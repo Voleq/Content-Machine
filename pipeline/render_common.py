@@ -1,8 +1,10 @@
 """FFmpeg plumbing shared by every stage: subprocess wrappers, probing,
-encode profiles and hardware-encoder detection (§7.3).
+encode profiles, hardware-encoder detection (§7.3), and the overlay
+compositing engine used by both renderers.
 
 Everything renders through `ffmpeg`/`ffprobe` subprocesses (C speed);
-Python only builds command lines and small raster assets.
+Python only builds command lines and small raster assets. Each final MP4
+is produced by exactly ONE encode pass over one filtergraph (§2.5).
 """
 
 from __future__ import annotations
@@ -10,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 
@@ -114,6 +116,131 @@ def encode_profile(settings: Settings, fmt: str, draft: bool = False) -> EncodeP
         return EncodeProfile(vcodec="libx264", preset=settings.draft_preset, crf=settings.draft_crf)
     crf = settings.short_crf if fmt == "short" else settings.long_crf
     return EncodeProfile(vcodec=vcodec, preset=settings.final_preset, crf=crf)
+
+
+# --------------------------------------------------------------------------
+# Overlay compositing: one filtergraph, one encode.
+# --------------------------------------------------------------------------
+
+
+@dataclass
+class OverlayLayer:
+    """One visual layer composited over the base at [t_start, t_end).
+
+    z-order is list order (first = bottom); time is the enable window —
+    they are independent, which lets e.g. the highlight sit UNDER the
+    typed line while appearing later.
+    """
+
+    path: Path
+    x: int
+    y: int
+    t_start: float
+    t_end: float
+    is_video: bool = False   # alpha .mov clip vs still PNG
+    fade_in: float = 0.0
+    hold: bool = False       # freeze a clip's last frame through t_end
+    name: str = ""           # for the manifest / debugging
+
+
+@dataclass
+class AudioTrack:
+    path: Path
+    start_s: float = 0.0
+    gain_db: float = 0.0
+    loop: bool = False       # e.g. the music bed
+
+
+@dataclass
+class CompositeSpec:
+    base_input_args: list[str]
+    base_filter: str
+    layers: list[OverlayLayer] = field(default_factory=list)
+    audio: list[AudioTrack] = field(default_factory=list)
+    ass_path: Path | None = None
+    fonts_dir: Path | None = None
+    duration: float = 0.0
+    fps: int = 30
+
+
+def composite_video(
+    spec: CompositeSpec,
+    profile: EncodeProfile,
+    audio_bitrate: str,
+    out_path: Path,
+) -> Path:
+    """Assemble the full filtergraph (written to a script file to dodge
+    argv limits) and run the single final encode."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    inputs: list[str] = list(spec.base_input_args)
+    lines: list[str] = [f"[0:v]{spec.base_filter}[v0]"]
+
+    idx = 1
+    for i, layer in enumerate(spec.layers):
+        window = layer.t_end - layer.t_start
+        if layer.is_video:
+            inputs += ["-i", str(layer.path)]
+        else:
+            inputs += [
+                "-loop", "1", "-framerate", str(spec.fps),
+                "-t", f"{window + 0.5:.3f}", "-i", str(layer.path),
+            ]
+        chain = "format=rgba"
+        if layer.fade_in > 0:
+            chain += f",fade=t=in:st=0:d={layer.fade_in:.3f}:alpha=1"
+        if layer.is_video and layer.hold:
+            chain += f",tpad=stop_mode=clone:stop_duration={window + 0.5:.3f}"
+        chain += f",setpts=PTS-STARTPTS+{layer.t_start:.4f}/TB"
+        lines.append(f"[{idx}:v]{chain}[l{i}]")
+        lines.append(
+            f"[v{i}][l{i}]overlay={layer.x}:{layer.y}"
+            f":enable='between(t,{layer.t_start:.4f},{layer.t_end:.4f})'"
+            f":eof_action=pass[v{i + 1}]"
+        )
+        idx += 1
+
+    v_label = f"[v{len(spec.layers)}]"
+    if spec.ass_path is not None:
+        fonts = f":fontsdir='{spec.fonts_dir}'" if spec.fonts_dir else ""
+        lines.append(f"{v_label}subtitles=filename='{spec.ass_path}'{fonts}[vout]")
+    else:
+        lines.append(f"{v_label}null[vout]")
+
+    a_labels: list[str] = []
+    for j, track in enumerate(spec.audio):
+        if track.loop:
+            inputs += ["-stream_loop", "-1", "-i", str(track.path)]
+        else:
+            inputs += ["-i", str(track.path)]
+        chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
+        if track.start_s > 0:
+            chain += f",adelay={int(track.start_s * 1000)}:all=1"
+        chain += f",volume={track.gain_db:.1f}dB"
+        lines.append(f"[{idx}:a]{chain}[a{j}]")
+        a_labels.append(f"[a{j}]")
+        idx += 1
+    if len(a_labels) == 1:
+        lines.append(f"{a_labels[0]}anull[aout]")
+    else:
+        lines.append(
+            f"{''.join(a_labels)}amix=inputs={len(a_labels)}"
+            f":duration=longest:normalize=0[aout]"
+        )
+
+    script = out_path.with_suffix(".filter.txt")
+    script.write_text(";\n".join(lines) + "\n")
+
+    run_ffmpeg([
+        *inputs,
+        "-filter_complex_script", str(script),
+        "-map", "[vout]", "-map", "[aout]",
+        "-t", f"{spec.duration:.3f}", "-r", str(spec.fps),
+        *profile.video_args(),
+        "-c:a", "aac", "-b:a", audio_bitrate,
+        "-movflags", "+faststart",
+        str(out_path),
+    ], timeout=7200)
+    return out_path
 
 
 def concat_audio(chunks: list[Path], out_path: Path, settings: Settings) -> Path:

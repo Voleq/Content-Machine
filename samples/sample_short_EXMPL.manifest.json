@@ -1,0 +1,195 @@
+{
+  "ticker": "EXMPL",
+  "verdict": "OVERVALUED",
+  "duration": 44.093991,
+  "cues": [
+    {
+      "t": 0.0,
+      "kind": "hook",
+      "payload": {
+        "text": "The market pays 60x sales for this. Let's see why it shouldn't.",
+        "until": 6.0243
+      },
+      "fallback": false
+    },
+    {
+      "t": 6.0243,
+      "kind": "whip_pan",
+      "payload": {
+        "duration": 0.45
+      },
+      "fallback": false
+    },
+    {
+      "t": 6.4743,
+      "kind": "data_line",
+      "payload": {
+        "index": 0,
+        "text": "Revenue growth: +1%",
+        "type_seconds": 1.1
+      },
+      "fallback": false
+    },
+    {
+      "t": 8.74445,
+      "kind": "data_line",
+      "payload": {
+        "index": 1,
+        "text": "Net margin: -18%",
+        "type_seconds": 1.1
+      },
+      "fallback": false
+    },
+    {
+      "t": 11.0146,
+      "kind": "data_line",
+      "payload": {
+        "index": 2,
+        "text": "FCF yield: -3%",
+        "type_seconds": 1.1
+      },
+      "fallback": false
+    },
+    {
+      "t": 11.3646,
+      "kind": "highlight",
+      "payload": {
+        "line_index": 2,
+        "color": "red",
+        "anchor_word": "cash"
+      },
+      "fallback": false
+    },
+    {
+      "t": 20.707730333333334,
+      "kind": "data_line",
+      "payload": {
+        "index": 3,
+        "text": "P/S: 62x",
+        "type_seconds": 1.1
+      },
+      "fallback": false
+    },
+    {
+      "t": 30.400860666666667,
+      "kind": "data_line",
+      "payload": {
+        "index": 4,
+        "text": "Debt/Equity: 140%",
+        "type_seconds": 1.1
+      },
+      "fallback": false
+    },
+    {
+      "t": 41.093991,
+      "kind": "stamp",
+      "payload": {
+        "label": "OVERVALUED"
+      },
+      "fallback": false
+    },
+    {
+      "t": 42.493991,
+      "kind": "cta",
+      "payload": {
+        "text": "Screenshot this before earnings."
+      },
+      "fallback": false
+    }
+  ],
+  "layers": [
+    {
+      "name": "folder_closed",
+      "t_start": 0.0,
+      "t_end": 6.0243,
+      "x": 160,
+      "y": 500
+    },
+    {
+      "name": "whip_pan",
+      "t_start": 6.0243,
+      "t_end": 6.4743,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "folder_open",
+      "t_start": 6.440966666666667,
+      "t_end": 44.093991,
+      "x": 40,
+      "y": 540
+    },
+    {
+      "name": "highlight_line2",
+      "t_start": 11.3646,
+      "t_end": 44.093991,
+      "x": 92,
+      "y": 882
+    },
+    {
+      "name": "data_line_0",
+      "t_start": 6.4743,
+      "t_end": 44.093991,
+      "x": 104,
+      "y": 612
+    },
+    {
+      "name": "data_line_1",
+      "t_start": 8.74445,
+      "t_end": 44.093991,
+      "x": 104,
+      "y": 752
+    },
+    {
+      "name": "data_line_2",
+      "t_start": 11.0146,
+      "t_end": 44.093991,
+      "x": 104,
+      "y": 892
+    },
+    {
+      "name": "data_line_3",
+      "t_start": 20.707730333333334,
+      "t_end": 44.093991,
+      "x": 104,
+      "y": 1032
+    },
+    {
+      "name": "data_line_4",
+      "t_start": 30.400860666666667,
+      "t_end": 44.093991,
+      "x": 104,
+      "y": 1172
+    },
+    {
+      "name": "stamp",
+      "t_start": 41.093991,
+      "t_end": 44.093991,
+      "x": -22,
+      "y": 764
+    },
+    {
+      "name": "hook",
+      "t_start": 0.0,
+      "t_end": 6.0243,
+      "x": 60,
+      "y": 150
+    },
+    {
+      "name": "cta",
+      "t_start": 42.493991,
+      "t_end": 44.093991,
+      "x": 100,
+      "y": 1430
+    },
+    {
+      "name": "disclaimer",
+      "t_start": 0.0,
+      "t_end": 44.093991,
+      "x": 119,
+      "y": 1850
+    }
+  ],
+  "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/short_final.filter.txt",
+  "output": "/home/user/Content-Machine/workspace/EXMPL/sample/short_final.mp4"
+}
