@@ -1,0 +1,339 @@
+"""ElevenLabs TTS with timestamps, content-hash caching and hard budgets (§6).
+
+One public entry point: `TTSEngine.synthesize(text, fmt)`.
+
+Invariants enforced here:
+  * character budget checked BEFORE anything else (BudgetExceededError)
+  * cache key = sha256(voice_id | model | settings | text) — re-running
+    unchanged content makes ZERO paid calls (§2.4)
+  * monthly spend cap checked before a real API call (SpendCapExceededError)
+  * LONG text is chunked by paragraph, synthesized per-chunk, stitched with
+    exact ffprobe chunk durations; word timestamps carry both time offsets
+    and char offsets into the ORIGINAL clean text
+  * MOCK_MODE generates deterministic ffmpeg audio + linear timestamps —
+    zero network, realistic durations
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import logging
+import re
+from pathlib import Path
+
+import httpx
+
+from config import Settings
+from pipeline.cost import BudgetExceededError, SpendLedger
+from pipeline.models import TTSResult, WordTimestamp
+from pipeline.render_common import concat_audio, ffprobe_duration, run_ffmpeg
+
+log = logging.getLogger(__name__)
+
+
+class TTSError(Exception):
+    pass
+
+
+# --------------------------------------------------------------------------
+# Pure helpers (unit-tested directly).
+# --------------------------------------------------------------------------
+
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?…])\s+")
+
+
+def chunk_text(text: str, max_chars: int) -> list[str]:
+    """Split into <=max_chars chunks on paragraph, then sentence boundaries.
+
+    Guarantee: ``"".join(chunks) == text`` — char offsets accumulate exactly.
+    """
+    if len(text) <= max_chars:
+        return [text]
+
+    # split keeping separators attached to the piece before them
+    pieces: list[str] = []
+    for para in re.split(r"(\n{2,})", text):
+        if not para:
+            continue
+        if pieces and para.startswith("\n"):
+            pieces[-1] += para
+        else:
+            pieces.append(para)
+
+    # explode any oversized piece on sentence boundaries (separator kept)
+    atoms: list[str] = []
+    for piece in pieces:
+        if len(piece) <= max_chars:
+            atoms.append(piece)
+            continue
+        last = 0
+        for m in _SENTENCE_SPLIT_RE.finditer(piece):
+            atoms.append(piece[last:m.end()])
+            last = m.end()
+        if last < len(piece):
+            atoms.append(piece[last:])
+
+    chunks: list[str] = []
+    current = ""
+    for atom in atoms:
+        # hard-split pathological atoms (no sentence breaks at all)
+        while len(atom) > max_chars:
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(atom[:max_chars])
+            atom = atom[max_chars:]
+        if len(current) + len(atom) <= max_chars:
+            current += atom
+        else:
+            chunks.append(current)
+            current = atom
+    if current:
+        chunks.append(current)
+
+    assert "".join(chunks) == text, "chunking must preserve the text exactly"
+    return chunks
+
+
+def words_from_alignment(text: str, alignment: dict) -> list[WordTimestamp]:
+    """ElevenLabs character alignment -> word-level timestamps.
+
+    `alignment` holds parallel arrays: characters,
+    character_start_times_seconds, character_end_times_seconds. Characters
+    mirror the request text, so indices double as char offsets.
+    """
+    chars: list[str] = alignment["characters"]
+    starts: list[float] = alignment["character_start_times_seconds"]
+    ends: list[float] = alignment["character_end_times_seconds"]
+    words: list[WordTimestamp] = []
+    w_start_idx: int | None = None
+    for i, ch in enumerate(chars + [" "]):  # sentinel space flushes last word
+        if ch.isspace():
+            if w_start_idx is not None:
+                words.append(
+                    WordTimestamp(
+                        word="".join(chars[w_start_idx:i]),
+                        start=float(starts[w_start_idx]),
+                        end=float(ends[i - 1]),
+                        char_start=w_start_idx,
+                        char_end=i,
+                    )
+                )
+                w_start_idx = None
+        elif w_start_idx is None:
+            w_start_idx = i
+    return words
+
+
+def mock_words(text: str, duration: float, lead_in: float = 0.15) -> list[WordTimestamp]:
+    """Deterministic linear word timing weighted by word length."""
+    spans: list[tuple[int, int]] = []
+    for m in re.finditer(r"\S+", text):
+        spans.append((m.start(), m.end()))
+    if not spans:
+        return []
+    speak_time = max(duration - lead_in, 0.001)
+    total_weight = sum(end - start + 1 for start, end in spans)
+    words: list[WordTimestamp] = []
+    t = lead_in
+    for start, end in spans:
+        share = (end - start + 1) / total_weight * speak_time
+        words.append(
+            WordTimestamp(
+                word=text[start:end],
+                start=round(t, 4),
+                end=round(t + share, 4),
+                char_start=start,
+                char_end=end,
+            )
+        )
+        t += share
+    return words
+
+
+def cache_key(voice_id: str, model_id: str, voice_settings: dict, text: str) -> str:
+    payload = "|".join([
+        voice_id,
+        model_id,
+        json.dumps(voice_settings, sort_keys=True),
+        text,
+    ])
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+# --------------------------------------------------------------------------
+# Engine.
+# --------------------------------------------------------------------------
+
+
+class TTSEngine:
+    def __init__(
+        self,
+        settings: Settings,
+        ledger: SpendLedger | None = None,
+        client: httpx.Client | None = None,
+    ):
+        self.settings = settings
+        self.ledger = ledger or SpendLedger(settings)
+        self._client = client  # injectable for tests (httpx.MockTransport)
+
+    # ------------------------------------------------------------------ API
+    def synthesize(self, text: str, fmt: str) -> TTSResult:
+        """text must be the CLEAN script (tags stripped). fmt: short|long."""
+        if fmt not in ("short", "long"):
+            raise ValueError(f"fmt must be short|long, got {fmt!r}")
+        budget = self.settings.max_chars(fmt)
+        if len(text) > budget:
+            raise BudgetExceededError(
+                f"{fmt.upper()} script is {len(text)} chars, budget is {budget}. "
+                f"No TTS was called."
+            )
+
+        voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
+        model_id = self.settings.active_eleven_model
+        vsettings = self.settings.voice_settings(fmt)
+        key = cache_key(voice_id, model_id, vsettings, text)
+        cdir = self.settings.cache_dir / "tts" / key
+        audio_path = cdir / "audio.m4a"
+        words_path = cdir / "words.json"
+
+        if audio_path.exists() and words_path.exists():
+            words = [WordTimestamp(**w) for w in json.loads(words_path.read_text())]
+            return TTSResult(
+                audio_path=audio_path,
+                words=words,
+                duration_s=ffprobe_duration(audio_path),
+                chars=len(text),
+                cached=True,
+                cost_usd=0.0,
+            )
+
+        cdir.mkdir(parents=True, exist_ok=True)
+        chunks = chunk_text(text, self.settings.tts_chunk_chars)
+        log.info("TTS generate: %s chars in %d chunk(s), mock=%s",
+                 len(text), len(chunks), self.settings.mock_mode)
+
+        cost_usd = 0.0
+        if self.settings.mock_mode:
+            chunk_files, chunk_words = self._generate_mock(chunks, fmt, cdir)
+        else:
+            # code-level spend gate (the operator Approve is the human gate)
+            est = self.ledger.guard_tts_spend(len(text))
+            chunk_files, chunk_words = self._generate_real(
+                chunks, voice_id, model_id, vsettings, cdir
+            )
+            self.ledger.record_tts(est)
+            cost_usd = est
+
+        # stitch chunks: offset each chunk's word times by the exact summed
+        # durations of prior chunks, and char offsets by prior chunk lengths
+        words: list[WordTimestamp] = []
+        t_offset = 0.0
+        c_offset = 0
+        for chunk_text_, cfile, cwords in zip(chunks, chunk_files, chunk_words):
+            for w in cwords:
+                words.append(
+                    WordTimestamp(
+                        word=w.word,
+                        start=round(w.start + t_offset, 4),
+                        end=round(w.end + t_offset, 4),
+                        char_start=w.char_start + c_offset,
+                        char_end=w.char_end + c_offset,
+                    )
+                )
+            t_offset += ffprobe_duration(cfile)
+            c_offset += len(chunk_text_)
+
+        concat_audio(chunk_files, audio_path, self.settings)
+        for f in chunk_files:
+            if f != audio_path:
+                f.unlink(missing_ok=True)
+
+        duration = ffprobe_duration(audio_path)
+        words_path.write_text(json.dumps([w.model_dump() for w in words]))
+        (cdir / "meta.json").write_text(json.dumps({
+            "voice_id": voice_id,
+            "model_id": model_id,
+            "voice_settings": vsettings,
+            "chars": len(text),
+            "chunks": len(chunks),
+            "mock": self.settings.mock_mode,
+            "cost_usd": cost_usd,
+        }, indent=2))
+
+        return TTSResult(
+            audio_path=audio_path,
+            words=words,
+            duration_s=duration,
+            chars=len(text),
+            cached=False,
+            cost_usd=cost_usd,
+        )
+
+    # ------------------------------------------------------------------ mock
+    def _generate_mock(
+        self, chunks: list[str], fmt: str, cdir: Path
+    ) -> tuple[list[Path], list[list[WordTimestamp]]]:
+        wps = self.settings.mock_wps_short if fmt == "short" else self.settings.mock_wps_long
+        files: list[Path] = []
+        words: list[list[WordTimestamp]] = []
+        for i, chunk in enumerate(chunks):
+            n_words = max(len(chunk.split()), 1)
+            duration = max(n_words / wps, 0.8)
+            f = cdir / f"chunk_{i:03d}.m4a"
+            # audible deterministic placeholder: low hum with word-rate tremolo
+            run_ffmpeg([
+                "-f", "lavfi",
+                "-i", f"sine=frequency=155:sample_rate=44100:duration={duration:.3f}",
+                "-af", f"tremolo=f={wps:.2f}:d=0.85,volume=0.35",
+                "-c:a", "aac", "-b:a", "128k", str(f),
+            ])
+            files.append(f)
+            words.append(mock_words(chunk, ffprobe_duration(f)))
+        return files, words
+
+    # ------------------------------------------------------------------ real
+    def _generate_real(
+        self,
+        chunks: list[str],
+        voice_id: str,
+        model_id: str,
+        vsettings: dict,
+        cdir: Path,
+    ) -> tuple[list[Path], list[list[WordTimestamp]]]:
+        if not self.settings.elevenlabs_api_key:
+            raise TTSError("ELEVENLABS_API_KEY is not set and MOCK_MODE is off.")
+        client = self._client or httpx.Client(timeout=120)
+        files: list[Path] = []
+        words: list[list[WordTimestamp]] = []
+        try:
+            for i, chunk in enumerate(chunks):
+                url = (
+                    f"{self.settings.eleven_base_url}/v1/text-to-speech/"
+                    f"{voice_id}/with-timestamps"
+                )
+                resp = client.post(
+                    url,
+                    params={"output_format": "mp3_44100_128"},
+                    headers={"xi-api-key": self.settings.elevenlabs_api_key},
+                    json={
+                        "text": chunk,
+                        "model_id": model_id,
+                        "voice_settings": vsettings,
+                    },
+                )
+                if resp.status_code != 200:
+                    raise TTSError(
+                        f"ElevenLabs error {resp.status_code}: {resp.text[:300]}"
+                    )
+                payload = resp.json()
+                f = cdir / f"chunk_{i:03d}.mp3"
+                f.write_bytes(base64.b64decode(payload["audio_base64"]))
+                files.append(f)
+                words.append(words_from_alignment(chunk, payload["alignment"]))
+        finally:
+            if self._client is None:
+                client.close()
+        return files, words
