@@ -1,0 +1,31 @@
+{
+  "page": 1,
+  "per_page": 3,
+  "total_results": 2,
+  "url": "https://www.pexels.com/search/videos/burning%20dumpster%20flames%20night/",
+  "videos": [
+    {
+      "id": 850001,
+      "width": 1920,
+      "height": 1080,
+      "duration": 12,
+      "url": "https://www.pexels.com/video/mock-dumpster-fire-850001/",
+      "user": {"id": 9001, "name": "Alex Mockman", "url": "https://www.pexels.com/@alex-mockman"},
+      "video_files": [
+        {"id": 1, "quality": "hd", "file_type": "video/mp4", "width": 1920, "height": 1080, "fps": 30, "link": "https://mock.pexels.invalid/dumpster_fire_hd.mp4"},
+        {"id": 2, "quality": "sd", "file_type": "video/mp4", "width": 960, "height": 540, "fps": 30, "link": "https://mock.pexels.invalid/dumpster_fire_sd.mp4"}
+      ]
+    },
+    {
+      "id": 850002,
+      "width": 3840,
+      "height": 2160,
+      "duration": 9,
+      "url": "https://www.pexels.com/video/mock-bonfire-850002/",
+      "user": {"id": 9002, "name": "Priya Fixture", "url": "https://www.pexels.com/@priya-fixture"},
+      "video_files": [
+        {"id": 3, "quality": "uhd", "file_type": "video/mp4", "width": 3840, "height": 2160, "fps": 25, "link": "https://mock.pexels.invalid/bonfire_uhd.mp4"}
+      ]
+    }
+  ]
+}

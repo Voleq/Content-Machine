@@ -1,0 +1,13 @@
+EXMPL trades at sixty two times sales, and the market considers this reasonable. [B-ROLL: house_of_cards] We are going to spend the next few minutes finding out why it is not.
+
+Start with the business. [B-ROLL: confused_office_worker] EXMPL sells software that automates a process nobody asked to automate, to customers who churn at nineteen percent a year. Revenue grew one percent. [SHOW REFINITIV: income_statement.png] That number is real. I checked twice. [SOUND: windows_error]
+
+Management describes the quarter as transformational. [B-ROLL: clown] The transformation in question: gross margin fell three points and operating expenses grew eleven percent. They spend a dollar ten to make each dollar. [B-ROLL: dumpster_fire] This is what we call, in technical terms, a charity. [SOUND: sad_trombone]
+
+The balance sheet. [B-ROLL: sinking_ship] More debt than equity. The interest bill eats a third of gross profit, which is impressive for a company that capitalizes its own optimism. Free cash flow is negative three percent of revenue, so ownership is a subscription. [B-ROLL: monopoly_money] You pay them.
+
+Now the valuation math. At sixty two times sales, EXMPL must grow revenue forty percent a year for a decade, at Microsoft margins, just to justify today's price. [B-ROLL: printing_money] Their actual growth rate is one. [SOUND: record_scratch] The discounted cash flow model does not output a number so much as it files a complaint.
+
+The bull case is that someone acquires them. The bear case is arithmetic. [B-ROLL: empty_promise_handshake] I know which one has a better track record.
+
+Verdict: overvalued. Not evil, not a fraud, just priced for a future that has declined the invitation. [STAMP: OVERVALUED] Do your own diligence. I already did mine.

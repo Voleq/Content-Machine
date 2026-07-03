@@ -1,0 +1,13 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "verdict": "TOXIC",
+  "hook_text": "Index points beyond the data block.",
+  "audio_script": "The highlight references a line that does not exist.",
+  "data_block": ["Revenue: $1", "Margin: -5%"],
+  "visual_directions": [
+    {"type": "highlight", "line_index": 7, "color": "red", "anchor_word": "line"},
+    {"type": "stamp", "label": "TOXIC", "anchor": "end_minus_3"}
+  ],
+  "cta_text": "n/a"
+}

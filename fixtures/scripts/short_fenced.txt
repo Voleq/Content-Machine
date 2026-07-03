@@ -1,0 +1,25 @@
+Sure! Here is the audit you asked for:
+
+```json
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "verdict": "CASH_COW",
+  "hook_text": "Everyone hates this stock. The cash flow statement disagrees.",
+  "audio_script": "Everyone hates this stock, which is convenient, because the cash flow statement cannot read the news. Revenue grew nine percent. Gross margin is sixty one. Free cash flow margin is twenty four percent and they buy back four percent of the float a year, which is the corporate version of quietly leaving the party early. Net cash on the balance sheet. No dilution. No story, no keynote, no vision deck. Just a machine that turns invoices into cash while the market stares at something shinier. I went looking for the fraud and found a moat. Revolting. Verdict: cash cow. Milk it.",
+  "data_block": [
+    "Revenue growth: +9%",
+    "Gross margin: 61%",
+    "FCF margin: 24%",
+    "Buyback yield: 4%",
+    "Net debt: negative"
+  ],
+  "visual_directions": [
+    {"type": "highlight", "line_index": 2, "color": "green", "anchor_word": "cash"},
+    {"type": "stamp", "label": "CASH_COW", "anchor": "end_minus_3"}
+  ],
+  "cta_text": "Tell me I'm wrong."
+}
+```
+
+Let me know if you want a different angle.

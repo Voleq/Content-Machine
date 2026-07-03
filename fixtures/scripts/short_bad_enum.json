@@ -1,0 +1,12 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "verdict": "GARBAGE_FIRE",
+  "hook_text": "This is not a valid verdict.",
+  "audio_script": "Short body.",
+  "data_block": ["Revenue: $1"],
+  "visual_directions": [
+    {"type": "stamp", "label": "TOXIC", "anchor": "end_minus_3"}
+  ],
+  "cta_text": "n/a"
+}

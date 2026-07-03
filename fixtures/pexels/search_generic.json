@@ -1,0 +1,19 @@
+{
+  "page": 1,
+  "per_page": 3,
+  "total_results": 1,
+  "url": "https://www.pexels.com/search/videos/generic/",
+  "videos": [
+    {
+      "id": 990001,
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "url": "https://www.pexels.com/video/mock-generic-990001/",
+      "user": {"id": 9100, "name": "Generic Fixture", "url": "https://www.pexels.com/@generic-fixture"},
+      "video_files": [
+        {"id": 10, "quality": "hd", "file_type": "video/mp4", "width": 1920, "height": 1080, "fps": 30, "link": "https://mock.pexels.invalid/generic_hd.mp4"}
+      ]
+    }
+  ]
+}

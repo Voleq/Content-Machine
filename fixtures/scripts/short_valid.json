@@ -1,0 +1,19 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "verdict": "OVERVALUED",
+  "hook_text": "The market pays 60x sales for this. Let's see why it shouldn't.",
+  "audio_script": "The market pays sixty times sales for this company, so it had better be printing money. It is not. Revenue grew one percent. Net margin is negative eighteen. They burn cash on operations and call it investment. The balance sheet has more debt than equity, and the interest bill alone eats a third of gross profit. Free cash flow yield is negative three percent, which means you pay them to own it. At sixty times sales you are not buying a business, you are buying a story. The story has no second act. The auditors signed off, the analysts nodded, and the price kept climbing. That is not a thesis, that is a seance. Verdict: overvalued, stamped and filed.",
+  "data_block": [
+    "Revenue growth: +1%",
+    "Net margin: -18%",
+    "FCF yield: -3%",
+    "P/S: 62x",
+    "Debt/Equity: 140%"
+  ],
+  "visual_directions": [
+    {"type": "highlight", "line_index": 2, "color": "red", "anchor_word": "cash"},
+    {"type": "stamp", "label": "OVERVALUED", "anchor": "end_minus_3"}
+  ],
+  "cta_text": "Screenshot this before earnings."
+}

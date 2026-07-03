@@ -1,0 +1,11 @@
+This narration exercises the tolerant path. [B-ROLL: printing_money] A known clip lands here.
+
+An unknown b-roll key follows. [B-ROLL: flying_toasters] The engine must fall back, not crash.
+
+An unknown tag type appears here. [CAMERA: zoom_in] The tokenizer must log and skip it, never die.
+
+A sound that does not exist. [SOUND: airhorn_extreme] Skipped with a warning.
+
+A refinitiv screenshot that is not in the workspace. [SHOW REFINITIV: missing_file.png] This one is a blocking validation error.
+
+A stamp with a bad label is skipped. [STAMP: MEDIOCRE] And a good one lands. [STAMP: TOXIC] End of test.

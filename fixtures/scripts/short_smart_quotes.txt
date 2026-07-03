@@ -1,0 +1,18 @@
+{
+  “ticker”: “EXMPL”,
+  “format”: “short”,
+  “verdict”: “DEAD_MONEY”,
+  “hook_text”: “Five years of ‘transformation’. The stock went nowhere.”,
+  “audio_script”: “Five years of transformation, three CEOs, two strategic pivots, and one stock chart that looks like a cardiogram of a patient who has accepted their fate. Revenue is flat. Margins are flat. The dividend is the only thing moving, and it moves like a glacier. Management calls it stability. The market calls it a value trap. They are both describing the same corpse from different angles. There is no catalyst here, no cliff either — just a company that pays you three percent a year to watch it not change. Verdict: dead money. Set an alarm for 2031.”,
+  “data_block”: [
+    “Revenue growth: 0%”,
+    “Operating margin: 11%”,
+    “Dividend yield: 3%”,
+    “5y total return: -4%”
+  ],
+  “visual_directions”: [
+    {“type”: “highlight”, “line_index”: 3, “color”: “red”, “anchor_word”: “nowhere”},
+    {“type”: “stamp”, “label”: “DEAD_MONEY”, “anchor”: “end_minus_3”}
+  ],
+  “cta_text”: “Name a more boring chart. I’ll wait.”
+}
