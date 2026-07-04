@@ -42,6 +42,9 @@ s3 = [
     "boto3==1.42.39",
 ]
 
+[project.scripts]
+due-diligence-desk = "main:main"
+
 [tool.setuptools]
 packages = ["pipeline", "bot"]
 py-modules = ["config", "main"]
