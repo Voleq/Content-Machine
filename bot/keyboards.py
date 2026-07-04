@@ -1,0 +1,53 @@
+"""Inline keyboards for the approval flow (§9.2).
+
+Callback data grammar (64-byte Telegram limit — keep it terse):
+    a|<fmt>|<ticker>|<date>|<sha8>     approve
+    x|<fmt>|<ticker>|<date>           cancel
+    w|<ticker>|<date>                 open the swap-clip menu (LONG)
+    s|<ticker>|<date>|<key>           swap this b-roll key to its next take
+    n|<ticker>                        fire /new from a screener candidate
+"""
+
+from __future__ import annotations
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+
+
+def approval_keyboard(fmt: str, ticker: str, workdate: str, sha: str,
+                      approvable: bool, has_broll: bool) -> InlineKeyboardMarkup:
+    rows = []
+    row = []
+    if approvable:
+        row.append(InlineKeyboardButton(
+            "Approve ✅", callback_data=f"a|{fmt}|{ticker}|{workdate}|{sha[:8]}"
+        ))
+    if has_broll:
+        row.append(InlineKeyboardButton(
+            "Swap clip 🔄", callback_data=f"w|{ticker}|{workdate}"
+        ))
+    row.append(InlineKeyboardButton(
+        "Cancel ❌", callback_data=f"x|{fmt}|{ticker}|{workdate}"
+    ))
+    rows.append(row)
+    return InlineKeyboardMarkup(rows)
+
+
+def swap_keyboard(ticker: str, workdate: str, keys: list[str]) -> InlineKeyboardMarkup:
+    rows = []
+    for i in range(0, len(keys), 2):
+        rows.append([
+            InlineKeyboardButton(f"🔄 {k}", callback_data=f"s|{ticker}|{workdate}|{k}")
+            for k in keys[i:i + 2]
+        ])
+    rows.append([InlineKeyboardButton("◀ back to report", callback_data=f"w!|{ticker}|{workdate}")])
+    return InlineKeyboardMarkup(rows)
+
+
+def candidates_keyboard(tickers: list[str]) -> InlineKeyboardMarkup:
+    rows = []
+    for i in range(0, len(tickers), 3):
+        rows.append([
+            InlineKeyboardButton(f"/new {t}", callback_data=f"n|{t}")
+            for t in tickers[i:i + 3]
+        ])
+    return InlineKeyboardMarkup(rows)

@@ -105,3 +105,89 @@ class SpendLedger:
             data = self._load()
             self._month(data)["pexels_calls"] += 1
             self._save(data)
+
+
+# ---------------------------------------------------------------------------
+# The §9.3 validation + cost report (the artifact behind the Approve button).
+# ---------------------------------------------------------------------------
+
+# empirical render-speed factors on a cheap VPS (minutes of render per
+# minute of output at final quality, libx264 veryfast)
+_RENDER_FACTOR = {"short": 0.9, "long": 0.8}
+_RENDER_BASE_MIN = {"short": 0.3, "long": 0.5}
+
+
+def estimate_render_minutes(fmt: str, words: int, wps: float) -> float:
+    duration_min = words / wps / 60.0
+    return round(duration_min * _RENDER_FACTOR[fmt] + _RENDER_BASE_MIN[fmt], 1)
+
+
+def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
+    from pipeline.models import CostReport  # local import avoids a cycle
+
+    cached = tts_engine.is_cached(script.audio_script, "short")
+    est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
+    missing = set(script.missing_anchor_words())
+    notes = []
+    for h in script.highlights:
+        mark = "⚠ fallback position" if h.anchor_word in missing else "✓ (anchor found)"
+        notes.append(f'Highlight -> line {h.line_index} "{h.anchor_word}" {mark}')
+    blocking: list[str] = []
+    if not cached and ledger.would_exceed(est):
+        blocking.append(
+            f"TTS (~${est:.2f}) would exceed the monthly cap "
+            f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
+        )
+    return CostReport(
+        ticker=script.ticker,
+        fmt="short",
+        words=script.word_count,
+        chars=script.char_count,
+        tts_cached=cached,
+        est_tts_usd=est,
+        data_block_lines=len(script.data_block),
+        stamp=script.stamps[0].label.value,
+        highlight_note="\n".join(notes),
+        est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
+        mtd_spend_usd=ledger.mtd_spend_usd(),
+        monthly_cap_usd=settings.monthly_spend_cap_usd,
+        warnings=list(parse_warnings),
+        blocking=blocking,
+        script_sha=script.content_sha(),
+    )
+
+
+def build_long_report(
+    script, parse_warnings, validation_warnings, validation_blocking,
+    settings, ledger, tts_engine, broll_plan, refinitiv_count,
+) -> "CostReport":
+    from pipeline.models import BrollPlanItem, CostReport
+
+    cached = tts_engine.is_cached(script.narration, "long")
+    est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
+    blocking = list(validation_blocking)
+    if not cached and ledger.would_exceed(est):
+        blocking.append(
+            f"TTS (~${est:.2f}) would exceed the monthly cap "
+            f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
+        )
+    return CostReport(
+        ticker=script.ticker,
+        fmt="long",
+        words=script.word_count,
+        chars=script.char_count,
+        tts_cached=cached,
+        est_tts_usd=est,
+        broll=[
+            BrollPlanItem(key=c.key, source=c.source, path=str(c.path),
+                          attribution=c.attribution)
+            for c in broll_plan
+        ],
+        refinitiv_overlays=refinitiv_count,
+        est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
+        mtd_spend_usd=ledger.mtd_spend_usd(),
+        monthly_cap_usd=settings.monthly_spend_cap_usd,
+        warnings=list(parse_warnings) + list(validation_warnings),
+        blocking=blocking,
+        script_sha=script.content_sha(),
+    )

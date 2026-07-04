@@ -180,6 +180,16 @@ class TTSEngine:
         self._client = client  # injectable for tests (httpx.MockTransport)
 
     # ------------------------------------------------------------------ API
+    def is_cached(self, text: str, fmt: str) -> bool:
+        """Would synthesize() be free? (drives the §9.3 cost report)"""
+        voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
+        key = cache_key(
+            voice_id, self.settings.active_eleven_model,
+            self.settings.voice_settings(fmt), text,
+        )
+        cdir = self.settings.cache_dir / "tts" / key
+        return (cdir / "audio.m4a").exists() and (cdir / "words.json").exists()
+
     def synthesize(self, text: str, fmt: str) -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long."""
         if fmt not in ("short", "long"):
