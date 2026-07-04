@@ -50,6 +50,7 @@ HELP_TEXT = """Due Diligence Desk — operator commands
 /render TICKER — render the approved SHORT
 /render_long TICKER — render the approved LONG
 /draft TICKER — cheap low-res LONG timing check (no TTS spend)
+/repurpose TICKER — free 9:16 SHORT from the finished LONG
 /status — job queue
 /cancel TICKER — cancel queued/running jobs + pending approval
 /cost — month-to-date spend vs cap
@@ -339,6 +340,18 @@ class BotCore:
         kind = JobKind.RENDER_SHORT if fmt == "short" else JobKind.RENDER_LONG
         return kind, f"🎬 queued {fmt.upper()} render for {ticker}", ws
 
+    def repurpose_request(self, ticker: str) -> tuple[JobKind | None, str, Workspace | None]:
+        """SHORT-from-LONG: free (no TTS, no fetches), so no approval gate."""
+        ws = self._ws_or_error(ticker)
+        if ws is None:
+            return None, f"No workspace for {ticker}.", None
+        if not (ws.path / "long_final.mp4").exists():
+            return None, (
+                f"No finished LONG for {ticker} — /render_long first, then "
+                f"/repurpose extracts the best ~58s as a 9:16 SHORT for free."
+            ), None
+        return JobKind.REPURPOSE, f"✂️ queued repurpose (SHORT-from-LONG) for {ticker}", ws
+
     # ------------------------------------------------- job executor (worker)
     def execute_job(self, job: JobRecord) -> str:
         """Blocking pipeline for one job; runs in the queue's worker thread.
@@ -403,6 +416,29 @@ class BotCore:
                 pass
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=attributions, extra_files=extra)
+            self._finish(job, result)
+            return str(out)
+
+        if job.kind is JobKind.REPURPOSE:
+            from pipeline.repurpose import repurpose_short_from_long
+
+            long_mp4 = ws.path / "long_final.mp4"
+            manifest = ws.path / "render_long_manifest.json"
+            if not long_mp4.exists() or not manifest.exists():
+                raise RuntimeError("no finished LONG render to repurpose")
+            script = ws.load_long()
+            words = None
+            if script and self.tts.is_cached(script.narration, "long"):
+                words = self.tts.synthesize(script.narration, "long").words  # cache hit
+            checkpoint("repurpose")
+            out, info = repurpose_short_from_long(
+                long_mp4, manifest, self.settings, words=words
+            )
+            checkpoint("delivery")
+            import json as _json
+            attributions = _json.loads(manifest.read_text()).get("attributions", [])
+            result = deliver(out, job.ticker, job.workdate, self.settings,
+                             attributions=attributions)
             self._finish(job, result)
             return str(out)
 
@@ -539,6 +575,21 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, Reply(text))
 
     @guard
+    async def cmd_repurpose(update, ctx):
+        if not ctx.args:
+            await _send(update, Reply("Usage: /repurpose TICKER"))
+            return
+        kind, text, ws = core.repurpose_request(ctx.args[0].upper())
+        if kind is None or ws is None:
+            await _send(update, Reply(text))
+            return
+        try:
+            await core.queue.submit(kind, ws.ticker, ws.workdate)
+        except ValueError as e:
+            text = f"⛔ {e}"
+        await _send(update, Reply(text))
+
+    @guard
     async def cmd_status(update, ctx):
         await _send(update, Reply(core.queue.status_text()))
 
@@ -628,6 +679,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render", cmd_render))
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
+    app.add_handler(CommandHandler("repurpose", cmd_repurpose))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("cost", cmd_cost))
