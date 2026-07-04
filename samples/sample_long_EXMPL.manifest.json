@@ -1,0 +1,303 @@
+{
+  "ticker": "EXMPL",
+  "draft": false,
+  "duration": 106.532993,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "cues": [
+    {
+      "t": 6.1837,
+      "kind": "broll",
+      "payload": {
+        "order": 0,
+        "key": "house_of_cards"
+      },
+      "fallback": false
+    },
+    {
+      "t": 13.2603,
+      "kind": "broll",
+      "payload": {
+        "order": 1,
+        "key": "confused_office_worker"
+      },
+      "fallback": false
+    },
+    {
+      "t": 24.3593,
+      "kind": "refinitiv",
+      "payload": {
+        "order": 2,
+        "file": "income_statement.png"
+      },
+      "fallback": false
+    },
+    {
+      "t": 27.1899,
+      "kind": "sound",
+      "payload": {
+        "order": 3,
+        "key": "windows_error"
+      },
+      "fallback": false
+    },
+    {
+      "t": 31.2124,
+      "kind": "broll",
+      "payload": {
+        "order": 4,
+        "key": "clown"
+      },
+      "fallback": false
+    },
+    {
+      "t": 42.5349,
+      "kind": "broll",
+      "payload": {
+        "order": 5,
+        "key": "dumpster_fire"
+      },
+      "fallback": false
+    },
+    {
+      "t": 46.4829,
+      "kind": "sound",
+      "payload": {
+        "order": 6,
+        "key": "sad_trombone"
+      },
+      "fallback": false
+    },
+    {
+      "t": 47.8982,
+      "kind": "broll",
+      "payload": {
+        "order": 7,
+        "key": "sinking_ship"
+      },
+      "fallback": false
+    },
+    {
+      "t": 64.6585,
+      "kind": "broll",
+      "payload": {
+        "order": 8,
+        "key": "monopoly_money"
+      },
+      "fallback": false
+    },
+    {
+      "t": 77.7688,
+      "kind": "broll",
+      "payload": {
+        "order": 9,
+        "key": "printing_money"
+      },
+      "fallback": false
+    },
+    {
+      "t": 80.227,
+      "kind": "sound",
+      "payload": {
+        "order": 10,
+        "key": "record_scratch"
+      },
+      "fallback": false
+    },
+    {
+      "t": 92.3689,
+      "kind": "broll",
+      "payload": {
+        "order": 11,
+        "key": "empty_promise_handshake"
+      },
+      "fallback": false
+    },
+    {
+      "t": 103.3189,
+      "kind": "stamp",
+      "payload": {
+        "order": 12,
+        "label": "OVERVALUED"
+      },
+      "fallback": false
+    }
+  ],
+  "segments": [
+    {
+      "kind": "filler",
+      "variant": 0,
+      "start": 0.0,
+      "end": 3.09185
+    },
+    {
+      "kind": "filler",
+      "variant": 1,
+      "start": 3.09185,
+      "end": 6.1837
+    },
+    {
+      "kind": "broll",
+      "key": "house_of_cards",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 6.1837,
+      "end": 11.383700000000001
+    },
+    {
+      "kind": "filler",
+      "variant": 2,
+      "start": 11.383700000000001,
+      "end": 13.2603
+    },
+    {
+      "kind": "broll",
+      "key": "confused_office_worker",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 13.2603,
+      "end": 18.4603
+    },
+    {
+      "kind": "filler",
+      "variant": 3,
+      "start": 18.4603,
+      "end": 24.3593
+    },
+    {
+      "kind": "refinitiv",
+      "file": "income_statement.png",
+      "start": 24.3593,
+      "end": 27.8593
+    },
+    {
+      "kind": "filler",
+      "variant": 0,
+      "start": 27.8593,
+      "end": 31.2124
+    },
+    {
+      "kind": "broll",
+      "key": "clown",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 31.2124,
+      "end": 36.4124
+    },
+    {
+      "kind": "filler",
+      "variant": 1,
+      "start": 36.4124,
+      "end": 39.47365
+    },
+    {
+      "kind": "filler",
+      "variant": 2,
+      "start": 39.47365,
+      "end": 42.5349
+    },
+    {
+      "kind": "broll",
+      "key": "dumpster_fire",
+      "source": "pexels",
+      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
+      "start": 42.5349,
+      "end": 47.8982
+    },
+    {
+      "kind": "broll",
+      "key": "sinking_ship",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 47.8982,
+      "end": 53.098200000000006
+    },
+    {
+      "kind": "filler",
+      "variant": 3,
+      "start": 53.098200000000006,
+      "end": 56.95163333333334
+    },
+    {
+      "kind": "filler",
+      "variant": 0,
+      "start": 56.95163333333334,
+      "end": 60.80506666666667
+    },
+    {
+      "kind": "filler",
+      "variant": 1,
+      "start": 60.80506666666667,
+      "end": 64.6585
+    },
+    {
+      "kind": "broll",
+      "key": "monopoly_money",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 64.6585,
+      "end": 69.8585
+    },
+    {
+      "kind": "filler",
+      "variant": 2,
+      "start": 69.8585,
+      "end": 73.81365
+    },
+    {
+      "kind": "filler",
+      "variant": 3,
+      "start": 73.81365,
+      "end": 77.7688
+    },
+    {
+      "kind": "broll",
+      "key": "printing_money",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 77.7688,
+      "end": 82.9688
+    },
+    {
+      "kind": "filler",
+      "variant": 0,
+      "start": 82.9688,
+      "end": 87.66884999999999
+    },
+    {
+      "kind": "filler",
+      "variant": 1,
+      "start": 87.66884999999999,
+      "end": 92.3689
+    },
+    {
+      "kind": "broll",
+      "key": "empty_promise_handshake",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "start": 92.3689,
+      "end": 97.5689
+    },
+    {
+      "kind": "filler",
+      "variant": 2,
+      "start": 97.5689,
+      "end": 102.05094650000001
+    },
+    {
+      "kind": "filler",
+      "variant": 3,
+      "start": 102.05094650000001,
+      "end": 106.532993
+    }
+  ],
+  "segment_warnings": [],
+  "attributions": [
+    "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
+    "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+  ],
+  "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.filter.txt",
+  "output": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.mp4"
+}

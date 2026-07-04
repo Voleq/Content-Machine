@@ -154,13 +154,19 @@ class AudioTrack:
 @dataclass
 class CompositeSpec:
     base_input_args: list[str]
-    base_filter: str
+    base_filter: str = ""              # single-input base: [0:v]base_filter[v0]
+    base_graph_lines: list[str] = field(default_factory=list)
+    # multi-input base (e.g. the LONG concat timeline): verbatim filter lines
+    # that must end by producing [v0]; overrides base_filter when non-empty
     layers: list[OverlayLayer] = field(default_factory=list)
     audio: list[AudioTrack] = field(default_factory=list)
     ass_path: Path | None = None
     fonts_dir: Path | None = None
     duration: float = 0.0
     fps: int = 30
+
+    def input_count(self) -> int:
+        return sum(1 for a in self.base_input_args if a == "-i")
 
 
 def composite_video(
@@ -173,9 +179,12 @@ def composite_video(
     argv limits) and run the single final encode."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
     inputs: list[str] = list(spec.base_input_args)
-    lines: list[str] = [f"[0:v]{spec.base_filter}[v0]"]
+    if spec.base_graph_lines:
+        lines = list(spec.base_graph_lines)
+    else:
+        lines = [f"[0:v]{spec.base_filter}[v0]"]
 
-    idx = 1
+    idx = spec.input_count()
     for i, layer in enumerate(spec.layers):
         window = layer.t_end - layer.t_start
         if layer.is_video:

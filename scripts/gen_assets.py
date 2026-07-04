@@ -217,6 +217,40 @@ def gen_sfx() -> None:
     print("sfx: 9 written")
 
 
+def gen_overlays() -> None:
+    """Pre-rendered glitch overlays (§7.2): rendered ONCE here, composited
+    by the filtergraph at render time — never frame-by-frame in Python."""
+    out = ASSETS / "overlays"
+    out.mkdir(parents=True, exist_ok=True)
+    # transparent speckle glitch: seeded Pillow frames (sparse hard white
+    # speckles + occasional tear bands), authored small and upscaled chunky
+    # (nearest-neighbour) at composite time. Pre-rendered ONCE here.
+    from pipeline.rasters import frames_to_alpha_clip  # noqa: E402
+
+    rng = random.Random("glitch")
+    frames = []
+    w, h = 320, 180
+    for _ in range(15):  # 0.5s @ 30fps
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        px = img.load()
+        for _ in range(int(w * h * 0.10)):
+            px[rng.randrange(w), rng.randrange(h)] = (255, 255, 255, 255)
+        if rng.random() < 0.4:  # horizontal tear band
+            y0 = rng.randrange(h - 8)
+            d = ImageDraw.Draw(img)
+            d.rectangle([0, y0, w, y0 + rng.randrange(2, 7)],
+                        fill=(255, 255, 255, 170))
+        frames.append(img)
+    frames_to_alpha_clip(frames, 30, out / "glitch_noise.mov")
+
+    # rgb-split horizontal tear (opaque, for blend/flash moments)
+    _lavfi(out / "rgb_tear.mp4",
+           "-f", "lavfi", "-i", "color=c=0x0a0a0a:s=480x270:r=30:d=0.5",
+           "-vf", "noise=alls=40:allf=t,rgbashift=rh=8:bv=-6,eq=contrast=1.5",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "26")
+    print("overlays: 2 written")
+
+
 def gen_music() -> None:
     out = ASSETS / "music"
     out.mkdir(parents=True, exist_ok=True)
@@ -237,4 +271,5 @@ if __name__ == "__main__":
     gen_stamps()
     gen_backgrounds()
     gen_sfx()
+    gen_overlays()
     gen_music()
