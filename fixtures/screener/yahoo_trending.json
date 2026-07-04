@@ -1,0 +1,11 @@
+{
+  "quotes": [
+    {"symbol": "HYPE", "regularMarketPrice": 12.40, "regularMarketChangePercent": 18.2, "regularMarketVolume": 84000000, "averageDailyVolume3Month": 20000000, "marketCap": 5200000000},
+    {"symbol": "MEME", "regularMarketPrice": 4.05, "regularMarketChangePercent": -22.5, "regularMarketVolume": 150000000, "averageDailyVolume3Month": 30000000, "marketCap": 1800000000},
+    {"symbol": "BIGCO", "regularMarketPrice": 182.10, "regularMarketChangePercent": 3.1, "regularMarketVolume": 41000000, "averageDailyVolume3Month": 35000000, "marketCap": 890000000000},
+    {"symbol": "TINY", "regularMarketPrice": 0.84, "regularMarketChangePercent": 45.0, "regularMarketVolume": 9000000, "averageDailyVolume3Month": 700000, "marketCap": 90000000},
+    {"symbol": "QUIET", "regularMarketPrice": 55.00, "regularMarketChangePercent": 0.4, "regularMarketVolume": 2100000, "averageDailyVolume3Month": 2000000, "marketCap": 12000000000},
+    {"symbol": "EXMPL", "regularMarketPrice": 84.20, "regularMarketChangePercent": 9.8, "regularMarketVolume": 30000000, "averageDailyVolume3Month": 6000000, "marketCap": 30700000000},
+    {"symbol": "SLOW", "regularMarketPrice": 33.20, "regularMarketChangePercent": -1.1, "regularMarketVolume": 1500000, "averageDailyVolume3Month": 1600000, "marketCap": 7500000000}
+  ]
+}

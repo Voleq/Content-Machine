@@ -1,0 +1,9 @@
+{
+  "symbols": [
+    {"symbol": "MEME", "title": "Meme Corp", "watchlist_count": 91000},
+    {"symbol": "HYPE", "title": "Hype Inc", "watchlist_count": 64000},
+    {"symbol": "EXMPL", "title": "Example Corp", "watchlist_count": 21000},
+    {"symbol": "FALLEN", "title": "Fallen Industries", "watchlist_count": 8000},
+    {"symbol": "NOPRICE", "title": "No Quote Co", "watchlist_count": 5000}
+  ]
+}

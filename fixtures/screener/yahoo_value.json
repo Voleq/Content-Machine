@@ -1,0 +1,9 @@
+{
+  "quotes": [
+    {"symbol": "FALLEN", "regularMarketPrice": 6.20, "fiftyTwoWeekLow": 5.80, "fiftyTwoWeekHigh": 24.50, "trailingPE": 4.1, "priceToSalesTrailing12Months": 0.38, "regularMarketVolume": 3200000, "averageDailyVolume3Month": 2500000, "marketCap": 2100000000, "regularMarketChangePercent": -2.1},
+    {"symbol": "DITCH", "regularMarketPrice": 11.90, "fiftyTwoWeekLow": 11.10, "fiftyTwoWeekHigh": 21.00, "trailingPE": 7.9, "priceToSalesTrailing12Months": 0.65, "regularMarketVolume": 1800000, "averageDailyVolume3Month": 1500000, "marketCap": 4200000000, "regularMarketChangePercent": 0.8},
+    {"symbol": "MIDWAY", "regularMarketPrice": 30.00, "fiftyTwoWeekLow": 22.00, "fiftyTwoWeekHigh": 45.00, "trailingPE": 12.0, "priceToSalesTrailing12Months": 1.4, "regularMarketVolume": 2600000, "averageDailyVolume3Month": 2400000, "marketCap": 9800000000, "regularMarketChangePercent": 1.2},
+    {"symbol": "PENNY", "regularMarketPrice": 1.20, "fiftyTwoWeekLow": 1.05, "fiftyTwoWeekHigh": 9.80, "trailingPE": null, "priceToSalesTrailing12Months": 0.2, "regularMarketVolume": 400000, "averageDailyVolume3Month": 350000, "marketCap": 150000000, "regularMarketChangePercent": -3.0},
+    {"symbol": "CHEAPCO", "regularMarketPrice": 18.40, "fiftyTwoWeekLow": 17.00, "fiftyTwoWeekHigh": 44.00, "trailingPE": 6.2, "priceToSalesTrailing12Months": 0.5, "regularMarketVolume": 5200000, "averageDailyVolume3Month": 4100000, "marketCap": 6700000000, "regularMarketChangePercent": -0.6}
+  ]
+}
