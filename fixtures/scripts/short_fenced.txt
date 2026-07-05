@@ -1,25 +1,33 @@
-Sure! Here is the audit you asked for:
+Sure! Here's the short-form script for BORV in the requested JSON format:
 
 ```json
 {
-  "ticker": "EXMPL",
+  "ticker": "BORV",
   "format": "short",
-  "verdict": "CASH_COW",
-  "hook_text": "Everyone hates this stock. The cash flow statement disagrees.",
-  "audio_script": "Everyone hates this stock, which is convenient, because the cash flow statement cannot read the news. Revenue grew nine percent. Gross margin is sixty one. Free cash flow margin is twenty four percent and they buy back four percent of the float a year, which is the corporate version of quietly leaving the party early. Net cash on the balance sheet. No dilution. No story, no keynote, no vision deck. Just a machine that turns invoices into cash while the market stares at something shinier. I went looking for the fraud and found a moat. Revolting. Verdict: cash cow. Milk it.",
-  "data_block": [
-    "Revenue growth: +9%",
-    "Gross margin: 61%",
-    "FCF margin: 24%",
-    "Buyback yield: 4%",
-    "Net debt: negative"
+  "hook_text": "BORV is up 12% and somehow still boring. Look anyway.",
+  "audio_script": "BORV is up twelve percent today because a boring industrial beat earnings again. Nobody is excited. That is the point. The headline says record backlog. It means customers pay deposits years ahead, which is the least imaginary revenue there is. Gut check. Revenue up every year for five years. Margins up four points. Free cash flow covers the dividend twice, and the share count shrinks, because they buy it back instead of tweeting. Debt could be paid off with nine months of cash flow. I wanted to find the catch. I read the whole filing. The catch is that it is dull, and the crowd does not do dull until it is up fifty percent. The move has five years of receipts. Signal. The boring machine keeps printing. I hate that it works.",
+  "move_summary": "+12% today · earnings beat",
+  "headlines": [
+    {
+      "text": "BORV beats, raises full-year guidance",
+      "meaning": "Record backlog — deposits in hand, the least imaginary kind of revenue."
+    }
   ],
-  "visual_directions": [
-    {"type": "highlight", "line_index": 2, "color": "green", "anchor_word": "cash"},
-    {"type": "stamp", "label": "CASH_COW", "anchor": "end_minus_3"}
+  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "numbers": [
+    {"label": "Revenue", "values": ["$1.1B", "$1.2B", "$1.3B", "$1.5B", "$1.6B"]},
+    {"label": "Op margin", "values": ["14%", "15%", "16%", "17%", "18%"]},
+    {"label": "Free cash flow", "values": ["$140M", "$168M", "$195M", "$228M", "$262M"]},
+    {"label": "Shares out", "values": ["210M", "205M", "199M", "194M", "190M"]}
   ],
-  "cta_text": "Tell me I'm wrong."
+  "numbers_comment": "Five straight years of growing revenue, expanding margins, compounding cash flow and a shrinking share count. It is the rarest chart on this channel: everything pointing the right way.",
+  "conclusion": "Signal. Through gritted teeth: the boring machine keeps printing, and it did not need your attention to do it.",
+  "meme": {"key": "leo-cheers-to-buybacks", "anchor_word": "back"},
+  "broll": null,
+  "annotations": [
+    {"target": "numbers", "row_index": 3, "anchor_word": "shrinks", "note": "fewer shares"}
+  ]
 }
 ```
 
-Let me know if you want a different angle.
+Let me know if you'd like any adjustments to the tone!

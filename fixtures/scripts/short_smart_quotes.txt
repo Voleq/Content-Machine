@@ -1,18 +1,23 @@
 {
-  “ticker”: “EXMPL”,
+  “ticker”: “DEDM”,
   “format”: “short”,
-  “verdict”: “DEAD_MONEY”,
-  “hook_text”: “Five years of ‘transformation’. The stock went nowhere.”,
-  “audio_script”: “Five years of transformation, three CEOs, two strategic pivots, and one stock chart that looks like a cardiogram of a patient who has accepted their fate. Revenue is flat. Margins are flat. The dividend is the only thing moving, and it moves like a glacier. Management calls it stability. The market calls it a value trap. They are both describing the same corpse from different angles. There is no catalyst here, no cliff either — just a company that pays you three percent a year to watch it not change. Verdict: dead money. Set an alarm for 2031.”,
-  “data_block”: [
-    “Revenue growth: 0%”,
-    “Operating margin: 11%”,
-    “Dividend yield: 3%”,
-    “5y total return: -4%”
+  “hook_text”: “DEDM’s ‘transformation’ is trending. Year five of it.”,
+  “audio_script”: “DEDM is the most active ticker today because management said transformation on a podcast. This is the fifth consecutive year of the transformation. Gut check, from the actual filings. Revenue has been within two percent of the same number for five years. Margins flat. Cash flow flat. Share count flat. Everything about this company is flat except the volume today. The headline is a podcast appearance. There is no order, no product, no number attached to it. I checked twice, because I could not believe that was the whole story. It was. The stock will be back where it started by the next filing, and the transformation will enter year six. Noise. A podcast is not a catalyst. Flat is not a setup. It is just flat.”,
+  “move_summary”: “most-active · +9% today”,
+  “headlines”: [
+    {“text”: “CEO teases ‘transformation’ on podcast”, “meaning”: “No order, no product, no number — a vibe with a ticker attached.”}
   ],
-  “visual_directions”: [
-    {“type”: “highlight”, “line_index”: 3, “color”: “red”, “anchor_word”: “nowhere”},
-    {“type”: “stamp”, “label”: “DEAD_MONEY”, “anchor”: “end_minus_3”}
+  “years”: [“2021”, “2022”, “2023”, “2024”, “2025”],
+  “numbers”: [
+    {“label”: “Revenue”, “values”: [“$2.02B”, “$2.04B”, “$2.00B”, “$2.03B”, “$2.01B”]},
+    {“label”: “Op margin”, “values”: [“6%”, “6%”, “5%”, “6%”, “6%”]},
+    {“label”: “Free cash flow”, “values”: [“$95M”, “$102M”, “$88M”, “$97M”, “$93M”]}
   ],
-  “cta_text”: “Name a more boring chart. I’ll wait.”
+  “numbers_comment”: “Five years, one number. Revenue, margins and cash flow are all parked. Whatever is trending today, it is not in the financial statements.”,
+  “conclusion”: “Noise. A podcast is not a catalyst. Check back at year six of the transformation.”,
+  “meme”: {“key”: “skeleton-waiting-for-turnaround”, “anchor_word”: “six”},
+  “broll”: null,
+  “annotations”: [
+    {“target”: “numbers”, “row_index”: 0, “anchor_word”: “flat”, “note”: “parked”}
+  ]
 }

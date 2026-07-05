@@ -57,10 +57,10 @@ def alignment_sample() -> dict:
 
 @pytest.fixture()
 def workspace(settings: Settings) -> Path:
-    """A prepared workspace dir for EXMPL with the fixture Refinitiv export."""
+    """A prepared workspace dir for EXMPL with the fixture data export."""
     ws = settings.workspace_dir / "EXMPL" / "2026-07-01"
     ws.mkdir(parents=True)
-    shutil.copy(FIXTURES / "refinitiv" / "data_refinitiv.xlsx", ws / "data_refinitiv.xlsx")
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx", ws / "dennis_data.xlsx")
     return ws
 
 

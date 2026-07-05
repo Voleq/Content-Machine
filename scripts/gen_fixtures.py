@@ -3,10 +3,12 @@
 Run from the repo root:  .venv/bin/python scripts/gen_fixtures.py
 
 Produces:
-  templates/refinitiv_audit_template.xlsx   (the Excel add-in data contract)
-  fixtures/refinitiv/data_refinitiv.xlsx    (filled example for EXMPL)
-  fixtures/refinitiv/data_refinitiv.csv     (CSV flavour of the same)
-  fixtures/tts/alignment_sample.json        (ElevenLabs-style char alignment)
+  templates/dennis_data_template.xlsx      (the two-sheet data contract:
+                                            Latest snapshot + 5y History)
+  fixtures/company_data/dennis_data.xlsx   (filled example for EXMPL)
+  fixtures/company_data/dennis_data.csv    (CSV flavour — snapshot only)
+  fixtures/tts/alignment_sample.json       (ElevenLabs-style char alignment)
+  fixtures/prices/EXMPL.json               (deterministic price history)
 """
 
 from __future__ import annotations
@@ -21,7 +23,7 @@ from openpyxl.styles import Font, PatternFill
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from pipeline.models import REFINITIV_FIELDS  # noqa: E402
+from pipeline.models import DATA_FIELDS, HISTORY_FIELDS  # noqa: E402
 
 EXMPL_VALUES: dict[str, object] = {
     # identity
@@ -73,19 +75,32 @@ EXMPL_VALUES: dict[str, object] = {
     "dividend_yield_pct": 0.0,
     "buyback_yield_pct": 0.0,
     "short_interest_pct": 11.0,
+    "website": "https://www.example.com",
+}
+
+# 5 fiscal years, oldest -> newest — the "show direction" sheet.
+EXMPL_HISTORY_YEARS = ["FY2021", "FY2022", "FY2023", "FY2024", "FY2025"]
+EXMPL_HISTORY: dict[str, list[object]] = {
+    "revenue":               [400_000_000, 452_000_000, 471_000_000, 491_000_000, 496_000_000],
+    "gross_margin_pct":      [63.0, 62.0, 61.0, 59.0, 58.0],
+    "operating_margin_pct":  [-2.0, -5.0, -8.0, -10.0, -12.0],
+    "net_income":            [-8_000_000, -25_000_000, -49_000_000, -70_000_000, -89_000_000],
+    "fcf":                   [12_000_000, -2_000_000, -6_000_000, -11_000_000, -15_000_000],
+    "shares_outstanding":    [298_000_000, 315_000_000, 330_000_000, 346_000_000, 364_600_000],
+    "total_debt":            [900_000_000, 1_050_000_000, 1_200_000_000, 1_350_000_000, 1_450_000_000],
+    "cash_and_equivalents":  [700_000_000, 610_000_000, 520_000_000, 465_000_000, 410_000_000],
 }
 
 
-def build_workbook(values: dict[str, object] | None) -> Workbook:
-    """The fixed-layout 'Audit' sheet: A=field, B=value, C=group.
-
-    In the operator's live template column B holds Refinitiv Excel add-in
-    formulas (e.g. =TR($B$1,"TR.Revenue")); here it holds either example
-    values (fixture) or blanks (template).
-    """
+def build_workbook(values: dict[str, object] | None,
+                   history: dict[str, list[object]] | None) -> Workbook:
+    """The two-sheet contract. `Latest`: A=field, B=value, C=group — in the
+    operator's live template column B holds Excel add-in formulas; here it
+    holds example values (fixture) or blanks (template). `History`: row 1 =
+    'field' + year labels, one row per HISTORY_FIELDS metric."""
     wb = Workbook()
     ws = wb.active
-    ws.title = "Audit"
+    ws.title = "Latest"
     header_font = Font(bold=True)
     group_fill = PatternFill("solid", fgColor="1F2A36")
     group_font = Font(bold=True, color="FFFFFF")
@@ -95,7 +110,7 @@ def build_workbook(values: dict[str, object] | None) -> Workbook:
         ws[cell].font = header_font
 
     row = 2
-    for group, fields in REFINITIV_FIELDS.items():
+    for group, fields in DATA_FIELDS.items():
         for field in fields:
             ws.cell(row=row, column=1, value=field)
             if values is not None:
@@ -109,6 +124,23 @@ def build_workbook(values: dict[str, object] | None) -> Workbook:
     ws.column_dimensions["A"].width = 30
     ws.column_dimensions["B"].width = 24
     ws.column_dimensions["C"].width = 12
+
+    hs = wb.create_sheet("History")
+    years = EXMPL_HISTORY_YEARS if history is not None else \
+        ["FY-4", "FY-3", "FY-2", "FY-1", "FY0"]
+    hs.cell(row=1, column=1, value="field").font = header_font
+    for j, y in enumerate(years):
+        hs.cell(row=1, column=2 + j, value=y).font = header_font
+    for i, field in enumerate(HISTORY_FIELDS):
+        hs.cell(row=2 + i, column=1, value=field)
+        if history is None:
+            hs.cell(row=2 + i, column=1).fill = group_fill
+            hs.cell(row=2 + i, column=1).font = group_font
+        else:
+            for j, val in enumerate(history.get(field, [])):
+                hs.cell(row=2 + i, column=2 + j,
+                        value="#N/A" if val is None else val)
+    hs.column_dimensions["A"].width = 26
     return wb
 
 
@@ -145,22 +177,26 @@ def gen_alignment_fixture(path: Path) -> None:
 
 def main() -> None:
     tdir = ROOT / "templates"
-    rdir = ROOT / "fixtures" / "refinitiv"
+    cdir = ROOT / "fixtures" / "company_data"
     adir = ROOT / "fixtures" / "tts"
-    for d in (tdir, rdir, adir):
+    pdir = ROOT / "fixtures" / "prices"
+    for d in (tdir, cdir, adir, pdir):
         d.mkdir(parents=True, exist_ok=True)
 
-    build_workbook(None).save(tdir / "refinitiv_audit_template.xlsx")
-    build_workbook(EXMPL_VALUES).save(rdir / "data_refinitiv.xlsx")
+    build_workbook(None, None).save(tdir / "dennis_data_template.xlsx")
+    build_workbook(EXMPL_VALUES, EXMPL_HISTORY).save(cdir / "dennis_data.xlsx")
 
     csv_lines = ["field,value"]
-    for group, fields in REFINITIV_FIELDS.items():
+    for group, fields in DATA_FIELDS.items():
         for field in fields:
             val = EXMPL_VALUES.get(field)
             csv_lines.append(f"{field},{'#N/A' if val is None else val}")
-    (rdir / "data_refinitiv.csv").write_text("\n".join(csv_lines) + "\n")
+    (cdir / "dennis_data.csv").write_text("\n".join(csv_lines) + "\n")
 
     gen_alignment_fixture(adir / "alignment_sample.json")
+
+    from pipeline.prices import synthetic_series
+    (pdir / "EXMPL.json").write_text(synthetic_series("EXMPL", 120).to_json())
     print("fixtures written")
 
 

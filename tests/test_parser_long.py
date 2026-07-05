@@ -4,19 +4,21 @@ from pipeline.models import TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 
 PALETTE = {
-    "house_of_cards", "confused_office_worker", "clown", "dumpster_fire",
-    "sinking_ship", "monopoly_money", "printing_money", "empty_promise_handshake",
+    "tumbleweed", "hamster_wheel", "boardroom_suits", "growing_plant",
+    "clown", "dumpster_fire", "sinking_ship", "monopoly_money",
 }
 
 
 def test_parse_valid_long(long_valid_text, settings):
     script, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
     assert script.ticker == "EXMPL"
-    assert len(script.events) == 13
-    assert len(script.events_of(TagType.BROLL)) == 8
-    assert len(script.events_of(TagType.SOUND)) == 3
-    assert len(script.events_of(TagType.SHOW_REFINITIV)) == 1
-    assert len(script.events_of(TagType.STAMP)) == 1
+    assert len(script.events_of(TagType.CLIP)) == 4
+    assert len(script.events_of(TagType.IMG)) == 1
+    assert len(script.events_of(TagType.PRODUCT)) == 1
+    assert len(script.events_of(TagType.CHART)) == 1
+    assert len(script.events_of(TagType.SHOW_FILING)) == 1
+    assert len(script.events_of(TagType.MEME)) == 1
+    assert len(script.events_of(TagType.SOUND)) == 2
     assert "[" not in script.narration and "]" not in script.narration
     # fixture is deliberately short-form; the parser should flag it
     assert any("short for the LONG format" in w for w in warnings)
@@ -24,19 +26,16 @@ def test_parse_valid_long(long_valid_text, settings):
 
 def test_offsets_point_into_clean_narration(long_valid_text, settings):
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    first_broll = script.events_of(TagType.BROLL)[0]
-    assert first_broll.payload == "house_of_cards"
-    after = script.narration[first_broll.char_offset:].lstrip()
-    assert after.startswith("We are going to spend")
+    first_clip = script.events_of(TagType.CLIP)[0]
+    assert first_clip.payload == "tumbleweed"
+    after = script.narration[first_clip.char_offset:].lstrip()
+    assert after.startswith("Which is usually when")
 
-    refinitiv = script.events_of(TagType.SHOW_REFINITIV)[0]
-    assert refinitiv.payload == "income_statement.png"
-    after = script.narration[refinitiv.char_offset:].lstrip()
-    assert after.startswith("That number is real.")
+    filing = script.events_of(TagType.SHOW_FILING)[0]
+    assert filing.payload == "income_statement.png"
+    after = script.narration[filing.char_offset:].lstrip()
+    assert after.startswith("Net income, from the actual filing")
 
-    stamp = script.events_of(TagType.STAMP)[0]
-    assert stamp.payload == "OVERVALUED"
-    # events must be ordered and inside the narration
     offsets = [e.char_offset for e in script.events]
     assert offsets == sorted(offsets)
     assert all(0 <= off <= len(script.narration) for off in offsets)
@@ -47,9 +46,30 @@ def test_unknown_tag_types_stripped_and_warned(fixtures_dir, settings):
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     assert "[" not in script.narration, "unknown tags must never be spoken"
     assert any("unknown tag [CAMERA" in w for w in warnings)
+    # the retired verdict grammar is just another unknown type now
+    assert any("unknown tag [STAMP" in w for w in warnings)
     # unknown PAYLOADS are kept as events (the validator handles them)
-    broll_keys = [e.payload for e in script.events_of(TagType.BROLL)]
-    assert "flying_toasters" in broll_keys
+    clip_keys = [e.payload for e in script.events_of(TagType.CLIP)]
+    assert "flying_toasters" in clip_keys
+
+
+def test_asset_trailer_split_and_stored(fixtures_dir, settings):
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert script.asset_slugs() == ["revenue-flywheel"]
+    assert "revenue-flywheel" in script.asset_prompts
+    prompt = script.asset_prompts["revenue-flywheel"]
+    assert "Claude" not in script.narration
+    assert "ASSET PROMPTS" not in script.narration, "trailer must never be spoken"
+    assert "16:9" in prompt and "flywheel" in prompt
+
+
+def test_orphan_asset_prompt_warns(settings):
+    raw = ("Plain narration with no asset tag.\n\n=== ASSET PROMPTS ===\n"
+           "--- ASSET: unused-diagram ---\nSome prompt text.")
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    assert script.asset_prompts == {"unused-diagram": "Some prompt text."}
+    assert any("unused-diagram" in w and "no matching" in w for w in warnings)
 
 
 def test_validation_rules(fixtures_dir, settings, tmp_path):
@@ -57,15 +77,46 @@ def test_validation_rules(fixtures_dir, settings, tmp_path):
     script, _ = parse_long_script(raw, "EXMPL", settings)
     warnings, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
 
-    assert any("flying_toasters" in w and "filler" in w for w in warnings)
+    assert any("flying_toasters" in w and "raw query" in w for w in warnings)
     assert any("airhorn_extreme" in w for w in warnings)
-    assert any("MEDIOCRE" in w for w in warnings)
-    assert len(blocking) == 1 and "missing_file.png" in blocking[0]
+    assert any("mystery_metric" in w for w in warnings)
+    assert any("obscure-meme-nobody-indexed" in w for w in warnings)
+    blocking_text = "\n".join(blocking)
+    assert "missing_file.png" in blocking_text
+    assert "revenue-flywheel" in blocking_text
+    assert "Claude Design" in blocking_text, "the prompt hint must reach the operator"
 
-    # drop the screenshot into the workspace -> no more blockers
+    # drop the screenshot + the custom asset in -> no more blockers
     (tmp_path / "missing_file.png").write_bytes(b"fake png")
-    _, blocking2 = validate_long_script(script, PALETTE, tmp_path, settings)
-    assert blocking2 == []
+    custom = settings.assets_dir / "custom"
+    custom.mkdir(parents=True, exist_ok=True)
+    (custom / "revenue-flywheel.png").write_bytes(b"fake png")
+    try:
+        _, blocking2 = validate_long_script(script, PALETTE, tmp_path, settings)
+        assert blocking2 == []
+    finally:
+        (custom / "revenue-flywheel.png").unlink()
+
+
+def test_meme_cap_blocks(settings, tmp_path):
+    raw = ("One. [MEME: bagholder] Two. [MEME: dilution] "
+           "Three. [MEME: stonks] The information got up and left.")
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert script.meme_count() == 3
+    _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert any("cap is 2" in b for b in blocking)
+
+
+def test_two_memes_pass_the_cap(settings, tmp_path):
+    raw = "One. [MEME: bagholder] Two. [MEME: dilution] Fine."
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert blocking == []
+
+
+def test_vendor_name_in_narration_rejected(settings):
+    with pytest.raises(LongScriptError, match="vendor"):
+        parse_long_script("According to Refinitiv, revenue fell.", "EXMPL", settings)
 
 
 def test_long_budget_enforced(long_valid_text, settings):
@@ -78,11 +129,18 @@ def test_empty_rejected(settings):
     with pytest.raises(LongScriptError):
         parse_long_script("", "EXMPL", settings)
     with pytest.raises(LongScriptError):
-        parse_long_script("[B-ROLL: clown]", "EXMPL", settings)
+        parse_long_script("[CLIP: clown]", "EXMPL", settings)
 
 
 def test_no_tags_is_valid_but_warned(settings):
     script, warnings = parse_long_script("Just words, no direction.", "EXMPL", settings)
     assert script.events == []
-    assert any("no [B-ROLL]" in w for w in warnings)
-    assert any("no [STAMP]" in w for w in warnings)
+    assert any("no visual tags" in w for w in warnings)
+
+
+def test_bad_asset_slug_skipped(settings):
+    script, warnings = parse_long_script(
+        "Words. [ASSET: Totally Bad Slug!!] More words.", "EXMPL", settings,
+    )
+    assert script.events_of(TagType.ASSET) == []
+    assert any("not kebab-case" in w for w in warnings)
