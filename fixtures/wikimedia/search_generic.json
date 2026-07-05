@@ -1,0 +1,16 @@
+{
+  "results": [
+    {
+      "url": "mock://commons/Factory_floor_wide.jpg",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+    },
+    {
+      "url": "mock://commons/Distribution_warehouse.jpg",
+      "attribution": "\"Distribution warehouse\" by B. Photographer, CC BY 2.0, via Wikimedia Commons"
+    },
+    {
+      "url": "mock://commons/Server_racks.jpg",
+      "attribution": "\"Server racks\" by C. Photographer, CC0, via Wikimedia Commons"
+    }
+  ]
+}

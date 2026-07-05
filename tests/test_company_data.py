@@ -70,7 +70,8 @@ def test_screenshot_gets_generic_filing_label(workspace, settings, tmp_path):
     # the label chip is drawn in the top-left margin — the corner must no
     # longer be the plain canvas color
     corner = img.crop((0, 0, 200, 60))
-    assert len(set(corner.getdata())) > 2, "label chip must be present"
+    colors = corner.getcolors(maxcolors=4096)
+    assert colors and len(colors) > 2, "label chip must be present"
 
 
 def test_list_screenshots_excludes_exports(workspace):
