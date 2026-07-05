@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-from pipeline.models import Verdict
 from pipeline.render_common import ffprobe_json, run_ffmpeg
 from pipeline.repurpose import pick_best_window, repurpose_short_from_long
 from pipeline.thumbnail import make_thumbnail, shock_metric
@@ -17,9 +16,9 @@ def _cue(t, kind):
 
 def test_window_prefers_dense_cluster():
     cues = (
-        [_cue(10, "broll")]
-        + [_cue(t, "broll") for t in (200, 205, 210, 215)]
-        + [_cue(220, "refinitiv"), _cue(230, "sound"), _cue(245, "stamp")]
+        [_cue(10, "clip")]
+        + [_cue(t, "clip") for t in (200, 205, 210, 215)]
+        + [_cue(220, "filing"), _cue(230, "sound"), _cue(245, "meme")]
     )
     start, end = pick_best_window(cues, duration=300, window_s=58)
     assert 190 <= start <= 220
@@ -28,20 +27,20 @@ def test_window_prefers_dense_cluster():
 
 
 def test_window_whole_video_when_short():
-    assert pick_best_window([_cue(3, "broll")], duration=40) == (0.0, 40.0)
+    assert pick_best_window([_cue(3, "clip")], duration=40) == (0.0, 40.0)
 
 
 def test_window_snaps_to_word_boundary():
     text = " ".join(["word"] * 200)
     words = mock_words(text, 300.0)
-    cues = [_cue(120, "stamp"), _cue(118, "broll"), _cue(125, "refinitiv")]
+    cues = [_cue(120, "meme"), _cue(118, "clip"), _cue(125, "filing")]
     start, end = pick_best_window(cues, 300.0, window_s=58, words=words)
     assert any(abs(w.start - start) < 1e-6 for w in words), "start must be a word start"
 
 
-def test_window_stamp_payoff_bias():
-    # two equally dense windows; the one whose stamp lands near the END wins
-    cues_a = [_cue(20, "broll"), _cue(25, "broll"), _cue(70, "stamp")]
+def test_window_meme_payoff_bias():
+    # two equally dense windows; the one whose meme lands near the END wins
+    cues_a = [_cue(20, "clip"), _cue(25, "clip"), _cue(70, "meme")]
     start, end = pick_best_window(cues_a, duration=200, window_s=58)
     assert start <= 20 and end >= 70  # window covering the payoff
 
@@ -61,7 +60,7 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
     manifest = tmp_path / "render_long_manifest.json"
     manifest.write_text(json.dumps({
         "duration": 30.0,
-        "cues": [_cue(5, "broll"), _cue(12, "refinitiv"), _cue(20, "stamp")],
+        "cues": [_cue(5, "clip"), _cue(12, "filing"), _cue(20, "meme")],
     }))
     out, info = repurpose_short_from_long(src, manifest, small)
     assert out.exists()
@@ -75,13 +74,13 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
 
 
 def test_shock_metric_priority():
-    from pipeline.models import RefinitivAudit
+    from pipeline.models import CompanyData
 
-    audit = RefinitivAudit(values={"net_margin_pct": -18.0, "ps_ratio": 62.0})
-    assert shock_metric(audit) == "Net margin: -18%"
-    audit2 = RefinitivAudit(values={"ps_ratio": 62.0, "net_margin_pct": 12.0})
-    assert shock_metric(audit2) == "P/S: 62x"
-    assert shock_metric(RefinitivAudit(values={})) == ""
+    data = CompanyData(values={"net_margin_pct": -18.0, "ps_ratio": 62.0})
+    assert shock_metric(data) == "Net margin: -18%"
+    data2 = CompanyData(values={"ps_ratio": 62.0, "net_margin_pct": 12.0})
+    assert shock_metric(data2) == "P/S: 62x"
+    assert shock_metric(CompanyData(values={})) == ""
 
 
 def test_make_thumbnail(settings, workspace, long_valid_text):

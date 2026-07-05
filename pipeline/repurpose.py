@@ -20,9 +20,12 @@ from pipeline.render_common import ffprobe_duration, run_ffmpeg
 log = logging.getLogger(__name__)
 
 _WEIGHTS = {
-    "stamp": 3.0,
-    "refinitiv": 2.5,
-    "broll": 1.5,
+    "meme": 3.0,
+    "filing": 2.5,
+    "chart": 2.0,
+    "asset": 2.0,
+    "clip": 1.5,
+    "img": 1.5,
     "sound": 1.0,
 }
 
@@ -45,8 +48,8 @@ def pick_best_window(
         for c in cues:
             if start <= c["t"] <= end:
                 s += _WEIGHTS.get(c["kind"], 0.5)
-                # a stamp near the END of the window = a natural payoff
-                if c["kind"] == "stamp" and c["t"] > end - 12:
+                # a meme near the END of the window = a natural comedic payoff
+                if c["kind"] == "meme" and c["t"] > end - 12:
                     s += 1.5
         return s
 

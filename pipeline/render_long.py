@@ -1,18 +1,27 @@
-"""LONG jump-cut engine — 16:9 deadpan deep-dive (§7.2).
+"""LONG jump-cut engine — 16:9 deadpan deep-dive (§5).
 
 Structure:
   * clean audio from the tag-stripped narration (cached TTS)
   * `build_long_timeline` resolves every tag to its spoken word
-  * `plan_long_segments` tiles the full duration with 3–5s cuts
+  * `plan_long_segments` tiles the full duration with fast ~1.5–3s cuts
   * the whole video is ONE ffmpeg filter_complex: per-segment trim ->
-    concat -> stamp/ticker/disclaimer/glitch overlays -> libass captions,
-    plus VO + music bed + SFX in a single amix — one final encode
+    concat -> bug/disclaimer/glitch overlays -> libass captions, plus
+    VO + music bed + SFX in a single amix — one final encode
   * draft mode reuses the same cached audio and graph at low res /
-    ultrafast (never re-calls TTS §7.2)
+    ultrafast (never re-calls TTS)
 
-B-roll lands exactly on its anchor word; `[SHOW REFINITIV]` flashes the
-normalized screenshot full-screen with a pre-rendered glitch overlay and
-its `[SOUND]` if the script placed one.
+Segment kinds (§editing — no static desk shots anywhere):
+  clip    ironic stock footage (content engine, palette-first)
+  img     real operations/product imagery, slow punch-in drift
+  meme    freeze-frame from the owned library + boom (first one gets the
+          record-scratch rewind)
+  chart   auto-generated channel-style chart
+  filing  the unnamed-source data screenshot, glitch flash on reveal
+  asset   bespoke Claude-Design visual from assets/custom/
+  filler  branded backdrop with subtle per-variant looks
+
+Every visual lands exactly on its anchor word; there is no verdict stamp
+— the video ends on whatever deadpan line the script wrote.
 """
 
 from __future__ import annotations
@@ -21,20 +30,11 @@ import json
 import logging
 from pathlib import Path
 
-from PIL import Image
-
 from config import Settings
-from pipeline.broll import BrollManager
+from pipeline.broll import ContentManager
+from pipeline.company_data import prepare_screenshot
 from pipeline.models import CueKind, LongScript, SFX_KEYS, TTSResult
-from pipeline.rasters import (
-    GREEN,
-    RED,
-    build_karaoke_ass,
-    frames_to_alpha_clip,
-    simple_text,
-    stamp_drop_frames,
-)
-from pipeline.refinitiv import prepare_screenshot
+from pipeline.rasters import build_karaoke_ass, simple_text
 from pipeline.render_common import (
     AudioTrack,
     CompositeSpec,
@@ -43,13 +43,14 @@ from pipeline.render_common import (
     composite_video,
     encode_profile,
     ffprobe_duration,
+    run_ffmpeg,
 )
 from pipeline.timeline import build_long_timeline, plan_long_segments
 
 log = logging.getLogger(__name__)
 
 _FILLER_LOOKS = (
-    "null",                                     # plain desk
+    "null",                                     # plain backdrop
     "eq=brightness=0.03:saturation=1.05",       # slightly lifted
     "crop=iw*0.94:ih*0.94,scale={W}:{H}",       # subtle punch-in
     "hflip",                                    # mirrored grain
@@ -61,21 +62,21 @@ def render_long(
     tts: TTSResult,
     workspace: Path,
     settings: Settings,
-    broll: BrollManager | None = None,
+    content: ContentManager | None = None,
     *,
     draft: bool = False,
     broll_overrides: dict[str, int] | None = None,
     as_of: str = "",
+    company_data=None,
 ) -> tuple[Path, Path]:
     """Render the LONG (or its low-res draft). Returns (mp4, manifest)."""
-    broll = broll or BrollManager(settings)
+    content = content or ContentManager(settings)
     duration = tts.duration_s
     cues = build_long_timeline(script, tts.words, duration)
     segments, seg_warnings = plan_long_segments(
         cues, duration,
         min_cut_s=settings.long_min_cut_s,
         max_cut_s=settings.long_max_cut_s,
-        broll_hold_s=settings.broll_max_clip_s * 0.65,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -90,54 +91,94 @@ def render_long(
     rdir = workspace / ("render_long_draft" if draft else "render_long")
     rdir.mkdir(parents=True, exist_ok=True)
 
+    website = str(company_data.get("website") or "") if company_data is not None else ""
+    overrides = broll_overrides or {}
+
     # ------------------------------------------------ per-segment inputs
     inputs: list[str] = []
     lines: list[str] = []
     seg_meta: list[dict] = []
-    filler_bg = settings.assets_dir / "backgrounds" / "desk_wide.png"
+    filler_bg = settings.assets_dir / "backgrounds" / "dennis_bg_wide.png"
     shot_cache: dict[str, Path] = {}
+    still_pad = f"scale={W}:{H}:force_original_aspect_ratio=decrease," \
+                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0b0d12"
 
     for i, seg in enumerate(segments):
         seg_len = seg.length
-        fit = f"scale={W}:{H}"
         # every chain ends with setsar=1 AFTER the per-variant look — a
         # crop/scale look would otherwise re-derive a non-1:1 SAR and make
         # the concat filter reject the stream
         tail = f",setsar=1,format=yuv420p[s{i}]"
-        if seg.kind == "broll":
-            clip = broll.resolve(seg.payload["key"], (broll_overrides or {}).get(seg.payload["key"], 0))
-            inputs += ["-i", str(clip.path)]
+        value = seg.payload.get("value", "")
+
+        if seg.kind == "clip":
+            visual = content.resolve_clip(value, overrides.get(value, 0))
+            inputs += ["-i", str(visual.path)]
             chain = (
                 f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-                f"trim=0:{seg_len:.4f},{fit}{tail}"
+                f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
             )
-            seg_meta.append({"kind": "broll", "key": seg.payload["key"],
-                             "source": clip.source, "attribution": clip.attribution,
-                             "start": seg.start, "end": seg.end})
-        elif seg.kind == "refinitiv":
-            fname = seg.payload["file"]
-            if fname not in shot_cache:
-                shot_cache[fname] = prepare_screenshot(
-                    workspace / fname, rdir / f"shot_{Path(fname).stem}.png", settings
+        elif seg.kind == "filing":
+            if value not in shot_cache:
+                shot_cache[value] = prepare_screenshot(
+                    workspace / value, rdir / f"shot_{Path(value).stem}.png", settings
                 )
+            visual = None
             inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(shot_cache[fname])]
+                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(shot_cache[value])]
             chain = (
-                f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,{fit}{tail}"
+                f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                f"scale={W}:{H}{tail}"
             )
-            seg_meta.append({"kind": "refinitiv", "file": fname,
-                             "start": seg.start, "end": seg.end})
+        elif seg.kind in ("img", "chart", "asset", "meme"):
+            if seg.kind == "img":
+                visual = content.resolve_image(
+                    value, kind="img", website=website,
+                    choice=overrides.get(value, 0),
+                )
+            elif seg.kind == "chart":
+                visual = content.resolve_chart(value, ticker=script.ticker,
+                                               company_data=company_data)
+            elif seg.kind == "asset":
+                visual = content.resolve_asset(value)
+            else:
+                visual = content.resolve_meme(value)
+            inputs += ["-loop", "1", "-framerate", str(settings.fps),
+                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(visual.path)]
+            if seg.kind == "img":
+                # slow punch-in drift so real imagery never sits static
+                chain = (
+                    f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                    f"scale={int(W * 1.08) // 2 * 2}:-2,"
+                    f"crop={W}:{H}:x='(iw-ow)*t/{max(seg_len, 0.1):.4f}':y='(ih-oh)/2'"
+                    f"{tail}"
+                )
+            else:
+                chain = (
+                    f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                    f"{still_pad}{tail}"
+                )
         else:  # filler
+            visual = None
             look = _FILLER_LOOKS[seg.payload.get("variant", 0) % len(_FILLER_LOOKS)].format(W=W, H=H)
             inputs += ["-loop", "1", "-framerate", str(settings.fps),
                        "-t", f"{seg_len + 0.2:.4f}", "-i", str(filler_bg)]
             chain = (
                 f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                f"{fit},{look}{tail}"
+                f"scale={W}:{H},{look}{tail}"
             )
-            seg_meta.append({"kind": "filler", "variant": seg.payload.get("variant", 0),
-                             "start": seg.start, "end": seg.end})
+        meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
+        if value:
+            meta["value"] = value
+        if visual is not None:
+            meta["source"] = visual.source
+            meta["attribution"] = visual.attribution
+        else:
+            meta["attribution"] = ""
+        if seg.kind == "filler":
+            meta["variant"] = seg.payload.get("variant", 0)
+        seg_meta.append(meta)
         lines.append(chain)
 
     concat_in = "".join(f"[s{i}]" for i in range(len(segments)))
@@ -148,41 +189,24 @@ def render_long(
     layers: list[OverlayLayer] = []
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
-    # glitch flash on every refinitiv reveal (pre-rendered overlay, §7.2)
+    # glitch flash on every filing reveal (pre-rendered overlay)
     glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
     if glitch.exists():
         glitch_big = rdir / "glitch_scaled.mov"
         if not glitch_big.exists():
-            from pipeline.render_common import run_ffmpeg
             run_ffmpeg(["-i", str(glitch),
                         "-vf", f"scale={W}:{H}:flags=neighbor",
                         "-c:v", "png", "-pix_fmt", "rgba", str(glitch_big)])
         for seg in segments:
-            if seg.kind == "refinitiv":
+            if seg.kind == "filing":
                 layers.append(OverlayLayer(
                     path=glitch_big, x=0, y=0,
                     t_start=seg.start, t_end=min(seg.start + 0.5, duration),
                     is_video=True, name=f"glitch@{seg.start:.2f}",
                 ))
 
-    # verdict stamps ([STAMP] cues) — drop + hold 3s (final stamp holds to end)
-    stamp_cues = [c for c in cues if c.kind is CueKind.STAMP]
-    for k, c in enumerate(stamp_cues):
-        label = c.payload["label"]
-        img = Image.open(settings.assets_dir / "stamps" / f"{label}.png").convert("RGBA")
-        frames = stamp_drop_frames(img, fps=settings.fps, final_width=px(760))
-        clip = frames_to_alpha_clip(frames, settings.fps, rdir / f"stamp_{k}_{label}.mov")
-        is_last = k == len(stamp_cues) - 1
-        t_end = duration if is_last else min(c.t + 3.0, duration)
-        cw, ch = frames[0].size
-        layers.append(OverlayLayer(
-            path=clip, x=(W - cw) // 2, y=(H - ch) // 2,
-            t_start=c.t, t_end=t_end, is_video=True, hold=True,
-            name=f"stamp_{label}",
-        ))
-
-    # corner bug: ticker + as-of date (§11 keeps the as-of visible)
-    bug_text = f"{script.ticker} · audit" + (f" as of {as_of}" if as_of else "")
+    # corner bug: ticker + as-of date (the as-of stays visible; no "audit")
+    bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
     bug = simple_text(settings, bug_text, font_size=px(34),
                       fill=(255, 255, 255, 200), stroke_width=2)
     bug_path = rdir / "corner_bug.png"
@@ -202,7 +226,7 @@ def render_long(
     ))
 
     # ---------------------------------------------------------- captions
-    # kept narrow (max ~22 chars) so a 9:16 center crop (repurpose §6)
+    # kept narrow (max ~22 chars) so a 9:16 center crop (repurpose)
     # retains them fully
     ass_path = rdir / "captions.ass"
     ass_path.write_text(build_karaoke_ass(
@@ -212,18 +236,27 @@ def render_long(
 
     # ------------------------------------------------------------- audio
     audio = [AudioTrack(path=tts.audio_path, gain_db=0.0)]
-    music = settings.assets_dir / "music" / "deadpan_bed.m4a"
+    music = settings.assets_dir / "music" / "dennis_bed.m4a"
     if music.exists():
         audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
     for c in cues:
-        if c.kind is CueKind.SOUND and c.payload.get("key") in SFX_KEYS:
-            sfx = settings.assets_dir / "sfx" / f"{c.payload['key']}.wav"
+        if c.kind is CueKind.SOUND and c.payload.get("value") in SFX_KEYS:
+            sfx = settings.assets_dir / "sfx" / f"{c.payload['value']}.wav"
             if sfx.exists():
                 audio.append(AudioTrack(path=sfx, start_s=c.t, gain_db=settings.sfx_gain_db))
-    stamp_hit = settings.assets_dir / "sfx" / "stamp_hit.wav"
-    if stamp_hit.exists():
-        for c in stamp_cues:
-            audio.append(AudioTrack(path=stamp_hit, start_s=c.t, gain_db=settings.sfx_gain_db + 3))
+    # meme stings: boom on every meme; the FIRST meme gets the occasional
+    # record-scratch rewind treatment
+    boom = settings.assets_dir / "sfx" / "vine_boom.wav"
+    scratch = settings.assets_dir / "sfx" / "record_scratch.wav"
+    meme_segs = [s for s in segments if s.kind == "meme"]
+    for j, seg in enumerate(meme_segs):
+        if boom.exists():
+            audio.append(AudioTrack(path=boom, start_s=seg.start,
+                                    gain_db=settings.sfx_gain_db + 2))
+        if j == 0 and scratch.exists():
+            audio.append(AudioTrack(path=scratch,
+                                    start_s=max(seg.start - 0.35, 0.0),
+                                    gain_db=settings.sfx_gain_db))
 
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(
