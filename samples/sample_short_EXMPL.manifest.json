@@ -1,191 +1,341 @@
 {
   "ticker": "EXMPL",
-  "verdict": "OVERVALUED",
-  "duration": 44.093991,
+  "duration": 51.872993,
+  "opener": "TRENDING, APPARENTLY.",
+  "chart": {
+    "source": "fixture",
+    "degraded": false,
+    "direction": "up"
+  },
   "cues": [
     {
       "t": 0.0,
       "kind": "hook",
       "payload": {
-        "text": "The market pays 60x sales for this. Let's see why it shouldn't.",
-        "until": 6.0243
+        "text": "EXMPL is up 29% today. The business is not.",
+        "until": 8.756
       },
       "fallback": false
     },
     {
-      "t": 6.0243,
-      "kind": "whip_pan",
-      "payload": {
-        "duration": 0.45
-      },
-      "fallback": false
-    },
-    {
-      "t": 6.4743,
-      "kind": "data_line",
+      "t": 2.2522,
+      "kind": "annotation",
       "payload": {
         "index": 0,
-        "text": "Revenue growth: +1%",
-        "type_seconds": 1.1
+        "target": "chart",
+        "note": "this candle",
+        "row_index": null,
+        "anchor_word": "today"
       },
       "fallback": false
     },
     {
-      "t": 8.74445,
-      "kind": "data_line",
+      "t": 8.756,
+      "kind": "transition",
+      "payload": {
+        "name": "why"
+      },
+      "fallback": false
+    },
+    {
+      "t": 8.906,
+      "kind": "headline",
+      "payload": {
+        "index": 0,
+        "text": "EXMPL announces AI partnership",
+        "meaning": "A press release, not a purchase order \u2014 no revenue attached.",
+        "until": 26.4105
+      },
+      "fallback": false
+    },
+    {
+      "t": 17.733249999999998,
+      "kind": "headline",
       "payload": {
         "index": 1,
-        "text": "Net margin: -18%",
-        "type_seconds": 1.1
+        "text": "Squeeze chatter on retail forums",
+        "meaning": "11% of the float is short. The crowd noticed and piled in.",
+        "until": 26.4105
       },
       "fallback": false
     },
     {
-      "t": 11.0146,
-      "kind": "data_line",
+      "t": 26.4105,
+      "kind": "transition",
+      "payload": {
+        "name": "gut"
+      },
+      "fallback": false
+    },
+    {
+      "t": 26.4105,
+      "kind": "numbers",
+      "payload": {
+        "rows": 4,
+        "until": 51.872993
+      },
+      "fallback": false
+    },
+    {
+      "t": 26.7605,
+      "kind": "number_row",
+      "payload": {
+        "index": 0,
+        "label": "Revenue",
+        "values": [
+          "$400M",
+          "$452M",
+          "$471M",
+          "$491M",
+          "$496M"
+        ],
+        "type_seconds": 0.9
+      },
+      "fallback": false
+    },
+    {
+      "t": 31.2003,
+      "kind": "number_row",
+      "payload": {
+        "index": 1,
+        "label": "Net income",
+        "values": [
+          "-$8M",
+          "-$25M",
+          "-$49M",
+          "-$70M",
+          "-$89M"
+        ],
+        "type_seconds": 0.9
+      },
+      "fallback": false
+    },
+    {
+      "t": 31.4503,
+      "kind": "annotation",
+      "payload": {
+        "index": 1,
+        "target": "numbers",
+        "note": "every year",
+        "row_index": 1,
+        "anchor_word": "wider"
+      },
+      "fallback": false
+    },
+    {
+      "t": 31.5003,
+      "kind": "zoom",
+      "payload": {
+        "row_index": 1
+      },
+      "fallback": false
+    },
+    {
+      "t": 35.640100000000004,
+      "kind": "number_row",
       "payload": {
         "index": 2,
-        "text": "FCF yield: -3%",
-        "type_seconds": 1.1
+        "label": "Free cash flow",
+        "values": [
+          "$12M",
+          "-$2M",
+          "-$6M",
+          "-$11M",
+          "-$15M"
+        ],
+        "type_seconds": 0.9
       },
       "fallback": false
     },
     {
-      "t": 11.3646,
-      "kind": "highlight",
-      "payload": {
-        "line_index": 2,
-        "color": "red",
-        "anchor_word": "cash"
-      },
-      "fallback": false
-    },
-    {
-      "t": 20.707730333333334,
-      "kind": "data_line",
+      "t": 40.0799,
+      "kind": "number_row",
       "payload": {
         "index": 3,
-        "text": "P/S: 62x",
-        "type_seconds": 1.1
+        "label": "Shares out",
+        "values": [
+          "298M",
+          "315M",
+          "330M",
+          "346M",
+          "365M"
+        ],
+        "type_seconds": 0.9
       },
       "fallback": false
     },
     {
-      "t": 30.400860666666667,
-      "kind": "data_line",
+      "t": 42.5233,
+      "kind": "meme",
       "payload": {
-        "index": 4,
-        "text": "Debt/Equity: 140%",
-        "type_seconds": 1.1
+        "key": "stonks-man-up-only",
+        "duration": 1.4
       },
       "fallback": false
     },
     {
-      "t": 41.093991,
-      "kind": "stamp",
+      "t": 45.0197,
+      "kind": "transition",
       "payload": {
-        "label": "OVERVALUED"
+        "name": "payoff"
       },
       "fallback": false
     },
     {
-      "t": 42.493991,
-      "kind": "cta",
+      "t": 45.0197,
+      "kind": "conclusion",
       "payload": {
-        "text": "Screenshot this before earnings."
+        "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+        "until": 51.872993
       },
       "fallback": false
     }
   ],
   "layers": [
     {
-      "name": "folder_closed",
+      "name": "chart",
       "t_start": 0.0,
-      "t_end": 6.0243,
-      "x": 160,
-      "y": 500
-    },
-    {
-      "name": "whip_pan",
-      "t_start": 6.0243,
-      "t_end": 6.4743,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "folder_open",
-      "t_start": 6.440966666666667,
-      "t_end": 44.093991,
+      "t_end": 51.872993,
       "x": 40,
-      "y": 540
+      "y": 170
     },
     {
-      "name": "highlight_line2",
-      "t_start": 11.3646,
-      "t_end": 44.093991,
-      "x": 92,
-      "y": 882
-    },
-    {
-      "name": "data_line_0",
-      "t_start": 6.4743,
-      "t_end": 44.093991,
-      "x": 104,
-      "y": 612
-    },
-    {
-      "name": "data_line_1",
-      "t_start": 8.74445,
-      "t_end": 44.093991,
-      "x": 104,
-      "y": 752
-    },
-    {
-      "name": "data_line_2",
-      "t_start": 11.0146,
-      "t_end": 44.093991,
-      "x": 104,
-      "y": 892
-    },
-    {
-      "name": "data_line_3",
-      "t_start": 20.707730333333334,
-      "t_end": 44.093991,
-      "x": 104,
-      "y": 1032
-    },
-    {
-      "name": "data_line_4",
-      "t_start": 30.400860666666667,
-      "t_end": 44.093991,
-      "x": 104,
-      "y": 1172
-    },
-    {
-      "name": "stamp",
-      "t_start": 41.093991,
-      "t_end": 44.093991,
-      "x": -22,
-      "y": 764
+      "name": "brand_bug",
+      "t_start": 0.0,
+      "t_end": 51.872993,
+      "x": 90,
+      "y": 48
     },
     {
       "name": "hook",
       "t_start": 0.0,
-      "t_end": 6.0243,
+      "t_end": 8.756,
       "x": 60,
-      "y": 150
+      "y": 1040
     },
     {
-      "name": "cta",
-      "t_start": 42.493991,
-      "t_end": 44.093991,
-      "x": 100,
-      "y": 1430
+      "name": "headline_0",
+      "t_start": 8.906,
+      "t_end": 26.4105,
+      "x": 95,
+      "y": 382
+    },
+    {
+      "name": "headline_1",
+      "t_start": 17.733249999999998,
+      "t_end": 26.4105,
+      "x": 95,
+      "y": 526
+    },
+    {
+      "name": "numbers_sheet",
+      "t_start": 26.4105,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 990
+    },
+    {
+      "name": "number_row_0",
+      "t_start": 26.7605,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 1178
+    },
+    {
+      "name": "number_row_1",
+      "t_start": 31.2003,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 1296
+    },
+    {
+      "name": "number_row_2",
+      "t_start": 35.640100000000004,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 1414
+    },
+    {
+      "name": "number_row_3",
+      "t_start": 40.0799,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 1532
+    },
+    {
+      "name": "scribble_0_chart",
+      "t_start": 2.2522,
+      "t_end": 26.4105,
+      "x": 834,
+      "y": 285
+    },
+    {
+      "name": "note_0",
+      "t_start": 2.2522,
+      "t_end": 26.4105,
+      "x": 827,
+      "y": 479
+    },
+    {
+      "name": "scribble_1_numbers",
+      "t_start": 31.4503,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 1296
+    },
+    {
+      "name": "note_1",
+      "t_start": 31.4503,
+      "t_end": 51.872993,
+      "x": 808,
+      "y": 1255
+    },
+    {
+      "name": "zoom_0",
+      "t_start": 31.5003,
+      "t_end": 32.1003,
+      "x": -124,
+      "y": 1273
+    },
+    {
+      "name": "meme_0",
+      "t_start": 42.5233,
+      "t_end": 43.9233,
+      "x": 166,
+      "y": 396
+    },
+    {
+      "name": "flash_why",
+      "t_start": 8.756,
+      "t_end": 8.956,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "flash_gut",
+      "t_start": 26.4105,
+      "t_end": 26.6105,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "flash_payoff",
+      "t_start": 45.0197,
+      "t_end": 45.2197,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "conclusion",
+      "t_start": 45.0197,
+      "t_end": 51.872993,
+      "x": 60,
+      "y": 430
     },
     {
       "name": "disclaimer",
       "t_start": 0.0,
-      "t_end": 44.093991,
+      "t_end": 51.872993,
       "x": 119,
       "y": 1850
     }

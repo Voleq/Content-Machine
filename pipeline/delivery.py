@@ -1,7 +1,7 @@
 """Pluggable delivery (§9.4): gdrive (default) | s3 | telegram | local.
 
 Google Drive is the recommended default: organized dated archive
-(/DueDiligenceDesk/<TICKER>/<date>/), shareable link, no bot upload cap,
+(/Dennis/<TICKER>/<date>/), shareable link, no bot upload cap,
 and it stages files for later YouTube/TikTok upload. Implemented with
 google-auth (service account or OAuth refresh-token JSON) + plain httpx
 against the Drive REST API — no googleapiclient discovery baggage.

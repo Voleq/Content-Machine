@@ -7,9 +7,9 @@ from pipeline.workspace import Workspace
 def _fill(ws: Workspace):
     (ws.path / "short_final.mp4").write_bytes(b"x" * 1000)
     (ws.path / "render_short").mkdir()
-    (ws.path / "render_short" / "stamp.mov").write_bytes(b"y" * 500)
+    (ws.path / "render_short" / "row_0.mov").write_bytes(b"y" * 500)
     (ws.path / "script_short.json").write_text("{}")
-    (ws.path / "data_refinitiv.xlsx").write_bytes(b"z")
+    (ws.path / "dennis_data.xlsx").write_bytes(b"z")
 
 
 def test_cleanup_prunes_old_renders_keeps_records(settings):
@@ -27,7 +27,7 @@ def test_cleanup_prunes_old_renders_keeps_records(settings):
     assert not (old_ws.path / "short_final.mp4").exists()
     assert not (old_ws.path / "render_short").exists()
     assert (old_ws.path / "script_short.json").exists()
-    assert (old_ws.path / "data_refinitiv.xlsx").exists()
+    assert (old_ws.path / "dennis_data.xlsx").exists()
     # fresh: untouched
     assert (fresh_ws.path / "short_final.mp4").exists()
     assert (fresh_ws.path / "render_short").exists()

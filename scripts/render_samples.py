@@ -2,13 +2,13 @@
 
 Usage:  .venv/bin/python scripts/render_samples.py [short|long|all]
 
-Outputs to samples/ at the repo root. These are the §13 deliverable
-artifacts: full-spec renders driven end-to-end by mock TTS timestamps.
+Outputs to samples/ at the repo root: full-spec Dennis renders driven
+end-to-end by mock TTS timestamps — the SHORT "Noise or signal?"
+template and the LONG deadpan deep-dive.
 """
 
 from __future__ import annotations
 
-import json
 import shutil
 import sys
 import time
@@ -56,7 +56,8 @@ def render_short_sample() -> Path:
 
 
 def render_long_sample() -> Path:
-    from pipeline.broll import BrollManager
+    from pipeline.broll import ContentManager
+    from pipeline.company_data import load_company_data
     from pipeline.parser_long import parse_long_script
     from pipeline.render_long import render_long
 
@@ -67,7 +68,12 @@ def render_long_sample() -> Path:
         print(f"  warning: {w}")
     ws = WORK / "EXMPL" / "sample"
     ws.mkdir(parents=True, exist_ok=True)
-    # the fixture references one Refinitiv screenshot — synthesize it
+    # the two-sheet data export feeds [CHART] + the corner bug's as-of
+    shutil.copy(ROOT / "fixtures" / "company_data" / "dennis_data.xlsx",
+                ws / "dennis_data.xlsx")
+    data = load_company_data(ws)
+    # the fixture references one filing screenshot — synthesize it (the
+    # renderer adds the generic "FROM THE 10-K" chip; no vendor anywhere)
     shot = ws / "income_statement.png"
     if not shot.exists():
         from PIL import Image, ImageDraw
@@ -75,16 +81,18 @@ def render_long_sample() -> Path:
         d = ImageDraw.Draw(img)
         for y in range(80, 860, 52):
             d.line([40, y, 1560, y], fill=(46, 54, 66), width=1)
-        d.text((60, 30), "REFINITIV  |  EXMPL.O  Income Statement (mock screenshot)",
+        d.text((60, 30), "EXMPL — Income Statement (mock screenshot)",
                fill=(210, 214, 220))
         d.text((60, 120), "Revenue TTM            496,000,000   (+1.0% YoY)", fill=(210, 214, 220))
         d.text((60, 172), "Net income TTM         -89,000,000   (margin -18%)", fill=(235, 90, 90))
         img.save(shot)
     tts = TTSEngine(settings).synthesize(script.narration, "long")
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")
-    broll = BrollManager(settings)
     t0 = time.time()
-    out, manifest = render_long(script, tts, ws, settings, broll=broll, draft=False)
+    out, manifest = render_long(script, tts, ws, settings,
+                                content=ContentManager(settings),
+                                as_of=str(data.get("as_of_date") or ""),
+                                company_data=data)
     print(f"  rendered in {time.time() - t0:.0f}s")
     SAMPLES.mkdir(exist_ok=True)
     dest = SAMPLES / "sample_long_EXMPL.mp4"

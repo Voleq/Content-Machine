@@ -1,126 +1,119 @@
 {
   "ticker": "EXMPL",
   "draft": false,
-  "duration": 106.532993,
+  "duration": 138.716009,
   "resolution": [
     1920,
     1080
   ],
   "cues": [
     {
-      "t": 6.1837,
-      "kind": "broll",
+      "t": 8.8043,
+      "kind": "clip",
       "payload": {
         "order": 0,
-        "key": "house_of_cards"
+        "value": "tumbleweed",
+        "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 13.2603,
-      "kind": "broll",
+      "t": 29.0492,
+      "kind": "img",
       "payload": {
         "order": 1,
-        "key": "confused_office_worker"
+        "value": "EXMPL data center server racks",
+        "tag": "IMG"
       },
       "fallback": false
     },
     {
-      "t": 24.3593,
-      "kind": "refinitiv",
+      "t": 33.6081,
+      "kind": "img",
       "payload": {
         "order": 2,
-        "file": "income_statement.png"
+        "value": "EXMPL dispatch dashboard",
+        "tag": "PRODUCT"
       },
       "fallback": false
     },
     {
-      "t": 27.1899,
-      "kind": "sound",
+      "t": 46.8214,
+      "kind": "chart",
       "payload": {
         "order": 3,
-        "key": "windows_error"
+        "value": "revenue",
+        "tag": "CHART"
       },
       "fallback": false
     },
     {
-      "t": 31.2124,
-      "kind": "broll",
+      "t": 54.2394,
+      "kind": "filing",
       "payload": {
         "order": 4,
-        "key": "clown"
+        "value": "income_statement.png",
+        "tag": "SHOW FILING"
       },
       "fallback": false
     },
     {
-      "t": 42.5349,
-      "kind": "broll",
-      "payload": {
-        "order": 5,
-        "key": "dumpster_fire"
-      },
-      "fallback": false
-    },
-    {
-      "t": 46.4829,
+      "t": 63.5118,
       "kind": "sound",
       "payload": {
-        "order": 6,
-        "key": "sad_trombone"
+        "order": 5,
+        "value": "windows_error",
+        "tag": "SOUND"
       },
       "fallback": false
     },
     {
-      "t": 47.8982,
-      "kind": "broll",
+      "t": 71.007,
+      "kind": "clip",
+      "payload": {
+        "order": 6,
+        "value": "hamster_wheel",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 78.8114,
+      "kind": "clip",
       "payload": {
         "order": 7,
-        "key": "sinking_ship"
+        "value": "boardroom_suits",
+        "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 64.6585,
-      "kind": "broll",
+      "t": 92.3337,
+      "kind": "clip",
       "payload": {
         "order": 8,
-        "key": "monopoly_money"
+        "value": "growing_plant",
+        "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 77.7688,
-      "kind": "broll",
+      "t": 106.706,
+      "kind": "meme",
       "payload": {
         "order": 9,
-        "key": "printing_money"
+        "value": "astronaut-always-has-been-dilution",
+        "tag": "MEME"
       },
       "fallback": false
     },
     {
-      "t": 80.227,
+      "t": 106.706,
       "kind": "sound",
       "payload": {
         "order": 10,
-        "key": "record_scratch"
-      },
-      "fallback": false
-    },
-    {
-      "t": 92.3689,
-      "kind": "broll",
-      "payload": {
-        "order": 11,
-        "key": "empty_promise_handshake"
-      },
-      "fallback": false
-    },
-    {
-      "t": 103.3189,
-      "kind": "stamp",
-      "payload": {
-        "order": 12,
-        "label": "OVERVALUED"
+        "value": "sad_trombone",
+        "tag": "SOUND"
       },
       "fallback": false
     }
@@ -128,175 +121,375 @@
   "segments": [
     {
       "kind": "filler",
-      "variant": 0,
       "start": 0.0,
-      "end": 3.09185
+      "end": 2.9347666666666665,
+      "attribution": "",
+      "variant": 0
     },
     {
       "kind": "filler",
-      "variant": 1,
-      "start": 3.09185,
-      "end": 6.1837
-    },
-    {
-      "kind": "broll",
-      "key": "house_of_cards",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 6.1837,
-      "end": 11.383700000000001
+      "start": 2.9347666666666665,
+      "end": 5.869533333333333,
+      "attribution": "",
+      "variant": 1
     },
     {
       "kind": "filler",
-      "variant": 2,
-      "start": 11.383700000000001,
-      "end": 13.2603
+      "start": 5.869533333333333,
+      "end": 8.8043,
+      "attribution": "",
+      "variant": 2
     },
     {
-      "kind": "broll",
-      "key": "confused_office_worker",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 13.2603,
-      "end": 18.4603
-    },
-    {
-      "kind": "filler",
-      "variant": 3,
-      "start": 18.4603,
-      "end": 24.3593
-    },
-    {
-      "kind": "refinitiv",
-      "file": "income_statement.png",
-      "start": 24.3593,
-      "end": 27.8593
+      "kind": "clip",
+      "start": 8.8043,
+      "end": 11.8043,
+      "value": "tumbleweed",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "variant": 0,
-      "start": 27.8593,
-      "end": 31.2124
-    },
-    {
-      "kind": "broll",
-      "key": "clown",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 31.2124,
-      "end": 36.4124
+      "start": 11.8043,
+      "end": 14.67845,
+      "attribution": "",
+      "variant": 3
     },
     {
       "kind": "filler",
-      "variant": 1,
-      "start": 36.4124,
-      "end": 39.47365
+      "start": 14.67845,
+      "end": 17.552599999999998,
+      "attribution": "",
+      "variant": 0
     },
     {
       "kind": "filler",
-      "variant": 2,
-      "start": 39.47365,
-      "end": 42.5349
-    },
-    {
-      "kind": "broll",
-      "key": "dumpster_fire",
-      "source": "pexels",
-      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
-      "start": 42.5349,
-      "end": 47.8982
-    },
-    {
-      "kind": "broll",
-      "key": "sinking_ship",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 47.8982,
-      "end": 53.098200000000006
+      "start": 17.552599999999998,
+      "end": 20.42675,
+      "attribution": "",
+      "variant": 1
     },
     {
       "kind": "filler",
-      "variant": 3,
-      "start": 53.098200000000006,
-      "end": 56.95163333333334
+      "start": 20.42675,
+      "end": 23.3009,
+      "attribution": "",
+      "variant": 2
     },
     {
       "kind": "filler",
-      "variant": 0,
-      "start": 56.95163333333334,
-      "end": 60.80506666666667
+      "start": 23.3009,
+      "end": 26.17505,
+      "attribution": "",
+      "variant": 3
     },
     {
       "kind": "filler",
-      "variant": 1,
-      "start": 60.80506666666667,
-      "end": 64.6585
+      "start": 26.17505,
+      "end": 29.0492,
+      "attribution": "",
+      "variant": 0
     },
     {
-      "kind": "broll",
-      "key": "monopoly_money",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 64.6585,
-      "end": 69.8585
-    },
-    {
-      "kind": "filler",
-      "variant": 2,
-      "start": 69.8585,
-      "end": 73.81365
+      "kind": "img",
+      "start": 29.0492,
+      "end": 31.8492,
+      "value": "EXMPL data center server racks",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "variant": 3,
-      "start": 73.81365,
-      "end": 77.7688
+      "start": 31.8492,
+      "end": 33.6081,
+      "attribution": "",
+      "variant": 1
     },
     {
-      "kind": "broll",
-      "key": "printing_money",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 77.7688,
-      "end": 82.9688
-    },
-    {
-      "kind": "filler",
-      "variant": 0,
-      "start": 82.9688,
-      "end": 87.66884999999999
+      "kind": "img",
+      "start": 33.6081,
+      "end": 36.4081,
+      "value": "EXMPL dispatch dashboard",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "variant": 1,
-      "start": 87.66884999999999,
-      "end": 92.3689
-    },
-    {
-      "kind": "broll",
-      "key": "empty_promise_handshake",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "start": 92.3689,
-      "end": 97.5689
+      "start": 36.4081,
+      "end": 39.011424999999996,
+      "attribution": "",
+      "variant": 2
     },
     {
       "kind": "filler",
-      "variant": 2,
-      "start": 97.5689,
-      "end": 102.05094650000001
+      "start": 39.011424999999996,
+      "end": 41.61475,
+      "attribution": "",
+      "variant": 3
     },
     {
       "kind": "filler",
-      "variant": 3,
-      "start": 102.05094650000001,
-      "end": 106.532993
+      "start": 41.61475,
+      "end": 44.218075,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 44.218075,
+      "end": 46.8214,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "chart",
+      "start": 46.8214,
+      "end": 49.8214,
+      "value": "revenue",
+      "source": "generated",
+      "attribution": ""
+    },
+    {
+      "kind": "filler",
+      "start": 49.8214,
+      "end": 52.0304,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 52.0304,
+      "end": 54.2394,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filing",
+      "start": 54.2394,
+      "end": 57.0394,
+      "value": "income_statement.png",
+      "attribution": ""
+    },
+    {
+      "kind": "filler",
+      "start": 57.0394,
+      "end": 59.83292,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 59.83292,
+      "end": 62.62644,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 62.62644,
+      "end": 65.41996,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 65.41996,
+      "end": 68.21348,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 68.21348,
+      "end": 71.007,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "clip",
+      "start": 71.007,
+      "end": 74.007,
+      "value": "hamster_wheel",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    },
+    {
+      "kind": "filler",
+      "start": 74.007,
+      "end": 76.4092,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 76.4092,
+      "end": 78.8114,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "clip",
+      "start": 78.8114,
+      "end": 81.8114,
+      "value": "boardroom_suits",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    },
+    {
+      "kind": "filler",
+      "start": 81.8114,
+      "end": 84.441975,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 84.441975,
+      "end": 87.07255,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 87.07255,
+      "end": 89.703125,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 89.703125,
+      "end": 92.3337,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "clip",
+      "start": 92.3337,
+      "end": 95.3337,
+      "value": "growing_plant",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    },
+    {
+      "kind": "filler",
+      "start": 95.3337,
+      "end": 98.17677499999999,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 98.17677499999999,
+      "end": 101.01984999999999,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 101.01984999999999,
+      "end": 103.862925,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 103.862925,
+      "end": 106.706,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "meme",
+      "start": 106.706,
+      "end": 108.506,
+      "value": "astronaut-always-has-been-dilution",
+      "source": "library",
+      "attribution": "owned meme library (astronaut-always-has-been-dilution)"
+    },
+    {
+      "kind": "filler",
+      "start": 108.506,
+      "end": 111.25236445454546,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 111.25236445454546,
+      "end": 113.99872890909091,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 113.99872890909091,
+      "end": 116.74509336363637,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 116.74509336363637,
+      "end": 119.49145781818183,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 119.49145781818183,
+      "end": 122.23782227272727,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 122.23782227272727,
+      "end": 124.98418672727274,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 124.98418672727274,
+      "end": 127.73055118181819,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 127.73055118181819,
+      "end": 130.47691563636366,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 130.47691563636366,
+      "end": 133.2232800909091,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 133.2232800909091,
+      "end": 135.96964454545457,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 135.96964454545457,
+      "end": 138.716009,
+      "attribution": "",
+      "variant": 1
     }
   ],
   "segment_warnings": [],
   "attributions": [
-    "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
-    "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+    "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+    "owned meme library (astronaut-always-has-been-dilution)"
   ],
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.filter.txt",
   "output": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.mp4"
