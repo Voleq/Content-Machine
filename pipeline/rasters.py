@@ -1,19 +1,27 @@
 """Pillow raster + animation-frame generation, and ASS karaoke captions.
 
-All text is rendered with Pillow (never ImageMagick / MoviePy TextClip §3).
-Animated moments (whip-pan, stamp impact, typewriter, highlight sweep) are
-generated here as short RGBA frame sequences, encoded once by ffmpeg into
-small alpha .mov clips, and composited by the FFmpeg filtergraph — Python
-never renders per-frame at video resolution for the full timeline.
+All text is rendered with Pillow (never ImageMagick / MoviePy TextClip).
+Animated moments (row type-ons, hand-drawn scribbles, zoom-punches, flash
+stingers) are generated here as short RGBA frame sequences, encoded once
+by ffmpeg into small alpha .mov clips, and composited by the FFmpeg
+filtergraph — Python never renders per-frame at video resolution for the
+full timeline.
+
+This is the reusable SHORT asset kit (§4): headline-overlay treatment,
+numbers sheet, caption style, hand-drawn annotations, transition
+stingers, intro/outro bug. Placeholder aesthetics; the production kit
+from Claude Design drops over the same components.
 """
 
 from __future__ import annotations
 
 import math
+import random
+import re
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 from config import Settings
 from pipeline.models import WordTimestamp
@@ -23,10 +31,12 @@ MONO = "DejaVuSansMono.ttf"
 MONO_BOLD = "DejaVuSansMono-Bold.ttf"
 DISPLAY_BOLD = "DejaVuSans-Bold.ttf"
 
-RED = (203, 44, 52)
-GREEN = (36, 158, 82)
-INK = (42, 34, 24)
-PAPER = (242, 235, 218)
+RED = (224, 82, 82)
+GREEN = (63, 185, 104)
+INK = (232, 234, 240)
+MUTED = (154, 163, 178)
+PANEL = (18, 21, 28)
+PANEL_LINE = (38, 43, 54)
 GOLD = (255, 205, 60)
 
 
@@ -58,13 +68,13 @@ def text_panel(
     font_name: str = DISPLAY_BOLD,
     font_size: int = 64,
     fg=(255, 255, 255, 255),
-    bg=(12, 10, 9, 216),
+    bg=(*PANEL, 235),
     accent=None,
     pad: int = 36,
     align: str = "center",
     radius: int = 26,
 ) -> Image.Image:
-    """Auto-height rounded panel with wrapped text (hook / CTA cards)."""
+    """Auto-height rounded panel with wrapped text (hook / conclusion cards)."""
     font = load_font(settings, font_name, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     inner = width - 2 * pad - (14 if accent else 0)
@@ -111,6 +121,25 @@ def simple_text(
     return img
 
 
+def brand_bug(settings: Settings, opener: str, *, width: int,
+              font_size: int = 34) -> Image.Image:
+    """The intro/outro bug: brand name + the sampled hook-bank opener."""
+    name_font = load_font(settings, DISPLAY_BOLD, font_size)
+    line_font = load_font(settings, MONO_BOLD, int(font_size * 0.72))
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    name = settings.brand_name
+    nw = probe.textlength(name, font=name_font)
+    lw = probe.textlength(opener, font=line_font)
+    h = name_font.size + line_font.size + 26
+    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.text(((width - nw) / 2, 0), name, font=name_font, fill=(*GOLD, 255),
+           stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    d.text(((width - lw) / 2, name_font.size + 10), opener, font=line_font,
+           fill=(*INK, 235), stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    return img
+
+
 # --------------------------------------------------------------------------
 # Frame sequences -> alpha clips.
 # --------------------------------------------------------------------------
@@ -140,7 +169,7 @@ def typing_frames(
     type_seconds: float = 0.9,
     cursor: bool = True,
 ) -> list[Image.Image]:
-    """Monospace typewriter reveal of one data-block line."""
+    """Monospace type-on reveal of one line."""
     font = load_font(settings, MONO_BOLD, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     full_w = int(probe.textlength(text, font=font)) + 26
@@ -160,103 +189,284 @@ def typing_frames(
     return frames
 
 
-def highlight_sweep_frames(
-    width: int,
-    height: int,
-    color: str,
+# --------------------------------------------------------------------------
+# Headline overlay (the "why" treatment ON the chart).
+# --------------------------------------------------------------------------
+
+
+def headline_card(settings: Settings, text: str, *, width: int,
+                  font_size: int = 40) -> Image.Image:
+    """News-strip card: gold kicker bar + headline text on a dark chip."""
+    font = load_font(settings, DISPLAY_BOLD, font_size)
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    pad = int(font_size * 0.55)
+    bar_w = int(font_size * 0.30)
+    lines = _wrap(probe, text, font, width - 2 * pad - bar_w)
+    lh = int(font_size * 1.28)
+    h = 2 * pad + lh * len(lines)
+    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, width - 1, h - 1], radius=12, fill=(12, 14, 19, 242))
+    d.rectangle([0, 6, bar_w, h - 7], fill=(*GOLD, 255))
+    for i, line in enumerate(lines):
+        d.text((bar_w + pad, pad + i * lh), line, font=font, fill=(*INK, 255))
+    return img
+
+
+# --------------------------------------------------------------------------
+# The numbers sheet — a clean statement card with mini trend bars (§4).
+# --------------------------------------------------------------------------
+
+_NUM_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
+
+
+def parse_row_values(values: list[str]) -> list[float] | None:
+    """Best-effort numeric parse of display strings for the trend bars."""
+    out: list[float] = []
+    for v in values:
+        m = _NUM_RE.search(v.replace(",", ""))
+        if not m:
+            return None
+        x = float(m.group(0))
+        if "-" in v.split(m.group(0))[0] or v.strip().startswith("("):
+            x = -abs(x)
+        low = v.lower()
+        if "b" in low.split(m.group(0))[-1][:2]:
+            x *= 1000  # bars only need relative scale vs M
+        out.append(x)
+    return out
+
+
+def sheet_layout(settings: Settings, n_rows: int, *, width: int,
+                 row_h: int = 118, title_h: int = 96, years_h: int = 64,
+                 pad: int = 28) -> dict:
+    """Pixel geometry shared by the base card, row clips and zoom pops."""
+    return {
+        "width": width,
+        "pad": pad,
+        "title_h": title_h,
+        "years_h": years_h,
+        "row_h": row_h,
+        "height": title_h + years_h + n_rows * row_h + 2 * pad,
+        "rows_y0": pad + title_h + years_h,
+        "label_w": int(width * 0.30),
+        "bars_w": int(width * 0.16),
+    }
+
+
+def numbers_sheet_base(settings: Settings, n_rows: int, years: list[str], *,
+                       width: int, title: str = "THE GUT CHECK") -> tuple[Image.Image, dict]:
+    """The empty statement card: title, year headers, ruled row slots.
+    Rows type on later as separate overlays positioned by the layout."""
+    ly = sheet_layout(settings, n_rows, width=width)
+    W, H = width, ly["height"]
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, W - 1, H - 1], radius=22, fill=(*PANEL, 246),
+                        outline=(*PANEL_LINE, 255), width=2)
+
+    title_font = load_font(settings, DISPLAY_BOLD, int(ly["title_h"] * 0.46))
+    d.text((ly["pad"], ly["pad"] + 4), title, font=title_font, fill=(*GOLD, 255))
+    sub_font = load_font(settings, MONO, int(ly["title_h"] * 0.22))
+    d.text((ly["pad"], ly["pad"] + title_font.size + 12),
+           "from the 10-K · five years", font=sub_font, fill=(*MUTED, 255))
+
+    # year headers over the value columns
+    if years:
+        yr_font = load_font(settings, MONO_BOLD, int(ly["years_h"] * 0.44))
+        x0 = ly["label_w"]
+        cols_w = W - x0 - ly["bars_w"] - ly["pad"]
+        for j, y in enumerate(years):
+            cx = x0 + cols_w * (j + 0.5) / len(years)
+            d.text((cx - d.textlength(str(y), font=yr_font) / 2,
+                    ly["pad"] + ly["title_h"] + 6),
+                   str(y), font=yr_font, fill=(*MUTED, 255))
+
+    for i in range(n_rows):  # recessive rules between row slots
+        ry = ly["rows_y0"] + (i + 1) * ly["row_h"]
+        if i < n_rows - 1:
+            d.line([ly["pad"], ry, W - ly["pad"], ry], fill=(*PANEL_LINE, 200), width=1)
+    return img, ly
+
+
+def number_row_frames(
+    settings: Settings,
+    label: str,
+    values: list[str],
+    layout: dict,
     *,
     fps: int = 30,
-    sweep_seconds: float = 0.35,
-    alpha: int = 110,
+    type_seconds: float = 0.8,
 ) -> list[Image.Image]:
-    """Semi-transparent marker rect expanding left->right over a data row."""
-    rgb = RED if color == "red" else GREEN
-    n = max(int(sweep_seconds * fps), 2)
-    frames = []
-    for k in range(n + 1):
-        prog = (k / n) ** 0.8
-        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        w = max(int(width * prog), 8)
-        d.rounded_rectangle([0, 0, w, height - 1], radius=14, fill=(*rgb, alpha))
-        frames.append(img)
-    return frames
+    """One sheet row typing on: label, then the year values landing cell by
+    cell (oldest -> newest), then the mini trend bars growing."""
+    W = layout["width"]
+    H = layout["row_h"]
+    label_w = layout["label_w"]
+    bars_w = layout["bars_w"]
+    pad = layout["pad"]
+    cols_w = W - label_w - bars_w - pad
 
+    # fit fonts to their columns so long labels / wide values never collide
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    lsize = int(H * 0.34)
+    label_font = load_font(settings, DISPLAY_BOLD, lsize)
+    while lsize > 14 and probe.textlength(label, font=label_font) > label_w - pad - 8:
+        lsize -= 2
+        label_font = load_font(settings, DISPLAY_BOLD, lsize)
+    cell_w = cols_w / max(len(values), 1)
+    vsize = int(H * 0.30)
+    val_font = load_font(settings, MONO_BOLD, vsize)
+    widest = max(values, key=len)
+    while vsize > 12 and probe.textlength(widest, font=val_font) > cell_w - 8:
+        vsize -= 2
+        val_font = load_font(settings, MONO_BOLD, vsize)
+    numeric = parse_row_values(values)
 
-def stamp_drop_frames(
-    stamp: Image.Image,
-    *,
-    fps: int = 30,
-    drop_seconds: float = 0.3,
-    final_width: int = 880,
-) -> list[Image.Image]:
-    """Impact drop: 200% -> 100% scale with a settle wobble (§7.1.6)."""
-    ratio = final_width / stamp.width
-    final = stamp.resize((final_width, int(stamp.height * ratio)), Image.LANCZOS)
-    cw, ch = int(final_width * 1.25), int(final.height * 1.25)
-    n = max(int(drop_seconds * fps), 3)
-    frames = []
-    for k in range(n + 1):
-        p = k / n
-        scale = 2.0 - (2.0 - 1.0) * (1 - (1 - p) ** 3)  # ease-out cubic
-        if k == n:
-            scale = 1.0
-        rot = (1 - p) * 6.0
-        alpha = min(1.0, 0.25 + p * 1.2)
-        img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-        s = final.rotate(rot, expand=True, resample=Image.BICUBIC)
-        sw, sh = int(s.width * scale), int(s.height * scale)
-        s = s.resize((max(sw, 1), max(sh, 1)), Image.BICUBIC)
-        if alpha < 1.0:
-            a = s.getchannel("A").point(lambda v: int(v * alpha))
-            s.putalpha(a)
-        img.alpha_composite(s, ((cw - s.width) // 2, (ch - s.height) // 2))
-        frames.append(img)
-    # settle bounce
-    for scale in (1.045, 1.0):
-        img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-        s = final.resize((int(final.width * scale), int(final.height * scale)), Image.BICUBIC)
-        img.alpha_composite(s, ((cw - s.width) // 2, (ch - s.height) // 2))
-        frames.append(img)
-    return frames
-
-
-def whip_pan_frames(
-    closed_folder: Image.Image,
-    open_folder: Image.Image,
-    canvas: tuple[int, int],
-    positions: tuple[tuple[int, int], tuple[int, int]],
-    *,
-    fps: int = 30,
-    duration: float = 0.45,
-) -> list[Image.Image]:
-    """Closed folder whips off-left, open folder whips in from the right,
-    ending exactly at the open folder's static resting position."""
-    W, H = canvas
-    (cx, cy), (ox, oy) = positions
-    n = max(int(duration * fps), 4)
-    frames = []
-    for k in range(n + 1):
-        p = k / n
-        ease = 1 - (1 - p) ** 2.2
+    def render(progress: float) -> Image.Image:
         img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        # closed folder exits left
-        x_closed = int(cx - ease * (cx + closed_folder.width + 80))
-        blur = int(ease * 14)
-        cf = closed_folder.filter(ImageFilter.BoxBlur((blur, 0))) if blur else closed_folder
-        img.alpha_composite(cf, (x_closed, cy))
-        # open folder enters from the right
-        x_open = int(W + 60 - ease * (W + 60 - ox))
-        of = open_folder
-        if blur and p < 0.85:
-            of = open_folder.filter(ImageFilter.BoxBlur((max(10 - blur, 0), 0)))
-        img.alpha_composite(of, (x_open, oy))
+        d = ImageDraw.Draw(img)
+        # phase 1 (0..0.25): the label types
+        label_p = min(progress / 0.25, 1.0)
+        shown = label[: max(1, round(len(label) * label_p))] if label_p > 0 else ""
+        d.text((pad, (H - label_font.size) / 2), shown, font=label_font,
+               fill=(*INK, 255))
+        # phase 2 (0.25..0.85): values land cell by cell
+        n = len(values)
+        vals_p = max(0.0, min((progress - 0.25) / 0.60, 1.0))
+        visible = int(math.ceil(vals_p * n))
+        for j in range(visible):
+            v = values[j]
+            cx = label_w + cols_w * (j + 0.5) / n
+            color = INK
+            if numeric is not None and numeric[j] < 0:
+                color = RED
+            d.text((cx - d.textlength(v, font=val_font) / 2,
+                    (H - val_font.size) / 2), v, font=val_font, fill=(*color, 255))
+        # phase 3 (0.85..1): mini trend bars grow. Neutral single hue —
+        # direction is a fact, not a judgement (rising share count is not
+        # good news); only genuinely negative values go red.
+        if numeric is not None and len(numeric) >= 2:
+            bars_p = max(0.0, min((progress - 0.85) / 0.15, 1.0))
+            bx0 = W - bars_w - pad + 6
+            bw = (bars_w - 12) / len(numeric)
+            lo, hi = min(numeric + [0.0]), max(numeric + [0.0])
+            span = (hi - lo) or 1.0
+            zero_y = H * 0.78 - (0.0 - lo) / span * H * 0.56
+            for j, x in enumerate(numeric):
+                vy = H * 0.78 - (x - lo) / span * H * 0.56
+                top, bot = (vy, zero_y) if x >= 0 else (zero_y, vy)
+                bot = top + max((bot - top) * bars_p, 2)
+                color = GOLD if x >= 0 else RED
+                d.rounded_rectangle(
+                    [bx0 + j * bw + 1, top, bx0 + (j + 1) * bw - 2, bot],
+                    radius=2, fill=(*color, 220),
+                )
+        return img
+
+    n_frames = max(int(type_seconds * fps), 4)
+    return [render(k / n_frames) for k in range(n_frames + 1)]
+
+
+def number_row_image(settings: Settings, label: str, values: list[str],
+                     layout: dict) -> Image.Image:
+    """The row's final frame (used for the zoom-punch pop)."""
+    return number_row_frames(settings, label, values, layout, fps=2,
+                             type_seconds=1.0)[-1]
+
+
+# --------------------------------------------------------------------------
+# Hand-drawn annotations, zoom-punch, flash stinger.
+# --------------------------------------------------------------------------
+
+
+def scribble_frames(
+    w: int,
+    h: int,
+    *,
+    style: str = "circle",
+    color=GOLD,
+    fps: int = 30,
+    draw_seconds: float = 0.4,
+    stroke: int | None = None,
+    seed: str = "scribble",
+) -> list[Image.Image]:
+    """A marker-style ellipse (or underline) drawing itself on, with
+    hand-drawn jitter. Composited over the chart or a numbers row."""
+    rng = random.Random(seed)
+    stroke = stroke or max(int(min(w, h) * 0.06), 5)
+    n = max(int(draw_seconds * fps), 4)
+    cx, cy = w / 2, h / 2
+    rx, ry = w / 2 - stroke, h / 2 - stroke
+    jitter = [(rng.uniform(-2.5, 2.5), rng.uniform(-2.5, 2.5)) for _ in range(64)]
+
+    def point(theta: float) -> tuple[float, float]:
+        j = jitter[int((theta % (2 * math.pi)) / (2 * math.pi) * 63)]
+        return (cx + rx * math.cos(theta) + j[0], cy + ry * math.sin(theta) + j[1])
+
+    frames: list[Image.Image] = []
+    for k in range(n + 1):
+        p = k / n
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        if style == "underline":
+            x1 = stroke + (w - 2 * stroke) * p
+            wave = [(x, h * 0.6 + math.sin(x / 14) * h * 0.12)
+                    for x in range(stroke, int(x1), 6)]
+            if len(wave) >= 2:
+                d.line(wave, fill=(*color, 235), width=stroke, joint="curve")
+        else:
+            start = -math.pi / 2
+            # 1.15 turns so the ellipse visibly closes like a real scribble
+            theta_end = start + 2 * math.pi * 1.15 * p
+            pts = [point(start + (theta_end - start) * i / 48) for i in range(49)]
+            if len(pts) >= 2 and p > 0:
+                d.line(pts, fill=(*color, 235), width=stroke, joint="curve")
+        frames.append(img)
+    return frames
+
+
+def zoom_pop_frames(image: Image.Image, *, fps: int = 30,
+                    pop_seconds: float = 0.5, max_scale: float = 1.32) -> list[Image.Image]:
+    """Zoom-punch on a key number: the row pops out, holds, settles."""
+    n = max(int(pop_seconds * fps), 4)
+    cw = int(image.width * max_scale) + 8
+    ch = int(image.height * max_scale) + 8
+    frames: list[Image.Image] = []
+    for k in range(n + 1):
+        p = k / n
+        # fast out, brief hold, ease back
+        if p < 0.3:
+            s = 1.0 + (max_scale - 1.0) * (p / 0.3)
+        elif p < 0.7:
+            s = max_scale
+        else:
+            s = max_scale - (max_scale - 1.0) * ((p - 0.7) / 0.3)
+        img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        scaled = image.resize((max(int(image.width * s), 1),
+                               max(int(image.height * s), 1)), Image.BICUBIC)
+        img.alpha_composite(scaled, ((cw - scaled.width) // 2,
+                                     (ch - scaled.height) // 2))
+        frames.append(img)
+    return frames
+
+
+def flash_frames(w: int, h: int, *, fps: int = 30,
+                 flash_seconds: float = 0.14) -> list[Image.Image]:
+    """A white flash stinger for beat transitions."""
+    n = max(int(flash_seconds * fps), 2)
+    frames = []
+    for k in range(n + 1):
+        p = k / n
+        alpha = int(190 * (1 - p))
+        img = Image.new("RGBA", (w, h), (255, 255, 255, alpha))
         frames.append(img)
     return frames
 
 
 # --------------------------------------------------------------------------
-# ASS karaoke captions (libass `subtitles` filter burns these in).
+# ASS karaoke captions (libass `subtitles` filter burns these in) — the
+# word-synced punch-in style, driven by the real audio timestamps.
 # --------------------------------------------------------------------------
 
 

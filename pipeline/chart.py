@@ -74,11 +74,24 @@ def render_price_chart(
     pad = int(W * 0.055)
     head_h = int(H * 0.17)
 
-    # ---- header: ticker (the title names the series — no legend) + badge
+    # ---- header: ticker (the title names the series — no legend) + badge.
+    # Both share one line: shrink the badge text until everything fits.
     tick_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.52))
+    tick_w = d.textlength(series.ticker, font=tick_font)
     d.text((pad, pad * 0.75), series.ticker, font=tick_font, fill=(*INK, 255))
     move = move_text or f"{series.pct_change_1d:+.1f}%"
-    badge_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.30))
+    avail = W - pad * 2 - tick_w - int(pad * 0.8)
+    size = int(head_h * 0.30)
+    badge_font = _font(settings, "DejaVuSans-Bold.ttf", size)
+    while size > 12 and d.textlength(move, font=badge_font) + pad * 0.9 > avail:
+        size -= 2
+        badge_font = _font(settings, "DejaVuSans-Bold.ttf", size)
+    while move and d.textlength(move + "…", font=badge_font) + pad * 0.9 > avail:
+        move = move[:-1].rstrip()
+        if len(move) < 6:
+            break
+    if not move.endswith("%") and move != (move_text or f"{series.pct_change_1d:+.1f}%"):
+        move += "…"
     bw = d.textlength(move, font=badge_font)
     bx1 = W - pad
     bx0 = bx1 - bw - int(pad * 0.9)

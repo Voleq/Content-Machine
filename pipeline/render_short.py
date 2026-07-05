@@ -1,42 +1,50 @@
-"""SHORT scene engine — 9:16, ~55–60s "forensic audit" (§7.1).
+"""SHORT scene engine — 9:16, ~55–60s "Noise or signal?" (§4).
+
+A TEMPLATE FILLER over the fixed reusable asset kit: every video reuses
+the same branded chart component, headline-overlay treatment, numbers
+sheet, caption style, hand-drawn annotations, transition stingers,
+intro/outro bug and music bed — only the rotating content changes
+(ticker, price data, headlines, numbers, hook, memes).
+
+Fixed beats, each with its own on-screen element:
+  Hook      — the branded chart (rendered HERE from our own price data —
+              never a screenshot) + the mute-safe hook card
+  Why       — driver headline(s) overlaid ON the chart
+  Gut check — the multi-year numbers sheet, rows typing on, trend bars
+  Payoff    — the deadpan conclusion card (no verdict, no stamp)
 
 Every visual event's time comes from `build_short_timeline` (the master
 clock); this module only turns cues into rasters, alpha clips and one
 FFmpeg filtergraph. There are NO hardcoded scene timings here — grep for
 `between(t` lands only on cue-derived values.
-
-Scene stack (bottom → top):
-  desk background
-  closed folder (cold open) → whip-pan clip → open folder
-  highlight sweep (under the typed line), typewriter data lines
-  verdict stamp drop
-  CTA card, hook card, persistent disclaimer
-  word-synced karaoke captions (libass)
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from pathlib import Path
 
-from PIL import Image, ImageDraw
-
 from config import Settings
+from pipeline.broll import ContentManager
+from pipeline.chart import render_price_chart
 from pipeline.models import CueKind, ShortScript, TTSResult
+from pipeline.prices import PriceSeries, get_price_history
 from pipeline.rasters import (
-    DISPLAY_BOLD,
-    GREEN,
-    RED,
+    GOLD,
+    brand_bug,
     build_karaoke_ass,
+    flash_frames,
     frames_to_alpha_clip,
-    highlight_sweep_frames,
-    load_font,
+    headline_card,
+    number_row_frames,
+    number_row_image,
+    numbers_sheet_base,
+    scribble_frames,
     simple_text,
-    stamp_drop_frames,
     text_panel,
-    typing_frames,
-    whip_pan_frames,
+    zoom_pop_frames,
 )
 from pipeline.render_common import (
     AudioTrack,
@@ -52,14 +60,34 @@ from pipeline.timeline import build_short_timeline
 log = logging.getLogger(__name__)
 
 
+def sample_hook_opener(script_sha: str, settings: Settings) -> str:
+    """Deterministically sample the hook bank (seeded by the script sha so
+    re-renders are idempotent, different scripts get fresh openers)."""
+    bank_file = settings.assets_dir / "hook_bank.json"
+    try:
+        openers = json.loads(bank_file.read_text()).get("openers") or []
+    except (FileNotFoundError, json.JSONDecodeError):
+        openers = []
+    if not openers:
+        return settings.brand_tagline
+    idx = int(hashlib.sha256(f"hook|{script_sha}".encode()).hexdigest()[:8], 16)
+    return openers[idx % len(openers)]
+
+
 def render_short(
     script: ShortScript,
     tts: TTSResult,
     workspace: Path,
     settings: Settings,
+    *,
+    content: ContentManager | None = None,
+    prices: PriceSeries | None = None,
     out_name: str = "short_final.mp4",
 ) -> tuple[Path, Path]:
     """Render the SHORT. Returns (mp4_path, manifest_path)."""
+    content = content or ContentManager(settings)
+    prices = prices or get_price_history(script.ticker, settings)
+
     duration = tts.duration_s
     cues = build_short_timeline(script, tts.words, duration)
     for c in cues:
@@ -75,115 +103,212 @@ def render_short(
     rdir = workspace / "render_short"
     rdir.mkdir(parents=True, exist_ok=True)
 
-    accent = GREEN if script.verdict.is_laudatory else RED
     hook = next(c for c in cues if c.kind is CueKind.HOOK)
-    whip = next(c for c in cues if c.kind is CueKind.WHIP_PAN)
-    stamp_cue = next(c for c in cues if c.kind is CueKind.STAMP)
-    cta = next(c for c in cues if c.kind is CueKind.CTA)
-    data_cues = [c for c in cues if c.kind is CueKind.DATA_LINE]
-    hl_cues = [c for c in cues if c.kind is CueKind.HIGHLIGHT]
-    whip_end = whip.t + float(whip.payload["duration"])
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    transitions = [c for c in cues if c.kind is CueKind.TRANSITION]
+    headline_cues = [c for c in cues if c.kind is CueKind.HEADLINE]
+    row_cues = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
+    annotation_cues = [c for c in cues if c.kind is CueKind.ANNOTATION]
+    zoom_cues = [c for c in cues if c.kind is CueKind.ZOOM]
+    meme_cues = [c for c in cues if c.kind is CueKind.MEME]
+    cutaway_cues = [c for c in cues if c.kind is CueKind.CUTAWAY]
 
     layers: list[OverlayLayer] = []
 
-    # ------------------------------------------------------ folder props
-    closed = Image.open(settings.assets_dir / "backgrounds" / "folder_closed.png").convert("RGBA")
-    d = ImageDraw.Draw(closed)
-    tfont = load_font(settings, DISPLAY_BOLD, 140)
-    tw = d.textlength(script.ticker, font=tfont)
-    d.text(((closed.width - tw) / 2, 680), script.ticker, font=tfont, fill=(88, 60, 28, 255))
-    closed = closed.resize((px(760), int(closed.height * px(760) / closed.width)), Image.LANCZOS)
-    closed_pos = (int((W - closed.width) / 2), px(500))
-
-    opened = Image.open(settings.assets_dir / "backgrounds" / "folder_open.png").convert("RGBA")
-    opened = opened.resize((px(1000), int(opened.height * px(1000) / opened.width)), Image.LANCZOS)
-    open_pos = (int((W - opened.width) / 2), px(540))
-
-    closed_path = rdir / "folder_closed_ticker.png"
-    closed.save(closed_path)
-    open_path = rdir / "folder_open.png"
-    opened.save(open_path)
-
-    layers.append(OverlayLayer(
-        path=closed_path, x=closed_pos[0], y=closed_pos[1],
-        t_start=0.0, t_end=whip.t, name="folder_closed",
-    ))
-
-    whip_clip = frames_to_alpha_clip(
-        whip_pan_frames(closed, opened, (W, H), (closed_pos, open_pos),
-                        fps=settings.fps, duration=float(whip.payload["duration"])),
-        settings.fps, rdir / "whip_pan.mov",
+    # ------------------------------------------- the branded chart (hero)
+    chart_px = (px(1000), px(760))
+    chart_pos = (px(40), px(170))
+    chart_path, chart_meta = render_price_chart(
+        prices, rdir / "chart.png", settings,
+        size=chart_px, move_text=script.move_summary,
     )
     layers.append(OverlayLayer(
-        path=whip_clip, x=0, y=0, t_start=whip.t, t_end=whip_end,
-        is_video=True, name="whip_pan",
+        path=chart_path, x=chart_pos[0], y=chart_pos[1],
+        t_start=0.0, t_end=duration, name="chart",
     ))
+
+    # ------------------------------------------------------ intro/outro bug
+    opener = sample_hook_opener(script.content_sha(), settings)
+    bug = brand_bug(settings, opener, width=px(900), font_size=px(40))
+    bug_path = rdir / "bug.png"
+    bug.save(bug_path)
     layers.append(OverlayLayer(
-        path=open_path, x=open_pos[0], y=open_pos[1],
-        t_start=max(whip_end - 1.0 / settings.fps, 0), t_end=duration, name="folder_open",
+        path=bug_path, x=int((W - bug.width) / 2), y=px(48),
+        t_start=0.0, t_end=duration, name="brand_bug",
     ))
 
-    # ------------------------------------- highlight (UNDER the line text)
-    line_h = px(140)
-    line_x = open_pos[0] + px(64)
-    line_y0 = open_pos[1] + px(72)
-    for i, c in enumerate(hl_cues):
-        idx = int(c.payload["line_index"])
-        sweep = frames_to_alpha_clip(
-            highlight_sweep_frames(opened.width - px(112), px(116), c.payload["color"],
-                                   fps=settings.fps),
-            settings.fps, rdir / f"highlight_{i}.mov",
-        )
-        layers.append(OverlayLayer(
-            path=sweep, x=open_pos[0] + px(52), y=line_y0 - px(10) + idx * line_h,
-            t_start=c.t, t_end=duration, is_video=True, hold=True,
-            name=f"highlight_line{idx}",
-        ))
-
-    # -------------------------------------------------- typewriter lines
-    for c in data_cues:
-        i = int(c.payload["index"])
-        clip = frames_to_alpha_clip(
-            typing_frames(settings, c.payload["text"], font_size=px(46),
-                          fps=settings.fps, type_seconds=float(c.payload["type_seconds"])),
-            settings.fps, rdir / f"line_{i}.mov",
-        )
-        layers.append(OverlayLayer(
-            path=clip, x=line_x, y=line_y0 + i * line_h,
-            t_start=c.t, t_end=duration, is_video=True, hold=True,
-            name=f"data_line_{i}",
-        ))
-
-    # ------------------------------------------------------- stamp drop
-    stamp_png = settings.assets_dir / "stamps" / f"{stamp_cue.payload['label']}.png"
-    stamp_img = Image.open(stamp_png).convert("RGBA")
-    stamp_clip_frames = stamp_drop_frames(stamp_img, fps=settings.fps, final_width=px(900))
-    stamp_clip = frames_to_alpha_clip(stamp_clip_frames, settings.fps, rdir / "stamp.mov")
-    cw, ch = stamp_clip_frames[0].size
-    layers.append(OverlayLayer(
-        path=stamp_clip, x=int((W - cw) / 2), y=px(1080) - ch // 2,
-        t_start=stamp_cue.t, t_end=duration, is_video=True, hold=True, name="stamp",
-    ))
-
-    # ------------------------------------------------- cards + disclaimer
+    # ------------------------------------------------------------ hook card
     hook_img = text_panel(settings, hook.payload["text"], width=px(960),
-                          font_size=px(68), accent=accent)
+                          font_size=px(64), accent=GOLD)
     hook_path = rdir / "hook.png"
     hook_img.save(hook_path)
     layers.append(OverlayLayer(
-        path=hook_path, x=int((W - hook_img.width) / 2), y=px(150),
+        path=hook_path, x=int((W - hook_img.width) / 2), y=px(1040),
         t_start=0.0, t_end=float(hook.payload["until"]), name="hook",
     ))
 
-    cta_img = text_panel(settings, cta.payload["text"], width=px(880),
-                         font_size=px(52), accent=accent, bg=(20, 16, 12, 235))
-    cta_path = rdir / "cta.png"
-    cta_img.save(cta_path)
+    # ------------------------------------- headlines overlaid ON the chart
+    slots = chart_meta["headline_slots"]
+    for c in headline_cues:
+        i = int(c.payload["index"])
+        card = headline_card(settings, c.payload["text"], width=px(880),
+                             font_size=px(38))
+        card_path = rdir / f"headline_{i}.png"
+        card.save(card_path)
+        sx, sy = slots[min(i, len(slots) - 1)]
+        layers.append(OverlayLayer(
+            path=card_path,
+            x=chart_pos[0] + int(sx), y=chart_pos[1] + int(sy),
+            t_start=c.t, t_end=float(c.payload["until"]),
+            fade_in=0.18, name=f"headline_{i}",
+        ))
+
+    # -------------------------------------------------- the numbers sheet
+    sheet_img, layout = numbers_sheet_base(
+        settings, len(script.numbers), script.years, width=px(1000),
+    )
+    sheet_path = rdir / "sheet.png"
+    sheet_img.save(sheet_path)
+    sheet_pos = (px(40), px(990))
     layers.append(OverlayLayer(
-        path=cta_path, x=int((W - cta_img.width) / 2), y=px(1430),
-        t_start=cta.t, t_end=duration, fade_in=0.25, name="cta",
+        path=sheet_path, x=sheet_pos[0], y=sheet_pos[1],
+        t_start=numbers.t, t_end=duration, fade_in=0.2, name="numbers_sheet",
     ))
 
+    row_geo: dict[int, tuple[int, int]] = {}
+    for c in row_cues:
+        i = int(c.payload["index"])
+        clip = frames_to_alpha_clip(
+            number_row_frames(settings, c.payload["label"], c.payload["values"],
+                              layout, fps=settings.fps,
+                              type_seconds=float(c.payload["type_seconds"])),
+            settings.fps, rdir / f"row_{i}.mov",
+        )
+        ry = sheet_pos[1] + layout["rows_y0"] + i * layout["row_h"]
+        row_geo[i] = (sheet_pos[0], ry)
+        layers.append(OverlayLayer(
+            path=clip, x=sheet_pos[0], y=ry,
+            t_start=c.t, t_end=duration, is_video=True, hold=True,
+            name=f"number_row_{i}",
+        ))
+
+    # ------------------------- hand-drawn scribbles (chart & numbers rows)
+    for k, c in enumerate(annotation_cues):
+        target = c.payload["target"]
+        if target == "chart":
+            lx, ly = chart_meta["last_point"]
+            sw, sh = px(240), px(190)
+            x = chart_pos[0] + int(lx) - sw // 2
+            y = chart_pos[1] + int(ly) - sh // 2
+            t_end = numbers.t if c.t < numbers.t else duration
+        else:
+            i = int(c.payload["row_index"] or 0)
+            rx, ry = row_geo.get(i, (sheet_pos[0], sheet_pos[1]))
+            sw, sh = px(1000), layout["row_h"]
+            x, y = rx, ry
+            t_end = duration
+        # keep the scribble fully on-canvas (the chart's last point sits
+        # near the right edge)
+        x = min(max(x, px(6)), W - sw - px(6))
+        y = min(max(y, px(6)), H - sh - px(6))
+        clip = frames_to_alpha_clip(
+            scribble_frames(sw, sh, style="circle", fps=settings.fps,
+                            seed=f"{script.ticker}|{k}"),
+            settings.fps, rdir / f"scribble_{k}.mov",
+        )
+        layers.append(OverlayLayer(
+            path=clip, x=x, y=y,
+            t_start=c.t, t_end=t_end, is_video=True, hold=True,
+            name=f"scribble_{k}_{target}",
+        ))
+        note = (c.payload.get("note") or "").strip()
+        if note:
+            note_img = simple_text(settings, note, font_size=px(34),
+                                   fill=(*GOLD, 255), stroke_width=2)
+            note_path = rdir / f"note_{k}.png"
+            note_img.save(note_path)
+            if target == "chart":
+                # under the circled point, hugging the chart's right edge
+                nx = min(x + sw // 2 - note_img.width // 2,
+                         W - note_img.width - px(16))
+                ny = min(y + sh + px(4), H - note_img.height - px(10))
+            else:
+                # in the bars zone above the row's right end — clear of the
+                # neighbouring row's label
+                nx = W - note_img.width - px(56)
+                ny = y - note_img.height + px(10)
+            layers.append(OverlayLayer(
+                path=note_path, x=max(nx, px(10)), y=max(ny, px(10)),
+                t_start=c.t, t_end=t_end, fade_in=0.15, name=f"note_{k}",
+            ))
+
+    # ------------------------------------- zoom-punch on the key number(s)
+    for k, c in enumerate(zoom_cues):
+        i = int(c.payload["row_index"])
+        row_img = number_row_image(settings, script.numbers[i].label,
+                                   script.numbers[i].values, layout)
+        pop = zoom_pop_frames(row_img, fps=settings.fps)
+        clip = frames_to_alpha_clip(pop, settings.fps, rdir / f"zoom_{k}.mov")
+        rx, ry = row_geo.get(i, sheet_pos)
+        cw, ch = pop[0].size
+        layers.append(OverlayLayer(
+            path=clip, x=int(rx - (cw - px(1000)) / 2),
+            y=int(ry - (ch - layout["row_h"]) / 2),
+            t_start=c.t, t_end=min(c.t + 0.6, duration), is_video=True,
+            name=f"zoom_{k}",
+        ))
+
+    # ----------------------------------------------- meme freeze / cutaway
+    for k, c in enumerate(meme_cues):
+        meme = content.resolve_meme(c.payload["key"])
+        from PIL import Image, ImageOps
+
+        m = Image.open(meme.path).convert("RGB")
+        m.thumbnail((px(880), px(700)), Image.LANCZOS)
+        framed = ImageOps.expand(m, border=px(14), fill=(245, 245, 245))
+        meme_path = rdir / f"meme_{k}.png"
+        framed.save(meme_path)
+        hold = float(c.payload["duration"])
+        layers.append(OverlayLayer(
+            path=meme_path, x=int((W - framed.width) / 2),
+            y=px(480) - framed.height // 2 + px(200),
+            t_start=c.t, t_end=min(c.t + hold, duration), name=f"meme_{k}",
+        ))
+
+    for k, c in enumerate(cutaway_cues):
+        clip = content.resolve_clip(c.payload["key"], portrait=True)
+        hold = float(c.payload["duration"])
+        layers.append(OverlayLayer(
+            path=clip.path, x=0, y=0,
+            t_start=c.t, t_end=min(c.t + hold, duration),
+            is_video=True, hold=True, name=f"cutaway_{k}",
+        ))
+
+    # ------------------------------------------- beat-transition stingers
+    flash = frames_to_alpha_clip(
+        flash_frames(W, H, fps=settings.fps), settings.fps, rdir / "flash.mov",
+    )
+    for c in transitions:
+        if c.t <= 0.05:
+            continue
+        layers.append(OverlayLayer(
+            path=flash, x=0, y=0, t_start=c.t,
+            t_end=min(c.t + 0.2, duration), is_video=True,
+            name=f"flash_{c.payload['name']}",
+        ))
+
+    # ------------------------------------------------- the payoff card
+    conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
+                          font_size=px(52), accent=GOLD, bg=(12, 14, 19, 245))
+    conc_path = rdir / "conclusion.png"
+    conc_img.save(conc_path)
+    layers.append(OverlayLayer(
+        path=conc_path, x=int((W - conc_img.width) / 2), y=px(430),
+        t_start=conclusion.t, t_end=duration, fade_in=0.25, name="conclusion",
+    ))
+
+    # -------------------------------------------------------- disclaimer
     disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(30),
                            fill=(235, 235, 235, 210), stroke_width=2)
     disc_path = rdir / "disclaimer.png"
@@ -196,25 +321,49 @@ def render_short(
     # ---------------------------------------------------------- captions
     ass_path = rdir / "captions.ass"
     ass_path.write_text(build_karaoke_ass(
-        tts.words, play_res=(W, H), font_size=px(64), margin_v=px(150),
-        accent_rgb=accent, duration=duration,
+        tts.words, play_res=(W, H), font_size=px(62), margin_v=px(120),
+        duration=duration,
     ))
 
     # ------------------------------------------------------------- audio
     audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0)]
-    whoosh = settings.assets_dir / "sfx" / "whoosh.wav"
-    stamp_hit = settings.assets_dir / "sfx" / "stamp_hit.wav"
+    music = settings.assets_dir / "music" / "dennis_bed.m4a"
+    if music.exists():
+        audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
+    sfx_dir = settings.assets_dir / "sfx"
+    whoosh = sfx_dir / "whoosh.wav"
     if whoosh.exists():
-        audio.append(AudioTrack(path=whoosh, start_s=whip.t, gain_db=settings.sfx_gain_db))
-    if stamp_hit.exists():
-        audio.append(AudioTrack(path=stamp_hit, start_s=stamp_cue.t, gain_db=settings.sfx_gain_db + 3))
+        for c in transitions:
+            if c.t > 0.05:
+                audio.append(AudioTrack(path=whoosh, start_s=c.t,
+                                        gain_db=settings.sfx_gain_db))
+    sting = sfx_dir / "sting.wav"
+    if sting.exists():
+        for c in headline_cues:
+            audio.append(AudioTrack(path=sting, start_s=c.t,
+                                    gain_db=settings.sfx_gain_db))
+    pop_wav = sfx_dir / "pop.wav"
+    if pop_wav.exists():
+        for c in zoom_cues:
+            audio.append(AudioTrack(path=pop_wav, start_s=c.t,
+                                    gain_db=settings.sfx_gain_db + 2))
+    boom = sfx_dir / "vine_boom.wav"
+    if boom.exists():
+        for c in meme_cues:
+            audio.append(AudioTrack(path=boom, start_s=c.t,
+                                    gain_db=settings.sfx_gain_db + 2))
+    scratch = sfx_dir / "record_scratch.wav"
+    if scratch.exists():
+        for c in cutaway_cues:
+            audio.append(AudioTrack(path=scratch, start_s=max(c.t - 0.15, 0.0),
+                                    gain_db=settings.sfx_gain_db))
 
     # ------------------------------------------------------------ encode
-    desk = settings.assets_dir / "backgrounds" / "desk_dark.png"
+    bg = settings.assets_dir / "backgrounds" / "dennis_bg_tall.png"
     spec = CompositeSpec(
         base_input_args=[
             "-loop", "1", "-framerate", str(settings.fps),
-            "-t", f"{duration:.3f}", "-i", str(desk),
+            "-t", f"{duration:.3f}", "-i", str(bg),
         ],
         base_filter=f"scale={W}:{H},setsar=1,format=yuv420p",
         layers=layers,
@@ -237,8 +386,10 @@ def render_short(
     manifest_path = workspace / "render_short_manifest.json"
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
-        "verdict": script.verdict.value,
         "duration": duration,
+        "opener": opener,
+        "chart": {"source": prices.source, "degraded": prices.degraded,
+                  "direction": chart_meta["direction"]},
         "cues": [c.model_dump() for c in cues],
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}
