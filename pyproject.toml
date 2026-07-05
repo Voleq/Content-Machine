@@ -3,9 +3,9 @@ requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "due-diligence-desk"
+name = "dennis"
 version = "0.1.0"
-description = "Telegram-controlled, human-in-the-loop financial video pipeline (SHORT 9:16 + LONG 16:9)"
+description = "Dennis — Telegram-controlled, human-in-the-loop financial video pipeline (SHORT 9:16 + LONG 16:9)"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Proprietary" }
@@ -17,9 +17,9 @@ dependencies = [
     "pydantic==2.13.4",
     "pydantic-settings==2.14.2",
     "httpx==0.28.1",                        # Pexels / StockTwits / ElevenLabs / Drive REST
-    "pillow==12.3.0",                       # all text & stamp raster generation (no ImageMagick)
+    "pillow==12.3.0",                       # all text/chart/kit raster generation (no ImageMagick)
     "pandas==2.3.3",
-    "openpyxl==3.1.5",                      # Refinitiv Excel-add-in export reader
+    "openpyxl==3.1.5",                      # two-sheet company-data export reader
     "yfinance==1.5.1",                      # Yahoo predefined screens + EquityQuery
     "yahooquery==2.4.1",                    # fallback for yfinance screener quirks
     "google-auth==2.55.1",                  # Google Drive delivery (service account / refresh token)
@@ -30,11 +30,11 @@ dev = [
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
 ]
-# MoviePy is deliberately OPTIONAL: every animated moment (whip-pan, stamp
-# impact, typewriter, highlight sweep) is pre-rendered by Pillow into small
-# alpha overlay clips and composited by FFmpeg, so the default install needs
-# neither MoviePy nor ImageMagick. Install this extra only if you want to
-# experiment with MoviePy-based animations.
+# MoviePy is deliberately OPTIONAL: every animated moment (row type-ons,
+# scribbles, zoom-punches, flash stingers) is pre-rendered by Pillow into
+# small alpha overlay clips and composited by FFmpeg, so the default install
+# needs neither MoviePy nor ImageMagick. Install this extra only if you want
+# to experiment with MoviePy-based animations.
 moviepy = [
     "moviepy==2.2.1",
 ]
@@ -43,7 +43,7 @@ s3 = [
 ]
 
 [project.scripts]
-due-diligence-desk = "main:main"
+dennis = "main:main"
 
 [tool.setuptools]
 packages = ["pipeline", "bot"]

@@ -1,4 +1,4 @@
-"""Typed settings for the Due Diligence Desk pipeline.
+"""Typed settings for the Dennis pipeline.
 
 Every cap, limit, path and knob lives here (pydantic-settings). Values come
 from the environment / a `.env` file; defaults are the documented sensible
@@ -54,23 +54,31 @@ class Settings(BaseSettings):
     telegram_api_base_url: str = ""  # set when using a self-hosted Bot API server
 
     # ------------------------------------------------------------- elevenlabs
+    # VOICE IS A PLACEHOLDER — the final Dennis voice is a to-be-decided,
+    # one-line change (set ELEVEN_VOICE_ID_SHORT / ELEVEN_VOICE_ID_LONG).
+    # Audition shortlist (stock ElevenLabs premade voices):
+    #   Brian   — dry / deadpan
+    #   Charlie — casual everyman
+    #   George  — weary / raspy
+    # Deadpan settings for whichever wins: stability ~0.65–0.75, style low,
+    # rate slightly slow. Both formats share the Dennis register now.
     elevenlabs_api_key: str = ""
     eleven_base_url: str = "https://api.elevenlabs.io"
-    # Cheap tier by default; premium behind a flag (cost rule §8.5).
+    # Turbo/Flash tier by default (~half the credit cost per character);
+    # premium multilingual only behind an explicit flag.
     eleven_model_id: str = "eleven_turbo_v2_5"
     eleven_premium_model_id: str = "eleven_multilingual_v2"
     eleven_use_premium: bool = False
-    eleven_voice_id_short: str = ""
-    eleven_voice_id_long: str = ""
-    # Deadpan LONG vs energetic SHORT (§10).
-    eleven_stability_short: float = 0.45
+    eleven_voice_id_short: str = ""   # placeholder — Dennis voice TBD
+    eleven_voice_id_long: str = ""    # placeholder — Dennis voice TBD
+    eleven_stability_short: float = 0.68
     eleven_similarity_short: float = 0.75
-    eleven_style_short: float = 0.45
-    eleven_stability_long: float = 0.80
+    eleven_style_short: float = 0.15
+    eleven_stability_long: float = 0.72
     eleven_similarity_long: float = 0.75
     eleven_style_long: float = 0.05
     eleven_speed_long: float = 0.95
-    eleven_speed_short: float = 1.0
+    eleven_speed_short: float = 0.97
 
     # ------------------------------------------------------- character budgets
     short_max_chars: int = Field(default=800, alias="SHORT_MAX_CHARS")
@@ -89,6 +97,27 @@ class Settings(BaseSettings):
     pexels_monthly_call_cap: int = 1000    # hard stop well under free 20k/month
     broll_max_clip_s: float = 8.0          # normalize clips to at most this long
 
+    # -------------------------------------------- content engine (multi-source)
+    # [IMG]/[PRODUCT] real-imagery chain: Wikimedia Commons first (free,
+    # attribution stored), then the company's own site (og:image best effort).
+    wikimedia_base_url: str = "https://commons.wikimedia.org"
+    image_min_interval_s: float = 1.0
+    # [MEME] fallback providers, tried only on an owned-library miss and only
+    # when a key is configured; the meme library in assets/ is always first.
+    giphy_api_key: str = ""
+    giphy_base_url: str = "https://api.giphy.com"
+    tenor_api_key: str = ""
+    tenor_base_url: str = "https://tenor.googleapis.com"
+    imgflip_base_url: str = "https://api.imgflip.com"  # get_memes is keyless
+    # information-first: a LONG may carry at most this many memes (validated)
+    meme_max_per_long: int = 2
+
+    # ------------------------------------------------------------------ prices
+    # Price history feeds the branded chart (rendered by the pipeline, never a
+    # screenshot). Same Yahoo feed the screener uses; cached, data-only.
+    price_history_days: int = 120
+    prices_cache_ttl_s: int = 3600
+
     # ------------------------------------------------------------------ video
     fps: int = 30
     short_width: int = 1080
@@ -96,8 +125,9 @@ class Settings(BaseSettings):
     long_width: int = 1920
     long_height: int = 1080
     short_target_seconds: float = 60.0
-    long_min_cut_s: float = 3.0
-    long_max_cut_s: float = 5.0
+    # fast-cut pacing (§editing): ~1.5–3s cuts everywhere, no static shots
+    long_min_cut_s: float = 1.5
+    long_max_cut_s: float = 3.0
 
     # encode profiles (§7.3) — libx264 assumed on a cheap VPS; hardware
     # encoders are auto-detected at startup and used when present.
@@ -116,9 +146,9 @@ class Settings(BaseSettings):
     delivery_backend: str = Field(default="gdrive", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
     gdrive_root_folder_id: str = Field(default="", alias="GDRIVE_ROOT_FOLDER_ID")
-    gdrive_folder_name: str = "DueDiligenceDesk"
+    gdrive_folder_name: str = "Dennis"
     s3_bucket: str = ""
-    s3_prefix: str = "due-diligence-desk"
+    s3_prefix: str = "dennis"
     s3_region: str = "us-east-1"
 
     # ------------------------------------------------------------------- jobs
@@ -146,6 +176,9 @@ class Settings(BaseSettings):
         default="Opinion / entertainment. Not financial advice.",
         alias="DISCLAIMER_TEXT",
     )
+    # brand copy burned into the intro/outro bug — never the data vendor
+    brand_name: str = "DENNIS"
+    brand_tagline: str = "NOISE OR SIGNAL?"
 
     # ------------------------------------------------------------ mock timing
     # Deterministic mock TTS pacing (words per second) so rendered fixtures

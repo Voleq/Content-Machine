@@ -1,13 +1,11 @@
-EXMPL trades at sixty two times sales, and the market considers this reasonable. [B-ROLL: house_of_cards] We are going to spend the next few minutes finding out why it is not.
+EXMPL is down sixty percent from its high, and the people who bought that high have moved on to newer mistakes. [CLIP: tumbleweed] Which is usually when a company gets interesting to me. It's three a.m., I've read the 10-K twice, and we are going to find out together whether this is a body or a bargain.
 
-Start with the business. [B-ROLL: confused_office_worker] EXMPL sells software that automates a process nobody asked to automate, to customers who churn at nineteen percent a year. Revenue grew one percent. [SHOW REFINITIV: income_statement.png] That number is real. I checked twice. [SOUND: windows_error]
+Start with what they actually do, because nobody who traded it this year seems to know. [IMG: EXMPL data center server racks] EXMPL runs workflow software for mid-size logistics firms. [PRODUCT: EXMPL dispatch dashboard] Dispatchers open this dashboard every morning in about four thousand depots. That part is real. I checked.
 
-Management describes the quarter as transformational. [B-ROLL: clown] The transformation in question: gross margin fell three points and operating expenses grew eleven percent. They spend a dollar ten to make each dollar. [B-ROLL: dumpster_fire] This is what we call, in technical terms, a charity. [SOUND: sad_trombone]
+Now the numbers that matter, over five years, not five minutes. [CHART: revenue] Revenue went from four hundred million to four ninety six — a plateau wearing a growth costume. [SHOW FILING: income_statement.png] Net income, from the actual filing: minus eight, minus twenty five, minus forty nine, minus seventy, minus eighty nine. [SOUND: windows_error] Each year they describe as an investment year. Five investment years in a row is called a habit. [CLIP: hamster_wheel]
 
-The balance sheet. [B-ROLL: sinking_ship] More debt than equity. The interest bill eats a third of gross profit, which is impressive for a company that capitalizes its own optimism. Free cash flow is negative three percent of revenue, so ownership is a subscription. [B-ROLL: monopoly_money] You pay them.
+The industry does not help. Two larger competitors give the same software away as a bundle discount. [CLIP: boardroom_suits] Pricing power, in this market, is a memoir title.
 
-Now the valuation math. At sixty two times sales, EXMPL must grow revenue forty percent a year for a decade, at Microsoft margins, just to justify today's price. [B-ROLL: printing_money] Their actual growth rate is one. [SOUND: record_scratch] The discounted cash flow model does not output a number so much as it files a complaint.
+The bull case: forty percent of revenue is sticky contracts, churn is falling, and the new management stopped buying growth. [CLIP: growing_plant] The bear case is the balance sheet: one point four billion of debt against four hundred million of cash, and the share count grows six percent a year while they wait for the turnaround. [MEME: astronaut-always-has-been-dilution] [SOUND: sad_trombone]
 
-The bull case is that someone acquires them. The bear case is arithmetic. [B-ROLL: empty_promise_handshake] I know which one has a better track record.
-
-Verdict: overvalued. Not evil, not a fraud, just priced for a future that has declined the invitation. [STAMP: OVERVALUED] Do your own diligence. I already did mine.
+So. A real product, real customers, a real hole, and a clock. If the debt gets refinanced, the sticky half of this business is being given away at these prices. If it doesn't, the equity is a rounding error. I don't do endings, so here's the resigned version: the business is better than the chart, the balance sheet is worse than the story, and I'll be awake at three a.m. either way. See you at the next filing.

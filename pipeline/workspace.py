@@ -1,10 +1,10 @@
 """Workspace + approval state (§9).
 
-Layout: workspace/<TICKER>/<YYYY-MM-DD>/ holds everything for one audit:
-the Refinitiv export, screenshots, validated scripts, approval records,
-renders and manifests. The bot's "active context" (which ticker/date a
-pasted script belongs to) and the audit history used for screener
-cooldowns also live here.
+Layout: workspace/<TICKER>/<YYYY-MM-DD>/ holds everything for one video:
+the company-data export, screenshots, validated scripts, approval
+records, renders and manifests. The bot's "active context" (which
+ticker/date a pasted script belongs to) and the coverage history used
+for screener cooldowns also live here.
 
 Approval records pin the exact script content hash (sha) — any script
 change invalidates the approval, so the render gate can never run on

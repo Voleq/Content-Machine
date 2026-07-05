@@ -1,11 +1,10 @@
-This narration exercises the tolerant path. [B-ROLL: printing_money] A known clip lands here.
+This narration exercises the tokenizer's edge cases. [CAMERA: slow push-in] Unknown tag types are stripped, never spoken. [CLIP: flying_toasters] Unknown clip payloads are kept as events for the validator. [STAMP: OVERVALUED] The retired verdict grammar is just another unknown type now. [SOUND: airhorn_extreme] Unknown sounds warn and get skipped. [CHART: mystery_metric] Unknown chart metrics warn and get skipped. [MEME: obscure-meme-nobody-indexed] Unindexed memes warn and fall through to providers. [SHOW FILING: missing_file.png] A missing screenshot must block the run. [ASSET: revenue-flywheel] A bespoke asset with no file must block until the operator drops it in. The narration itself keeps going like nothing happened, because the voice never reads a bracket.
 
-An unknown b-roll key follows. [B-ROLL: flying_toasters] The engine must fall back, not crash.
-
-An unknown tag type appears here. [CAMERA: zoom_in] The tokenizer must log and skip it, never die.
-
-A sound that does not exist. [SOUND: airhorn_extreme] Skipped with a warning.
-
-A refinitiv screenshot that is not in the workspace. [SHOW REFINITIV: missing_file.png] This one is a blocking validation error.
-
-A stamp with a bad label is skipped. [STAMP: MEDIOCRE] And a good one lands. [STAMP: TOXIC] End of test.
+=== ASSET PROMPTS ===
+--- ASSET: revenue-flywheel ---
+Design a clean 16:9 diagram titled "How EXMPL makes money" for a dark-themed
+finance video (background #12151C, ink #E8EAF0, accent #FFCD3C). Show a
+four-node flywheel: depots pay subscriptions -> software routes trucks ->
+routing data improves the product -> better product signs more depots.
+Flat vector style, no gradients, DejaVu Sans, generous spacing, no logos,
+no watermark. Export as PNG, 1920x1080.

@@ -334,7 +334,45 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
                  if c.ticker not in cooled]
         result["value"] = cands[: settings.screen_top_n]
 
+    _save_last_screen(settings, result)
     return result
+
+
+def _save_last_screen(settings: Settings, result: dict) -> None:
+    """Persist the run so the SHORT master prompt can carry the ticker's
+    move context ({{move_context}}) without re-hitting any source."""
+    entries: dict[str, dict] = {}
+    for lane_name in ("trending", "value"):
+        for c in result.get(lane_name, []) or []:
+            entries[c.ticker] = {
+                "lane": c.lane.value, "reasons": c.reasons,
+                "price": c.price, "pct_change": c.pct_change,
+            }
+    try:
+        path = settings.state_dir / "last_screen.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"ts": time.time(), "tickers": entries}))
+    except OSError as e:  # advisory only — never let it break a screen
+        log.warning("could not persist last screen: %s", e)
+
+
+def last_screen_context(settings: Settings, ticker: str) -> str:
+    """The move context for a ticker from the most recent screen run, or ""
+    when unknown/stale (older than one trading day)."""
+    path = settings.state_dir / "last_screen.json"
+    try:
+        data = json.loads(path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return ""
+    if time.time() - float(data.get("ts", 0)) > 86400:
+        return ""
+    entry = (data.get("tickers") or {}).get(ticker.upper())
+    if not entry:
+        return ""
+    bits = list(entry.get("reasons") or [])
+    if entry.get("lane"):
+        bits.append(f"{entry['lane']} lane")
+    return " · ".join(bits)
 
 
 def digest_text(result: dict) -> str:

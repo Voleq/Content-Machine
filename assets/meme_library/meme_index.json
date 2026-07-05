@@ -1,0 +1,66 @@
+{
+  "harold-quick-flip-became-bagholder": {
+    "tags": ["bagholder", "regret", "buy-high", "hide-the-pain", "quick-flip"],
+    "use_when": "A 'short-term trade' quietly turns into an involuntary long-term position."
+  },
+  "portfolio-down-50-percent-all-time": {
+    "tags": ["losses", "drawdown", "portfolio", "pain", "all-time"],
+    "use_when": "Quoting a brutal drawdown number or a chart that only goes down."
+  },
+  "altman-jensen-sell-me-this-pen-circular-financing": {
+    "tags": ["circular-financing", "ai-capex", "vendor-financing", "bubble", "round-trip"],
+    "use_when": "Revenue that comes from the same pocket the capex goes into — money orbiting, not landing."
+  },
+  "stonks-man-up-only": {
+    "tags": ["euphoria", "up-only", "retail", "momentum", "stonks"],
+    "use_when": "The crowd treats a green candle as a business model."
+  },
+  "this-is-fine-dog-guidance-reaffirmed": {
+    "tags": ["denial", "burning", "guidance", "management", "earnings-call"],
+    "use_when": "Management reaffirms guidance while the income statement is visibly on fire."
+  },
+  "guy-checking-phone-red-candles": {
+    "tags": ["panic", "red-day", "checking", "anxiety", "watchlist"],
+    "use_when": "Describing the compulsive check-refresh loop on a big red day."
+  },
+  "math-lady-non-gaap-reconciliation": {
+    "tags": ["confusion", "adjusted-ebitda", "non-gaap", "accounting", "reconciliation"],
+    "use_when": "An 'adjusted' metric needs a flowchart to reconcile back to reality."
+  },
+  "drake-no-profits-yes-narrative": {
+    "tags": ["narrative", "profitless", "story-stock", "preference", "drake"],
+    "use_when": "The market rejects actual earnings and embraces the story instead."
+  },
+  "astronaut-always-has-been-dilution": {
+    "tags": ["dilution", "betrayal", "always-has-been", "share-count", "atm-offering"],
+    "use_when": "The share count reveal — it was funded by printing stock all along."
+  },
+  "galaxy-brain-buy-the-dip-again": {
+    "tags": ["buy-the-dip", "escalation", "averaging-down", "galaxy-brain"],
+    "use_when": "Each new low is greeted as an even smarter entry point."
+  },
+  "skeleton-waiting-for-turnaround": {
+    "tags": ["waiting", "turnaround", "dead-money", "patience", "skeleton"],
+    "use_when": "The turnaround that is perpetually two quarters away."
+  },
+  "sweating-guy-two-buttons-value-or-trap": {
+    "tags": ["value-trap", "decision", "cheap", "dilemma", "two-buttons"],
+    "use_when": "A stock that is either deep value or a trap, and the numbers refuse to say which."
+  },
+  "leo-cheers-to-buybacks": {
+    "tags": ["buybacks", "cash-cow", "celebration", "capital-returns", "cheers"],
+    "use_when": "A genuinely good business quietly returning cash while nobody watches."
+  },
+  "surprised-pikachu-missed-earnings": {
+    "tags": ["earnings-miss", "surprise", "obvious", "pikachu"],
+    "use_when": "A completely foreseeable miss is greeted as a shocking surprise."
+  },
+  "gru-plan-scale-then-profit-never-profit": {
+    "tags": ["business-plan", "scaling", "unprofitable", "gru-plan", "step-three"],
+    "use_when": "The plan where profitability is step three and step three never arrives."
+  },
+  "clown-makeup-averaging-down-on-margin": {
+    "tags": ["clown", "margin", "averaging-down", "self-own", "leverage"],
+    "use_when": "Step-by-step self-inflicted damage, each step more confident than the last."
+  }
+}

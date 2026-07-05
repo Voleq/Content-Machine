@@ -16,7 +16,7 @@ from pipeline.jobs import RenderJobQueue
 
 from bot.handlers import BotCore, build_application
 
-log = logging.getLogger("due-diligence-desk")
+log = logging.getLogger("dennis")
 
 
 def main() -> None:

@@ -1,19 +1,32 @@
 {
   "ticker": "EXMPL",
   "format": "short",
-  "verdict": "OVERVALUED",
-  "hook_text": "The market pays 60x sales for this. Let's see why it shouldn't.",
-  "audio_script": "The market pays sixty times sales for this company, so it had better be printing money. It is not. Revenue grew one percent. Net margin is negative eighteen. They burn cash on operations and call it investment. The balance sheet has more debt than equity, and the interest bill alone eats a third of gross profit. Free cash flow yield is negative three percent, which means you pay them to own it. At sixty times sales you are not buying a business, you are buying a story. The story has no second act. The auditors signed off, the analysts nodded, and the price kept climbing. That is not a thesis, that is a seance. Verdict: overvalued, stamped and filed.",
-  "data_block": [
-    "Revenue growth: +1%",
-    "Net margin: -18%",
-    "FCF yield: -3%",
-    "P/S: 62x",
-    "Debt/Equity: 140%"
+  "hook_text": "EXMPL is up 29% today. The business is not.",
+  "audio_script": "EXMPL is up twenty nine percent today, on five times average volume, so the internet has decided it is a technology company again. The news: an AI partnership. A press release, not a purchase order. Plus squeeze chatter, because eleven percent of the float was betting against it. Gut check. I read the filings so you don't have to. Revenue went four hundred million to four ninety six in five years. Flat. Losses got wider every single year, eighty nine million out the door last time. Free cash flow went negative in twenty two and stayed there. Share count grows six percent a year, which is how management sends you the bill. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+  "move_summary": "+29% today · 5× average volume",
+  "headlines": [
+    {
+      "text": "EXMPL announces AI partnership",
+      "meaning": "A press release, not a purchase order — no revenue attached."
+    },
+    {
+      "text": "Squeeze chatter on retail forums",
+      "meaning": "11% of the float is short. The crowd noticed and piled in."
+    }
   ],
-  "visual_directions": [
-    {"type": "highlight", "line_index": 2, "color": "red", "anchor_word": "cash"},
-    {"type": "stamp", "label": "OVERVALUED", "anchor": "end_minus_3"}
+  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "numbers": [
+    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
+    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]},
+    {"label": "Free cash flow", "values": ["$12M", "-$2M", "-$6M", "-$11M", "-$15M"]},
+    {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M"]}
   ],
-  "cta_text": "Screenshot this before earnings."
+  "numbers_comment": "Revenue has flatlined for three years while losses widen and the share count grows six percent a year. The business is going sideways; the stock is going vertical.",
+  "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+  "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
+  "broll": null,
+  "annotations": [
+    {"target": "chart", "anchor_word": "today", "note": "this candle"},
+    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
+  ]
 }

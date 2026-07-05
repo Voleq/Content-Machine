@@ -1,7 +1,7 @@
-"""Disk hygiene (§8.8): prune heavyweight render artifacts from workspaces
+"""Disk hygiene: prune heavyweight render artifacts from workspaces
 older than RETENTION_DAYS. Caches are NEVER touched (they are what makes
 re-runs free), and neither are scripts, approvals, reports or the
-Refinitiv exports — those are small and feed the screener cooldown
+company-data exports — those are small and feed the screener cooldown
 history.
 
 Run manually or from the shipped systemd timer:

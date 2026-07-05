@@ -19,7 +19,7 @@ def test_approval_pins_content_sha(settings, short_valid_json):
     assert ws.is_approved("short")
 
     # any script change invalidates the approval
-    changed = script.model_copy(update={"cta_text": "Different bait."})
+    changed = script.model_copy(update={"conclusion": "Different deadpan close."})
     ws.save_short(changed, short_valid_json)
     assert not ws.is_approved("short")
 
@@ -50,9 +50,9 @@ def test_broll_override_invalidates_long_approval(settings, long_valid_text):
     ws.approve("long", script.content_sha(), "r")
     assert ws.is_approved("long")
 
-    ws.set_broll_override("clown", 1)
+    ws.set_broll_override("tumbleweed", 1)
     assert not ws.is_approved("long")
-    assert ws.broll_overrides() == {"clown": 1}
+    assert ws.broll_overrides() == {"tumbleweed": 1}
 
 
 def test_active_context_roundtrip(settings):

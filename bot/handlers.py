@@ -1,4 +1,4 @@
-"""Telegram command/callback handlers (§9).
+"""Telegram command/callback handlers.
 
 All decision logic lives in `BotCore` — a plain object that consumes
 strings/bytes and returns `Reply` values — so the whole flow is unit
@@ -19,7 +19,12 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from config import Settings
-from pipeline.broll import BrollManager, palette_keys
+from pipeline.broll import ContentManager, palette_keys
+from pipeline.company_data import (
+    CompanyDataError,
+    list_screenshots,
+    load_company_data,
+)
 from pipeline.cost import (
     SpendLedger,
     build_long_report,
@@ -31,7 +36,6 @@ from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 from pipeline.parser_short import ScriptParseError, parse_short_script
 from pipeline.rasters import load_font
-from pipeline.refinitiv import RefinitivError, list_screenshots, load_audit
 from pipeline.render_long import render_long
 from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
@@ -42,11 +46,11 @@ from bot.prompts import fill_prompt
 
 log = logging.getLogger(__name__)
 
-HELP_TEXT = """Due Diligence Desk — operator commands
+HELP_TEXT = """Dennis — operator commands
 
-/new TICKER — open today's workspace, get the audit template
+/new TICKER — open today's workspace, get the data template
 /prompts — re-send the pre-filled master prompts
-/screen [trending|value|all] — ranked candidate tickers
+/screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
 /render TICKER — render the approved SHORT
 /render_long TICKER — render the approved LONG
 /draft TICKER — cheap low-res LONG timing check (no TTS spend)
@@ -56,10 +60,12 @@ HELP_TEXT = """Due Diligence Desk — operator commands
 /cost — month-to-date spend vs cap
 /help — this text
 
-Flow: /new → upload data_refinitiv.xlsx (+ screenshot PNGs) → run the
+Flow: /new → upload dennis_data.xlsx (+ screenshot PNGs) → run the
 prompts in Claude/GPT → paste the output back here → review the
 validation & cost report → Approve ✅ → /render. Nothing paid happens
-before Approve."""
+before Approve. If a LONG uses [ASSET] tags, paste the appended prompt
+into Claude Design and upload the exported PNG here — the render stays
+blocked until every asset file exists."""
 
 
 @dataclass
@@ -76,7 +82,7 @@ class BotCore:
         settings.ensure_runtime_dirs()
         self.ledger = SpendLedger(settings)
         self.tts = TTSEngine(settings, ledger=self.ledger)
-        self.broll = BrollManager(settings, ledger=self.ledger)
+        self.content = ContentManager(settings, ledger=self.ledger)
         self.context = ActiveContext(settings)
         self.queue: RenderJobQueue | None = None  # attached in main.py
 
@@ -87,6 +93,12 @@ class BotCore:
     def _active_ws(self, chat_id: int) -> Workspace | None:
         return self.context.get(chat_id)
 
+    def _company_data(self, ws: Workspace):
+        try:
+            return load_company_data(ws.path)
+        except CompanyDataError:
+            return None
+
     # ---------------------------------------------------------------- /new
     def new_ticker(self, chat_id: int, ticker: str) -> Reply:
         ticker = ticker.strip().upper()
@@ -94,14 +106,15 @@ class BotCore:
             return Reply("Usage: /new TICKER")
         ws = Workspace(self.settings, ticker, today_str()).create()
         self.context.set(chat_id, ticker, ws.workdate)
-        template = self.settings.templates_dir / "refinitiv_audit_template.xlsx"
+        template = self.settings.templates_dir / "dennis_data_template.xlsx"
         return Reply(
             f"📁 Workspace ready: {ticker} / {ws.workdate}\n\n"
-            f"1. Refresh the attached audit template for {ticker} in Excel "
-            f"(Refinitiv add-in), save, and upload it here as data_refinitiv.xlsx "
-            f"(CSV also accepted).\n"
-            f"2. Optionally upload raw Refinitiv screenshot PNGs for "
-            f"[SHOW REFINITIV] moments.\n"
+            f"1. Refresh the attached data template for {ticker} in Excel "
+            f"(both sheets — Latest and the 5-year History), save, and upload "
+            f"it here as dennis_data.xlsx (CSV accepted, snapshot only).\n"
+            f"2. Optionally upload screenshot PNGs for [SHOW FILING] moments "
+            f"(they get a generic 'from the 10-K' label — the source stays "
+            f"unnamed).\n"
             f"3. I'll reply with the pre-filled master prompts.",
             files=[template] if template.exists() else [],
         )
@@ -112,25 +125,32 @@ class BotCore:
         if ws is None:
             return Reply("No active workspace — start with /new TICKER.")
         try:
-            audit = load_audit(ws.path)
-        except RefinitivError as e:
+            data = load_company_data(ws.path)
+        except CompanyDataError as e:
             return Reply(f"⛔ {e}")
-        if audit.blocking_missing:
+        if data.blocking_missing:
             return Reply(
-                "⛔ Refinitiv export is missing required fields "
-                f"({', '.join(audit.blocking_missing[:8])}…). Refresh and re-upload."
+                "⛔ Data export is missing required fields "
+                f"({', '.join(data.blocking_missing[:8])}…). Refresh and re-upload."
             )
+        from pipeline.screener import last_screen_context
+
+        move_context = last_screen_context(self.settings, ws.ticker)
         files = []
         for fmt in ("short", "long"):
-            text = fill_prompt(fmt, ws.ticker, audit, ws.path, self.settings)
+            text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
+                               move_context=move_context)
             f = ws.path / f"prompt_{fmt}.md"
             f.write_text(text)
             files.append(f)
         warn = ""
-        if audit.warning_missing:
-            warn = f"\n⚠️ optional fields missing: {', '.join(audit.warning_missing[:6])}"
+        if not data.has_history:
+            warn += ("\n⚠️ no History sheet — the multi-year gut check will "
+                     "have nothing to show; re-export with both sheets")
+        if data.warning_missing:
+            warn += f"\n⚠️ optional fields missing: {', '.join(data.warning_missing[:6])}"
         return Reply(
-            f"📋 Master prompts for {ws.ticker} (as of {audit.get('as_of_date')}) — "
+            f"📋 Master prompts for {ws.ticker} (as of {data.get('as_of_date')}) — "
             f"run in Claude/GPT and paste the output back here.{warn}",
             files=files,
         )
@@ -144,18 +164,31 @@ class BotCore:
         suffix = Path(name).suffix.lower()
 
         if suffix in (".xlsx", ".csv"):
-            dest = ws.path / f"data_refinitiv{suffix}"
+            dest = ws.path / f"dennis_data{suffix}"
             dest.write_bytes(data)
             reply = self.prompts_reply(chat_id)
             reply.text = f"💾 saved {dest.name} for {ws.ticker}.\n\n" + reply.text
             return reply
 
-        if suffix in (".png", ".jpg", ".jpeg"):
+        if suffix in (".png", ".jpg", ".jpeg", ".webp"):
+            stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
+            pending = self._pending_asset_slugs(ws)
+            if stem in pending:
+                # a Claude Design export for an [ASSET] tag — into the shared
+                # custom library, where validation looks for it
+                custom = self.settings.assets_dir / "custom"
+                custom.mkdir(parents=True, exist_ok=True)
+                (custom / f"{stem}{suffix}").write_bytes(data)
+                remaining = [s for s in self._pending_asset_slugs(ws) if s != stem]
+                note = (f" Still missing: {', '.join(remaining)}." if remaining
+                        else " All [ASSET] files present — re-paste the script "
+                             "to refresh the report.")
+                return Reply(f"🎨 saved custom asset {stem}{suffix}.{note}")
             safe = name.replace(" ", "_")
             (ws.path / safe).write_bytes(data)
             shots = list_screenshots(ws.path)
             return Reply(
-                f"🖼 saved {safe}. Screenshots available for [SHOW REFINITIV]: "
+                f"🖼 saved {safe}. Screenshots available for [SHOW FILING]: "
                 f"{', '.join(shots)}"
             )
 
@@ -163,6 +196,18 @@ class BotCore:
             return self.intake_script(chat_id, data.decode("utf-8", errors="replace"))
 
         return Reply(f"Unsupported file type: {name}")
+
+    def _pending_asset_slugs(self, ws: Workspace) -> list[str]:
+        """[ASSET] slugs of the saved LONG script that still lack a file."""
+        script = ws.load_long()
+        if script is None:
+            return []
+        custom = self.settings.assets_dir / "custom"
+        out = []
+        for slug in script.asset_slugs():
+            if not (custom.is_dir() and list(custom.glob(f"{slug}.*"))):
+                out.append(slug)
+        return out
 
     # ------------------------------------------------------- script intake
     def intake_script(self, chat_id: int, text: str) -> Reply:
@@ -207,12 +252,14 @@ class BotCore:
             script, palette_keys(), ws.path, self.settings
         )
         ws.save_long(script, raw)
-        keys = self._long_broll_keys(script)
-        plan = self.broll.plan(keys, ws.broll_overrides())
-        refin_count = len({e.payload for e in script.events_of(TagType.SHOW_REFINITIV)})
+        prompt_files = self._save_asset_prompts(ws, script)
+        data = self._company_data(ws)
+        plan = self.content.plan(script, company_data=data,
+                                 overrides=ws.broll_overrides())
+        filing_count = len({e.payload for e in script.events_of(TagType.SHOW_FILING)})
         report = build_long_report(
             script, warnings, v_warnings, v_blocking,
-            self.settings, self.ledger, self.tts, plan, refin_count,
+            self.settings, self.ledger, self.tts, plan, filing_count,
         )
         (ws.path / "report_long.txt").write_text(report.render_text())
         sheet = self._contact_sheet(ws, plan)
@@ -221,28 +268,43 @@ class BotCore:
             keyboard=approval_keyboard("long", ws.ticker, ws.workdate,
                                        report.script_sha, report.approvable, bool(plan)),
             photo=sheet,
+            files=prompt_files,
         )
 
+    def _save_asset_prompts(self, ws: Workspace, script) -> list[Path]:
+        """Persist appended Claude Design prompts as paste-ready .txt files
+        the operator receives with the report."""
+        out: list[Path] = []
+        if not script.asset_prompts:
+            return out
+        pdir = ws.path / "asset_prompts"
+        pdir.mkdir(exist_ok=True)
+        for slug, prompt in script.asset_prompts.items():
+            f = pdir / f"{slug}.claude-design.txt"
+            f.write_text(prompt + "\n")
+            out.append(f)
+        return out
+
     @staticmethod
-    def _long_broll_keys(script) -> list[str]:
+    def _long_clip_keys(script) -> list[str]:
         seen: list[str] = []
-        for e in script.events_of(TagType.BROLL):
+        for e in script.events_of(TagType.CLIP, TagType.BROLL):
             if e.payload not in seen:
                 seen.append(e.payload)
         return seen
 
     def _contact_sheet(self, ws: Workspace, plan) -> Path | None:
-        """Grid of proposed b-roll thumbnails (§9.2)."""
+        """Grid of proposed visual thumbnails for the approval report."""
         if not plan:
             return None
         thumbs = []
-        for clip in plan:
-            t = ws.path / "thumbs" / f"{clip.key}.png"
+        for visual in plan:
+            t = ws.path / "thumbs" / f"{visual.kind}_{visual.key[:24].replace(' ', '_')}.png"
             try:
-                self.broll.thumbnail(clip, t)
-                thumbs.append((clip, Image.open(t).convert("RGB")))
+                self.content.thumbnail(visual, t)
+                thumbs.append((visual, Image.open(t).convert("RGB")))
             except Exception:
-                log.warning("thumbnail failed for %s", clip.key)
+                log.warning("thumbnail failed for %s", visual.key)
         if not thumbs:
             return None
         cols = min(3, len(thumbs))
@@ -251,12 +313,12 @@ class BotCore:
         sheet = Image.new("RGB", (cols * tw, rows * (th + label_h)), (18, 18, 22))
         d = ImageDraw.Draw(sheet)
         font = load_font(self.settings, "DejaVuSansMono-Bold.ttf", 18)
-        for i, (clip, img) in enumerate(thumbs):
+        for i, (visual, img) in enumerate(thumbs):
             x, y = (i % cols) * tw, (i // cols) * (th + label_h)
             sheet.paste(img.resize((tw, th)), (x, y))
-            d.text((x + 6, y + th + 5), f"{clip.key} [{clip.source}]",
+            d.text((x + 6, y + th + 5), f"{visual.key[:24]} [{visual.source}]",
                    font=font, fill=(240, 240, 240))
-        out = ws.path / "broll_contact_sheet.png"
+        out = ws.path / "visual_contact_sheet.png"
         sheet.save(out)
         return out
 
@@ -289,9 +351,11 @@ class BotCore:
         script = ws.load_long()
         if script is None:
             return Reply("No LONG script on file.")
-        keys = self._long_broll_keys(script)
+        keys = self._long_clip_keys(script)
+        if not keys:
+            return Reply("This LONG has no [CLIP] tags to swap.")
         return Reply(
-            "Pick the b-roll key to swap to its next take "
+            "Pick the clip key to swap to its next take "
             "(approval resets after a swap):",
             keyboard=swap_keyboard(ticker, workdate, keys),
         )
@@ -302,7 +366,7 @@ class BotCore:
         if script is None:
             return Reply("No LONG script on file.")
         current = ws.broll_overrides().get(key, 0)
-        n = self.broll.alternates_count(key)
+        n = self.content.alternates_count(key)
         ws.set_broll_override(key, (current + 1) % max(n, 1))
         raw = (ws.path / "script_long.raw.txt").read_text()
         self.context.set(chat_id, ticker, workdate)
@@ -375,7 +439,8 @@ class BotCore:
             checkpoint("tts")
             tts = self.tts.synthesize(script.audio_script, "short")
             checkpoint("render")
-            out, manifest = render_short(script, tts, ws.path, self.settings)
+            out, manifest = render_short(script, tts, ws.path, self.settings,
+                                         content=self.content)
             checkpoint("delivery")
             result = deliver(out, job.ticker, job.workdate, self.settings)
             self._finish(job, result)
@@ -391,14 +456,12 @@ class BotCore:
             checkpoint("tts")
             tts = self.tts.synthesize(script.narration, "long")
             checkpoint("render")
-            audit_as_of = ""
-            try:
-                audit_as_of = str(load_audit(ws.path).get("as_of_date") or "")
-            except RefinitivError:
-                pass
+            data = self._company_data(ws)
+            as_of = str(data.get("as_of_date") or "") if data is not None else ""
             out, manifest = render_long(
-                script, tts, ws.path, self.settings, broll=self.broll,
-                draft=draft, broll_overrides=ws.broll_overrides(), as_of=audit_as_of,
+                script, tts, ws.path, self.settings, content=self.content,
+                draft=draft, broll_overrides=ws.broll_overrides(),
+                as_of=as_of, company_data=data,
             )
             if draft:
                 job.delivered_link = f"file://{out}"
@@ -407,7 +470,7 @@ class BotCore:
             import json as _json
             attributions = _json.loads(Path(manifest).read_text()).get("attributions", [])
             extra: list[Path] = []
-            try:  # LONG gets an auto thumbnail (M9 module)
+            try:  # LONG gets an auto thumbnail
                 from pipeline.thumbnail import make_thumbnail
                 thumb = make_thumbnail(script, ws, self.settings)
                 if thumb:
@@ -614,7 +677,7 @@ def build_application(settings: Settings, core: BotCore):
 
     @guard
     async def cmd_screen(update, ctx):
-        from pipeline.screener import screen_reply  # M10 module
+        from pipeline.screener import screen_reply
         lane = ctx.args[0].lower() if ctx.args else "all"
         reply = await screen_reply(core, lane)
         await _send(update, reply)

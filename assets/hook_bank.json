@@ -1,0 +1,19 @@
+{
+  "comment": "Opener lines the pipeline samples (seeded per render) for the SHORT intro bug, so cold opens stay fresh. On-screen framing only — never spoken, never names a data vendor.",
+  "openers": [
+    "NOISE OR SIGNAL?",
+    "ANOTHER GREEN CANDLE.",
+    "EVERYONE'S A GENIUS TODAY.",
+    "YOUR GROUP CHAT FOUND A STOCK.",
+    "IT'S 3AM. I READ THE 10-K.",
+    "THE MARKET IS EXCITED AGAIN.",
+    "LET'S RUIN THIS ONE TOO.",
+    "BEFORE YOU HIT BUY —",
+    "THE TICKER EVERYONE'S TYPING.",
+    "CALM DOWN. NUMBERS FIRST.",
+    "TRENDING, APPARENTLY.",
+    "I CHECKED SO YOU WON'T.",
+    "ONE CHART. FIVE YEARS. RELAX.",
+    "THIS WEEK'S MAIN CHARACTER."
+  ]
+}

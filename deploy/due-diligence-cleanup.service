@@ -1,9 +1,0 @@
-[Unit]
-Description=Due Diligence Desk — workspace retention cleanup
-
-[Service]
-Type=oneshot
-User=ddd
-WorkingDirectory=/opt/due-diligence-desk
-EnvironmentFile=/opt/due-diligence-desk/.env
-ExecStart=/opt/due-diligence-desk/.venv/bin/python -m pipeline.cleanup

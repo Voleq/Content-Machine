@@ -123,15 +123,17 @@ def estimate_render_minutes(fmt: str, words: int, wps: float) -> float:
 
 
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
-    from pipeline.models import CostReport  # local import avoids a cycle
+    from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
 
     cached = tts_engine.is_cached(script.audio_script, "short")
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
     missing = set(script.missing_anchor_words())
     notes = []
-    for h in script.highlights:
-        mark = "⚠ fallback position" if h.anchor_word in missing else "✓ (anchor found)"
-        notes.append(f'Highlight -> line {h.line_index} "{h.anchor_word}" {mark}')
+    for a in script.annotations:
+        mark = "⚠ fallback position" if a.anchor_word in missing else "✓ (anchor found)"
+        where = ("chart" if a.target is AnnotationTarget.CHART
+                 else f"numbers row {a.row_index if a.row_index is not None else 0}")
+        notes.append(f'Scribble -> {where} "{a.anchor_word}" {mark}')
     blocking: list[str] = []
     if not cached and ledger.would_exceed(est):
         blocking.append(
@@ -145,9 +147,12 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         chars=script.char_count,
         tts_cached=cached,
         est_tts_usd=est,
-        data_block_lines=len(script.data_block),
-        stamp=script.stamps[0].label.value,
-        highlight_note="\n".join(notes),
+        headline_count=len(script.headlines),
+        numbers_rows=len(script.numbers),
+        numbers_years=max(len(r.values) for r in script.numbers),
+        annotation_note="\n".join(notes),
+        meme_count=1 if script.meme else 0,
+        meme_cap=settings.meme_max_per_long,
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
@@ -159,9 +164,9 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
 
 def build_long_report(
     script, parse_warnings, validation_warnings, validation_blocking,
-    settings, ledger, tts_engine, broll_plan, refinitiv_count,
+    settings, ledger, tts_engine, visual_plan, filing_count,
 ) -> "CostReport":
-    from pipeline.models import BrollPlanItem, CostReport
+    from pipeline.models import CostReport, VisualPlanItem
 
     cached = tts_engine.is_cached(script.narration, "long")
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
@@ -178,12 +183,14 @@ def build_long_report(
         chars=script.char_count,
         tts_cached=cached,
         est_tts_usd=est,
-        broll=[
-            BrollPlanItem(key=c.key, source=c.source, path=str(c.path),
-                          attribution=c.attribution)
-            for c in broll_plan
+        visuals=[
+            VisualPlanItem(key=v.key, kind=v.kind, source=v.source,
+                           path=str(v.path), attribution=v.attribution)
+            for v in visual_plan
         ],
-        refinitiv_overlays=refinitiv_count,
+        filing_overlays=filing_count,
+        meme_count=script.meme_count(),
+        meme_cap=settings.meme_max_per_long,
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,

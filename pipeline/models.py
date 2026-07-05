@@ -1,53 +1,24 @@
 """Pydantic models + enums shared across the pipeline.
 
-These are the data contracts of §5: the SHORT strict-JSON script, the LONG
-tagged-narration script, TTS word timestamps, the Refinitiv audit schema,
-job records, screener candidates and the validation/cost report.
+The data contracts of the Dennis build: the SHORT "Noise or signal?"
+strict-JSON script, the LONG tagged-narration script, TTS word
+timestamps, the company-data schema (latest snapshot + 5-year history,
+vendor never named), job records, screener candidates and the
+validation/cost report.
+
+There is deliberately NO verdict enum anywhere — videos end on a deadpan
+free-text conclusion and the viewer draws their own.
 """
 
 from __future__ import annotations
 
 import hashlib
-import re
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Literal, Union
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
-# --------------------------------------------------------------------------
-# Verdict taxonomy — the brand device. Swings both ways (§10).
-# --------------------------------------------------------------------------
-
-
-class Verdict(str, Enum):
-    # scathing
-    TOXIC = "TOXIC"
-    PONZI_ADJACENT = "PONZI_ADJACENT"
-    OVERVALUED = "OVERVALUED"
-    DEAD_MONEY = "DEAD_MONEY"
-    FALLING_KNIFE = "FALLING_KNIFE"
-    # (satirically) laudatory
-    VALUE_GEM = "VALUE_GEM"
-    CASH_COW = "CASH_COW"
-    QUIET_COMPOUNDER = "QUIET_COMPOUNDER"
-    SECRETLY_ELITE = "SECRETLY_ELITE"
-    BORING_AND_RICH = "BORING_AND_RICH"
-
-    @property
-    def is_laudatory(self) -> bool:
-        return self in {
-            Verdict.VALUE_GEM,
-            Verdict.CASH_COW,
-            Verdict.QUIET_COMPOUNDER,
-            Verdict.SECRETLY_ELITE,
-            Verdict.BORING_AND_RICH,
-        }
-
-
-SCATHING_VERDICTS = [v for v in Verdict if not v.is_laudatory]
-LAUDATORY_VERDICTS = [v for v in Verdict if v.is_laudatory]
 
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
@@ -60,51 +31,61 @@ SFX_KEYS = (
 )
 
 
-class HighlightColor(str, Enum):
-    RED = "red"
-    GREEN = "green"
-
-
 # --------------------------------------------------------------------------
-# SHORT script (§5.2) — strict JSON.
+# SHORT script — the "Noise or signal?" format (§4). Strict JSON.
 # --------------------------------------------------------------------------
 
-_END_MINUS_RE = re.compile(r"^end_minus_(\d+(?:\.\d+)?)$")
 
+class Headline(BaseModel):
+    """One driver headline overlaid ON the branded chart."""
 
-class HighlightDirection(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["highlight"]
-    line_index: int = Field(ge=0)
-    color: HighlightColor = HighlightColor.RED
-    anchor_word: str = Field(min_length=1)
+    text: str = Field(min_length=1, max_length=120)     # shown on screen, mute-safe
+    meaning: str = Field(min_length=1, max_length=240)  # what it actually means
 
 
-class StampDirection(BaseModel):
+class NumberRow(BaseModel):
+    """One metric row on the numbers sheet — MULTI-YEAR, oldest -> newest."""
+
     model_config = ConfigDict(extra="forbid")
 
-    type: Literal["stamp"]
-    label: Verdict
-    anchor: str = "end_minus_3"
+    label: str = Field(min_length=1, max_length=40)
+    values: list[str] = Field(min_length=2, max_length=6)
 
-    @field_validator("anchor")
+    @field_validator("values")
     @classmethod
-    def _check_anchor(cls, v: str) -> str:
-        v = v.strip()
-        if not v:
-            raise ValueError("stamp anchor must not be empty")
-        # either "end_minus_N" or an anchor word/phrase from the script
-        return v
-
-    def end_offset(self) -> float | None:
-        m = _END_MINUS_RE.match(self.anchor)
-        return float(m.group(1)) if m else None
+    def _non_empty_values(cls, v: list[str]) -> list[str]:
+        cleaned = [x.strip() for x in v]
+        if any(not x for x in cleaned):
+            raise ValueError("values contains an empty entry")
+        return cleaned
 
 
-VisualDirection = Annotated[
-    Union[HighlightDirection, StampDirection], Field(discriminator="type")
-]
+class AnnotationTarget(str, Enum):
+    CHART = "chart"
+    NUMBERS = "numbers"
+
+
+class Annotation(BaseModel):
+    """A hand-drawn scribble on the chart or the numbers sheet, fired at
+    an anchor word in the audio."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    target: AnnotationTarget
+    anchor_word: str = Field(min_length=1)
+    note: str = Field(default="", max_length=40)      # optional scribbled text
+    row_index: int | None = Field(default=None, ge=0)  # numbers target only
+
+
+class CutawayTag(BaseModel):
+    """Optional meme / ironic-broll cutaway with an optional anchor word."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    key: str = Field(min_length=1, max_length=80)
+    anchor_word: str = ""
 
 
 class ShortScript(BaseModel):
@@ -112,45 +93,34 @@ class ShortScript(BaseModel):
 
     ticker: str = Field(min_length=1, max_length=15)
     format: Literal["short"]
-    verdict: Verdict
-    hook_text: str = Field(min_length=1, max_length=90)
+    hook_text: str = Field(min_length=1, max_length=90)   # mute-safe cold open
     audio_script: str = Field(min_length=1)
-    data_block: list[str] = Field(min_length=1, max_length=10)
-    visual_directions: list[VisualDirection] = Field(min_length=1)
-    cta_text: str = Field(min_length=1, max_length=120)
+    move_summary: str = Field(min_length=1, max_length=80)  # how much / how active
+    headlines: list[Headline] = Field(min_length=1, max_length=3)
+    numbers: list[NumberRow] = Field(min_length=1, max_length=6)
+    years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
+    numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
+    conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
+    meme: CutawayTag | None = None
+    broll: CutawayTag | None = None
+    annotations: list[Annotation] = Field(default_factory=list, max_length=4)
 
     @field_validator("ticker")
     @classmethod
     def _norm_ticker(cls, v: str) -> str:
         return v.strip().upper()
 
-    @field_validator("data_block")
-    @classmethod
-    def _non_empty_lines(cls, v: list[str]) -> list[str]:
-        cleaned = [line.strip() for line in v]
-        if any(not line for line in cleaned):
-            raise ValueError("data_block contains an empty line")
-        return cleaned
-
     @model_validator(mode="after")
     def _cross_checks(self) -> "ShortScript":
-        for d in self.highlights:
-            if d.line_index >= len(self.data_block):
-                raise ValueError(
-                    f"highlight line_index {d.line_index} out of range "
-                    f"(data_block has {len(self.data_block)} lines)"
-                )
-        if not self.stamps:
-            raise ValueError("visual_directions must include a stamp direction")
+        for a in self.annotations:
+            if a.target is AnnotationTarget.NUMBERS:
+                idx = a.row_index if a.row_index is not None else 0
+                if idx >= len(self.numbers):
+                    raise ValueError(
+                        f"annotation row_index {idx} out of range "
+                        f"(numbers has {len(self.numbers)} rows)"
+                    )
         return self
-
-    @property
-    def highlights(self) -> list[HighlightDirection]:
-        return [d for d in self.visual_directions if isinstance(d, HighlightDirection)]
-
-    @property
-    def stamps(self) -> list[StampDirection]:
-        return [d for d in self.visual_directions if isinstance(d, StampDirection)]
 
     @property
     def word_count(self) -> int:
@@ -160,14 +130,18 @@ class ShortScript(BaseModel):
     def char_count(self) -> int:
         return len(self.audio_script)
 
+    def anchor_words(self) -> list[str]:
+        """Every anchor the timeline will try to resolve."""
+        anchors = [a.anchor_word for a in self.annotations]
+        for tag in (self.meme, self.broll):
+            if tag is not None and tag.anchor_word:
+                anchors.append(tag.anchor_word)
+        return anchors
+
     def missing_anchor_words(self) -> list[str]:
         """Anchors not found verbatim (case-insensitive) in audio_script."""
         script = self.audio_script.lower()
-        return [
-            d.anchor_word
-            for d in self.highlights
-            if d.anchor_word.lower() not in script
-        ]
+        return [a for a in self.anchor_words() if a.lower() not in script]
 
     def content_sha(self) -> str:
         return hashlib.sha256(
@@ -176,15 +150,27 @@ class ShortScript(BaseModel):
 
 
 # --------------------------------------------------------------------------
-# LONG script (§5.3) — tagged narration.
+# LONG script — tagged narration with the Dennis tag grammar (§5).
 # --------------------------------------------------------------------------
 
 
 class TagType(str, Enum):
-    BROLL = "B-ROLL"
-    SHOW_REFINITIV = "SHOW REFINITIV"
-    SOUND = "SOUND"
-    STAMP = "STAMP"
+    IMG = "IMG"                  # real imagery: operations/facilities/people
+    PRODUCT = "PRODUCT"          # real imagery: the product itself
+    MEME = "MEME"                # owned meme library first (capped per video)
+    CLIP = "CLIP"                # ironic stock footage (Pexels palette)
+    BROLL = "BROLL"              # alias of CLIP (legacy spelling)
+    CHART = "CHART"              # auto-generated chart in the channel style
+    SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
+    SOUND = "SOUND"              # sfx palette
+    ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
+
+
+# tag types that claim a visual segment on the LONG timeline
+VISUAL_TAG_TYPES = frozenset({
+    TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
+    TagType.CHART, TagType.SHOW_FILING, TagType.ASSET,
+})
 
 
 class TagEvent(BaseModel):
@@ -204,6 +190,8 @@ class LongScript(BaseModel):
     ticker: str = Field(min_length=1, max_length=15)
     narration: str = Field(min_length=1)  # clean, tag-free — goes to TTS
     events: list[TagEvent] = Field(default_factory=list)
+    # slug -> the self-contained Claude Design prompt the director appended
+    asset_prompts: dict[str, str] = Field(default_factory=dict)
 
     @field_validator("ticker")
     @classmethod
@@ -218,8 +206,19 @@ class LongScript(BaseModel):
     def char_count(self) -> int:
         return len(self.narration)
 
-    def events_of(self, t: TagType) -> list[TagEvent]:
-        return [e for e in self.events if e.type == t]
+    def events_of(self, *types: TagType) -> list[TagEvent]:
+        wanted = set(types)
+        return [e for e in self.events if e.type in wanted]
+
+    def meme_count(self) -> int:
+        return len(self.events_of(TagType.MEME))
+
+    def asset_slugs(self) -> list[str]:
+        seen: list[str] = []
+        for e in self.events_of(TagType.ASSET):
+            if e.payload not in seen:
+                seen.append(e.payload)
+        return seen
 
     def content_sha(self) -> str:
         return hashlib.sha256(self.model_dump_json().encode("utf-8")).hexdigest()[:16]
@@ -253,14 +252,23 @@ class TTSResult(BaseModel):
 
 
 class CueKind(str, Enum):
+    # SHORT beats (Noise or signal?)
     HOOK = "hook"
-    WHIP_PAN = "whip_pan"
-    DATA_LINE = "data_line"
-    HIGHLIGHT = "highlight"
-    STAMP = "stamp"
-    CTA = "cta"
-    BROLL = "broll"
-    REFINITIV = "refinitiv"
+    TRANSITION = "transition"
+    HEADLINE = "headline"
+    NUMBERS = "numbers"          # the sheet slides in
+    NUMBER_ROW = "number_row"    # one row types on
+    ANNOTATION = "annotation"    # hand-drawn scribble
+    ZOOM = "zoom"                # zoom-punch on the key number
+    CONCLUSION = "conclusion"
+    CUTAWAY = "cutaway"          # ironic broll cutaway (SHORT)
+    # LONG visuals (MEME + SOUND are shared by both formats)
+    MEME = "meme"
+    CLIP = "clip"
+    IMG = "img"
+    CHART = "chart"
+    FILING = "filing"
+    ASSET = "asset"
     SOUND = "sound"
 
 
@@ -277,10 +285,12 @@ class Cue(BaseModel):
 
 
 # --------------------------------------------------------------------------
-# Refinitiv audit (§5.1) — stable schema.
+# Company data (§3) — the PRIVATE data source. Two sheets: a latest
+# snapshot plus a 5-year history so videos can show direction. The vendor
+# is never named on-screen; internally this is just "company data".
 # --------------------------------------------------------------------------
 
-REFINITIV_FIELDS: dict[str, list[str]] = {
+DATA_FIELDS: dict[str, list[str]] = {
     "identity": ["company_name", "ticker", "exchange", "sector", "currency", "as_of_date"],
     "size": ["price", "market_cap", "shares_outstanding", "enterprise_value"],
     "growth": ["revenue_ttm", "revenue_yoy_pct", "revenue_cagr_3y_pct"],
@@ -293,22 +303,38 @@ REFINITIV_FIELDS: dict[str, list[str]] = {
     "returns": ["roic_pct", "roe_pct"],
     "valuation": ["pe_ratio", "ps_ratio", "ev_ebitda", "pb_ratio", "p_fcf"],
     "dilution": ["shares_outstanding_yoy_pct"],
-    "optional": ["dividend_yield_pct", "buyback_yield_pct", "short_interest_pct"],
+    "optional": ["dividend_yield_pct", "buyback_yield_pct", "short_interest_pct", "website"],
 }
 
-# Missing fields in these groups BLOCK the run (§5.1); the rest only warn.
-REFINITIV_BLOCKING_GROUPS = ("identity", "size", "margins", "cash")
+# Missing fields in these groups BLOCK the run; the rest only warn.
+DATA_BLOCKING_GROUPS = ("identity", "size", "margins", "cash")
 
-ALL_REFINITIV_FIELDS: list[str] = [f for group in REFINITIV_FIELDS.values() for f in group]
-_STRING_FIELDS = {"company_name", "ticker", "exchange", "sector", "currency", "as_of_date"}
+ALL_DATA_FIELDS: list[str] = [f for group in DATA_FIELDS.values() for f in group]
+_STRING_FIELDS = {"company_name", "ticker", "exchange", "sector", "currency",
+                  "as_of_date", "website"}
+
+# The 5-year history sheet: per-fiscal-year values, oldest -> newest.
+HISTORY_FIELDS: list[str] = [
+    "revenue",
+    "gross_margin_pct",
+    "operating_margin_pct",
+    "net_income",
+    "fcf",
+    "shares_outstanding",
+    "total_debt",
+    "cash_and_equivalents",
+]
+HISTORY_YEARS = 5
 
 
-class RefinitivAudit(BaseModel):
-    """Clean, typed view of the operator's Refinitiv export."""
+class CompanyData(BaseModel):
+    """Clean, typed view of the operator's two-sheet data export."""
 
     model_config = ConfigDict(extra="forbid")
 
     values: dict[str, str | float | None] = Field(default_factory=dict)
+    history_years: list[str] = Field(default_factory=list)   # oldest -> newest
+    history: dict[str, list[float | None]] = Field(default_factory=dict)
     source_file: str = ""
 
     def get(self, field: str):
@@ -316,13 +342,11 @@ class RefinitivAudit(BaseModel):
 
     @property
     def missing(self) -> list[str]:
-        return [f for f in ALL_REFINITIV_FIELDS if self.values.get(f) in (None, "")]
+        return [f for f in ALL_DATA_FIELDS if self.values.get(f) in (None, "")]
 
     @property
     def blocking_missing(self) -> list[str]:
-        blocking = {
-            f for g in REFINITIV_BLOCKING_GROUPS for f in REFINITIV_FIELDS[g]
-        }
+        blocking = {f for g in DATA_BLOCKING_GROUPS for f in DATA_FIELDS[g]}
         return [f for f in self.missing if f in blocking]
 
     @property
@@ -330,10 +354,20 @@ class RefinitivAudit(BaseModel):
         blocking = set(self.blocking_missing)
         return [f for f in self.missing if f not in blocking]
 
+    @property
+    def has_history(self) -> bool:
+        return bool(self.history_years) and any(
+            any(v is not None for v in vals) for vals in self.history.values()
+        )
+
+    def history_row(self, field: str) -> list[float | None]:
+        return self.history.get(field, [])
+
     def as_prompt_block(self) -> str:
-        """Render as the {{refinitiv_data}} block for the master prompts."""
+        """Render as the {{company_data}} block for the master prompts —
+        latest snapshot by group, then the multi-year history table."""
         lines: list[str] = []
-        for group, fields in REFINITIV_FIELDS.items():
+        for group, fields in DATA_FIELDS.items():
             present = [
                 f"{f} = {self.values[f]}"
                 for f in fields
@@ -342,6 +376,14 @@ class RefinitivAudit(BaseModel):
             if present:
                 lines.append(f"[{group}]")
                 lines.extend(f"  {p}" for p in present)
+        if self.has_history:
+            lines.append("[history · fiscal years, oldest → newest]")
+            lines.append("  years: " + " | ".join(self.history_years))
+            for f in HISTORY_FIELDS:
+                vals = self.history.get(f)
+                if vals and any(v is not None for v in vals):
+                    cells = " | ".join("n/a" if v is None else f"{v:g}" for v in vals)
+                    lines.append(f"  {f}: {cells}")
         return "\n".join(lines) if lines else "(no data)"
 
 
@@ -395,8 +437,8 @@ def _utcnow() -> str:
 
 
 class Lane(str, Enum):
-    TRENDING = "trending"
-    VALUE = "value"
+    TRENDING = "trending"   # -> SHORT candidates
+    VALUE = "value"         # -> LONG candidates (long-form NEVER covers trending)
 
 
 class Candidate(BaseModel):
@@ -416,17 +458,23 @@ class Candidate(BaseModel):
 
 
 # --------------------------------------------------------------------------
-# Validation + cost report (§9.3) — the spend gate artifact.
+# Validation + cost report — the spend gate artifact.
 # --------------------------------------------------------------------------
 
 
-class BrollPlanItem(BaseModel):
+class VisualPlanItem(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     key: str
-    source: str  # local | cache | pexels | filler
+    kind: str = "clip"   # clip | img | meme | chart | filing | asset
+    source: str = ""     # local | library | cache | pexels | wikimedia | ... | filler
     path: str = ""
     attribution: str = ""
+
+
+# report bucketing: where each resolver source counts
+_OWNED_SOURCES = {"local", "library"}
+_FILLER_SOURCES = {"filler"}
 
 
 class CostReport(BaseModel):
@@ -438,11 +486,16 @@ class CostReport(BaseModel):
     chars: int
     tts_cached: bool
     est_tts_usd: float
-    data_block_lines: int = 0
-    stamp: str = ""
-    highlight_note: str = ""
-    broll: list[BrollPlanItem] = Field(default_factory=list)
-    refinitiv_overlays: int = 0
+    # SHORT specifics
+    headline_count: int = 0
+    numbers_rows: int = 0
+    numbers_years: int = 0
+    annotation_note: str = ""
+    # LONG specifics
+    visuals: list[VisualPlanItem] = Field(default_factory=list)
+    filing_overlays: int = 0
+    meme_count: int = 0
+    meme_cap: int = 2
     est_render_minutes: float = 0.0
     mtd_spend_usd: float = 0.0
     monthly_cap_usd: float = 0.0
@@ -455,10 +508,17 @@ class CostReport(BaseModel):
         return not self.blocking
 
     @property
-    def broll_counts(self) -> dict[str, int]:
-        counts = {"local": 0, "cache": 0, "pexels": 0, "filler": 0}
-        for item in self.broll:
-            counts[item.source] = counts.get(item.source, 0) + 1
+    def visual_counts(self) -> dict[str, int]:
+        counts = {"owned": 0, "cache": 0, "fetched": 0, "filler": 0}
+        for item in self.visuals:
+            if item.source in _OWNED_SOURCES:
+                counts["owned"] += 1
+            elif item.source == "cache":
+                counts["cache"] += 1
+            elif item.source in _FILLER_SOURCES:
+                counts["filler"] += 1
+            else:
+                counts["fetched"] += 1
         return counts
 
     def render_text(self) -> str:
@@ -473,18 +533,22 @@ class CostReport(BaseModel):
         lines.append(tts)
 
         if self.fmt == "short":
-            lines.append(f"Data block: {self.data_block_lines} lines ✓   Stamp: {self.stamp} ✓")
-            if self.highlight_note:
-                lines.append(self.highlight_note)
-        if self.broll:
-            c = self.broll_counts
             lines.append(
-                f"B-roll: {len(self.broll)} clips "
-                f"(local {c['local']} / cache {c['cache']} / pexels {c['pexels']} / filler {c['filler']})"
+                f"Chart: branded, from cached prices ✓   "
+                f"Headlines: {self.headline_count} ✓   "
+                f"Numbers: {self.numbers_rows} rows × {self.numbers_years}yr"
             )
-        else:
-            lines.append("B-roll: n/a")
-        lines.append(f"Refinitiv overlay: {self.refinitiv_overlays or 'not used'}")
+            if self.annotation_note:
+                lines.append(self.annotation_note)
+        if self.visuals:
+            c = self.visual_counts
+            lines.append(
+                f"Visuals: {len(self.visuals)} "
+                f"(owned {c['owned']} / cache {c['cache']} / fetched {c['fetched']} / filler {c['filler']})"
+            )
+        if self.fmt == "long":
+            lines.append(f"Filing overlays: {self.filing_overlays or 'not used'}   "
+                         f"Memes: {self.meme_count}/{self.meme_cap}")
         lines.append(
             f"Est. render: ~{self.est_render_minutes:.0f} min   "
             f"MTD spend: ${self.mtd_spend_usd:.2f} / ${self.monthly_cap_usd:.2f} cap"

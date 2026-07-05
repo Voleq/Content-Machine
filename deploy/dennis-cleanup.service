@@ -1,0 +1,9 @@
+[Unit]
+Description=Dennis — workspace retention cleanup
+
+[Service]
+Type=oneshot
+User=dennis
+WorkingDirectory=/opt/dennis
+EnvironmentFile=/opt/dennis/.env
+ExecStart=/opt/dennis/.venv/bin/python -m pipeline.cleanup

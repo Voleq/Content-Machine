@@ -1,6 +1,8 @@
-"""SHORT renderer smoke test (§0.5): renders a real 5–7s MP4 from mock
-audio + placeholder assets at reduced resolution, then verifies the cue
-timing that reached the filtergraph against the timeline."""
+"""SHORT renderer smoke test: renders a real MP4 from mock audio +
+fixture prices at reduced resolution, then verifies the cue timing that
+reached the filtergraph against the timeline. The Noise-or-signal
+template: chart hero, headlines on the chart, numbers sheet, deadpan
+conclusion — and no stamp anywhere."""
 
 import json
 
@@ -8,25 +10,36 @@ import pytest
 
 from pipeline.models import CueKind, ShortScript
 from pipeline.render_common import ffprobe_json
-from pipeline.render_short import render_short
+from pipeline.render_short import render_short, sample_hook_opener
 from pipeline.timeline import build_short_timeline
 from pipeline.tts import TTSEngine
 
 SMOKE_SCRIPT = {
     "ticker": "EXMPL",
     "format": "short",
-    "verdict": "OVERVALUED",
-    "hook_text": "60x sales. Let's talk.",
+    "hook_text": "Up 29% today. The business is not.",
     "audio_script": (
-        "The market pays sixty times sales. They burn cash on operations. "
-        "The story has no second act. Verdict overvalued."
+        "EXMPL is up twenty nine percent today. The news is a press release. "
+        "Revenue is flat for five years and the losses got wider every year. "
+        "The chart went vertical, the business went sideways. "
+        "Noise. Set a reminder for the next filing."
     ),
-    "data_block": ["Revenue growth: +1%", "FCF yield: -3%", "P/S: 62x"],
-    "visual_directions": [
-        {"type": "highlight", "line_index": 1, "color": "red", "anchor_word": "cash"},
-        {"type": "stamp", "label": "OVERVALUED", "anchor": "end_minus_3"},
+    "move_summary": "+29% today · 5× volume",
+    "headlines": [
+        {"text": "EXMPL announces AI partnership", "meaning": "A press release, no revenue attached."},
     ],
-    "cta_text": "Tell me I'm wrong.",
+    "years": ["2021", "2022", "2023", "2024", "2025"],
+    "numbers": [
+        {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
+        {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]},
+    ],
+    "numbers_comment": "Flat revenue, widening losses.",
+    "conclusion": "Noise. Set a reminder for the next filing.",
+    "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
+    "annotations": [
+        {"target": "chart", "anchor_word": "today", "note": "this"},
+        {"target": "numbers", "row_index": 1, "anchor_word": "wider"},
+    ],
 }
 
 
@@ -72,27 +85,56 @@ def test_cue_times_reached_the_filtergraph(rendered):
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
 
     cues = build_short_timeline(script, tts.words, tts.duration_s)
-    stamp = next(c for c in cues if c.kind is CueKind.STAMP)
-    whip = next(c for c in cues if c.kind is CueKind.WHIP_PAN)
-    cta = next(c for c in cues if c.kind is CueKind.CTA)
-    highlight = next(c for c in cues if c.kind is CueKind.HIGHLIGHT)
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+    headline = next(c for c in cues if c.kind is CueKind.HEADLINE)
+    annotation = next(c for c in cues if c.kind is CueKind.ANNOTATION)
+    zoom = next(c for c in cues if c.kind is CueKind.ZOOM)
+    meme = next(c for c in cues if c.kind is CueKind.MEME)
 
-    for cue in (stamp, whip, cta, highlight):
+    for cue in (conclusion, numbers, headline, annotation, zoom, meme):
         assert f"between(t,{cue.t:.4f}" in filter_text, f"{cue.kind} cue time missing"
     assert "subtitles=filename=" in filter_text
-    # stamp must land at audio_duration - 3 (end_minus_3), from ffprobe truth
-    assert stamp.t == pytest.approx(tts.duration_s - 3.0, abs=0.06)
+    # the payoff lands on the conclusion's spoken words (audio-timestamp clock)
+    from pipeline.timeline import find_anchor_time
+
+    anchored = find_anchor_time(tts.words, "Noise. Set a")
+    assert anchored is not None
+    assert conclusion.t == pytest.approx(anchored, abs=0.06)
 
 
-def test_manifest_reflects_cues(rendered):
+def test_manifest_reflects_cues_and_kit(rendered):
     settings, script, tts, out, manifest = rendered
     times = [c["t"] for c in manifest["cues"]]
     assert times == sorted(times)
     names = {layer["name"] for layer in manifest["layers"]}
-    assert {"folder_closed", "whip_pan", "folder_open", "stamp", "hook",
-            "cta", "disclaimer"} <= names
-    assert {f"data_line_{i}" for i in range(3)} <= names
-    stamp_layer = next(l for l in manifest["layers"] if l["name"] == "stamp")
-    stamp_cue = next(c for c in manifest["cues"] if c["kind"] == "stamp")
-    assert stamp_layer["t_start"] == pytest.approx(stamp_cue["t"])
+    assert {"chart", "brand_bug", "hook", "numbers_sheet", "conclusion",
+            "disclaimer", "meme_0"} <= names
+    assert {f"number_row_{i}" for i in range(2)} <= names
+    assert any(n.startswith("headline_") for n in names)
+    assert any(n.startswith("scribble_") for n in names)
+    assert any(n.startswith("zoom_") for n in names)
+    assert any(n.startswith("flash_") for n in names)
+    conc_layer = next(l for l in manifest["layers"] if l["name"] == "conclusion")
+    conc_cue = next(c for c in manifest["cues"] if c["kind"] == "conclusion")
+    assert conc_layer["t_start"] == pytest.approx(conc_cue["t"])
     assert manifest["duration"] == pytest.approx(tts.duration_s)
+    assert manifest["chart"]["source"] in ("fixture", "synthetic", "cache")
+
+
+def test_no_desk_no_stamp_anywhere(rendered):
+    """The desk scene and the verdict system are gone — not renamed."""
+    settings, script, tts, out, manifest = rendered
+    names = " ".join(layer["name"] for layer in manifest["layers"])
+    for banned in ("stamp", "folder", "whip", "highlight", "typewriter", "cta"):
+        assert banned not in names, f"desk-era layer {banned!r} survived"
+    assert "verdict" not in json.dumps(manifest).lower()
+
+
+def test_hook_opener_sampling(settings):
+    a = sample_hook_opener("sha-one", settings)
+    b = sample_hook_opener("sha-one", settings)
+    c = sample_hook_opener("sha-two-different", settings)
+    assert a == b, "same script sha -> same opener (idempotent re-renders)"
+    bank = json.loads((settings.assets_dir / "hook_bank.json").read_text())["openers"]
+    assert a in bank and c in bank

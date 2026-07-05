@@ -1,7 +1,7 @@
 {
   "page": 1,
   "per_page": 3,
-  "total_results": 1,
+  "total_results": 2,
   "url": "https://www.pexels.com/search/videos/generic/",
   "videos": [
     {
@@ -13,6 +13,17 @@
       "user": {"id": 9100, "name": "Generic Fixture", "url": "https://www.pexels.com/@generic-fixture"},
       "video_files": [
         {"id": 10, "quality": "hd", "file_type": "video/mp4", "width": 1920, "height": 1080, "fps": 30, "link": "https://mock.pexels.invalid/generic_hd.mp4"}
+      ]
+    },
+    {
+      "id": 990002,
+      "width": 1920,
+      "height": 1080,
+      "duration": 8,
+      "url": "https://www.pexels.com/video/mock-generic-990002/",
+      "user": {"id": 9101, "name": "Second Take Fixture", "url": "https://www.pexels.com/@second-take"},
+      "video_files": [
+        {"id": 11, "quality": "hd", "file_type": "video/mp4", "width": 1920, "height": 1080, "fps": 30, "link": "https://mock.pexels.invalid/generic_hd_take2.mp4"}
       ]
     }
   ]

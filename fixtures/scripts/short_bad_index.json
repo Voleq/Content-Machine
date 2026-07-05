@@ -1,13 +1,19 @@
 {
   "ticker": "EXMPL",
   "format": "short",
-  "verdict": "TOXIC",
-  "hook_text": "Index points beyond the data block.",
-  "audio_script": "The highlight references a line that does not exist.",
-  "data_block": ["Revenue: $1", "Margin: -5%"],
-  "visual_directions": [
-    {"type": "highlight", "line_index": 7, "color": "red", "anchor_word": "line"},
-    {"type": "stamp", "label": "TOXIC", "anchor": "end_minus_3"}
+  "hook_text": "A scribble aimed at a row that does not exist.",
+  "audio_script": "This script is invalid because its annotation points at numbers row nine and the sheet only has two rows. The parser must reject it with a message about row_index.",
+  "move_summary": "+10% today",
+  "headlines": [
+    {"text": "Some headline", "meaning": "Some meaning."}
   ],
-  "cta_text": "n/a"
+  "numbers": [
+    {"label": "Revenue", "values": ["$1M", "$2M"]},
+    {"label": "FCF", "values": ["$1M", "$2M"]}
+  ],
+  "numbers_comment": "Irrelevant.",
+  "conclusion": "Noise.",
+  "annotations": [
+    {"target": "numbers", "row_index": 9, "anchor_word": "revenue"}
+  ]
 }

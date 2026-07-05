@@ -1,0 +1,19 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "hook_text": "Too many headlines on this one.",
+  "audio_script": "This script is invalid because it carries four driver headlines and the format allows at most three. The parser must reject it with a message about headlines.",
+  "move_summary": "+10% today",
+  "headlines": [
+    {"text": "Headline one", "meaning": "Meaning one."},
+    {"text": "Headline two", "meaning": "Meaning two."},
+    {"text": "Headline three", "meaning": "Meaning three."},
+    {"text": "Headline four", "meaning": "Meaning four."}
+  ],
+  "numbers": [
+    {"label": "Revenue", "values": ["$1M", "$2M"]}
+  ],
+  "numbers_comment": "Irrelevant.",
+  "conclusion": "Noise.",
+  "annotations": []
+}
