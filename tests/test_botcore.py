@@ -1,5 +1,5 @@
 """End-to-end operator flow WITHOUT Telegram: BotCore consumes strings/
-bytes and returns Reply values. Covers the full §9 loop: /new → upload →
+bytes and returns Reply values. Covers the full loop: /new → upload →
 prompts → paste script → report → approve → render gate → executed job →
 local delivery. All in MOCK_MODE, zero network."""
 
@@ -26,31 +26,56 @@ def core(settings):
 
 @pytest.fixture()
 def xlsx_bytes(fixtures_dir) -> bytes:
-    return (fixtures_dir / "refinitiv" / "data_refinitiv.xlsx").read_bytes()
+    return (fixtures_dir / "company_data" / "dennis_data.xlsx").read_bytes()
 
 
 def test_new_ticker_creates_workspace_and_context(core):
     reply = core.new_ticker(CHAT, "exmpl")
     assert "Workspace ready: EXMPL" in reply.text
-    assert reply.files and reply.files[0].name == "refinitiv_audit_template.xlsx"
+    assert reply.files and reply.files[0].name == "dennis_data_template.xlsx"
     assert core.context.get(CHAT).ticker == "EXMPL"
+    assert "Refinitiv" not in reply.text
 
 
 def test_upload_xlsx_yields_filled_prompts(core, xlsx_bytes):
     core.new_ticker(CHAT, "EXMPL")
-    reply = core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
-    assert "saved data_refinitiv.xlsx" in reply.text
+    reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    assert "saved dennis_data.xlsx" in reply.text
     assert len(reply.files) == 2
     short_prompt = next(f for f in reply.files if "short" in f.name).read_text()
     long_prompt = next(f for f in reply.files if "long" in f.name).read_text()
-    placeholders = ("{{ticker}}", "{{as_of_date}}", "{{refinitiv_data}}",
-                    "{{broll_palette}}", "{{screenshot_files}}")
+    placeholders = ("{{ticker}}", "{{as_of_date}}", "{{company_data}}",
+                    "{{move_context}}", "{{meme_keys}}", "{{broll_palette}}",
+                    "{{chart_metrics}}", "{{screenshot_files}}")
     for ph in placeholders:
         assert ph not in short_prompt, f"{ph} must be filled"
         assert ph not in long_prompt, f"{ph} must be filled"
     assert "Ticker: EXMPL" in short_prompt
     assert "ps_ratio = 62.0" in short_prompt
-    assert "dumpster_fire" in long_prompt  # palette injected
+    assert "[history" in short_prompt, "the 5y history feeds the gut check"
+    assert "DENNIS" in short_prompt and "DENNIS" in long_prompt
+    assert "dumpster_fire" in long_prompt          # palette injected
+    assert "harold-quick-flip-became-bagholder" in long_prompt  # meme keys injected
+    assert "ASSET PROMPTS" in long_prompt          # self-prompting instructions
+    assert "Refinitiv" not in short_prompt and "Refinitiv" not in long_prompt
+
+
+def test_prompts_carry_screener_move_context(core, xlsx_bytes):
+    state = core.settings.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    import time
+
+    state.write_text(json.dumps({
+        "ts": time.time(),
+        "tickers": {"EXMPL": {"lane": "trending",
+                              "reasons": ["+29.0% today", "vol 5.0× avg"],
+                              "price": 19.67, "pct_change": 29.0}},
+    }))
+    core.new_ticker(CHAT, "EXMPL")
+    reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    short_prompt = next(f for f in reply.files if "short" in f.name).read_text()
+    assert "+29.0% today" in short_prompt
+    assert "trending lane" in short_prompt
 
 
 def test_prompts_blocked_without_upload(core):
@@ -61,10 +86,11 @@ def test_prompts_blocked_without_upload(core):
 
 def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_json):
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, short_valid_json)
     assert "EXMPL — SHORT — ready to render" in reply.text
     assert "$" in reply.text and "cap" in reply.text
+    assert "Headlines: 2" in reply.text and "4 rows × 5yr" in reply.text
     assert reply.keyboard is not None
 
     ws = Workspace.latest_for(core.settings, "EXMPL")
@@ -83,7 +109,7 @@ def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_jso
 
 def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, short_valid_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")
     reply = core.approve("short", "EXMPL", ws.workdate, "deadbeef")
@@ -93,14 +119,14 @@ def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
 
 def test_malformed_script_reports_friendly_error(core, xlsx_bytes):
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, '{"ticker": "EXMPL", "format": "short"')
     assert "⛔" in reply.text and "rejected" in reply.text
 
 
 def test_long_intake_blocks_on_missing_screenshot(core, xlsx_bytes, long_valid_text):
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, long_valid_text)
     assert "BLOCKED" in reply.text
     assert "income_statement.png" in reply.text
@@ -115,7 +141,44 @@ def test_long_intake_blocks_on_missing_screenshot(core, xlsx_bytes, long_valid_t
     core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
     reply2 = core.intake_script(CHAT, long_valid_text)
     assert "ready to render" in reply2.text
-    assert "B-roll:" in reply2.text
+    assert "Visuals:" in reply2.text
+    assert "Memes: 1/2" in reply2.text
+
+
+def test_asset_flow_blocks_saves_prompt_and_accepts_upload(core, xlsx_bytes, fixtures_dir):
+    """The [ASSET] loop: block → paste-ready Claude Design prompt file →
+    operator uploads the export → unblocked."""
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    core.new_ticker(CHAT, "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    from PIL import Image
+    import io
+    buf = io.BytesIO()
+    Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
+    core.handle_upload(CHAT, "missing_file.png", buf.getvalue())
+
+    reply = core.intake_script(CHAT, raw)
+    assert "BLOCKED" in reply.text
+    assert "revenue-flywheel" in reply.text and "Claude Design" in reply.text
+    prompt_files = [f for f in reply.files if "claude-design" in f.name]
+    assert prompt_files, "the appended prompt must come back as a paste-ready file"
+    assert "flywheel" in prompt_files[0].read_text()
+
+    custom = core.settings.assets_dir / "custom"
+    try:
+        upload = io.BytesIO()
+        Image.new("RGB", (1600, 900), (30, 34, 44)).save(upload, format="PNG")
+        r = core.handle_upload(CHAT, "revenue-flywheel.png", upload.getvalue())
+        assert "custom asset revenue-flywheel" in r.text
+        assert (custom / "revenue-flywheel.png").exists()
+
+        reply2 = core.intake_script(CHAT, raw)
+        assert "revenue-flywheel" not in "\n".join(
+            line for line in reply2.text.splitlines() if line.startswith("⛔")
+        )
+    finally:
+        for p in custom.glob("revenue-flywheel.*"):
+            p.unlink()
 
 
 def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_text):
@@ -123,7 +186,7 @@ def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_
     import io
 
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     buf = io.BytesIO()
     Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
     core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
@@ -134,9 +197,9 @@ def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_
     core.approve("long", "EXMPL", ws.workdate, script.content_sha()[:8])
     assert ws.is_approved("long")
 
-    reply = core.swap_key(CHAT, "EXMPL", ws.workdate, "dumpster_fire")
+    reply = core.swap_key(CHAT, "EXMPL", ws.workdate, "tumbleweed")
     assert "take" in reply.text
-    assert ws.broll_overrides()["dumpster_fire"] == 1
+    assert ws.broll_overrides()["tumbleweed"] == 1
     assert not ws.is_approved("long"), "swap must reset the approval gate"
 
 
@@ -145,18 +208,29 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
     script_json = json.dumps({
         "ticker": "EXMPL",
         "format": "short",
-        "verdict": "CASH_COW",
-        "hook_text": "Boring. Profitable. Ignored.",
-        "audio_script": "Everyone ignores this company. The cash flow statement does not care. Verdict cash cow.",
-        "data_block": ["FCF margin: 24%", "Net debt: negative"],
-        "visual_directions": [
-            {"type": "highlight", "line_index": 0, "color": "green", "anchor_word": "cash"},
-            {"type": "stamp", "label": "CASH_COW", "anchor": "end_minus_3"},
+        "hook_text": "Up 12% and still boring. Good.",
+        "audio_script": (
+            "EXMPL is up twelve percent because the boring machine beat "
+            "earnings again. Five years of growth, cash, and fewer shares. "
+            "Signal. I hate that it works."
+        ),
+        "move_summary": "+12% today · earnings beat",
+        "headlines": [
+            {"text": "EXMPL beats and raises", "meaning": "Actual numbers, not vibes."},
         ],
-        "cta_text": "Still ignoring it?",
+        "years": ["2023", "2024", "2025"],
+        "numbers": [
+            {"label": "FCF", "values": ["$195M", "$228M", "$262M"]},
+            {"label": "Shares out", "values": ["199M", "194M", "190M"]},
+        ],
+        "numbers_comment": "Cash up, share count down. The rarest chart.",
+        "conclusion": "Signal. I hate that it works.",
+        "annotations": [
+            {"target": "numbers", "row_index": 1, "anchor_word": "fewer"},
+        ],
     })
     core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "data_refinitiv.xlsx", xlsx_bytes)
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, script_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")
     core.approve("short", "EXMPL", ws.workdate, ws.load_short().content_sha()[:8])
