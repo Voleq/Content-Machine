@@ -133,3 +133,71 @@ def test_draft_reuses_cached_tts_and_is_smaller(rendered):
     v = next(s for s in info["streams"] if s["codec_type"] == "video")
     assert v["width"] == int(640 * settings.draft_scale) // 2 * 2
     assert json.loads(draft_manifest.read_text())["draft"] is True
+
+
+# ---- the reference look: doodles, scribbles, screengrab, marker chart ----
+
+
+@pytest.fixture(scope="module")
+def rendered_doodles(tmp_path_factory):
+    import shutil
+    from pathlib import Path
+
+    from config import Settings
+
+    tmp = tmp_path_factory.mktemp("render_long_doodles")
+    settings = Settings(
+        MOCK_MODE=True,
+        workspace_dir=tmp / "ws", cache_dir=tmp / "cache", state_dir=tmp / "state",
+        long_width=640, long_height=360,
+        _env_file=None,
+    )
+    settings.ensure_runtime_dirs()
+    fixtures = Path(__file__).resolve().parents[1] / "fixtures"
+    raw = (fixtures / "scripts" / "long_doodles.txt").read_text()
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    ws = settings.workspace_dir / "EXMPL" / "test"
+    ws.mkdir(parents=True)
+    Image.new("RGB", (1200, 700), (14, 18, 26)).save(ws / "income_statement.png")
+    shutil.copy(fixtures / "company_data" / "dennis_data.xlsx", ws / "dennis_data.xlsx")
+    data = load_company_data(ws)
+    # the operator-supplied screengrab (a tall phone P&L) lives in custom/
+    custom = settings.assets_dir / "custom"
+    custom.mkdir(parents=True, exist_ok=True)
+    grab = custom / "broker-pnl.png"
+    Image.new("RGB", (1170, 2532), (16, 26, 20)).save(grab)
+    try:
+        tts = TTSEngine(settings).synthesize(script.narration, "long")
+        out, manifest = render_long(script, tts, ws, settings,
+                                    content=ContentManager(settings),
+                                    as_of="2026-07-01", company_data=data)
+        yield settings, script, tts, out, json.loads(manifest.read_text())
+    finally:
+        grab.unlink(missing_ok=True)
+
+
+def test_screengrab_and_marker_chart_segments(rendered_doodles):
+    settings, script, tts, out, manifest = rendered_doodles
+    segs = manifest["segments"]
+    kinds = {s["kind"] for s in segs}
+    assert "screengrab" in kinds
+    grab = next(s for s in segs if s["kind"] == "screengrab")
+    assert grab["source"] == "local"
+    # two [CHART] segments: one clean (revenue), one marker (price)
+    charts = [s for s in segs if s["kind"] == "chart"]
+    assert len(charts) >= 2
+    assert all(c["source"] == "generated" for c in charts)
+
+
+def test_doodle_and_scribble_overlays_present(rendered_doodles):
+    settings, script, tts, out, manifest = rendered_doodles
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    cues = build_long_timeline(script, tts.words, tts.duration_s)
+    doodles = [c for c in cues if c.kind is CueKind.DOODLE]
+    scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
+    assert doodles and scribbles
+    # every overlay cue time reached the compositing filtergraph
+    for c in doodles + scribbles:
+        assert f"between(t,{c.t:.4f}" in filter_text
+    # overlays never became concat segments (they ride on top)
+    assert not any(s["kind"] in ("doodle", "scribble") for s in manifest["segments"])

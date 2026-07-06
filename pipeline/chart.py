@@ -1,13 +1,17 @@
 """Branded chart rendering — the channel's own visual, drawn by the
 pipeline from its own data (§4: never a TradingView screenshot).
 
-Two products, one style:
-  * `render_price_chart`  — the SHORT hero: price line + area fill on a
-    dark card, ticker + move badge, last-point marker. Returns layout
-    metadata so annotations (scribbles) and headline overlays can anchor
-    to real pixel positions instead of guessing.
-  * `render_metric_chart` — the [CHART: metric] auto-chart for LONG:
+Products:
+  * `render_price_chart`        — the clean SHORT hero: price line + area
+    fill on a dark card, ticker + move badge, last-point marker.
+  * `render_marker_price_chart` — the crude "napkin chart": the same price
+    data drawn as a rough hand-drawn marker scribble on black. Same meta
+    contract, so a SHORT can open on either (chart_style / [CHART: … style=marker]).
+  * `render_metric_chart`       — the [CHART: metric] auto-chart for LONG:
     multi-year bars from the company-data history sheet.
+
+Both price charts return layout metadata (plot box, last point, headline
+slots) so annotations and headline overlays anchor to real pixels.
 
 Chart-craft rules applied: one axis, single series (the title names it —
 no legend), thin marks, recessive grid, direction stated in TEXT (+/-%)
@@ -17,6 +21,8 @@ chart; all inks pass ≥3:1 contrast on the dark surface.
 
 from __future__ import annotations
 
+import math
+import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -173,6 +179,106 @@ def render_price_chart(
         "direction": "up" if up else "down",
         # stacked slots where headline cards overlay ON the chart without
         # burying the line's endpoint
+        "headline_slots": [
+            [pad, int(y0 + (y1 - y0) * 0.06 + i * (y1 - y0) * 0.30)]
+            for i in range(3)
+        ],
+        "source": series.source,
+        "degraded": series.degraded,
+    }
+    return out_path, meta
+
+
+def _marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
+    """A marker line: the polyline drawn a few times with per-point jitter
+    and a chunky nib — the crude hand-drawn look."""
+    for _ in range(passes):
+        wobbled = [(x + rng.uniform(-jitter, jitter),
+                    y + rng.uniform(-jitter, jitter)) for x, y in pts]
+        d.line(wobbled, fill=color, width=width, joint="curve")
+
+
+def render_marker_price_chart(
+    series,
+    out_path: Path,
+    settings: Settings,
+    *,
+    size: tuple[int, int] = (1000, 780),
+    move_text: str = "",
+) -> tuple[Path, dict]:
+    """The napkin chart: `series` price line drawn as a rough marker
+    scribble on black. Returns (png_path, meta) with the SAME anchor
+    contract as render_price_chart."""
+    W, H = size
+    closes = list(series.closes)
+    up = closes[-1] >= closes[0]
+    line_rgb = UP if up else DOWN
+    rng = random.Random(f"marker|{series.ticker}|{closes[-1]}|{len(closes)}")
+
+    BLACK = (8, 9, 11)
+    CHALK = (232, 232, 226)
+    img = Image.new("RGBA", (W, H), (*BLACK, 255))
+    d = ImageDraw.Draw(img)
+    nib = max(int(W * 0.006), 3)
+
+    pad = int(W * 0.06)
+    head_h = int(H * 0.16)
+    # scrawled title (the title names the series — no legend) + move aside
+    tick_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.55))
+    d.text((pad + rng.randint(-3, 3), pad * 0.7), series.ticker,
+           font=tick_font, fill=(*CHALK, 255))
+    move = move_text or f"{series.pct_change_1d:+.1f}%"
+    move_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.30))
+    mw = d.textlength(move, font=move_font)
+    if pad + d.textlength(series.ticker, font=tick_font) + mw + pad < W:
+        d.text((W - pad - mw, pad * 0.9 + head_h * 0.18), move,
+               font=move_font, fill=(*line_rgb, 255))
+
+    x0, y0 = pad, head_h + pad
+    x1, y1 = W - pad, H - pad - int(H * 0.05)
+    # crude hand-drawn axes
+    _marker_stroke(d, [(x0, y0 - 6), (x0, y1)], rng, width=nib, color=(*CHALK, 220),
+                   jitter=2.5, passes=1)
+    _marker_stroke(d, [(x0, y1), (x1 + 4, y1)], rng, width=nib, color=(*CHALK, 220),
+                   jitter=2.5, passes=1)
+
+    lo, hi = min(closes), max(closes)
+    span = (hi - lo) or 1.0
+    lo -= span * 0.08
+    hi += span * 0.08
+    span = hi - lo
+
+    def pt(i: int):
+        x = x0 + (x1 - x0) * (i / max(len(closes) - 1, 1))
+        y = y1 - (y1 - y0) * ((closes[i] - lo) / span)
+        return x, y
+
+    pts = [pt(i) for i in range(len(closes))]
+    _marker_stroke(d, pts, rng, width=nib + 2, color=(*line_rgb, 255),
+                   jitter=3.2, passes=3)
+
+    # a scrawled arrow off the last point, in the move direction
+    lx, ly = pts[-1]
+    ax, ay = lx + W * 0.02, ly - (H * 0.06 if up else -H * 0.06)
+    _marker_stroke(d, [(lx, ly), (ax, ay)], rng, width=nib, color=(*line_rgb, 255),
+                   jitter=2, passes=2)
+    head = H * 0.028
+    if up:
+        _marker_stroke(d, [(ax - head, ay + head), (ax, ay), (ax + head, ay + head * 0.6)],
+                       rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
+    else:
+        _marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
+                       rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out_path)
+
+    meta = {
+        "size": [W, H],
+        "plot_box": [x0, y0, x1, y1],
+        "last_point": [round(lx), round(ly)],
+        "direction": "up" if up else "down",
+        "style": "marker",
         "headline_slots": [
             [pad, int(y0 + (y1 - y0) * 0.06 + i * (y1 - y0) * 0.30)]
             for i in range(3)

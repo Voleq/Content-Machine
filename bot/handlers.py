@@ -170,20 +170,25 @@ class BotCore:
             reply.text = f"💾 saved {dest.name} for {ws.ticker}.\n\n" + reply.text
             return reply
 
-        if suffix in (".png", ".jpg", ".jpeg", ".webp"):
-            stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
-            pending = self._pending_asset_slugs(ws)
+        stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
+
+        if suffix in (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mov", ".mkv", ".webm"):
+            pending = self._pending_custom_slugs(ws)
             if stem in pending:
-                # a Claude Design export for an [ASSET] tag — into the shared
-                # custom library, where validation looks for it
+                # a Claude Design export ([ASSET]) or an operator capture
+                # ([SCREENGRAB]) — into the shared custom library, where
+                # pre-render validation looks for it
                 custom = self.settings.assets_dir / "custom"
                 custom.mkdir(parents=True, exist_ok=True)
                 (custom / f"{stem}{suffix}").write_bytes(data)
-                remaining = [s for s in self._pending_asset_slugs(ws) if s != stem]
+                remaining = [s for s in self._pending_custom_slugs(ws) if s != stem]
+                kind = "screengrab" if pending[stem] == "screengrab" else "custom asset"
                 note = (f" Still missing: {', '.join(remaining)}." if remaining
-                        else " All [ASSET] files present — re-paste the script "
+                        else " All custom files present — re-paste the script "
                              "to refresh the report.")
-                return Reply(f"🎨 saved custom asset {stem}{suffix}.{note}")
+                return Reply(f"🎨 saved {kind} {stem}{suffix}.{note}")
+
+        if suffix in (".png", ".jpg", ".jpeg", ".webp"):
             safe = name.replace(" ", "_")
             (ws.path / safe).write_bytes(data)
             shots = list_screenshots(ws.path)
@@ -197,16 +202,19 @@ class BotCore:
 
         return Reply(f"Unsupported file type: {name}")
 
-    def _pending_asset_slugs(self, ws: Workspace) -> list[str]:
-        """[ASSET] slugs of the saved LONG script that still lack a file."""
+    def _pending_custom_slugs(self, ws: Workspace) -> dict[str, str]:
+        """slug -> kind ("asset"|"screengrab") for the saved LONG script's
+        custom-file tags that still lack a file in assets/custom/."""
         script = ws.load_long()
         if script is None:
-            return []
+            return {}
         custom = self.settings.assets_dir / "custom"
-        out = []
-        for slug in script.asset_slugs():
-            if not (custom.is_dir() and list(custom.glob(f"{slug}.*"))):
-                out.append(slug)
+        out: dict[str, str] = {}
+        for kind, slugs in (("asset", script.asset_slugs()),
+                            ("screengrab", script.screengrab_slugs())):
+            for slug in slugs:
+                if not (custom.is_dir() and list(custom.glob(f"{slug}.*"))):
+                    out[slug] = kind
         return out
 
     # ------------------------------------------------------- script intake

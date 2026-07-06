@@ -9,6 +9,60 @@ PALETTE = {
 }
 
 
+def test_parse_new_tags(long_doodles_text, settings):
+    script, warnings = parse_long_script(long_doodles_text, "EXMPL", settings)
+    assert "[" not in script.narration and "]" not in script.narration
+    # chart with a marker style
+    charts = script.events_of(TagType.CHART)
+    price_chart = next(e for e in charts if e.payload == "price")
+    assert price_chart.style == "marker"
+    revenue_chart = next(e for e in charts if e.payload == "revenue")
+    assert revenue_chart.style == ""  # clean default
+    # doodles, scribbles, screengrab
+    assert [e.payload for e in script.events_of(TagType.DOODLE)] == \
+        ["scribble-explosion", "stick-face-down"]
+    assert len(script.events_of(TagType.SCRIBBLE)) == 2
+    assert script.screengrab_slugs() == ["broker-pnl"]
+
+
+def test_screengrab_blocks_until_file_present(long_doodles_text, settings, tmp_path):
+    script, _ = parse_long_script(long_doodles_text, "EXMPL", settings)
+    # the fixture references income_statement.png too — satisfy that first
+    (tmp_path / "income_statement.png").write_bytes(b"png")
+    _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert any("SCREENGRAB" in b and "broker-pnl" in b for b in blocking)
+
+    custom = settings.assets_dir / "custom"
+    custom.mkdir(parents=True, exist_ok=True)
+    grab = custom / "broker-pnl.png"
+    grab.write_bytes(b"png")
+    try:
+        _, blocking2 = validate_long_script(script, PALETTE, tmp_path, settings)
+        assert not any("broker-pnl" in b for b in blocking2)
+    finally:
+        grab.unlink()
+
+
+def test_unknown_doodle_warns_not_blocks(settings, tmp_path):
+    script, _ = parse_long_script(
+        "Words. [DOODLE: not-a-real-doodle] More words. And a real one. "
+        "[DOODLE: shrug] Done.", "EXMPL", settings,
+    )
+    warnings, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert blocking == []
+    assert any("not-a-real-doodle" in w and "skipped" in w for w in warnings)
+
+
+def test_malformed_scribble_skipped(settings):
+    script, warnings = parse_long_script(
+        "A point. [SCRIBBLE: wobble -> target] and [SCRIBBLE: circle -> the debt] end.",
+        "EXMPL", settings,
+    )
+    scribbles = script.events_of(TagType.SCRIBBLE)
+    assert len(scribbles) == 1 and scribbles[0].payload == "circle -> the debt"
+    assert any("malformed" in w for w in warnings)
+
+
 def test_parse_valid_long(long_valid_text, settings):
     script, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
     assert script.ticker == "EXMPL"

@@ -10,10 +10,13 @@ The Dennis tag grammar:
     [IMG: query] [PRODUCT: query]     real operations/product imagery
     [MEME: key]                       owned library first, capped per video
     [CLIP: query] / [BROLL: query]    ironic stock footage (vetted palette)
-    [CHART: metric]                   auto-generated channel-style chart
+    [CHART: metric style=marker]      auto chart; clean (default) or marker
     [SHOW FILING: file.png]           unnamed-source data screenshot
+    [SCREENGRAB: slug]                operator-supplied app/screen capture
     [SOUND: key]                      sfx palette
     [ASSET: slug]                     bespoke Claude-Design asset
+    [DOODLE: key]                     crude hand-drawn overlay (owned)
+    [SCRIBBLE: circle|arrow|underline -> target]   drawn annotation on a point
 
 Unknown tag *types* ([CAMERA: ...] — or the retired [STAMP: ...]) are
 logged, stripped and skipped — never fatal, and never spoken.
@@ -37,7 +40,9 @@ from pipeline.models import (
     LongScript,
     TagEvent,
     TagType,
+    parse_scribble_payload,
 )
+from pipeline.tagging import parse_chart_payload, tokenize_tags
 
 log = logging.getLogger(__name__)
 
@@ -47,10 +52,6 @@ VENDOR_WORDS = ("refinitiv", "lseg", "eikon")
 class LongScriptError(Exception):
     """Fatal LONG script problem (shown in Telegram)."""
 
-
-# A broader net first so unknown tag types are stripped rather than spoken.
-_ANY_TAG_RE = re.compile(r"\[([A-Z][A-Z -]*?):\s*([^\]\n]+)\]")
-_KNOWN_TYPES = {t.value: t for t in TagType}
 
 _ASSET_TRAILER_RE = re.compile(r"^\s*=+\s*ASSET PROMPTS\s*=+\s*$",
                                re.IGNORECASE | re.MULTILINE)
@@ -97,42 +98,33 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     if not raw.strip():
         raise LongScriptError("Narration is empty (only an asset-prompt trailer was sent).")
 
-    warnings: list[str] = []
-    clean_parts: list[str] = []
-    clean_len = 0
+    narration, raw_tags, warnings = tokenize_tags(raw)
+    for w in warnings:
+        log.warning("long tokenize: %s", w)
+
     events: list[TagEvent] = []
-    last = 0
-
-    for m in _ANY_TAG_RE.finditer(raw):
-        segment = raw[last:m.start()]
-        clean_parts.append(segment)
-        clean_len += len(segment)
-        last = m.end()
-
-        type_str = m.group(1).strip()
-        payload = m.group(2).strip()
-        tag_type = _KNOWN_TYPES.get(type_str)
-        if tag_type is None:
-            warnings.append(f"unknown tag [{type_str}: {payload}] at char {m.start()} — skipped")
-            log.warning("unknown tag type %r skipped", type_str)
-            continue
-        if tag_type is TagType.ASSET:
+    for rt in raw_tags:
+        payload = rt.payload
+        style = ""
+        if rt.type in (TagType.ASSET, TagType.SCREENGRAB):
             slug = normalize_slug(payload)
             if not _SLUG_RE.match(slug):
-                warnings.append(f'asset slug "{payload}" is not kebab-case — tag skipped')
+                warnings.append(f'{rt.type.value.lower()} slug "{payload}" is not '
+                                f"kebab-case — tag skipped")
                 continue
             payload = slug
-        events.append(
-            TagEvent(
-                type=tag_type,
-                payload=payload,
-                char_offset=clean_len,
-                raw_offset=m.start(),
-            )
-        )
-
-    clean_parts.append(raw[last:])
-    narration = "".join(clean_parts)
+        elif rt.type is TagType.CHART:
+            payload, style = parse_chart_payload(payload)
+        elif rt.type is TagType.SCRIBBLE:
+            parsed = parse_scribble_payload(payload)
+            if parsed is None:
+                warnings.append(f'scribble "{payload}" is malformed (use '
+                                f'"circle|arrow|underline -> target") — skipped')
+                continue
+        events.append(TagEvent(
+            type=rt.type, payload=payload,
+            char_offset=rt.char_offset, raw_offset=rt.raw_offset, style=style,
+        ))
 
     if not narration.strip():
         raise LongScriptError("Narration is empty after stripping tags.")
@@ -184,14 +176,18 @@ def validate_long_script(
       MEME count over the cap         -> BLOCKING (information-first, 1–2 max)
       MEME key not in owned library   -> warning (fallback providers / filler)
       CHART metric unknown            -> warning (skipped)
+      DOODLE key not in owned library -> warning (skipped at render)
+      SCREENGRAB file missing         -> BLOCKING (operator drops it in custom/)
       ASSET file missing              -> BLOCKING until the operator pastes the
                                          appended prompt into Claude Design and
                                          drops the export at assets/custom/<slug>
     """
+    from pipeline.doodles import DoodleLibrary
     from pipeline.memes import MemeLibrary
 
     palette = set(palette_keys)
     meme_lib = MemeLibrary(settings)
+    doodle_lib = DoodleLibrary(settings)
     warnings: list[str] = []
     blocking: list[str] = []
 
@@ -230,6 +226,19 @@ def validate_long_script(
                 warnings.append(
                     f'chart metric "{e.payload}" unknown (use one of: '
                     f'{", ".join(CHART_METRICS)}) — skipped'
+                )
+        elif e.type is TagType.DOODLE:
+            if doodle_lib.match(e.payload) is None:
+                warnings.append(
+                    f'doodle "{e.payload}" not in the owned library — skipped at render'
+                )
+        elif e.type is TagType.SCREENGRAB:
+            hits = list(custom_dir.glob(f"{e.payload}.*")) if custom_dir.is_dir() else []
+            if not hits:
+                blocking.append(
+                    f'[SCREENGRAB: {e.payload}] has no file at '
+                    f'assets/custom/{e.payload}.* — drop the screenshot or short '
+                    f'screen-record there (or upload it in chat named {e.payload}).'
                 )
         elif e.type is TagType.ASSET:
             hits = list(custom_dir.glob(f"{e.payload}.*")) if custom_dir.is_dir() else []

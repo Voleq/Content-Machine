@@ -58,24 +58,28 @@ pipeline/
                          strict JSON), LongScript + Dennis tag grammar,
                          CompanyData (latest + 5y history), CostReport,
                          JobRecord, Candidate — no verdict enum anywhere
-  parser_short.py        tolerant JSON extraction -> strict validation
+  parser_short.py        tolerant JSON extraction + inline [DOODLE]/[SCRIBBLE]
   parser_long.py         offset-aware tag tokenizer + ASSET-prompt trailer
+  tagging.py             the shared tag tokenizer (both formats) + chart style
   tts.py                 ElevenLabs with-timestamps client + cache + budgets
   timeline.py            THE MASTER CLOCK: beats/anchors -> cue times,
-                         fast-cut segment planner
+                         fast-cut segment planner, doodle/scribble overlays
   prices.py              Yahoo price history behind an interface (cached,
                          synthetic floor) — feeds the branded chart
-  chart.py               branded price chart + multi-year metric charts
+  chart.py               branded price chart, crude "marker" napkin chart,
+                         multi-year metric charts
   rasters.py             the SHORT kit: headline cards, numbers sheet,
-                         scribbles, zoom-punch, stingers, karaoke captions
+                         scribbles, zoom-punch, stingers, karaoke captions,
+                         doodle boil
   render_common.py       ffmpeg wrappers, encode profiles, compositing engine
   render_short.py        9:16 "Noise or signal?" template filler
   render_long.py         16:9 fast-cut concat engine (draft + final)
   broll.py               the content engine: [CLIP] Pexels palette,
                          [IMG]/[PRODUCT] Wikimedia + company site,
                          [MEME] owned library + fallbacks, [CHART] auto,
-                         [ASSET] custom files — cached, attribution kept
+                         [SCREENGRAB]/[ASSET] custom files — cached, attributed
   memes.py               owned meme library (meme_index.json) + providers
+  doodles.py             owned doodle library (doodles_index.json) + boil
   company_data.py        two-sheet Excel export reader + filing screenshots
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
@@ -91,8 +95,9 @@ bot/
   keyboards.py           Approve / Swap clip / Cancel, candidate buttons
 assets/                  fonts, backgrounds, overlays, sfx, music,
                          hook_bank.json, meme_library/ (16 owned memes +
-                         index), broll_library/ (drop owned clips here),
-                         custom/ (Claude-Design [ASSET] exports)
+                         index), doodle_library — doodles/ (14 crude marker
+                         overlays + index), broll_library/ (drop owned clips),
+                         custom/ (Claude-Design [ASSET] + [SCREENGRAB] files)
 templates/               master prompts + dennis_data_template.xlsx
 fixtures/                mock scripts / Pexels / Wikimedia / TTS / prices /
                          screener JSON / company data
@@ -224,7 +229,21 @@ env var, case-insensitive).
   remains available as an optional extra (`pip install -e '.[moviepy]'`).
 - **The branded chart is rendered by the pipeline** from the same Yahoo
   feed the screener uses (cached, TTL'd, synthetic deterministic floor if
-  the feed dies) — never a TradingView screenshot.
+  the feed dies) — never a TradingView screenshot. Two styles: the clean
+  branded card and a crude hand-drawn "marker" napkin chart on black;
+  a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
+- **Hand-drawn overlay language**: `[DOODLE: key]` drops a crude marker
+  overlay (stick-figure reactions, arrows, a scribble explosion — 14 in
+  `assets/doodles/`, indexed like the memes, resolved locally, given a
+  frame-to-frame "boil"); `[SCRIBBLE: circle|arrow|underline -> target]`
+  draws a mark plus a target callout on a number/point. Both parse in the
+  SHORT (inline in `audio_script`, stripped before TTS) and the LONG, and
+  composite as the TOP layer over charts, screenshots and b-roll.
+- **Screen-grab backbone**: `[SCREENGRAB: slug]` composites an operator-
+  supplied capture (a broker app, a portfolio P&L, a Google search) —
+  image or short screen-record dropped into `assets/custom/`, pad-fit
+  (never cover-cropped). Same missing-file block as `[ASSET]`; the bot
+  routes a matching-slug upload straight into `custom/`.
 - **Captions are libass karaoke** (`subtitles` filter) generated from the
   word timestamps — words punch in as they are spoken. LONG captions are
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps
@@ -240,9 +259,11 @@ env var, case-insensitive).
   rate (2.7 SHORT / 2.3 LONG) with linear word timestamps, so mock
   renders have realistic pacing and the full timeline logic is exercised.
 - **Placeholder kit assets are generated procedurally**
-  (`scripts/gen_assets.py`, seeded). Replace `assets/sfx`, `assets/music`,
-  the backgrounds and the meme placeholders with the Claude-Design /
-  licensed kit for production polish; everything is normalized on ingest.
+  (`scripts/gen_assets.py`, seeded — including the 14 crude marker doodles
+  drawn with wobbly Pillow strokes). Replace `assets/sfx`, `assets/music`,
+  the backgrounds, and the meme + doodle placeholders with the
+  Claude-Design / licensed kit for production polish; everything is
+  normalized on ingest.
 - **Draft renders sit behind the same approval gate in live mode** — the
   first LONG render (draft or final) is what triggers the single paid TTS
   call; after that, drafts and re-renders are free from cache.

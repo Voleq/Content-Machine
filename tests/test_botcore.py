@@ -181,6 +181,40 @@ def test_asset_flow_blocks_saves_prompt_and_accepts_upload(core, xlsx_bytes, fix
             p.unlink()
 
 
+def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
+    """[SCREENGRAB] blocks like [ASSET]; the operator's capture (image or
+    a short screen-record) is routed to assets/custom/ by matching slug."""
+    import io
+
+    from PIL import Image
+
+    raw = ("EXMPL is cheap and hated. Here is my account, for context. "
+           "[SCREENGRAB: broker-pnl] Twenty five k to zero. "
+           "I will be up at three a.m. See you at the next filing.")
+    core.new_ticker(CHAT, "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+
+    reply = core.intake_script(CHAT, raw)
+    assert "BLOCKED" in reply.text
+    assert "SCREENGRAB" in reply.text and "broker-pnl" in reply.text
+
+    custom = core.settings.assets_dir / "custom"
+    try:
+        # a short screen-record (mp4) whose name matches the slug routes to custom/
+        buf = io.BytesIO()
+        Image.new("RGB", (1170, 2532), (18, 22, 28)).save(buf, format="PNG")
+        r = core.handle_upload(CHAT, "broker-pnl.png", buf.getvalue())
+        assert "screengrab broker-pnl" in r.text
+        assert (custom / "broker-pnl.png").exists()
+
+        reply2 = core.intake_script(CHAT, raw)
+        assert not any(line.startswith("⛔") and "broker-pnl" in line
+                       for line in reply2.text.splitlines())
+    finally:
+        for p in custom.glob("broker-pnl.*"):
+            p.unlink()
+
+
 def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_text):
     from PIL import Image
     import io

@@ -100,6 +100,7 @@ def build_short_timeline(
     conclusion_lead_s: float = 5.0,
     meme_hold_s: float = 1.4,
     cutaway_hold_s: float = 2.0,
+    doodle_hold_s: float = 1.6,
 ) -> list[Cue]:
     """Every SHORT cue, positioned off the spoken audio. No number in the
     renderer may override these."""
@@ -208,6 +209,18 @@ def build_short_timeline(
         cues.append(Cue(t=t, kind=CueKind.CUTAWAY, fallback=fb,
                         payload={"key": script.broll.key, "duration": cutaway_hold_s}))
 
+    # ---- inline [DOODLE]/[SCRIBBLE] overlays, word-anchored to their
+    #      position in the (clean) audio_script — composited on top, so
+    #      they never disturb the beat structure
+    for e in script.doodle_events():
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        cues.append(Cue(t=t, kind=CueKind.DOODLE,
+                        payload={"value": e.payload, "hold": doodle_hold_s}))
+    for e in script.scribble_events():
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        cues.append(Cue(t=t, kind=CueKind.SCRIBBLE,
+                        payload={"value": e.payload, "hold": doodle_hold_s}))
+
     # ---- 4. payoff: the deadpan conclusion (noise or signal — no stamp)
     cues.append(Cue(t=payoff_t, kind=CueKind.CONCLUSION, fallback=payoff_fallback,
                     payload={"text": script.conclusion, "until": duration}))
@@ -228,13 +241,20 @@ _TAG_TO_KIND = {
     TagType.BROLL: CueKind.CLIP,
     TagType.CHART: CueKind.CHART,
     TagType.SHOW_FILING: CueKind.FILING,
+    TagType.SCREENGRAB: CueKind.SCREENGRAB,
     TagType.SOUND: CueKind.SOUND,
     TagType.ASSET: CueKind.ASSET,
+    TagType.DOODLE: CueKind.DOODLE,
+    TagType.SCRIBBLE: CueKind.SCRIBBLE,
 }
 
-# cue kinds that claim a visual segment on the LONG timeline
+# cue kinds that claim a visual segment on the LONG timeline (the base
+# frame). DOODLE/SCRIBBLE are overlays; SOUND is audio — none claim a cut.
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
-                    CueKind.FILING, CueKind.ASSET)
+                    CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET)
+
+# how long a hand-drawn overlay stays on screen before it lifts off
+DOODLE_HOLD_S = 2.0
 
 
 def build_long_timeline(
@@ -249,6 +269,12 @@ def build_long_timeline(
         t = clamp(char_offset_time(words, e.char_offset), duration)
         kind = _TAG_TO_KIND[e.type]
         payload = {"order": idx, "value": e.payload, "tag": e.type.value}
+        if kind is CueKind.CHART and e.style:
+            payload["style"] = e.style
+        if kind is CueKind.SCRIBBLE:
+            payload["hold"] = DOODLE_HOLD_S
+        elif kind is CueKind.DOODLE:
+            payload["hold"] = DOODLE_HOLD_S
         cues.append(Cue(t=t, kind=kind, payload=payload))
     cues.sort(key=lambda c: (c.t, c.payload.get("order", 0)))
     return cues
@@ -258,7 +284,7 @@ def build_long_timeline(
 class Segment:
     start: float
     end: float
-    kind: str          # clip | img | meme | chart | filing | asset | filler
+    kind: str          # clip | img | meme | chart | filing | screengrab | asset | filler
     payload: dict = field(default_factory=dict)
 
     @property
@@ -275,6 +301,7 @@ DEFAULT_HOLDS = {
     CueKind.IMG: 2.8,
     CueKind.CHART: 3.0,
     CueKind.FILING: 2.8,
+    CueKind.SCREENGRAB: 3.0,
     CueKind.ASSET: 3.0,
     CueKind.MEME: 1.8,
 }

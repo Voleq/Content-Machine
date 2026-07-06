@@ -1,11 +1,12 @@
 {
   "ticker": "EXMPL",
   "duration": 51.872993,
-  "opener": "TRENDING, APPARENTLY.",
+  "opener": "CALM DOWN. NUMBERS FIRST.",
   "chart": {
     "source": "fixture",
     "degraded": false,
-    "direction": "up"
+    "direction": "up",
+    "style": "clean"
   },
   "cues": [
     {

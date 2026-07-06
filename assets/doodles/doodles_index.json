@@ -1,0 +1,58 @@
+{
+  "stick-shrug": {
+    "tags": ["shrug", "whatever", "acceptance", "who-knows"],
+    "use_when": "A fact lands and there is nothing to do about it but shrug."
+  },
+  "stick-face-down": {
+    "tags": ["defeat", "floor", "giving-up", "done"],
+    "use_when": "The number is so bad the only honest reaction is lying on the floor."
+  },
+  "stick-umbrella-red-arrows": {
+    "tags": ["crash", "rain", "red-arrows", "drawdown", "sell-off"],
+    "use_when": "Standing under a sell-off like weather — a rain of red arrows."
+  },
+  "stick-staring-at-crash": {
+    "tags": ["watching", "chart-crash", "disbelief", "spectator"],
+    "use_when": "Watching a chart fall in real time and doing nothing."
+  },
+  "stick-pointing": {
+    "tags": ["look", "pointing", "exhibit-a", "see"],
+    "use_when": "Pointing at the number like exhibit A — 'look at it.'"
+  },
+  "arrow-up-scribble": {
+    "tags": ["up", "pump", "moon", "rally"],
+    "use_when": "A crude up arrow when the crowd thinks something only goes up."
+  },
+  "arrow-down-scribble": {
+    "tags": ["down", "dump", "red", "falling"],
+    "use_when": "A crude red down arrow for the part of the chart nobody screenshots."
+  },
+  "circle-scribble": {
+    "tags": ["circle", "attention", "this-one", "highlight"],
+    "use_when": "Circling the one number that actually matters."
+  },
+  "underline-scribble": {
+    "tags": ["underline", "emphasis", "read-it-again"],
+    "use_when": "Underlining a phrase that deserves a second read."
+  },
+  "wedge-diagram": {
+    "tags": ["wedge", "pattern", "technical-analysis", "lines"],
+    "use_when": "Drawing the 'pattern' with unearned confidence — technical analysis, allegedly."
+  },
+  "payoff-diagram": {
+    "tags": ["payoff", "options", "hockey-stick", "asymmetric"],
+    "use_when": "The napkin payoff diagram for a trade that definitely can't go wrong."
+  },
+  "money-bag": {
+    "tags": ["money", "bag", "profit", "riches"],
+    "use_when": "The theoretical money at the end of the plan."
+  },
+  "money-stack": {
+    "tags": ["stack", "cash", "tendies", "pile"],
+    "use_when": "A drawn pile of cash — the imaginary kind."
+  },
+  "scribble-explosion": {
+    "tags": ["explosion", "boom", "blowup", "account-blowup"],
+    "use_when": "The account, the thesis, or the balance sheet detonating."
+  }
+}

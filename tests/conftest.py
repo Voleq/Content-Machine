@@ -51,6 +51,16 @@ def long_valid_text() -> str:
 
 
 @pytest.fixture()
+def short_doodles_json() -> str:
+    return (FIXTURES / "scripts" / "short_doodles.json").read_text()
+
+
+@pytest.fixture()
+def long_doodles_text() -> str:
+    return (FIXTURES / "scripts" / "long_doodles.txt").read_text()
+
+
+@pytest.fixture()
 def alignment_sample() -> dict:
     return json.loads((FIXTURES / "tts" / "alignment_sample.json").read_text())
 

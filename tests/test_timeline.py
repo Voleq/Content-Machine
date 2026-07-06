@@ -242,6 +242,49 @@ def test_long_timeline_img_and_product_share_kind(settings):
     assert img_cues[1].payload["tag"] == "PRODUCT"
 
 
+def test_short_inline_doodle_scribble_cues(short_doodles_json):
+    script = ShortScript.model_validate_json(_reparse(short_doodles_json))
+    duration = 55.0
+    words = mock_words(script.audio_script, duration)
+    cues = build_short_timeline(script, words, duration)
+    doodles = [c for c in cues if c.kind is CueKind.DOODLE]
+    scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
+    assert len(doodles) == 1 and doodles[0].payload["value"] == "stick-staring-at-crash"
+    assert len(scribbles) == 1 and scribbles[0].payload["value"] == "circle -> Net income"
+    # word-anchored into the clean audio_script, and inside the runtime
+    for c in doodles + scribbles:
+        assert 0 <= c.t <= duration
+    assert [c.t for c in cues] == sorted(c.t for c in cues)
+
+
+def test_long_overlays_do_not_claim_segments(long_doodles_text, settings):
+    script, _ = parse_long_script(long_doodles_text, "EXMPL", settings)
+    duration = 90.0
+    words = mock_words(script.narration, duration)
+    cues = build_long_timeline(script, words, duration)
+    # doodle/scribble cues exist on the timeline...
+    assert any(c.kind is CueKind.DOODLE for c in cues)
+    assert any(c.kind is CueKind.SCRIBBLE for c in cues)
+    assert any(c.kind is CueKind.SCREENGRAB for c in cues)
+    # ...but only real visuals claim segments (overlays ride on top)
+    segments, _ = plan_long_segments(cues, duration)
+    kinds = {s.kind for s in segments}
+    assert "doodle" not in kinds and "scribble" not in kinds
+    assert "screengrab" in kinds, "a screengrab IS a base frame"
+    assert "chart" in kinds
+
+
+def _reparse(raw: str) -> str:
+    """Run the short parser so inline tags become inline_events, then dump
+    the model JSON for a clean round-trip in tests."""
+    from config import Settings
+    from pipeline.parser_short import parse_short_script
+
+    s = Settings(MOCK_MODE=True, _env_file=None)
+    script, _ = parse_short_script(raw, s)
+    return script.model_dump_json()
+
+
 # ------------------------------------------------------------ segment plan
 
 

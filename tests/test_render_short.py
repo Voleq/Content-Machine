@@ -14,13 +14,17 @@ from pipeline.render_short import render_short, sample_hook_opener
 from pipeline.timeline import build_short_timeline
 from pipeline.tts import TTSEngine
 
-SMOKE_SCRIPT = {
+# the raw script embeds inline [DOODLE]/[SCRIBBLE] tags and opens on the
+# marker chart — parsed (not hand-built) so the inline tokenizer runs
+SMOKE_RAW = json.dumps({
     "ticker": "EXMPL",
     "format": "short",
     "hook_text": "Up 29% today. The business is not.",
+    "chart_style": "marker",
     "audio_script": (
-        "EXMPL is up twenty nine percent today. The news is a press release. "
-        "Revenue is flat for five years and the losses got wider every year. "
+        "EXMPL is up twenty nine percent today. [DOODLE: stick-staring-at-crash] "
+        "The news is a press release. "
+        "Revenue is flat for five years and the losses got [SCRIBBLE: circle -> Net income] wider every year. "
         "The chart went vertical, the business went sideways. "
         "Noise. Set a reminder for the next filing."
     ),
@@ -40,12 +44,14 @@ SMOKE_SCRIPT = {
         {"target": "chart", "anchor_word": "today", "note": "this"},
         {"target": "numbers", "row_index": 1, "anchor_word": "wider"},
     ],
-}
+})
 
 
 @pytest.fixture(scope="module")
 def rendered(tmp_path_factory):
     from config import Settings
+
+    from pipeline.parser_short import parse_short_script
 
     tmp = tmp_path_factory.mktemp("render_short")
     settings = Settings(
@@ -58,7 +64,7 @@ def rendered(tmp_path_factory):
         _env_file=None,
     )
     settings.ensure_runtime_dirs()
-    script = ShortScript.model_validate(SMOKE_SCRIPT)
+    script, _ = parse_short_script(SMOKE_RAW, settings)
     tts = TTSEngine(settings).synthesize(script.audio_script, "short")
     ws = settings.workspace_dir / "EXMPL" / "test"
     ws.mkdir(parents=True)
@@ -129,6 +135,21 @@ def test_no_desk_no_stamp_anywhere(rendered):
     for banned in ("stamp", "folder", "whip", "highlight", "typewriter", "cta"):
         assert banned not in names, f"desk-era layer {banned!r} survived"
     assert "verdict" not in json.dumps(manifest).lower()
+
+
+def test_marker_chart_and_hand_drawn_overlays(rendered):
+    """The reference look: marker chart hero + inline doodle + inline
+    scribble composited as top layers."""
+    settings, script, tts, out, manifest = rendered
+    assert manifest["chart"]["style"] == "marker"
+    names = {layer["name"] for layer in manifest["layers"]}
+    assert any(n.startswith("doodle_") for n in names), "inline doodle composited"
+    assert any(n.startswith("scribble_inline_") for n in names), "inline scribble composited"
+    # the inline doodle/scribble cue times reached the filtergraph
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    for kind in ("doodle", "scribble"):
+        cue = next(c for c in manifest["cues"] if c["kind"] == kind)
+        assert f"between(t,{cue['t']:.4f}" in filter_text
 
 
 def test_hook_opener_sampling(settings):

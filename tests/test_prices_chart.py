@@ -5,7 +5,11 @@ import json
 
 from PIL import Image
 
-from pipeline.chart import render_metric_chart, render_price_chart
+from pipeline.chart import (
+    render_marker_price_chart,
+    render_metric_chart,
+    render_price_chart,
+)
 from pipeline.prices import (
     MockPriceSource,
     PriceSeries,
@@ -92,6 +96,31 @@ def test_price_chart_down_direction(settings, tmp_path):
                          closes=[10, 9.5, 9.7, 9, 8.5, 8.6, 8, 7.5, 7.2, 6])
     _, meta = render_price_chart(series, tmp_path / "down.png", settings, size=(400, 320))
     assert meta["direction"] == "down"
+
+
+def test_marker_price_chart_same_contract(settings, tmp_path):
+    """The napkin chart returns the same anchor contract so a SHORT can
+    open on either style."""
+    series = MockPriceSource(settings).history("EXMPL", 120)
+    clean = render_price_chart(series, tmp_path / "c.png", settings, size=(500, 390))[1]
+    out, marker = render_marker_price_chart(
+        series, tmp_path / "m.png", settings, size=(500, 390), move_text="+29%")
+    assert out.exists() and Image.open(out).size == (500, 390)
+    assert marker["style"] == "marker"
+    assert set(clean) - {"style"} <= set(marker), "same keys as the clean chart"
+    assert marker["direction"] == clean["direction"]
+    x0, y0, x1, y1 = marker["plot_box"]
+    lx, ly = marker["last_point"]
+    assert x0 < lx <= x1 + 2 and y0 - 2 <= ly <= y1 + 2
+
+
+def test_marker_chart_is_deterministic(settings, tmp_path):
+    series = MockPriceSource(settings).history("EXMPL", 120)
+    a = tmp_path / "a.png"
+    b = tmp_path / "b.png"
+    render_marker_price_chart(series, a, settings, size=(400, 320))
+    render_marker_price_chart(series, b, settings, size=(400, 320))
+    assert a.read_bytes() == b.read_bytes(), "seeded wobble -> identical render"
 
 
 def test_metric_chart_multi_year(settings, tmp_path):

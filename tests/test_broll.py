@@ -192,9 +192,64 @@ def test_chart_price_uses_price_feed(manager):
     assert chart.path.exists()
 
 
+def test_chart_marker_style_is_distinct(manager):
+    clean = manager.resolve_chart("price", ticker="EXMPL", style="clean")
+    marker = manager.resolve_chart("price", ticker="EXMPL", style="marker")
+    assert clean.path != marker.path, "style is part of the cache key"
+    assert marker.path.exists()
+
+
 def test_chart_unknown_metric_falls_back(manager):
     chart = manager.resolve_chart("mystery_metric", ticker="EXMPL", company_data=None)
     assert chart.source == "filler"
+
+
+# -------------------------------------------------------------- doodles
+def test_resolve_doodle_hit_and_miss(manager):
+    hit = manager.resolve_doodle("crash")  # tag -> stick-umbrella-red-arrows
+    assert hit is not None and hit.kind == "doodle" and hit.source == "local"
+    assert manager.resolve_doodle("nope-not-a-doodle") is None
+
+
+# ----------------------------------------------------------- screengrabs
+def test_screengrab_image_pad_fits(manager, settings):
+    from PIL import Image
+
+    missing = manager.resolve_screengrab("no-such-grab")
+    assert missing.source == "filler"
+
+    custom = settings.assets_dir / "custom"
+    custom.mkdir(parents=True, exist_ok=True)
+    target = custom / "phone-pnl.png"
+    Image.new("RGB", (1170, 2532), (18, 22, 28)).save(target)  # tall phone capture
+    try:
+        grab = manager.resolve_screengrab("phone-pnl")
+        assert grab.kind == "screengrab" and grab.source == "local"
+        assert not grab.is_video
+        # pad-fit (never cover-crop): output is exactly long res, letterboxed
+        assert Image.open(grab.path).size == settings.long_resolution
+    finally:
+        target.unlink()
+
+
+def test_screengrab_clip_normalized(manager, settings):
+    custom = settings.assets_dir / "custom"
+    custom.mkdir(parents=True, exist_ok=True)
+    target = custom / "screen-record.mp4"
+    run_ffmpeg([
+        "-f", "lavfi", "-i", "testsrc2=size=1080x1920:rate=30:duration=2",
+        "-c:v", "libx264", "-preset", "ultrafast", str(target),
+    ])
+    try:
+        grab = manager.resolve_screengrab("screen-record")
+        assert grab.is_video and grab.source == "local"
+        v = next(s for s in ffprobe_json(grab.path)["streams"]
+                 if s["codec_type"] == "video")
+        assert (v["width"], v["height"]) == settings.long_resolution
+        assert not [s for s in ffprobe_json(grab.path)["streams"]
+                    if s["codec_type"] == "audio"], "audio stripped"
+    finally:
+        target.unlink()
 
 
 # ------------------------------------------------------------------ assets

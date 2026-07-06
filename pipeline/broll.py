@@ -641,23 +641,29 @@ class ContentManager:
 
     # ------------------------------------------------------------ charts
     def resolve_chart(self, metric: str, *, ticker: str,
-                      company_data=None) -> Visual:
+                      company_data=None, style: str = "clean") -> Visual:
         """[CHART: metric] -> channel-style auto chart. `price` renders the
-        branded price chart from the cached price feed; history metrics
-        render multi-year bars. Cached by content hash."""
+        branded price chart (clean or marker style) from the cached price
+        feed; history metrics render multi-year bars. Cached by content
+        hash (style included)."""
         try:
             if metric == "price":
-                from pipeline.chart import render_price_chart
+                from pipeline.chart import (
+                    render_marker_price_chart,
+                    render_price_chart,
+                )
                 from pipeline.prices import get_price_history
 
                 series = get_price_history(ticker, self.settings)
+                marker = style == "marker"
                 h = hashlib.sha256(
-                    f"price|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
+                    f"price|{style}|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
                 ).hexdigest()[:20]
                 out = self.settings.cache_dir / "charts" / f"{h}.png"
                 if not out.exists():
                     W, H = self.settings.long_resolution
-                    render_price_chart(series, out, self.settings, size=(W, H))
+                    render = render_marker_price_chart if marker else render_price_chart
+                    render(series, out, self.settings, size=(W, H))
                 return Visual(key=metric, kind="chart", path=out, is_video=False,
                               source="generated", attribution="")
 
@@ -702,10 +708,70 @@ class ContentManager:
         return Visual(key=slug, kind="asset", path=norm, is_video=False,
                       source="local", attribution="")
 
+    # ------------------------------------------------------- screengrabs
+    _CLIP_SUFFIXES = (".mp4", ".mov", ".mkv", ".webm")
+
+    def resolve_screengrab(self, slug: str) -> Visual:
+        """[SCREENGRAB: slug] -> assets/custom/<slug>.* — an operator-
+        supplied real screenshot or short screen-record (broker app, P&L,
+        a Google search). Images are pad-fitted; clips are normalized.
+        Degrades to the filler card if it vanished since validation."""
+        custom = self.settings.assets_dir / "custom"
+        hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
+        clips = [p for p in hits if p.suffix.lower() in self._CLIP_SUFFIXES]
+        images = [p for p in hits if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")]
+        if clips:
+            src = clips[0]
+            stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
+            norm = self.settings.cache_dir / "custom" / f"grab_{slug}_{stamp}.mp4"
+            if not norm.exists():
+                self._normalize_screengrab_clip(src, norm)
+            return Visual(key=slug, kind="screengrab", path=norm, is_video=True,
+                          source="local", attribution="")
+        if images:
+            src = images[0]
+            stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
+            norm = self.settings.cache_dir / "custom" / f"grab_{slug}_{stamp}.png"
+            if not norm.exists():
+                normalize_image(src, norm, self.settings)
+            return Visual(key=slug, kind="screengrab", path=norm, is_video=False,
+                          source="local", attribution="")
+        log.warning("screengrab %r missing at render time — filler", slug)
+        return self.filler_image(slug, "screengrab")
+
+    def _normalize_screengrab_clip(self, src: Path, dest: Path) -> Path:
+        """Pad-fit a screen-record onto the dark canvas (never cover-crop a
+        phone capture), fps + duration cap, audio stripped."""
+        W, H = self.settings.long_resolution
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        run_ffmpeg([
+            "-i", str(src),
+            "-t", f"{self.settings.broll_max_clip_s:.2f}",
+            "-vf",
+            f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
+            f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0b0d12,"
+            f"fps={self.settings.fps},setsar=1",
+            "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
+            str(dest),
+        ])
+        return dest
+
+    # ------------------------------------------------------------- doodles
+    def resolve_doodle(self, key: str) -> Visual | None:
+        """[DOODLE: key] -> a crude hand-drawn overlay from the owned
+        library. Local-only; a miss returns None (renderer logs + skips)."""
+        from pipeline.doodles import DoodleLibrary
+
+        path = DoodleLibrary(self.settings).resolve(key)
+        if path is None:
+            return None
+        return Visual(key=key, kind="doodle", path=path, is_video=False,
+                      source="local", attribution="")
+
     # ---------------------------------------------------------- dispatch
     def resolve_visual(self, kind: str, value: str, *, ticker: str = "",
                        company_data=None, website: str = "",
-                       choice: int = 0) -> Visual:
+                       choice: int = 0, style: str = "clean") -> Visual:
         """Uniform entry point for LONG segments (kind = the CueKind value)."""
         if kind == "clip":
             return self.resolve_clip(value, choice)
@@ -714,7 +780,10 @@ class ContentManager:
         if kind == "meme":
             return self.resolve_meme(value)
         if kind == "chart":
-            return self.resolve_chart(value, ticker=ticker, company_data=company_data)
+            return self.resolve_chart(value, ticker=ticker,
+                                      company_data=company_data, style=style)
+        if kind == "screengrab":
+            return self.resolve_screengrab(value)
         if kind == "asset":
             return self.resolve_asset(value)
         raise ValueError(f"unknown visual kind {kind!r}")
@@ -739,17 +808,20 @@ class ContentManager:
                 kind = "meme"
             elif e.type is TagType.CHART:
                 kind = "chart"
+            elif e.type is TagType.SCREENGRAB:
+                kind = "screengrab"
             elif e.type is TagType.ASSET:
                 kind = "asset"
             else:
                 continue
-            if (kind, e.payload) in seen:
+            style = e.style or "clean"
+            if (kind, e.payload + f":{style}") in seen:
                 continue
-            seen.add((kind, e.payload))
+            seen.add((kind, e.payload + f":{style}"))
             out.append(self.resolve_visual(
                 kind, e.payload, ticker=script.ticker,
                 company_data=company_data, website=website,
-                choice=overrides.get(e.payload, 0),
+                choice=overrides.get(e.payload, 0), style=style,
             ))
         return out
 
