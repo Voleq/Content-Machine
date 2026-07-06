@@ -1,5 +1,6 @@
 import pytest
 
+from pipeline.models import ChartStyle, TagType
 from pipeline.parser_short import ScriptParseError, parse_short_script
 
 
@@ -8,6 +9,93 @@ def test_parse_valid_json(short_valid_json, settings):
     assert script.ticker == "EXMPL"
     assert len(script.headlines) == 2
     assert not any("anchor" in w for w in warnings)
+
+
+def test_inline_doodle_and_scribble_stripped_and_anchored(short_doodles_json, settings):
+    script, warnings = parse_short_script(short_doodles_json, settings)
+    # tags are stripped from the spoken/captioned text
+    assert "[" not in script.audio_script and "]" not in script.audio_script
+    assert "DOODLE" not in script.audio_script and "SCRIBBLE" not in script.audio_script
+    doodles = script.doodle_events()
+    scribbles = script.scribble_events()
+    assert [e.payload for e in doodles] == ["stick-staring-at-crash"]
+    assert [e.payload for e in scribbles] == ["circle -> Net income"]
+    # offsets index the CLEAN audio_script (the word right after each tag)
+    for e in doodles + scribbles:
+        assert e.type in (TagType.DOODLE, TagType.SCRIBBLE)
+        assert 0 <= e.char_offset <= len(script.audio_script)
+    after = script.audio_script[doodles[0].char_offset:].lstrip()
+    assert after.startswith("The news")
+
+
+def test_chart_style_marker_parsed(short_doodles_json, settings):
+    script, _ = parse_short_script(short_doodles_json, settings)
+    assert script.chart_style is ChartStyle.MARKER
+
+
+def test_chart_style_defaults_clean(short_valid_json, settings):
+    script, _ = parse_short_script(short_valid_json, settings)
+    assert script.chart_style is ChartStyle.CLEAN
+
+
+def test_budget_measured_on_clean_text(settings):
+    import json
+
+    # audio_script is 40 real chars + a big doodle tag; the tag must not count
+    body = "The number is bad and the chart is worse, honestly. "
+    padded = body + "[DOODLE: scribble-explosion] " + body
+    data = {
+        "ticker": "EXMPL", "format": "short",
+        "hook_text": "Bad number, worse chart.",
+        "audio_script": padded,
+        "move_summary": "+10% today",
+        "headlines": [{"text": "H", "meaning": "M"}],
+        "years": ["2024", "2025"],
+        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "numbers_comment": "flat", "conclusion": "Noise.",
+    }
+    tight = settings.model_copy(update={"short_max_chars": len(padded) - 5})
+    # the clean text (tag stripped) is shorter than the raw, so it fits
+    script, _ = parse_short_script(json.dumps(data), tight)
+    assert "[DOODLE" not in script.audio_script
+    assert script.char_count <= tight.short_max_chars
+
+
+def test_malformed_inline_scribble_warned_and_skipped(settings):
+    import json
+
+    data = {
+        "ticker": "EXMPL", "format": "short",
+        "hook_text": "A hook that works muted.",
+        "audio_script": "Numbers first. [SCRIBBLE: wobble -> nothing] Then the point. Noise.",
+        "move_summary": "+5% today",
+        "headlines": [{"text": "H", "meaning": "M"}],
+        "years": ["2024", "2025"],
+        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "numbers_comment": "flat", "conclusion": "Noise.",
+    }
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    assert script.scribble_events() == []
+    assert any("scribble" in w.lower() and "malformed" in w.lower() for w in warnings)
+
+
+def test_non_overlay_inline_tag_stripped(settings):
+    import json
+
+    data = {
+        "ticker": "EXMPL", "format": "short",
+        "hook_text": "A muted hook line here.",
+        "audio_script": "Here is a clip tag [CLIP: dumpster_fire] that does not belong. Noise.",
+        "move_summary": "+5% today",
+        "headlines": [{"text": "H", "meaning": "M"}],
+        "years": ["2024", "2025"],
+        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "numbers_comment": "flat", "conclusion": "Noise.",
+    }
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    assert "[CLIP" not in script.audio_script, "non-overlay tags stripped from SHORT"
+    assert script.inline_events == []
+    assert any("not allowed" in w for w in warnings)
 
 
 def test_parse_code_fenced_with_prose(fixtures_dir, settings):

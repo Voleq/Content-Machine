@@ -254,6 +254,196 @@ def gen_meme_placeholders() -> None:
     print(f"meme placeholders: {written} written ({len(index)} indexed)")
 
 
+# ------------------------------------------------------------------ doodles
+# Crude marker-style overlays — the hand-drawn visual language. These are
+# deterministic Pillow placeholders drawn with wobbly strokes; hand-drawn
+# replacements from Claude Design drop over the same filenames.
+
+INK_WHITE = (242, 242, 242, 255)
+INK_RED = (224, 82, 82, 255)
+INK_GOLD = (255, 205, 60, 255)
+
+
+def _wobble_line(d: ImageDraw.ImageDraw, pts, rng, *, width=9, color=INK_WHITE,
+                 jitter=4, passes=2) -> None:
+    """A marker stroke: the polyline drawn twice with per-point jitter."""
+    for _ in range(passes):
+        wobbled = [(x + rng.uniform(-jitter, jitter),
+                    y + rng.uniform(-jitter, jitter)) for x, y in pts]
+        d.line(wobbled, fill=color, width=width, joint="curve")
+
+
+def _wobble_ellipse(d, box, rng, *, width=9, color=INK_WHITE, turns=1.15) -> None:
+    import math
+    x0, y0, x1, y1 = box
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx, ry = (x1 - x0) / 2, (y1 - y0) / 2
+    pts = []
+    n = 56
+    for i in range(int(n * turns) + 1):
+        th = -math.pi / 2 + 2 * math.pi * i / n
+        pts.append((cx + rx * math.cos(th) + rng.uniform(-3, 3),
+                    cy + ry * math.sin(th) + rng.uniform(-3, 3)))
+    d.line(pts, fill=color, width=width, joint="curve")
+
+
+def _stick_figure(d, rng, cx, head_y, *, scale=1.0, color=INK_WHITE,
+                  arms="down", legs="stand") -> None:
+    """A crude stick figure. arms: down|up|shrug|point|umbrella.
+    legs: stand|flat."""
+    s = scale
+    r = 34 * s
+    _wobble_ellipse(d, [cx - r, head_y - r, cx + r, head_y + r], rng, color=color)
+    neck = head_y + r
+    hip = neck + 120 * s
+    _wobble_line(d, [(cx, neck), (cx, hip)], rng, color=color)
+    sh = neck + 26 * s  # shoulders
+    if arms == "up":
+        _wobble_line(d, [(cx - 70 * s, sh - 70 * s), (cx, sh)], rng, color=color)
+        _wobble_line(d, [(cx, sh), (cx + 70 * s, sh - 70 * s)], rng, color=color)
+    elif arms == "shrug":
+        _wobble_line(d, [(cx - 80 * s, sh - 20 * s), (cx - 40 * s, sh + 16 * s), (cx, sh)],
+                     rng, color=color)
+        _wobble_line(d, [(cx, sh), (cx + 40 * s, sh + 16 * s), (cx + 80 * s, sh - 20 * s)],
+                     rng, color=color)
+    elif arms == "point":
+        _wobble_line(d, [(cx, sh), (cx - 46 * s, sh + 54 * s)], rng, color=color)
+        _wobble_line(d, [(cx, sh), (cx + 100 * s, sh - 12 * s)], rng, color=color)
+        _wobble_line(d, [(cx + 100 * s, sh - 12 * s), (cx + 124 * s, sh - 16 * s)],
+                     rng, width=7, color=color)
+    elif arms == "umbrella":
+        _wobble_line(d, [(cx, sh), (cx + 52 * s, sh - 60 * s)], rng, color=color)
+        _wobble_line(d, [(cx - 52 * s, sh + 40 * s), (cx, sh)], rng, color=color)
+    else:  # down
+        _wobble_line(d, [(cx, sh), (cx - 50 * s, sh + 70 * s)], rng, color=color)
+        _wobble_line(d, [(cx, sh), (cx + 50 * s, sh + 70 * s)], rng, color=color)
+    if legs == "stand":
+        _wobble_line(d, [(cx, hip), (cx - 44 * s, hip + 110 * s)], rng, color=color)
+        _wobble_line(d, [(cx, hip), (cx + 44 * s, hip + 110 * s)], rng, color=color)
+
+
+def _doodle_canvas() -> tuple[Image.Image, ImageDraw.ImageDraw]:
+    img = Image.new("RGBA", (480, 480), (0, 0, 0, 0))
+    return img, ImageDraw.Draw(img)
+
+
+def _draw_doodle(stem: str) -> Image.Image:
+    rng = random.Random(f"doodle:{stem}")
+    img, d = _doodle_canvas()
+    W = H = 480
+
+    if stem == "stick-shrug":
+        _stick_figure(d, rng, 240, 120, arms="shrug")
+        f = _font("DejaVuSans-Bold.ttf", 64)
+        d.text((330, 60), "?", font=f, fill=INK_GOLD)
+    elif stem == "stick-face-down":
+        _wobble_line(d, [(40, 400), (440, 400)], rng)  # the floor
+        _wobble_ellipse(d, [66, 336, 130, 400], rng)   # head on the floor
+        _wobble_line(d, [(130, 372), (330, 380)], rng)  # body flat
+        _wobble_line(d, [(330, 380), (420, 396)], rng)  # legs
+        _wobble_line(d, [(180, 378), (210, 400)], rng, width=7)  # arm
+    elif stem == "stick-umbrella-red-arrows":
+        _stick_figure(d, rng, 220, 210, scale=0.8, arms="umbrella")
+        _wobble_line(d, [(272, 190), (272, 96)], rng, width=7)   # umbrella pole
+        _wobble_ellipse(d, [180, 60, 364, 130], rng, turns=0.5)  # canopy
+        for i in range(5):
+            x = 60 + i * 90 + rng.randint(-12, 12)
+            y0 = 20 + rng.randint(0, 30)
+            _wobble_line(d, [(x, y0), (x - 14, y0 + 64)], rng, width=7, color=INK_RED)
+            _wobble_line(d, [(x - 14, y0 + 64), (x - 28, y0 + 44)], rng, width=6, color=INK_RED)
+            _wobble_line(d, [(x - 14, y0 + 64), (x + 6, y0 + 52)], rng, width=6, color=INK_RED)
+    elif stem == "stick-staring-at-crash":
+        _stick_figure(d, rng, 100, 150, scale=0.7)
+        crash = [(180, 120), (250, 200), (230, 250), (330, 330), (310, 380), (430, 440)]
+        _wobble_line(d, crash, rng, color=INK_RED)
+        _wobble_line(d, [(430, 440), (398, 428)], rng, width=7, color=INK_RED)
+        _wobble_line(d, [(430, 440), (424, 404)], rng, width=7, color=INK_RED)
+    elif stem == "stick-pointing":
+        _stick_figure(d, rng, 170, 130, arms="point")
+    elif stem == "arrow-up-scribble":
+        _wobble_line(d, [(150, 420), (240, 120)], rng, width=13)
+        _wobble_line(d, [(240, 120), (168, 190)], rng, width=11, color=INK_GOLD)
+        _wobble_line(d, [(240, 120), (306, 200)], rng, width=11, color=INK_GOLD)
+    elif stem == "arrow-down-scribble":
+        _wobble_line(d, [(240, 70), (250, 380)], rng, width=13, color=INK_RED)
+        _wobble_line(d, [(250, 380), (180, 310)], rng, width=11, color=INK_RED)
+        _wobble_line(d, [(250, 380), (322, 316)], rng, width=11, color=INK_RED)
+    elif stem == "circle-scribble":
+        _wobble_ellipse(d, [60, 120, 420, 360], rng, width=12, color=INK_GOLD, turns=1.4)
+    elif stem == "underline-scribble":
+        for k in range(3):
+            y = 220 + k * 26
+            pts = [(50 + i * 38, y + rng.uniform(-9, 9)) for i in range(11)]
+            _wobble_line(d, pts, rng, width=10, color=INK_GOLD, jitter=2, passes=1)
+    elif stem == "wedge-diagram":
+        _wobble_line(d, [(50, 120), (430, 235)], rng, width=8)
+        _wobble_line(d, [(50, 400), (430, 265)], rng, width=8)
+        squiggle = [(70 + i * 34, 260 + rng.uniform(-1, 1) * (90 - i * 7) *
+                     (1 if i % 2 else -1)) for i in range(11)]
+        _wobble_line(d, squiggle, rng, width=7, color=INK_GOLD, jitter=2, passes=1)
+    elif stem == "payoff-diagram":
+        _wobble_line(d, [(60, 60), (60, 420)], rng, width=7)     # y axis
+        _wobble_line(d, [(60, 420), (440, 420)], rng, width=7)   # x axis
+        _wobble_line(d, [(60, 330), (250, 330)], rng, width=11, color=INK_GOLD)
+        _wobble_line(d, [(250, 330), (430, 110)], rng, width=11, color=INK_GOLD)
+        f = _font("DejaVuSansMono-Bold.ttf", 34)
+        d.text((330, 44), "$$$", font=f, fill=INK_GOLD)
+    elif stem == "money-bag":
+        _wobble_ellipse(d, [120, 170, 360, 430], rng, width=10)
+        _wobble_line(d, [(190, 180), (222, 120), (258, 120), (290, 180)], rng, width=9)
+        _wobble_line(d, [(186, 128), (294, 128)], rng, width=8)
+        f = _font("DejaVuSans-Bold.ttf", 110)
+        d.text((202, 230), "$", font=f, fill=INK_GOLD)
+    elif stem == "money-stack":
+        for k in range(3):
+            y0 = 300 - k * 62
+            box = [110 + rng.randint(-6, 6), y0, 370 + rng.randint(-6, 6), y0 + 58]
+            _wobble_line(d, [(box[0], box[1]), (box[2], box[1]), (box[2], box[3]),
+                             (box[0], box[3]), (box[0], box[1])], rng, width=8,
+                         jitter=3, passes=1)
+        f = _font("DejaVuSans-Bold.ttf", 44)
+        d.text((216, 190), "$", font=f, fill=INK_GOLD)
+        d.text((216, 252), "$", font=f, fill=INK_GOLD)
+        d.text((216, 314), "$", font=f, fill=INK_GOLD)
+    elif stem == "scribble-explosion":
+        import math
+        cx, cy = 240, 240
+        for i in range(14):
+            th = 2 * math.pi * i / 14 + rng.uniform(-0.12, 0.12)
+            r0 = rng.uniform(46, 70)
+            r1 = rng.uniform(150, 210)
+            color = INK_RED if i % 3 == 0 else (INK_GOLD if i % 3 == 1 else INK_WHITE)
+            _wobble_line(d, [(cx + r0 * math.cos(th), cy + r0 * math.sin(th)),
+                             (cx + r1 * math.cos(th), cy + r1 * math.sin(th))],
+                         rng, width=9, color=color, jitter=3, passes=1)
+    else:  # unknown stem in the index — a labelled placeholder box
+        _wobble_line(d, [(40, 40), (440, 40), (440, 440), (40, 440), (40, 40)], rng)
+        f = _font("DejaVuSansMono.ttf", 22)
+        d.text((60, 220), stem[:28], font=f, fill=INK_WHITE)
+    return img
+
+
+def gen_doodle_placeholders() -> None:
+    """One crude marker-style PNG per doodles_index.json entry. Only fills
+    GAPS — hand-drawn replacements are never overwritten."""
+    import json
+
+    lib = ASSETS / "doodles"
+    index_file = lib / "doodles_index.json"
+    if not index_file.exists():
+        print("doodle placeholders: no doodles_index.json — skipped")
+        return
+    index = json.loads(index_file.read_text())
+    written = 0
+    for stem in index:
+        existing = [p for p in lib.glob(f"{stem}.*") if p.suffix != ".json"]
+        if existing:
+            continue
+        _draw_doodle(stem).save(lib / f"{stem}.png")
+        written += 1
+    print(f"doodle placeholders: {written} written ({len(index)} indexed)")
+
+
 if __name__ == "__main__":
     gen_sfx()
     gen_overlays()
@@ -261,3 +451,4 @@ if __name__ == "__main__":
     gen_dennis_sfx()
     gen_dennis_music()
     gen_meme_placeholders()
+    gen_doodle_placeholders()

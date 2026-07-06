@@ -159,6 +159,29 @@ def frames_to_alpha_clip(frames: list[Image.Image], fps: int, out_path: Path) ->
     return out_path
 
 
+def doodle_clip(
+    src: Path,
+    out_path: Path,
+    *,
+    display_w: int,
+    duration_s: float,
+    fps: int = 30,
+    seed: str = "doodle",
+) -> tuple[Path, tuple[int, int]]:
+    """Resize a doodle PNG to display width, give it the hand-drawn boil,
+    and encode an alpha .mov. Returns (clip_path, (w, h)) of the frames so
+    the caller can position it."""
+    from pipeline.doodles import wobble_frames
+
+    img = Image.open(src).convert("RGBA")
+    if img.width != display_w:
+        ratio = display_w / img.width
+        img = img.resize((display_w, max(int(img.height * ratio), 1)), Image.LANCZOS)
+    frames = wobble_frames(img, duration_s=duration_s, fps=fps, seed=seed)
+    frames_to_alpha_clip(frames, fps, out_path)
+    return out_path, frames[0].size
+
+
 def typing_frames(
     settings: Settings,
     text: str,
@@ -391,8 +414,8 @@ def scribble_frames(
     stroke: int | None = None,
     seed: str = "scribble",
 ) -> list[Image.Image]:
-    """A marker-style ellipse (or underline) drawing itself on, with
-    hand-drawn jitter. Composited over the chart or a numbers row."""
+    """A marker-style mark (circle / underline / arrow) drawing itself on,
+    with hand-drawn jitter. Composited over the chart or a numbers row."""
     rng = random.Random(seed)
     stroke = stroke or max(int(min(w, h) * 0.06), 5)
     n = max(int(draw_seconds * fps), 4)
@@ -403,6 +426,10 @@ def scribble_frames(
     def point(theta: float) -> tuple[float, float]:
         j = jitter[int((theta % (2 * math.pi)) / (2 * math.pi) * 63)]
         return (cx + rx * math.cos(theta) + j[0], cy + ry * math.sin(theta) + j[1])
+
+    # an arrow flies in from the top-left corner toward the center
+    tail = (stroke * 1.5, stroke * 1.5)
+    tip = (cx, cy)
 
     frames: list[Image.Image] = []
     for k in range(n + 1):
@@ -415,13 +442,64 @@ def scribble_frames(
                     for x in range(stroke, int(x1), 6)]
             if len(wave) >= 2:
                 d.line(wave, fill=(*color, 235), width=stroke, joint="curve")
-        else:
+        elif style == "arrow":
+            hx = tail[0] + (tip[0] - tail[0]) * p
+            hy = tail[1] + (tip[1] - tail[1]) * p
+            shaft = [(tail[0] + rng.uniform(-2, 2), tail[1] + rng.uniform(-2, 2)),
+                     (hx, hy)]
+            d.line(shaft, fill=(*color, 235), width=stroke, joint="curve")
+            if p > 0.85:  # the arrowhead lands last
+                ah = stroke * 3
+                d.line([(tip[0] - ah, tip[1] - ah * 0.3), (tip[0], tip[1])],
+                       fill=(*color, 235), width=stroke, joint="curve")
+                d.line([(tip[0] - ah * 0.3, tip[1] - ah), (tip[0], tip[1])],
+                       fill=(*color, 235), width=stroke, joint="curve")
+        else:  # circle
             start = -math.pi / 2
             # 1.15 turns so the ellipse visibly closes like a real scribble
             theta_end = start + 2 * math.pi * 1.15 * p
             pts = [point(start + (theta_end - start) * i / 48) for i in range(49)]
             if len(pts) >= 2 and p > 0:
                 d.line(pts, fill=(*color, 235), width=stroke, joint="curve")
+        frames.append(img)
+    return frames
+
+
+def scribble_callout_frames(
+    settings: Settings,
+    w: int,
+    h: int,
+    *,
+    style: str,
+    target: str,
+    fps: int = 30,
+    draw_seconds: float = 0.45,
+    hold_seconds: float = 1.2,
+    color=GOLD,
+    seed: str = "callout",
+) -> list[Image.Image]:
+    """A scribble mark drawing itself on, plus the target text as a small
+    hand-labelled callout beneath it — the LONG/inline `[SCRIBBLE: … -> target]`
+    treatment that rides over whatever segment is on screen."""
+    mark_h = int(h * 0.62)
+    mark = scribble_frames(w, mark_h, style=style, color=color, fps=fps,
+                           draw_seconds=draw_seconds, seed=seed)
+    font = load_font(settings, MONO_BOLD, max(int(h * 0.12), 16))
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    label = target if probe.textlength(target, font=font) < w - 20 else target[:24]
+    lw = probe.textlength(label, font=font)
+
+    frames: list[Image.Image] = []
+    total = len(mark) + max(int(hold_seconds * fps), 1)
+    for k in range(total):
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        img.alpha_composite(mark[min(k, len(mark) - 1)], (0, 0))
+        if k >= len(mark) - 2:  # the label appears as the mark completes
+            d = ImageDraw.Draw(img)
+            lx = (w - lw) / 2
+            ly = mark_h + int(h * 0.02)
+            d.text((lx, ly), label, font=font, fill=(*color, 255),
+                   stroke_width=3, stroke_fill=(8, 9, 11, 230))
         frames.append(img)
     return frames
 

@@ -32,8 +32,83 @@ SFX_KEYS = (
 
 
 # --------------------------------------------------------------------------
+# Shared tag grammar — used by BOTH formats (LONG narration tags, SHORT
+# inline [DOODLE]/[SCRIBBLE] tags). Kept up here so the SHORT script can
+# carry inline-parsed events too.
+# --------------------------------------------------------------------------
+
+
+class TagType(str, Enum):
+    IMG = "IMG"                  # real imagery: operations/facilities/people
+    PRODUCT = "PRODUCT"          # real imagery: the product itself
+    MEME = "MEME"                # owned meme library first (capped per video)
+    CLIP = "CLIP"                # ironic stock footage (Pexels palette)
+    BROLL = "BROLL"              # alias of CLIP (legacy spelling)
+    CHART = "CHART"              # auto-generated chart in the channel style
+    SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
+    SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
+    SOUND = "SOUND"              # sfx palette
+    ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
+    DOODLE = "DOODLE"            # crude hand-drawn overlay (owned, top layer)
+    SCRIBBLE = "SCRIBBLE"        # drawn annotation on a number/point (top layer)
+
+
+# tag types that claim a visual SEGMENT on the LONG timeline (the base
+# frame). DOODLE and SCRIBBLE are overlays that ride on top of whatever is
+# on screen, so they never claim a segment of their own.
+VISUAL_TAG_TYPES = frozenset({
+    TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
+    TagType.CHART, TagType.SHOW_FILING, TagType.SCREENGRAB, TagType.ASSET,
+})
+
+# overlay tag types — composited over the current frame, not a segment.
+# These are the only tags allowed inline in a SHORT audio_script.
+OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE})
+
+
+class ScribbleStyle(str, Enum):
+    CIRCLE = "circle"
+    ARROW = "arrow"
+    UNDERLINE = "underline"
+
+
+def parse_scribble_payload(payload: str) -> tuple[ScribbleStyle, str] | None:
+    """`[SCRIBBLE: circle -> target]` -> (style, target). None if malformed
+    or the style is unknown (caller logs + skips — never fatal)."""
+    if "->" not in payload:
+        return None
+    style_raw, target = payload.split("->", 1)
+    style_raw = style_raw.strip().lower()
+    target = target.strip()
+    if not target:
+        return None
+    try:
+        return ScribbleStyle(style_raw), target
+    except ValueError:
+        return None
+
+
+class TagEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    type: TagType
+    payload: str
+    # offset into the CLEAN text (tags stripped) — what TTS timestamps
+    # refer to. raw_offset is the position in the original tagged text.
+    char_offset: int = Field(ge=0)
+    raw_offset: int = Field(ge=0)
+    # optional modifier — [CHART: metric style=marker] parses to style.
+    style: str = ""
+
+
+# --------------------------------------------------------------------------
 # SHORT script — the "Noise or signal?" format (§4). Strict JSON.
 # --------------------------------------------------------------------------
+
+
+class ChartStyle(str, Enum):
+    CLEAN = "clean"    # the branded price card
+    MARKER = "marker"  # the crude hand-drawn "napkin" chart
 
 
 class Headline(BaseModel):
@@ -101,9 +176,14 @@ class ShortScript(BaseModel):
     years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
     numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
+    chart_style: ChartStyle = ChartStyle.CLEAN  # open on clean or marker chart
     meme: CutawayTag | None = None
     broll: CutawayTag | None = None
     annotations: list[Annotation] = Field(default_factory=list, max_length=4)
+    # inline [DOODLE]/[SCRIBBLE] tags the parser strips out of audio_script
+    # (never spoken); offsets index the CLEAN audio_script. Model-populated,
+    # never authored directly in the JSON.
+    inline_events: list[TagEvent] = Field(default_factory=list)
 
     @field_validator("ticker")
     @classmethod
@@ -143,6 +223,12 @@ class ShortScript(BaseModel):
         script = self.audio_script.lower()
         return [a for a in self.anchor_words() if a.lower() not in script]
 
+    def doodle_events(self) -> list[TagEvent]:
+        return [e for e in self.inline_events if e.type is TagType.DOODLE]
+
+    def scribble_events(self) -> list[TagEvent]:
+        return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
+
     def content_sha(self) -> str:
         return hashlib.sha256(
             self.model_dump_json().encode("utf-8")
@@ -152,36 +238,6 @@ class ShortScript(BaseModel):
 # --------------------------------------------------------------------------
 # LONG script — tagged narration with the Dennis tag grammar (§5).
 # --------------------------------------------------------------------------
-
-
-class TagType(str, Enum):
-    IMG = "IMG"                  # real imagery: operations/facilities/people
-    PRODUCT = "PRODUCT"          # real imagery: the product itself
-    MEME = "MEME"                # owned meme library first (capped per video)
-    CLIP = "CLIP"                # ironic stock footage (Pexels palette)
-    BROLL = "BROLL"              # alias of CLIP (legacy spelling)
-    CHART = "CHART"              # auto-generated chart in the channel style
-    SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
-    SOUND = "SOUND"              # sfx palette
-    ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
-
-
-# tag types that claim a visual segment on the LONG timeline
-VISUAL_TAG_TYPES = frozenset({
-    TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
-    TagType.CHART, TagType.SHOW_FILING, TagType.ASSET,
-})
-
-
-class TagEvent(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    type: TagType
-    payload: str
-    # offset into the CLEAN narration (tags stripped) — what TTS timestamps
-    # refer to. raw_offset is the position in the original tagged text.
-    char_offset: int = Field(ge=0)
-    raw_offset: int = Field(ge=0)
 
 
 class LongScript(BaseModel):
@@ -216,6 +272,13 @@ class LongScript(BaseModel):
     def asset_slugs(self) -> list[str]:
         seen: list[str] = []
         for e in self.events_of(TagType.ASSET):
+            if e.payload not in seen:
+                seen.append(e.payload)
+        return seen
+
+    def screengrab_slugs(self) -> list[str]:
+        seen: list[str] = []
+        for e in self.events_of(TagType.SCREENGRAB):
             if e.payload not in seen:
                 seen.append(e.payload)
         return seen
@@ -268,8 +331,12 @@ class CueKind(str, Enum):
     IMG = "img"
     CHART = "chart"
     FILING = "filing"
+    SCREENGRAB = "screengrab"
     ASSET = "asset"
     SOUND = "sound"
+    # hand-drawn overlays (both formats) — composited on top, no segment
+    DOODLE = "doodle"
+    SCRIBBLE = "scribble"
 
 
 class Cue(BaseModel):

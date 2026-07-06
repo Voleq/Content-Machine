@@ -13,10 +13,21 @@ from __future__ import annotations
 import json
 import re
 
+import logging
+
 from pydantic import ValidationError
 
 from config import Settings
-from pipeline.models import ShortScript
+from pipeline.models import (
+    OVERLAY_TAG_TYPES,
+    ShortScript,
+    TagEvent,
+    TagType,
+    parse_scribble_payload,
+)
+from pipeline.tagging import tokenize_tags
+
+log = logging.getLogger(__name__)
 
 VENDOR_WORDS = ("refinitiv", "lseg", "eikon", "workspace.refinitiv")
 
@@ -132,6 +143,30 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
     block = _extract_json_block(raw)
     data = _loads_tolerant(block)
 
+    # strip inline [DOODLE]/[SCRIBBLE] tags out of audio_script BEFORE
+    # validation: the clean text is what TTS speaks and what the budget is
+    # measured against; the events are word-anchored into that clean text.
+    inline_warnings: list[str] = []
+    if isinstance(data.get("audio_script"), str):
+        clean, raw_tags, tok_warnings = tokenize_tags(
+            data["audio_script"], allowed=OVERLAY_TAG_TYPES
+        )
+        inline_warnings.extend(tok_warnings)
+        events: list[dict] = []
+        for rt in raw_tags:
+            if rt.type is TagType.SCRIBBLE and parse_scribble_payload(rt.payload) is None:
+                inline_warnings.append(
+                    f'scribble "{rt.payload}" is malformed (use '
+                    f'"circle|arrow|underline -> target") — skipped'
+                )
+                continue
+            events.append(TagEvent(
+                type=rt.type, payload=rt.payload,
+                char_offset=rt.char_offset, raw_offset=rt.raw_offset,
+            ).model_dump())
+        data["audio_script"] = clean
+        data["inline_events"] = events
+
     try:
         script = ShortScript.model_validate(data)
     except ValidationError as err:
@@ -152,7 +187,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             + '. Data is "from the 10-K" — source unnamed. Fix and resend.'
         )
 
-    warnings: list[str] = []
+    warnings: list[str] = list(inline_warnings)
     for anchor in script.missing_anchor_words():
         warnings.append(
             f'anchor_word "{anchor}" not found in audio_script — the cue will '

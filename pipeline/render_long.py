@@ -33,8 +33,20 @@ from pathlib import Path
 from config import Settings
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.models import CueKind, LongScript, SFX_KEYS, TTSResult
-from pipeline.rasters import build_karaoke_ass, simple_text
+from pipeline.models import (
+    CueKind,
+    LongScript,
+    SFX_KEYS,
+    TTSResult,
+    parse_scribble_payload,
+)
+from pipeline.rasters import (
+    build_karaoke_ass,
+    doodle_clip,
+    frames_to_alpha_clip,
+    scribble_callout_frames,
+    simple_text,
+)
 from pipeline.render_common import (
     AudioTrack,
     CompositeSpec,
@@ -73,6 +85,8 @@ def render_long(
     content = content or ContentManager(settings)
     duration = tts.duration_s
     cues = build_long_timeline(script, tts.words, duration)
+    doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
+    scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     segments, seg_warnings = plan_long_segments(
         cues, duration,
         min_cut_s=settings.long_min_cut_s,
@@ -111,6 +125,13 @@ def render_long(
         tail = f",setsar=1,format=yuv420p[s{i}]"
         value = seg.payload.get("value", "")
 
+        def _clip_chain(idx: int) -> str:
+            return (
+                f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
+                f"trim=0:{seg_len:.4f},{still_pad}{tail}"
+            )
+
         if seg.kind == "clip":
             visual = content.resolve_clip(value, overrides.get(value, 0))
             inputs += ["-i", str(visual.path)]
@@ -131,6 +152,17 @@ def render_long(
                 f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"scale={W}:{H}{tail}"
             )
+        elif seg.kind == "screengrab":
+            # operator-supplied capture — image (pad-fit) or short clip
+            visual = content.resolve_screengrab(value)
+            if visual.is_video:
+                inputs += ["-i", str(visual.path)]
+                chain = _clip_chain(i)
+            else:
+                inputs += ["-loop", "1", "-framerate", str(settings.fps),
+                           "-t", f"{seg_len + 0.2:.4f}", "-i", str(visual.path)]
+                chain = (f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+                         f"{still_pad}{tail}")
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -138,8 +170,10 @@ def render_long(
                     choice=overrides.get(value, 0),
                 )
             elif seg.kind == "chart":
-                visual = content.resolve_chart(value, ticker=script.ticker,
-                                               company_data=company_data)
+                visual = content.resolve_chart(
+                    value, ticker=script.ticker, company_data=company_data,
+                    style=seg.payload.get("style", "clean"),
+                )
             elif seg.kind == "asset":
                 visual = content.resolve_asset(value)
             else:
@@ -204,6 +238,45 @@ def render_long(
                     t_start=seg.start, t_end=min(seg.start + 0.5, duration),
                     is_video=True, name=f"glitch@{seg.start:.2f}",
                 ))
+
+    # hand-drawn overlays (TOP layer, riding over whatever segment shows):
+    # [DOODLE] boils in a corner, [SCRIBBLE] draws a mark + target callout
+    doodle_slots = [(px(1180), px(140)), (px(120), px(150)),
+                    (px(1180), px(560)), (px(120), px(560))]
+    for k, c in enumerate(doodle_cues):
+        visual = content.resolve_doodle(c.payload["value"])
+        if visual is None:
+            log.warning("doodle %r not resolved — skipped", c.payload["value"])
+            continue
+        hold = float(c.payload.get("hold", 2.0))
+        clip, (cw, ch) = doodle_clip(
+            visual.path, rdir / f"doodle_{k}.mov",
+            display_w=px(520), duration_s=hold + 0.2, fps=settings.fps,
+            seed=f"{script.ticker}|doodle|{k}",
+        )
+        sx, sy = doodle_slots[k % len(doodle_slots)]
+        layers.append(OverlayLayer(
+            path=clip, x=min(sx, W - cw), y=min(sy, H - ch),
+            t_start=c.t, t_end=min(c.t + hold, duration),
+            is_video=True, name=f"doodle_{k}_{visual.key[:16]}",
+        ))
+    for k, c in enumerate(scribble_cues):
+        parsed = parse_scribble_payload(c.payload["value"])
+        if parsed is None:
+            continue
+        style, target = parsed
+        hold = float(c.payload.get("hold", 2.0))
+        sw, sh = px(700), px(460)
+        frames = scribble_callout_frames(
+            settings, sw, sh, style=style.value, target=target,
+            fps=settings.fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
+        )
+        clip = frames_to_alpha_clip(frames, settings.fps, rdir / f"scribble_{k}.mov")
+        layers.append(OverlayLayer(
+            path=clip, x=int((W - sw) / 2), y=int((H - sh) / 2),
+            t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
+            is_video=True, hold=True, name=f"scribble_{k}",
+        ))
 
     # corner bug: ticker + as-of date (the as-of stays visible; no "audit")
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")

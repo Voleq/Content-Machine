@@ -28,19 +28,21 @@ from pathlib import Path
 
 from config import Settings
 from pipeline.broll import ContentManager
-from pipeline.chart import render_price_chart
-from pipeline.models import CueKind, ShortScript, TTSResult
+from pipeline.chart import render_marker_price_chart, render_price_chart
+from pipeline.models import ChartStyle, CueKind, ScribbleStyle, ShortScript, TTSResult, parse_scribble_payload
 from pipeline.prices import PriceSeries, get_price_history
 from pipeline.rasters import (
     GOLD,
     brand_bug,
     build_karaoke_ass,
+    doodle_clip,
     flash_frames,
     frames_to_alpha_clip,
     headline_card,
     number_row_frames,
     number_row_image,
     numbers_sheet_base,
+    scribble_callout_frames,
     scribble_frames,
     simple_text,
     text_panel,
@@ -113,13 +115,18 @@ def render_short(
     zoom_cues = [c for c in cues if c.kind is CueKind.ZOOM]
     meme_cues = [c for c in cues if c.kind is CueKind.MEME]
     cutaway_cues = [c for c in cues if c.kind is CueKind.CUTAWAY]
+    doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
+    scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
 
     layers: list[OverlayLayer] = []
 
     # ------------------------------------------- the branded chart (hero)
+    # open on the clean branded card or the crude marker/napkin chart
     chart_px = (px(1000), px(760))
     chart_pos = (px(40), px(170))
-    chart_path, chart_meta = render_price_chart(
+    render_chart = (render_marker_price_chart
+                    if script.chart_style is ChartStyle.MARKER else render_price_chart)
+    chart_path, chart_meta = render_chart(
         prices, rdir / "chart.png", settings,
         size=chart_px, move_text=script.move_summary,
     )
@@ -285,6 +292,47 @@ def render_short(
             is_video=True, hold=True, name=f"cutaway_{k}",
         ))
 
+    # ------------------------------ inline hand-drawn doodles (TOP layer)
+    # rotate through a few slots so consecutive doodles don't stack
+    doodle_slots = [(px(560), px(560)), (px(120), px(600)), (px(540), px(1180)),
+                    (px(120), px(1180))]
+    for k, c in enumerate(doodle_cues):
+        visual = content.resolve_doodle(c.payload["value"])
+        if visual is None:
+            log.warning("doodle %r not resolved — skipped", c.payload["value"])
+            continue
+        hold = float(c.payload.get("hold", 1.6))
+        clip, (cw, ch) = doodle_clip(
+            visual.path, rdir / f"doodle_{k}.mov",
+            display_w=px(380), duration_s=hold + 0.2, fps=settings.fps,
+            seed=f"{script.ticker}|doodle|{k}",
+        )
+        sx, sy = doodle_slots[k % len(doodle_slots)]
+        layers.append(OverlayLayer(
+            path=clip, x=min(sx, W - cw), y=min(sy, H - ch),
+            t_start=c.t, t_end=min(c.t + hold, duration),
+            is_video=True, name=f"doodle_{k}_{visual.key[:16]}",
+        ))
+
+    # ---------------- inline scribbles (drawn mark + target callout, TOP)
+    for k, c in enumerate(scribble_cues):
+        parsed = parse_scribble_payload(c.payload["value"])
+        if parsed is None:
+            continue
+        style, target = parsed
+        hold = float(c.payload.get("hold", 1.6))
+        sw, sh = px(520), px(360)
+        frames = scribble_callout_frames(
+            settings, sw, sh, style=style.value, target=target,
+            fps=settings.fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
+        )
+        clip = frames_to_alpha_clip(frames, settings.fps, rdir / f"scribble_inline_{k}.mov")
+        layers.append(OverlayLayer(
+            path=clip, x=int((W - sw) / 2), y=px(560),
+            t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
+            is_video=True, hold=True, name=f"scribble_inline_{k}",
+        ))
+
     # ------------------------------------------- beat-transition stingers
     flash = frames_to_alpha_clip(
         flash_frames(W, H, fps=settings.fps), settings.fps, rdir / "flash.mov",
@@ -389,7 +437,8 @@ def render_short(
         "duration": duration,
         "opener": opener,
         "chart": {"source": prices.source, "degraded": prices.degraded,
-                  "direction": chart_meta["direction"]},
+                  "direction": chart_meta["direction"],
+                  "style": script.chart_style.value},
         "cues": [c.model_dump() for c in cues],
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}
