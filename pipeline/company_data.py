@@ -338,20 +338,15 @@ FILING_LABEL = "FROM THE 10-K"
 
 
 def prepare_screenshot(src: Path, dest: Path, settings: Settings) -> Path:
-    """Fixed canvas, fitted image, subtle border, generic '10-K' chip —
-    deterministic output."""
+    """Full-frame designed filing card: the screenshot fitted sharp over a
+    blurred, brand-tinted cover of itself (never a letterboxed black frame),
+    a subtle border, and the generic '10-K' chip. Deterministic output."""
+    from pipeline.rasters import cover_fill_frame
+
     W, H = settings.long_resolution
     margin = int(H * 0.05)
-    img = Image.open(src).convert("RGB")
-    img.thumbnail((W - 2 * margin, H - 2 * margin), Image.LANCZOS)
-
-    canvas = Image.new("RGB", (W, H), (10, 13, 18))
-    x = (W - img.width) // 2
-    y = (H - img.height) // 2
-    canvas.paste(img, (x, y))
+    canvas = cover_fill_frame(src, W, H, keep_min=1.1)  # always contain-on-fill
     d = ImageDraw.Draw(canvas)
-    d.rectangle([x - 3, y - 3, x + img.width + 2, y + img.height + 2],
-                outline=(96, 106, 122), width=3)
 
     # generic source chip — "the filing", never the vendor
     font = ImageFont.truetype(str(settings.fonts_dir / "SpaceMono-Bold.ttf"),

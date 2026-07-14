@@ -39,7 +39,7 @@ Write a {{ticker}} deep-dive voiceover of ~1,600–2,200 words (≈10–15 min a
 5. BULL vs BEAR TENSION — the strongest honest case each way, held in both hands.
 6. RESIGNED CLOSE — a deadpan last line the viewer finishes in their own head. NO verdict, NO label, NO stamp.
 
-Cut FAST: a visual tag roughly every 1–2 sentences (~2–3 seconds of speech between visuals).
+Cut FAST, and MEDIA IS THE BACKGROUND: essentially EVERY beat carries a real full-frame visual — an [IMG]/[PRODUCT] photo, a [CLIP], a [CHART], a [SHOW FILING], or a [MEME]. Aim for one such tag every 1–2 sentences (~2–3 seconds of speech). The renderer fills each cut with whatever real media you name and Ken-Burns it; if you leave a stretch untagged it falls back to a designed brand card, which is a waste of screen time. So keep the real tags coming — never let the doodles carry a multi-second frame on their own.
 
 ## TAG GRAMMAR (only these; exact syntax; place inline, immediately before the word it should hit)
 [IMG: query]            real imagery of operations / facilities / people (searched on free commons + the company's own site — write a literal query like "{{ticker}} distribution warehouse")
@@ -50,11 +50,11 @@ Cut FAST: a visual tag roughly every 1–2 sentences (~2–3 seconds of speech b
 [SHOW FILING: file.png] full-screen data flash from the uploaded screenshots; labelled generically on screen ("from the 10-K")
 [SCREENGRAB: slug]      an operator-supplied real screen capture — a broker app, a portfolio P&L, a Google-search bit (drop it in assets/custom/<slug>). Blocks like [ASSET] until the file exists. Great for the account-blowup bits.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom
-[DOODLE: key]           a crude hand-drawn overlay from the doodle list above — punctuates the UNDERCUT, dropped over the current frame
-[SCRIBBLE: circle|arrow|underline -> target]  a drawn mark + the target text as a callout, pointing at a specific number/point on whatever is on screen
+[DOODLE: key]           EXTRA punctuation only — a crude hand-drawn overlay that rides ON TOP of the current media for a beat. It is NEVER the main visual of a cut; there must already be a real media tag nearby driving that frame.
+[SCRIBBLE: circle|arrow|underline -> target]  EXTRA punctuation only — a drawn mark + target callout composited over whatever real media is on screen, pointing at a specific number/point
 [ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
 
-Irony lands on the exact word: "a [CLIP: clown] visionary CEO". [DOODLE]/[SCRIBBLE] ride ON TOP of the current visual — use them to punctuate the flat aside, not to replace a [CHART] or [IMG]. Unknown tags are dropped by the engine — use what is listed.
+Irony lands on the exact word: "a [CLIP: clown] visionary CEO". [DOODLE]/[SCRIBBLE] are the comedy layer that rides OVER real media — they punctuate the flat aside and must never stand in for a [CHART]/[IMG]/[CLIP]/[SHOW FILING]. Every doodle/scribble should sit within a second or two of a real media tag. Unknown tags are dropped by the engine — use what is listed.
 
 ## BESPOKE ASSETS (rare — the kit and real content serve most videos)
 Prefer the palette, real [IMG]/[PRODUCT] imagery, [CHART]s and [SHOW FILING] flashes. Request a custom asset ONLY for something none of those can show — usually an explanatory diagram: how the company makes money, a competitive map, a timeline. When you do:
@@ -72,8 +72,8 @@ The pipeline BLOCKS the render until the operator pastes that prompt into Claude
 
 ## RULES
 - Multi-year first: growth rates, margin direction, share count, debt — the history table above is the spine of section 3.
-- At least: one [IMG] or [PRODUCT] on what they actually do, one [CHART] on the defining metric, one [SHOW FILING] on the single ugliest (or most impressive) real figure.
-- Punctuate the undercuts with [DOODLE]/[SCRIBBLE] and the marker chart. Use them on the flat asides — they are the visual comedy layer over the real teaching.
+- Media density is the rule: essentially every beat gets a real full-frame tag ([IMG]/[PRODUCT]/[CLIP]/[CHART]/[SHOW FILING]/[MEME]). At least one [IMG] or [PRODUCT] on what they actually do, one [CHART] on the defining metric, one [SHOW FILING] on the single ugliest (or most impressive) real figure — and keep real tags flowing between them so no long stretch relies on the fallback card.
+- Punctuate the undercuts with [DOODLE]/[SCRIBBLE] and the marker chart — but only OVER a real visual, never as the whole cut. They are the comedy layer on top of the teaching, not a substitute for it.
 - 1–2 [MEME] tags MAXIMUM; zero is fine. The engine enforces the cap. Doodles and scribbles are uncapped (they're cheap, on-brand, and owned) — but don't wallpaper the video; punctuate, don't spam.
 - Let the numbers pick the tone. A genuinely good business gets grudging respect — the irony aims at the market's neglect, not the company.
 - Short sentences. Deadpan reads better clipped. No hype adjectives, no "folks", no exclamation marks.

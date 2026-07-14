@@ -381,36 +381,53 @@ class MockImageClient:
     def search(self, query: str, limit: int = 5) -> list[dict]:
         self.search_calls.append(query)
         fixture = self.settings.fixtures_dir / "wikimedia" / "search_generic.json"
-        return json.loads(fixture.read_text())["results"][:limit]
+        results = json.loads(fixture.read_text())["results"][:limit]
+        # thread the real query into the mock urls so each distinct [IMG]
+        # renders a distinct colored, labelled card (not one generic image)
+        for i, r in enumerate(results):
+            r["url"] = f"mock://img/{query}" + (f" {i}" if i else "")
+        return results
 
     def download(self, url: str, dest: Path) -> Path:
-        """On-brand imagery stand-in: a dark card with the subject label in
-        Space Grotesk on the brand backdrop — reads as an intentional
-        imagery placeholder, not a broken box."""
+        """On-brand imagery stand-in: a full-frame COLOURED card (subject
+        seeds a distinct deep-tone gradient) with the subject labelled in
+        Space Grotesk — so a MOCK long previews the real composition
+        (full-frame media + Ken Burns), not text on black."""
         self.download_calls.append(url)
+        import colorsys
+
         from PIL import Image, ImageDraw, ImageFont
 
         dest.parent.mkdir(parents=True, exist_ok=True)
         W, H = 1600, 900
-        img = Image.new("RGB", (W, H), (10, 10, 11))
+        subject = url.split("/img/", 1)[-1] if "/img/" in url else url.rsplit("/", 1)[-1]
+        subject = subject.rsplit(".", 1)[0].replace("_", " ").strip() or "imagery"
+        seed = int(hashlib.sha256(url.encode()).hexdigest()[:8], 16)
+        hue = (seed % 360) / 360.0
+        top = tuple(int(c * 255) for c in colorsys.hsv_to_rgb(hue, 0.5, 0.62))
+        bot = tuple(int(c * 255) for c in colorsys.hsv_to_rgb((hue + 0.08) % 1.0, 0.62, 0.3))
+        img = Image.new("RGB", (W, H), bot)
         d = ImageDraw.Draw(img)
-        # subtle grid + border, brand tokens
-        for x in range(0, W, 64):
-            d.line([x, 0, x, H], fill=(18, 18, 22), width=1)
-        for y in range(0, H, 64):
-            d.line([0, y, W, y], fill=(18, 18, 22), width=1)
+        for y in range(0, H, 2):  # vertical gradient
+            t = y / H
+            d.line([(0, y), (W, y)],
+                   fill=tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3)))
         d.rounded_rectangle([28, 28, W - 29, H - 29], radius=18,
-                            outline=(42, 42, 52), width=2)
-        subject = url.rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " ")
+                            outline=(242, 242, 239), width=2)
         fonts = self.settings.assets_dir / "fonts"
         try:
             kick = ImageFont.truetype(str(fonts / "SpaceMono-Bold.ttf"), 34)
-            body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), 72)
+            size = 72
+            body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), size)
+            while size > 30 and d.textlength(subject, font=body) > W - 180:
+                size -= 4
+                body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), size)
         except OSError:  # fallback if brand fonts absent
             kick = body = ImageFont.load_default()
-        d.text((72, 72), "IMAGERY", font=kick, fill=(107, 107, 112))
+        d.text((72, 72), "IMAGERY", font=kick, fill=(242, 242, 239))
         tw = d.textlength(subject, font=body)
-        d.text(((W - tw) / 2, H / 2 - 40), subject, font=body, fill=(242, 242, 239))
+        d.text(((W - tw) / 2, H / 2 - body.size / 2), subject, font=body,
+               fill=(255, 255, 255), stroke_width=2, stroke_fill=(0, 0, 0))
         img.save(dest, format="PNG")
         return dest
 
@@ -441,18 +458,17 @@ def normalize_clip(src: Path, dest: Path, settings: Settings,
 
 
 def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
-    """Contain the image on the dark canvas at LONG resolution (logos and
-    products survive; no butchering cover-crop)."""
-    from PIL import Image
+    """Compose the image to FILL the LONG frame (§editing: media is the
+    background). Real photos cover the frame edge-to-edge; logos and tall
+    grabs are contained sharp over a blurred, brand-tinted cover of
+    themselves — a designed full-frame shot, never a letterboxed black
+    frame. Ken Burns then rides over the whole WxH still in the renderer."""
+    from pipeline.rasters import cover_fill_frame
 
     W, H = settings.long_resolution
-    margin = int(H * 0.04)
-    img = Image.open(src).convert("RGB")
-    img.thumbnail((W - 2 * margin, H - 2 * margin), Image.LANCZOS)
-    canvas = Image.new("RGB", (W, H), (11, 13, 18))
-    canvas.paste(img, ((W - img.width) // 2, (H - img.height) // 2))
+    frame = cover_fill_frame(src, W, H)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    canvas.save(dest, format="PNG")
+    frame.save(dest, format="PNG")
     return dest
 
 

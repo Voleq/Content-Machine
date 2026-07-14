@@ -1,14 +1,14 @@
 {
   "ticker": "EXMPL",
   "draft": false,
-  "duration": 167.833991,
+  "duration": 190.45,
   "resolution": [
     1920,
     1080
   ],
   "cues": [
     {
-      "t": 8.8202,
+      "t": 8.7993,
       "kind": "clip",
       "payload": {
         "order": 0,
@@ -18,7 +18,7 @@
       "fallback": false
     },
     {
-      "t": 13.1553,
+      "t": 13.124,
       "kind": "doodle",
       "payload": {
         "order": 1,
@@ -29,7 +29,7 @@
       "fallback": false
     },
     {
-      "t": 29.1024,
+      "t": 29.0325,
       "kind": "img",
       "payload": {
         "order": 2,
@@ -39,7 +39,7 @@
       "fallback": false
     },
     {
-      "t": 33.6697,
+      "t": 33.5889,
       "kind": "img",
       "payload": {
         "order": 3,
@@ -49,20 +49,30 @@
       "fallback": false
     },
     {
-      "t": 39.6305,
+      "t": 39.5353,
       "kind": "img",
       "payload": {
         "order": 4,
-        "value": "logistics warehouse depot",
+        "value": "logistics warehouse interior",
         "tag": "IMG"
       },
       "fallback": false
     },
     {
-      "t": 41.9529,
-      "kind": "doodle",
+      "t": 45.7134,
+      "kind": "img",
       "payload": {
         "order": 5,
+        "value": "delivery trucks fleet depot",
+        "tag": "IMG"
+      },
+      "fallback": false
+    },
+    {
+      "t": 47.7985,
+      "kind": "doodle",
+      "payload": {
+        "order": 6,
         "value": "idea",
         "tag": "DOODLE",
         "hold": 2.0
@@ -70,20 +80,20 @@
       "fallback": false
     },
     {
-      "t": 46.9073,
+      "t": 52.7409,
       "kind": "chart",
       "payload": {
-        "order": 6,
+        "order": 7,
         "value": "revenue",
         "tag": "CHART"
       },
       "fallback": false
     },
     {
-      "t": 51.4747,
+      "t": 57.2973,
       "kind": "scribble",
       "payload": {
-        "order": 7,
+        "order": 8,
         "value": "circle -> the plateau",
         "tag": "SCRIBBLE",
         "hold": 2.0
@@ -91,10 +101,10 @@
       "fallback": false
     },
     {
-      "t": 54.2615,
+      "t": 63.012,
       "kind": "doodle",
       "payload": {
-        "order": 8,
+        "order": 9,
         "value": "hype-vs-reality",
         "tag": "DOODLE",
         "hold": 2.0
@@ -102,30 +112,30 @@
       "fallback": false
     },
     {
-      "t": 57.9773,
+      "t": 66.7189,
       "kind": "clip",
       "payload": {
-        "order": 9,
+        "order": 10,
         "value": "hamster_wheel",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 61.3835,
+      "t": 72.2019,
       "kind": "filing",
       "payload": {
-        "order": 10,
+        "order": 11,
         "value": "income_statement.png",
         "tag": "SHOW FILING"
       },
       "fallback": false
     },
     {
-      "t": 70.673,
+      "t": 81.469,
       "kind": "scribble",
       "payload": {
-        "order": 11,
+        "order": 12,
         "value": "underline -> minus eighty nine",
         "tag": "SCRIBBLE",
         "hold": 2.0
@@ -133,20 +143,30 @@
       "fallback": false
     },
     {
-      "t": 70.673,
+      "t": 81.469,
       "kind": "sound",
       "payload": {
-        "order": 12,
+        "order": 13,
         "value": "windows_error",
         "tag": "SOUND"
       },
       "fallback": false
     },
     {
-      "t": 77.6402,
+      "t": 84.5581,
+      "kind": "chart",
+      "payload": {
+        "order": 14,
+        "value": "net_income",
+        "tag": "CHART"
+      },
+      "fallback": false
+    },
+    {
+      "t": 88.4194,
       "kind": "doodle",
       "payload": {
-        "order": 13,
+        "order": 15,
         "value": "money-printer",
         "tag": "DOODLE",
         "hold": 2.0
@@ -154,10 +174,30 @@
       "fallback": false
     },
     {
-      "t": 81.2786,
+      "t": 92.049,
+      "kind": "chart",
+      "payload": {
+        "order": 16,
+        "value": "fcf",
+        "tag": "CHART"
+      },
+      "fallback": false
+    },
+    {
+      "t": 95.0608,
+      "kind": "clip",
+      "payload": {
+        "order": 17,
+        "value": "printing_money",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 97.6093,
       "kind": "doodle",
       "payload": {
-        "order": 14,
+        "order": 18,
         "value": "flames",
         "tag": "DOODLE",
         "hold": 2.0
@@ -165,30 +205,50 @@
       "fallback": false
     },
     {
-      "t": 83.4461,
+      "t": 99.7716,
       "kind": "clip",
       "payload": {
-        "order": 15,
+        "order": 19,
         "value": "boardroom_suits",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 92.9679,
+      "t": 105.4091,
+      "kind": "img",
+      "payload": {
+        "order": 20,
+        "value": "corporate office building",
+        "tag": "IMG"
+      },
+      "fallback": false
+    },
+    {
+      "t": 109.2704,
       "kind": "sound",
       "payload": {
-        "order": 16,
+        "order": 21,
         "value": "sad_trombone",
         "tag": "SOUND"
       },
       "fallback": false
     },
     {
-      "t": 92.9679,
+      "t": 109.2704,
+      "kind": "clip",
+      "payload": {
+        "order": 22,
+        "value": "paper_shredder",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 112.6684,
       "kind": "doodle",
       "payload": {
-        "order": 17,
+        "order": 23,
         "value": "sweat",
         "tag": "DOODLE",
         "hold": 2.0
@@ -196,10 +256,20 @@
       "fallback": false
     },
     {
-      "t": 101.4833,
+      "t": 115.8346,
+      "kind": "filing",
+      "payload": {
+        "order": 24,
+        "value": "income_statement.png",
+        "tag": "SHOW FILING"
+      },
+      "fallback": false
+    },
+    {
+      "t": 121.1632,
       "kind": "scribble",
       "payload": {
-        "order": 18,
+        "order": 25,
         "value": "arrow -> the debt",
         "tag": "SCRIBBLE",
         "hold": 2.0
@@ -207,41 +277,40 @@
       "fallback": false
     },
     {
-      "t": 107.4441,
-      "kind": "doodle",
+      "t": 127.1096,
+      "kind": "clip",
       "payload": {
-        "order": 19,
-        "value": "crash",
-        "tag": "DOODLE",
-        "hold": 2.0
+        "order": 26,
+        "value": "treadmill_running",
+        "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 110.6954,
+      "t": 130.3531,
       "kind": "meme",
       "payload": {
-        "order": 20,
+        "order": 27,
         "value": "harold-quick-flip-became-bagholder",
         "tag": "MEME"
       },
       "fallback": false
     },
     {
-      "t": 110.6954,
+      "t": 130.3531,
       "kind": "sound",
       "payload": {
-        "order": 21,
+        "order": 28,
         "value": "cash_register",
         "tag": "SOUND"
       },
       "fallback": false
     },
     {
-      "t": 115.0305,
+      "t": 134.6778,
       "kind": "chart",
       "payload": {
-        "order": 22,
+        "order": 29,
         "value": "price",
         "tag": "CHART",
         "style": "marker"
@@ -249,10 +318,20 @@
       "fallback": false
     },
     {
-      "t": 119.7527,
+      "t": 139.3886,
+      "kind": "clip",
+      "payload": {
+        "order": 30,
+        "value": "casino_roulette",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 142.7865,
       "kind": "doodle",
       "payload": {
-        "order": 23,
+        "order": 31,
         "value": "face-down",
         "tag": "DOODLE",
         "hold": 2.0
@@ -260,20 +339,30 @@
       "fallback": false
     },
     {
-      "t": 122.9266,
+      "t": 145.9528,
       "kind": "clip",
       "payload": {
-        "order": 24,
+        "order": 32,
         "value": "growing_plant",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 133.3773,
+      "t": 156.0694,
+      "kind": "img",
+      "payload": {
+        "order": 33,
+        "value": "EXMPL data center servers",
+        "tag": "IMG"
+      },
+      "fallback": false
+    },
+    {
+      "t": 163.7148,
       "kind": "doodle",
       "payload": {
-        "order": 25,
+        "order": 34,
         "value": "risk-reward",
         "tag": "DOODLE",
         "hold": 2.0
@@ -281,30 +370,30 @@
       "fallback": false
     },
     {
-      "t": 144.2925,
+      "t": 166.9583,
       "kind": "clip",
       "payload": {
-        "order": 26,
+        "order": 35,
         "value": "dumpster_fire",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 151.879,
+      "t": 174.5264,
       "kind": "meme",
       "payload": {
-        "order": 27,
+        "order": 36,
         "value": "portfolio-down-99-percent-20-left",
         "tag": "MEME"
       },
       "fallback": false
     },
     {
-      "t": 165.6585,
+      "t": 188.2727,
       "kind": "doodle",
       "payload": {
-        "order": 28,
+        "order": 37,
         "value": "bagholder",
         "tag": "DOODLE",
         "hold": 2.0
@@ -316,462 +405,711 @@
     {
       "kind": "filler",
       "start": 0.0,
-      "end": 2.9400666666666666,
+      "end": 2.9331,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 2.9400666666666666,
-      "end": 5.880133333333333,
+      "start": 2.9331,
+      "end": 5.8662,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 5.880133333333333,
-      "end": 8.8202,
+      "start": 5.8662,
+      "end": 8.7993,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "clip",
-      "start": 8.8202,
-      "end": 11.8202,
+      "start": 8.7993,
+      "end": 11.7993,
       "value": "tumbleweed",
-      "source": "pexels",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 11.8202,
-      "end": 14.700566666666667,
+      "start": 11.7993,
+      "end": 14.6715,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 14.700566666666667,
-      "end": 17.580933333333334,
+      "start": 14.6715,
+      "end": 17.5437,
       "attribution": "",
-      "variant": 0
+      "variant": 4
     },
     {
       "kind": "filler",
-      "start": 17.580933333333334,
-      "end": 20.4613,
+      "start": 17.5437,
+      "end": 20.4159,
       "attribution": "",
-      "variant": 1
+      "variant": 5
     },
     {
       "kind": "filler",
-      "start": 20.4613,
-      "end": 23.34166666666667,
+      "start": 20.4159,
+      "end": 23.2881,
       "attribution": "",
-      "variant": 2
+      "variant": 6
     },
     {
       "kind": "filler",
-      "start": 23.34166666666667,
-      "end": 26.222033333333336,
+      "start": 23.2881,
+      "end": 26.1603,
       "attribution": "",
-      "variant": 3
+      "variant": 7
     },
     {
       "kind": "filler",
-      "start": 26.222033333333336,
-      "end": 29.1024,
+      "start": 26.1603,
+      "end": 29.0325,
       "attribution": "",
-      "variant": 0
+      "variant": 8
     },
     {
       "kind": "img",
-      "start": 29.1024,
-      "end": 31.9024,
+      "start": 29.0325,
+      "end": 31.8325,
       "value": "EXMPL data center server racks",
-      "source": "mock",
+      "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 31.9024,
-      "end": 33.6697,
+      "start": 31.8325,
+      "end": 33.5889,
       "attribution": "",
-      "variant": 1
+      "variant": 9
     },
     {
       "kind": "img",
-      "start": 33.6697,
-      "end": 36.469699999999996,
+      "start": 33.5889,
+      "end": 36.3889,
       "value": "EXMPL dispatch dashboard",
-      "source": "mock",
+      "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 36.469699999999996,
-      "end": 38.0501,
+      "start": 36.3889,
+      "end": 37.9621,
       "attribution": "",
-      "variant": 2
+      "variant": 10
     },
     {
       "kind": "filler",
-      "start": 38.0501,
-      "end": 39.6305,
+      "start": 37.9621,
+      "end": 39.5353,
       "attribution": "",
-      "variant": 3
+      "variant": 11
     },
     {
       "kind": "img",
-      "start": 39.6305,
-      "end": 42.430499999999995,
-      "value": "logistics warehouse depot",
-      "source": "mock",
+      "start": 39.5353,
+      "end": 42.3353,
+      "value": "logistics warehouse interior",
+      "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 42.430499999999995,
-      "end": 44.668899999999994,
+      "start": 42.3353,
+      "end": 44.02435,
       "attribution": "",
-      "variant": 0
+      "variant": 12
     },
     {
       "kind": "filler",
-      "start": 44.668899999999994,
-      "end": 46.9073,
+      "start": 44.02435,
+      "end": 45.7134,
       "attribution": "",
-      "variant": 1
+      "variant": 13
+    },
+    {
+      "kind": "img",
+      "start": 45.7134,
+      "end": 48.5134,
+      "value": "delivery trucks fleet depot",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+    },
+    {
+      "kind": "filler",
+      "start": 48.5134,
+      "end": 50.62715,
+      "attribution": "",
+      "variant": 14
+    },
+    {
+      "kind": "filler",
+      "start": 50.62715,
+      "end": 52.7409,
+      "attribution": "",
+      "variant": 15
     },
     {
       "kind": "chart",
-      "start": 46.9073,
-      "end": 49.9073,
+      "start": 52.7409,
+      "end": 55.7409,
       "value": "revenue",
       "source": "generated",
       "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 49.9073,
-      "end": 52.5973,
+      "start": 55.7409,
+      "end": 58.485400000000006,
       "attribution": "",
-      "variant": 2
+      "variant": 16
     },
     {
       "kind": "filler",
-      "start": 52.5973,
-      "end": 55.2873,
+      "start": 58.485400000000006,
+      "end": 61.2299,
       "attribution": "",
-      "variant": 3
+      "variant": 17
     },
     {
       "kind": "filler",
-      "start": 55.2873,
-      "end": 57.9773,
+      "start": 61.2299,
+      "end": 63.9744,
       "attribution": "",
-      "variant": 0
+      "variant": 18
+    },
+    {
+      "kind": "filler",
+      "start": 63.9744,
+      "end": 66.7189,
+      "attribution": "",
+      "variant": 19
     },
     {
       "kind": "clip",
-      "start": 57.9773,
-      "end": 60.9773,
+      "start": 66.7189,
+      "end": 69.7189,
       "value": "hamster_wheel",
-      "source": "pexels",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 60.9773,
-      "end": 61.3835,
+      "start": 69.7189,
+      "end": 72.2019,
       "attribution": "",
-      "variant": 1
+      "variant": 20
     },
     {
       "kind": "filing",
-      "start": 61.3835,
-      "end": 64.1835,
+      "start": 72.2019,
+      "end": 75.00189999999999,
       "value": "income_statement.png",
       "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 64.1835,
-      "end": 66.9353,
+      "start": 75.00189999999999,
+      "end": 77.39094999999999,
       "attribution": "",
-      "variant": 2
+      "variant": 21
     },
     {
       "kind": "filler",
-      "start": 66.9353,
-      "end": 69.6871,
+      "start": 77.39094999999999,
+      "end": 79.78,
       "attribution": "",
-      "variant": 3
+      "variant": 22
     },
     {
       "kind": "filler",
-      "start": 69.6871,
-      "end": 72.43889999999999,
+      "start": 79.78,
+      "end": 82.16905,
       "attribution": "",
-      "variant": 0
+      "variant": 23
     },
     {
       "kind": "filler",
-      "start": 72.43889999999999,
-      "end": 75.19069999999999,
+      "start": 82.16905,
+      "end": 84.5581,
       "attribution": "",
-      "variant": 1
+      "variant": 24
+    },
+    {
+      "kind": "chart",
+      "start": 84.5581,
+      "end": 87.5581,
+      "value": "net_income",
+      "source": "generated",
+      "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 75.19069999999999,
-      "end": 77.9425,
+      "start": 87.5581,
+      "end": 89.80355,
       "attribution": "",
-      "variant": 2
+      "variant": 25
     },
     {
       "kind": "filler",
-      "start": 77.9425,
-      "end": 80.6943,
+      "start": 89.80355,
+      "end": 92.049,
       "attribution": "",
-      "variant": 3
+      "variant": 26
     },
     {
-      "kind": "filler",
-      "start": 80.6943,
-      "end": 83.4461,
-      "attribution": "",
-      "variant": 0
+      "kind": "chart",
+      "start": 92.049,
+      "end": 95.0608,
+      "value": "fcf",
+      "source": "generated",
+      "attribution": ""
     },
     {
       "kind": "clip",
-      "start": 83.4461,
-      "end": 86.4461,
-      "value": "boardroom_suits",
-      "source": "pexels",
+      "start": 95.0608,
+      "end": 98.0608,
+      "value": "printing_money",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 86.4461,
-      "end": 89.14046666666667,
+      "start": 98.0608,
+      "end": 99.7716,
       "attribution": "",
-      "variant": 1
+      "variant": 27
+    },
+    {
+      "kind": "clip",
+      "start": 99.7716,
+      "end": 102.7716,
+      "value": "boardroom_suits",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 89.14046666666667,
-      "end": 91.83483333333334,
+      "start": 102.7716,
+      "end": 105.4091,
       "attribution": "",
-      "variant": 2
+      "variant": 28
+    },
+    {
+      "kind": "img",
+      "start": 105.4091,
+      "end": 108.20909999999999,
+      "value": "corporate office building",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 91.83483333333334,
-      "end": 94.5292,
+      "start": 108.20909999999999,
+      "end": 109.2704,
       "attribution": "",
-      "variant": 3
+      "variant": 29
+    },
+    {
+      "kind": "clip",
+      "start": 109.2704,
+      "end": 112.2704,
+      "value": "paper_shredder",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 94.5292,
-      "end": 97.22356666666667,
+      "start": 112.2704,
+      "end": 114.0525,
       "attribution": "",
-      "variant": 0
+      "variant": 30
     },
     {
       "kind": "filler",
-      "start": 97.22356666666667,
-      "end": 99.91793333333334,
+      "start": 114.0525,
+      "end": 115.8346,
       "attribution": "",
-      "variant": 1
+      "variant": 31
+    },
+    {
+      "kind": "filing",
+      "start": 115.8346,
+      "end": 118.63459999999999,
+      "value": "income_statement.png",
+      "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 99.91793333333334,
-      "end": 102.6123,
+      "start": 118.63459999999999,
+      "end": 121.4596,
       "attribution": "",
-      "variant": 2
+      "variant": 32
     },
     {
       "kind": "filler",
-      "start": 102.6123,
-      "end": 105.30666666666667,
+      "start": 121.4596,
+      "end": 124.2846,
       "attribution": "",
-      "variant": 3
+      "variant": 33
     },
     {
       "kind": "filler",
-      "start": 105.30666666666667,
-      "end": 108.00103333333334,
+      "start": 124.2846,
+      "end": 127.1096,
       "attribution": "",
-      "variant": 0
+      "variant": 34
     },
     {
-      "kind": "filler",
-      "start": 108.00103333333334,
-      "end": 110.6954,
-      "attribution": "",
-      "variant": 1
+      "kind": "clip",
+      "start": 127.1096,
+      "end": 130.3531,
+      "value": "treadmill_running",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "meme",
-      "start": 110.6954,
-      "end": 112.4954,
+      "start": 130.3531,
+      "end": 132.15310000000002,
       "value": "harold-quick-flip-became-bagholder",
       "source": "library",
       "attribution": "owned meme library (harold-quick-flip-became-bagholder)"
     },
     {
       "kind": "filler",
-      "start": 112.4954,
-      "end": 115.0305,
+      "start": 132.15310000000002,
+      "end": 134.6778,
       "attribution": "",
-      "variant": 2
+      "variant": 35
     },
     {
       "kind": "chart",
-      "start": 115.0305,
-      "end": 118.0305,
+      "start": 134.6778,
+      "end": 137.6778,
       "value": "price",
       "source": "generated",
       "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 118.0305,
-      "end": 120.47855,
+      "start": 137.6778,
+      "end": 139.3886,
       "attribution": "",
-      "variant": 3
-    },
-    {
-      "kind": "filler",
-      "start": 120.47855,
-      "end": 122.9266,
-      "attribution": "",
-      "variant": 0
+      "variant": 36
     },
     {
       "kind": "clip",
-      "start": 122.9266,
-      "end": 125.9266,
-      "value": "growing_plant",
-      "source": "pexels",
+      "start": 139.3886,
+      "end": 142.3886,
+      "value": "casino_roulette",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 125.9266,
-      "end": 128.5503,
+      "start": 142.3886,
+      "end": 144.1707,
       "attribution": "",
-      "variant": 1
+      "variant": 37
     },
     {
       "kind": "filler",
-      "start": 128.5503,
-      "end": 131.17399999999998,
+      "start": 144.1707,
+      "end": 145.9528,
       "attribution": "",
-      "variant": 2
-    },
-    {
-      "kind": "filler",
-      "start": 131.17399999999998,
-      "end": 133.7977,
-      "attribution": "",
-      "variant": 3
-    },
-    {
-      "kind": "filler",
-      "start": 133.7977,
-      "end": 136.4214,
-      "attribution": "",
-      "variant": 0
-    },
-    {
-      "kind": "filler",
-      "start": 136.4214,
-      "end": 139.0451,
-      "attribution": "",
-      "variant": 1
-    },
-    {
-      "kind": "filler",
-      "start": 139.0451,
-      "end": 141.66879999999998,
-      "attribution": "",
-      "variant": 2
-    },
-    {
-      "kind": "filler",
-      "start": 141.66879999999998,
-      "end": 144.2925,
-      "attribution": "",
-      "variant": 3
+      "variant": 38
     },
     {
       "kind": "clip",
-      "start": 144.2925,
-      "end": 147.2925,
+      "start": 145.9528,
+      "end": 148.9528,
+      "value": "growing_plant",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    },
+    {
+      "kind": "filler",
+      "start": 148.9528,
+      "end": 151.325,
+      "attribution": "",
+      "variant": 39
+    },
+    {
+      "kind": "filler",
+      "start": 151.325,
+      "end": 153.6972,
+      "attribution": "",
+      "variant": 40
+    },
+    {
+      "kind": "filler",
+      "start": 153.6972,
+      "end": 156.0694,
+      "attribution": "",
+      "variant": 41
+    },
+    {
+      "kind": "img",
+      "start": 156.0694,
+      "end": 158.8694,
+      "value": "EXMPL data center servers",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+    },
+    {
+      "kind": "filler",
+      "start": 158.8694,
+      "end": 161.56570000000002,
+      "attribution": "",
+      "variant": 42
+    },
+    {
+      "kind": "filler",
+      "start": 161.56570000000002,
+      "end": 164.262,
+      "attribution": "",
+      "variant": 43
+    },
+    {
+      "kind": "filler",
+      "start": 164.262,
+      "end": 166.9583,
+      "attribution": "",
+      "variant": 44
+    },
+    {
+      "kind": "clip",
+      "start": 166.9583,
+      "end": 169.9583,
       "value": "dumpster_fire",
-      "source": "pexels",
+      "source": "cache",
       "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)"
     },
     {
       "kind": "filler",
-      "start": 147.2925,
-      "end": 149.58575,
+      "start": 169.9583,
+      "end": 172.24235,
       "attribution": "",
-      "variant": 0
+      "variant": 45
     },
     {
       "kind": "filler",
-      "start": 149.58575,
-      "end": 151.879,
+      "start": 172.24235,
+      "end": 174.5264,
       "attribution": "",
-      "variant": 1
+      "variant": 46
     },
     {
       "kind": "meme",
-      "start": 151.879,
-      "end": 153.679,
+      "start": 174.5264,
+      "end": 176.3264,
       "value": "portfolio-down-99-percent-20-left",
       "source": "library",
       "attribution": "owned meme library (portfolio-down-99-percent-20-left)"
     },
     {
       "kind": "filler",
-      "start": 153.679,
-      "end": 156.5099982,
+      "start": 176.3264,
+      "end": 179.15112,
       "attribution": "",
-      "variant": 2
+      "variant": 47
     },
     {
       "kind": "filler",
-      "start": 156.5099982,
-      "end": 159.3409964,
+      "start": 179.15112,
+      "end": 181.97584,
       "attribution": "",
-      "variant": 3
+      "variant": 48
     },
     {
       "kind": "filler",
-      "start": 159.3409964,
-      "end": 162.1719946,
+      "start": 181.97584,
+      "end": 184.80056,
       "attribution": "",
-      "variant": 0
+      "variant": 49
     },
     {
       "kind": "filler",
-      "start": 162.1719946,
-      "end": 165.0029928,
+      "start": 184.80056,
+      "end": 187.62528,
       "attribution": "",
-      "variant": 1
+      "variant": 50
     },
     {
       "kind": "filler",
-      "start": 165.0029928,
-      "end": 167.833991,
+      "start": 187.62528,
+      "end": 190.45,
       "attribution": "",
-      "variant": 2
+      "variant": 51
+    }
+  ],
+  "layers": [
+    {
+      "name": "intro_card",
+      "t_start": 0.0,
+      "t_end": 2.6,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_1",
+      "t_start": 31.8325,
+      "t_end": 32.7325,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_2",
+      "t_start": 63.9744,
+      "t_end": 64.87440000000001,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_3",
+      "t_start": 98.0608,
+      "t_end": 98.9608,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_4",
+      "t_start": 127.1096,
+      "t_end": 128.0096,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_5",
+      "t_start": 158.8694,
+      "t_end": 159.76940000000002,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "glitch@72.20",
+      "t_start": 72.2019,
+      "t_end": 72.7019,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "glitch@115.83",
+      "t_start": 115.8346,
+      "t_end": 116.3346,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "doodle_0_shrug",
+      "t_start": 13.124,
+      "t_end": 15.124,
+      "x": 1180,
+      "y": 140
+    },
+    {
+      "name": "doodle_1_idea",
+      "t_start": 47.7985,
+      "t_end": 49.7985,
+      "x": 120,
+      "y": 150
+    },
+    {
+      "name": "doodle_2_hype-vs-reality",
+      "t_start": 63.012,
+      "t_end": 65.012,
+      "x": 1180,
+      "y": 560
+    },
+    {
+      "name": "doodle_3_money-printer",
+      "t_start": 88.4194,
+      "t_end": 90.4194,
+      "x": 120,
+      "y": 560
+    },
+    {
+      "name": "doodle_4_flames",
+      "t_start": 97.6093,
+      "t_end": 99.6093,
+      "x": 1180,
+      "y": 140
+    },
+    {
+      "name": "doodle_5_sweat",
+      "t_start": 112.6684,
+      "t_end": 114.6684,
+      "x": 120,
+      "y": 150
+    },
+    {
+      "name": "doodle_6_face-down",
+      "t_start": 142.7865,
+      "t_end": 144.7865,
+      "x": 1180,
+      "y": 560
+    },
+    {
+      "name": "doodle_7_risk-reward",
+      "t_start": 163.7148,
+      "t_end": 165.7148,
+      "x": 120,
+      "y": 560
+    },
+    {
+      "name": "doodle_8_bagholder",
+      "t_start": 188.2727,
+      "t_end": 190.2727,
+      "x": 1180,
+      "y": 140
+    },
+    {
+      "name": "scribble_0",
+      "t_start": 57.2973,
+      "t_end": 59.7973,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_1",
+      "t_start": 81.469,
+      "t_end": 83.969,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_2",
+      "t_start": 121.1632,
+      "t_end": 123.6632,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "corner_bug",
+      "t_start": 0.0,
+      "t_end": 190.45,
+      "x": 1373,
+      "y": 30
+    },
+    {
+      "name": "lower_third",
+      "t_start": 0.0,
+      "t_end": 190.45,
+      "x": 36,
+      "y": 30
+    },
+    {
+      "name": "disclaimer",
+      "t_start": 0.0,
+      "t_end": 190.45,
+      "x": 36,
+      "y": 1036
     }
   ],
   "segment_warnings": [],
