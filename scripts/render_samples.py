@@ -62,7 +62,9 @@ def render_long_sample() -> Path:
     from pipeline.render_long import render_long
 
     settings = _settings()
-    raw = (ROOT / "fixtures" / "scripts" / "long_valid.txt").read_text()
+    # a denser, purpose-built deep-dive that showcases the kit (charts,
+    # doodles, scribbles, memes); long_valid.txt stays the parser fixture
+    raw = (ROOT / "fixtures" / "scripts" / "long_sample.txt").read_text()
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     for w in warnings:
         print(f"  warning: {w}")
