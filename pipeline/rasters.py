@@ -217,6 +217,96 @@ def lower_third(settings: Settings, primary: str, secondary: str = "", *,
     return img
 
 
+def _brand_grid(d: ImageDraw.ImageDraw, W: int, H: int) -> None:
+    step = max(H // 16, 40)
+    for x in range(0, W, step):
+        d.line([x, 0, x, H], fill=(20, 20, 24), width=1)
+    for y in range(0, H, step):
+        d.line([0, y, W, y], fill=(20, 20, 24), width=1)
+
+
+def interstitial_card(
+    settings: Settings, *, width: int, height: int, scene_path: Path | None,
+    headline: str = "", kicker: str = "", accent=GREEN, period=RED,
+) -> Image.Image:
+    """A composed full-frame brand card for the LONG's cutaways: a mascot
+    scene (carrying its own hand-lettered label) on the brand grid, with a
+    Space Mono section kicker + green rule top-left. The scene is the hero;
+    the top-right and bottom bands stay clear for the corner bug, the
+    lower-third and the captions."""
+    W, H = width, height
+    img = Image.new("RGBA", (W, H), (*BG, 255))
+    d = ImageDraw.Draw(img)
+    _brand_grid(d, W, H)
+    pad = int(H * 0.075)
+
+    # section kicker, top-left, with a short green rule under it
+    if kicker:
+        kf = load_font(settings, MONO_BOLD, int(H * 0.03))
+        d.text((pad, pad), kicker.upper(), font=kf, fill=(*MUTED, 255))
+        d.line([pad, pad + kf.size + 12, pad + int(W * 0.09), pad + kf.size + 12],
+               fill=(*accent, 255), width=3)
+
+    # the mascot scene, large, centred in the upper two-thirds (clear of the
+    # bottom caption band)
+    if scene_path is not None and Path(scene_path).exists():
+        scene = Image.open(scene_path).convert("RGBA")
+        sh = int(H * 0.56)
+        sw = int(scene.width * sh / scene.height)
+        if sw > W - 2 * pad:
+            sw = W - 2 * pad
+            sh = int(scene.height * sw / scene.width)
+        scene = scene.resize((sw, sh), Image.LANCZOS)
+        img.alpha_composite(scene, ((W - sw) // 2, int(H * 0.13)))
+
+    # optional short hand-drawn line, mid-frame left (for scenes with no
+    # baked label) — sits well above the caption band
+    if headline:
+        hf = load_font(settings, SHANTELL, int(H * 0.06))
+        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+        lw = probe.textlength(headline, font=hf)
+        d.text((pad, int(H * 0.76)), headline, font=hf, fill=(*INK, 255))
+        d.text((pad + lw, int(H * 0.76)), ".", font=hf, fill=(*period, 255))
+    return img
+
+
+def intro_card(settings: Settings, ticker: str, tagline: str, *,
+               width: int, height: int, scene_path: Path | None = None) -> Image.Image:
+    """The LONG opening title card: the marker wordmark + $TICKER pill +
+    the tagline + a mascot, composed on the brand grid — a real open, not a
+    lone mascot on a flat backdrop."""
+    W, H = width, height
+    img = Image.new("RGBA", (W, H), (*BG, 255))
+    d = ImageDraw.Draw(img)
+    _brand_grid(d, W, H)
+
+    if scene_path is not None and Path(scene_path).exists():
+        scene = Image.open(scene_path).convert("RGBA")
+        sh = int(H * 0.42)
+        sw = int(scene.width * sh / scene.height)
+        scene = scene.resize((sw, sh), Image.LANCZOS)
+        img.alpha_composite(scene, ((W - sw) // 2, int(H * 0.10)))
+
+    # wordmark, centred, with the red terminal dot
+    wf = load_font(settings, SHANTELL, int(H * 0.16))
+    name = settings.brand_name.lower()
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    nw = probe.textlength(name, font=wf)
+    dot = probe.textlength(".", font=wf)
+    wy = int(H * 0.58)
+    d.text(((W - nw - dot) / 2, wy), name, font=wf, fill=(*INK, 255))
+    d.text(((W - nw - dot) / 2 + nw, wy), ".", font=wf, fill=(*RED, 255))
+
+    # ticker pill + tagline under the wordmark
+    pill = ticker_pill(settings, ticker, font_size=int(H * 0.05))
+    img.alpha_composite(pill, ((W - pill.width) // 2, wy + int(wf.size * 1.05)))
+    tf = load_font(settings, MONO, int(H * 0.032))
+    tw = probe.textlength(tagline, font=tf)
+    d.text(((W - tw) / 2, wy + int(wf.size * 1.05) + pill.height + int(H * 0.02)),
+           tagline, font=tf, fill=(*MUTED, 255))
+    return img
+
+
 def chapter_stinger(settings: Settings, number: str, title: str, *,
                     width: int, height: int) -> Image.Image:
     """A full-frame chapter stinger card: a big Shantell chapter title with

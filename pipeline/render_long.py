@@ -44,6 +44,8 @@ from pipeline.rasters import (
     build_karaoke_ass,
     doodle_clip,
     frames_to_alpha_clip,
+    interstitial_card,
+    intro_card,
     lower_third,
     scribble_callout_frames,
     simple_text,
@@ -114,6 +116,34 @@ def render_long(
     lines: list[str] = []
     seg_meta: list[dict] = []
     filler_bg = settings.assets_dir / "backgrounds" / "dennis_bg_wide.png"
+    # composed interstitial cards — the LONG's cutaways are designed brand
+    # frames (a mascot scene + a deadpan line), never a plain backdrop
+    scenes_dir = settings.assets_dir / "brand" / "scenes"
+
+    def _scene(name: str) -> Path | None:
+        p = scenes_dir / f"{name}.png"
+        return p if p.exists() else None
+
+    # (scene, headline, kicker) — headline only for scenes with no baked
+    # hand-lettered label of their own
+    _INTERSTITIALS = [
+        ("staring-at-the-crash", "the chart does the talking", "NOISE OR SIGNAL?"),
+        ("at-the-desk-the-setup", "three a.m., again", "THE DEEP DIVE"),
+        ("whiteboard-let-me-explain", "", "THE NUMBERS"),
+        ("in-too-deep-underwater", "", "THE BALANCE SHEET"),
+        ("dumpster-fire-it-s-fine", "", "THE INDUSTRY"),
+        ("money-rain-easy-come", "", "THE HYPE"),
+        ("red-rain-it-s-raining", "", "THE TAPE"),
+        ("face-down-defeated", "five investment years in a row", "THE HABIT"),
+    ]
+    card_paths: list[Path] = []
+    for ci, (scene, head, kick) in enumerate(_INTERSTITIALS):
+        cp = rdir / f"card_{ci}.png"
+        if not cp.exists():
+            interstitial_card(settings, width=W, height=H, scene_path=_scene(scene),
+                              headline=head, kicker=kick).save(cp)
+        card_paths.append(cp)
+
     shot_cache: dict[str, Path] = {}
     still_pad = f"scale={W}:{H}:force_original_aspect_ratio=decrease," \
                 f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0b0d12"
@@ -194,14 +224,18 @@ def render_long(
                     f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                     f"{still_pad}{tail}"
                 )
-        else:  # filler
+        else:  # filler -> a composed interstitial brand card, slow zoom
             visual = None
-            look = _FILLER_LOOKS[seg.payload.get("variant", 0) % len(_FILLER_LOOKS)].format(W=W, H=H)
+            variant = seg.payload.get("variant", 0)
+            card = card_paths[variant % len(card_paths)]
+            zw = int(W * 1.06) // 2 * 2
             inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(filler_bg)]
+                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(card)]
             chain = (
                 f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                f"scale={W}:{H},{look}{tail}"
+                f"scale={zw}:-2,"
+                f"crop={W}:{H}:x='(iw-ow)*t/{max(seg_len, 0.1):.4f}':y='(ih-oh)/2'"
+                f"{tail}"
             )
         meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
         if value:
@@ -223,6 +257,19 @@ def render_long(
     # ------------------------------------------------------------ layers
     layers: list[OverlayLayer] = []
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
+
+    # composed opening title card (a real open, not a lone mascot on a flat
+    # backdrop) — full-frame over the first beat, fading out on its own
+    intro_dur = min(2.6, duration * 0.5)
+    intro_path = rdir / "intro_card.png"
+    intro_card(settings, script.ticker, settings.brand_tagline.lower(),
+               width=W, height=H,
+               scene_path=(scenes_dir / "at-the-desk-the-setup.png"
+                           if (scenes_dir / "at-the-desk-the-setup.png").exists()
+                           else None)).save(intro_path)
+    layers.append(OverlayLayer(
+        path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur, name="intro_card",
+    ))
 
     # glitch flash on every filing reveal (pre-rendered overlay)
     glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
