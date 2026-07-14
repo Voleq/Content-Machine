@@ -25,6 +25,39 @@ def test_parse_new_tags(long_doodles_text, settings):
     assert script.screengrab_slugs() == ["broker-pnl"]
 
 
+def test_hook_options_preamble_is_stripped(settings):
+    """The Step-2 write prompt emits a HOOK OPTIONS menu before the script —
+    it must never be spoken (stripped like the ASSET PROMPTS trailer)."""
+    raw = (
+        '=== HOOK OPTIONS ===\n'
+        '1. "It is an excellent company. I will not touch the stock."\n'
+        '2. "Down sixty percent, and nobody left to sell."\n'
+        'Chosen: 2\n\n'
+        'Down sixty percent, and nobody left to sell. [CLIP: tumbleweed] '
+        'Which is when I start reading. See you at the next filing.'
+    )
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert "HOOK OPTIONS" not in script.narration
+    assert "Chosen:" not in script.narration
+    assert "excellent company" not in script.narration, "the hook menu is not spoken"
+    assert script.narration.startswith("Down sixty percent")
+    assert [e.payload for e in script.events_of(TagType.CLIP)] == ["tumbleweed"]
+
+
+def test_chart_metric_absent_from_data_is_flagged(settings, tmp_path):
+    (tmp_path / "income_statement.png").write_bytes(b"png")
+    script, _ = parse_long_script(
+        "The tape. [CHART: revenue] and [CHART: sbc_pct_rev] over five years.",
+        "EXMPL", settings,
+    )
+    # revenue has a series; sbc_pct_rev is a valid metric with no data here
+    warnings, _ = validate_long_script(
+        script, PALETTE, tmp_path, settings, data_metrics={"revenue", "price"}
+    )
+    assert any("sbc_pct_rev" in w and "no multi-year series" in w for w in warnings)
+    assert not any("revenue" in w and "no multi-year series" in w for w in warnings)
+
+
 def test_screengrab_blocks_until_file_present(long_doodles_text, settings, tmp_path):
     script, _ = parse_long_script(long_doodles_text, "EXMPL", settings)
     # the fixture references income_statement.png too — satisfy that first

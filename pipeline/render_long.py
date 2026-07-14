@@ -348,11 +348,18 @@ def render_long(
     # [DOODLE] boils in a corner, [SCRIBBLE] draws a mark + target callout
     doodle_slots = [(px(1180), px(140)), (px(120), px(150)),
                     (px(1180), px(560)), (px(120), px(560))]
+    prev_doodle_key: str | None = None
     for k, c in enumerate(doodle_cues):
         visual = content.resolve_doodle(c.payload["value"])
         if visual is None:
             log.warning("doodle %r not resolved — skipped", c.payload["value"])
             continue
+        # the same doodle can't ride two beats in a row (§variety) — a repeat
+        # reads as a stuck frame; drop the adjacent duplicate
+        if visual.key == prev_doodle_key:
+            log.warning("doodle %r repeats back-to-back — skipped", visual.key)
+            continue
+        prev_doodle_key = visual.key
         hold = float(c.payload.get("hold", 2.0))
         clip, (cw, ch) = doodle_clip(
             visual.path, rdir / f"doodle_{k}.mov",

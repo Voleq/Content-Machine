@@ -70,6 +70,40 @@ class Workspace:
         f = self.path / "script_long.json"
         return LongScript.model_validate_json(f.read_text()) if f.exists() else None
 
+    # ------------------------------------------------- LONG two-step angle
+    # The human decision moved to the ANGLE: after the data upload the bot
+    # sends the Step-1 angle prompt and marks the workspace "awaiting angle";
+    # the operator's plain-text reply is stored as the chosen angle and used
+    # to fill the Step-2 writing prompt.
+    def _angle_file(self) -> Path:
+        return self.path / "long_angle.json"
+
+    def set_awaiting_angle(self) -> None:
+        self._angle_file().write_text(json.dumps({"awaiting": True, "chosen": ""}))
+
+    def set_chosen_angle(self, text: str) -> None:
+        self._angle_file().write_text(json.dumps(
+            {"awaiting": False, "chosen": text.strip()}, indent=2))
+
+    def _angle_state(self) -> dict:
+        f = self._angle_file()
+        try:
+            return json.loads(f.read_text()) if f.exists() else {}
+        except json.JSONDecodeError:
+            return {}
+
+    def awaiting_angle(self) -> bool:
+        return bool(self._angle_state().get("awaiting"))
+
+    def clear_awaiting_angle(self) -> None:
+        st = self._angle_state()
+        if st.get("awaiting"):
+            st["awaiting"] = False
+            self._angle_file().write_text(json.dumps(st, indent=2))
+
+    def chosen_angle(self) -> str:
+        return self._angle_state().get("chosen", "")
+
     # ------------------------------------------------------------- approval
     def _approval_file(self, fmt: str) -> Path:
         return self.path / f"approval_{fmt}.json"

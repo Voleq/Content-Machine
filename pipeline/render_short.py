@@ -444,13 +444,22 @@ def render_short(
                                     gain_db=settings.sfx_gain_db))
 
     # ------------------------------------------------------------ encode
+    # a subtle, slow Ken Burns drift on the branded backdrop so the SHORT is
+    # never a dead static hold (the fixed beat UI composites over it); ~6%
+    # over the whole runtime — designed, not busy
     bg = settings.assets_dir / "backgrounds" / "dennis_bg_tall.png"
+    zw = int(W * 1.06) // 2 * 2
+    dur = max(duration, 0.1)
+    base_ken_burns = (
+        f"scale={zw}:-2,crop={W}:{H}:x='(iw-ow)*t/{dur:.3f}':y='(ih-oh)*t/{dur:.3f}',"
+        f"setsar=1,format=yuv420p"
+    )
     spec = CompositeSpec(
         base_input_args=[
             "-loop", "1", "-framerate", str(settings.fps),
             "-t", f"{duration:.3f}", "-i", str(bg),
         ],
-        base_filter=f"scale={W}:{H},setsar=1,format=yuv420p",
+        base_filter=base_ken_burns,
         layers=layers,
         audio=audio,
         ass_path=ass_path,

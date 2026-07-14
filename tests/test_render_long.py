@@ -241,6 +241,32 @@ def test_screengrab_and_marker_chart_segments(rendered_doodles):
     assert all(c["source"] == "generated" for c in charts)
 
 
+def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
+    """§variety B2: an adjacent duplicate doodle reads as a stuck frame — the
+    renderer drops the repeat, so only one of two identical adjacent doodles
+    reaches the composite."""
+    from config import Settings
+
+    tmp = tmp_path_factory.mktemp("long_dupe_doodle")
+    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
+                        cache_dir=tmp / "cache", state_dir=tmp / "state",
+                        long_width=640, long_height=360, _env_file=None)
+    settings.ensure_runtime_dirs()
+    raw = ("EXMPL is down and forgotten. [DOODLE: shrug] I start reading here. "
+           "[DOODLE: shrug] Still reading, calmly. [CLIP: tumbleweed] "
+           "See you at the next filing.")
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    ws = settings.workspace_dir / "EXMPL" / "test"
+    ws.mkdir(parents=True)
+    tts = TTSEngine(settings).synthesize(script.narration, "long")
+    _, manifest = render_long(script, tts, ws, settings,
+                              content=ContentManager(settings))
+    layers = json.loads(manifest.read_text())["layers"]
+    shrug_layers = [l for l in layers if l["name"].startswith("doodle_")
+                    and "shrug" in l["name"]]
+    assert len(shrug_layers) == 1, "the back-to-back duplicate doodle was dropped"
+
+
 def test_doodle_and_scribble_overlays_present(rendered_doodles):
     settings, script, tts, out, manifest = rendered_doodles
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()

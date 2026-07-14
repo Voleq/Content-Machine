@@ -13,6 +13,7 @@ whose content hash still matches that approval.
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -137,12 +138,15 @@ class BotCore:
 
         move_context = last_screen_context(self.settings, ws.ticker)
         files = []
-        for fmt in ("short", "long"):
+        # SHORT is one paste; LONG is now two manual steps in Claude — Step 1
+        # (angle) here, Step 2 (write) after the operator replies with a pick.
+        for fmt in ("short", "long_angle"):
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
                                move_context=move_context)
             f = ws.path / f"prompt_{fmt}.md"
             f.write_text(text)
             files.append(f)
+        ws.set_awaiting_angle()
         warn = ""
         if not data.has_history:
             warn += ("\n⚠️ no History sheet — the multi-year gut check will "
@@ -150,8 +154,11 @@ class BotCore:
         if data.warning_missing:
             warn += f"\n⚠️ optional fields missing: {', '.join(data.warning_missing[:6])}"
         return Reply(
-            f"📋 Master prompts for {ws.ticker} (as of {data.get('as_of_date')}) — "
-            f"run in Claude/GPT and paste the output back here.{warn}",
+            f"📋 Prompts for {ws.ticker} (as of {data.get('as_of_date')}).\n"
+            f"• SHORT: run prompt_short.md, paste the output back.\n"
+            f"• LONG: run prompt_long_angle.md (Step 1) — it returns ranked "
+            f"angles. Reply here with a number (or a tweak) and I'll hand you "
+            f"Step 2, the writing prompt.{warn}",
             files=files,
         )
 
@@ -218,10 +225,27 @@ class BotCore:
         return out
 
     # ------------------------------------------------------- script intake
+    @staticmethod
+    def _looks_like_script(text: str) -> bool:
+        """A pasted SHORT (JSON) or LONG (tagged narration / write-step
+        output) — as opposed to a short free-text angle reply."""
+        stripped = text.lstrip()
+        if stripped.startswith("{") or '"format"' in text or "```" in text:
+            return True  # SHORT JSON
+        if re.search(r"\[[A-Za-z][A-Za-z ]*:", text):
+            return True  # a bracket tag -> LONG narration
+        if "ASSET PROMPTS" in text or "HOOK OPTIONS" in text:
+            return True  # the LONG write-step output
+        return False
+
     def intake_script(self, chat_id: int, text: str) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /new TICKER first.")
+        # LONG two-step: a plain-text reply while awaiting the angle pick is
+        # the operator's angle choice, not a script — hand back Step 2.
+        if ws.awaiting_angle() and text.strip() and not self._looks_like_script(text):
+            return self._intake_angle(ws, text)
         stripped = text.lstrip()
         looks_short = stripped.startswith("{") or '"format"' in text or "```" in text
         if looks_short:
@@ -240,6 +264,25 @@ class BotCore:
         except LongScriptError as e:
             return Reply(f"⛔ LONG script rejected:\n{e}")
 
+    def _intake_angle(self, ws: Workspace, text: str) -> Reply:
+        """The operator picked a LONG angle — store it and hand back the
+        Step-2 writing prompt, pre-filled with the chosen angle."""
+        data = self._company_data(ws)
+        if data is None:
+            return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
+        ws.set_chosen_angle(text)
+        prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
+                             chosen_angle=text)
+        f = ws.path / "prompt_long_write.md"
+        f.write_text(prompt)
+        return Reply(
+            f"✅ Angle locked for {ws.ticker}.\n"
+            f"Here's Step 2 — the writing prompt. Run it in the SAME Claude "
+            f"chat (so it still has the angle in context), pick a hook, then "
+            f"paste the tagged script back here.",
+            files=[f],
+        )
+
     def _intake_short(self, ws: Workspace, raw: str) -> Reply:
         script, warnings = parse_short_script(raw, self.settings)
         if script.ticker != ws.ticker:
@@ -256,12 +299,14 @@ class BotCore:
 
     def _intake_long(self, ws: Workspace, raw: str) -> Reply:
         script, warnings = parse_long_script(raw, ws.ticker, self.settings)
+        data = self._company_data(ws)
+        data_metrics = data.available_chart_metrics() if data is not None else None
         v_warnings, v_blocking = validate_long_script(
-            script, palette_keys(), ws.path, self.settings
+            script, palette_keys(), ws.path, self.settings, data_metrics=data_metrics
         )
         ws.save_long(script, raw)
+        ws.clear_awaiting_angle()  # a script is on file — past the angle stage
         prompt_files = self._save_asset_prompts(ws, script)
-        data = self._company_data(ws)
         plan = self.content.plan(script, company_data=data,
                                  overrides=ws.broll_overrides())
         filing_count = len({e.payload for e in script.events_of(TagType.SHOW_FILING)})

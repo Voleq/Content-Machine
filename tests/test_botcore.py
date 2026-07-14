@@ -37,27 +37,65 @@ def test_new_ticker_creates_workspace_and_context(core):
     assert "Refinitiv" not in reply.text
 
 
-def test_upload_xlsx_yields_filled_prompts(core, xlsx_bytes):
+def test_upload_xlsx_yields_short_and_long_angle_prompts(core, xlsx_bytes):
     core.new_ticker(CHAT, "EXMPL")
     reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     assert "saved dennis_data.xlsx" in reply.text
+    # SHORT is one paste; LONG is now Step 1 (the angle prompt)
     assert len(reply.files) == 2
-    short_prompt = next(f for f in reply.files if "short" in f.name).read_text()
-    long_prompt = next(f for f in reply.files if "long" in f.name).read_text()
-    placeholders = ("{{ticker}}", "{{as_of_date}}", "{{company_data}}",
-                    "{{move_context}}", "{{meme_keys}}", "{{broll_palette}}",
-                    "{{chart_metrics}}", "{{screenshot_files}}")
-    for ph in placeholders:
-        assert ph not in short_prompt, f"{ph} must be filled"
-        assert ph not in long_prompt, f"{ph} must be filled"
-    assert "Ticker: EXMPL" in short_prompt
-    assert "ps_ttm = 62.0" in short_prompt
+    short_prompt = next(f for f in reply.files if f.name == "prompt_short.md").read_text()
+    angle_prompt = next(f for f in reply.files if "long_angle" in f.name).read_text()
+    # no real placeholder braces survive in either (the header's literal
+    # "{{placeholder}}" doc token is not a real field)
+    import re as _re
+    unfilled = _re.compile(r"\{\{(?!placeholder\}\})[a-z_]+\}\}")
+    assert not unfilled.search(short_prompt), "short placeholders filled"
+    assert not unfilled.search(angle_prompt), "angle placeholders filled"
+
+    assert "Ticker: EXMPL" in short_prompt and "ps_ttm = 62.0" in short_prompt
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
-    assert "DENNIS" in short_prompt and "DENNIS" in long_prompt
-    assert "dumpster_fire" in long_prompt          # palette injected
-    assert "harold-quick-flip-became-bagholder" in long_prompt  # meme keys injected
-    assert "ASSET PROMPTS" in long_prompt          # self-prompting instructions
-    assert "Refinitiv" not in short_prompt and "Refinitiv" not in long_prompt
+    # catalogs injected into the SHORT writing prompt (with queries / use-when)
+    assert "dumpster_fire — dumpster fire burning night" in short_prompt
+    assert "reactions/deadpan" in short_prompt        # doodle catalog, grouped
+    assert "harold-quick-flip-became-bagholder" in short_prompt  # meme catalog
+    assert "## VOICE BIBLE" in short_prompt and "deadpan" in short_prompt
+
+    # the angle prompt is Step 1: ranked angles, no script, gets the full data
+    assert "PICK THE ANGLE" in angle_prompt and "pick an angle" in angle_prompt
+    assert "ps_ttm = 62.0" in angle_prompt
+    assert "★recommended" in angle_prompt
+    assert "ASSET PROMPTS" not in angle_prompt, "no tags/assets at the angle step"
+    assert "Refinitiv" not in short_prompt and "Refinitiv" not in angle_prompt
+    # the workspace is now awaiting the operator's angle pick
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    assert ws.awaiting_angle()
+
+
+def test_long_two_step_angle_then_write(core, xlsx_bytes, long_valid_text):
+    core.new_ticker(CHAT, "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    assert ws.awaiting_angle()
+
+    # a plain-text reply is the angle pick -> Step 2 writing prompt appears
+    reply = core.intake_script(CHAT, "1, but lean on the debt")
+    assert "Angle locked" in reply.text
+    write = next(f for f in reply.files if "long_write" in f.name).read_text()
+    assert "WRITE THE SCRIPT" in write
+    assert "1, but lean on the debt" in write, "chosen angle injected"
+    assert "## VOICE BIBLE" in write and "dumpster_fire" in write
+    assert ws.chosen_angle() == "1, but lean on the debt"
+
+    # now the tagged script pastes back through the normal LONG intake
+    import io
+
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
+    core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
+    reply2 = core.intake_script(CHAT, long_valid_text)
+    assert "EXMPL — LONG" in reply2.text
+    assert not ws.awaiting_angle(), "past the angle stage once a script is on file"
 
 
 def test_prompts_carry_screener_move_context(core, xlsx_bytes):
