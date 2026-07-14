@@ -1,14 +1,14 @@
 {
   "ticker": "EXMPL",
   "draft": false,
-  "duration": 138.716009,
+  "duration": 167.833991,
   "resolution": [
     1920,
     1080
   ],
   "cues": [
     {
-      "t": 8.8043,
+      "t": 8.8202,
       "kind": "clip",
       "payload": {
         "order": 0,
@@ -18,102 +18,296 @@
       "fallback": false
     },
     {
-      "t": 29.0492,
-      "kind": "img",
+      "t": 13.1553,
+      "kind": "doodle",
       "payload": {
         "order": 1,
+        "value": "shrug",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 29.1024,
+      "kind": "img",
+      "payload": {
+        "order": 2,
         "value": "EXMPL data center server racks",
         "tag": "IMG"
       },
       "fallback": false
     },
     {
-      "t": 33.6081,
+      "t": 33.6697,
       "kind": "img",
       "payload": {
-        "order": 2,
+        "order": 3,
         "value": "EXMPL dispatch dashboard",
         "tag": "PRODUCT"
       },
       "fallback": false
     },
     {
-      "t": 46.8214,
+      "t": 39.6305,
+      "kind": "img",
+      "payload": {
+        "order": 4,
+        "value": "logistics warehouse depot",
+        "tag": "IMG"
+      },
+      "fallback": false
+    },
+    {
+      "t": 41.9529,
+      "kind": "doodle",
+      "payload": {
+        "order": 5,
+        "value": "idea",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 46.9073,
       "kind": "chart",
       "payload": {
-        "order": 3,
+        "order": 6,
         "value": "revenue",
         "tag": "CHART"
       },
       "fallback": false
     },
     {
-      "t": 54.2394,
-      "kind": "filing",
+      "t": 51.4747,
+      "kind": "scribble",
       "payload": {
-        "order": 4,
-        "value": "income_statement.png",
-        "tag": "SHOW FILING"
+        "order": 7,
+        "value": "circle -> the plateau",
+        "tag": "SCRIBBLE",
+        "hold": 2.0
       },
       "fallback": false
     },
     {
-      "t": 63.5118,
-      "kind": "sound",
+      "t": 54.2615,
+      "kind": "doodle",
       "payload": {
-        "order": 5,
-        "value": "windows_error",
-        "tag": "SOUND"
+        "order": 8,
+        "value": "hype-vs-reality",
+        "tag": "DOODLE",
+        "hold": 2.0
       },
       "fallback": false
     },
     {
-      "t": 71.007,
+      "t": 57.9773,
       "kind": "clip",
       "payload": {
-        "order": 6,
+        "order": 9,
         "value": "hamster_wheel",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 78.8114,
+      "t": 61.3835,
+      "kind": "filing",
+      "payload": {
+        "order": 10,
+        "value": "income_statement.png",
+        "tag": "SHOW FILING"
+      },
+      "fallback": false
+    },
+    {
+      "t": 70.673,
+      "kind": "scribble",
+      "payload": {
+        "order": 11,
+        "value": "underline -> minus eighty nine",
+        "tag": "SCRIBBLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 70.673,
+      "kind": "sound",
+      "payload": {
+        "order": 12,
+        "value": "windows_error",
+        "tag": "SOUND"
+      },
+      "fallback": false
+    },
+    {
+      "t": 77.6402,
+      "kind": "doodle",
+      "payload": {
+        "order": 13,
+        "value": "money-printer",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 81.2786,
+      "kind": "doodle",
+      "payload": {
+        "order": 14,
+        "value": "flames",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 83.4461,
       "kind": "clip",
       "payload": {
-        "order": 7,
+        "order": 15,
         "value": "boardroom_suits",
         "tag": "CLIP"
       },
       "fallback": false
     },
     {
-      "t": 92.3337,
-      "kind": "clip",
+      "t": 92.9679,
+      "kind": "sound",
       "payload": {
-        "order": 8,
-        "value": "growing_plant",
-        "tag": "CLIP"
+        "order": 16,
+        "value": "sad_trombone",
+        "tag": "SOUND"
       },
       "fallback": false
     },
     {
-      "t": 106.706,
+      "t": 92.9679,
+      "kind": "doodle",
+      "payload": {
+        "order": 17,
+        "value": "sweat",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 101.4833,
+      "kind": "scribble",
+      "payload": {
+        "order": 18,
+        "value": "arrow -> the debt",
+        "tag": "SCRIBBLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 107.4441,
+      "kind": "doodle",
+      "payload": {
+        "order": 19,
+        "value": "crash",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 110.6954,
       "kind": "meme",
       "payload": {
-        "order": 9,
+        "order": 20,
         "value": "harold-quick-flip-became-bagholder",
         "tag": "MEME"
       },
       "fallback": false
     },
     {
-      "t": 106.706,
+      "t": 110.6954,
       "kind": "sound",
       "payload": {
-        "order": 10,
-        "value": "sad_trombone",
+        "order": 21,
+        "value": "cash_register",
         "tag": "SOUND"
+      },
+      "fallback": false
+    },
+    {
+      "t": 115.0305,
+      "kind": "chart",
+      "payload": {
+        "order": 22,
+        "value": "price",
+        "tag": "CHART",
+        "style": "marker"
+      },
+      "fallback": false
+    },
+    {
+      "t": 119.7527,
+      "kind": "doodle",
+      "payload": {
+        "order": 23,
+        "value": "face-down",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 122.9266,
+      "kind": "clip",
+      "payload": {
+        "order": 24,
+        "value": "growing_plant",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 133.3773,
+      "kind": "doodle",
+      "payload": {
+        "order": 25,
+        "value": "risk-reward",
+        "tag": "DOODLE",
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 144.2925,
+      "kind": "clip",
+      "payload": {
+        "order": 26,
+        "value": "dumpster_fire",
+        "tag": "CLIP"
+      },
+      "fallback": false
+    },
+    {
+      "t": 151.879,
+      "kind": "meme",
+      "payload": {
+        "order": 27,
+        "value": "portfolio-down-99-percent-20-left",
+        "tag": "MEME"
+      },
+      "fallback": false
+    },
+    {
+      "t": 165.6585,
+      "kind": "doodle",
+      "payload": {
+        "order": 28,
+        "value": "bagholder",
+        "tag": "DOODLE",
+        "hold": 2.0
       },
       "fallback": false
     }
@@ -122,374 +316,471 @@
     {
       "kind": "filler",
       "start": 0.0,
-      "end": 2.9347666666666665,
+      "end": 2.9400666666666666,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 2.9347666666666665,
-      "end": 5.869533333333333,
+      "start": 2.9400666666666666,
+      "end": 5.880133333333333,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 5.869533333333333,
-      "end": 8.8043,
+      "start": 5.880133333333333,
+      "end": 8.8202,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "clip",
-      "start": 8.8043,
-      "end": 11.8043,
+      "start": 8.8202,
+      "end": 11.8202,
       "value": "tumbleweed",
       "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 11.8043,
-      "end": 14.67845,
+      "start": 11.8202,
+      "end": 14.700566666666667,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 14.67845,
-      "end": 17.552599999999998,
+      "start": 14.700566666666667,
+      "end": 17.580933333333334,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 17.552599999999998,
-      "end": 20.42675,
+      "start": 17.580933333333334,
+      "end": 20.4613,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 20.42675,
-      "end": 23.3009,
+      "start": 20.4613,
+      "end": 23.34166666666667,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "filler",
-      "start": 23.3009,
-      "end": 26.17505,
+      "start": 23.34166666666667,
+      "end": 26.222033333333336,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 26.17505,
-      "end": 29.0492,
+      "start": 26.222033333333336,
+      "end": 29.1024,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "img",
-      "start": 29.0492,
-      "end": 31.8492,
+      "start": 29.1024,
+      "end": 31.9024,
       "value": "EXMPL data center server racks",
       "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 31.8492,
-      "end": 33.6081,
+      "start": 31.9024,
+      "end": 33.6697,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "img",
-      "start": 33.6081,
-      "end": 36.4081,
+      "start": 33.6697,
+      "end": 36.469699999999996,
       "value": "EXMPL dispatch dashboard",
       "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
       "kind": "filler",
-      "start": 36.4081,
-      "end": 39.011424999999996,
+      "start": 36.469699999999996,
+      "end": 38.0501,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "filler",
-      "start": 39.011424999999996,
-      "end": 41.61475,
+      "start": 38.0501,
+      "end": 39.6305,
       "attribution": "",
       "variant": 3
     },
     {
+      "kind": "img",
+      "start": 39.6305,
+      "end": 42.430499999999995,
+      "value": "logistics warehouse depot",
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+    },
+    {
       "kind": "filler",
-      "start": 41.61475,
-      "end": 44.218075,
+      "start": 42.430499999999995,
+      "end": 44.668899999999994,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 44.218075,
-      "end": 46.8214,
+      "start": 44.668899999999994,
+      "end": 46.9073,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "chart",
-      "start": 46.8214,
-      "end": 49.8214,
+      "start": 46.9073,
+      "end": 49.9073,
       "value": "revenue",
       "source": "generated",
       "attribution": ""
     },
     {
       "kind": "filler",
-      "start": 49.8214,
-      "end": 52.0304,
+      "start": 49.9073,
+      "end": 52.5973,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "filler",
-      "start": 52.0304,
-      "end": 54.2394,
-      "attribution": "",
-      "variant": 3
-    },
-    {
-      "kind": "filing",
-      "start": 54.2394,
-      "end": 57.0394,
-      "value": "income_statement.png",
-      "attribution": ""
-    },
-    {
-      "kind": "filler",
-      "start": 57.0394,
-      "end": 59.83292,
-      "attribution": "",
-      "variant": 0
-    },
-    {
-      "kind": "filler",
-      "start": 59.83292,
-      "end": 62.62644,
-      "attribution": "",
-      "variant": 1
-    },
-    {
-      "kind": "filler",
-      "start": 62.62644,
-      "end": 65.41996,
-      "attribution": "",
-      "variant": 2
-    },
-    {
-      "kind": "filler",
-      "start": 65.41996,
-      "end": 68.21348,
+      "start": 52.5973,
+      "end": 55.2873,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 68.21348,
-      "end": 71.007,
+      "start": 55.2873,
+      "end": 57.9773,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "clip",
-      "start": 71.007,
-      "end": 74.007,
+      "start": 57.9773,
+      "end": 60.9773,
       "value": "hamster_wheel",
       "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 74.007,
-      "end": 76.4092,
+      "start": 60.9773,
+      "end": 61.3835,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filing",
+      "start": 61.3835,
+      "end": 64.1835,
+      "value": "income_statement.png",
+      "attribution": ""
+    },
+    {
+      "kind": "filler",
+      "start": 64.1835,
+      "end": 66.9353,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 66.9353,
+      "end": 69.6871,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 69.6871,
+      "end": 72.43889999999999,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 72.43889999999999,
+      "end": 75.19069999999999,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 76.4092,
-      "end": 78.8114,
+      "start": 75.19069999999999,
+      "end": 77.9425,
       "attribution": "",
       "variant": 2
     },
     {
+      "kind": "filler",
+      "start": 77.9425,
+      "end": 80.6943,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 80.6943,
+      "end": 83.4461,
+      "attribution": "",
+      "variant": 0
+    },
+    {
       "kind": "clip",
-      "start": 78.8114,
-      "end": 81.8114,
+      "start": 83.4461,
+      "end": 86.4461,
       "value": "boardroom_suits",
       "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
       "kind": "filler",
-      "start": 81.8114,
-      "end": 84.441975,
-      "attribution": "",
-      "variant": 3
-    },
-    {
-      "kind": "filler",
-      "start": 84.441975,
-      "end": 87.07255,
-      "attribution": "",
-      "variant": 0
-    },
-    {
-      "kind": "filler",
-      "start": 87.07255,
-      "end": 89.703125,
+      "start": 86.4461,
+      "end": 89.14046666666667,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 89.703125,
-      "end": 92.3337,
+      "start": 89.14046666666667,
+      "end": 91.83483333333334,
       "attribution": "",
       "variant": 2
     },
     {
-      "kind": "clip",
-      "start": 92.3337,
-      "end": 95.3337,
-      "value": "growing_plant",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
       "kind": "filler",
-      "start": 95.3337,
-      "end": 98.17677499999999,
+      "start": 91.83483333333334,
+      "end": 94.5292,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 98.17677499999999,
-      "end": 101.01984999999999,
+      "start": 94.5292,
+      "end": 97.22356666666667,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 101.01984999999999,
-      "end": 103.862925,
+      "start": 97.22356666666667,
+      "end": 99.91793333333334,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 103.862925,
-      "end": 106.706,
+      "start": 99.91793333333334,
+      "end": 102.6123,
       "attribution": "",
       "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 102.6123,
+      "end": 105.30666666666667,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 105.30666666666667,
+      "end": 108.00103333333334,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 108.00103333333334,
+      "end": 110.6954,
+      "attribution": "",
+      "variant": 1
     },
     {
       "kind": "meme",
-      "start": 106.706,
-      "end": 108.506,
+      "start": 110.6954,
+      "end": 112.4954,
       "value": "harold-quick-flip-became-bagholder",
       "source": "library",
       "attribution": "owned meme library (harold-quick-flip-became-bagholder)"
     },
     {
       "kind": "filler",
-      "start": 108.506,
-      "end": 111.25236445454546,
+      "start": 112.4954,
+      "end": 115.0305,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "chart",
+      "start": 115.0305,
+      "end": 118.0305,
+      "value": "price",
+      "source": "generated",
+      "attribution": ""
+    },
+    {
+      "kind": "filler",
+      "start": 118.0305,
+      "end": 120.47855,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 111.25236445454546,
-      "end": 113.99872890909091,
+      "start": 120.47855,
+      "end": 122.9266,
       "attribution": "",
       "variant": 0
     },
     {
+      "kind": "clip",
+      "start": 122.9266,
+      "end": 125.9266,
+      "value": "growing_plant",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+    },
+    {
       "kind": "filler",
-      "start": 113.99872890909091,
-      "end": 116.74509336363637,
+      "start": 125.9266,
+      "end": 128.5503,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 116.74509336363637,
-      "end": 119.49145781818183,
+      "start": 128.5503,
+      "end": 131.17399999999998,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "filler",
-      "start": 119.49145781818183,
-      "end": 122.23782227272727,
+      "start": 131.17399999999998,
+      "end": 133.7977,
       "attribution": "",
       "variant": 3
     },
     {
       "kind": "filler",
-      "start": 122.23782227272727,
-      "end": 124.98418672727274,
+      "start": 133.7977,
+      "end": 136.4214,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 124.98418672727274,
-      "end": 127.73055118181819,
+      "start": 136.4214,
+      "end": 139.0451,
       "attribution": "",
       "variant": 1
     },
     {
       "kind": "filler",
-      "start": 127.73055118181819,
-      "end": 130.47691563636366,
+      "start": 139.0451,
+      "end": 141.66879999999998,
       "attribution": "",
       "variant": 2
     },
     {
       "kind": "filler",
-      "start": 130.47691563636366,
-      "end": 133.2232800909091,
+      "start": 141.66879999999998,
+      "end": 144.2925,
       "attribution": "",
       "variant": 3
     },
     {
+      "kind": "clip",
+      "start": 144.2925,
+      "end": 147.2925,
+      "value": "dumpster_fire",
+      "source": "pexels",
+      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)"
+    },
+    {
       "kind": "filler",
-      "start": 133.2232800909091,
-      "end": 135.96964454545457,
+      "start": 147.2925,
+      "end": 149.58575,
       "attribution": "",
       "variant": 0
     },
     {
       "kind": "filler",
-      "start": 135.96964454545457,
-      "end": 138.716009,
+      "start": 149.58575,
+      "end": 151.879,
       "attribution": "",
       "variant": 1
+    },
+    {
+      "kind": "meme",
+      "start": 151.879,
+      "end": 153.679,
+      "value": "portfolio-down-99-percent-20-left",
+      "source": "library",
+      "attribution": "owned meme library (portfolio-down-99-percent-20-left)"
+    },
+    {
+      "kind": "filler",
+      "start": 153.679,
+      "end": 156.5099982,
+      "attribution": "",
+      "variant": 2
+    },
+    {
+      "kind": "filler",
+      "start": 156.5099982,
+      "end": 159.3409964,
+      "attribution": "",
+      "variant": 3
+    },
+    {
+      "kind": "filler",
+      "start": 159.3409964,
+      "end": 162.1719946,
+      "attribution": "",
+      "variant": 0
+    },
+    {
+      "kind": "filler",
+      "start": 162.1719946,
+      "end": 165.0029928,
+      "attribution": "",
+      "variant": 1
+    },
+    {
+      "kind": "filler",
+      "start": 165.0029928,
+      "end": 167.833991,
+      "attribution": "",
+      "variant": 2
     }
   ],
   "segment_warnings": [],
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+    "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-    "owned meme library (harold-quick-flip-became-bagholder)"
+    "owned meme library (harold-quick-flip-became-bagholder)",
+    "owned meme library (portfolio-down-99-percent-20-left)"
   ],
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.filter.txt",
   "output": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.mp4"

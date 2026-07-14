@@ -212,18 +212,41 @@ class MockPexelsClient:
 
     def search(self, query: str, per_page: int = 5) -> dict:
         self.search_calls.append(query)
-        return json.loads(self._fixture_for(query).read_text())
+        data = json.loads(self._fixture_for(query).read_text())
+        # thread the query into the mock links so download can label the tile
+        for v in data.get("videos", []):
+            for f in v.get("video_files", []):
+                f["link"] = f"mock://clip/{query}"
+        return data
 
     def download(self, url: str, dest: Path) -> Path:
+        """Generate a self-documenting b-roll stand-in: a dark cinematic
+        brand gradient + film grain + vignette with the subject labelled in
+        Space Grotesk — never a test pattern, so mock renders read as
+        intentional footage placeholders rather than broken."""
         self.download_calls.append(url)
         dest.parent.mkdir(parents=True, exist_ok=True)
+        subject = url.split("/clip/", 1)[-1] if "/clip/" in url else url.rsplit("/", 1)[-1]
+        subject = re.sub(r"[^A-Za-z0-9 -]", " ", subject).strip()[:40] or "b-roll"
         seed = int(hashlib.sha256(url.encode()).hexdigest()[:6], 16)
         hue = seed % 360
+        dur = self.settings.broll_max_clip_s
+        body = str(self.settings.fonts_dir / "SpaceGrotesk-Bold.ttf")
+        kick = str(self.settings.fonts_dir / "SpaceMono-Bold.ttf")
+        vf = (
+            f"hue=h={hue},noise=alls=14:allf=t,vignette=PI/5,"
+            f"eq=brightness=0.0:saturation=0.75,"
+            f"drawtext=fontfile='{kick}':text='B-ROLL':fontcolor=0x6b6b70:"
+            f"fontsize=26:x=(w-text_w)/2:y=(h-text_h)/2-66,"
+            f"drawtext=fontfile='{body}':text='{subject}':fontcolor=0xf2f2ef:"
+            f"fontsize=46:x=(w-text_w)/2:y=(h-text_h)/2:box=1:"
+            f"boxcolor=0x0a0a0b@0.5:boxborderw=24"
+        )
         run_ffmpeg([
             "-f", "lavfi",
-            "-i", "testsrc2=size=1280x720:rate=30:duration=6",
-            "-vf", f"hue=h={hue}:s=0.35,eq=brightness=-0.28:saturation=0.8,"
-                   f"drawbox=x=0:y=0:w=iw:h=ih:color=black@0.25:t=fill",
+            "-i", (f"gradients=s=1280x720:c0=0x141a24:c1=0x1c3128:nb_colors=2:"
+                   f"speed=0.01:d={dur:.1f}:r=30"),
+            "-vf", vf,
             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28",
             "-an", str(dest),
         ])
@@ -361,16 +384,33 @@ class MockImageClient:
         return json.loads(fixture.read_text())["results"][:limit]
 
     def download(self, url: str, dest: Path) -> Path:
+        """On-brand imagery stand-in: a dark card with the subject label in
+        Space Grotesk on the brand backdrop — reads as an intentional
+        imagery placeholder, not a broken box."""
         self.download_calls.append(url)
-        from PIL import Image, ImageDraw
+        from PIL import Image, ImageDraw, ImageFont
 
-        seed = int(hashlib.sha256(url.encode()).hexdigest()[:6], 16)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        img = Image.new("RGB", (1600, 900),
-                        (30 + seed % 40, 40 + seed % 30, 50 + seed % 20))
+        W, H = 1600, 900
+        img = Image.new("RGB", (W, H), (10, 10, 11))
         d = ImageDraw.Draw(img)
-        d.rectangle([20, 20, 1579, 879], outline=(220, 220, 220), width=6)
-        d.text((60, 430), url.rsplit("/", 1)[-1], fill=(230, 230, 230))
+        # subtle grid + border, brand tokens
+        for x in range(0, W, 64):
+            d.line([x, 0, x, H], fill=(18, 18, 22), width=1)
+        for y in range(0, H, 64):
+            d.line([0, y, W, y], fill=(18, 18, 22), width=1)
+        d.rounded_rectangle([28, 28, W - 29, H - 29], radius=18,
+                            outline=(42, 42, 52), width=2)
+        subject = url.rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " ")
+        fonts = self.settings.assets_dir / "fonts"
+        try:
+            kick = ImageFont.truetype(str(fonts / "SpaceMono-Bold.ttf"), 34)
+            body = ImageFont.truetype(str(fonts / "SpaceGrotesk-Bold.ttf"), 72)
+        except OSError:  # fallback if brand fonts absent
+            kick = body = ImageFont.load_default()
+        d.text((72, 72), "IMAGERY", font=kick, fill=(107, 107, 112))
+        tw = d.textlength(subject, font=body)
+        d.text(((W - tw) / 2, H / 2 - 40), subject, font=body, fill=(242, 242, 239))
         img.save(dest, format="PNG")
         return dest
 
