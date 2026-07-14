@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 210" style="width:100%;height:auto;overflow:visible;"><defs>
+  <filter id="k1" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k1s }}"/></filter>
+  <filter id="k2" x="-45%" y="-45%" width="190%" height="190%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k2s }}"/></filter>
+</defs>
+          <g filter="url(#k1)" stroke="#6b6b70" stroke-width="4" fill="none" stroke-linecap="round"><path d="M48 20 v160 M48 180 h226"/></g>
+          <g filter="url(#k1)" stroke="#4a4a4f" stroke-width="3" stroke-dasharray="8 8" fill="none" stroke-linecap="round"><path d="M48 180 L256 40"/></g>
+          <circle cx="86" cy="150" r="7" fill="#2fd576"/>
+          <circle cx="238" cy="158" r="8" fill="#ff5247"/>
+          <text x="12" y="34" fill="#6b6b70" font-family="'Space Mono',monospace" font-size="12">reward</text>
+          <text x="196" y="200" fill="#6b6b70" font-family="'Space Mono',monospace" font-size="12">risk →</text>
+          <text x="150" y="150" fill="#ff5247" font-family="'Shantell Sans',cursive" font-size="14">you (0dte)</text>
+        </svg>

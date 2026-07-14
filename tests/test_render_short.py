@@ -22,7 +22,7 @@ SMOKE_RAW = json.dumps({
     "hook_text": "Up 29% today. The business is not.",
     "chart_style": "marker",
     "audio_script": (
-        "EXMPL is up twenty nine percent today. [DOODLE: stick-staring-at-crash] "
+        "EXMPL is up twenty nine percent today. [DOODLE: crash] "
         "The news is a press release. "
         "Revenue is flat for five years and the losses got [SCRIBBLE: circle -> Net income] wider every year. "
         "The chart went vertical, the business went sideways. "
@@ -39,7 +39,7 @@ SMOKE_RAW = json.dumps({
     ],
     "numbers_comment": "Flat revenue, widening losses.",
     "conclusion": "Noise. Set a reminder for the next filing.",
-    "meme": {"key": "stonks-man-up-only", "anchor_word": "vertical"},
+    "meme": {"key": "fomo-stages-wish-i-bought-doodle", "anchor_word": "vertical"},
     "annotations": [
         {"target": "chart", "anchor_word": "today", "note": "this"},
         {"target": "numbers", "row_index": 1, "anchor_word": "wider"},

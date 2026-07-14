@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 260 30" style="position:absolute;left:2%;bottom:-14%;width:96%;overflow:visible;pointer-events:none;"><defs><symbol id="eyes" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 62 q24 -12 48 -2"/>
+      <path d="M112 60 q24 -10 48 2"/>
+      <path d="M42 92 q23 -16 48 0"/>
+      <path d="M110 92 q25 -16 48 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="66" cy="106" r="10"/><circle cx="134" cy="106" r="10"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round">
+      <path d="M46 120 q22 12 44 2"/>
+      <path d="M112 122 q22 12 44 -2"/>
+    </g>
+  </symbol><symbol id="eyecandle" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 46 q16 -10 34 -3"/>
+      <path d="M64 44 q16 -8 33 2"/>
+      <path d="M16 70 q16 -13 34 0"/>
+      <path d="M64 70 q17 -13 34 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="44" cy="78" r="9"/><circle cx="92" cy="78" r="9"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"><path d="M22 92 q15 8 30 2"/><path d="M68 92 q15 8 30 2"/></g>
+    <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M8 140 h98"/><path d="M178 140 h14"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M106 142 l-11 15 l8 13"/><path d="M178 142 l10 16 l-8 12"/></g>
+    <line x1="141" y1="22" x2="141" y2="186" stroke="#ff5247" stroke-width="9" stroke-linecap="round"/>
+    <rect x="122" y="46" width="38" height="106" rx="6" fill="#ff5247"/>
+  </symbol><symbol id="eyecandle-mono" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 46 q16 -10 34 -3"/>
+      <path d="M64 44 q16 -8 33 2"/>
+      <path d="M16 70 q16 -13 34 0"/>
+      <path d="M64 70 q17 -13 34 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="44" cy="78" r="9"/><circle cx="92" cy="78" r="9"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"><path d="M22 92 q15 8 30 2"/><path d="M68 92 q15 8 30 2"/></g>
+    <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M8 140 h98"/><path d="M178 140 h14"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M106 142 l-11 15 l8 13"/><path d="M178 142 l10 16 l-8 12"/></g>
+    <line x1="141" y1="22" x2="141" y2="186" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <rect x="122" y="46" width="38" height="106" rx="6" fill="currentColor"/>
+  </symbol><symbol id="mug" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="50" y="84" width="82" height="82" rx="14"/>
+      <path d="M132 102 q32 2 28 32 q-4 20 -28 12"/>
+      <path d="M70 118 q11 7 21 0"/>
+      <path d="M99 118 q11 7 21 0"/>
+      <path d="M74 144 h40"/>
+    </g>
+    <g fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" opacity="0.85">
+      <path d="M74 66 q-9 -12 0 -26"/>
+      <path d="M102 64 q-9 -12 0 -26"/>
+    </g>
+  </symbol><symbol id="candle" viewBox="0 0 200 200" overflow="visible">
+    <line x1="100" y1="30" x2="100" y2="172" stroke="#ff5247" stroke-width="10" stroke-linecap="round"/>
+    <rect x="76" y="66" width="48" height="82" rx="6" fill="#ff5247"/>
+  </symbol>
+  <filter id="b1" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ b1s }}"/></filter>
+  <filter id="b2" x="-45%" y="-45%" width="190%" height="190%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="6" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ b2s }}"/></filter>
+  <symbol id="eyes" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 62 q24 -12 48 -2"/>
+      <path d="M112 60 q24 -10 48 2"/>
+      <path d="M42 92 q23 -16 48 0"/>
+      <path d="M110 92 q25 -16 48 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="66" cy="106" r="10"/><circle cx="134" cy="106" r="10"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round">
+      <path d="M46 120 q22 12 44 2"/>
+      <path d="M112 122 q22 12 44 -2"/>
+    </g>
+  </symbol>
+  <symbol id="eyecandle" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 46 q16 -10 34 -3"/>
+      <path d="M64 44 q16 -8 33 2"/>
+      <path d="M16 70 q16 -13 34 0"/>
+      <path d="M64 70 q17 -13 34 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="44" cy="78" r="9"/><circle cx="92" cy="78" r="9"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"><path d="M22 92 q15 8 30 2"/><path d="M68 92 q15 8 30 2"/></g>
+    <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M8 140 h98"/><path d="M178 140 h14"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M106 142 l-11 15 l8 13"/><path d="M178 142 l10 16 l-8 12"/></g>
+    <line x1="141" y1="22" x2="141" y2="186" stroke="#ff5247" stroke-width="9" stroke-linecap="round"/>
+    <rect x="122" y="46" width="38" height="106" rx="6" fill="#ff5247"/>
+  </symbol>
+  <symbol id="eyecandle-mono" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 46 q16 -10 34 -3"/>
+      <path d="M64 44 q16 -8 33 2"/>
+      <path d="M16 70 q16 -13 34 0"/>
+      <path d="M64 70 q17 -13 34 0"/>
+    </g>
+    <g fill="currentColor"><circle cx="44" cy="78" r="9"/><circle cx="92" cy="78" r="9"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"><path d="M22 92 q15 8 30 2"/><path d="M68 92 q15 8 30 2"/></g>
+    <g stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M8 140 h98"/><path d="M178 140 h14"/></g>
+    <g fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"><path d="M106 142 l-11 15 l8 13"/><path d="M178 142 l10 16 l-8 12"/></g>
+    <line x1="141" y1="22" x2="141" y2="186" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+    <rect x="122" y="46" width="38" height="106" rx="6" fill="currentColor"/>
+  </symbol>
+  <symbol id="mug" viewBox="0 0 200 200" overflow="visible">
+    <g fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="50" y="84" width="82" height="82" rx="14"/>
+      <path d="M132 102 q32 2 28 32 q-4 20 -28 12"/>
+      <path d="M70 118 q11 7 21 0"/>
+      <path d="M99 118 q11 7 21 0"/>
+      <path d="M74 144 h40"/>
+    </g>
+    <g fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" opacity="0.85">
+      <path d="M74 66 q-9 -12 0 -26"/>
+      <path d="M102 64 q-9 -12 0 -26"/>
+    </g>
+  </symbol>
+  <symbol id="candle" viewBox="0 0 200 200" overflow="visible">
+    <line x1="100" y1="30" x2="100" y2="172" stroke="#ff5247" stroke-width="10" stroke-linecap="round"/>
+    <rect x="76" y="66" width="48" height="82" rx="6" fill="#ff5247"/>
+  </symbol>
+</defs><g filter="url(#b2)" stroke="#ff5247" stroke-width="5" fill="none" stroke-linecap="round"><path d="M6 16 C70 8 180 8 252 18"/></g></svg>

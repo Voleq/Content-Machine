@@ -1,58 +1,854 @@
 {
-  "stick-shrug": {
-    "tags": ["shrug", "whatever", "acceptance", "who-knows"],
-    "use_when": "A fact lands and there is nothing to do about it but shrug."
-  },
-  "stick-face-down": {
-    "tags": ["defeat", "floor", "giving-up", "done"],
-    "use_when": "The number is so bad the only honest reaction is lying on the floor."
-  },
-  "stick-umbrella-red-arrows": {
-    "tags": ["crash", "rain", "red-arrows", "drawdown", "sell-off"],
-    "use_when": "Standing under a sell-off like weather — a rain of red arrows."
-  },
-  "stick-staring-at-crash": {
-    "tags": ["watching", "chart-crash", "disbelief", "spectator"],
-    "use_when": "Watching a chart fall in real time and doing nothing."
-  },
-  "stick-pointing": {
-    "tags": ["look", "pointing", "exhibit-a", "see"],
-    "use_when": "Pointing at the number like exhibit A — 'look at it.'"
-  },
-  "arrow-up-scribble": {
-    "tags": ["up", "pump", "moon", "rally"],
-    "use_when": "A crude up arrow when the crowd thinks something only goes up."
-  },
-  "arrow-down-scribble": {
-    "tags": ["down", "dump", "red", "falling"],
-    "use_when": "A crude red down arrow for the part of the chart nobody screenshots."
-  },
-  "circle-scribble": {
-    "tags": ["circle", "attention", "this-one", "highlight"],
-    "use_when": "Circling the one number that actually matters."
-  },
-  "underline-scribble": {
-    "tags": ["underline", "emphasis", "read-it-again"],
-    "use_when": "Underlining a phrase that deserves a second read."
-  },
-  "wedge-diagram": {
-    "tags": ["wedge", "pattern", "technical-analysis", "lines"],
-    "use_when": "Drawing the 'pattern' with unearned confidence — technical analysis, allegedly."
-  },
-  "payoff-diagram": {
-    "tags": ["payoff", "options", "hockey-stick", "asymmetric"],
-    "use_when": "The napkin payoff diagram for a trade that definitely can't go wrong."
-  },
-  "money-bag": {
-    "tags": ["money", "bag", "profit", "riches"],
-    "use_when": "The theoretical money at the end of the plan."
-  },
-  "money-stack": {
-    "tags": ["stack", "cash", "tendies", "pile"],
-    "use_when": "A drawn pile of cash — the imaginary kind."
-  },
-  "scribble-explosion": {
-    "tags": ["explosion", "boom", "blowup", "account-blowup"],
-    "use_when": "The account, the thesis, or the balance sheet detonating."
-  }
+ "reactions/deadpan": {
+  "label": "DEADPAN",
+  "section": "reactions",
+  "tags": [
+   "deadpan",
+   "neutral",
+   "unimpressed",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201cdeadpan\u201d"
+ },
+ "reactions/shocked-it-s-over": {
+  "label": "SHOCKED \u00b7 \"it's over\"",
+  "section": "reactions",
+  "tags": [
+   "crash",
+   "shock",
+   "it's-over",
+   "panic",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "shocked",
+   "it",
+   "over"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201cshocked \u00b7 \"it's over\"\u201d"
+ },
+ "reactions/crying": {
+  "label": "CRYING",
+  "section": "reactions",
+  "tags": [
+   "cry",
+   "loss",
+   "pain",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "crying"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201ccrying\u201d"
+ },
+ "reactions/dead-guh": {
+  "label": "DEAD \u00b7 \"GUH\"",
+  "section": "reactions",
+  "tags": [
+   "guh",
+   "account-blowup",
+   "dead",
+   "wiped-out",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201cdead \u00b7 \"guh\"\u201d"
+ },
+ "reactions/cope-nervous": {
+  "label": "COPE \u00b7 nervous",
+  "section": "reactions",
+  "tags": [
+   "cope",
+   "nervous",
+   "sweating",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201ccope \u00b7 nervous\u201d"
+ },
+ "reactions/laughing": {
+  "label": "LAUGHING",
+  "section": "reactions",
+  "tags": [
+   "laugh",
+   "lol",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "laughing"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201claughing\u201d"
+ },
+ "reactions/smug-told-you": {
+  "label": "SMUG \u00b7 \"told you\"",
+  "section": "reactions",
+  "tags": [
+   "smug",
+   "told-you",
+   "vindicated",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "told",
+   "you"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201csmug \u00b7 \"told you\"\u201d"
+ },
+ "reactions/zen-this-is-fine": {
+  "label": "ZEN \u00b7 \"this is fine\"",
+  "section": "reactions",
+  "tags": [
+   "zen",
+   "this-is-fine",
+   "calm",
+   "denial",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "this",
+   "is",
+   "fine"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201czen \u00b7 \"this is fine\"\u201d"
+ },
+ "reactions/rage-sell-it-all": {
+  "label": "RAGE \u00b7 \"sell it all\"",
+  "section": "reactions",
+  "tags": [
+   "rage",
+   "sell",
+   "angry",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "it",
+   "all"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201crage \u00b7 \"sell it all\"\u201d"
+ },
+ "reactions/money-eyes-buy": {
+  "label": "MONEY EYES \u00b7 \"buy\"",
+  "section": "reactions",
+  "tags": [
+   "money-eyes",
+   "buy",
+   "greed",
+   "pump",
+   "reaction",
+   "stickman",
+   "mascot",
+   "face",
+   "head",
+   "money",
+   "eyes"
+  ],
+  "use_when": "cut to this reaction head when the line is about \u201cmoney eyes \u00b7 \"buy\"\u201d"
+ },
+ "poses/standing-coffee": {
+  "label": "STANDING \u00b7 coffee",
+  "section": "poses",
+  "tags": [
+   "coffee",
+   "standing",
+   "3am",
+   "the-setup",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cstanding \u00b7 coffee\u201d"
+ },
+ "poses/shrug-idk-man": {
+  "label": "SHRUG \u00b7 \"idk man\"",
+  "section": "poses",
+  "tags": [
+   "shrug",
+   "idk",
+   "who-knows",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "man"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cshrug \u00b7 \"idk man\"\u201d"
+ },
+ "poses/panic-run": {
+  "label": "PANIC RUN",
+  "section": "poses",
+  "tags": [
+   "panic",
+   "run",
+   "crash",
+   "bank-run",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cpanic run\u201d"
+ },
+ "poses/face-down-defeated": {
+  "label": "FACE-DOWN \u00b7 defeated",
+  "section": "poses",
+  "tags": [
+   "face-down",
+   "defeated",
+   "give-up",
+   "capitulation",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "face",
+   "down"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cface-down \u00b7 defeated\u201d"
+ },
+ "poses/hopium-please-green": {
+  "label": "HOPIUM \u00b7 \"please green\"",
+  "section": "poses",
+  "tags": [
+   "hopium",
+   "please-green",
+   "hope",
+   "pump",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "please",
+   "green"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201chopium \u00b7 \"please green\"\u201d"
+ },
+ "poses/diamond-hands": {
+  "label": "DIAMOND HANDS",
+  "section": "poses",
+  "tags": [
+   "diamond-hands",
+   "hodl",
+   "hold",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "diamond",
+   "hands"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cdiamond hands\u201d"
+ },
+ "poses/celebrate-money-rain": {
+  "label": "CELEBRATE \u00b7 money rain",
+  "section": "poses",
+  "tags": [
+   "celebrate",
+   "money-rain",
+   "gains",
+   "green-day",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "money",
+   "rain"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201ccelebrate \u00b7 money rain\u201d"
+ },
+ "poses/at-the-laptop-trading": {
+  "label": "AT THE LAPTOP \u00b7 trading",
+  "section": "poses",
+  "tags": [
+   "laptop",
+   "trading",
+   "desk",
+   "day-trading",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "at",
+   "the"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cat the laptop \u00b7 trading\u201d"
+ },
+ "poses/pointing-look-at-this": {
+  "label": "POINTING \u00b7 \"look at this\"",
+  "section": "poses",
+  "tags": [
+   "point",
+   "look-at-this",
+   "pointing",
+   "pose",
+   "stickman",
+   "mascot",
+   "full-body",
+   "look",
+   "at",
+   "this"
+  ],
+  "use_when": "drop the full-body stickman when the line is about \u201cpointing \u00b7 \"look at this\"\u201d"
+ },
+ "concepts/supply-and-demand": {
+  "label": "SUPPLY & DEMAND",
+  "section": "concepts",
+  "tags": [
+   "supply",
+   "demand",
+   "supply-and-demand",
+   "concept",
+   "and"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201csupply & demand\u201d"
+ },
+ "concepts/hype-vs-reality": {
+  "label": "HYPE vs REALITY",
+  "section": "concepts",
+  "tags": [
+   "hype",
+   "reality",
+   "hype-vs-reality",
+   "narrative",
+   "concept",
+   "vs"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201chype vs reality\u201d"
+ },
+ "concepts/risk-reward": {
+  "label": "RISK / REWARD",
+  "section": "concepts",
+  "tags": [
+   "risk",
+   "reward",
+   "risk-reward",
+   "payoff",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201crisk / reward\u201d"
+ },
+ "concepts/the-money-printer": {
+  "label": "THE MONEY PRINTER",
+  "section": "concepts",
+  "tags": [
+   "money-printer",
+   "brrr",
+   "printing",
+   "fed",
+   "concept",
+   "the",
+   "money",
+   "printer"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cthe money printer\u201d"
+ },
+ "concepts/candlestick-101": {
+  "label": "CANDLESTICK 101",
+  "section": "concepts",
+  "tags": [
+   "candlestick",
+   "candles",
+   "candlestick-101",
+   "concept",
+   "101"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201ccandlestick 101\u201d"
+ },
+ "concepts/how-a-call-pays-off": {
+  "label": "HOW A CALL PAYS OFF",
+  "section": "concepts",
+  "tags": [
+   "call",
+   "payoff",
+   "options",
+   "how-a-call-pays-off",
+   "concept",
+   "how",
+   "pays",
+   "off"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201chow a call pays off\u201d"
+ },
+ "chart-patterns/double-top": {
+  "label": "DOUBLE TOP",
+  "section": "chart-patterns",
+  "tags": [
+   "double-top",
+   "reversal",
+   "resistance",
+   "chart",
+   "pattern",
+   "technical",
+   "double",
+   "top"
+  ],
+  "use_when": "overlay the pattern when the line is about \u201cdouble top\u201d"
+ },
+ "chart-patterns/head-and-shoulders": {
+  "label": "HEAD & SHOULDERS",
+  "section": "chart-patterns",
+  "tags": [
+   "head-and-shoulders",
+   "reversal",
+   "top",
+   "chart",
+   "pattern",
+   "technical",
+   "head",
+   "and",
+   "shoulders"
+  ],
+  "use_when": "overlay the pattern when the line is about \u201chead & shoulders\u201d"
+ },
+ "chart-patterns/cup-and-handle": {
+  "label": "CUP & HANDLE",
+  "section": "chart-patterns",
+  "tags": [
+   "cup-and-handle",
+   "breakout",
+   "bullish",
+   "chart",
+   "pattern",
+   "technical",
+   "cup",
+   "and",
+   "handle"
+  ],
+  "use_when": "overlay the pattern when the line is about \u201ccup & handle\u201d"
+ },
+ "chart-patterns/bull-flag": {
+  "label": "BULL FLAG",
+  "section": "chart-patterns",
+  "tags": [
+   "bull-flag",
+   "continuation",
+   "bullish",
+   "chart",
+   "pattern",
+   "technical",
+   "bull",
+   "flag"
+  ],
+  "use_when": "overlay the pattern when the line is about \u201cbull flag\u201d"
+ },
+ "injokes/rocket-to-the-moon": {
+  "label": "ROCKET \u00b7 to the moon",
+  "section": "injokes",
+  "tags": [
+   "rocket",
+   "moon",
+   "to-the-moon",
+   "pump",
+   "injoke",
+   "meme",
+   "to",
+   "the"
+  ],
+  "use_when": "land the in-joke when the line is about \u201crocket \u00b7 to the moon\u201d"
+ },
+ "injokes/the-moon": {
+  "label": "THE MOON",
+  "section": "injokes",
+  "tags": [
+   "moon",
+   "to-the-moon",
+   "injoke",
+   "meme",
+   "the"
+  ],
+  "use_when": "land the in-joke when the line is about \u201cthe moon\u201d"
+ },
+ "injokes/diamond-hands": {
+  "label": "DIAMOND HANDS",
+  "section": "injokes",
+  "tags": [
+   "diamond-hands",
+   "hodl",
+   "hold",
+   "injoke",
+   "meme",
+   "diamond",
+   "hands"
+  ],
+  "use_when": "land the in-joke when the line is about \u201cdiamond hands\u201d"
+ },
+ "injokes/holding-the-bag": {
+  "label": "HOLDING THE BAG",
+  "section": "injokes",
+  "tags": [
+   "bagholder",
+   "holding-the-bag",
+   "left-holding",
+   "injoke",
+   "meme",
+   "holding",
+   "the",
+   "bag"
+  ],
+  "use_when": "land the in-joke when the line is about \u201cholding the bag\u201d"
+ },
+ "injokes/rip-portfolio": {
+  "label": "RIP PORTFOLIO",
+  "section": "injokes",
+  "tags": [
+   "rip",
+   "portfolio",
+   "wiped-out",
+   "account-blowup",
+   "injoke",
+   "meme"
+  ],
+  "use_when": "land the in-joke when the line is about \u201crip portfolio\u201d"
+ },
+ "injokes/stonks-up-only": {
+  "label": "STONKS \u00b7 up only",
+  "section": "injokes",
+  "tags": [
+   "stonks",
+   "up-only",
+   "pump",
+   "vertical",
+   "injoke",
+   "meme",
+   "up",
+   "only"
+  ],
+  "use_when": "land the in-joke when the line is about \u201cstonks \u00b7 up only\u201d"
+ },
+ "injokes/crayon-lunch": {
+  "label": "CRAYON \u00b7 lunch",
+  "section": "injokes",
+  "tags": [
+   "crayon",
+   "wsb",
+   "smooth-brain",
+   "injoke",
+   "meme",
+   "lunch"
+  ],
+  "use_when": "land the in-joke when the line is about \u201ccrayon \u00b7 lunch\u201d"
+ },
+ "injokes/loss-porn": {
+  "label": "LOSS PORN",
+  "section": "injokes",
+  "tags": [
+   "loss-porn",
+   "loss",
+   "red",
+   "injoke",
+   "meme",
+   "porn"
+  ],
+  "use_when": "land the in-joke when the line is about \u201closs porn\u201d"
+ },
+ "annotations/scrawl-circle": {
+  "label": "SCRAWL CIRCLE",
+  "section": "annotations",
+  "tags": [
+   "circle",
+   "circle-this",
+   "highlight",
+   "annotation",
+   "marker",
+   "overlay",
+   "scrawl"
+  ],
+  "use_when": "mark the frame when the line is about \u201cscrawl circle\u201d"
+ },
+ "annotations/scrawl-oval-wide": {
+  "label": "SCRAWL OVAL \u00b7 wide",
+  "section": "annotations",
+  "tags": [
+   "oval",
+   "circle",
+   "circle-wide",
+   "annotation",
+   "marker",
+   "overlay",
+   "scrawl",
+   "wide"
+  ],
+  "use_when": "mark the frame when the line is about \u201cscrawl oval \u00b7 wide\u201d"
+ },
+ "annotations/arrow-curved-down": {
+  "label": "ARROW \u00b7 curved down",
+  "section": "annotations",
+  "tags": [
+   "arrow-down",
+   "down",
+   "dump",
+   "falling",
+   "annotation",
+   "marker",
+   "overlay",
+   "arrow",
+   "curved"
+  ],
+  "use_when": "mark the frame when the line is about \u201carrow \u00b7 curved down\u201d"
+ },
+ "annotations/arrow-curved-up": {
+  "label": "ARROW \u00b7 curved up",
+  "section": "annotations",
+  "tags": [
+   "arrow-up",
+   "up",
+   "pump",
+   "rising",
+   "annotation",
+   "marker",
+   "overlay",
+   "arrow",
+   "curved"
+  ],
+  "use_when": "mark the frame when the line is about \u201carrow \u00b7 curved up\u201d"
+ },
+ "annotations/arrow-straight-jab": {
+  "label": "ARROW \u00b7 straight jab",
+  "section": "annotations",
+  "tags": [
+   "arrow",
+   "point",
+   "this",
+   "annotation",
+   "marker",
+   "overlay",
+   "straight",
+   "jab"
+  ],
+  "use_when": "mark the frame when the line is about \u201carrow \u00b7 straight jab\u201d"
+ },
+ "annotations/squiggle-underline": {
+  "label": "SQUIGGLE UNDERLINE",
+  "section": "annotations",
+  "tags": [
+   "underline",
+   "squiggle",
+   "emphasis",
+   "annotation",
+   "marker",
+   "overlay"
+  ],
+  "use_when": "mark the frame when the line is about \u201csquiggle underline\u201d"
+ },
+ "annotations/cross-out-nope": {
+  "label": "CROSS-OUT \u00b7 \"nope\"",
+  "section": "annotations",
+  "tags": [
+   "cross-out",
+   "nope",
+   "x",
+   "wrong",
+   "annotation",
+   "marker",
+   "overlay",
+   "cross",
+   "out"
+  ],
+  "use_when": "mark the frame when the line is about \u201ccross-out \u00b7 \"nope\"\u201d"
+ },
+ "annotations/you-are-here": {
+  "label": "YOU ARE HERE",
+  "section": "annotations",
+  "tags": [
+   "you-are-here",
+   "here",
+   "now",
+   "annotation",
+   "marker",
+   "overlay",
+   "you",
+   "are"
+  ],
+  "use_when": "mark the frame when the line is about \u201cyou are here\u201d"
+ },
+ "annotations/redaction-bar": {
+  "label": "REDACTION BAR",
+  "section": "annotations",
+  "tags": [
+   "redaction",
+   "redacted",
+   "hidden",
+   "annotation",
+   "marker",
+   "overlay",
+   "bar"
+  ],
+  "use_when": "mark the frame when the line is about \u201credaction bar\u201d"
+ },
+ "annotations/curly-bracket": {
+  "label": "CURLY BRACKET",
+  "section": "annotations",
+  "tags": [
+   "bracket",
+   "group",
+   "this-whole-thing",
+   "annotation",
+   "marker",
+   "overlay",
+   "curly"
+  ],
+  "use_when": "mark the frame when the line is about \u201ccurly bracket\u201d"
+ },
+ "concepts/mug": {
+  "label": "MUG",
+  "section": "concepts",
+  "tags": [
+   "mug",
+   "coffee",
+   "3am",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cmug\u201d"
+ },
+ "concepts/flames": {
+  "label": "FLAMES",
+  "section": "concepts",
+  "tags": [
+   "flames",
+   "fire",
+   "hot",
+   "on-fire",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cflames\u201d"
+ },
+ "concepts/sweat-drop": {
+  "label": "SWEAT DROP",
+  "section": "concepts",
+  "tags": [
+   "sweat",
+   "nervous",
+   "pressure",
+   "concept",
+   "drop"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201csweat drop\u201d"
+ },
+ "concepts/flying-cash": {
+  "label": "FLYING CASH",
+  "section": "concepts",
+  "tags": [
+   "flying-cash",
+   "burn",
+   "cash-burn",
+   "spend",
+   "concept",
+   "flying",
+   "cash"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cflying cash\u201d"
+ },
+ "concepts/question": {
+  "label": "QUESTION",
+  "section": "concepts",
+  "tags": [
+   "question",
+   "huh",
+   "noise-or-signal",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cquestion\u201d"
+ },
+ "concepts/alert": {
+  "label": "ALERT",
+  "section": "concepts",
+  "tags": [
+   "alert",
+   "warning",
+   "watch-out",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201calert\u201d"
+ },
+ "concepts/halo": {
+  "label": "HALO",
+  "section": "concepts",
+  "tags": [
+   "halo",
+   "saint",
+   "innocent",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201chalo\u201d"
+ },
+ "concepts/zzz-boring": {
+  "label": "ZZZ \u00b7 boring",
+  "section": "concepts",
+  "tags": [
+   "boring",
+   "zzz",
+   "sleep",
+   "no-catalyst",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201czzz \u00b7 boring\u201d"
+ },
+ "concepts/impact-pow": {
+  "label": "IMPACT \u00b7 POW",
+  "section": "concepts",
+  "tags": [
+   "impact",
+   "pow",
+   "explosion",
+   "boom",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cimpact \u00b7 pow\u201d"
+ },
+ "concepts/idea": {
+  "label": "IDEA",
+  "section": "concepts",
+  "tags": [
+   "idea",
+   "thesis",
+   "lightbulb",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cidea\u201d"
+ },
+ "concepts/motion-lines": {
+  "label": "MOTION LINES",
+  "section": "concepts",
+  "tags": [
+   "motion",
+   "speed",
+   "fast",
+   "concept",
+   "lines"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201cmotion lines\u201d"
+ },
+ "concepts/sparkle": {
+  "label": "SPARKLE",
+  "section": "concepts",
+  "tags": [
+   "sparkle",
+   "shiny",
+   "new",
+   "concept"
+  ],
+  "use_when": "illustrate the idea when the line is about \u201csparkle\u201d"
+ }
 }

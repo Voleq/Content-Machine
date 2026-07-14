@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 96 96" width="58" style="overflow:visible;"><defs>
+  <filter id="rough" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ roughScale }}"/></filter>
+  <filter id="rougher" x="-30%" y="-30%" width="160%" height="160%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ rougherScale }}"/></filter>
+</defs>
+          <g filter="url(#rough)" stroke="#f2f2ef" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M36 24 q-6 -16 9 -18 q11 -1 4 11"/>
+            <circle cx="48" cy="50" r="27"/>
+            <path d="M37 47 q6 5 13 1"/><path d="M52 48 q6 4 13 -1"/>
+            <path d="M39 62 q8 2 14 0"/>
+          </g>
+        </svg>

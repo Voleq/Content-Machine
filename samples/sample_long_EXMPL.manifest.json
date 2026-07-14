@@ -102,7 +102,7 @@
       "kind": "meme",
       "payload": {
         "order": 9,
-        "value": "astronaut-always-has-been-dilution",
+        "value": "harold-quick-flip-became-bagholder",
         "tag": "MEME"
       },
       "fallback": false
@@ -145,7 +145,7 @@
       "start": 8.8043,
       "end": 11.8043,
       "value": "tumbleweed",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
@@ -195,7 +195,7 @@
       "start": 29.0492,
       "end": 31.8492,
       "value": "EXMPL data center server racks",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
@@ -210,7 +210,7 @@
       "start": 33.6081,
       "end": 36.4081,
       "value": "EXMPL dispatch dashboard",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
     },
     {
@@ -310,7 +310,7 @@
       "start": 71.007,
       "end": 74.007,
       "value": "hamster_wheel",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
@@ -332,7 +332,7 @@
       "start": 78.8114,
       "end": 81.8114,
       "value": "boardroom_suits",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
@@ -368,7 +368,7 @@
       "start": 92.3337,
       "end": 95.3337,
       "value": "growing_plant",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
     },
     {
@@ -403,9 +403,9 @@
       "kind": "meme",
       "start": 106.706,
       "end": 108.506,
-      "value": "astronaut-always-has-been-dilution",
+      "value": "harold-quick-flip-became-bagholder",
       "source": "library",
-      "attribution": "owned meme library (astronaut-always-has-been-dilution)"
+      "attribution": "owned meme library (harold-quick-flip-became-bagholder)"
     },
     {
       "kind": "filler",
@@ -489,7 +489,7 @@
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-    "owned meme library (astronaut-always-has-been-dilution)"
+    "owned meme library (harold-quick-flip-became-bagholder)"
   ],
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.filter.txt",
   "output": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.mp4"

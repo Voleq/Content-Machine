@@ -8,7 +8,7 @@ from PIL import Image
 
 from pipeline.doodles import DoodleLibrary, wobble_frames
 
-ROOT_INDEX_KEYS = 14  # the committed library ships 14 indexed doodles
+ROOT_INDEX_KEYS = 59  # the committed library ships 59 indexed doodles (by section/name)
 
 
 def test_committed_index_shape(settings):
@@ -16,7 +16,9 @@ def test_committed_index_shape(settings):
     index = lib.index()
     assert len(index) == ROOT_INDEX_KEYS
     for stem, entry in index.items():
-        assert stem == stem.lower().replace(" ", "-"), "stems are kebab-case"
+        # keys are "<section>/<name>", kebab-case within each segment
+        assert stem == stem.lower().replace(" ", "-"), "keys are kebab-case"
+        assert "/" in stem, "doodles keep their section subfolder"
         assert entry.get("tags"), f"{stem} needs tags"
         assert entry.get("use_when"), f"{stem} needs a one-line use_when"
         assert lib._file_for(stem) is not None, f"{stem} has no image file"
@@ -29,21 +31,21 @@ def test_index_json_committed_and_valid():
 
 def test_match_exact_stem(settings):
     lib = DoodleLibrary(settings)
-    assert lib.match("scribble-explosion") == "scribble-explosion"
+    assert lib.match("reactions/deadpan") == "reactions/deadpan"
 
 
 def test_match_by_tag(settings):
     lib = DoodleLibrary(settings)
-    assert lib.match("crash") == "stick-umbrella-red-arrows"
-    assert lib.match("shrug") == "stick-shrug"
-    assert lib.match("account-blowup") == "scribble-explosion"
-    assert lib.match("pump") == "arrow-up-scribble"
+    assert lib.match("crash") == "poses/panic-run"
+    assert lib.match("shrug") == "poses/shrug-idk-man"
+    assert lib.match("account-blowup") == "injokes/rip-portfolio"
+    assert lib.match("pump") == "annotations/arrow-curved-up"
 
 
 def test_match_normalizes_key(settings):
     lib = DoodleLibrary(settings)
-    assert lib.match("Face Down") == "stick-face-down"
-    assert lib.match("money_bag") == "money-bag"
+    assert lib.match("Face Down") == "poses/face-down-defeated"
+    assert lib.match("Idk Man") == "poses/shrug-idk-man"
 
 
 def test_resolve_hit_and_miss(settings):
@@ -56,7 +58,7 @@ def test_resolve_hit_and_miss(settings):
 def test_doodle_images_are_transparent_overlays(settings):
     """Doodles composite as a top layer, so they must carry alpha."""
     lib = DoodleLibrary(settings)
-    path = lib.resolve("circle-scribble")
+    path = lib.resolve("circle")
     img = Image.open(path)
     assert img.mode == "RGBA"
     alpha = img.getchannel("A")

@@ -27,17 +27,38 @@ from config import Settings
 from pipeline.models import WordTimestamp
 from pipeline.render_common import run_ffmpeg
 
-MONO = "DejaVuSansMono.ttf"
-MONO_BOLD = "DejaVuSansMono-Bold.ttf"
-DISPLAY_BOLD = "DejaVuSans-Bold.ttf"
+# Bundled brand fonts (Google Fonts, reproduced from the .dc.html kits):
+#   Shantell Sans — hand-drawn headlines + marker text
+#   Space Grotesk — numbers / UI sans
+#   Space Mono    — labels + tags
+SHANTELL = "ShantellSans-Bold.ttf"
+SHANTELL_ITALIC = "ShantellSans-BoldItalic.ttf"
+GROTESK = "SpaceGrotesk-Medium.ttf"
+GROTESK_BOLD = "SpaceGrotesk-Bold.ttf"
+MONO = "SpaceMono-Regular.ttf"
+MONO_BOLD = "SpaceMono-Bold.ttf"
+DISPLAY_BOLD = GROTESK_BOLD          # UI display sans (back-compat alias)
 
-RED = (224, 82, 82)
-GREEN = (63, 185, 104)
-INK = (232, 234, 240)
-MUTED = (154, 163, 178)
-PANEL = (18, 21, 28)
-PANEL_LINE = (38, 43, 54)
-GOLD = (255, 205, 60)
+# Palette — the exact tokens from the Dennis visual-identity kits.
+BG = (10, 10, 11)          # #0a0a0b  page
+BG_CARD = (12, 12, 14)     # #0c0c0e  the tall beat card
+BG_MARK = (5, 5, 6)        # #050506  marker chart black
+CARD = (19, 19, 25)        # #131319  inner card
+CARD2 = (25, 25, 32)       # #191920
+CARD_LINE = (35, 35, 41)   # #232329  inner card border
+BORDER = (35, 35, 38)      # #232326  card border
+BORDER2 = (42, 42, 52)     # #2a2a34  chip border
+INK = (242, 242, 239)      # #f2f2ef  text
+MUTED = (107, 107, 112)    # #6b6b70  muted text
+MUTED2 = (201, 201, 204)   # #c9c9cc  secondary text
+FAINT = (74, 74, 79)       # #4a4a4f  faintest label
+GREEN = (47, 213, 118)     # #2fd576  up / signal green
+RED = (255, 82, 71)        # #ff5247  down / marker red
+GRID = (30, 30, 36)        # #1e1e24  chart gridlines
+ACCENT = GREEN             # the brand accent (the kit uses no gold)
+GOLD = GREEN               # back-compat alias — accent is the signal green
+PANEL = CARD               # back-compat alias
+PANEL_LINE = CARD_LINE     # back-compat alias
 
 
 def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFont:
@@ -123,20 +144,93 @@ def simple_text(
 
 def brand_bug(settings: Settings, opener: str, *, width: int,
               font_size: int = 34) -> Image.Image:
-    """The intro/outro bug: brand name + the sampled hook-bank opener."""
-    name_font = load_font(settings, DISPLAY_BOLD, font_size)
-    line_font = load_font(settings, MONO_BOLD, int(font_size * 0.72))
+    """The intro/outro bug: the marker wordmark + the sampled hook-bank
+    opener, in the brand's hand-drawn + mono pairing."""
+    name_font = load_font(settings, SHANTELL, font_size)
+    line_font = load_font(settings, MONO, int(font_size * 0.62))
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    name = settings.brand_name
+    name = settings.brand_name.lower()
     nw = probe.textlength(name, font=name_font)
     lw = probe.textlength(opener, font=line_font)
-    h = name_font.size + line_font.size + 26
+    h = name_font.size + line_font.size + 30
     img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.text(((width - nw) / 2, 0), name, font=name_font, fill=(*GOLD, 255),
+    # wordmark, with the signature red terminal dot
+    d.text(((width - nw) / 2 - 6, 0), name, font=name_font, fill=(*INK, 255),
            stroke_width=2, stroke_fill=(0, 0, 0, 200))
-    d.text(((width - lw) / 2, name_font.size + 10), opener, font=line_font,
-           fill=(*INK, 235), stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    d.text(((width - nw) / 2 - 6 + nw, 0), ".", font=name_font, fill=(*RED, 255),
+           stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    d.text(((width - lw) / 2, name_font.size + 12), opener, font=line_font,
+           fill=(*MUTED, 235), stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    return img
+
+
+def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40) -> Image.Image:
+    """The $TICKER pill — Space Mono bold, near-black on signal green."""
+    font = load_font(settings, MONO_BOLD, font_size)
+    label = ticker if ticker.startswith("$") else f"${ticker}"
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    tw = probe.textlength(label, font=font)
+    padx, pady = int(font_size * 0.42), int(font_size * 0.26)
+    w, h = int(tw + 2 * padx), int(font.size + 2 * pady)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=int(h * 0.22), fill=(*GREEN, 255))
+    d.text((padx, pady - 2), label, font=font, fill=(10, 10, 11, 255))
+    return img
+
+
+def nos_header(settings: Settings, *, font_size: int = 30) -> Image.Image:
+    """The "noise or signal?" header — Shantell Sans, muted, with a red "?"."""
+    font = load_font(settings, SHANTELL, font_size)
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    base, mark = "noise or signal", "?"
+    bw = probe.textlength(base, font=font)
+    mw = probe.textlength(mark, font=font)
+    w, h = int(bw + mw + 8), int(font.size + 10)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.text((0, 2), base, font=font, fill=(*MUTED, 255),
+           stroke_width=2, stroke_fill=(0, 0, 0, 160))
+    d.text((bw + 2, 2), mark, font=font, fill=(*RED, 255),
+           stroke_width=2, stroke_fill=(0, 0, 0, 160))
+    return img
+
+
+def lower_third(settings: Settings, primary: str, secondary: str = "", *,
+                width: int, font_size: int = 34) -> Image.Image:
+    """A branded lower-third strip: primary line (Space Grotesk) + a muted
+    Space Mono secondary, on a dark card with a green left edge."""
+    pf = load_font(settings, GROTESK_BOLD, font_size)
+    sf = load_font(settings, MONO, int(font_size * 0.6))
+    pad = int(font_size * 0.5)
+    bar = int(font_size * 0.22)
+    h = pad * 2 + pf.size + (sf.size + 6 if secondary else 0)
+    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, width - 1, h - 1], radius=10, fill=(*CARD, 235),
+                        outline=(*CARD_LINE, 255), width=1)
+    d.rounded_rectangle([0, 0, bar, h - 1], radius=3, fill=(*GREEN, 255))
+    d.text((bar + pad, pad), primary, font=pf, fill=(*INK, 255))
+    if secondary:
+        d.text((bar + pad, pad + pf.size + 6), secondary, font=sf, fill=(*MUTED, 255))
+    return img
+
+
+def chapter_stinger(settings: Settings, number: str, title: str, *,
+                    width: int, height: int) -> Image.Image:
+    """A full-frame chapter stinger card: a big Shantell chapter title with
+    a mono kicker and the red terminal dot — the LONG section divider."""
+    img = Image.new("RGBA", (width, height), (*BG, 235))
+    d = ImageDraw.Draw(img)
+    kick = load_font(settings, MONO_BOLD, max(int(height * 0.045), 14))
+    big = load_font(settings, SHANTELL, max(int(height * 0.16), 28))
+    d.text((int(width * 0.1), int(height * 0.36)), number.upper(), font=kick,
+           fill=(*MUTED, 255))
+    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    tw = probe.textlength(title, font=big)
+    d.text((int(width * 0.1), int(height * 0.44)), title, font=big, fill=(*INK, 255))
+    d.text((int(width * 0.1) + tw, int(height * 0.44)), ".", font=big, fill=(*RED, 255))
     return img
 
 
@@ -217,22 +311,37 @@ def typing_frames(
 # --------------------------------------------------------------------------
 
 
-def headline_card(settings: Settings, text: str, *, width: int,
-                  font_size: int = 40) -> Image.Image:
-    """News-strip card: gold kicker bar + headline text on a dark chip."""
-    font = load_font(settings, DISPLAY_BOLD, font_size)
+def headline_card(settings: Settings, text: str, *, meaning: str = "",
+                  width: int, font_size: int = 40) -> Image.Image:
+    """Driver-headline card (the WHY beat): a red left border, the quoted
+    headline in Space Grotesk, and the red hand-drawn "gloss" line under it
+    (Shantell Sans) saying what it actually means."""
+    font = load_font(settings, GROTESK_BOLD, font_size)
+    gloss_font = load_font(settings, SHANTELL, int(font_size * 0.82))
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     pad = int(font_size * 0.55)
     bar_w = int(font_size * 0.30)
-    lines = _wrap(probe, text, font, width - 2 * pad - bar_w)
-    lh = int(font_size * 1.28)
-    h = 2 * pad + lh * len(lines)
+    inner = width - 2 * pad - bar_w
+    quoted = text if text.strip().startswith('"') else f'"{text}"'
+    lines = _wrap(probe, quoted, font, inner)
+    lh = int(font_size * 1.24)
+    gloss_lines = _wrap(probe, meaning, gloss_font, inner) if meaning else []
+    glh = int(gloss_font.size * 1.2)
+    h = 2 * pad + lh * len(lines) + (int(pad * 0.6) + glh * len(gloss_lines)
+                                     if gloss_lines else 0)
     img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, width - 1, h - 1], radius=12, fill=(12, 14, 19, 242))
-    d.rectangle([0, 6, bar_w, h - 7], fill=(*GOLD, 255))
-    for i, line in enumerate(lines):
-        d.text((bar_w + pad, pad + i * lh), line, font=font, fill=(*INK, 255))
+    d.rounded_rectangle([0, 0, width - 1, h - 1], radius=10, fill=(*CARD, 244),
+                        outline=(*CARD_LINE, 255), width=1)
+    d.rounded_rectangle([0, 0, bar_w, h - 1], radius=4, fill=(*RED, 255))
+    y = pad
+    for line in lines:
+        d.text((bar_w + pad, y), line, font=font, fill=(*INK, 255))
+        y += lh
+    y += int(pad * 0.6)
+    for line in gloss_lines:
+        d.text((bar_w + pad, y), line, font=gloss_font, fill=(*RED, 255))
+        y += glh
     return img
 
 
@@ -288,11 +397,12 @@ def numbers_sheet_base(settings: Settings, n_rows: int, years: list[str], *,
     d.rounded_rectangle([0, 0, W - 1, H - 1], radius=22, fill=(*PANEL, 246),
                         outline=(*PANEL_LINE, 255), width=2)
 
-    title_font = load_font(settings, DISPLAY_BOLD, int(ly["title_h"] * 0.46))
-    d.text((ly["pad"], ly["pad"] + 4), title, font=title_font, fill=(*GOLD, 255))
+    title_font = load_font(settings, GROTESK_BOLD, int(ly["title_h"] * 0.46))
+    d.text((ly["pad"], ly["pad"] + 4), title, font=title_font, fill=(*INK, 255))
     sub_font = load_font(settings, MONO, int(ly["title_h"] * 0.22))
     d.text((ly["pad"], ly["pad"] + title_font.size + 12),
-           "from the 10-K · five years", font=sub_font, fill=(*MUTED, 255))
+           "from the filing · direction, not a snapshot", font=sub_font,
+           fill=(*MUTED, 255))
 
     # year headers over the value columns
     if years:
@@ -353,7 +463,7 @@ def number_row_frames(
         label_p = min(progress / 0.25, 1.0)
         shown = label[: max(1, round(len(label) * label_p))] if label_p > 0 else ""
         d.text((pad, (H - label_font.size) / 2), shown, font=label_font,
-               fill=(*INK, 255))
+               fill=(*MUTED2, 255))
         # phase 2 (0.25..0.85): values land cell by cell
         n = len(values)
         vals_p = max(0.0, min((progress - 0.25) / 0.60, 1.0))
@@ -380,7 +490,7 @@ def number_row_frames(
                 vy = H * 0.78 - (x - lo) / span * H * 0.56
                 top, bot = (vy, zero_y) if x >= 0 else (zero_y, vy)
                 bot = top + max((bot - top) * bars_p, 2)
-                color = GOLD if x >= 0 else RED
+                color = (72, 72, 84) if x >= 0 else RED  # neutral trend bar; red only if negative
                 d.rounded_rectangle(
                     [bx0 + j * bw + 1, top, bx0 + (j + 1) * bw - 2, bot],
                     radius=2, fill=(*color, 220),
@@ -408,14 +518,15 @@ def scribble_frames(
     h: int,
     *,
     style: str = "circle",
-    color=GOLD,
+    color=RED,
     fps: int = 30,
     draw_seconds: float = 0.4,
     stroke: int | None = None,
     seed: str = "scribble",
 ) -> list[Image.Image]:
     """A marker-style mark (circle / underline / arrow) drawing itself on,
-    with hand-drawn jitter. Composited over the chart or a numbers row."""
+    with hand-drawn jitter — the red scrawl the kit uses over the chart or
+    a numbers row. Composited on the top layer."""
     rng = random.Random(seed)
     stroke = stroke or max(int(min(w, h) * 0.06), 5)
     n = max(int(draw_seconds * fps), 4)
@@ -475,7 +586,7 @@ def scribble_callout_frames(
     fps: int = 30,
     draw_seconds: float = 0.45,
     hold_seconds: float = 1.2,
-    color=GOLD,
+    color=RED,
     seed: str = "callout",
 ) -> list[Image.Image]:
     """A scribble mark drawing itself on, plus the target text as a small
@@ -598,7 +709,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,DejaVu Sans,{font_size},{bgr(accent_rgb)},&H00FFFFFF,&H00101010,&H96000000,-1,0,0,0,100,100,0,0,1,4,2,2,60,60,{margin_v},1
+Style: Caps,Space Grotesk,{font_size},{bgr(accent_rgb)},&H00FFFFFF,&H000A0A0A,&H96000000,-1,0,0,0,100,100,0,0,1,4,2,2,60,60,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

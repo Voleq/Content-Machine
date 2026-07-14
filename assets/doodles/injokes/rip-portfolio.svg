@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 240" style="width:100%;max-width:120px;height:auto;overflow:visible;"><defs>
+  <filter id="k1" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k1s }}"/></filter>
+  <filter id="k2" x="-45%" y="-45%" width="190%" height="190%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k2s }}"/></filter>
+</defs>
+          <g filter="url(#k1)" stroke="#2fd576" stroke-width="5" fill="none" stroke-linecap="round"><path d="M28 196 h144"/></g>
+          <g filter="url(#k1)" stroke="#f2f2ef" stroke-width="7" fill="#0e0e11" stroke-linecap="round" stroke-linejoin="round"><path d="M62 196 v-74 q0 -44 38 -44 q38 0 38 44 v74 z"/></g>
+          <text x="100" y="128" text-anchor="middle" fill="#f2f2ef" font-family="'Shantell Sans',cursive" font-weight="700" font-size="22">R.I.P</text>
+          <text x="100" y="158" text-anchor="middle" fill="#6b6b70" font-family="'Space Mono',monospace" font-size="11">my calls</text>
+          <text x="100" y="176" text-anchor="middle" fill="#6b6b70" font-family="'Space Mono',monospace" font-size="10">2021 – 2024</text>
+        </svg>

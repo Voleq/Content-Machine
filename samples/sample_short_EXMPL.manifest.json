@@ -1,7 +1,7 @@
 {
   "ticker": "EXMPL",
   "duration": 51.872993,
-  "opener": "CALM DOWN. NUMBERS FIRST.",
+  "opener": "ONE CHART. FIVE YEARS. RELAX.",
   "chart": {
     "source": "fixture",
     "degraded": false,
@@ -169,7 +169,7 @@
       "t": 42.5233,
       "kind": "meme",
       "payload": {
-        "key": "stonks-man-up-only",
+        "key": "fomo-stages-wish-i-bought-doodle",
         "duration": 1.4
       },
       "fallback": false
@@ -213,6 +213,20 @@
       "t_end": 8.756,
       "x": 60,
       "y": 1040
+    },
+    {
+      "name": "ticker_pill",
+      "t_start": 0.0,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 150
+    },
+    {
+      "name": "nos_header",
+      "t_start": 0.0,
+      "t_end": 51.872993,
+      "x": 784,
+      "y": 156
     },
     {
       "name": "headline_0",
@@ -274,7 +288,7 @@
       "name": "note_0",
       "t_start": 2.2522,
       "t_end": 26.4105,
-      "x": 827,
+      "x": 824,
       "y": 479
     },
     {
@@ -288,8 +302,8 @@
       "name": "note_1",
       "t_start": 31.4503,
       "t_end": 51.872993,
-      "x": 808,
-      "y": 1255
+      "x": 804,
+      "y": 1244
     },
     {
       "name": "zoom_0",
@@ -302,8 +316,8 @@
       "name": "meme_0",
       "t_start": 42.5233,
       "t_end": 43.9233,
-      "x": 166,
-      "y": 396
+      "x": 279,
+      "y": 316
     },
     {
       "name": "flash_why",
@@ -334,10 +348,17 @@
       "y": 430
     },
     {
+      "name": "mascot",
+      "t_start": 45.0197,
+      "t_end": 51.872993,
+      "x": 764,
+      "y": 800
+    },
+    {
       "name": "disclaimer",
       "t_start": 0.0,
       "t_end": 51.872993,
-      "x": 119,
+      "x": 112,
       "y": 1850
     }
   ],

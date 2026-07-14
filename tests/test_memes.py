@@ -5,7 +5,7 @@ import json
 
 from pipeline.memes import MemeLibrary, MemeManager, MockMemeClient
 
-ROOT_INDEX_KEYS = 16  # the committed library ships 16 indexed memes
+ROOT_INDEX_KEYS = 32  # the committed library ships 32 indexed memes
 
 
 def test_committed_index_shape(settings):
@@ -27,14 +27,14 @@ def test_match_exact_stem(settings):
 def test_match_by_tag(settings):
     lib = MemeLibrary(settings)
     assert lib.match("bagholder") == "harold-quick-flip-became-bagholder"
-    assert lib.match("dilution") == "astronaut-always-has-been-dilution"
+    assert lib.match("margin-call") == "margin-call-due-532k-daily-loss"
     assert lib.match("circular-financing") == "altman-jensen-sell-me-this-pen-circular-financing"
 
 
 def test_match_normalizes_key(settings):
     lib = MemeLibrary(settings)
-    assert lib.match("Buy The Dip") == "galaxy-brain-buy-the-dip-again"
-    assert lib.match("value_trap") == "sweating-guy-two-buttons-value-or-trap"
+    assert lib.match("Buy The Dip") == "buy-the-dip-dippity-dip"
+    assert lib.match("inverse_cramer") == "inverse-cramer-trading-card"
 
 
 def test_library_hit_never_calls_providers(settings):
