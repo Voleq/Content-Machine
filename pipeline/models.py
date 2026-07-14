@@ -352,56 +352,63 @@ class Cue(BaseModel):
 
 
 # --------------------------------------------------------------------------
-# Company data (§3) — the PRIVATE data source. Two sheets: a latest
-# snapshot plus a 5-year history so videos can show direction. The vendor
-# is never named on-screen; internally this is just "company data".
+# Company data (§3) — the PRIVATE data source, the v3 template. Sheets read
+# by NAME: Snapshot (point-in-time), History (6 periods, oldest → newest,
+# read dynamically from the header row), Dashboard (the one-glance summary
+# the numbers sheet reads), plus Valuation (bear/base/bull) and Peers for
+# long-form. The vendor is never named on-screen; internally this is just
+# "company data".
 # --------------------------------------------------------------------------
 
+# Snapshot field_keys, grouped by the sheet's Section column.
 DATA_FIELDS: dict[str, list[str]] = {
-    "identity": ["company_name", "ticker", "exchange", "sector", "currency", "as_of_date"],
-    "size": ["price", "market_cap", "shares_outstanding", "enterprise_value"],
-    "growth": ["revenue_ttm", "revenue_yoy_pct", "revenue_cagr_3y_pct"],
-    "margins": ["gross_margin_pct", "operating_margin_pct", "net_margin_pct", "net_income_ttm"],
-    "cash": ["operating_cf_ttm", "capex_ttm", "fcf_ttm", "fcf_margin_pct", "fcf_yield_pct"],
-    "balance": [
-        "cash_and_equivalents", "total_debt", "net_debt",
-        "net_debt_to_ebitda", "debt_to_equity", "interest_coverage",
-    ],
-    "returns": ["roic_pct", "roe_pct"],
-    "valuation": ["pe_ratio", "ps_ratio", "ev_ebitda", "pb_ratio", "p_fcf"],
-    "dilution": ["shares_outstanding_yoy_pct"],
-    "optional": ["dividend_yield_pct", "buyback_yield_pct", "short_interest_pct", "website"],
+    "identity": ["company_name", "ticker", "exchange", "sector", "industry",
+                 "country", "currency", "as_of_date"],
+    "size": ["price", "market_cap", "enterprise_value", "shares_out",
+             "avg_volume_3m", "beta", "week52_high", "week52_low",
+             "pct_from_52w_high"],
+    "valuation": ["pe_ttm", "forward_pe", "ps_ttm", "ev_ebitda", "ev_sales",
+                  "ev_fcf", "pb", "p_fcf", "peg", "earnings_yield",
+                  "fcf_yield", "dividend_yield", "buyback_yield",
+                  "shareholder_yield"],
+    "balance": ["cash_st", "total_debt_now", "net_debt_now",
+                "net_debt_ebitda_now", "debt_to_equity", "current_ratio",
+                "quick_ratio", "interest_coverage", "goodwill_intang",
+                "tangible_bv"],
+    "ownership": ["short_interest", "insider_own", "institutional_own"],
 }
 
-# Missing fields in these groups BLOCK the run; the rest only warn.
-DATA_BLOCKING_GROUPS = ("identity", "size", "margins", "cash")
+# These fields BLOCK the run when missing; everything else only warns.
+DATA_REQUIRED: list[str] = ["company_name", "ticker", "as_of_date", "price",
+                            "market_cap", "shares_out"]
 
 ALL_DATA_FIELDS: list[str] = [f for group in DATA_FIELDS.values() for f in group]
-_STRING_FIELDS = {"company_name", "ticker", "exchange", "sector", "currency",
-                  "as_of_date", "website"}
+_STRING_FIELDS = {"company_name", "ticker", "exchange", "sector", "industry",
+                  "country", "currency", "as_of_date"}
 
-# The 5-year history sheet: per-fiscal-year values, oldest -> newest.
+# History sheet field_keys (col A). Period columns (FY-4..FY-0, LTM) are
+# read dynamically from the header row — never hardcoded here.
 HISTORY_FIELDS: list[str] = [
-    "revenue",
-    "gross_margin_pct",
-    "operating_margin_pct",
-    "net_income",
-    "fcf",
-    "shares_outstanding",
-    "total_debt",
-    "cash_and_equivalents",
+    "revenue", "gross_profit", "gross_margin", "operating_income",
+    "operating_margin", "ebitda", "net_income", "net_margin", "operating_cf",
+    "capex", "fcf", "fcf_margin", "sbc", "sbc_pct_rev", "dividends_paid",
+    "buybacks", "cash", "total_debt", "net_debt", "total_equity",
+    "total_assets", "invested_capital", "net_debt_ebitda", "eps", "fcf_ps",
+    "bvps", "roic", "roe", "diluted_shares", "shares_yoy",
 ]
-HISTORY_YEARS = 5
 
 
 class CompanyData(BaseModel):
-    """Clean, typed view of the operator's two-sheet data export."""
+    """Clean, typed view of the operator's v3 data export."""
 
     model_config = ConfigDict(extra="forbid")
 
     values: dict[str, str | float | None] = Field(default_factory=dict)
     history_years: list[str] = Field(default_factory=list)   # oldest -> newest
     history: dict[str, list[float | None]] = Field(default_factory=dict)
+    dashboard: dict[str, str | float | None] = Field(default_factory=dict)
+    valuation: dict = Field(default_factory=dict)   # inputs + bear/base/bull
+    peers: list[dict] = Field(default_factory=list)
     source_file: str = ""
 
     def get(self, field: str):
@@ -413,8 +420,7 @@ class CompanyData(BaseModel):
 
     @property
     def blocking_missing(self) -> list[str]:
-        blocking = {f for g in DATA_BLOCKING_GROUPS for f in DATA_FIELDS[g]}
-        return [f for f in self.missing if f in blocking]
+        return [f for f in DATA_REQUIRED if self.values.get(f) in (None, "")]
 
     @property
     def warning_missing(self) -> list[str]:
@@ -427,12 +433,32 @@ class CompanyData(BaseModel):
             any(v is not None for v in vals) for vals in self.history.values()
         )
 
+    @property
+    def has_valuation(self) -> bool:
+        return bool(self.valuation.get("scenarios"))
+
+    @property
+    def has_peers(self) -> bool:
+        return bool(self.peers)
+
     def history_row(self, field: str) -> list[float | None]:
         return self.history.get(field, [])
 
+    def metric(self, key: str):
+        """Snapshot value first, then the Dashboard summary (by label) —
+        lets the thumbnail / scripts read a number wherever it lives."""
+        v = self.values.get(key)
+        if v not in (None, ""):
+            return v
+        return self.dashboard.get(key)
+
+    def dashboard_get(self, label: str):
+        return self.dashboard.get(label)
+
     def as_prompt_block(self) -> str:
         """Render as the {{company_data}} block for the master prompts —
-        latest snapshot by group, then the multi-year history table."""
+        the snapshot by group, the multi-year history table, the one-glance
+        Dashboard, then (long-form) the valuation scenarios + peer table."""
         lines: list[str] = []
         for group, fields in DATA_FIELDS.items():
             present = [
@@ -444,13 +470,37 @@ class CompanyData(BaseModel):
                 lines.append(f"[{group}]")
                 lines.extend(f"  {p}" for p in present)
         if self.has_history:
-            lines.append("[history · fiscal years, oldest → newest]")
-            lines.append("  years: " + " | ".join(self.history_years))
+            lines.append("[history · periods, oldest → newest]")
+            lines.append("  periods: " + " | ".join(self.history_years))
             for f in HISTORY_FIELDS:
                 vals = self.history.get(f)
                 if vals and any(v is not None for v in vals):
                     cells = " | ".join("n/a" if v is None else f"{v:g}" for v in vals)
                     lines.append(f"  {f}: {cells}")
+        if self.dashboard:
+            lines.append("[dashboard · one-glance summary + flags]")
+            for label, val in self.dashboard.items():
+                if val not in (None, ""):
+                    lines.append(f"  {label}: {val}")
+        if self.has_valuation:
+            lines.append("[valuation · bear/base/bull]")
+            for k in ("current_price", "ltm_eps", "ltm_fcf_ps"):
+                if self.valuation.get(k) not in (None, ""):
+                    lines.append(f"  {k} = {self.valuation[k]}")
+            for sc in self.valuation.get("scenarios", []):
+                cells = ", ".join(f"{k}={v}" for k, v in sc.items()
+                                  if v not in (None, ""))
+                if cells:
+                    lines.append(f"  {cells}")
+        if self.has_peers:
+            lines.append(f"[peers · {len(self.peers)} names]")
+            for p in self.peers:
+                name = p.get("name")
+                if not name:
+                    continue
+                cells = ", ".join(f"{k}={v}" for k, v in p.items()
+                                  if k != "name" and v not in (None, ""))
+                lines.append(f"  {name}: {cells}")
         return "\n".join(lines) if lines else "(no data)"
 
 

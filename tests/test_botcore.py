@@ -51,7 +51,7 @@ def test_upload_xlsx_yields_filled_prompts(core, xlsx_bytes):
         assert ph not in short_prompt, f"{ph} must be filled"
         assert ph not in long_prompt, f"{ph} must be filled"
     assert "Ticker: EXMPL" in short_prompt
-    assert "ps_ratio = 62.0" in short_prompt
+    assert "ps_ttm = 62.0" in short_prompt
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
     assert "DENNIS" in short_prompt and "DENNIS" in long_prompt
     assert "dumpster_fire" in long_prompt          # palette injected

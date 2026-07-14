@@ -18,7 +18,7 @@ def test_inline_doodle_and_scribble_stripped_and_anchored(short_doodles_json, se
     assert "DOODLE" not in script.audio_script and "SCRIBBLE" not in script.audio_script
     doodles = script.doodle_events()
     scribbles = script.scribble_events()
-    assert [e.payload for e in doodles] == ["stick-staring-at-crash"]
+    assert [e.payload for e in doodles] == ["crash"]
     assert [e.payload for e in scribbles] == ["circle -> Net income"]
     # offsets index the CLEAN audio_script (the word right after each tag)
     for e in doodles + scribbles:

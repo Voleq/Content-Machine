@@ -29,15 +29,21 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from config import Settings
 
-# dark-surface palette (validated: contrast vs SURFACE ≥ 3:1)
-SURFACE = (18, 21, 28)        # #12151C card
-FRAME = (11, 13, 18)          # around the card
-INK = (232, 234, 240)         # primary text
-MUTED = (154, 163, 178)       # secondary text
-GRID = (38, 43, 54)           # recessive gridlines
-UP = (63, 185, 104)           # #3FB968
-DOWN = (224, 82, 82)          # #E05252
-ACCENT = (255, 205, 60)       # brand gold (badges, single-hue bars)
+# dark-surface palette — the Dennis kit tokens (validated: contrast ≥ 3:1)
+SURFACE = (19, 19, 25)        # #131319 card
+FRAME = (10, 10, 11)          # #0a0a0b around the card
+INK = (242, 242, 239)         # #f2f2ef primary text
+MUTED = (107, 107, 112)       # #6b6b70 secondary text
+GRID = (30, 30, 36)           # #1e1e24 recessive gridlines
+UP = (47, 213, 118)           # #2fd576 signal green
+DOWN = (255, 82, 71)          # #ff5247 marker red
+ACCENT = (47, 213, 118)       # single-hue magnitude (brand green)
+
+# brand fonts (reproduced from the .dc.html kits)
+_SANS = "SpaceGrotesk-Bold.ttf"      # numbers / UI sans
+_MONO = "SpaceMono-Regular.ttf"      # labels
+_MONO_BOLD = "SpaceMono-Bold.ttf"
+_MARKER = "ShantellSans-Bold.ttf"    # hand-drawn marker text
 
 
 def _font(settings: Settings, name: str, size: int):
@@ -82,16 +88,16 @@ def render_price_chart(
 
     # ---- header: ticker (the title names the series — no legend) + badge.
     # Both share one line: shrink the badge text until everything fits.
-    tick_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.52))
+    tick_font = _font(settings, _SANS, int(head_h * 0.52))
     tick_w = d.textlength(series.ticker, font=tick_font)
     d.text((pad, pad * 0.75), series.ticker, font=tick_font, fill=(*INK, 255))
     move = move_text or f"{series.pct_change_1d:+.1f}%"
     avail = W - pad * 2 - tick_w - int(pad * 0.8)
     size = int(head_h * 0.30)
-    badge_font = _font(settings, "DejaVuSans-Bold.ttf", size)
+    badge_font = _font(settings, _SANS, size)
     while size > 12 and d.textlength(move, font=badge_font) + pad * 0.9 > avail:
         size -= 2
-        badge_font = _font(settings, "DejaVuSans-Bold.ttf", size)
+        badge_font = _font(settings, _SANS, size)
     while move and d.textlength(move + "…", font=badge_font) + pad * 0.9 > avail:
         move = move[:-1].rstrip()
         if len(move) < 6:
@@ -123,7 +129,7 @@ def render_price_chart(
         return x, y
 
     # recessive grid: 4 horizontals + right-edge price labels (muted)
-    lbl_font = _font(settings, "DejaVuSansMono.ttf", max(int(H * 0.026), 12))
+    lbl_font = _font(settings, _MONO, max(int(H * 0.026), 12))
     for k in range(4):
         gy = y0 + (y1 - y0) * k / 3
         d.line([x0, gy, x1, gy], fill=(*GRID, 255), width=1)
@@ -224,11 +230,11 @@ def render_marker_price_chart(
     pad = int(W * 0.06)
     head_h = int(H * 0.16)
     # scrawled title (the title names the series — no legend) + move aside
-    tick_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.55))
+    tick_font = _font(settings, _MARKER, int(head_h * 0.55))
     d.text((pad + rng.randint(-3, 3), pad * 0.7), series.ticker,
            font=tick_font, fill=(*CHALK, 255))
     move = move_text or f"{series.pct_change_1d:+.1f}%"
-    move_font = _font(settings, "DejaVuSans-Bold.ttf", int(head_h * 0.30))
+    move_font = _font(settings, _MARKER, int(head_h * 0.30))
     mw = d.textlength(move, font=move_font)
     if pad + d.textlength(series.ticker, font=tick_font) + mw + pad < W:
         d.text((W - pad - mw, pad * 0.9 + head_h * 0.18), move,
@@ -270,6 +276,17 @@ def render_marker_price_chart(
         _marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
                        rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
 
+    # the red scrawl circle around the spike (the kit's signature "doubt" mark):
+    # ~1.15 turns of a jittered ellipse in marker red, drawn twice
+    crx, cry = W * 0.11, H * 0.11
+    for _ in range(2):
+        ring = []
+        for t in range(0, 53):
+            th = -math.pi / 2 + 2 * math.pi * 1.15 * (t / 52)
+            ring.append((lx + crx * math.cos(th) + rng.uniform(-3, 3),
+                         ly + cry * math.sin(th) + rng.uniform(-3, 3)))
+        d.line(ring, fill=(*DOWN, 255), width=nib, joint="curve")
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
 
@@ -308,7 +325,7 @@ def render_metric_chart(
     d.rounded_rectangle([pad // 2, pad // 2, W - pad // 2, H - pad // 2],
                         radius=24, fill=SURFACE, outline=GRID, width=2)
 
-    title_font = _font(settings, "DejaVuSans-Bold.ttf", int(H * 0.062))
+    title_font = _font(settings, _SANS, int(H * 0.062))
     d.text((pad, pad * 0.85), label, font=title_font, fill=INK)
 
     vals = [(v if isinstance(v, (int, float)) else None) for v in values]
@@ -336,8 +353,8 @@ def render_metric_chart(
     n = len(vals)
     slot = (x1 - x0) / n
     bar_w = slot * 0.56
-    yr_font = _font(settings, "DejaVuSansMono.ttf", max(int(H * 0.034), 14))
-    val_font = _font(settings, "DejaVuSansMono-Bold.ttf", max(int(H * 0.036), 14))
+    yr_font = _font(settings, _MONO, max(int(H * 0.034), 14))
+    val_font = _font(settings, _MONO_BOLD, max(int(H * 0.036), 14))
 
     def _fmt(v: float) -> str:
         a = abs(v)

@@ -32,13 +32,18 @@ from pipeline.chart import render_marker_price_chart, render_price_chart
 from pipeline.models import ChartStyle, CueKind, ScribbleStyle, ShortScript, TTSResult, parse_scribble_payload
 from pipeline.prices import PriceSeries, get_price_history
 from pipeline.rasters import (
-    GOLD,
+    GREEN,
+    INK,
+    RED,
+    SHANTELL,
     brand_bug,
     build_karaoke_ass,
     doodle_clip,
     flash_frames,
     frames_to_alpha_clip,
     headline_card,
+    lower_third,
+    nos_header,
     number_row_frames,
     number_row_image,
     numbers_sheet_base,
@@ -46,6 +51,7 @@ from pipeline.rasters import (
     scribble_frames,
     simple_text,
     text_panel,
+    ticker_pill,
     zoom_pop_frames,
 )
 from pipeline.render_common import (
@@ -147,7 +153,7 @@ def render_short(
 
     # ------------------------------------------------------------ hook card
     hook_img = text_panel(settings, hook.payload["text"], width=px(960),
-                          font_size=px(64), accent=GOLD)
+                          font_name=SHANTELL, font_size=px(60), accent=GREEN)
     hook_path = rdir / "hook.png"
     hook_img.save(hook_path)
     layers.append(OverlayLayer(
@@ -155,12 +161,29 @@ def render_short(
         t_start=0.0, t_end=float(hook.payload["until"]), name="hook",
     ))
 
+    # -------------------------------- $TICKER pill + "noise or signal?" header
+    pill = ticker_pill(settings, script.ticker, font_size=px(40))
+    pill_path = rdir / "ticker_pill.png"
+    pill.save(pill_path)
+    layers.append(OverlayLayer(
+        path=pill_path, x=px(40), y=px(150), t_start=0.0, t_end=duration,
+        name="ticker_pill",
+    ))
+    nos = nos_header(settings, font_size=px(30))
+    nos_path = rdir / "nos_header.png"
+    nos.save(nos_path)
+    layers.append(OverlayLayer(
+        path=nos_path, x=W - nos.width - px(40), y=px(156),
+        t_start=0.0, t_end=duration, name="nos_header",
+    ))
+
     # ------------------------------------- headlines overlaid ON the chart
     slots = chart_meta["headline_slots"]
     for c in headline_cues:
         i = int(c.payload["index"])
-        card = headline_card(settings, c.payload["text"], width=px(880),
-                             font_size=px(38))
+        meaning = script.headlines[i].meaning if i < len(script.headlines) else ""
+        card = headline_card(settings, c.payload["text"], meaning=meaning,
+                             width=px(880), font_size=px(34))
         card_path = rdir / f"headline_{i}.png"
         card.save(card_path)
         sx, sy = slots[min(i, len(slots) - 1)]
@@ -232,7 +255,7 @@ def render_short(
         note = (c.payload.get("note") or "").strip()
         if note:
             note_img = simple_text(settings, note, font_size=px(34),
-                                   fill=(*GOLD, 255), stroke_width=2)
+                                   fill=(*RED, 255), stroke_width=2)
             note_path = rdir / f"note_{k}.png"
             note_img.save(note_path)
             if target == "chart":
@@ -348,13 +371,27 @@ def render_short(
 
     # ------------------------------------------------- the payoff card
     conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
-                          font_size=px(52), accent=GOLD, bg=(12, 14, 19, 245))
+                          font_name=SHANTELL, font_size=px(48), accent=GREEN,
+                          bg=(12, 12, 14, 245))
     conc_path = rdir / "conclusion.png"
     conc_img.save(conc_path)
     layers.append(OverlayLayer(
         path=conc_path, x=int((W - conc_img.width) / 2), y=px(430),
         t_start=conclusion.t, t_end=duration, fade_in=0.25, name="conclusion",
     ))
+
+    # a deadpan mascot rides the payoff — the reaction-head stickman
+    mascot = content.resolve_doodle("reactions/deadpan")
+    if mascot is not None:
+        mclip, (mcw, mch) = doodle_clip(
+            mascot.path, rdir / "mascot.mov",
+            display_w=px(220), duration_s=max(duration - conclusion.t, 0.5),
+            fps=settings.fps, seed=f"{script.ticker}|mascot",
+        )
+        layers.append(OverlayLayer(
+            path=mclip, x=W - mcw - px(70), y=px(800),
+            t_start=conclusion.t, t_end=duration, is_video=True, name="mascot",
+        ))
 
     # -------------------------------------------------------- disclaimer
     disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(30),

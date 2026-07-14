@@ -1,66 +1,332 @@
 {
-  "harold-quick-flip-became-bagholder": {
-    "tags": ["bagholder", "regret", "buy-high", "hide-the-pain", "quick-flip"],
-    "use_when": "A 'short-term trade' quietly turns into an involuntary long-term position."
-  },
-  "portfolio-down-50-percent-all-time": {
-    "tags": ["losses", "drawdown", "portfolio", "pain", "all-time"],
-    "use_when": "Quoting a brutal drawdown number or a chart that only goes down."
-  },
-  "altman-jensen-sell-me-this-pen-circular-financing": {
-    "tags": ["circular-financing", "ai-capex", "vendor-financing", "bubble", "round-trip"],
-    "use_when": "Revenue that comes from the same pocket the capex goes into — money orbiting, not landing."
-  },
-  "stonks-man-up-only": {
-    "tags": ["euphoria", "up-only", "retail", "momentum", "stonks"],
-    "use_when": "The crowd treats a green candle as a business model."
-  },
-  "this-is-fine-dog-guidance-reaffirmed": {
-    "tags": ["denial", "burning", "guidance", "management", "earnings-call"],
-    "use_when": "Management reaffirms guidance while the income statement is visibly on fire."
-  },
-  "guy-checking-phone-red-candles": {
-    "tags": ["panic", "red-day", "checking", "anxiety", "watchlist"],
-    "use_when": "Describing the compulsive check-refresh loop on a big red day."
-  },
-  "math-lady-non-gaap-reconciliation": {
-    "tags": ["confusion", "adjusted-ebitda", "non-gaap", "accounting", "reconciliation"],
-    "use_when": "An 'adjusted' metric needs a flowchart to reconcile back to reality."
-  },
-  "drake-no-profits-yes-narrative": {
-    "tags": ["narrative", "profitless", "story-stock", "preference", "drake"],
-    "use_when": "The market rejects actual earnings and embraces the story instead."
-  },
-  "astronaut-always-has-been-dilution": {
-    "tags": ["dilution", "betrayal", "always-has-been", "share-count", "atm-offering"],
-    "use_when": "The share count reveal — it was funded by printing stock all along."
-  },
-  "galaxy-brain-buy-the-dip-again": {
-    "tags": ["buy-the-dip", "escalation", "averaging-down", "galaxy-brain"],
-    "use_when": "Each new low is greeted as an even smarter entry point."
-  },
-  "skeleton-waiting-for-turnaround": {
-    "tags": ["waiting", "turnaround", "dead-money", "patience", "skeleton"],
-    "use_when": "The turnaround that is perpetually two quarters away."
-  },
-  "sweating-guy-two-buttons-value-or-trap": {
-    "tags": ["value-trap", "decision", "cheap", "dilemma", "two-buttons"],
-    "use_when": "A stock that is either deep value or a trap, and the numbers refuse to say which."
-  },
-  "leo-cheers-to-buybacks": {
-    "tags": ["buybacks", "cash-cow", "celebration", "capital-returns", "cheers"],
-    "use_when": "A genuinely good business quietly returning cash while nobody watches."
-  },
-  "surprised-pikachu-missed-earnings": {
-    "tags": ["earnings-miss", "surprise", "obvious", "pikachu"],
-    "use_when": "A completely foreseeable miss is greeted as a shocking surprise."
-  },
-  "gru-plan-scale-then-profit-never-profit": {
-    "tags": ["business-plan", "scaling", "unprofitable", "gru-plan", "step-three"],
-    "use_when": "The plan where profitability is step three and step three never arrives."
-  },
-  "clown-makeup-averaging-down-on-margin": {
-    "tags": ["clown", "margin", "averaging-down", "self-own", "leverage"],
-    "use_when": "Step-by-step self-inflicted damage, each step more confident than the last."
-  }
+ "altman-jensen-sell-me-this-pen-circular-financing": {
+  "tags": [
+   "circular-financing",
+   "vendor-financing",
+   "ai-capex",
+   "sell-me-this-pen",
+   "related-party"
+  ],
+  "use_when": "capex or revenue that loops back to the same handful of counterparties"
+ },
+ "big-short-2-parody-poster-ai-bubble": {
+  "tags": [
+   "big-short",
+   "ai-bubble",
+   "bubble",
+   "movie-poster",
+   "short-thesis"
+  ],
+  "use_when": "framing the current AI mania as the sequel to the housing bubble"
+ },
+ "big-tech-logos-magnificent-seven": {
+  "tags": [
+   "magnificent-seven",
+   "big-tech",
+   "mega-cap",
+   "concentration",
+   "index"
+  ],
+  "use_when": "the market really being carried by a handful of mega-caps"
+ },
+ "bitcoin-1m-dream-to-mcdonalds-job": {
+  "tags": [
+   "bitcoin",
+   "crypto",
+   "dream-vs-reality",
+   "cope",
+   "rekt"
+  ],
+  "use_when": "a moonshot price target meets a very different reality"
+ },
+ "buffett-billions-vs-me-blowing-up-account": {
+  "tags": [
+   "buffett",
+   "billions-vs-me",
+   "blowing-up-account",
+   "retail-vs-pro",
+   "humility"
+  ],
+  "use_when": "contrasting patient compounding with the retail account blowing up"
+ },
+ "buy-the-dip-dippity-dip": {
+  "tags": [
+   "buy-the-dip",
+   "dip",
+   "averaging-down",
+   "hopium",
+   "catching-knives"
+  ],
+  "use_when": "someone rationalizes averaging down into a falling stock"
+ },
+ "chart-double-top-mcdonalds-arches": {
+  "tags": [
+   "double-top",
+   "chart",
+   "reversal",
+   "mcdonalds-arches",
+   "technical",
+   "pattern"
+  ],
+  "use_when": "a chart printing a textbook double top / lower-high reversal"
+ },
+ "chart-double-top-plain": {
+  "tags": [
+   "double-top",
+   "chart",
+   "reversal",
+   "technical",
+   "pattern",
+   "resistance"
+  ],
+  "use_when": "the plain double-top pattern when you want the shape without the joke"
+ },
+ "costco-hotdog-1.50-buy-now-pay-later": {
+  "tags": [
+   "costco-hotdog",
+   "inflation",
+   "buy-now-pay-later",
+   "consumer",
+   "affordability"
+  ],
+  "use_when": "stretched consumers financing everyday purchases"
+ },
+ "ebitda-earnings-before-iran-tariffs-donald": {
+  "tags": [
+   "ebitda",
+   "adjusted-earnings",
+   "add-backs",
+   "non-gaap",
+   "earnings-before"
+  ],
+  "use_when": "management adds back everything to reach a flattering EBITDA"
+ },
+ "fomo-stages-wish-i-bought-doodle": {
+  "tags": [
+   "fomo",
+   "wish-i-bought",
+   "up-only",
+   "vertical",
+   "pump",
+   "missed-it",
+   "chasing"
+  ],
+  "use_when": "the stock went vertical and now everyone wishes they'd bought"
+ },
+ "futures-physical-delivery-crude-oil": {
+  "tags": [
+   "futures",
+   "physical-delivery",
+   "crude-oil",
+   "derivatives",
+   "held-to-expiry"
+  ],
+  "use_when": "the joke of forgetting a long future settles in physical barrels"
+ },
+ "futures-physical-delivery-live-cattle": {
+  "tags": [
+   "futures",
+   "physical-delivery",
+   "live-cattle",
+   "derivatives",
+   "held-to-expiry"
+  ],
+  "use_when": "a long future held to expiry that settles in live cattle"
+ },
+ "gemini-ai-open-the-strait-of-hormuz": {
+  "tags": [
+   "ai-slop",
+   "gemini",
+   "geopolitics",
+   "strait-of-hormuz",
+   "hallucination"
+  ],
+  "use_when": "an AI asked to do something absurd about a macro/geopolitics event"
+ },
+ "gold-chart-shaped-like-dinosaur": {
+  "tags": [
+   "gold",
+   "chart",
+   "pattern",
+   "pareidolia",
+   "technical-analysis"
+  ],
+  "use_when": "over-reading a squiggly chart into a meaningful shape"
+ },
+ "green-laser-into-night-sky-signal": {
+  "tags": [
+   "signal",
+   "noise-or-signal",
+   "green",
+   "bullish-signal",
+   "cope"
+  ],
+  "use_when": "reading a faint bullish 'signal' out of pure noise"
+ },
+ "harold-100k-goal-still-152k-to-go": {
+  "tags": [
+   "harold",
+   "hiding-the-pain",
+   "goal",
+   "underwater",
+   "still-losing",
+   "cope"
+  ],
+  "use_when": "smiling through a portfolio that is nowhere near the goal"
+ },
+ "harold-quick-flip-became-bagholder": {
+  "tags": [
+   "harold",
+   "bagholder",
+   "quick-flip",
+   "hiding-the-pain",
+   "long-term-investor",
+   "cope"
+  ],
+  "use_when": "a quick trade that quietly turned into a long-term hold"
+ },
+ "inverse-cramer-trading-card": {
+  "tags": [
+   "inverse-cramer",
+   "cramer",
+   "pundit",
+   "fade-the-tv",
+   "trading-card"
+  ],
+  "use_when": "fading the loud TV pundit as a strategy"
+ },
+ "jason-zweig-brokers-children-harvard-options": {
+  "tags": [
+   "fees",
+   "options",
+   "who-profits",
+   "brokers-children",
+   "wall-street-satire"
+  ],
+  "use_when": "the house always wins \u2014 trading fees fund the broker's lifestyle"
+ },
+ "kangaroo-market-cnbc-parody": {
+  "tags": [
+   "kangaroo-market",
+   "choppy",
+   "volatility",
+   "cnbc",
+   "chop",
+   "range-bound"
+  ],
+  "use_when": "a jumpy range-bound tape with no real trend"
+ },
+ "kim-jong-un-crying-left-out": {
+  "tags": [
+   "fomo",
+   "left-out",
+   "crying",
+   "missed-the-rally",
+   "envy"
+  ],
+  "use_when": "everyone got the move except you"
+ },
+ "linkedin-supreme-leader-iran-temporary-position": {
+  "tags": [
+   "linkedin",
+   "job-title",
+   "temporary-position",
+   "corporate-satire",
+   "geopolitics"
+  ],
+  "use_when": "dressing up a precarious situation in LinkedIn corporate-speak"
+ },
+ "margin-call-due-532k-daily-loss": {
+  "tags": [
+   "margin-call",
+   "leverage",
+   "blown-up",
+   "daily-loss",
+   "liquidation"
+  ],
+  "use_when": "leverage turns a bad day into a margin call"
+ },
+ "meta-73b-metaverse-horizon-workrooms": {
+  "tags": [
+   "meta",
+   "metaverse",
+   "cash-burn",
+   "moonshot",
+   "capex",
+   "empty-product"
+  ],
+  "use_when": "billions burned on a moonshot with little to show"
+ },
+ "nvidia-merchant-infinite-loop-card": {
+  "tags": [
+   "nvidia",
+   "ai-capex",
+   "circular-financing",
+   "infinite-loop",
+   "picks-and-shovels"
+  ],
+  "use_when": "the AI-spend loop where the chip vendor funds its own customers"
+ },
+ "portfolio-down-50-percent-all-time": {
+  "tags": [
+   "drawdown",
+   "down-50",
+   "all-time-low",
+   "loss-porn",
+   "bagholder"
+  ],
+  "use_when": "the portfolio halved and the timeframe is 'all time'"
+ },
+ "portfolio-down-99-percent-20-left": {
+  "tags": [
+   "down-99",
+   "rounding-error",
+   "wiped-out",
+   "loss-porn",
+   "capitulation"
+  ],
+  "use_when": "the equity is basically a rounding error now"
+ },
+ "portfoliogone-portfolio-crash-shapes": {
+  "tags": [
+   "portfolio-gone",
+   "crash",
+   "wiped-out",
+   "loss",
+   "red"
+  ],
+  "use_when": "the account is basically gone after the crash"
+ },
+ "trump-2012-tweet-dow-drops-impeach": {
+  "tags": [
+   "trump",
+   "old-tweet",
+   "hypocrisy",
+   "dow",
+   "politics",
+   "market-drop"
+  ],
+  "use_when": "an old political take that aged badly against the tape"
+ },
+ "trump-tariffs-wizard-halves-portfolio": {
+  "tags": [
+   "trump",
+   "tariffs",
+   "macro",
+   "portfolio-halved",
+   "policy-risk"
+  ],
+  "use_when": "a policy or macro shock cutting the portfolio in half"
+ },
+ "wolverine-shown-photo-of-powell": {
+  "tags": [
+   "powell",
+   "fed",
+   "rate-pain",
+   "flashback",
+   "macro",
+   "trauma"
+  ],
+  "use_when": "the Fed / Powell triggering a fresh round of rate-cut trauma"
+ }
 }

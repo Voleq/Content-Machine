@@ -44,6 +44,7 @@ from pipeline.rasters import (
     build_karaoke_ass,
     doodle_clip,
     frames_to_alpha_clip,
+    lower_third,
     scribble_callout_frames,
     simple_text,
 )
@@ -287,6 +288,16 @@ def render_long(
     layers.append(OverlayLayer(
         path=bug_path, x=W - bug.width - px(36), y=px(30),
         t_start=0.0, t_end=duration, name="corner_bug",
+    ))
+
+    # branded lower-third: ticker + the channel tagline (persistent, bottom-left)
+    lt = lower_third(settings, f"${script.ticker}", settings.brand_tagline.lower(),
+                     width=px(560), font_size=px(34))
+    lt_path = rdir / "lower_third.png"
+    lt.save(lt_path)
+    layers.append(OverlayLayer(
+        path=lt_path, x=px(36), y=H - lt.height - px(92),
+        t_start=0.0, t_end=duration, name="lower_third",
     ))
 
     disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),

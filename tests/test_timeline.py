@@ -190,7 +190,7 @@ def test_short_meme_lands_on_anchor(short_script):
     meme = next(c for c in cues if c.kind is CueKind.MEME)
     anchor_t = find_anchor_time(words, "vertical")
     assert meme.t == pytest.approx(anchor_t, abs=0.01)
-    assert meme.payload["key"] == "stonks-man-up-only"
+    assert meme.payload["key"] == "fomo-stages-wish-i-bought-doodle"
     assert not meme.fallback
 
 
@@ -249,7 +249,7 @@ def test_short_inline_doodle_scribble_cues(short_doodles_json):
     cues = build_short_timeline(script, words, duration)
     doodles = [c for c in cues if c.kind is CueKind.DOODLE]
     scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
-    assert len(doodles) == 1 and doodles[0].payload["value"] == "stick-staring-at-crash"
+    assert len(doodles) == 1 and doodles[0].payload["value"] == "crash"
     assert len(scribbles) == 1 and scribbles[0].payload["value"] == "circle -> Net income"
     # word-anchored into the clean audio_script, and inside the runtime
     for c in doodles + scribbles:

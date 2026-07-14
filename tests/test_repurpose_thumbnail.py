@@ -76,9 +76,9 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
 def test_shock_metric_priority():
     from pipeline.models import CompanyData
 
-    data = CompanyData(values={"net_margin_pct": -18.0, "ps_ratio": 62.0})
+    data = CompanyData(values={"ps_ttm": 62.0}, dashboard={"Net margin (LTM)": -18.0})
     assert shock_metric(data) == "Net margin: -18%"
-    data2 = CompanyData(values={"ps_ratio": 62.0, "net_margin_pct": 12.0})
+    data2 = CompanyData(values={"ps_ttm": 62.0}, dashboard={"Net margin (LTM)": 12.0})
     assert shock_metric(data2) == "P/S: 62x"
     assert shock_metric(CompanyData(values={})) == ""
 

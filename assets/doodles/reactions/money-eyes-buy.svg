@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200" style="width:100%;max-width:126px;height:auto;overflow:visible;"><defs>
+  <filter id="k1" x="-25%" y="-25%" width="150%" height="150%"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k1s }}"/></filter>
+  <filter id="k2" x="-45%" y="-45%" width="190%" height="190%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="{{ k2s }}"/></filter>
+</defs>
+          <g filter="url(#k1)" stroke="#f2f2ef" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M90 46 q-11 -27 12 -29 q17 -1 6 16"/><circle cx="100" cy="110" r="60"/>
+            <path d="M76 138 q24 22 48 0"/>
+          </g>
+          <text x="80" y="112" text-anchor="middle" font-family="'Space Mono',monospace" font-weight="700" font-size="30" fill="#2fd576">$</text>
+          <text x="120" y="112" text-anchor="middle" font-family="'Space Mono',monospace" font-weight="700" font-size="30" fill="#2fd576">$</text>
+        </svg>

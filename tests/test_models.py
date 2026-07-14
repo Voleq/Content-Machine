@@ -20,7 +20,7 @@ def test_short_script_valid(short_valid_json: str):
     assert len(script.numbers) == 4
     assert all(len(r.values) == 5 for r in script.numbers), "multi-year rows"
     assert script.years == ["2021", "2022", "2023", "2024", "2025"]
-    assert script.meme is not None and script.meme.key == "stonks-man-up-only"
+    assert script.meme is not None and script.meme.key == "fomo-stages-wish-i-bought-doodle"
     assert script.missing_anchor_words() == []
     assert script.char_count <= 800
     assert "noise" in script.conclusion.lower()
@@ -73,20 +73,20 @@ def test_short_script_anchor_words_include_cutaways(short_valid_json: str):
 def test_company_data_missing_classification():
     data = CompanyData(values={"company_name": "X", "price": 1.0})
     assert "ticker" in data.blocking_missing
-    assert "pe_ratio" in data.warning_missing
-    assert "pe_ratio" not in data.blocking_missing
-    assert "website" in data.warning_missing, "website is optional, never blocking"
+    assert "pe_ttm" in data.warning_missing
+    assert "pe_ttm" not in data.blocking_missing
+    assert "short_interest" in data.warning_missing, "ownership is optional, never blocking"
 
 
 def test_company_data_prompt_block_with_history():
     data = CompanyData(
         values={"company_name": "X", "price": 10.0},
-        history_years=["FY2021", "FY2022"],
+        history_years=["FY-1", "FY-0"],
         history={"revenue": [100.0, 120.0], "fcf": [None, None]},
     )
     block = data.as_prompt_block()
     assert "[identity]" in block and "company_name = X" in block
-    assert "[history" in block and "FY2021 | FY2022" in block
+    assert "[history" in block and "FY-1 | FY-0" in block
     assert "revenue: 100 | 120" in block
     assert "fcf" not in block.split("[history")[1], "all-empty history rows are omitted"
     assert data.has_history

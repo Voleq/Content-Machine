@@ -20,7 +20,7 @@ def test_parse_new_tags(long_doodles_text, settings):
     assert revenue_chart.style == ""  # clean default
     # doodles, scribbles, screengrab
     assert [e.payload for e in script.events_of(TagType.DOODLE)] == \
-        ["scribble-explosion", "stick-face-down"]
+        ["impact-pow", "face-down"]
     assert len(script.events_of(TagType.SCRIBBLE)) == 2
     assert script.screengrab_slugs() == ["broker-pnl"]
 
