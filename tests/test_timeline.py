@@ -371,3 +371,34 @@ def test_segments_hold_capped_by_next_cue():
     first = next(s for s in segments if s.kind == "clip")
     assert first.end == pytest.approx(3.5), "a hold never runs over the next cue"
     _tiled(segments, 30.0)
+
+
+# ------------------------------------------------------ scene-variety planner
+
+
+def test_adjacent_fillers_get_distinct_looks():
+    """A run of filler cuts (a long gap with no media) must not read as the
+    same bare frame — consecutive fillers get different backdrop families."""
+    segments, _ = plan_long_segments([], 24.0)  # all filler
+    fillers = [s for s in segments if s.kind == "filler"]
+    assert len(fillers) >= 4
+    for a, b in zip(segments, segments[1:]):
+        if a.kind == "filler" and b.kind == "filler":
+            assert a.payload["variant"] != b.payload["variant"], \
+                "consecutive fillers must not share a backdrop look"
+    # a longer timeline exercises more than the old 4-look rotation
+    long_segments, _ = plan_long_segments([], 120.0)
+    looks = {s.payload["variant"] for s in long_segments if s.kind == "filler"}
+    assert len(looks) >= 3
+
+
+def test_adjacent_same_type_real_cuts_are_flagged():
+    from pipeline.models import Cue
+
+    cues = [
+        Cue(t=2.0, kind=CueKind.CLIP, payload={"value": "a"}),
+        Cue(t=3.5, kind=CueKind.CLIP, payload={"value": "b"}),
+    ]
+    _, warnings = plan_long_segments(cues, 30.0)
+    assert any("same visual type" in w for w in warnings), \
+        "two clips back-to-back should warn the variety planner"

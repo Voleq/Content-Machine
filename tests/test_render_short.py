@@ -101,6 +101,9 @@ def test_cue_times_reached_the_filtergraph(rendered):
     for cue in (conclusion, numbers, headline, annotation, zoom, meme):
         assert f"between(t,{cue.t:.4f}" in filter_text, f"{cue.kind} cue time missing"
     assert "subtitles=filename=" in filter_text
+    # the branded backdrop drifts (subtle Ken Burns) — never a dead static hold
+    W, H = settings.short_resolution
+    assert f"crop={W}:{H}:x='(iw-ow)*t/" in filter_text, "SHORT base has Ken Burns"
     # the payoff lands on the conclusion's spoken words (audio-timestamp clock)
     from pipeline.timeline import find_anchor_time
 

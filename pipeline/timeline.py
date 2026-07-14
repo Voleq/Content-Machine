@@ -294,6 +294,11 @@ class Segment:
 
 MIN_SEGMENT_S = 0.25
 
+# size of the renderer's DESIGNED-backdrop pool (each of rasters'
+# LONG_BACKDROP_FAMILIES families is drawn with several seeds). Kept as a bare
+# int so this module stays pure logic — no PIL/raster import.
+LONG_FILLER_LOOKS = 12
+
 # how long each visual kind holds before cutting back (a meme is a beat,
 # a clip is a thought)
 DEFAULT_HOLDS = {
@@ -305,6 +310,20 @@ DEFAULT_HOLDS = {
     CueKind.ASSET: 3.0,
     CueKind.MEME: 1.8,
 }
+
+
+def _diversify_fillers(segments: list["Segment"]) -> None:
+    """Number the fillers sequentially (payload['variant']). The renderer
+    spreads that index across a wide pool of DESIGNED backdrops, so a run of
+    filler beats reads as motion through a deck — and because consecutive
+    fillers get consecutive indices they can never land on the same backdrop.
+    LONG_FILLER_LOOKS is the minimum distinct looks the renderer guarantees."""
+    counter = 0
+    for seg in segments:
+        if seg.kind != "filler":
+            continue
+        seg.payload["variant"] = counter
+        counter += 1
 
 
 def plan_long_segments(
@@ -376,6 +395,20 @@ def plan_long_segments(
                                 payload=dict(c.payload)))
         cursor = end
     add_filler(cursor, duration)
+
+    # ---- scene-variety pass (§editing) -------------------------------------
+    # Give every filler a DESIGNED backdrop family that differs from its
+    # neighbour, so a run of filler cuts (a long gap with no assigned media)
+    # never reads as the same bare frame on repeat. Real media cues keep
+    # their own type. Adjacent same-TYPE real cuts are flagged (rare — they
+    # only happen when the director stacks two of a kind back-to-back).
+    _diversify_fillers(segments)
+    for a, b in zip(segments, segments[1:]):
+        if a.kind == b.kind and a.kind != "filler":
+            warnings.append(
+                f"adjacent {a.kind} cuts at {a.start:.2f}s/{b.start:.2f}s "
+                f"— same visual type back-to-back"
+            )
 
     # tiling invariant — fail loudly in dev rather than desync audio/video
     eps = 1e-6

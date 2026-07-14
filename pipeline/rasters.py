@@ -21,7 +21,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 
 from config import Settings
 from pipeline.models import WordTimestamp
@@ -322,6 +322,198 @@ def chapter_stinger(settings: Settings, number: str, title: str, *,
     d.text((int(width * 0.1), int(height * 0.44)), title, font=big, fill=(*INK, 255))
     d.text((int(width * 0.1) + tw, int(height * 0.44)), ".", font=big, fill=(*RED, 255))
     return img
+
+
+# --------------------------------------------------------------------------
+# Full-frame media treatment + designed backdrops (the LONG "media IS the
+# background" kit). Every LONG still is composed to fill the frame — never a
+# bare black frame, never letterbox bars — before Ken Burns rides over it.
+# --------------------------------------------------------------------------
+
+
+def _cover(img: Image.Image, W: int, H: int) -> Image.Image:
+    """Scale + centre-crop `img` to exactly WxH (cover fit, no bars)."""
+    scale = max(W / img.width, H / img.height)
+    bw, bh = max(int(img.width * scale), W), max(int(img.height * scale), H)
+    resized = img.resize((bw, bh), Image.LANCZOS)
+    ox, oy = (bw - W) // 2, (bh - H) // 2
+    return resized.crop((ox, oy, ox + W, oy + H))
+
+
+def cover_fill_frame(
+    src,
+    width: int,
+    height: int,
+    *,
+    keep_min: float = 0.72,
+    blur: int = 26,
+    darken: float = 0.5,
+    border: bool = True,
+) -> Image.Image:
+    """One media still, composed to fill a WxH frame in the Dennis look.
+
+    If the media's aspect is close enough to the target that a cover-crop
+    keeps at least `keep_min` of it, the media fills the frame edge-to-edge
+    (real photos become the background). Otherwise — logos, tall phone
+    grabs, panoramas — the media is CONTAINed sharp over a blurred, darkened,
+    brand-tinted cover of itself, so it still reads as a designed full-frame
+    shot and never a letterboxed black frame.
+    """
+    img = (src if isinstance(src, Image.Image) else Image.open(src)).convert("RGB")
+    W, H = width, height
+    src_ar, dst_ar = img.width / img.height, W / H
+    kept = min(src_ar / dst_ar, dst_ar / src_ar)  # fraction of area cover keeps
+    if kept >= keep_min:
+        return _cover(img, W, H)
+
+    bg = ImageEnhance.Brightness(_cover(img, W, H).filter(
+        ImageFilter.GaussianBlur(blur))).enhance(darken)
+    bg = Image.blend(bg, Image.new("RGB", (W, H), BG), 0.42)
+    fg = img.copy()
+    fg.thumbnail((int(W * 0.92), int(H * 0.9)), Image.LANCZOS)
+    ox, oy = (W - fg.width) // 2, (H - fg.height) // 2
+    bg.paste(fg, (ox, oy))
+    if border:
+        ImageDraw.Draw(bg).rectangle(
+            [ox - 2, oy - 2, ox + fg.width + 1, oy + fg.height + 1],
+            outline=BORDER2, width=2)
+    return bg
+
+
+# the designed filler families — visually distinct looks so consecutive
+# filler beats never read as "the same scene on repeat"
+LONG_BACKDROP_FAMILIES = 5
+
+
+def _lerp(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def long_backdrop(
+    settings: Settings, width: int, height: int, variant: int, *,
+    ticker: str = "", label: str = "", seed: str = "bg",
+) -> Image.Image:
+    """A DESIGNED Dennis-palette full-frame background for a filler beat.
+
+    `variant` selects one of a few visually distinct families (gradient,
+    grid texture, a branded 'signal' chart card, a chapter word, a dot
+    field). Because the families differ so strongly, a run of filler cuts
+    reads as motion through a designed deck — never a repeated bare frame.
+    """
+    W, H = width, height
+    fam = variant % LONG_BACKDROP_FAMILIES
+    rng = random.Random(f"{seed}|{variant}")
+    accent = RED if rng.random() < 0.4 else GREEN
+    # lifted card tones so a designed backdrop clearly reads as a card, never
+    # as a bare black frame
+    LIFT_HI, LIFT_MID, LIFT_LO = (40, 42, 56), (28, 29, 40), (20, 20, 28)
+    img = Image.new("RGB", (W, H), LIFT_MID)
+    d = ImageDraw.Draw(img, "RGBA")
+
+    if fam == 0:  # diagonal gradient + a large, clearly visible accent glow
+        top, bot = (LIFT_HI, LIFT_LO) if rng.random() < 0.5 else (LIFT_MID, LIFT_LO)
+        for y in range(0, H, 2):
+            d.line([(0, y), (W, y)], fill=_lerp(top, bot, y / H))
+        glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        gx, gy = (rng.choice([int(W * 0.2), int(W * 0.8)]),
+                  rng.choice([int(H * 0.25), int(H * 0.75)]))
+        ImageDraw.Draw(glow).ellipse(
+            [gx - W * 0.45, gy - W * 0.45, gx + W * 0.45, gy + W * 0.45],
+            fill=(*accent, 80))
+        img = Image.alpha_composite(img.convert("RGBA"),
+                                    glow.filter(ImageFilter.GaussianBlur(140))).convert("RGB")
+        d = ImageDraw.Draw(img, "RGBA")
+
+    elif fam == 1:  # brand grid texture + a SUBTLE ticker watermark + hairline
+        img.paste(LIFT_LO, (0, 0, W, H))
+        gd = ImageDraw.Draw(img)
+        step = max(H // rng.choice([12, 14, 18]), 40)
+        for x in range(0, W, step):
+            gd.line([x, 0, x, H], fill=LIFT_MID, width=1)
+        for y in range(0, H, step):
+            gd.line([0, y, W, y], fill=LIFT_MID, width=1)
+        ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        od = ImageDraw.Draw(ov)
+        if ticker:  # a faint texture, not the hero — seed varies scale/place
+            wf = load_font(settings, SHANTELL, int(H * rng.choice([0.2, 0.26, 0.3])))
+            probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+            tw = probe.textlength(f"${ticker}", font=wf)
+            wx = rng.choice([int(W * 0.06), (W - tw) / 2, W - tw - int(W * 0.06)])
+            wy = rng.choice([int(H * 0.16), (H - wf.size) / 2, int(H * 0.62)])
+            od.text((wx, wy), f"${ticker}", font=wf, fill=(74, 76, 92, 60))
+        hy = rng.choice([0.2, 0.5, 0.82])
+        od.line([(0, int(H * hy)), (W, int(H * hy))], fill=(*accent, 120),
+                width=max(int(H * 0.008), 3))
+        img = Image.alpha_composite(img.convert("RGBA"), ov).convert("RGB")
+        d = ImageDraw.Draw(img, "RGBA")
+
+    elif fam == 2:  # a branded "signal" card — a decorative marker line chart
+        d.rectangle([0, 0, W, H], fill=LIFT_LO)
+        cx0, cy0, cx1, cy1 = int(W * 0.07), int(H * 0.1), int(W * 0.93), int(H * 0.9)
+        d.rounded_rectangle([cx0, cy0, cx1, cy1], radius=int(W * 0.02),
+                            fill=(*CARD2, 255), outline=(*BORDER2, 255), width=3)
+        x0, x1 = int(W * 0.13), int(W * 0.87)
+        y0, y1 = int(H * 0.26), int(H * 0.8)
+        for k in range(4):
+            gy = y0 + (y1 - y0) * k / 3
+            d.line([(x0, gy), (x1, gy)], fill=(56, 58, 72, 255), width=1)
+        n = 10
+        ys = [rng.uniform(y0, y1) for _ in range(n)]
+        pts = [(x0 + (x1 - x0) * i / (n - 1), ys[i]) for i in range(n)]
+        area = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(area).polygon(pts + [(x1, y1), (x0, y1)], fill=(*accent, 40))
+        img = Image.alpha_composite(img.convert("RGBA"), area).convert("RGB")
+        d = ImageDraw.Draw(img, "RGBA")
+        d.line(pts, fill=(*accent, 255), width=max(int(W * 0.005), 3), joint="curve")
+        d.ellipse([pts[-1][0] - 9, pts[-1][1] - 9, pts[-1][0] + 9, pts[-1][1] + 9],
+                  fill=(*accent, 255))
+        kf = load_font(settings, MONO_BOLD, int(H * 0.032))
+        d.text((int(W * 0.13), int(H * 0.14)), (label or "the tape").upper(),
+               font=kf, fill=(*MUTED2, 255))
+
+    elif fam == 3:  # chapter word — big Shantell line, mono kicker, red dot
+        for y in range(0, H, 2):
+            d.line([(0, y), (W, y)], fill=_lerp(LIFT_MID, LIFT_LO, y / H))
+        gd = ImageDraw.Draw(img)
+        step = max(H // 14, 44)
+        for x in range(0, W, step):
+            gd.line([x, 0, x, H], fill=(48, 50, 64), width=1)
+        d = ImageDraw.Draw(img, "RGBA")
+        kf = load_font(settings, MONO_BOLD, int(H * 0.034))
+        bf = load_font(settings, SHANTELL, int(H * 0.12))
+        word = label or "the deep dive"
+        d.text((int(W * 0.1), int(H * 0.39)), ("section" if label else "dennis").upper(),
+               font=kf, fill=(*MUTED2, 255))
+        d.line([int(W * 0.1), int(H * 0.44), int(W * 0.17), int(H * 0.44)],
+               fill=(*accent, 255), width=4)
+        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+        tw = probe.textlength(word, font=bf)
+        d.text((int(W * 0.1), int(H * 0.49)), word, font=bf, fill=(*INK, 255))
+        d.text((int(W * 0.1) + tw, int(H * 0.49)), ".", font=bf, fill=(*RED, 255))
+
+    else:  # fam == 4: dot field + a bold diagonal accent band
+        d.rectangle([0, 0, W, H], fill=LIFT_LO)
+        step = max(H // 18, 40)
+        for yy in range(step, H, step):
+            for xx in range(step, W, step):
+                d.ellipse([xx - 3, yy - 3, xx + 3, yy + 3], fill=(70, 72, 90, 255))
+        band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        ImageDraw.Draw(band).line([(0, int(H * 0.78)), (W, int(H * 0.32))],
+                                  fill=(*accent, 90), width=max(int(H * 0.05), 18))
+        img = Image.alpha_composite(img.convert("RGBA"),
+                                    band.filter(ImageFilter.GaussianBlur(6))).convert("RGB")
+        d = ImageDraw.Draw(img, "RGBA")
+        d.line([(0, int(H * 0.78)), (W, int(H * 0.32))], fill=(*accent, 220),
+               width=max(int(H * 0.006), 3))
+
+    # a gentle vignette keeps every family cinematic but never crushes the
+    # edges to black (the whole point is that a filler beat reads as designed)
+    vig = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(vig).ellipse([-int(W * 0.25), -int(H * 0.25),
+                                 int(W * 1.25), int(H * 1.25)], fill=255)
+    vig = vig.filter(ImageFilter.GaussianBlur(int(W * 0.05)))
+    dark = ImageEnhance.Brightness(img).enhance(0.82)
+    return Image.composite(img, dark, vig)
 
 
 # --------------------------------------------------------------------------
@@ -782,13 +974,30 @@ def build_karaoke_ass(
     max_chars: int = 18,
     accent_rgb: tuple[int, int, int] = GOLD,
     duration: float | None = None,
+    box: bool = False,
+    margin_h: int = 60,
 ) -> str:
-    """Word-synced karaoke: unspoken text white, spoken fills accent."""
+    """Word-synced karaoke: unspoken text white, spoken fills accent.
+
+    `box=True` switches to an opaque, text-fitted caption box (ASS
+    BorderStyle=3): each line gets its own dark chip sized to its content,
+    so a LONG caption can never clip off-frame or stack into the furniture.
+    The default (outline) style is byte-for-byte the SHORT's captions.
+    """
     W, H = play_res
 
     def bgr(c):  # ASS colours are &HAABBGGRR
         r, g, b = c
         return f"&H00{b:02X}{g:02X}{r:02X}"
+
+    # BorderStyle, Outline (box padding / stroke), Shadow, and the outline/back
+    # colours differ between the outline caption (SHORT) and the fitted box (LONG)
+    if box:
+        border_style, outline, shadow = 3, 12, 0
+        outline_c, back_c = "&H73121216", "&H73121216"
+    else:
+        border_style, outline, shadow = 1, 4, 2
+        outline_c, back_c = "&H000A0A0A", "&H96000000"
 
     header = f"""[Script Info]
 ScriptType: v4.00+
@@ -799,7 +1008,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,Space Grotesk,{font_size},{bgr(accent_rgb)},&H00FFFFFF,&H000A0A0A,&H96000000,-1,0,0,0,100,100,0,0,1,4,2,2,60,60,{margin_v},1
+Style: Caps,Space Grotesk,{font_size},{bgr(accent_rgb)},&H00FFFFFF,{outline_c},{back_c},-1,0,0,0,100,100,0,0,{border_style},{outline},{shadow},2,{margin_h},{margin_h},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

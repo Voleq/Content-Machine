@@ -120,6 +120,58 @@ def test_sources_and_attributions_carried(rendered):
     assert "verdict" not in json.dumps(manifest).lower()
 
 
+# ---- the overhaul: media-is-the-background, motion, design system --------
+
+
+def test_every_still_gets_ken_burns_motion(rendered):
+    """No still is a static hold — pans ride a time-varying crop, zooms ride
+    zoompan; over the timeline both kinds of move appear."""
+    settings, script, tts, out, manifest = rendered
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    W, H = manifest["resolution"]
+    assert "zoompan=" in filter_text, "at least one still zooms (Ken Burns)"
+    # a pan is a crop with a time-varying x/y expression
+    assert f"crop={W}:{H}:x='(iw-ow)" in filter_text, "stills pan (Ken Burns)"
+    # the old static pad-fit hold is gone
+    assert f"pad={W}:{H}" not in filter_text, "no more static letterbox hold"
+
+
+def test_long_captions_are_a_fitted_box(rendered):
+    """The LONG caption is an opaque, text-fitted box (BorderStyle=3) so a
+    line can never clip off-frame or stack into the furniture."""
+    settings, script, tts, out, manifest = rendered
+    ass = (out.parent / "render_long" / "captions.ass").read_text()
+    assert ",3,12,0,2," in ass, "captions use the fitted-box style"
+    assert ",1,4,2,2," not in ass, "not the SHORT outline style"
+
+
+def test_fillers_are_designed_backdrops_not_repeated_cards(rendered):
+    settings, script, tts, out, manifest = rendered
+    rdir = out.parent / "render_long"
+    backdrops = sorted(rdir.glob("backdrop_*.png"))
+    assert len(backdrops) >= 3, "a pool of designed backdrops is drawn"
+    assert not list(rdir.glob("card_*.png")), "the repeated mascot cards are gone"
+    fillers = [s for s in manifest["segments"] if s["kind"] == "filler"]
+    assert fillers, "the sample has filler beats"
+    # fillers are numbered sequentially so consecutive ones can never map to
+    # the same pooled backdrop (variant % pool differs for consecutive ints)
+    segs = manifest["segments"]
+    for a, b in zip(segs, segs[1:]):
+        if a["kind"] == "filler" and b["kind"] == "filler":
+            assert a["variant"] != b["variant"], "adjacent fillers must differ"
+
+
+def test_design_system_furniture_present_and_clear(rendered):
+    """Chapter stingers exist; the brand strip moved to the TOP so it can't
+    collide with the bottom caption band."""
+    settings, script, tts, out, manifest = rendered
+    names = {l["name"] for l in manifest["layers"]}
+    assert any(n.startswith("chapter_") for n in names), "chapter stingers ride the acts"
+    lt = next(l for l in manifest["layers"] if l["name"] == "lower_third")
+    H = manifest["resolution"][1]
+    assert lt["y"] < H * 0.25, "the brand strip sits at the top, clear of captions"
+
+
 def test_draft_reuses_cached_tts_and_is_smaller(rendered):
     settings, script, tts, out, manifest = rendered
     engine = TTSEngine(settings)
@@ -187,6 +239,32 @@ def test_screengrab_and_marker_chart_segments(rendered_doodles):
     charts = [s for s in segs if s["kind"] == "chart"]
     assert len(charts) >= 2
     assert all(c["source"] == "generated" for c in charts)
+
+
+def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
+    """§variety B2: an adjacent duplicate doodle reads as a stuck frame — the
+    renderer drops the repeat, so only one of two identical adjacent doodles
+    reaches the composite."""
+    from config import Settings
+
+    tmp = tmp_path_factory.mktemp("long_dupe_doodle")
+    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
+                        cache_dir=tmp / "cache", state_dir=tmp / "state",
+                        long_width=640, long_height=360, _env_file=None)
+    settings.ensure_runtime_dirs()
+    raw = ("EXMPL is down and forgotten. [DOODLE: shrug] I start reading here. "
+           "[DOODLE: shrug] Still reading, calmly. [CLIP: tumbleweed] "
+           "See you at the next filing.")
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    ws = settings.workspace_dir / "EXMPL" / "test"
+    ws.mkdir(parents=True)
+    tts = TTSEngine(settings).synthesize(script.narration, "long")
+    _, manifest = render_long(script, tts, ws, settings,
+                              content=ContentManager(settings))
+    layers = json.loads(manifest.read_text())["layers"]
+    shrug_layers = [l for l in layers if l["name"].startswith("doodle_")
+                    and "shrug" in l["name"]]
+    assert len(shrug_layers) == 1, "the back-to-back duplicate doodle was dropped"
 
 
 def test_doodle_and_scribble_overlays_present(rendered_doodles):

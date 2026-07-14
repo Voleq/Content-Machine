@@ -59,6 +59,22 @@ _ASSET_BLOCK_RE = re.compile(r"^---\s*ASSET:\s*([^-\s][^\n]*?)\s*---\s*$",
                              re.IGNORECASE | re.MULTILINE)
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
+# the Step-2 writing prompt emits a "=== HOOK OPTIONS ===" block, then the
+# narration begins after its "Chosen:" line — strip that preamble so the
+# hook menu is never spoken (symmetric to the ASSET PROMPTS trailer).
+_HOOK_MARKER_RE = re.compile(r"^\s*=+\s*HOOK OPTIONS\s*=+\s*$",
+                             re.IGNORECASE | re.MULTILINE)
+_CHOSEN_RE = re.compile(r"^\s*chosen\b[^\n]*$", re.IGNORECASE | re.MULTILINE)
+
+
+def _strip_hook_options(raw: str) -> str:
+    m = _HOOK_MARKER_RE.search(raw)
+    if not m:
+        return raw
+    chosen = _CHOSEN_RE.search(raw, m.end())
+    cut = chosen.end() if chosen else m.end()
+    return raw[cut:].lstrip("\n ")
+
 # metrics [CHART: metric] may reference: the history sheet + the price feed
 CHART_METRICS = tuple(HISTORY_FIELDS) + ("price",)
 
@@ -95,6 +111,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         raise LongScriptError("Empty message — expected the tagged LONG narration.")
 
     raw, asset_prompts = _split_asset_trailer(raw)
+    raw = _strip_hook_options(raw)
     if not raw.strip():
         raise LongScriptError("Narration is empty (only an asset-prompt trailer was sent).")
 
@@ -165,6 +182,7 @@ def validate_long_script(
     palette_keys: Iterable[str],
     workspace: Path,
     settings: Settings,
+    data_metrics: Iterable[str] | None = None,
 ) -> tuple[list[str], list[str]]:
     """Validate every payload against the palette / workspace / libraries.
 
@@ -186,6 +204,7 @@ def validate_long_script(
     from pipeline.memes import MemeLibrary
 
     palette = set(palette_keys)
+    present_metrics = set(data_metrics) if data_metrics is not None else None
     meme_lib = MemeLibrary(settings)
     doodle_lib = DoodleLibrary(settings)
     warnings: list[str] = []
@@ -226,6 +245,11 @@ def validate_long_script(
                 warnings.append(
                     f'chart metric "{e.payload}" unknown (use one of: '
                     f'{", ".join(CHART_METRICS)}) — skipped'
+                )
+            elif present_metrics is not None and e.payload not in present_metrics:
+                warnings.append(
+                    f'chart metric "{e.payload}" has no multi-year series in this '
+                    f"data — the chart will fall back to a filler card"
                 )
         elif e.type is TagType.DOODLE:
             if doodle_lib.match(e.payload) is None:

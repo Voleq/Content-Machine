@@ -444,6 +444,17 @@ class CompanyData(BaseModel):
     def history_row(self, field: str) -> list[float | None]:
         return self.history.get(field, [])
 
+    def available_chart_metrics(self) -> list[str]:
+        """History metrics that have a multi-year series the renderer can draw
+        trend bars from, plus 'price' (always drawable from the price feed).
+        The director may only feature [CHART: metric] / numbers from these."""
+        out = [
+            f for f in HISTORY_FIELDS
+            if sum(1 for v in self.history.get(f, []) if v is not None) >= 2
+        ]
+        out.append("price")
+        return out
+
     def metric(self, key: str):
         """Snapshot value first, then the Dashboard summary (by label) —
         lets the thumbnail / scripts read a number wherever it lives."""

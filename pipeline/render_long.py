@@ -10,18 +10,28 @@ Structure:
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
 
-Segment kinds (§editing — no static desk shots anywhere):
-  clip    ironic stock footage (content engine, palette-first)
-  img     real operations/product imagery, slow punch-in drift
-  meme    freeze-frame from the owned library + boom (first one gets the
-          record-scratch rewind)
-  chart   auto-generated channel-style chart
+MEDIA IS THE BACKGROUND (§editing): every segment is a full-frame visual
+with real motion — nothing is a static hold, nothing is a bare black frame.
+Stills are composed to fill the frame (cover-fit / blurred-fill) and get a
+randomized Ken Burns move; clips play their footage. Doodles/scribbles ride
+ON TOP as brief overlay cutaways, never as the main element of a held frame.
+
+Segment kinds:
+  clip    ironic stock footage (content engine, palette-first), real motion
+  img     real operations/product imagery, full-frame + Ken Burns
+  meme    freeze-frame from the owned library, composed full-frame + boom
+          (first one gets the record-scratch rewind)
+  chart   auto-generated channel-style chart, Ken Burns
   filing  the unnamed-source data screenshot, glitch flash on reveal
   asset   bespoke Claude-Design visual from assets/custom/
-  filler  branded backdrop with subtle per-variant looks
+  filler  a DESIGNED Dennis-palette backdrop (gradient / grid / signal card /
+          chapter word / dot field), families spread so no two adjacent
+          fillers share a look — never a bare black frame
 
-Every visual lands exactly on its anchor word; there is no verdict stamp
-— the video ends on whatever deadpan line the script wrote.
+Chapter stingers divide the acts; the branded strip + corner bug frame the
+top, captions sit in a fitted box band clear of the furniture. Every visual
+lands exactly on its anchor word; there is no verdict stamp — the video ends
+on whatever deadpan line the script wrote.
 """
 
 from __future__ import annotations
@@ -42,10 +52,12 @@ from pipeline.models import (
 )
 from pipeline.rasters import (
     build_karaoke_ass,
+    chapter_stinger,
+    cover_fill_frame,
     doodle_clip,
     frames_to_alpha_clip,
-    interstitial_card,
     intro_card,
+    long_backdrop,
     lower_third,
     scribble_callout_frames,
     simple_text,
@@ -60,16 +72,58 @@ from pipeline.render_common import (
     ffprobe_duration,
     run_ffmpeg,
 )
-from pipeline.timeline import build_long_timeline, plan_long_segments
+from pipeline.timeline import (
+    LONG_FILLER_LOOKS,
+    build_long_timeline,
+    plan_long_segments,
+)
 
 log = logging.getLogger(__name__)
 
-_FILLER_LOOKS = (
-    "null",                                     # plain backdrop
-    "eq=brightness=0.03:saturation=1.05",       # slightly lifted
-    "crop=iw*0.94:ih*0.94,scale={W}:{H}",       # subtle punch-in
-    "hflip",                                    # mirrored grain
-)
+# Ken Burns move vocabulary — every still gets one (randomized per segment)
+# so nothing is a static hold. Pans ride a 1.14x upscale; zooms animate the
+# crop window then rescale. All keep the WxH aspect exactly.
+_KB_MODES = ("in", "out", "left", "right", "up", "down")
+
+# chapter stinger titles (the LONG's designed section dividers) — rotated
+# across the runtime at act boundaries
+_CHAPTERS = [
+    ("01", "the setup"),
+    ("02", "what they do"),
+    ("03", "the numbers"),
+    ("04", "the industry"),
+    ("05", "bull vs bear"),
+    ("06", "the close"),
+]
+
+
+def _ken_burns_chain(i: int, seg_len: float, W: int, H: int, mode: str,
+                     tail: str, fps: int) -> str:
+    """A single still -> a moving WxH stream: input `[i:v]` upscaled 1.14x
+    then panned (time-varying crop x/y) or zoomed (`zoompan`) over `seg_len`,
+    ending in `tail` ([s{i}]). ffmpeg's `crop` only re-evaluates x/y per
+    frame, so zoom rides zoompan rather than an animated crop window."""
+    dur = max(seg_len, 0.1)
+    zw = int(W * 1.14) // 2 * 2
+    head = (f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={zw}:-2,")
+    if mode in ("in", "out"):
+        n = max(int(round(dur * fps)), 2)
+        if mode == "in":       # 1.00 -> 1.14
+            z = f"min(1.0+0.14*on/{n},1.14)"
+        else:                  # 1.14 -> 1.00
+            z = f"max(1.14-0.14*on/{n},1.0)"
+        body = (f"zoompan=z='{z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+                f":s={W}x{H}:fps={fps}")
+        return f"{head}{body}{tail}"
+    if mode == "right":
+        xy = f"x='(iw-ow)*t/{dur:.4f}':y='(ih-oh)/2'"
+    elif mode == "left":
+        xy = f"x='(iw-ow)*(1-t/{dur:.4f})':y='(ih-oh)/2'"
+    elif mode == "down":
+        xy = f"x='(iw-ow)/2':y='(ih-oh)*t/{dur:.4f}'"
+    else:  # "up"
+        xy = f"x='(iw-ow)/2':y='(ih-oh)*(1-t/{dur:.4f})'"
+    return f"{head}crop={W}:{H}:{xy}{tail}"
 
 
 def render_long(
@@ -115,128 +169,109 @@ def render_long(
     inputs: list[str] = []
     lines: list[str] = []
     seg_meta: list[dict] = []
-    filler_bg = settings.assets_dir / "backgrounds" / "dennis_bg_wide.png"
-    # composed interstitial cards — the LONG's cutaways are designed brand
-    # frames (a mascot scene + a deadpan line), never a plain backdrop
-    scenes_dir = settings.assets_dir / "brand" / "scenes"
 
-    def _scene(name: str) -> Path | None:
-        p = scenes_dir / f"{name}.png"
-        return p if p.exists() else None
+    # designed filler backdrops — the LONG's no-media fallback is a DESIGNED
+    # Dennis-palette frame, never a bare black one. The variety planner numbers
+    # fillers sequentially; here that index spreads across a POOL of distinct
+    # designed cards (each backdrop family drawn with several seeds), drawn
+    # once and cached, so a run of fillers reads as motion through a deck and
+    # no two adjacent fillers ever share a look.
+    backdrop_cache: dict[int, Path] = {}
 
-    # (scene, headline, kicker) — headline only for scenes with no baked
-    # hand-lettered label of their own
-    _INTERSTITIALS = [
-        ("staring-at-the-crash", "the chart does the talking", "NOISE OR SIGNAL?"),
-        ("at-the-desk-the-setup", "three a.m., again", "THE DEEP DIVE"),
-        ("whiteboard-let-me-explain", "", "THE NUMBERS"),
-        ("in-too-deep-underwater", "", "THE BALANCE SHEET"),
-        ("dumpster-fire-it-s-fine", "", "THE INDUSTRY"),
-        ("money-rain-easy-come", "", "THE HYPE"),
-        ("red-rain-it-s-raining", "", "THE TAPE"),
-        ("face-down-defeated", "five investment years in a row", "THE HABIT"),
-    ]
-    card_paths: list[Path] = []
-    for ci, (scene, head, kick) in enumerate(_INTERSTITIALS):
-        cp = rdir / f"card_{ci}.png"
-        if not cp.exists():
-            interstitial_card(settings, width=W, height=H, scene_path=_scene(scene),
-                              headline=head, kicker=kick).save(cp)
-        card_paths.append(cp)
+    def _backdrop_path(variant: int) -> Path:
+        slot = variant % LONG_FILLER_LOOKS
+        if slot not in backdrop_cache:
+            bp = rdir / f"backdrop_{slot}.png"
+            if not bp.exists():
+                _, chap = _CHAPTERS[slot % len(_CHAPTERS)]
+                long_backdrop(settings, W, H, slot, ticker=script.ticker,
+                              label=chap, seed=f"{script.ticker}|bg").save(bp)
+            backdrop_cache[slot] = bp
+        return backdrop_cache[slot]
+
+    # deterministic per-render Ken Burns phase so the move sequence differs
+    # per ticker but adjacent stills never share a direction
+    kb_off = int(json.dumps(script.ticker).encode().hex()[:6], 16) if script.ticker else 0
+
+    def _kb_mode(idx: int) -> str:
+        return _KB_MODES[(idx + kb_off) % len(_KB_MODES)]
 
     shot_cache: dict[str, Path] = {}
-    still_pad = f"scale={W}:{H}:force_original_aspect_ratio=decrease," \
-                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0x0b0d12"
+    meme_frame_cache: dict[str, Path] = {}
 
     for i, seg in enumerate(segments):
         seg_len = seg.length
-        # every chain ends with setsar=1 AFTER the per-variant look — a
-        # crop/scale look would otherwise re-derive a non-1:1 SAR and make
-        # the concat filter reject the stream
+        # every chain ends with setsar=1 AFTER the move — a crop/scale look
+        # would otherwise re-derive a non-1:1 SAR and make the concat filter
+        # reject the stream
         tail = f",setsar=1,format=yuv420p[s{i}]"
         value = seg.payload.get("value", "")
 
-        def _clip_chain(idx: int) -> str:
+        def _still_input(path: Path) -> None:
+            inputs.extend(["-loop", "1", "-framerate", str(settings.fps),
+                           "-t", f"{seg_len + 0.2:.4f}", "-i", str(path)])
+
+        def _clip_motion(idx: int) -> str:
+            # real footage motion, cover-scaled, with a gentle drift so even a
+            # short clone-padded clip keeps moving
             return (
                 f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-                f"trim=0:{seg_len:.4f},{still_pad}{tail}"
+                f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
             )
 
         if seg.kind == "clip":
             visual = content.resolve_clip(value, overrides.get(value, 0))
             inputs += ["-i", str(visual.path)]
-            chain = (
-                f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-                f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
-            )
+            chain = _clip_motion(i)
         elif seg.kind == "filing":
             if value not in shot_cache:
                 shot_cache[value] = prepare_screenshot(
                     workspace / value, rdir / f"shot_{Path(value).stem}.png", settings
                 )
             visual = None
-            inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(shot_cache[value])]
-            chain = (
-                f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                f"scale={W}:{H}{tail}"
-            )
+            _still_input(shot_cache[value])
+            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
         elif seg.kind == "screengrab":
-            # operator-supplied capture — image (pad-fit) or short clip
+            # operator-supplied capture — image (full-frame) or short clip
             visual = content.resolve_screengrab(value)
             if visual.is_video:
                 inputs += ["-i", str(visual.path)]
-                chain = _clip_chain(i)
+                chain = _clip_motion(i)
             else:
-                inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                           "-t", f"{seg_len + 0.2:.4f}", "-i", str(visual.path)]
-                chain = (f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                         f"{still_pad}{tail}")
+                _still_input(visual.path)
+                chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
                     value, kind="img", website=website,
                     choice=overrides.get(value, 0),
                 )
+                still = visual.path
             elif seg.kind == "chart":
                 visual = content.resolve_chart(
                     value, ticker=script.ticker, company_data=company_data,
                     style=seg.payload.get("style", "clean"),
                 )
+                still = visual.path
             elif seg.kind == "asset":
                 visual = content.resolve_asset(value)
-            else:
+                still = visual.path
+            else:  # meme — compose the freeze-frame full-frame so it never
+                   # sits letterboxed on black, then Ken Burns over it
                 visual = content.resolve_meme(value)
-            inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(visual.path)]
-            if seg.kind == "img":
-                # slow punch-in drift so real imagery never sits static
-                chain = (
-                    f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                    f"scale={int(W * 1.08) // 2 * 2}:-2,"
-                    f"crop={W}:{H}:x='(iw-ow)*t/{max(seg_len, 0.1):.4f}':y='(ih-oh)/2'"
-                    f"{tail}"
-                )
-            else:
-                chain = (
-                    f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                    f"{still_pad}{tail}"
-                )
-        else:  # filler -> a composed interstitial brand card, slow zoom
+                if visual.key not in meme_frame_cache:
+                    dest = rdir / f"meme_frame_{len(meme_frame_cache)}.png"
+                    cover_fill_frame(visual.path, W, H, keep_min=1.1).save(dest)
+                    meme_frame_cache[visual.key] = dest
+                still = meme_frame_cache[visual.key]
+            _still_input(still)
+            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
+        else:  # filler -> a DESIGNED backdrop, Ken Burns
             visual = None
             variant = seg.payload.get("variant", 0)
-            card = card_paths[variant % len(card_paths)]
-            zw = int(W * 1.06) // 2 * 2
-            inputs += ["-loop", "1", "-framerate", str(settings.fps),
-                       "-t", f"{seg_len + 0.2:.4f}", "-i", str(card)]
-            chain = (
-                f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-                f"scale={zw}:-2,"
-                f"crop={W}:{H}:x='(iw-ow)*t/{max(seg_len, 0.1):.4f}':y='(ih-oh)/2'"
-                f"{tail}"
-            )
+            _still_input(_backdrop_path(variant))
+            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
         meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
         if value:
             meta["value"] = value
@@ -260,16 +295,38 @@ def render_long(
 
     # composed opening title card (a real open, not a lone mascot on a flat
     # backdrop) — full-frame over the first beat, fading out on its own
+    scenes_dir = settings.assets_dir / "brand" / "scenes"
+    intro_scene = scenes_dir / "at-the-desk-the-setup.png"
     intro_dur = min(2.6, duration * 0.5)
     intro_path = rdir / "intro_card.png"
     intro_card(settings, script.ticker, settings.brand_tagline.lower(),
                width=W, height=H,
-               scene_path=(scenes_dir / "at-the-desk-the-setup.png"
-                           if (scenes_dir / "at-the-desk-the-setup.png").exists()
-                           else None)).save(intro_path)
+               scene_path=intro_scene if intro_scene.exists() else None).save(intro_path)
     layers.append(OverlayLayer(
         path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur, name="intro_card",
     ))
+
+    # chapter stingers — the design system's section dividers, landing on a
+    # real cut near each act boundary, brief with a fade (the intro covers
+    # act one, so these run from act two)
+    seg_starts = [s.start for s in segments]
+    n_ch = len(_CHAPTERS)
+    used_ch: set[float] = set()
+    for k in range(1, n_ch):
+        target = duration * k / n_ch
+        t = next((s for s in seg_starts
+                  if s >= max(target, intro_dur) and s not in used_ch), None)
+        if t is None or t < 0.6 or t > duration - 1.2:
+            continue
+        used_ch.add(t)
+        num, title = _CHAPTERS[k]
+        cs_path = rdir / f"chapter_{k}.png"
+        if not cs_path.exists():
+            chapter_stinger(settings, num, title, width=W, height=H).save(cs_path)
+        layers.append(OverlayLayer(
+            path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 0.9, duration),
+            fade_in=0.2, name=f"chapter_{k}",
+        ))
 
     # glitch flash on every filing reveal (pre-rendered overlay)
     glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
@@ -291,11 +348,18 @@ def render_long(
     # [DOODLE] boils in a corner, [SCRIBBLE] draws a mark + target callout
     doodle_slots = [(px(1180), px(140)), (px(120), px(150)),
                     (px(1180), px(560)), (px(120), px(560))]
+    prev_doodle_key: str | None = None
     for k, c in enumerate(doodle_cues):
         visual = content.resolve_doodle(c.payload["value"])
         if visual is None:
             log.warning("doodle %r not resolved — skipped", c.payload["value"])
             continue
+        # the same doodle can't ride two beats in a row (§variety) — a repeat
+        # reads as a stuck frame; drop the adjacent duplicate
+        if visual.key == prev_doodle_key:
+            log.warning("doodle %r repeats back-to-back — skipped", visual.key)
+            continue
+        prev_doodle_key = visual.key
         hold = float(c.payload.get("hold", 2.0))
         clip, (cw, ch) = doodle_clip(
             visual.path, rdir / f"doodle_{k}.mov",
@@ -326,7 +390,7 @@ def render_long(
             is_video=True, hold=True, name=f"scribble_{k}",
         ))
 
-    # corner bug: ticker + as-of date (the as-of stays visible; no "audit")
+    # corner bug: ticker + as-of date (top-right; the as-of stays visible)
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
     bug = simple_text(settings, bug_text, font_size=px(34),
                       fill=(255, 255, 255, 200), stroke_width=2)
@@ -337,13 +401,14 @@ def render_long(
         t_start=0.0, t_end=duration, name="corner_bug",
     ))
 
-    # branded lower-third: ticker + the channel tagline (persistent, bottom-left)
+    # branded strip: ticker + channel tagline. Persistent, TOP-left — moved
+    # off the bottom so it can never clip or stack with the caption band.
     lt = lower_third(settings, f"${script.ticker}", settings.brand_tagline.lower(),
                      width=px(560), font_size=px(34))
     lt_path = rdir / "lower_third.png"
     lt.save(lt_path)
     layers.append(OverlayLayer(
-        path=lt_path, x=px(36), y=H - lt.height - px(92),
+        path=lt_path, x=px(36), y=px(30),
         t_start=0.0, t_end=duration, name="lower_third",
     ))
 
@@ -352,17 +417,20 @@ def render_long(
     disc_path = rdir / "disclaimer.png"
     disc.save(disc_path)
     layers.append(OverlayLayer(
-        path=disc_path, x=px(36), y=H - px(52),
+        path=disc_path, x=px(36), y=H - px(44),
         t_start=0.0, t_end=duration, name="disclaimer",
     ))
 
     # ---------------------------------------------------------- captions
-    # kept narrow (max ~22 chars) so a 9:16 center crop (repurpose)
-    # retains them fully
+    # A fitted opaque box per line (box=True) sized to its own text, sitting
+    # in a dedicated bottom band CLEAR of the disclaimer and the top strip —
+    # so a LONG caption line ("...three a.m., again...") can never clip
+    # off-frame or overlap the furniture. Kept narrow so a 9:16 centre crop
+    # (repurpose) retains it.
     ass_path = rdir / "captions.ass"
     ass_path.write_text(build_karaoke_ass(
-        tts.words, play_res=(W, H), font_size=px(52), margin_v=px(84),
-        max_words=4, max_chars=22, duration=duration,
+        tts.words, play_res=(W, H), font_size=px(50), margin_v=px(150),
+        max_words=4, max_chars=24, duration=duration, box=True,
     ))
 
     # ------------------------------------------------------------- audio
@@ -422,6 +490,11 @@ def render_long(
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],
         "segments": seg_meta,
+        "layers": [
+            {"name": l.name, "t_start": l.t_start, "t_end": l.t_end,
+             "x": l.x, "y": l.y}
+            for l in layers
+        ],
         "segment_warnings": seg_warnings,
         "attributions": attributions,
         "filter_script": str(out_path.with_suffix(".filter.txt")),

@@ -48,26 +48,14 @@ _QUOTE_MAP = str.maketrans({
 _TRAILING_COMMA_RE = re.compile(r",(\s*[}\]])")
 
 
-def _extract_json_block(raw: str) -> str:
-    """Pull the JSON object out of fences/prose. Raises if none found."""
-    raw = raw.strip()
-    if not raw:
-        raise ScriptParseError("Empty message — expected the SHORT script JSON.")
-
-    fenced = _FENCE_RE.search(raw)
-    if fenced:
-        raw = fenced.group(1).strip()
-
-    start = raw.find("{")
-    if start == -1:
-        raise ScriptParseError("No JSON object found in the message.")
-
-    # balanced-brace scan, string-aware
+def _balanced_objects(raw: str) -> list[str]:
+    """Every top-level balanced {...} span, string-aware."""
+    spans: list[str] = []
     depth = 0
+    start = -1
     in_string = False
     escape = False
-    for i in range(start, len(raw)):
-        ch = raw[i]
+    for i, ch in enumerate(raw):
         if in_string:
             if escape:
                 escape = False
@@ -79,12 +67,39 @@ def _extract_json_block(raw: str) -> str:
         if ch == '"':
             in_string = True
         elif ch == "{":
+            if depth == 0:
+                start = i
             depth += 1
-        elif ch == "}":
+        elif ch == "}" and depth > 0:
             depth -= 1
             if depth == 0:
-                return raw[start : i + 1]
-    raise ScriptParseError("JSON object is not closed (unbalanced braces).")
+                spans.append(raw[start : i + 1])
+    return spans
+
+
+def _extract_json_block(raw: str) -> str:
+    """Pull the SHORT script object out of fences/prose.
+
+    The SHORT prompt asks the model to show its work IN ORDER (angle +
+    numbers, hook options, script, tags) and THEN emit the JSON, so a
+    preamble — even one with stray braces — may precede the real object.
+    Prefer the last balanced object that carries the script's `"format"`
+    key; fall back to the first balanced object (single-object case)."""
+    raw = raw.strip()
+    if not raw:
+        raise ScriptParseError("Empty message — expected the SHORT script JSON.")
+
+    fenced = _FENCE_RE.search(raw)
+    if fenced:
+        raw = fenced.group(1).strip()
+
+    objects = _balanced_objects(raw)
+    if not objects:
+        if "{" not in raw:
+            raise ScriptParseError("No JSON object found in the message.")
+        raise ScriptParseError("JSON object is not closed (unbalanced braces).")
+    tagged = [o for o in objects if '"format"' in o]
+    return (tagged[-1] if tagged else objects[0])
 
 
 def _loads_tolerant(block: str) -> dict:

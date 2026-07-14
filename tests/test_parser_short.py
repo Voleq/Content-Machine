@@ -194,9 +194,19 @@ def test_warning_on_thin_history(short_valid_json, settings):
     assert any("fewer than 3 years" in w for w in warnings)
 
 
-def test_braces_inside_strings_survive_extraction(settings, short_valid_json):
-    raw = "Note: JSON follows. {not the object}... just kidding:\n" + short_valid_json
-    # the first '{' opens a fake object; the extractor must still find a
-    # balanced block — the fake one — and fail loudly on schema, not crash
+def test_show_your_work_preamble_before_json(settings, short_valid_json):
+    """The restructured SHORT prompt emits the angle/hooks/tags reasoning as
+    prose FIRST — even with stray braces — then the JSON. The extractor must
+    skip the prose (and any fake object) and find the real script object."""
+    raw = (
+        "ANGLE & NUMBERS: a plateau in a costume {this brace is not the object}.\n"
+        "HOOK OPTIONS:\n1. \"x\"\n2. \"y\" ★\n"
+        "Here is the script object:\n" + short_valid_json
+    )
+    script, _ = parse_short_script(raw, settings)
+    assert script.ticker == "EXMPL" and script.format == "short"
+
+
+def test_unclosed_json_still_rejected(settings):
     with pytest.raises(ScriptParseError):
-        parse_short_script(raw, settings)
+        parse_short_script('prose then {"ticker": "EXMPL", "format": "short"', settings)
