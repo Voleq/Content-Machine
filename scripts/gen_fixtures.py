@@ -5,7 +5,9 @@ Run from the repo root:  .venv/bin/python scripts/gen_fixtures.py
 Produces:
   fixtures/company_data/dennis_data.xlsx   (the v3 export, filled for EXMPL:
                                             Snapshot · History · Dashboard ·
-                                            Valuation · Peers)
+                                            Valuation [+ WACC/reverse-DCF] ·
+                                            Peers [+ self-scoring percentiles] ·
+                                            News)
   fixtures/company_data/dennis_data.csv    (CSV flavour — snapshot only)
   fixtures/tts/alignment_sample.json       (ElevenLabs-style char alignment)
   fixtures/prices/EXMPL.json               (deterministic price history)
@@ -16,6 +18,7 @@ v3 workbook the operator refreshes — it is committed as-is, not built here.
 
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import sys
 from pathlib import Path
@@ -151,6 +154,70 @@ EXMPL_PEERS = [
     ("CargoCloud Inc", 19.0, 1_800_000_000, NA, NA, 3.2, 6.0, 58.0, -22.0, NA, 2.6),
 ]
 
+# --- Peers · self-scoring percentile block (BELOW the auto table) -------------
+# A DISTINCT second block: the subject's percentile within each cleaned peer
+# column. Percentile is a 0-1 fraction; "Higher is" carries the polarity.
+EXMPL_PEER_PCTL_HEADER = ["Metric", "Subject", "Peer median", "Percentile",
+                          "Higher is", "Read"]
+_WORSE = "worse (expensive/levered)"
+_BETTER = "better"
+EXMPL_PEER_PCTL = [
+    # metric, subject, peer median, percentile (0-1), higher-is, read
+    ("P/E (TTM)", 34.0, 37.5, 0.42, _WORSE, "mid-pack"),
+    ("EV/EBITDA", 22.0, 24.0, 0.40, _WORSE, "mid-pack"),
+    ("P/S (TTM)", 9.1, 5.4, 0.85, _WORSE, "expensive vs peers"),
+    ("Rev growth % (3Y CAGR)", 18.0, 12.0, 0.80, _BETTER, "strong vs peers"),
+    ("Gross margin %", 71.0, 62.0, 0.86, _BETTER, "strong vs peers"),
+    ("Net margin %", 6.0, -4.0, 0.90, _BETTER, "strong vs peers"),
+    ("FCF yield %", 2.1, 1.2, 0.75, _BETTER, "strong vs peers"),
+    ("Net debt / EBITDA", 0.4, 1.8, 0.45, _WORSE, "mid-pack"),
+]
+
+# --- Valuation · auto WACC (CAPM) + reverse-DCF block -------------------------
+# `None` value = a section/band title (col A only). The bare "WACC" row is the
+# one the reader captures; the band title "WACC (auto — CAPM)" and the
+# "WACC −1%"/"WACC +1%" sensitivity rows are decoys it must NOT match. Labels
+# carry a Unicode minus (U+2212) exactly as the add-in emits them.
+MINUS = "−"
+EXMPL_VAL_WACC_DCF = [
+    ("WACC (auto — CAPM)", None),
+    ("Risk-free rate (10Y)", 0.043),
+    ("Equity risk premium", 0.05),
+    ("Beta (5y)", 1.6),
+    ("Cost of equity (Ke)", 0.123),
+    ("WACC", 0.092),
+    (None, None),
+    ("Reverse DCF — growth priced into today's price", None),
+    (f"Implied growth  (WACC {MINUS} FCF/EV)", 0.061),
+    ("Historical FCF CAGR (4y)", 0.045),
+    ("Revenue CAGR (4y)", 0.12),
+    (f"Priced-for {MINUS} delivered (FCF)", 0.016),
+    ("Read", "market prices in MORE growth than history delivered"),
+    (None, None),
+    ("Implied growth sensitivity (WACC ±1%)", None),
+    (f"WACC {MINUS}1%", 0.051),
+    ("WACC base", 0.061),
+    ("WACC +1%", 0.071),
+]
+
+# --- News · recent headlines (Date/Headline/Source/URL) -----------------------
+# `None` = a blank spill row; NA in the headline = an unresolved row. Both are
+# skipped on read. Sources are news outlets (Reuters/Bloomberg/AP/CNBC) — never
+# a data-terminal brand.
+EXMPL_NEWS_HEADER = ["Date", "Headline", "Source", "URL"]
+EXMPL_NEWS = [
+    (_dt.date(2026, 7, 14), "Example Corp posts record quarterly revenue, tops estimates",
+     "Reuters", "https://example.com/news/record-revenue"),
+    (_dt.date(2026, 7, 12), "Regulators open probe into logistics-software pricing",
+     "Bloomberg", "https://example.com/news/pricing-probe"),
+    None,  # blank spill row — must be skipped
+    (_dt.date(2026, 7, 10), "Example Corp unveils next-gen routing platform at expo",
+     "Associated Press", "https://example.com/news/routing-platform"),
+    (_dt.date(2026, 7, 9), NA, "CNBC", "https://example.com/news/na-headline"),  # NA headline — skipped
+    (_dt.date(2026, 7, 8), "CEO outlines margin recovery and cost cuts in interview",
+     "CNBC", "https://example.com/news/ceo-interview"),
+]
+
 
 def build_workbook() -> Workbook:
     header_font = Font(bold=True)
@@ -217,6 +284,13 @@ def build_workbook() -> Workbook:
     for i, sc in enumerate(EXMPL_VAL_SCENARIOS):
         for j, v in enumerate(sc):
             vs.cell(row=8 + i, column=1 + j, value=v)
+    # WACC (CAPM) + reverse-DCF block, one blank row below the scenarios
+    r0 = 8 + len(EXMPL_VAL_SCENARIOS) + 1
+    for i, (label, value) in enumerate(EXMPL_VAL_WACC_DCF):
+        if label is not None:
+            vs.cell(row=r0 + i, column=1, value=label)
+        if value is not None:
+            vs.cell(row=r0 + i, column=2, value=value)
 
     # ---- Peers
     ps = wb.create_sheet("Peers")
@@ -226,6 +300,37 @@ def build_workbook() -> Workbook:
     for i, peer in enumerate(EXMPL_PEERS):
         for j, v in enumerate(peer):
             ps.cell(row=5 + i, column=1 + j, value=v)
+    # self-scoring percentile block — a DISTINCT block beneath the auto table,
+    # separated by one blank row so _read_peers stops before it.
+    pp_title = 5 + len(EXMPL_PEERS) + 1
+    ps.cell(row=pp_title, column=1,
+            value="DENNIS — self-scoring vs peers (percentile of THIS ticker in each peer column)")
+    ps.cell(row=pp_title + 1, column=1,
+            value="PERCENTRANK.INC of the subject within the cleaned peer columns above. "
+                  "'Read' bakes in direction so a glance tells you cheap/expensive and strong/weak.")
+    pp_hdr = pp_title + 2
+    for j, h in enumerate(EXMPL_PEER_PCTL_HEADER, 1):
+        ps.cell(row=pp_hdr, column=j, value=h).font = header_font
+    for i, mrow in enumerate(EXMPL_PEER_PCTL):
+        for j, v in enumerate(mrow):
+            ps.cell(row=pp_hdr + 1 + i, column=1 + j, value=v)
+    # a footnote after a blank row — the reader must stop at the blank metric
+    foot = pp_hdr + 1 + len(EXMPL_PEER_PCTL) + 1
+    ps.cell(row=foot, column=1,
+            value="Peer 3Y growth from revenue with date params; blank on refresh is harmless.")
+
+    # ---- News
+    ns = wb.create_sheet("News")
+    ns["A1"] = "DENNIS — recent news & key developments (auto)"
+    ns["A2"] = ("Latest headlines (Date / Headline / Source / URL), spilled by the add-in. "
+                "A news outlet as Source is fine — never a data-terminal brand.")
+    for j, h in enumerate(EXMPL_NEWS_HEADER, 1):
+        ns.cell(row=4, column=j, value=h).font = header_font
+    for i, item in enumerate(EXMPL_NEWS):
+        if item is None:
+            continue  # leave a genuinely blank spill row (exercises the skip)
+        for j, v in enumerate(item):
+            ns.cell(row=5 + i, column=1 + j, value=v)
 
     return wb
 

@@ -43,6 +43,83 @@ def test_dashboard_valuation_peers_surfaced(workspace):
     assert data.has_peers and data.peers[0]["name"] == "Freightwave Systems Inc"
 
 
+def test_news_parsing_skips_blanks_and_coerces_dates(workspace):
+    data = load_company_data(workspace)
+    # the blank spill row AND the NA-headline row are skipped
+    assert len(data.news) == 4
+    first = data.news[0]
+    assert set(first) == {"date", "headline", "source", "url"}
+    # real dates coerce to ISO day strings
+    assert first["date"] == "2026-07-14"
+    assert first["headline"].startswith("Example Corp posts record")
+    assert first["url"] == "https://example.com/news/record-revenue"
+    # every surviving row has a non-empty headline
+    assert all(n["headline"] for n in data.news)
+    # a news outlet as Source is fine; a data-terminal brand never reaches a field
+    assert [n["source"] for n in data.news] == [
+        "Reuters", "Bloomberg", "Associated Press", "CNBC",
+    ]
+    blob = " ".join(str(v) for n in data.news for v in n.values()).lower()
+    for brand in ("refinitiv", "lseg", "capital iq"):
+        assert brand not in blob
+
+
+def test_peer_percentiles_parsing_and_block_separation(workspace):
+    data = load_company_data(workspace)
+    pcts = data.peer_percentiles
+    assert len(pcts) == 8
+    by_metric = {p["metric"]: p for p in pcts}
+    # values + a 0-1 percentile fraction + direction + read
+    pe = by_metric["P/E (TTM)"]
+    assert pe["subject"] == 34.0 and pe["median"] == 37.5
+    assert pe["percentile"] == 0.42 and pe["direction"] == "worse"
+    assert pe["read"] == "mid-pack"
+    rg = by_metric["Rev growth % (3Y CAGR)"]
+    assert rg["direction"] == "better" and rg["read"] == "strong vs peers"
+    assert rg["percentile"] == 0.80
+    assert by_metric["P/S (TTM)"]["read"] == "expensive vs peers"
+    assert all(0.0 <= p["percentile"] <= 1.0 for p in pcts)
+    assert {p["direction"] for p in pcts} == {"better", "worse"}
+    # the two blocks are DISTINCT: the auto peer table did not consume the
+    # percentile rows, and the percentile reader did not grab peer names
+    assert [p["name"] for p in data.peers] == [
+        "Freightwave Systems Inc", "DepotOps Corp",
+        "RouteLogic Holdings", "CargoCloud Inc",
+    ]
+    assert {p["name"] for p in data.peers}.isdisjoint(by_metric)
+
+
+def test_valuation_wacc_and_reverse_dcf_keys(workspace):
+    data = load_company_data(workspace)
+    val = data.valuation
+    # the bare 'WACC' row — NOT the 'WACC (auto — CAPM)' band title nor the
+    # 'WACC −1%' / 'WACC +1%' sensitivity rows (Unicode-minus labels)
+    assert val["wacc"] == 0.092
+    # the reverse-DCF row, not the later 'Implied growth sensitivity …' title
+    assert val["implied_growth"] == 0.061
+    assert val["hist_fcf_cagr"] == 0.045
+    assert val["rev_cagr"] == 0.12
+    assert val["priced_vs_delivered"] == 0.016
+    # a free-text verdict, kept verbatim as a string
+    assert val["reverse_dcf_read"] == "market prices in MORE growth than history delivered"
+    # the existing bear/base/bull scenario reader is untouched
+    assert len(val["scenarios"]) == 3
+
+
+def test_missing_news_sheet_degrades(workspace):
+    # dropping the OPTIONAL News sheet must degrade (news == []), never raise
+    from openpyxl import load_workbook
+
+    xlsx = workspace / "dennis_data.xlsx"
+    wb = load_workbook(xlsx)
+    wb.remove(wb["News"])
+    wb.save(xlsx)
+    data = load_company_data(workspace)
+    assert data.news == []
+    # the other optional blocks are unaffected
+    assert data.has_peers and len(data.peer_percentiles) == 8
+
+
 def test_prompt_block_carries_history_and_dashboard(workspace):
     data = load_company_data(workspace)
     block = data.as_prompt_block()
@@ -60,6 +137,7 @@ def test_csv_is_snapshot_only(workspace, fixtures_dir):
     data = load_company_data(workspace)
     assert data.get("ticker") == "EXMPL"
     assert not data.has_history, "CSV carries no history sheet"
+    assert data.news == [] and data.peer_percentiles == []
 
 
 def test_missing_export_raises(settings):
