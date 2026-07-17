@@ -248,6 +248,9 @@ class LongScript(BaseModel):
     events: list[TagEvent] = Field(default_factory=list)
     # slug -> the self-contained Claude Design prompt the director appended
     asset_prompts: dict[str, str] = Field(default_factory=dict)
+    # the `=== CHAPTERS ===` trailer (mm:ss Title lines) — YouTube chapter
+    # markers the operator pastes; metadata only, split off so it's never spoken
+    chapters: str = ""
 
     @field_validator("ticker")
     @classmethod
@@ -638,7 +641,8 @@ class CostReport(BaseModel):
     filing_overlays: int = 0
     meme_count: int = 0
     meme_cap: int = 2
-    est_render_minutes: float = 0.0
+    est_runtime_min: float = 0.0   # estimated finished VIDEO length (min)
+    est_render_minutes: float = 0.0  # estimated ffmpeg processing time (min)
     mtd_spend_usd: float = 0.0
     monthly_cap_usd: float = 0.0
     warnings: list[str] = Field(default_factory=list)
@@ -670,7 +674,7 @@ class CostReport(BaseModel):
         head += "ready to render" if self.approvable else "BLOCKED"
         lines.append(head)
 
-        tts = f"Audio: {self.words} words / {self.chars} chars"
+        tts = f"Audio: {self.words} words / {self.chars} chars / ~{self.est_runtime_min:.0f} min video"
         tts += "  (cached — $0.00 TTS)" if self.tts_cached else f"  (~${self.est_tts_usd:.2f} TTS)"
         lines.append(tts)
 

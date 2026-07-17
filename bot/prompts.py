@@ -75,6 +75,85 @@ def chart_metrics_line(data: CompanyData) -> str:
     return ", ".join(data.available_chart_metrics())
 
 
+def _pct(v) -> str:
+    """A stored fraction (0.074) rendered as a percent (7.4%); n/a when absent."""
+    return f"{v * 100:.1f}%" if isinstance(v, (int, float)) else "n/a"
+
+
+def _ordinal(n: int) -> str:
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def valuation_data_block(data: CompanyData) -> str:
+    """The reverse-DCF figures for the MANDATORY valuation beat — a perpetuity
+    gut-check ("priced for X, has delivered Y"), never a fair value. Exact
+    numbers so the writer can cite them instead of guessing."""
+    v = data.valuation or {}
+    keys = ("implied_growth", "wacc", "hist_fcf_cagr", "rev_cagr", "priced_vs_delivered")
+    if not any(v.get(k) is not None for k in keys) and not v.get("reverse_dcf_read"):
+        return ("(no reverse-DCF in this export — keep the valuation beat qualitative: "
+                "what the current price assumes vs what the business has delivered)")
+    lines = [
+        'Reverse-DCF — a perpetuity gut-check ("priced for X, has delivered Y"), NOT a fair value:',
+        f"  Implied growth priced into today's price (perpetual FCF growth): {_pct(v.get('implied_growth'))}",
+        f"  Discount rate used (WACC): {_pct(v.get('wacc'))}",
+        f"  Historical FCF CAGR, 4y — what it has ACTUALLY delivered: {_pct(v.get('hist_fcf_cagr'))}",
+        f"  Revenue CAGR, 4y: {_pct(v.get('rev_cagr'))}",
+        f"  Priced-for minus delivered (FCF), in growth points: {_pct(v.get('priced_vs_delivered'))}",
+    ]
+    read = v.get("reverse_dcf_read")
+    if read:
+        lines.append(f"  Read (verdict): {read}")
+    return "\n".join(lines)
+
+
+def peer_percentiles_block(data: CompanyData) -> str:
+    """Where THIS ticker ranks within its peer set, metric by metric — the
+    "90th percentile on price, 20th on margins" read the valuation beat folds
+    in. `percentile` is a 0–1 fraction; `direction` says which way is good."""
+    pcts = data.peer_percentiles or []
+    if not pcts:
+        return "(no peer-percentile block in this export)"
+    lines: list[str] = []
+    for p in pcts:
+        metric = p.get("metric")
+        if not metric:
+            continue
+        pct = p.get("percentile")
+        rank = f"{_ordinal(round(pct * 100))} pctile" if isinstance(pct, (int, float)) else "pctile n/a"
+        subj, med = p.get("subject"), p.get("median")
+        detail = f"subject {subj} vs peer median {med}" if subj is not None and med is not None else ""
+        direction = p.get("direction")
+        higher = f"higher is {direction}" if direction else ""
+        read = p.get("read")
+        bits = [b for b in (rank, detail, higher, read) if b]
+        lines.append(f"  {metric}: " + " — ".join(bits))
+    return "\n".join(lines) if lines else "(no peer-percentile block in this export)"
+
+
+def filing_quotes_block(data: CompanyData) -> str:
+    """Auto-extracted filing quotes (task 5), surfaced only when present — the
+    receipts the smoking-gun walk cites. Degrades to the manual [SHOW FILING]
+    flow on the uploaded screenshots when there are none."""
+    quotes = getattr(data, "filing_quotes", None) or []
+    if not quotes:
+        return ("(none auto-extracted — the smoking-gun walk uses [SHOW FILING] on the "
+                "uploaded filing screenshots below)")
+    lines: list[str] = []
+    for q in quotes:
+        if isinstance(q, dict):
+            text = q.get("quote") or q.get("text") or ""
+            src = q.get("source") or q.get("label") or ""
+            lines.append(f'  - "{text}"' + (f" ({src})" if src else ""))
+        else:
+            lines.append(f"  - {q}")
+    return "\n".join(lines)
+
+
 def screenshots_line(workspace: Path) -> str:
     shots = list_screenshots(workspace)
     return ", ".join(shots) if shots else "(none uploaded — upload filing PNGs first)"
@@ -117,6 +196,9 @@ def fill_prompt(
         r["{{broll_palette}}"] = broll_catalog()
     elif fmt == "long_angle":
         r["{{available_screenshots}}"] = screenshots_line(workspace)
+        r["{{valuation_data}}"] = valuation_data_block(data)
+        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(data)
     elif fmt == "long_write":
         r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
         r["{{voice_bible}}"] = voice_bible(settings)
@@ -124,6 +206,9 @@ def fill_prompt(
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
         r["{{available_screenshots}}"] = screenshots_line(workspace)
+        r["{{valuation_data}}"] = valuation_data_block(data)
+        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(data)
     else:
         raise ValueError(f"unknown prompt fmt {fmt!r}")
 

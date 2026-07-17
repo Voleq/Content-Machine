@@ -82,7 +82,11 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------- character budgets
     short_max_chars: int = Field(default=800, alias="SHORT_MAX_CHARS")
-    long_max_chars: int = Field(default=22000, alias="LONG_MAX_CHARS")
+    # LONG length is complexity-driven, not fixed: a clean thesis is a few
+    # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
+    # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
+    # target — the writer assembles chapters and runtime falls out of that.
+    long_max_chars: int = Field(default=36000, alias="LONG_MAX_CHARS")
     # LONG scripts are chunked by paragraph to stay under request limits.
     tts_chunk_chars: int = 4000
 

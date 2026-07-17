@@ -122,6 +122,13 @@ def estimate_render_minutes(fmt: str, words: int, wps: float) -> float:
     return round(duration_min * _RENDER_FACTOR[fmt] + _RENDER_BASE_MIN[fmt], 1)
 
 
+def estimate_runtime_minutes(words: int, wps: float) -> float:
+    """Estimated finished VIDEO length (minutes) at deadpan pace. LONG length
+    is complexity-driven, so this rides on the actual word count — a 40-min
+    cut is ~2.5x the TTS spend of a 15-min one, and the report shows both."""
+    return round(words / wps / 60.0, 1)
+
+
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
 
@@ -153,6 +160,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         annotation_note="\n".join(notes),
         meme_count=1 if script.meme else 0,
         meme_cap=settings.meme_max_per_long,
+        est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
@@ -191,6 +199,7 @@ def build_long_report(
         filing_overlays=filing_count,
         meme_count=script.meme_count(),
         meme_cap=settings.meme_max_per_long,
+        est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_long),
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,

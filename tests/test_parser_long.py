@@ -44,6 +44,48 @@ def test_hook_options_preamble_is_stripped(settings):
     assert [e.payload for e in script.events_of(TagType.CLIP)] == ["tumbleweed"]
 
 
+def test_chapters_trailer_split_and_stored(settings):
+    """The `=== CHAPTERS ===` trailer is YouTube metadata — split off like the
+    ASSET PROMPTS trailer so it is never spoken, and stored on the script."""
+    raw = (
+        "Down sixty percent, and nobody left to sell. [CLIP: tumbleweed] "
+        "Which is when I start reading. See you at the next filing.\n\n"
+        "=== CHAPTERS ===\n"
+        "00:00 Cold open — nobody left to sell\n"
+        "02:30 What they actually do\n"
+        "18:40 What you're paying for\n"
+    )
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert "CHAPTERS" not in script.narration
+    assert "00:00" not in script.narration and "Cold open" not in script.narration
+    assert script.narration.startswith("Down sixty percent")
+    assert "00:00 Cold open" in script.chapters
+    assert "What you're paying for" in script.chapters
+    assert [e.payload for e in script.events_of(TagType.CLIP)] == ["tumbleweed"]
+
+
+def test_chapters_and_asset_trailers_coexist(settings):
+    """Chapters sit before the asset trailer; both are split off, neither is
+    spoken, and each is captured on the script."""
+    raw = (
+        "Words and a diagram. [ASSET: revenue-flywheel] More words to speak.\n\n"
+        "=== CHAPTERS ===\n"
+        "00:00 Cold open\n"
+        "05:00 The flywheel\n\n"
+        "=== ASSET PROMPTS ===\n"
+        "--- ASSET: revenue-flywheel ---\n"
+        "A 16:9 diagram of the revenue flywheel on a dark background.\n"
+    )
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert "CHAPTERS" not in script.narration and "ASSET PROMPTS" not in script.narration
+    assert "flywheel" not in script.narration.lower(), "asset/chapter text is never spoken"
+    assert "00:00 Cold open" in script.chapters and "05:00 The flywheel" in script.chapters
+    assert script.asset_slugs() == ["revenue-flywheel"]
+    assert "revenue-flywheel" in script.asset_prompts
+    # the chapter lines must NOT have leaked into the asset prompt
+    assert "05:00" not in script.asset_prompts["revenue-flywheel"]
+
+
 def test_chart_metric_absent_from_data_is_flagged(settings, tmp_path):
     (tmp_path / "income_statement.png").write_bytes(b"png")
     script, _ = parse_long_script(
@@ -107,8 +149,9 @@ def test_parse_valid_long(long_valid_text, settings):
     assert len(script.events_of(TagType.MEME)) == 1
     assert len(script.events_of(TagType.SOUND)) == 2
     assert "[" not in script.narration and "]" not in script.narration
-    # fixture is deliberately short-form; the parser should flag it
-    assert any("short for the LONG format" in w for w in warnings)
+    # fixture is deliberately short-form; the parser should flag it as thin
+    # even for the shortest LONG cut
+    assert any("thin even for the shortest LONG cut" in w for w in warnings)
 
 
 def test_offsets_point_into_clean_narration(long_valid_text, settings):
