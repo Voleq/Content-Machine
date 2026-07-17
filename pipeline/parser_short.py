@@ -208,10 +208,10 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f'anchor_word "{anchor}" not found in audio_script — the cue will '
             f"use a proportional fallback position"
         )
-    if not 130 <= script.word_count <= 170:
+    if not 170 <= script.word_count <= 220:
         warnings.append(
-            f"audio_script is {script.word_count} words (target ~140–165 for "
-            f"55–60s) — pacing may be off"
+            f"audio_script is {script.word_count} words (target ~180–210 for "
+            f"60–75s) — pacing may be off"
         )
     year_counts = {len(row.values) for row in script.numbers}
     if script.years and max(year_counts) != len(script.years):

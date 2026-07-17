@@ -194,6 +194,7 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
     elif fmt == "long_angle":
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)

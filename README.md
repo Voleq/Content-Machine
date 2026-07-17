@@ -7,7 +7,7 @@ Funny on purpose (never merely bored), a disappointed realist rather than
 a hater.
 Two formats:
 
-- **SHORT** — 9:16 vertical, ~55–60s **"Noise or signal?"** on a trending
+- **SHORT** — 9:16 vertical, ~60–75s **"Noise or signal?"** on a trending
   stock. Branded price chart rendered by the pipeline from its own price
   data (never a screenshot), driver headlines overlaid on the chart, a
   multi-year numbers sheet, hand-drawn scribbles, a deadpan free-text

@@ -81,7 +81,9 @@ class Settings(BaseSettings):
     eleven_speed_short: float = 0.97
 
     # ------------------------------------------------------- character budgets
-    short_max_chars: int = Field(default=800, alias="SHORT_MAX_CHARS")
+    # SHORT is 60–75s of retention-first "Noise or signal?": ~180–210 spoken
+    # words at the mock ~2.7 w/s, so ~1200 chars is the ceiling (not a target).
+    short_max_chars: int = Field(default=1200, alias="SHORT_MAX_CHARS")
     # LONG length is complexity-driven, not fixed: a clean thesis is a few
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
@@ -128,7 +130,7 @@ class Settings(BaseSettings):
     short_height: int = 1920
     long_width: int = 1920
     long_height: int = 1080
-    short_target_seconds: float = 60.0
+    short_target_seconds: float = 70.0  # 60–75s "Noise or signal?" band midpoint
     # fast-cut pacing (§editing): ~1.5–3s cuts everywhere, no static shots
     long_min_cut_s: float = 1.5
     long_max_cut_s: float = 3.0

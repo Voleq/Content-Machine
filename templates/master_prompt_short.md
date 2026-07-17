@@ -1,4 +1,4 @@
-# MASTER PROMPT — SHORT-FORM ("Noise or signal?" · 9:16 · ~55–60s)
+# MASTER PROMPT — SHORT-FORM ("Noise or signal?" · 9:16 · ~60–75s)
 # The bot fills every {{placeholder}} and hands you this ready to paste into Claude/GPT.
 # You paste the model's JSON output back to the bot.
 
@@ -21,6 +21,9 @@ Why it's moving (from the screener): {{move_context}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
+Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut check may drop at most ONE as a one-liner, never a table):
+{{peer_percentiles}}
+
 Chartable metrics present in THIS data — every `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
 ## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
@@ -34,11 +37,19 @@ Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
 {{broll_palette}}
 
 ## THE FORMAT — "Noise or signal?"
-A trending stock gets ~55–60 seconds over four fixed beats. Each beat has its own on-screen element (the render kit is fixed — you only supply the rotating content):
+A trending stock gets ~60–75 seconds over four fixed beats. Each beat has its own on-screen element (the render kit is fixed — you only supply the rotating content):
 1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" (the polished branded card) or "marker" (a crude hand-drawn "napkin" chart on black — reach for it when the tone is extra deadpan / degenerate).
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
-3. GUT CHECK — the MULTI-YEAR numbers from the data above appear on a designed numbers sheet. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move?
+3. GUT CHECK — the MULTI-YEAR numbers from the data above appear on a designed numbers sheet. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES above sharpen the read, you MAY drop a SINGLE percentile one-liner here ("90th percentile expensive, 20th on margins") — at most one, never a table.
 4. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+
+## RETENTION — the extra ~15 seconds buys attention, not filler
+The four beats are fixed; the added runtime goes to keeping the viewer, never to more talking:
+1. FRONT-LOAD THE HOOK. The first ~3 seconds decide scroll-through — open on the sharpest version of the move and the doubt, no wind-up. `hook_text` stays ≤ 90 chars and mute-safe; the spoken first sentence hits just as hard.
+2. ONE MID-POINT RE-HOOK, around the 30-second mark (the WHY → GUT CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part nobody screenshots". Exactly one; it's a turn back into the story, not a tangent.
+3. OPTIONAL SECOND LOOK (a 5th micro-beat — most shorts skip it): immediately before the payoff, ONE counter-observation — the strongest point AGAINST the read you're about to give — so the payoff lands as considered, not reflexive. One line, then the conclusion.
+4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
+Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
 ## PUNCTUATING WITH HAND-DRAWN MARKS
 The channel's visual language is crude marker doodles composited on top of the frame. Use them to punctuate the UNDERCUT, not the teach — the doodle is the visual version of the flat aside. Place them inline in `audio_script`, immediately before the word they should hit; the parser strips them out (they are never spoken) and fires them on that word:
@@ -47,10 +58,10 @@ The channel's visual language is crude marker doodles composited on top of the f
 Keep it to ~1–3 inline marks per short. They ride on top of the fixed beats; they don't replace the JSON `annotations` (which anchor precisely to the chart's move and the numbers rows).
 
 ## HARD RULES
-1. `audio_script`: 140–165 words, ≤ 800 characters, first sentence = the hook, and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1200 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
-4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count.
+4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. `annotations`: up to 4 scribbles. `target` "chart" (circles the move) or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script` where the scribble should fire; optional `note` ≤ 40 chars, lowercase, terse.
@@ -65,7 +76,7 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 
 1. ANGLE & NUMBERS — one line naming the story, then the 3–5 `numbers` rows you'll feature and one clause each on WHY (each must be a chartable metric from the list above).
 2. HOOK OPTIONS — 2–3 muted-safe `hook_text` candidates (≤ 90 chars each); mark the one you'll use with ★.
-3. SCRIPT — the `audio_script`, written with the ★ hook as its first sentence.
+3. SCRIPT — the `audio_script` (180–210 words), written with the ★ hook as its first sentence, ONE mid-point re-hook (~30s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
 
 THEN, as the final block, the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
@@ -74,7 +85,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<140-165 spoken words, <= 800 chars, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<180-210 spoken words, <= 1200 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
   "chart_style": "clean",
   "headlines": [
@@ -95,12 +106,12 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
 }
 
 ## STRUCTURE EXAMPLE — illustrative only, replace every value (do not reuse these numbers)
-Note how each fact is taught straight, then undercut flat; the inline [DOODLE]/[SCRIBBLE] punctuate the undercuts, and one self-deprecating account-blowup line lands mid-script.
+Note how each fact is taught straight, then undercut flat; the hook is front-loaded, ONE mid-point re-hook ("but here is the part nobody screenshots") re-opens the question, a single peer-percentile one-liner sharpens the gut check, a self-deprecating account-blowup line lands mid-script, and one second-look concession precedes the verbatim payoff.
 {
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "EXMPL is up 29% today. The business is not.",
-  "audio_script": "EXMPL is up twenty nine percent today on five times average volume, so the internet has decided it is a technology company again. [DOODLE: stick-staring-at-crash] The news is an AI partnership, which is a press release, not a purchase order. No revenue attached. Plus a squeeze, because eleven percent of the float was short. Gut check, and this part is dull, stay with me. Revenue went four hundred million to four ninety six in five years. That is not growth, that is a plateau in a costume. Losses got wider [SCRIBBLE: circle -> Net income] every year. Free cash flow went negative and stayed there, which means you pay them to own it. I know a value trap; my account went from twenty five k to zero dollars. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
+  "audio_script": "EXMPL is up twenty nine percent today on five times average volume, so the internet has decided it is a technology company again. [DOODLE: stick-staring-at-crash] The news is an AI partnership, which is a press release, not a purchase order. No revenue attached. Plus a squeeze, because eleven percent of the float was short. But here is the part nobody screenshots. Revenue went four hundred million to four ninety six in five years. That is not growth, that is a plateau in a costume. Losses got wider [SCRIBBLE: circle -> Net income] every year. Free cash flow went negative and stayed there, which means you pay them to own it. On the peer sheet it is ninetieth percentile on price and twentieth on margins, dear and mediocre in the same breath. I know a value trap; my own account went from twenty five k to zero dollars. In fairness, there is enough cash on the balance sheet to survive being wrong for a while, which is the nicest thing I can say and I am reaching. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
   "move_summary": "+29% today · 5× average volume",
   "chart_style": "marker",
   "headlines": [

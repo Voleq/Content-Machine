@@ -22,7 +22,7 @@ def test_short_script_valid(short_valid_json: str):
     assert script.years == ["2021", "2022", "2023", "2024", "2025"]
     assert script.meme is not None and script.meme.key == "fomo-stages-wish-i-bought-doodle"
     assert script.missing_anchor_words() == []
-    assert script.char_count <= 800
+    assert script.char_count <= 1200
     assert "noise" in script.conclusion.lower()
 
 

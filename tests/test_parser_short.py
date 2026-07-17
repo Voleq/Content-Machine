@@ -171,7 +171,7 @@ def test_warning_on_missing_anchor(short_valid_json, settings):
 
 
 def test_warning_on_word_count(short_valid_json, settings):
-    # shrink the script well under the ~140-word floor to force the warning
+    # shrink the script well under the ~180-word floor to force the warning
     raw = short_valid_json.replace(
         "on five times average volume, so the internet has decided it is a "
         "technology company again. The news: an AI partnership. A press "

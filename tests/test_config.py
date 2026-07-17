@@ -12,10 +12,10 @@ def test_mock_mode_default_true(tmp_path: Path):
 
 def test_budgets_defaults():
     s = Settings(_env_file=None)
-    assert s.short_max_chars == 800
+    assert s.short_max_chars == 1200  # 60–75s retention-first short
     assert s.long_max_chars == 36000  # complexity-driven ceiling (~40 min)
     assert s.monthly_spend_cap_usd == 50.0
-    assert s.max_chars("short") == 800
+    assert s.max_chars("short") == 1200
     assert s.max_chars("long") == 36000
 
 
