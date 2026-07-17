@@ -135,22 +135,32 @@ def peer_percentiles_block(data: CompanyData) -> str:
     return "\n".join(lines) if lines else "(no peer-percentile block in this export)"
 
 
-def filing_quotes_block(data: CompanyData) -> str:
-    """Auto-extracted filing quotes (task 5), surfaced only when present — the
-    receipts the smoking-gun walk cites. Degrades to the manual [SHOW FILING]
-    flow on the uploaded screenshots when there are none."""
-    quotes = getattr(data, "filing_quotes", None) or []
-    if not quotes:
-        return ("(none auto-extracted — the smoking-gun walk uses [SHOW FILING] on the "
-                "uploaded filing screenshots below)")
+def filing_quotes_block(workspace: Path) -> str:
+    """Auto-extracted 10-K quotes for the smoking-gun walk (task 5), read from
+    the workspace manifest the auto-filings step writes AFTER the angle is
+    picked. Each line gives the verbatim quote, its section, the one-line why,
+    and the exact [SHOW FILING: file] to flash it. Empty until the angle step
+    has run (or when nothing was found — then the walk is simply skipped)."""
+    from pipeline.filings import load_manifest
+
+    shots = load_manifest(workspace).get("shots", [])
+    if not shots:
+        return ("(no auto-extracted filing quotes for this angle yet — they are pulled "
+                "after you pick an angle; skip the smoking-gun walk if none appear)")
     lines: list[str] = []
-    for q in quotes:
-        if isinstance(q, dict):
-            text = q.get("quote") or q.get("text") or ""
-            src = q.get("source") or q.get("label") or ""
-            lines.append(f'  - "{text}"' + (f" ({src})" if src else ""))
-        else:
-            lines.append(f"  - {q}")
+    for s in shots:
+        quote = (s.get("quote") or "").strip()
+        section = s.get("section") or ""
+        why = s.get("why") or ""
+        name = s.get("name") or ""
+        head = f'  - "{quote}"'
+        if section:
+            head += f" ({section})"
+        lines.append(head)
+        if why:
+            lines.append(f"      why: {why}")
+        if name:
+            lines.append(f"      flash: [SHOW FILING: {name}]")
     return "\n".join(lines)
 
 
@@ -199,7 +209,7 @@ def fill_prompt(
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
     elif fmt == "long_write":
         r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
         r["{{voice_bible}}"] = voice_bible(settings)
@@ -209,7 +219,7 @@ def fill_prompt(
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
     else:
         raise ValueError(f"unknown prompt fmt {fmt!r}")
 

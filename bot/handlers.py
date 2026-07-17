@@ -42,7 +42,7 @@ from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 from pipeline.workspace import ActiveContext, Workspace, today_str
 
-from bot.keyboards import approval_keyboard, swap_keyboard
+from bot.keyboards import approval_keyboard, filing_veto_keyboard, swap_keyboard
 from bot.prompts import fill_prompt
 
 log = logging.getLogger(__name__)
@@ -61,12 +61,12 @@ HELP_TEXT = """Dennis — operator commands
 /cost — month-to-date spend vs cap
 /help — this text
 
-Flow: /new → upload dennis_data.xlsx (+ screenshot PNGs) → run the
-prompts in Claude/GPT → paste the output back here → review the
-validation & cost report → Approve ✅ → /render. Nothing paid happens
-before Approve. If a LONG uses [ASSET] tags, paste the appended prompt
-into Claude Design and upload the exported PNG here — the render stays
-blocked until every asset file exists."""
+Flow: /new → upload dennis_data.xlsx → run the prompts in Claude/GPT →
+(LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
+here → review the validation & cost report → Approve ✅ → /render. Nothing
+paid happens before Approve. If a LONG uses [ASSET] tags, paste the appended
+prompt into Claude Design and upload the exported PNG here — the render
+stays blocked until every asset file exists."""
 
 
 @dataclass
@@ -113,10 +113,11 @@ class BotCore:
             f"1. Refresh the attached data template for {ticker} in Excel "
             f"(both sheets — Latest and the 5-year History), save, and upload "
             f"it here as dennis_data.xlsx (CSV accepted, snapshot only).\n"
-            f"2. Optionally upload screenshot PNGs for [SHOW FILING] moments "
-            f"(they get a generic 'from the 10-K' label — the source stays "
-            f"unnamed).\n"
-            f"3. I'll reply with the pre-filled master prompts.",
+            f"2. I'll reply with the pre-filled master prompts. For a LONG, "
+            f"once you pick an angle I auto-pull the relevant 10-K excerpts "
+            f"and snap them for [SHOW FILING] — no screenshot uploads needed "
+            f"(they carry a generic 'from the 10-K' label; the source stays "
+            f"unnamed).",
             files=[template] if template.exists() else [],
         )
 
@@ -265,23 +266,102 @@ class BotCore:
             return Reply(f"⛔ LONG script rejected:\n{e}")
 
     def _intake_angle(self, ws: Workspace, text: str) -> Reply:
-        """The operator picked a LONG angle — store it and hand back the
-        Step-2 writing prompt, pre-filled with the chosen angle."""
+        """The operator picked a LONG angle — store it, run the thesis-aware
+        10-K auto-screenshot pull, and hand back the Step-2 writing prompt
+        (pre-filled with the angle + the auto-pulled filing quotes)."""
         data = self._company_data(ws)
         if data is None:
             return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
         ws.set_chosen_angle(text)
+        self._auto_filings(ws, text)  # best-effort; never blocks the flow
+        return self._long_write_reply(ws, header=f"✅ Angle locked for {ws.ticker}.")
+
+    def _auto_filings(self, ws: Workspace, angle: str) -> list:
+        """Pull the 10-K, flag smoking-gun quotes, snap + normalize them into
+        the workspace. Fully best-effort — a failure here is a warning, never
+        a blocked render."""
+        if not self.settings.filings_enabled:
+            return []
+        try:
+            from pipeline.filings import auto_filings
+            return auto_filings(ws.ticker, angle, ws.path, self.settings,
+                                ledger=self.ledger)
+        except Exception as e:  # pragma: no cover - auto_filings already guards
+            log.warning("auto-filings failed for %s: %s", ws.ticker, e)
+            return []
+
+    def _long_write_reply(self, ws: Workspace, header: str) -> Reply:
+        """Build the Step-2 writing prompt reply, attaching a contact sheet +
+        veto keyboard for whatever auto-pulled filing shots are on file."""
+        from pipeline.filings import load_manifest
+
+        data = self._company_data(ws)
+        if data is None:
+            return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
         prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
-                             chosen_angle=text)
+                             chosen_angle=ws.chosen_angle())
         f = ws.path / "prompt_long_write.md"
         f.write_text(prompt)
-        return Reply(
-            f"✅ Angle locked for {ws.ticker}.\n"
+        note = (
+            f"{header}\n"
             f"Here's Step 2 — the writing prompt. Run it in the SAME Claude "
             f"chat (so it still has the angle in context), pick a hook, then "
-            f"paste the tagged script back here.",
-            files=[f],
+            f"paste the tagged script back here."
         )
+        shots = load_manifest(ws.path).get("shots", [])
+        photo = keyboard = None
+        if shots:
+            note += (
+                f"\n\n📎 Auto-pulled {len(shots)} shot(s) from the 10-K, "
+                f"labelled 'FROM THE 10-K' (source stays unnamed). They're "
+                f"already available to [SHOW FILING] and their quotes are in "
+                f"the prompt. Tap to drop a bad crop:"
+            )
+            photo = self._filing_contact_sheet(ws, shots)
+            keyboard = filing_veto_keyboard(ws.ticker, ws.workdate,
+                                            [s["name"] for s in shots])
+        return Reply(note, files=[f], photo=photo, keyboard=keyboard)
+
+    def veto_filing(self, chat_id: int, ticker: str, workdate: str, name: str) -> Reply:
+        """Operator dropped an auto-pulled filing crop — remove it and re-send
+        the writing prompt (regenerated without that shot)."""
+        from pipeline.filings import veto_shot
+
+        ws = Workspace(self.settings, ticker, workdate)
+        self.context.set(chat_id, ticker, workdate)
+        removed = veto_shot(ws.path, name)
+        header = f"🗑 Dropped {name}." if removed else f"({name} already gone.)"
+        return self._long_write_reply(ws, header=header)
+
+    def _filing_contact_sheet(self, ws: Workspace, shots: list) -> Path | None:
+        """Grid of the auto-pulled filing shots so the operator can veto a bad
+        crop without opening each one."""
+        imgs = []
+        for i, s in enumerate(shots, 1):
+            p = Path(s.get("image") or "")
+            if not p.exists():
+                p = ws.path / s.get("name", "")
+            try:
+                imgs.append((i, s, Image.open(p).convert("RGB")))
+            except Exception:
+                log.warning("filing thumbnail failed for %s", s.get("name"))
+        if not imgs:
+            return None
+        cols = min(3, len(imgs))
+        rows = (len(imgs) + cols - 1) // cols
+        tw, th, label_h = 320, 180, 30
+        sheet = Image.new("RGB", (cols * tw, rows * (th + label_h)), (18, 18, 22))
+        d = ImageDraw.Draw(sheet)
+        font = load_font(self.settings, "DejaVuSansMono-Bold.ttf", 16)
+        for k, (i, s, img) in enumerate(imgs):
+            x, y = (k % cols) * tw, (k // cols) * (th + label_h)
+            sheet.paste(img.resize((tw, th)), (x, y))
+            d.text((x + 6, y + th + 5), f"#{i} {str(s.get('section', ''))[:22]}",
+                   font=font, fill=(240, 240, 240))
+        out = ws.path / "filings" / "contact_sheet.png"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        sheet.save(out)
+        return out
 
     def _intake_short(self, ws: Workspace, raw: str) -> Reply:
         script, warnings = parse_short_script(raw, self.settings)
@@ -576,6 +656,7 @@ class BotCore:
             f"${self.settings.monthly_spend_cap_usd:.2f} cap\n"
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
             f"{self.settings.pexels_monthly_call_cap}\n"
+            f"Filing-flagger LLM: ${self.ledger.llm_usd_this_month():.2f}\n"
             f"Mode: {'MOCK (no paid calls possible)' if self.settings.mock_mode else 'LIVE'}"
         )
 
@@ -778,6 +859,8 @@ def build_application(settings: Settings, core: BotCore):
                      if raw_file.exists() else Reply("No LONG script on file."))
         elif op == "s" and len(parts) == 4:
             reply = core.swap_key(chat_id, parts[1], parts[2], parts[3])
+        elif op == "fv" and len(parts) == 4:
+            reply = core.veto_filing(chat_id, parts[1], parts[2], parts[3])
         elif op == "n" and len(parts) == 2:
             reply = core.new_ticker(chat_id, parts[1])
         else:

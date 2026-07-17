@@ -1,0 +1,15 @@
+{
+  "cik": "7654321",
+  "name": "Foreign Filer PLC",
+  "tickers": ["FRGN"],
+  "exchanges": ["NYSE"],
+  "filings": {
+    "recent": {
+      "accessionNumber": ["0007654321-26-000003", "0007654321-25-000009"],
+      "form": ["20-F", "6-K"],
+      "filingDate": ["2026-03-01", "2025-12-15"],
+      "primaryDocument": ["frgn-20f.htm", "frgn-6k.htm"],
+      "primaryDocDescription": ["20-F", "6-K"]
+    }
+  }
+}

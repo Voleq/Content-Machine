@@ -1,0 +1,19 @@
+{
+  "cik": "1234567",
+  "name": "Example Corp",
+  "tickers": ["EXMPL"],
+  "exchanges": ["Nasdaq"],
+  "filings": {
+    "recent": {
+      "accessionNumber": [
+        "0001234567-26-000012",
+        "0001234567-25-000045",
+        "0001234567-25-000031"
+      ],
+      "form": ["10-K", "10-Q", "8-K"],
+      "filingDate": ["2026-02-18", "2025-11-04", "2025-10-30"],
+      "primaryDocument": ["exmpl-20251231.htm", "exmpl-20250930.htm", "exmpl-8k.htm"],
+      "primaryDocDescription": ["10-K", "10-Q", "8-K"]
+    }
+  }
+}

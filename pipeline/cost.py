@@ -68,6 +68,10 @@ class SpendLedger:
         with self._lock:
             return int(self._load().get(month_key(), {}).get("pexels_calls", 0))
 
+    def llm_usd_this_month(self) -> float:
+        with self._lock:
+            return float(self._load().get(month_key(), {}).get("llm_usd", 0.0))
+
     def would_exceed(self, additional_usd: float) -> bool:
         return self.mtd_spend_usd() + additional_usd > self.settings.monthly_spend_cap_usd
 
@@ -104,6 +108,15 @@ class SpendLedger:
         with self._lock:
             data = self._load()
             self._month(data)["pexels_calls"] += 1
+            self._save(data)
+
+    def record_llm(self, usd: float) -> None:
+        """Filing-flagger LLM spend. Cheap (often free-tier $0) but tracked for
+        visibility. Kept separate from the TTS cap bucket."""
+        with self._lock:
+            data = self._load()
+            month = self._month(data)
+            month["llm_usd"] = round(month.get("llm_usd", 0.0) + float(usd), 4)
             self._save(data)
 
 

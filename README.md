@@ -14,8 +14,10 @@ Two formats:
   payoff. No verdict, no stamp — the viewer draws the conclusion.
 - **LONG** — 16:9 deadpan deep-dive on a beaten-down value-lane stock
   (never the trending names): real operations imagery, auto-generated
-  charts, unnamed-source filing flashes, at most 1–2 memes from the owned
-  library, fast ~1.5–3s cuts, resigned close.
+  charts, unnamed-source filing flashes auto-pulled from the 10-K (SEC
+  EDGAR → smoking-gun quotes → headless-Chromium screenshots, no manual
+  uploads), at most 1–2 memes from the owned library, fast ~1.5–3s cuts,
+  resigned close.
 
 The operator supplies the judgment (numbers, thesis, approval); the
 machine does 100% of voice, asset fetching, composition and rendering.

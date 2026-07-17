@@ -41,6 +41,15 @@ moviepy = [
 s3 = [
     "boto3==1.42.39",
 ]
+# 10-K auto-screenshot pipeline: SEC pull + cheap LLM flagging + headless
+# Chromium shots. Optional so the base install stays lean — the feature
+# degrades to zero shots when absent. bootstrap.sh installs this and the
+# browser (`playwright install --with-deps chromium`). httpx is already a base
+# dependency; the SEC/LLM calls reuse it.
+filings = [
+    "playwright==1.61.0",
+    "beautifulsoup4==4.15.0",
+]
 
 [project.scripts]
 dennis = "main:main"
