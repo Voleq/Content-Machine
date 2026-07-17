@@ -172,27 +172,40 @@ def screenshots_line(workspace: Path) -> str:
 def fill_prompt(
     fmt: str,
     ticker: str,
-    data: CompanyData,
+    data: CompanyData | None,
     workspace: Path,
     settings: Settings,
     move_context: str = "",
     chosen_angle: str = "",
+    headline: str = "",
+    article_summary: str = "",
+    headline_mode: str = "",
 ) -> str:
-    """Fill one master prompt. `fmt` ∈ {short, long_angle, long_write}.
+    """Fill one master prompt. `fmt` ∈ {short, long_angle, long_write, headline}.
 
-    Every prompt gets the FULL dataset + the catalogs it needs; the writing
-    prompts (short, long_write) additionally get the voice bible. `long_write`
-    also gets the operator's {{chosen_angle}}.
+    Every prompt gets the catalogs it needs; the writing prompts (short,
+    long_write, headline) additionally get the voice bible. `long_write` also
+    gets the operator's {{chosen_angle}}; `headline` gets the operator's
+    {{headline}} + optional {{article_summary}} + the active {{mode}}. `data`
+    may be None for the macro headline mode (no single-company financials).
     """
     template_file = settings.templates_dir / f"master_prompt_{fmt}.md"
     text = template_file.read_text()
 
-    as_of = data.get("as_of_date") or date.today().isoformat()
+    as_of = (data.get("as_of_date") if data is not None else None) or date.today().isoformat()
     r: dict[str, str] = {
         "{{ticker}}": ticker.upper(),
         "{{as_of_date}}": str(as_of),
-        "{{company_data}}": data.as_prompt_block(),
-        "{{chart_metrics}}": chart_metrics_line(data),
+        "{{company_data}}": (
+            data.as_prompt_block() if data is not None else
+            f"(macro mode — no single-company financials; anchor on {ticker.upper()} "
+            f"as the index/sector proxy and the macro figures in the headline)"
+        ),
+        "{{chart_metrics}}": (
+            chart_metrics_line(data) if data is not None else
+            f"(index-based — the chart is the {ticker.upper()} proxy; the numbers "
+            f"beat is optional and, if used, carries index levels or the macro series)"
+        ),
     }
 
     if fmt == "short":
@@ -220,6 +233,19 @@ def fill_prompt(
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
+    elif fmt == "headline":
+        r["{{headline}}"] = headline.strip() or "(no headline text supplied)"
+        r["{{article_summary}}"] = article_summary.strip() or (
+            "(no article summary — work from the headline itself)"
+        )
+        r["{{mode}}"] = headline_mode or "company"
+        r["{{voice_bible}}"] = voice_bible(settings)
+        r["{{doodle_catalog}}"] = doodle_catalog(settings)
+        r["{{meme_catalog}}"] = meme_catalog(settings)
+        r["{{broll_palette}}"] = broll_catalog()
+        r["{{peer_percentiles}}"] = (
+            peer_percentiles_block(data) if data is not None else "(n/a in macro mode)"
+        )
     else:
         raise ValueError(f"unknown prompt fmt {fmt!r}")
 

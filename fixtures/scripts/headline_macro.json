@@ -1,0 +1,22 @@
+{
+  "ticker": "SPY",
+  "format": "short",
+  "hook_text": "CPI ran hot. Your portfolio is not the one that has to care.",
+  "audio_script": "Inflation came in at three point four percent against an expected three point one, so the number was hot, and the market did its little flinch. Here is what that actually says. Prices rose a bit faster than a room full of economists guessed, which is a statement about the economists as much as the prices. What the crowd hears is that the Fed will never cut again. But here is the part the headline skips. One print is a data point, not a trend, and the trend has been cooling for two years even with bumps like this one. CPI went three point seven, three point two, three point one, three point four. That last number is a wiggle, not a reversal. I once rearranged my whole account around a single hot print [SCRIBBLE: circle -> CPI YoY] and got to watch it mean nothing by the next month; the account still went to zero, unrelated, but it did. In fairness, if the wiggles keep coming, the story changes. For today it is one number. Noise for your portfolio, homework for the Fed.",
+  "move_summary": "CPI 3.4% vs 3.1% expected",
+  "chart_style": "clean",
+  "headlines": [
+    {"text": "CPI comes in at 3.4% vs 3.1% expected", "meaning": "One hot print against a cooling two-year trend — a wiggle, not a reversal."}
+  ],
+  "years": ["Q1", "Q2", "Q3", "Q4"],
+  "numbers": [
+    {"label": "CPI YoY", "values": ["3.7%", "3.2%", "3.1%", "3.4%"]}
+  ],
+  "numbers_comment": "Inflation has cooled from 3.7% to the low threes over the past year; the 3.4% print is a bump within that, not a new direction.",
+  "conclusion": "Noise for your portfolio, homework for the Fed.",
+  "meme": null,
+  "broll": null,
+  "annotations": [
+    {"target": "numbers", "row_index": 0, "anchor_word": "wiggle", "note": "not a reversal"}
+  ]
+}

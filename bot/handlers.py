@@ -50,6 +50,7 @@ log = logging.getLogger(__name__)
 HELP_TEXT = """Dennis — operator commands
 
 /new TICKER — open today's workspace, get the data template
+/headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
 /prompts — re-send the pre-filled master prompts
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
 /render TICKER — render the approved SHORT
@@ -75,6 +76,58 @@ class Reply:
     keyboard: object | None = None  # telegram.InlineKeyboardMarkup
     files: list[Path] = field(default_factory=list)
     photo: Path | None = None
+
+
+# ---------------------------------------------------------------------------
+# /headline mode detection — company (A) · earnings (B) · macro (C).
+# ---------------------------------------------------------------------------
+
+# common index / sector proxies + the "macro" keyword all route to macro mode
+_INDEX_SYMS = {"SPY", "QQQ", "DIA", "IWM", "VIX", "TLT", "VOO", "IVV", "RSP", "MARKET"}
+_MACRO_SYMS = {"MACRO"} | _INDEX_SYMS
+_MACRO_KW = (
+    "cpi", "inflation", "deflation", "the fed", "fomc", "rate hike", "rate cut",
+    "interest rate", "jobs report", "payroll", "nonfarm", "unemployment", "jobless",
+    "gdp", "pce", "treasury yield", "recession", "powell", "basis points",
+    "soft landing", "ppi", "retail sales", "rate decision",
+)
+_EARNINGS_KW = (
+    "earnings", "eps", "beat", "missed", "misses", "guidance", "guides", "guided",
+    "quarterly", "q1", "q2", "q3", "q4", "top line", "bottom line", "revenue beat",
+    "revenue miss", "raises guidance", "cuts guidance", "reports results",
+)
+_HEADLINE_MODES = {"a": "company", "b": "earnings", "c": "macro",
+                   "company": "company", "earnings": "earnings", "macro": "macro"}
+_URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
+
+
+def _strip_mode_tag(text: str) -> tuple[str | None, str]:
+    """A leading [company]/[earnings]/[macro] (or [a]/[b]/[c]) tag forces the
+    framing. Returns (mode | None, remaining headline text)."""
+    m = re.match(r"\s*\[\s*([a-zA-Z]+)\s*\]\s*(.*)", text, re.DOTALL)
+    if m and m.group(1).strip().lower() in _HEADLINE_MODES:
+        return _HEADLINE_MODES[m.group(1).strip().lower()], m.group(2).strip()
+    return None, text.strip()
+
+
+def detect_headline_mode(symbol: str, headline: str) -> str:
+    """company | earnings | macro from the symbol + headline text. Symbol wins
+    for macro (an index or 'macro'); otherwise keywords decide, defaulting to
+    company news."""
+    sym = symbol.strip().upper()
+    low = f" {headline.lower()} "
+    if sym in _MACRO_SYMS or any(k in low for k in _MACRO_KW):
+        return "macro"
+    if any(f" {k} " in low or low.strip().startswith(k) for k in _EARNINGS_KW):
+        return "earnings"
+    return "company"
+
+
+def _macro_index_for(symbol: str) -> str:
+    """The chart proxy for macro mode — a named index passes through, plain
+    'macro' defaults to the broad market."""
+    sym = symbol.strip().upper()
+    return sym if sym in _INDEX_SYMS else "SPY"
 
 
 class BotCore:
@@ -163,6 +216,88 @@ class BotCore:
             files=files,
         )
 
+    # ---------------------------------------------------------- /headline
+    def headline_command(self, chat_id: int, args: list[str]) -> Reply:
+        """Build a SHORT around a specific news item the operator supplies —
+        company news (A), an earnings print (B), or a macro release (C). The
+        framing comes from the headline, not the screener's move context."""
+        if len(args) < 2:
+            return Reply(
+                "Usage: /headline TICKER <headline text or URL>\n"
+                "       /headline macro <text>   (market/sector — no single ticker)\n"
+                "Force the framing with a leading tag, e.g.\n"
+                "       /headline AAPL [earnings] Apple tops Q3 estimates, raises guide"
+            )
+        symbol_raw = args[0].strip()
+        rest = " ".join(args[1:]).strip()
+        forced_mode, headline = _strip_mode_tag(rest)
+        if not headline:
+            return Reply("Give me the headline text (or a URL) after the ticker.")
+        sym = symbol_raw.upper()
+        mode = forced_mode or detect_headline_mode(sym, headline)
+
+        if mode == "macro":
+            ws_ticker = _macro_index_for(sym)
+        else:
+            if not sym or not sym.replace(".", "").replace("-", "").isalnum():
+                return Reply("First arg must be a TICKER (or 'macro'). "
+                             "e.g. /headline NVDA <headline>")
+            ws_ticker = sym
+
+        ws = Workspace(self.settings, ws_ticker, today_str()).create()
+        self.context.set(chat_id, ws_ticker, ws.workdate)
+        ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
+        display_headline, summary = self._enrich_headline(headline)
+        ws.set_headline({"mode": mode, "symbol": ws_ticker,
+                         "headline": display_headline, "summary": summary})
+
+        if mode in ("company", "earnings"):
+            data = self._company_data(ws)
+            if data is None:
+                template = self.settings.templates_dir / "dennis_data_template.xlsx"
+                return Reply(
+                    f"📰 Headline stored for {ws_ticker} ({mode} framing).\n"
+                    f"I need this ticker's numbers for the gut check — upload "
+                    f"dennis_data.xlsx for {ws_ticker} (template attached) and "
+                    f"I'll hand you the headline prompt.",
+                    files=[template] if template.exists() else [],
+                )
+            return self._headline_prompt_reply(ws, data)
+        return self._headline_prompt_reply(ws, None)  # macro — no company data
+
+    def _headline_prompt_reply(self, ws: Workspace, data) -> Reply:
+        hstate = ws.headline()
+        mode = hstate.get("mode", "company")
+        prompt = fill_prompt("headline", ws.ticker, data, ws.path, self.settings,
+                             headline=hstate.get("headline", ""),
+                             article_summary=hstate.get("summary", ""),
+                             headline_mode=mode)
+        f = ws.path / "prompt_headline.md"
+        f.write_text(prompt)
+        label = {"company": "company-news", "earnings": "earnings",
+                 "macro": "macro / market"}.get(mode, mode)
+        anchor = "an index chart" if mode == "macro" else "the ticker's multi-year numbers"
+        return Reply(
+            f"📰 Headline short for {ws.ticker} — {label} framing (anchored on "
+            f"{anchor}).\nRun prompt_headline.md in Claude, paste the JSON back "
+            f"here, review the cost report, Approve ✅, then /render {ws.ticker}.",
+            files=[f],
+        )
+
+    def _enrich_headline(self, headline: str) -> tuple[str, str]:
+        """If the headline is a URL, best-effort fetch + summarize ONCE so the
+        'what it actually means' beat is grounded. Never blocks: in MOCK_MODE /
+        offline or on any failure the URL is used as-is with no summary."""
+        text = headline.strip()
+        if not _URL_RE.match(text) or self.settings.mock_mode:
+            return text, ""
+        try:
+            from pipeline.filings import fetch_and_summarize
+            return text, (fetch_and_summarize(text, self.settings, ledger=self.ledger) or "")
+        except Exception as e:  # pragma: no cover - best-effort enrichment
+            log.warning("headline URL enrich failed for %s: %s", text, e)
+            return text, ""
+
     # ------------------------------------------------------------- uploads
     def handle_upload(self, chat_id: int, filename: str, data: bytes) -> Reply:
         ws = self._active_ws(chat_id)
@@ -174,6 +309,16 @@ class BotCore:
         if suffix in (".xlsx", ".csv"):
             dest = ws.path / f"dennis_data{suffix}"
             dest.write_bytes(data)
+            # a /headline that was waiting on the numbers → hand back the
+            # headline prompt now, not the usual short/long_angle pair
+            hstate = ws.headline()
+            if (hstate.get("mode") in ("company", "earnings")
+                    and ws.load_short() is None):
+                cdata = self._company_data(ws)
+                if cdata is not None:
+                    reply = self._headline_prompt_reply(ws, cdata)
+                    reply.text = f"💾 saved {dest.name}.\n\n" + reply.text
+                    return reply
             reply = self.prompts_reply(chat_id)
             reply.text = f"💾 saved {dest.name} for {ws.ticker}.\n\n" + reply.text
             return reply
@@ -723,6 +868,10 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.new_ticker(update.effective_chat.id, ticker))
 
     @guard
+    async def cmd_headline(update, ctx):
+        await _send(update, core.headline_command(update.effective_chat.id, ctx.args or []))
+
+    @guard
     async def cmd_prompts(update, ctx):
         await _send(update, core.prompts_reply(update.effective_chat.id))
 
@@ -874,6 +1023,7 @@ def build_application(settings: Settings, core: BotCore):
 
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
     app.add_handler(CommandHandler("new", cmd_new))
+    app.add_handler(CommandHandler("headline", cmd_headline))
     app.add_handler(CommandHandler("prompts", cmd_prompts))
     app.add_handler(CommandHandler("render", cmd_render))
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))

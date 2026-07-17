@@ -349,7 +349,7 @@ def _compress_sections(sections: list[dict], budget: int) -> str:
     return "".join(out)
 
 
-def _llm_chat(prompt: str, settings: Settings) -> str | None:
+def _llm_chat(prompt: str, settings: Settings, system: str = _FLAG_SYSTEM) -> str | None:
     """One OpenAI-compatible chat completion. Provider is swappable via
     config; returns the message content or None on any failure."""
     try:
@@ -364,7 +364,7 @@ def _llm_chat(prompt: str, settings: Settings) -> str | None:
         base, token = settings.github_models_endpoint, settings.github_models_token
         url = base.rstrip("/") + "/chat/completions"
     if not token:
-        log.warning("filings: no token for LLM provider %r — skipping flags", provider)
+        log.warning("filings: no token for LLM provider %r — skipping", provider)
         return None
     try:
         resp = httpx.post(
@@ -373,7 +373,7 @@ def _llm_chat(prompt: str, settings: Settings) -> str | None:
                      "Content-Type": "application/json"},
             json={
                 "model": settings.filings_llm_model,
-                "messages": [{"role": "system", "content": _FLAG_SYSTEM},
+                "messages": [{"role": "system", "content": system},
                              {"role": "user", "content": prompt}],
                 "temperature": 0.2,
             },
@@ -382,8 +382,52 @@ def _llm_chat(prompt: str, settings: Settings) -> str | None:
         resp.raise_for_status()
         return resp.json()["choices"][0]["message"]["content"]
     except Exception as e:
-        log.warning("filings: LLM flagging failed (%s)", e)
+        log.warning("filings: LLM call failed (%s)", e)
         return None
+
+
+_SUMMARY_SYSTEM = (
+    "You summarize a news article for a deadpan financial video. In 2-3 plain "
+    "sentences, state only what happened and the key figures — no opinion, no "
+    "hype, and never name a data terminal or vendor."
+)
+
+
+def fetch_and_summarize(url: str, settings: Settings, ledger=None) -> str:
+    """Best-effort: fetch a news URL, extract its readable text, and summarize
+    it so the /headline 'what it actually means' beat is grounded. Returns ''
+    on any failure — NEVER blocks. Not called in MOCK_MODE (the caller skips
+    network); spend (usually free-tier) is recorded when a summary comes back."""
+    try:
+        import httpx
+    except ImportError:  # pragma: no cover
+        return ""
+    try:
+        resp = httpx.get(url, timeout=15.0, follow_redirects=True,
+                         headers={"User-Agent": settings.sec_user_agent or "Dennis bot"})
+        resp.raise_for_status()
+        html = resp.text
+    except Exception as e:
+        log.warning("headline fetch failed for %s (%s)", url, e)
+        return ""
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html, "html.parser")
+        for t in soup(["script", "style", "nav", "footer", "header", "aside"]):
+            t.decompose()
+        text = _norm(soup.get_text(" "))
+    except ImportError:  # pragma: no cover
+        text = _norm(re.sub(r"<[^>]+>", " ", html))
+    if not text:
+        return ""
+    summary = _llm_chat(text[:settings.filings_llm_max_chars], settings,
+                        system=_SUMMARY_SYSTEM) or ""
+    if summary and ledger is not None:
+        try:
+            ledger.record_llm(settings.filings_llm_usd_per_call)
+        except Exception:
+            pass
+    return summary.strip()
 
 
 def _parse_quote_json(raw: str) -> list[FlaggedQuote]:

@@ -104,6 +104,23 @@ class Workspace:
     def chosen_angle(self) -> str:
         return self._angle_state().get("chosen", "")
 
+    # ------------------------------------------------- headline short (/headline)
+    # A headline-driven SHORT: the operator supplied a specific news item (not a
+    # screener mover). The stored state carries the detected mode (company /
+    # earnings / macro), the headline text, and an optional fetched summary.
+    def _headline_file(self) -> Path:
+        return self.path / "headline.json"
+
+    def set_headline(self, payload: dict) -> None:
+        self._headline_file().write_text(json.dumps(payload, indent=2))
+
+    def headline(self) -> dict:
+        f = self._headline_file()
+        try:
+            return json.loads(f.read_text()) if f.exists() else {}
+        except json.JSONDecodeError:
+            return {}
+
     # ------------------------------------------------------------- approval
     def _approval_file(self, fmt: str) -> Path:
         return self.path / f"approval_{fmt}.json"
