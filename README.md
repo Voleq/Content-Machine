@@ -1,8 +1,10 @@
 # Dennis
 
 Telegram-controlled, human-in-the-loop video pipeline that renders
-financial videos hosted by **Dennis** — a smart, sarcastic, burnt-out
+financial videos hosted by **Dennis** — a smart, dry, deadpan, burnt-out
 everyman who reads 10-Ks at 3am because the void won't let him sleep.
+Funny on purpose (never merely bored), a disappointed realist rather than
+a hater.
 Two formats:
 
 - **SHORT** — 9:16 vertical, ~55–60s **"Noise or signal?"** on a trending
