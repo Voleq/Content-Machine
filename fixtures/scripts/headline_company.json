@@ -1,0 +1,23 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "hook_text": "EXMPL signed an AI partnership. Read the second sentence.",
+  "audio_script": "EXMPL announced an AI partnership this morning, and the stock did the thing where it goes up before anyone reads the release. What it literally says is that two companies will explore opportunities together. What the crowd hears is revenue. Those are not the same sentence. There is no dollar figure, no timeline, and the word explore is doing a lot of work. But here is the part the headline skips. Revenue went four hundred million to four ninety six in five years, which is a plateau wearing a growth costume, and a press release does not move a plateau. Losses got wider [SCRIBBLE: circle -> Net income] every one of those years. I have owned a press release before; my own account went from twenty five k to zero dollars waiting for a follow-through that never came. In fairness, partnerships sometimes turn into contracts, and if this one does I will happily say so. Today it is a sentence about exploring. Priced in, and then some. A partnership to explore, stapled to five years of flat.",
+  "move_summary": "AI partnership announced · no terms disclosed",
+  "chart_style": "marker",
+  "headlines": [
+    {"text": "EXMPL announces AI partnership", "meaning": "A letter of intent, not a contract — no revenue, no timeline attached."}
+  ],
+  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "numbers": [
+    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
+    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]}
+  ],
+  "numbers_comment": "Revenue has been flat for three years and losses keep widening. A partnership with no terms doesn't touch either line.",
+  "conclusion": "Priced in, and then some. A partnership to explore, stapled to five years of flat.",
+  "meme": null,
+  "broll": null,
+  "annotations": [
+    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
+  ]
+}

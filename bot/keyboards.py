@@ -6,6 +6,7 @@ Callback data grammar (64-byte Telegram limit — keep it terse):
     w|<ticker>|<date>                 open the swap-clip menu (LONG)
     s|<ticker>|<date>|<key>           swap this b-roll key to its next take
     n|<ticker>                        fire /new from a screener candidate
+    fv|<ticker>|<date>|<file>         veto (drop) an auto-pulled filing shot
 """
 
 from __future__ import annotations
@@ -40,6 +41,23 @@ def swap_keyboard(ticker: str, workdate: str, keys: list[str]) -> InlineKeyboard
             for k in keys[i:i + 2]
         ])
     rows.append([InlineKeyboardButton("◀ back to report", callback_data=f"w!|{ticker}|{workdate}")])
+    return InlineKeyboardMarkup(rows)
+
+
+def filing_veto_keyboard(ticker: str, workdate: str,
+                         names: list[str]) -> InlineKeyboardMarkup:
+    """One drop button per auto-pulled filing shot (veto a bad crop)."""
+    rows = []
+    row = []
+    for i, name in enumerate(names, 1):
+        row.append(InlineKeyboardButton(
+            f"❌ drop #{i}", callback_data=f"fv|{ticker}|{workdate}|{name}"
+        ))
+        if len(row) == 3:
+            rows.append(row)
+            row = []
+    if row:
+        rows.append(row)
     return InlineKeyboardMarkup(rows)
 
 

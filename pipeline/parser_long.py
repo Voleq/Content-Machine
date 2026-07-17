@@ -59,6 +59,12 @@ _ASSET_BLOCK_RE = re.compile(r"^---\s*ASSET:\s*([^-\s][^\n]*?)\s*---\s*$",
                              re.IGNORECASE | re.MULTILINE)
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
+# the Step-2 write prompt appends a "=== CHAPTERS ===" trailer (mm:ss Title
+# lines) for YouTube — metadata the operator pastes, never spoken. Split it
+# off like the ASSET PROMPTS trailer; it sits BEFORE the asset trailer.
+_CHAPTERS_TRAILER_RE = re.compile(r"^\s*=+\s*CHAPTERS\s*=+\s*$",
+                                  re.IGNORECASE | re.MULTILINE)
+
 # the Step-2 writing prompt emits a "=== HOOK OPTIONS ===" block, then the
 # narration begins after its "Chosen:" line — strip that preamble so the
 # hook menu is never spoken (symmetric to the ASSET PROMPTS trailer).
@@ -101,6 +107,17 @@ def _split_asset_trailer(raw: str) -> tuple[str, dict[str, str]]:
     return body, prompts
 
 
+def _split_chapters_trailer(raw: str) -> tuple[str, str]:
+    """Cut the `=== CHAPTERS ===` trailer off the narration. Returns
+    (body, chapters_text); chapters is metadata for YouTube, never spoken.
+    Run AFTER the asset trailer is removed, so the chapters block (which the
+    prompt places before the asset trailer) is what remains at the tail."""
+    m = _CHAPTERS_TRAILER_RE.search(raw)
+    if not m:
+        return raw, ""
+    return raw[: m.start()], raw[m.end():].strip()
+
+
 def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongScript, list[str]]:
     """Tokenize tagged narration. Returns (script, warnings).
 
@@ -111,6 +128,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         raise LongScriptError("Empty message — expected the tagged LONG narration.")
 
     raw, asset_prompts = _split_asset_trailer(raw)
+    raw, chapters = _split_chapters_trailer(raw)
     raw = _strip_hook_options(raw)
     if not raw.strip():
         raise LongScriptError("Narration is empty (only an asset-prompt trailer was sent).")
@@ -161,12 +179,13 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         )
 
     script = LongScript(ticker=ticker, narration=narration, events=events,
-                        asset_prompts=asset_prompts)
+                        asset_prompts=asset_prompts, chapters=chapters)
 
     if script.word_count < 800:
         warnings.append(
-            f"narration is only {script.word_count} words — short for the LONG "
-            f"format (target ~1600–2200)"
+            f"narration is only {script.word_count} words — thin even for the "
+            f"shortest LONG cut (a clean thesis is ~1600 words / ~12 min; length "
+            f"scales up with the chapters the story earns)"
         )
     if not script.events_of(TagType.CLIP, TagType.BROLL, TagType.IMG,
                             TagType.PRODUCT, TagType.CHART):

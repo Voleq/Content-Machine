@@ -1,0 +1,5 @@
+{
+  "0": {"cik_str": 1234567, "ticker": "EXMPL", "title": "Example Corp"},
+  "1": {"cik_str": 7654321, "ticker": "FRGN", "title": "Foreign Filer PLC"},
+  "2": {"cik_str": 9090909, "ticker": "MEGA", "title": "Megacorp Inc"}
+}

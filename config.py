@@ -81,8 +81,14 @@ class Settings(BaseSettings):
     eleven_speed_short: float = 0.97
 
     # ------------------------------------------------------- character budgets
-    short_max_chars: int = Field(default=800, alias="SHORT_MAX_CHARS")
-    long_max_chars: int = Field(default=22000, alias="LONG_MAX_CHARS")
+    # SHORT is 60–75s of retention-first "Noise or signal?": ~180–210 spoken
+    # words at the mock ~2.7 w/s, so ~1200 chars is the ceiling (not a target).
+    short_max_chars: int = Field(default=1200, alias="SHORT_MAX_CHARS")
+    # LONG length is complexity-driven, not fixed: a clean thesis is a few
+    # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
+    # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
+    # target — the writer assembles chapters and runtime falls out of that.
+    long_max_chars: int = Field(default=36000, alias="LONG_MAX_CHARS")
     # LONG scripts are chunked by paragraph to stay under request limits.
     tts_chunk_chars: int = 4000
 
@@ -112,6 +118,33 @@ class Settings(BaseSettings):
     # information-first: a LONG may carry at most this many memes (validated)
     meme_max_per_long: int = 2
 
+    # ---------------------------------------------- filings (10-K auto-screenshot)
+    # Pull the latest 10-K from SEC EDGAR, flag smoking-gun quotes with a cheap
+    # LLM, and Playwright-screenshot each — replacing the manual PNG upload.
+    # All network is skipped in MOCK_MODE (fixtures, $0); a failed pull never
+    # blocks a render. SEC requires a declared User-Agent for live pulls.
+    filings_enabled: bool = Field(default=True, alias="FILINGS_ENABLED")  # per-run kill switch
+    sec_user_agent: str = Field(default="", alias="SEC_USER_AGENT")  # "Name email" — REQUIRED live
+    sec_base_url: str = "https://www.sec.gov"
+    sec_data_base_url: str = "https://data.sec.gov"
+    sec_min_interval_s: float = 0.11        # SEC fair-access: keep well under 10 req/s
+    filings_include_10q: bool = Field(default=False, alias="FILINGS_INCLUDE_10Q")
+    filings_max_shots: int = Field(default=3, alias="FILINGS_MAX_SHOTS")
+    # smoking-gun flagging LLM — swappable. Default: GitHub Models gpt-4o-mini
+    # (free tier, OpenAI-compatible endpoint + a GitHub token). MOCK -> fixture.
+    filings_llm_provider: str = Field(default="github", alias="FILINGS_LLM_PROVIDER")  # github|openai|mock
+    filings_llm_model: str = Field(default="gpt-4o-mini", alias="FILINGS_LLM_MODEL")
+    filings_llm_max_chars: int = 24000      # per-call section budget (free tier is rate-limited)
+    filings_llm_usd_per_call: float = 0.0   # free tier; still recorded in the ledger
+    github_models_token: str = Field(default="", alias="GITHUB_MODELS_TOKEN")
+    github_models_endpoint: str = Field(
+        default="https://models.inference.ai.azure.com", alias="GITHUB_MODELS_ENDPOINT")
+    openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    openai_base_url: str = "https://api.openai.com"
+    # headless Chromium for the screenshots; empty -> Playwright default, or the
+    # pre-provisioned browser if present.
+    playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")
+
     # ------------------------------------------------------------------ prices
     # Price history feeds the branded chart (rendered by the pipeline, never a
     # screenshot). Same Yahoo feed the screener uses; cached, data-only.
@@ -124,7 +157,7 @@ class Settings(BaseSettings):
     short_height: int = 1920
     long_width: int = 1920
     long_height: int = 1080
-    short_target_seconds: float = 60.0
+    short_target_seconds: float = 70.0  # 60–75s "Noise or signal?" band midpoint
     # fast-cut pacing (§editing): ~1.5–3s cuts everywhere, no static shots
     long_min_cut_s: float = 1.5
     long_max_cut_s: float = 3.0

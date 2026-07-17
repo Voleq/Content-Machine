@@ -28,6 +28,15 @@ python3.11 -m venv .venv
 .venv/bin/pip install --upgrade pip -q
 .venv/bin/pip install -q -e .
 
+echo "==> headless Chromium for 10-K auto-screenshots (Playwright)"
+# The filings feature snaps 10-K excerpts with headless Chromium. This pulls
+# the optional extra, the browser, and its apt system libs (libnss3, libgbm,
+# libatk, fonts, …) via 'install --with-deps'. It is OPTIONAL: if this step is
+# skipped the pull degrades to zero auto-shots and a render is never blocked.
+.venv/bin/pip install -q -e '.[filings]'
+.venv/bin/playwright install --with-deps chromium || \
+  echo "    playwright browser install failed — 10-K auto-shots will degrade to none"
+
 echo "==> brand assets (deterministic, generated locally)"
 .venv/bin/python scripts/gen_assets.py
 .venv/bin/python scripts/gen_fixtures.py
@@ -37,7 +46,8 @@ if [ ! -f .env ]; then
   echo "==> wrote .env from .env.example — EDIT IT before starting:"
   echo "    TELEGRAM_BOT_TOKEN, OPERATOR_CHAT_IDS, and (when going live)"
   echo "    MOCK_MODE=false, ELEVENLABS_API_KEY + the Dennis voice id,"
-  echo "    PEXELS_API_KEY, GDRIVE_*"
+  echo "    PEXELS_API_KEY, GDRIVE_*, SEC_USER_AGENT (required for 10-K"
+  echo "    pulls), GITHUB_MODELS_TOKEN (free-tier quote flagging)"
 fi
 
 chown -R dennis:dennis "$DEST"

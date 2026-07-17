@@ -13,8 +13,13 @@ hidden add-in helper sheets are ignored):
     period columns are read DYNAMICALLY from that header, never hardcoded.
   * `Dashboard` — the one-glance summary + flags (this is exactly what the
     numbers sheet reads).
-  * `Valuation` — bear/base/bull scenarios + inputs (long-form).
-  * `Peers`     — the auto-pulled peer table (long-form).
+  * `Valuation` — bear/base/bull scenarios + inputs, plus the auto WACC
+    (CAPM) and reverse-DCF block (long-form).
+  * `Peers`     — the auto-pulled peer table, plus a self-scoring percentile
+    block beneath it (two distinct blocks; long-form).
+  * `News`      — recent headlines (Date/Headline/Source/URL), spilled by the
+    add-in (optional; a news outlet as Source is fine — never a data-terminal
+    brand).
 
 A CSV export (`field_key,value`) is accepted for the snapshot only. Missing
 required identity/size fields BLOCK the run; other gaps warn.
@@ -57,6 +62,7 @@ HISTORY_SHEET = "History"
 DASHBOARD_SHEET = "Dashboard"
 VALUATION_SHEET = "Valuation"
 PEERS_SHEET = "Peers"
+NEWS_SHEET = "News"
 
 
 class CompanyDataError(Exception):
@@ -98,6 +104,20 @@ def _coerce(field: str, raw) -> str | float | None:
     if val is None:
         log.warning("company data field %s: cannot coerce %r to number", field, raw)
     return val
+
+
+def _text_or_none(raw) -> str | None:
+    """NA-aware free-text coerce; a real date collapses to an ISO day string.
+    Used by the News / peer-percentile readers, whose cells are free text (or
+    spilled dates) rather than typed field_keys."""
+    if raw is None:
+        return None
+    if isinstance(raw, _dt.datetime):
+        return raw.date().isoformat()
+    if isinstance(raw, _dt.date):
+        return raw.isoformat()
+    text = str(raw).strip()
+    return None if _is_na(text) else text
 
 
 def find_export(workspace: Path) -> Path | None:
@@ -226,6 +246,41 @@ def _read_dashboard(ws) -> dict[str, object]:
     return out
 
 
+def _read_news(ws) -> list[dict]:
+    """Recent headlines. The header row carries `Date | Headline | Source |
+    URL` (anchor on the row with a cell equal to `Headline`); data rows spill
+    beneath, possibly blank/NA. Skip any row whose headline is empty/NA;
+    dates coerce to ISO day strings. Source is a news outlet, never a
+    data-terminal brand."""
+    rows = _rows(ws)
+    hr = _header_row(rows, "headline")
+    if hr is None:
+        return []
+    header = rows[hr]
+    date_c = _col_of(header, "date")
+    head_c = _col_of(header, "headline")
+    src_c = _col_of(header, "source")
+    url_c = _col_of(header, "url")
+    if head_c is None:
+        return []
+
+    def _cell(row, c):
+        return row[c] if c is not None and c < len(row) else None
+
+    news: list[dict] = []
+    for row in rows[hr + 1:]:
+        headline = _text_or_none(_cell(row, head_c))
+        if not headline:
+            continue  # blank/NA spill row — skip (do NOT stop; gaps happen)
+        news.append({
+            "date": _text_or_none(_cell(row, date_c)),
+            "headline": headline,
+            "source": _text_or_none(_cell(row, src_c)),
+            "url": _text_or_none(_cell(row, url_c)),
+        })
+    return news
+
+
 def _read_valuation(ws) -> dict:
     rows = _rows(ws)
     val: dict = {}
@@ -236,9 +291,36 @@ def _read_valuation(ws) -> dict:
                 return _num(row[1]) if len(row) > 1 else None
         return None
 
+    def _find_value_prefix(prefix: str):
+        """First row whose col-A label STARTS WITH `prefix` (lowercased). The
+        add-in emits these labels with a Unicode minus (U+2212) and en-dashes,
+        so we anchor on the clean leading text, never on hardcoded punctuation."""
+        for row in rows:
+            if row and _cell_text(row[0]).lower().startswith(prefix):
+                return _num(row[1]) if len(row) > 1 else None
+        return None
+
+    def _find_text(label: str):
+        for row in rows:
+            if row and _cell_text(row[0]).lower() == label:
+                return _text_or_none(row[1]) if len(row) > 1 else None
+        return None
+
     val["current_price"] = _find_value("current price")
     val["ltm_eps"] = _find_value("ltm eps")
     val["ltm_fcf_ps"] = _find_value("ltm fcf / share")
+
+    # WACC + reverse-DCF block (fully auto). Match on exact / leading text so
+    # the bare `WACC` row is captured but NOT the "WACC (auto — CAPM)" band
+    # title nor the "WACC −1%" / "WACC +1%" sensitivity rows. `implied_growth`
+    # takes the reverse-DCF row (first "Implied growth …"), not the later
+    # "Implied growth sensitivity …" title.
+    val["wacc"] = _find_value("wacc")
+    val["implied_growth"] = _find_value_prefix("implied growth")
+    val["hist_fcf_cagr"] = _find_value("historical fcf cagr (4y)")
+    val["rev_cagr"] = _find_value("revenue cagr (4y)")
+    val["priced_vs_delivered"] = _find_value_prefix("priced-for")
+    val["reverse_dcf_read"] = _find_text("read")
 
     hr = _header_row(rows, "scenario")
     scenarios: list[dict] = []
@@ -271,12 +353,70 @@ def _read_peers(ws) -> list[dict]:
     for row in rows[hr + 1:]:
         name = _cell_text(row[0]) if row else ""
         if not name:
-            continue
+            # the PEERS() spill is contiguous; the first blank name ends the
+            # auto table — stop here so we never wander into the self-scoring
+            # percentile block that lives beneath it.
+            break
         entry: dict = {"name": name}
         for k, j in zip(_PEER_COLS, range(1, 1 + len(_PEER_COLS))):
             entry[k] = _num(row[j]) if j < len(row) else None
         peers.append(entry)
     return peers
+
+
+def _percentile_direction(raw) -> str | None:
+    """Normalize the "Higher is" column to `better` / `worse`. The cell reads
+    e.g. "better" or "worse (expensive/levered)" — we keep just the polarity."""
+    text = _text_or_none(raw)
+    if text is None:
+        return None
+    low = text.lower()
+    if low.startswith("better"):
+        return "better"
+    if low.startswith("worse"):
+        return "worse"
+    return None
+
+
+def _read_peer_percentiles(ws) -> list[dict]:
+    """The SECOND block on the Peers sheet — the subject's self-score vs its
+    peers — which lives beneath the auto table (`_read_peers` handles that).
+    Anchor on the header row whose col-A cell equals `Metric`
+    (Metric | Subject | Peer median | Percentile | Higher is | Read); metric
+    rows follow until the first blank metric. `percentile` is a 0–1 fraction;
+    `direction` is the polarity of the "Higher is" column; `read` is the
+    plain-text verdict ("expensive vs peers" / "strong vs peers" / …)."""
+    rows = _rows(ws)
+    hr = _header_row(rows, "metric")
+    if hr is None:
+        return []
+    header = rows[hr]
+    m_c = _col_of(header, "metric")
+    subj_c = _col_of(header, "subject")
+    med_c = _col_of(header, "peer median")
+    pct_c = _col_of(header, "percentile")
+    dir_c = _col_of(header, "higher is")
+    read_c = _col_of(header, "read")
+    if m_c is None:
+        return []
+
+    def _cell(row, c):
+        return row[c] if c is not None and c < len(row) else None
+
+    out: list[dict] = []
+    for row in rows[hr + 1:]:
+        metric = _cell_text(row[m_c]) if m_c < len(row) else ""
+        if not metric:
+            break  # the first blank metric ends the block
+        out.append({
+            "metric": metric,
+            "subject": _num(_cell(row, subj_c)),
+            "median": _num(_cell(row, med_c)),
+            "percentile": _num(_cell(row, pct_c)),
+            "direction": _percentile_direction(_cell(row, dir_c)),
+            "read": _text_or_none(_cell(row, read_c)),
+        })
+    return out
 
 
 def load_company_data(workspace: Path) -> CompanyData:
@@ -296,6 +436,8 @@ def load_company_data(workspace: Path) -> CompanyData:
     dashboard: dict[str, object] = {}
     valuation: dict = {}
     peers: list[dict] = []
+    peer_percentiles: list[dict] = []
+    news: list[dict] = []
     if src.suffix == ".xlsx":
         wb = load_workbook(src, data_only=True)
         names = set(wb.sheetnames)
@@ -310,7 +452,14 @@ def load_company_data(workspace: Path) -> CompanyData:
         if VALUATION_SHEET in names:
             valuation = _read_valuation(wb[VALUATION_SHEET])
         if PEERS_SHEET in names:
+            # two distinct blocks on the one sheet — the raw auto table and
+            # the self-scoring percentile block below it.
             peers = _read_peers(wb[PEERS_SHEET])
+            peer_percentiles = _read_peer_percentiles(wb[PEERS_SHEET])
+        if NEWS_SHEET in names:
+            news = _read_news(wb[NEWS_SHEET])
+        else:
+            log.warning("export has no News sheet — recent-headlines flow unavailable")
         wb.close()
     else:
         with open(src, newline="", encoding="utf-8-sig") as f:
@@ -326,7 +475,9 @@ def load_company_data(workspace: Path) -> CompanyData:
     values = {field: _coerce(field, pairs.get(field)) for field in ALL_DATA_FIELDS}
     return CompanyData(values=values, history_years=history_years,
                        history=history, dashboard=dashboard,
-                       valuation=valuation, peers=peers, source_file=str(src))
+                       valuation=valuation, peers=peers,
+                       peer_percentiles=peer_percentiles, news=news,
+                       source_file=str(src))
 
 
 # ---------------------------------------------------------------------------

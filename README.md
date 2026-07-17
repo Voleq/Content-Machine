@@ -1,19 +1,23 @@
 # Dennis
 
 Telegram-controlled, human-in-the-loop video pipeline that renders
-financial videos hosted by **Dennis** — a smart, sarcastic, burnt-out
+financial videos hosted by **Dennis** — a smart, dry, deadpan, burnt-out
 everyman who reads 10-Ks at 3am because the void won't let him sleep.
+Funny on purpose (never merely bored), a disappointed realist rather than
+a hater.
 Two formats:
 
-- **SHORT** — 9:16 vertical, ~55–60s **"Noise or signal?"** on a trending
+- **SHORT** — 9:16 vertical, ~60–75s **"Noise or signal?"** on a trending
   stock. Branded price chart rendered by the pipeline from its own price
   data (never a screenshot), driver headlines overlaid on the chart, a
   multi-year numbers sheet, hand-drawn scribbles, a deadpan free-text
   payoff. No verdict, no stamp — the viewer draws the conclusion.
 - **LONG** — 16:9 deadpan deep-dive on a beaten-down value-lane stock
   (never the trending names): real operations imagery, auto-generated
-  charts, unnamed-source filing flashes, at most 1–2 memes from the owned
-  library, fast ~1.5–3s cuts, resigned close.
+  charts, unnamed-source filing flashes auto-pulled from the 10-K (SEC
+  EDGAR → smoking-gun quotes → headless-Chromium screenshots, no manual
+  uploads), at most 1–2 memes from the owned library, fast ~1.5–3s cuts,
+  resigned close.
 
 The operator supplies the judgment (numbers, thesis, approval); the
 machine does 100% of voice, asset fetching, composition and rendering.

@@ -68,6 +68,10 @@ class SpendLedger:
         with self._lock:
             return int(self._load().get(month_key(), {}).get("pexels_calls", 0))
 
+    def llm_usd_this_month(self) -> float:
+        with self._lock:
+            return float(self._load().get(month_key(), {}).get("llm_usd", 0.0))
+
     def would_exceed(self, additional_usd: float) -> bool:
         return self.mtd_spend_usd() + additional_usd > self.settings.monthly_spend_cap_usd
 
@@ -106,6 +110,15 @@ class SpendLedger:
             self._month(data)["pexels_calls"] += 1
             self._save(data)
 
+    def record_llm(self, usd: float) -> None:
+        """Filing-flagger LLM spend. Cheap (often free-tier $0) but tracked for
+        visibility. Kept separate from the TTS cap bucket."""
+        with self._lock:
+            data = self._load()
+            month = self._month(data)
+            month["llm_usd"] = round(month.get("llm_usd", 0.0) + float(usd), 4)
+            self._save(data)
+
 
 # ---------------------------------------------------------------------------
 # The §9.3 validation + cost report (the artifact behind the Approve button).
@@ -120,6 +133,13 @@ _RENDER_BASE_MIN = {"short": 0.3, "long": 0.5}
 def estimate_render_minutes(fmt: str, words: int, wps: float) -> float:
     duration_min = words / wps / 60.0
     return round(duration_min * _RENDER_FACTOR[fmt] + _RENDER_BASE_MIN[fmt], 1)
+
+
+def estimate_runtime_minutes(words: int, wps: float) -> float:
+    """Estimated finished VIDEO length (minutes) at deadpan pace. LONG length
+    is complexity-driven, so this rides on the actual word count — a 40-min
+    cut is ~2.5x the TTS spend of a 15-min one, and the report shows both."""
+    return round(words / wps / 60.0, 1)
 
 
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
@@ -153,6 +173,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         annotation_note="\n".join(notes),
         meme_count=1 if script.meme else 0,
         meme_cap=settings.meme_max_per_long,
+        est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
@@ -191,6 +212,7 @@ def build_long_report(
         filing_overlays=filing_count,
         meme_count=script.meme_count(),
         meme_cap=settings.meme_max_per_long,
+        est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_long),
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,

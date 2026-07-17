@@ -248,6 +248,9 @@ class LongScript(BaseModel):
     events: list[TagEvent] = Field(default_factory=list)
     # slug -> the self-contained Claude Design prompt the director appended
     asset_prompts: dict[str, str] = Field(default_factory=dict)
+    # the `=== CHAPTERS ===` trailer (mm:ss Title lines) — YouTube chapter
+    # markers the operator pastes; metadata only, split off so it's never spoken
+    chapters: str = ""
 
     @field_validator("ticker")
     @classmethod
@@ -399,7 +402,19 @@ HISTORY_FIELDS: list[str] = [
 
 
 class CompanyData(BaseModel):
-    """Clean, typed view of the operator's v3 data export."""
+    """Clean, typed view of the operator's v3 data export.
+
+    `valuation` is a dict carrying the scenario inputs (`current_price`,
+    `ltm_eps`, `ltm_fcf_ps`), the bear/base/bull `scenarios` list, and the
+    auto WACC + reverse-DCF block: `wacc`, `implied_growth`, `hist_fcf_cagr`,
+    `rev_cagr`, `priced_vs_delivered` (all numeric) and `reverse_dcf_read`
+    (a free-text verdict).
+
+    `news` is a list of `{date, headline, source, url}` dicts (dates ISO,
+    Source a news outlet — never a data-terminal brand). `peer_percentiles`
+    is a list of `{metric, subject, median, percentile, direction, read}`
+    dicts — the subject's self-score vs its peers (percentile 0–1;
+    direction `better`/`worse`)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -407,8 +422,10 @@ class CompanyData(BaseModel):
     history_years: list[str] = Field(default_factory=list)   # oldest -> newest
     history: dict[str, list[float | None]] = Field(default_factory=dict)
     dashboard: dict[str, str | float | None] = Field(default_factory=dict)
-    valuation: dict = Field(default_factory=dict)   # inputs + bear/base/bull
+    valuation: dict = Field(default_factory=dict)   # inputs + bear/base/bull + WACC/reverse-DCF
     peers: list[dict] = Field(default_factory=list)
+    peer_percentiles: list = Field(default_factory=list)  # subject self-score vs peers
+    news: list = Field(default_factory=list)              # recent headlines (optional)
     source_file: str = ""
 
     def get(self, field: str):
@@ -624,7 +641,8 @@ class CostReport(BaseModel):
     filing_overlays: int = 0
     meme_count: int = 0
     meme_cap: int = 2
-    est_render_minutes: float = 0.0
+    est_runtime_min: float = 0.0   # estimated finished VIDEO length (min)
+    est_render_minutes: float = 0.0  # estimated ffmpeg processing time (min)
     mtd_spend_usd: float = 0.0
     monthly_cap_usd: float = 0.0
     warnings: list[str] = Field(default_factory=list)
@@ -656,7 +674,7 @@ class CostReport(BaseModel):
         head += "ready to render" if self.approvable else "BLOCKED"
         lines.append(head)
 
-        tts = f"Audio: {self.words} words / {self.chars} chars"
+        tts = f"Audio: {self.words} words / {self.chars} chars / ~{self.est_runtime_min:.0f} min video"
         tts += "  (cached — $0.00 TTS)" if self.tts_cached else f"  (~${self.est_tts_usd:.2f} TTS)"
         lines.append(tts)
 
