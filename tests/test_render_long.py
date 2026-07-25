@@ -67,7 +67,7 @@ def test_streams_and_duration(rendered):
     assert float(info["format"]["duration"]) == pytest.approx(tts.duration_s, abs=0.7)
 
 
-def test_fast_cut_structure_with_all_kinds(rendered):
+def test_host_anchored_structure_with_all_kinds(rendered):
     settings, script, tts, out, manifest = rendered
     segs = manifest["segments"]
     # tiles the whole duration
@@ -76,17 +76,24 @@ def test_fast_cut_structure_with_all_kinds(rendered):
     for a, b in zip(segs, segs[1:]):
         assert a["end"] == pytest.approx(b["start"], abs=0.01)
     kinds = {s["kind"] for s in segs}
-    assert {"clip", "img", "chart", "filing", "meme", "filler"} <= kinds
-    # fast cuts: fillers never exceed the max cut
+    assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
+
+    # deliberate pacing: nothing flashes by, and every gap is ONE held host
+    # beat rather than a run of chopped filler
     for s in segs:
-        if s["kind"] == "filler":
-            assert s["end"] - s["start"] <= settings.long_max_cut_s + 1e-6
-    # visual segments start exactly on their cue's anchor-word time
+        assert s["end"] - s["start"] >= 1.0, f"{s['kind']} flashes by"
+    for a, b in zip(segs, segs[1:]):
+        assert not (a["kind"] == "host" and b["kind"] == "host"), \
+            "consecutive host beats mean the gap was chopped"
+
+    # visual segments start on their cue's anchor-word time, or later when a
+    # data visual before them was still being read
     cues = build_long_timeline(script, tts.words, tts.duration_s)
-    cue_times = {round(c.t, 3) for c in cues if c.kind is not CueKind.SOUND}
+    cue_times = sorted(c.t for c in cues if c.kind is not CueKind.SOUND)
     for seg in segs:
-        if seg["kind"] != "filler":
-            assert round(seg["start"], 3) in cue_times
+        if seg["kind"] == "host":
+            continue
+        assert any(seg["start"] >= t - 1e-3 for t in cue_times)
 
 
 def test_cue_times_reached_the_filtergraph(rendered):
@@ -145,20 +152,21 @@ def test_long_captions_are_a_fitted_box(rendered):
     assert ",1,4,2,2," not in ass, "not the SHORT outline style"
 
 
-def test_fillers_are_designed_backdrops_not_repeated_cards(rendered):
+def test_host_holds_the_untagged_stretches(rendered):
+    """Untagged narration is Dennis on screen, not a designed filler card."""
     settings, script, tts, out, manifest = rendered
     rdir = out.parent / "render_long"
-    backdrops = sorted(rdir.glob("backdrop_*.png"))
-    assert len(backdrops) >= 3, "a pool of designed backdrops is drawn"
     assert not list(rdir.glob("card_*.png")), "the repeated mascot cards are gone"
-    fillers = [s for s in manifest["segments"] if s["kind"] == "filler"]
-    assert fillers, "the sample has filler beats"
-    # fillers are numbered sequentially so consecutive ones can never map to
-    # the same pooled backdrop (variant % pool differs for consecutive ints)
-    segs = manifest["segments"]
-    for a, b in zip(segs, segs[1:]):
-        if a["kind"] == "filler" and b["kind"] == "filler":
-            assert a["variant"] != b["variant"], "adjacent fillers must differ"
+
+    hosts = [s for s in manifest["segments"] if s["kind"] == "host"]
+    assert hosts, "the sample has host beats"
+    assert all(h["layout"] == "host-full" for h in hosts)
+    # a real talking clip was composited for each one
+    clips = sorted(rdir.glob("host_*.mov"))
+    assert len(clips) >= len(hosts), "every host beat gets a lip-synced clip"
+    # host beats are numbered sequentially so the renderer can vary the shot
+    variants = [h["variant"] for h in hosts]
+    assert len(set(variants)) == len(variants)
 
 
 def test_design_system_furniture_present_and_clear(rendered):

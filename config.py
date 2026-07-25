@@ -160,9 +160,13 @@ class Settings(BaseSettings):
     long_width: int = 1920
     long_height: int = 1080
     short_target_seconds: float = 70.0  # 60–75s "Noise or signal?" band midpoint
-    # fast-cut pacing (§editing): ~1.5–3s cuts everywhere, no static shots
-    long_min_cut_s: float = 1.5
-    long_max_cut_s: float = 3.0
+    # Deliberate pacing (§editing): Dennis holds the frame and cuts away to
+    # evidence that stays up long enough to read. `long_min_readable_s` is the
+    # floor for data visuals — a later cut is deferred rather than truncating
+    # a chart or a filing the viewer is still reading.
+    long_min_readable_s: float = 5.0
+    # host on each side of a chapter boundary, so chapters bookend on his face
+    long_chapter_host_s: float = 2.5
 
     # encode profiles (§7.3) — libx264 assumed on a cheap VPS; hardware
     # encoders are auto-detected at startup and used when present.

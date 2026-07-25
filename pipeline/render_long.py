@@ -1,37 +1,43 @@
-"""LONG jump-cut engine — 16:9 deadpan deep-dive (§5).
+"""LONG host-anchored engine — 16:9 deadpan deep-dive (§5).
 
 Structure:
   * clean audio from the tag-stripped narration (cached TTS)
   * `build_long_timeline` resolves every tag to its spoken word
-  * `plan_long_segments` tiles the full duration with fast ~1.5–3s cuts
+  * `plan_long_segments` tiles the full duration with host beats and the
+    evidence he cuts away to
   * the whole video is ONE ffmpeg filter_complex: per-segment trim ->
     concat -> bug/disclaimer/glitch overlays -> libass captions, plus
     VO + music bed + SFX in a single amix — one final encode
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
 
-MEDIA IS THE BACKGROUND (§editing): every segment is a full-frame visual
-with real motion — nothing is a static hold, nothing is a bare black frame.
-Stills are composed to fill the frame (cover-fit / blurred-fill) and get a
-randomized Ken Burns move; clips play their footage. Doodles/scribbles ride
-ON TOP as brief overlay cutaways, never as the main element of a held frame.
+DENNIS IS THE BASE FRAME (§editing): this is a talking-host show. Untagged
+narration is the host on screen, lip-synced to the voice-over by
+`pipeline.host`; a tag means leave his face for a piece of evidence and hold
+it long enough to read. Nothing flashes by: data visuals cannot be cut short
+by a later tag, that tag is deferred instead. Doodles/scribbles ride ON TOP,
+including over the host.
 
 Segment kinds:
+  host    Dennis talking — the default frame, one held beat per untagged gap
   clip    ironic stock footage (content engine, palette-first), real motion
   img     real operations/product imagery, full-frame + Ken Burns
   meme    freeze-frame from the owned library, composed full-frame + boom
           (first one gets the record-scratch rewind)
-  chart   auto-generated channel-style chart, Ken Burns
+  chart   auto-generated channel-style chart — a TWO-SHOT beside the host
   filing  the unnamed-source data screenshot, glitch flash on reveal
-  asset   bespoke Claude-Design visual from assets/custom/
-  filler  a DESIGNED Dennis-palette backdrop (gradient / grid / signal card /
-          chapter word / dot field), families spread so no two adjacent
-          fillers share a look — never a bare black frame
+  asset   bespoke Claude-Design visual from assets/custom/ — also a two-shot
+
+Layouts: host-full (him alone), two-shot (him beside a designed panel) and
+cutaway-full (raw full-frame photography, footage and filings), always
+returning to him. Chapter boundaries reserve a host beat on each side, so a
+chapter opens and closes on his face.
 
 Chapter stingers divide the acts; the branded strip + corner bug frame the
 top, captions sit in a fitted box band clear of the furniture. Every visual
-lands exactly on its anchor word; there is no verdict stamp — the video ends
-on whatever deadpan line the script wrote.
+lands on its anchor word (or the first moment after it that is free); there
+is no verdict stamp — the video ends on whatever deadpan line the script
+wrote.
 """
 
 from __future__ import annotations
@@ -43,6 +49,7 @@ from pathlib import Path
 from config import Settings
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
+from pipeline.host import build_host_clip
 from pipeline.models import (
     CueKind,
     LongScript,
@@ -75,6 +82,7 @@ from pipeline.render_common import (
 from pipeline.timeline import (
     LONG_FILLER_LOOKS,
     build_long_timeline,
+    chapter_start_times,
     plan_long_segments,
 )
 
@@ -146,8 +154,9 @@ def render_long(
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     segments, seg_warnings = plan_long_segments(
         cues, duration,
-        min_cut_s=settings.long_min_cut_s,
-        max_cut_s=settings.long_max_cut_s,
+        chapter_starts=chapter_start_times(script.chapters, duration),
+        min_readable_s=settings.long_min_readable_s,
+        chapter_host_s=settings.long_chapter_host_s,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -164,6 +173,8 @@ def render_long(
 
     website = str(company_data.get("website") or "") if company_data is not None else ""
     overrides = broll_overrides or {}
+
+    px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
     # ------------------------------------------------ per-segment inputs
     inputs: list[str] = []
@@ -196,8 +207,78 @@ def render_long(
     def _kb_mode(idx: int) -> str:
         return _KB_MODES[(idx + kb_off) % len(_KB_MODES)]
 
+    # ------------------------------------------------------- the host rig
+    # Dennis is composited per segment, lip-synced to that segment's slice of
+    # the voice-over. `HOST_POSES` rotate with the beat index so a long cut
+    # never returns to an identical shot; a missing rig degrades to the
+    # designed backdrop rather than failing the render.
+    host_h = int(H * 0.82)
+
+    def _host_input(seg_i: int, seg, seg_len: float, *, panel: bool = False):
+        """Add the host clip as an input. Returns (index, x, y) or None."""
+        side = seg.payload.get("host_side", "left")
+        if panel:
+            # in a two-shot he faces the panel on the other side
+            facing = "right" if side == "left" else "left"
+            expression = "point"
+        else:
+            facing = "right" if seg_i % 2 == 0 else "left"
+            expression = "talk"
+        built = build_host_clip(
+            tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
+            display_h=host_h, fps=settings.fps,
+            expression=expression, facing=facing, root=settings.assets_dir.parent,
+        )
+        if built is None:
+            return None
+        clip_path, (hw, hh) = built
+        if panel:
+            x = px(60) if side == "left" else W - hw - px(60)
+        else:
+            x = int((W - hw) / 2)
+        return _add_input(["-i", str(clip_path)]), x, H - hh
+
+    def _overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
+                       seg_len: float, seg_i: int, tail: str) -> str:
+        """Backdrop + alpha host clip -> one concat-ready segment stream."""
+        return (
+            f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+            f"scale={W}:{H}[hbg{seg_i}];"
+            f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+            f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
+            f"trim=0:{seg_len:.4f}[hfg{seg_i}];"
+            f"[hbg{seg_i}][hfg{seg_i}]overlay={x}:{y}:eof_action=repeat"
+            f"{tail}"
+        )
+
+    def _panel_frame(still: Path, host_side: str, dest: Path, *, variant: int) -> Path:
+        """The two-shot plate: the designed panel inset on the side opposite
+        Dennis, over the room backdrop."""
+        from PIL import Image
+
+        base = Image.open(_backdrop_path(variant)).convert("RGB").resize((W, H))
+        panel = Image.open(still).convert("RGBA")
+        max_w, max_h = int(W * 0.56), int(H * 0.72)
+        ratio = min(max_w / panel.width, max_h / panel.height)
+        panel = panel.resize((max(int(panel.width * ratio), 1),
+                              max(int(panel.height * ratio), 1)), Image.LANCZOS)
+        x = W - panel.width - px(70) if host_side == "left" else px(70)
+        base.paste(panel, (x, int((H - panel.height) / 2)), panel)
+        base.save(dest)
+        return dest
+
     shot_cache: dict[str, Path] = {}
     meme_frame_cache: dict[str, Path] = {}
+    # A host beat needs two inputs (the room, then Dennis over it), so input
+    # indices are tracked explicitly rather than assumed equal to the segment
+    # index.
+    n_inputs = 0
+
+    def _add_input(args: list[str]) -> int:
+        nonlocal n_inputs
+        inputs.extend(args)
+        n_inputs += 1
+        return n_inputs - 1
 
     for i, seg in enumerate(segments):
         seg_len = seg.length
@@ -207,9 +288,9 @@ def render_long(
         tail = f",setsar=1,format=yuv420p[s{i}]"
         value = seg.payload.get("value", "")
 
-        def _still_input(path: Path) -> None:
-            inputs.extend(["-loop", "1", "-framerate", str(settings.fps),
-                           "-t", f"{seg_len + 0.2:.4f}", "-i", str(path)])
+        def _still_input(path: Path) -> int:
+            return _add_input(["-loop", "1", "-framerate", str(settings.fps),
+                               "-t", f"{seg_len + 0.2:.4f}", "-i", str(path)])
 
         def _clip_motion(idx: int) -> str:
             # real footage motion, cover-scaled, with a gentle drift so even a
@@ -220,27 +301,41 @@ def render_long(
                 f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
             )
 
-        if seg.kind == "clip":
+        if seg.kind == "host":
+            # Dennis is the default base frame: the room, then the talking rig
+            # lip-synced to this segment's slice of the voice-over.
+            visual = None
+            variant = seg.payload.get("variant", 0)
+            bg_i = _still_input(_backdrop_path(variant))
+            host = _host_input(i, seg, seg_len)
+            if host is None:
+                chain = _ken_burns_chain(bg_i, seg_len, W, H, _kb_mode(i), tail,
+                                         settings.fps)
+            else:
+                host_i, hx, hy = host
+                chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
+        elif seg.kind == "clip":
             visual = content.resolve_clip(value, overrides.get(value, 0))
-            inputs += ["-i", str(visual.path)]
-            chain = _clip_motion(i)
+            clip_i = _add_input(["-i", str(visual.path)])
+            chain = _clip_motion(clip_i)
         elif seg.kind == "filing":
             if value not in shot_cache:
                 shot_cache[value] = prepare_screenshot(
                     workspace / value, rdir / f"shot_{Path(value).stem}.png", settings
                 )
             visual = None
-            _still_input(shot_cache[value])
-            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
+            still_i = _still_input(shot_cache[value])
+            chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
         elif seg.kind == "screengrab":
             # operator-supplied capture — image (full-frame) or short clip
             visual = content.resolve_screengrab(value)
             if visual.is_video:
-                inputs += ["-i", str(visual.path)]
-                chain = _clip_motion(i)
+                clip_i = _add_input(["-i", str(visual.path)])
+                chain = _clip_motion(clip_i)
             else:
-                _still_input(visual.path)
-                chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
+                still_i = _still_input(visual.path)
+                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
+                                         settings.fps)
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -265,13 +360,27 @@ def render_long(
                     cover_fill_frame(visual.path, W, H, keep_min=1.1).save(dest)
                     meme_frame_cache[visual.key] = dest
                 still = meme_frame_cache[visual.key]
-            _still_input(still)
-            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
-        else:  # filler -> a DESIGNED backdrop, Ken Burns
+            # A designed panel (chart / bespoke diagram) plays as a TWO-SHOT:
+            # Dennis stays in frame beside it, so the cut never leaves the
+            # host. Photographs, footage and memes stay raw and full-frame.
+            host = (_host_input(i, seg, seg_len, panel=True)
+                    if seg.payload.get("layout") == "two-shot" else None)
+            if host is None:
+                still_i = _still_input(still)
+                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
+                                         settings.fps)
+            else:
+                panel = _panel_frame(still, seg.payload.get("host_side", "left"),
+                                     rdir / f"panel_{i}.png", variant=i)
+                bg_i = _still_input(panel)
+                host_i, hx, hy = host
+                chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
+        else:  # an unrecognised kind still gets a designed backdrop
             visual = None
             variant = seg.payload.get("variant", 0)
-            _still_input(_backdrop_path(variant))
-            chain = _ken_burns_chain(i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
+            still_i = _still_input(_backdrop_path(variant))
+            chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
+                                     settings.fps)
         meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
         if value:
             meta["value"] = value
@@ -280,8 +389,10 @@ def render_long(
             meta["attribution"] = visual.attribution
         else:
             meta["attribution"] = ""
-        if seg.kind == "filler":
+        if seg.kind == "host":
             meta["variant"] = seg.payload.get("variant", 0)
+        if seg.payload.get("layout"):
+            meta["layout"] = seg.payload["layout"]
         seg_meta.append(meta)
         lines.append(chain)
 
@@ -291,7 +402,6 @@ def render_long(
 
     # ------------------------------------------------------------ layers
     layers: list[OverlayLayer] = []
-    px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
     # composed opening title card (a real open, not a lone mascot on a flat
     # backdrop) — full-frame over the first beat, fading out on its own

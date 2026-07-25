@@ -21,7 +21,6 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 from __future__ import annotations
 
 import hashlib
-import math
 from dataclasses import dataclass, field
 
 from pipeline.models import (
@@ -368,28 +367,70 @@ MIN_SEGMENT_S = 0.25
 # int so this module stays pure logic — no PIL/raster import.
 LONG_FILLER_LOOKS = 12
 
-# how long each visual kind holds before cutting back (a meme is a beat,
-# a clip is a thought)
+# How long each visual kind holds before cutting back to the host. These are
+# roughly double the old values: the show is a host talking who cuts away to
+# evidence, and evidence the viewer cannot finish reading is worse than no
+# evidence at all. A meme is still a beat; a diagram is a paragraph.
 DEFAULT_HOLDS = {
-    CueKind.CLIP: 3.0,
-    CueKind.IMG: 2.8,
-    CueKind.CHART: 3.0,
-    CueKind.FILING: 2.8,
-    CueKind.SCREENGRAB: 3.0,
-    CueKind.ASSET: 3.0,
-    CueKind.MEME: 1.8,
+    CueKind.CLIP: 5.0,
+    CueKind.IMG: 5.0,
+    CueKind.CHART: 7.0,
+    CueKind.FILING: 6.0,
+    CueKind.SCREENGRAB: 6.0,
+    CueKind.ASSET: 8.0,
+    CueKind.MEME: 3.0,
 }
+
+# Kinds carrying data a viewer has to READ rather than glance at. These never
+# cut early: a later visual is pushed back rather than truncating one of
+# these, and the voice-over simply keeps running underneath.
+READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET)
+MIN_READABLE_S = 5.0
+
+# Designed panels sit BESIDE Dennis (the two-shot); real photographs,
+# footage, filings and memes take the whole frame raw.
+TWO_SHOT_KINDS = (CueKind.CHART, CueKind.ASSET)
+
+# Dennis bookends every chapter: this much host on each side of a chapter
+# boundary is reserved, so a chapter always opens and closes on his face.
+CHAPTER_HOST_S = 2.5
+
+# The shortest host beat worth cutting to. A third of a second of Dennis
+# between two cutaways is a blink, not a beat — below this the evidence
+# already on screen simply stays up until the next one is due.
+MIN_HOST_BEAT_S = 1.2
+
+
+def chapter_start_times(chapters: str, duration: float) -> list[float]:
+    """Seconds from the `=== CHAPTERS ===` trailer's `mm:ss Title` lines.
+
+    The times are the writer's estimates, not measurements — they are used
+    only to reserve a host beat around each boundary, never to place audio.
+    Anything unparseable or past the end of the cut is skipped.
+    """
+    out: list[float] = []
+    for line in (chapters or "").splitlines():
+        stamp = line.strip().split(" ", 1)[0]
+        parts = stamp.split(":")
+        if not (2 <= len(parts) <= 3) or not all(p.isdigit() for p in parts):
+            continue
+        seconds = 0.0
+        for p in parts:
+            seconds = seconds * 60 + int(p)
+        if 0.0 < seconds < duration:
+            out.append(seconds)
+    return sorted(set(out))
 
 
 def _diversify_fillers(segments: list["Segment"]) -> None:
-    """Number the fillers sequentially (payload['variant']). The renderer
-    spreads that index across a wide pool of DESIGNED backdrops, so a run of
-    filler beats reads as motion through a deck — and because consecutive
-    fillers get consecutive indices they can never land on the same backdrop.
-    LONG_FILLER_LOOKS is the minimum distinct looks the renderer guarantees."""
+    """Number the host beats sequentially (payload['variant']).
+
+    The renderer spreads that index across the rig's poses and boil seeds, so
+    a long cut does not return to an identical Dennis every time. Consecutive
+    beats get consecutive indices, so neighbours can never match."""
     counter = 0
     for seg in segments:
-        if seg.kind != "filler":
+        if seg.kind != "host":
             continue
         seg.payload["variant"] = counter
         counter += 1
@@ -399,81 +440,103 @@ def plan_long_segments(
     cues: list[Cue],
     duration: float,
     *,
-    min_cut_s: float = 1.5,
-    max_cut_s: float = 3.0,
     holds: dict | None = None,
+    chapter_starts: list[float] | None = None,
+    min_readable_s: float = MIN_READABLE_S,
+    chapter_host_s: float = CHAPTER_HOST_S,
 ) -> tuple[list[Segment], list[str]]:
-    """Tile [0, duration] with fast jump-cut segments (~1.5–3s).
+    """Tile [0, duration] with host beats and the evidence he cuts away to.
 
-    Visual cues claim a segment starting exactly at their anchor time; the
-    gaps between them are subdivided into filler cuts no longer than
-    `max_cut_s`. Returns (segments, warnings). Invariant: segments tile
-    the full duration with no gaps or overlaps.
+    Dennis is the DEFAULT base frame: every stretch the director did not tag
+    is one held host segment, not a run of filler cards. A visual cue claims
+    the frame from its anchor word and keeps it for its full hold — if the
+    next cue lands during that hold it is pushed back rather than cutting the
+    current one short, so nothing on screen is ever unreadable. Chapter
+    boundaries reserve a host beat on each side.
+
+    Returns (segments, warnings). Invariant: segments tile the full duration
+    with no gaps or overlaps.
     """
     holds = {**DEFAULT_HOLDS, **(holds or {})}
     warnings: list[str] = []
     visual = [c for c in cues if c.kind in VISUAL_CUE_KINDS]
     visual.sort(key=lambda c: c.t)
 
-    # drop cues that would produce sub-minimum segments (stacked tags)
-    pruned: list[Cue] = []
-    for c in visual:
-        if c.t >= duration - MIN_SEGMENT_S:
-            warnings.append(f"visual cue at {c.t:.2f}s is too close to the end — dropped")
-            continue
-        if pruned and c.t - pruned[-1].t < MIN_SEGMENT_S:
-            warnings.append(
-                f"visual cues stacked at {pruned[-1].t:.2f}s/{c.t:.2f}s — kept the later one"
-            )
-            pruned.pop()
-        pruned.append(c)
+    # Windows the evidence may not occupy, so each chapter opens and closes
+    # on Dennis talking.
+    blocked: list[tuple[float, float]] = [
+        (max(t - chapter_host_s, 0.0), min(t + chapter_host_s, duration))
+        for t in sorted(chapter_starts or []) if 0.0 < t < duration
+    ]
+
+    def push_past_chapter_beat(t: float) -> float:
+        for a, b in blocked:
+            if a <= t < b:
+                return b
+        return t
 
     segments: list[Segment] = []
-    filler_i = 0
+    host_i = 0
 
-    def add_filler(a: float, b: float) -> None:
-        nonlocal filler_i
-        gap = b - a
-        if gap <= 0:
+    def add_host(a: float, b: float) -> None:
+        """One held host beat for the gap — never chopped into filler cuts."""
+        nonlocal host_i
+        if b - a <= 0:
             return
-        if gap < MIN_SEGMENT_S and segments:
-            segments[-1].end = b  # absorb slivers into the previous cut
+        if b - a < MIN_HOST_BEAT_S and segments:
+            # too short to be a beat: leave the previous visual up instead of
+            # blinking to the host and straight back out
+            segments[-1].end = b
             return
-        pieces = max(1, math.ceil(gap / max_cut_s))
-        # avoid machine-gun cuts: don't create pieces shorter than min_cut
-        # unless the gap itself is short
-        while pieces > 1 and gap / pieces < min_cut_s:
-            pieces -= 1
-        step = gap / pieces
-        for i in range(pieces):
-            segments.append(Segment(
-                start=a + i * step,
-                end=b if i == pieces - 1 else a + (i + 1) * step,
-                kind="filler",
-                payload={"variant": filler_i % 4},
-            ))
-            filler_i += 1
+        segments.append(Segment(start=a, end=b, kind="host",
+                                payload={"variant": host_i, "layout": "host-full"}))
+        host_i += 1
 
     cursor = 0.0
-    for i, c in enumerate(pruned):
-        add_filler(cursor, c.t)
-        next_t = pruned[i + 1].t if i + 1 < len(pruned) else duration
-        hold = holds.get(c.kind, 3.0)
-        end = min(c.t + hold, next_t, duration)
-        segments.append(Segment(start=c.t, end=end, kind=c.kind.value,
-                                payload=dict(c.payload)))
+    two_shot_i = 0
+    for c in visual:
+        # never before the previous visual has finished, never inside a
+        # chapter bookend
+        start = push_past_chapter_beat(max(c.t, cursor))
+        if not segments and start < MIN_HOST_BEAT_S:
+            # the cut opens on Dennis, even when the first tag lands early
+            start = min(MIN_HOST_BEAT_S, duration)
+        if start >= duration - MIN_SEGMENT_S:
+            warnings.append(
+                f"visual cue at {c.t:.2f}s no longer fits before the end — dropped"
+            )
+            continue
+        if start - c.t > 2.0:
+            warnings.append(
+                f"visual cue at {c.t:.2f}s deferred to {start:.2f}s — the previous "
+                f"visual was still being read"
+            )
+        add_host(cursor, start)
+        hold = holds.get(c.kind, 5.0)
+        if c.kind in READABLE_KINDS:
+            hold = max(hold, min_readable_s)
+        end = min(start + hold, duration)
+        payload = dict(c.payload)
+        if c.kind in TWO_SHOT_KINDS:
+            # Dennis stays in frame beside the panel, alternating sides so
+            # two two-shots in a row do not look like the same picture.
+            payload["layout"] = "two-shot"
+            payload["host_side"] = "left" if two_shot_i % 2 == 0 else "right"
+            two_shot_i += 1
+        else:
+            payload["layout"] = "cutaway-full"
+        segments.append(Segment(start=start, end=end, kind=c.kind.value,
+                                payload=payload))
         cursor = end
-    add_filler(cursor, duration)
+    add_host(cursor, duration)
 
     # ---- scene-variety pass (§editing) -------------------------------------
-    # Give every filler a DESIGNED backdrop family that differs from its
-    # neighbour, so a run of filler cuts (a long gap with no assigned media)
-    # never reads as the same bare frame on repeat. Real media cues keep
-    # their own type. Adjacent same-TYPE real cuts are flagged (rare — they
-    # only happen when the director stacks two of a kind back-to-back).
+    # Host beats are numbered so the renderer can vary his pose and the boil
+    # seed across a long cut. Adjacent same-TYPE cutaways are flagged (rare —
+    # they only happen when the director stacks two of a kind back-to-back).
     _diversify_fillers(segments)
     for a, b in zip(segments, segments[1:]):
-        if a.kind == b.kind and a.kind != "filler":
+        if a.kind == b.kind and a.kind != "host":
             warnings.append(
                 f"adjacent {a.kind} cuts at {a.start:.2f}s/{b.start:.2f}s "
                 f"— same visual type back-to-back"

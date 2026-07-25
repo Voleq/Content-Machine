@@ -299,12 +299,13 @@ def _tiled(segments, duration):
         assert a.end == pytest.approx(b.start)
 
 
-def test_segments_no_cues_all_filler():
+def test_untagged_narration_is_one_held_host_beat():
+    """No tags means Dennis holds the frame — not a run of filler cards."""
     segments, warnings = plan_long_segments([], 22.0)
     _tiled(segments, 22.0)
-    assert all(s.kind == "filler" for s in segments)
-    assert all(s.length <= 3.0 + 1e-6 for s in segments), "fast cuts: ≤3s"
-    assert all(s.length >= 1.5 - 1e-6 for s in segments)
+    assert [s.kind for s in segments] == ["host"]
+    assert segments[0].length == pytest.approx(22.0)
+    assert segments[0].payload["layout"] == "host-full"
 
 
 def test_segments_with_cues(long_valid_text, settings):
@@ -322,7 +323,7 @@ def test_segments_with_cues(long_valid_text, settings):
     hit = sum(1 for c in clip_cues if round(c.t, 3) in started)
     assert hit >= len(clips)  # every kept clip segment maps to a cue
     kinds = {s.kind for s in segments}
-    assert {"clip", "img", "chart", "filing", "meme", "filler"} <= kinds
+    assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
     assert all(s.length >= 0.25 - 1e-9 for s in segments)
 
 
@@ -340,18 +341,21 @@ def test_segments_meme_holds_shorter_than_clips():
     _tiled(segments, 40.0)
 
 
-def test_segments_stacked_cues_keep_later(settings):
+def test_stacked_cues_are_deferred_not_dropped(settings):
+    """Two tags on adjacent words: the second waits its turn rather than
+    cutting the first one short."""
     from pipeline.models import Cue
 
     cues = [
         Cue(t=5.0, kind=CueKind.CLIP, payload={"value": "a"}),
         Cue(t=5.1, kind=CueKind.CLIP, payload={"value": "b"}),
     ]
-    segments, warnings = plan_long_segments(cues, 20.0)
-    _tiled(segments, 20.0)
+    segments, warnings = plan_long_segments(cues, 30.0)
+    _tiled(segments, 30.0)
     kept = [s for s in segments if s.kind == "clip"]
-    assert len(kept) == 1 and kept[0].payload["value"] == "b"
-    assert warnings
+    assert [k.payload["value"] for k in kept] == ["a", "b"]
+    assert kept[0].end == pytest.approx(kept[1].start)
+    assert any("deferred" in w for w in warnings)
 
 
 def test_segments_cue_near_end_dropped():
@@ -360,40 +364,56 @@ def test_segments_cue_near_end_dropped():
     cues = [Cue(t=19.9, kind=CueKind.CLIP, payload={"value": "a"})]
     segments, warnings = plan_long_segments(cues, 20.0)
     _tiled(segments, 20.0)
-    assert all(s.kind == "filler" for s in segments)
-    assert any("too close to the end" in w for w in warnings)
+    assert all(s.kind == "host" for s in segments)
+    assert any("no longer fits before the end" in w for w in warnings)
 
 
-def test_segments_hold_capped_by_next_cue():
+def test_data_visuals_are_never_cut_short():
+    """A chart the viewer is still reading is not cut for the next tag."""
     from pipeline.models import Cue
+    from pipeline.timeline import MIN_READABLE_S
 
     cues = [
-        Cue(t=2.0, kind=CueKind.CLIP, payload={"value": "a"}),
+        Cue(t=2.0, kind=CueKind.CHART, payload={"value": "revenue"}),
         Cue(t=3.5, kind=CueKind.CLIP, payload={"value": "b"}),
     ]
-    segments, _ = plan_long_segments(cues, 30.0)
-    first = next(s for s in segments if s.kind == "clip")
-    assert first.end == pytest.approx(3.5), "a hold never runs over the next cue"
-    _tiled(segments, 30.0)
+    segments, _ = plan_long_segments(cues, 40.0)
+    chart = next(s for s in segments if s.kind == "chart")
+    clip = next(s for s in segments if s.kind == "clip")
+    assert chart.length >= MIN_READABLE_S
+    assert clip.start >= chart.end - 1e-9, "the clip waits for the chart to finish"
+    _tiled(segments, 40.0)
+
+
+def test_holds_are_deliberate_not_machine_gun():
+    """Every kind holds long enough to register; data kinds longest."""
+    from pipeline.models import Cue
+    from pipeline.timeline import DEFAULT_HOLDS
+
+    for kind, hold in DEFAULT_HOLDS.items():
+        cues = [Cue(t=2.0, kind=kind, payload={"value": "x"})]
+        segments, _ = plan_long_segments(cues, 60.0)
+        seg = next(s for s in segments if s.kind == kind.value)
+        assert seg.length == pytest.approx(hold)
+        assert seg.length >= 3.0, f"{kind.value} still machine-guns"
+    assert DEFAULT_HOLDS[CueKind.ASSET] >= DEFAULT_HOLDS[CueKind.MEME] * 2
 
 
 # ------------------------------------------------------ scene-variety planner
 
 
-def test_adjacent_fillers_get_distinct_looks():
-    """A run of filler cuts (a long gap with no media) must not read as the
-    same bare frame — consecutive fillers get different backdrop families."""
-    segments, _ = plan_long_segments([], 24.0)  # all filler
-    fillers = [s for s in segments if s.kind == "filler"]
-    assert len(fillers) >= 4
-    for a, b in zip(segments, segments[1:]):
-        if a.kind == "filler" and b.kind == "filler":
-            assert a.payload["variant"] != b.payload["variant"], \
-                "consecutive fillers must not share a backdrop look"
-    # a longer timeline exercises more than the old 4-look rotation
-    long_segments, _ = plan_long_segments([], 120.0)
-    looks = {s.payload["variant"] for s in long_segments if s.kind == "filler"}
-    assert len(looks) >= 3
+def test_host_beats_get_distinct_looks():
+    """Consecutive host beats are numbered so the renderer never returns to
+    an identical shot."""
+    from pipeline.models import Cue
+
+    cues = [Cue(t=t, kind=CueKind.CLIP, payload={"value": f"c{i}"})
+            for i, t in enumerate((10.0, 25.0, 40.0, 55.0))]
+    segments, _ = plan_long_segments(cues, 80.0)
+    hosts = [s for s in segments if s.kind == "host"]
+    assert len(hosts) >= 4
+    variants = [h.payload["variant"] for h in hosts]
+    assert variants == sorted(variants) and len(set(variants)) == len(variants)
 
 
 def test_adjacent_same_type_real_cuts_are_flagged():
