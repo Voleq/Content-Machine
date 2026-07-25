@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+  @keyframes dpulse { 0% { box-shadow: 0 0 0 0 rgba(255,82,71,.5); } 70% { box-shadow: 0 0 0 10px rgba(255,82,71,0); } 100% { box-shadow: 0 0 0 0 rgba(255,82,71,0); } }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1440px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · LAYERED HOST RIG</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:96px; line-height:.9; letter-spacing:-.02em;">The living host</h1>
+  <p style="margin:18px 0 0; max-width:760px; font-size:17px; line-height:1.6; color:#3a3a3d;">One Dennis, built from <strong>stacked layers</strong> — body · head · eyes · a mouth open/closed pair · a swappable arm. The pipeline flips the mouth for a <strong>talk-flap</strong>, swaps the arm to point, and re-seeds the wobble for a living <strong>boil</strong>. Every layer exports as its own transparent PNG; stack them for endless takes. Same mug, hair tuft and flat mouth — <em>he never smiles.</em></p>
+</header>
+
+<section style="display:grid; grid-template-columns:1.15fr .85fr; gap:30px; align-items:stretch; margin:0 0 34px;">
+  <div style="position:relative; border-radius:6px; overflow:hidden; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover no-repeat; box-shadow:0 30px 60px -34px rgba(35,35,38,.5); min-height:560px;">
+    <div style="position:absolute; left:40px; top:34px; font-family:'Space Mono',monospace; line-height:1.15;">
+      <div style="display:flex; align-items:baseline; gap:.5em; font-size:24px; font-weight:700;"><span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span><span>$12.40</span></div>
+      <div style="font-size:12px; color:#8f8c83; margin-top:4px;">4:00PM ET · VOL 1M · AVG 3M 500K</div>
+    </div>
+    <div style="position:absolute; right:34px; top:34px; display:flex; align-items:center; gap:8px; font-family:'Space Mono',monospace; font-size:12px; font-weight:700; letter-spacing:.12em; color:#ff5247;">
+      <span style="width:9px; height:9px; border-radius:50%; background:#ff5247; box-shadow:0 0 0 0 rgba(255,82,71,.5); animation:dpulse 1.4s ease-out infinite;"></span>LIVE
+    </div>
+    <svg ref="{{ heroRef }}" viewBox="300 120 560 820" preserveAspectRatio="xMidYMax meet" style="position:absolute; left:0; right:0; bottom:44px; margin:0 auto; width:70%; height:82%; overflow:visible; display:block;"></svg>
+    <div style="position:absolute; left:40px; bottom:30px; font-family:'Space Grotesk',sans-serif; font-size:16px; color:#8f8c83;">Opinion / entertainment. Not financial advice.</div>
+  </div>
+
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:30px 32px;">
+    <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8f8c83; margin-bottom:16px;">THE STACK · bottom → top</div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; align-items:center; gap:14px;"><span style="font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; width:20px;">01</span><span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:19px; width:120px;">body</span><span style="font-size:13.5px; color:#6f6c65;">torso · neck · legs</span></div>
+      <div style="display:flex; align-items:center; gap:14px;"><span style="font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; width:20px;">02</span><span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:19px; width:120px;">arm</span><span style="font-size:13.5px; color:#6f6c65;">6 swaps · mug welded on</span></div>
+      <div style="display:flex; align-items:center; gap:14px;"><span style="font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; width:20px;">03</span><span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:19px; width:120px;">head</span><span style="font-size:13.5px; color:#6f6c65;">skull · one bed-hair tuft</span></div>
+      <div style="display:flex; align-items:center; gap:14px;"><span style="font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; width:20px;">04</span><span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:19px; width:120px;">eyes</span><span style="font-size:13.5px; color:#6f6c65;">12 expressions · eye-bags</span></div>
+      <div style="display:flex; align-items:center; gap:14px;"><span style="font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; width:20px;">05</span><span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:19px; width:120px; color:#ff5247;">mouth</span><span style="font-size:13.5px; color:#6f6c65;">open ⇄ closed = the flap</span></div>
+    </div>
+    <div style="height:1.5px; background:#e2dfd5; margin:22px 0;"></div>
+    <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.16em; color:#8f8c83; margin-bottom:12px;">HOW IT MOVES</div>
+    <ul style="margin:0; padding-left:16px; font-size:14px; line-height:1.7; color:#3a3a3d;">
+      <li><strong>Talk-flap</strong> — swap mouth open/closed to the voice.</li>
+      <li><strong>Arm-swap</strong> — point / hold-mug / gesture on a cut.</li>
+      <li><strong>Boil</strong> — re-seed to re-wobble the line so held shots feel alive.</li>
+    </ul>
+    <div style="margin-top:18px; font-size:13px; color:#6f6c65; line-height:1.6; padding:14px 16px; border-left:3px solid #ff5247; background:#faf9f6;">6 arms × 12 expressions × 2 mouths = <strong>144</strong> stills before a single boil re-seed — then it's endless.</div>
+  </div>
+</section>
+
+<section style="background:#f2f2ef; border-radius:6px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:44px 48px; margin:0 0 30px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 28px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">A</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:34px; letter-spacing:-.01em;">Ready poses</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">DROP-IN PRESETS · composed from layers</span>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px;">
+    <sc-for list="{{ presets }}" as="p" hint-placeholder-count="12">
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px 10px 8px; text-align:center;">
+        <svg data-mk="compose" data-body="{{ p.body }}" data-arm="{{ p.arm }}" data-expr="{{ p.expr }}" data-mouth="{{ p.mouth }}" data-seed="{{ p.seed }}" viewBox="{{ p.vb }}" style="width:100%; height:200px; display:block; overflow:visible;"></svg>
+        <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#6f6c65; margin-top:4px;">{{ p.name }}</div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="background:#f2f2ef; border-radius:6px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:44px 48px; margin:0 0 30px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 12px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">B</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:34px; letter-spacing:-.01em;">Layer anatomy</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">EACH = ONE TRANSPARENT PNG</span>
+  </div>
+  <p style="margin:0 0 26px; font-size:14px; color:#6f6c65; max-width:820px; line-height:1.55;">Highlighted layer in ink, the rest ghosted for context. Claude Code stacks these five slots; swapping one slot is the whole animation model.</p>
+
+  <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83; margin-bottom:12px;">01 · BODY &nbsp;+&nbsp; 03 · HEAD</div>
+  <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:30px;">
+    <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px; text-align:center;"><svg data-mk="body" data-seed="7" viewBox="330 400 340 520" style="height:150px; width:auto; display:block; margin:0 auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">body</div></div>
+    <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px; text-align:center;"><svg data-mk="head" data-seed="9" viewBox="360 150 280 300" style="height:150px; width:auto; display:block; margin:0 auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">head</div></div>
+    <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px; text-align:center;"><svg data-mk="compose" data-body="atdesk" data-expr="dead-stare" data-mouth="closed" data-seed="4" viewBox="150 150 770 800" style="height:150px; width:auto; display:block; margin:0 auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">body · at-desk</div></div>
+    <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px; text-align:center;"><svg data-mk="mugonly" data-seed="3" viewBox="430 440 140 130" style="height:150px; width:auto; display:block; margin:0 auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">mug</div></div>
+    <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:10px; text-align:center; display:flex; flex-direction:column; justify-content:center;"><svg data-mk="head" data-seed="9" viewBox="360 150 280 300" style="height:96px; width:auto; display:block; margin:0 auto; overflow:visible; opacity:.35;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">＋ eyes ＋ mouth<br>= head done</div></div>
+    <div style="background:#232326; border-radius:5px; padding:12px; text-align:center; display:flex; flex-direction:column; justify-content:center; gap:6px;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; color:#ff5247; line-height:1;">5</div><div style="font-family:'Space Mono',monospace; font-size:9.5px; color:#c9c6bf; letter-spacing:.08em;">SLOTS<br>STACK UP</div></div>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83; margin-bottom:12px;">04 · EYES / EXPRESSIONS · 12</div>
+  <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:30px;">
+    <sc-for list="{{ exprSwatches }}" as="e" hint-placeholder-count="12">
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:8px; text-align:center;"><svg data-mk="eyes" data-arg="{{ e.expr }}" data-seed="{{ e.seed }}" viewBox="360 150 280 300" style="height:122px; width:auto; display:block; margin:0 auto; overflow:hidden;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">{{ e.expr }}</div></div>
+    </sc-for>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83; margin-bottom:12px;">05 · MOUTH · closed ⇄ open pair (the flap)</div>
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:30px;">
+    <sc-for list="{{ mouthPairs }}" as="m" hint-placeholder-count="5">
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:8px; text-align:center;">
+        <div style="display:flex; gap:6px;">
+          <svg data-mk="mouth" data-arg="{{ m.expr }}" data-open="0" data-seed="{{ m.seedC }}" viewBox="455 336 92 62" style="width:50%; height:70px; display:block; overflow:hidden;"></svg>
+          <svg data-mk="mouth" data-arg="{{ m.expr }}" data-open="1" data-seed="{{ m.seedO }}" viewBox="455 336 92 62" style="width:50%; height:70px; display:block; overflow:hidden;"></svg>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">{{ m.expr }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83; margin-bottom:12px;">02 · ARM · 6 swaps</div>
+  <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px;">
+    <sc-for list="{{ armSwatches }}" as="a" hint-placeholder-count="6">
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:5px; padding:8px; text-align:center;"><svg data-mk="arm" data-arg="{{ a.arm }}" data-seed="{{ a.seed }}" viewBox="150 300 720 630" style="height:150px; width:auto; display:block; margin:0 auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:4px;">{{ a.arm }}</div></div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="background:#f2f2ef; border-radius:6px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:44px 48px; margin:0 0 30px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 12px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">C</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:34px; letter-spacing:-.01em;">The full matrix</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">6 ARMS × 12 EXPRESSIONS = 72</span>
+  </div>
+  <p style="margin:0 0 24px; font-size:14px; color:#6f6c65; max-width:820px; line-height:1.55;">Same five layers, every combination. Add the mouth pair and boil re-seeds and this one rig covers the whole 100+ mascot target on its own.</p>
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <sc-for list="{{ matrix }}" as="row" hint-placeholder-count="6">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; width:74px; text-align:right; flex:none;">{{ row.arm }}</div>
+        <div style="display:grid; grid-template-columns:repeat(12,1fr); gap:6px; flex:1;">
+          <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="12">
+            <div style="background:#faf9f6; border:1px solid #eae7dd; border-radius:4px; padding:3px;"><svg data-mk="compose" data-arm="{{ c.arm }}" data-expr="{{ c.expr }}" data-mouth="closed" data-seed="{{ c.seed }}" viewBox="300 130 560 810" style="width:100%; height:78px; display:block; overflow:visible;"></svg></div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section style="background:#232326; color:#f2f2ef; border-radius:6px; box-shadow:0 24px 50px -30px rgba(35,35,38,.5); padding:44px 48px; margin:0 0 12px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 12px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">D</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:34px; letter-spacing:-.01em; color:#f2f2ef;">The boil</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#4a4a4e,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">name.png ＋ name_b.png</span>
+  </div>
+  <p style="margin:0 0 26px; max-width:820px; font-size:14.5px; line-height:1.6; color:#c9c6bf;">Two seeds of the same drawing = the same thing wobbled twice. Held on screen and cross-faded ~8fps, the line shimmers alive. Deliver any lingering asset as a pair.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+    <div style="background:#2b2b2f; border-radius:6px; padding:16px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="compose" data-arm="rest" data-expr="deadpan" data-mouth="closed" data-seed="211" viewBox="300 130 560 810" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="compose" data-arm="rest" data-expr="deadpan" data-mouth="closed" data-seed="212" viewBox="300 130 560 810" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#8f8c83; margin-top:10px;">dennis-deadpan · a / _b</div>
+    </div>
+    <div style="background:#2b2b2f; border-radius:6px; padding:16px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="arm" data-arg="point" data-seed="221" viewBox="150 300 720 630" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="arm" data-arg="point" data-seed="222" viewBox="150 300 720 630" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#8f8c83; margin-top:10px;">arm-point · a / _b</div>
+    </div>
+    <div style="background:#2b2b2f; border-radius:6px; padding:16px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="mugonly" data-seed="231" viewBox="430 440 140 130" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+        <div style="flex:1; background:#f2f2ef; border-radius:4px; padding:6px;"><svg data-mk="mugonly" data-seed="232" viewBox="430 440 140 130" style="width:100%; height:150px; display:block; overflow:visible;"></svg></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#8f8c83; margin-top:10px;">prop-mug · a / _b</div>
+    </div>
+  </div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · layered host rig · body · arm · head · eyes · mouth</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Rig&quot;},&quot;talk&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Rig&quot;},&quot;boil&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Rig&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.heroRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#9a978f', ghost:'#c9c6bc', water:'#7d94b8', waterEdge:'#5f76a0' };
+    this.frame = 0;
+    this.combos = [
+      {arm:'rest', expr:'deadpan'}, {arm:'point', expr:'tired'}, {arm:'gesture', expr:'exasperated'},
+      {arm:'hold-mug', expr:'deadpan'}, {arm:'shrug', expr:'nervous'}, {arm:'rest', expr:'dead-stare'}
+    ];
+  }
+
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _star(cx,cy,rO,rI,n){ const p=[]; for(let i=0;i<=2*n;i++){ const r=i%2?rI:rO,a=-Math.PI/2+Math.PI*i/n; p.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); } return p; }
+  _drop(x,y){ return this._p('M'+x+','+y+' Q'+(x+9)+','+(y+12)+' '+x+','+(y+22)+' Q'+(x-9)+','+(y+12)+' '+x+','+y+'Z',{f:this.C.water,s:this.C.waterEdge,w:1.5}); }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+
+  lBody(rand,col){
+    let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:col});
+    s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:col});
+    s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:col});
+    s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:col});
+    return s;
+  }
+  lHead(rand,col){
+    let s=this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:col});
+    s+=this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:col});
+    return s;
+  }
+  lDesk(rand,col){
+    let s=this._stroke([[416,470],[584,470],[600,720],[400,720]],rand,{w:5,r:3,close:true,s:col});
+    s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:col});
+    s+=this._stroke([[430,502],[450,640],[486,712]],rand,{w:5,r:3,s:col});
+    s+=this._stroke([[570,502],[556,640],[600,712]],rand,{w:5,r:3,s:col});
+    s+=this._stroke([[210,720],[790,720]],rand,{w:6,r:2,s:col});
+    s+=this._stroke([[560,720],[560,668],[690,668],[690,720]],rand,{w:4,r:2,s:col});
+    s+=this._stroke([[566,668],[566,628],[684,628],[684,668]],rand,{w:3.4,r:2,s:col});
+    return s;
+  }
+  mug(rand,hx,hy,col){
+    const acc=(col===this.C.ink);
+    let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:col});
+    s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:col});
+    if(acc) s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:this.C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:this.C.grey});
+    return s;
+  }
+  lArm(rand,arm,col){
+    let s='',mugAt=null; const L=(pts)=>this._stroke(pts,rand,{w:5,r:3,s:col});
+    switch(arm){
+      case 'rest': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[600,560],[596,586],[556,606]]); mugAt=[552,612]; break;
+      case 'point': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[664,490],[744,478],[802,470]])+this._stroke([[802,470],[826,467]],rand,{w:4,r:2,s:col}); break;
+      case 'hold-mug': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[560,486],[524,470],[500,452]]); mugAt=[494,452]; break;
+      case 'gesture': s+=L([[418,500],[372,548],[356,600],[382,626]])+L([[582,500],[628,548],[644,600],[618,626]]); break;
+      case 'arms-up': s+=L([[418,500],[386,404],[360,306]])+L([[582,500],[614,404],[640,306]]); break;
+      case 'shrug': s+=L([[418,500],[356,540],[344,596],[372,614]])+L([[582,500],[644,540],[656,596],[628,614]]); break;
+      default: s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[600,560],[596,586],[556,606]]); mugAt=[552,612];
+    }
+    if(mugAt) s+=this.mug(rand,mugAt[0],mugAt[1],col);
+    return s;
+  }
+  lEyes(rand,expr,col){
+    const Lx=456,Rx=544,Ey=288,C=this.C,acc=(col===C.ink);
+    const dot=(x,y,r)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+col+'"/>';
+    const gm=acc?C.grey:col;
+    const bags=()=> this._stroke([[Lx-18,314],[Lx,320],[Lx+18,314]],rand,{w:3,r:2,s:gm}) + this._stroke([[Rx-18,314],[Rx,320],[Rx+18,314]],rand,{w:3,r:2,s:gm});
+    let s='';
+    switch(expr){
+      case 'deadpan': s+=this._stroke([[Lx-20,Ey],[Lx+20,Ey+2]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-20,Ey+2],[Rx+20,Ey]],rand,{w:4,r:1.5,s:col})+bags(); break;
+      case 'tired': s+=this._stroke([[Lx-22,Ey-4],[Lx,Ey+8],[Lx+22,Ey-4]],rand,{w:4,r:2,s:col})+this._stroke([[Rx-22,Ey-4],[Rx,Ey+8],[Rx+22,Ey-4]],rand,{w:4,r:2,s:col})+bags()+this._stroke([[Lx-15,328],[Lx+13,332]],rand,{w:2.4,r:1.4,s:gm})+this._stroke([[Rx-13,332],[Rx+15,328]],rand,{w:2.4,r:1.4,s:gm}); break;
+      case 'shocked': s+=this._stroke(this._ell(Lx,Ey,17,19,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:col})+this._stroke(this._ell(Rx,Ey,17,19,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:col})+dot(Lx,Ey,4)+dot(Rx,Ey,4)+this._stroke([[Lx-22,254],[Lx+18,248]],rand,{w:3,r:1.5,s:col})+this._stroke([[Rx-18,248],[Rx+22,254]],rand,{w:3,r:1.5,s:col}); break;
+      case 'dead-stare': s+=this._stroke(this._ell(Lx,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+this._stroke(this._ell(Rx,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+dot(Lx,Ey,5.5)+dot(Rx,Ey,5.5)+bags(); break;
+      case 'crying': s+=this._stroke([[Lx-20,Ey-2],[Lx,Ey+8],[Lx+20,Ey-2]],rand,{w:4,r:2,s:col})+this._stroke([[Rx-20,Ey-2],[Rx,Ey+8],[Rx+20,Ey-2]],rand,{w:4,r:2,s:col}); if(acc) s+=this._drop(Lx,Ey+16)+this._drop(Rx,Ey+16); break;
+      case 'smug': s+=this._stroke([[Lx-20,Ey+4],[Lx+20,Ey-2]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-20,Ey-2],[Rx+20,Ey+4]],rand,{w:4,r:1.5,s:col})+this._stroke([[Lx-20,Ey-15],[Lx+18,Ey-19]],rand,{w:3,r:1.5,s:col})+bags(); break;
+      case 'exasperated': s+=dot(Lx,Ey-6,4)+dot(Rx,Ey-6,4)+this._stroke([[Lx-20,Ey],[Lx+20,Ey]],rand,{w:3,r:1.4,s:col})+this._stroke([[Rx-20,Ey],[Rx+20,Ey]],rand,{w:3,r:1.4,s:col})+this._stroke([[Lx-22,Ey-19],[Lx+16,Ey-25]],rand,{w:3,r:1.5,s:col})+this._stroke([[Rx-16,Ey-25],[Rx+22,Ey-19]],rand,{w:3,r:1.5,s:col}); break;
+      case 'rage': s+=this._stroke([[Lx-22,Ey-16],[Lx+16,Ey-2]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-16,Ey-2],[Rx+22,Ey-16]],rand,{w:4,r:1.5,s:col})+dot(Lx,Ey+4,4)+dot(Rx,Ey+4,4); if(acc) s+=this._stroke([[598,214],[616,232]],rand,{w:3,r:1,s:C.red})+this._stroke([[616,214],[598,232]],rand,{w:3,r:1,s:C.red}); break;
+      case 'nervous': s+=this._stroke(this._ell(Lx,Ey,18,15,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+this._stroke(this._ell(Rx,Ey,18,15,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+dot(Lx,Ey,4.5)+dot(Rx,Ey,4.5)+bags(); if(acc) s+=this._drop(604,250); break;
+      case 'hopium': s+=this._stroke(this._ell(Lx,Ey-2,18,17,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+this._stroke(this._ell(Rx,Ey-2,18,17,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+dot(Lx,Ey-6,5)+dot(Rx,Ey-6,5); if(acc) s+=this._stroke(this._star(632,236,15,6,4),rand,{w:2.4,r:1,close:true,s:C.green})+this._stroke(this._star(372,238,11,4,4),rand,{w:2.2,r:1,close:true,s:C.green}); break;
+      case 'defeated': s+=this._stroke([[Lx-20,Ey+2],[Lx,Ey+10],[Lx+20,Ey+2]],rand,{w:4,r:2,s:col})+this._stroke([[Rx-20,Ey+2],[Rx,Ey+10],[Rx+20,Ey+2]],rand,{w:4,r:2,s:col})+this._stroke([[Lx-22,Ey-16],[Lx+14,Ey-8]],rand,{w:3,r:1.5,s:col})+this._stroke([[Rx-14,Ey-8],[Rx+22,Ey-16]],rand,{w:3,r:1.5,s:col})+bags(); break;
+      case 'money': { const me=(x,y)=>{ let o=this._stroke(this._ell(x,y,15,17,0,Math.PI*2),rand,{w:3,r:1.2,close:true,s:col}); if(acc){o+=this._stroke([[x,y-11],[x,y+11]],rand,{w:2.4,r:0.8,s:C.gdk})+this._stroke([[x-6,y-4],[x+6,y-4]],rand,{w:2,r:0.6,s:C.gdk})+this._stroke([[x-6,y+4],[x+6,y+4]],rand,{w:2,r:0.6,s:C.gdk});} return o; }; s+=me(Lx,Ey)+me(Rx,Ey); break; }
+      default: s+=this._stroke([[Lx-20,Ey],[Lx+20,Ey]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-20,Ey],[Rx+20,Ey]],rand,{w:4,r:1.5,s:col})+bags();
+    }
+    return s;
+  }
+  mouthClosed(rand,expr,col){
+    const My=360;
+    switch(expr){
+      case 'shocked': return this._stroke(this._ell(500,My+2,9,11,0,Math.PI*2),rand,{w:3.4,r:1.2,close:true,s:col});
+      case 'crying': case 'defeated': return this._stroke([[474,My+8],[500,My-4],[526,My+8]],rand,{w:4,r:2,s:col});
+      case 'rage': return this._stroke([[472,My-6],[528,My-6],[528,My+12],[472,My+12]],rand,{w:3.2,r:1,close:true,s:col})+this._stroke([[486,My-6],[486,My+12]],rand,{w:2,r:0.6,s:col})+this._stroke([[500,My-6],[500,My+12]],rand,{w:2,r:0.6,s:col})+this._stroke([[514,My-6],[514,My+12]],rand,{w:2,r:0.6,s:col});
+      case 'nervous': return this._stroke([[476,My+2],[490,My-4],[506,My+2],[522,My-4]],rand,{w:3.2,r:1.4,s:col});
+      case 'hopium': case 'money': return this._stroke(this._ell(500,My+2,8,9,0,Math.PI*2),rand,{w:3,r:1,close:true,s:col});
+      case 'smug': return this._stroke([[474,My+2],[528,My-4]],rand,{w:4,r:1.4,s:col});
+      default: return this._stroke([[472,My],[528,My-2]],rand,{w:4,r:1.6,s:col});
+    }
+  }
+  mouthOpen(rand,expr,col){
+    let rx=16,ry=19,cy=366;
+    if(expr==='rage'){ rx=22; ry=26; cy=368; }
+    else if(expr==='shocked'){ rx=19; ry=24; cy=368; }
+    else if(expr==='hopium'||expr==='money'){ rx=12; ry=15; cy=364; }
+    else if(expr==='defeated'||expr==='crying'){ rx=15; ry=17; cy=366; }
+    return this._stroke(this._ell(500,cy,rx,ry,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:col});
+  }
+
+  compose(seed,opts){
+    const rand=this.prng((((seed>>>0)||1)*2654435761)>>>0);
+    const C=this.C,o=opts||{};
+    const body=o.body||'standing',arm=o.arm||'rest',expr=o.expr||'deadpan',mouth=o.mouth||'closed';
+    let s='';
+    if(body==='atdesk'){ s+=this.lDesk(rand,C.ink); }
+    else { s+=this.lBody(rand,C.ink)+this.lArm(rand,arm,C.ink); }
+    s+=this.lHead(rand,C.ink);
+    s+=this.lEyes(rand,expr,C.ink);
+    s+= mouth==='open'? this.mouthOpen(rand,expr,C.ink): this.mouthClosed(rand,expr,C.ink);
+    return s;
+  }
+
+  drawStatic(el){
+    if(el.getAttribute('data-drawn')) return;
+    const mk=el.dataset.mk, seed=+(el.dataset.seed||7), C=this.C;
+    const rand=this.prng(((seed*2654435761)>>>0)||1);
+    const g=this.prng(((seed*131+17)>>>0)||1);
+    let out='';
+    if(mk==='compose') out=this.compose(seed,{body:el.dataset.body||'standing',arm:el.dataset.arm||'rest',expr:el.dataset.expr||'deadpan',mouth:el.dataset.mouth||'closed'});
+    else if(mk==='body') out=this.lBody(rand,C.ink);
+    else if(mk==='head') out=this.lHead(rand,C.ink);
+    else if(mk==='mugonly') out=this.mug(rand,500,500,C.ink);
+    else if(mk==='eyes') out=this.lHead(rand,C.ink)+this.lEyes(rand,el.dataset.arg||'deadpan',C.ink)+this.mouthClosed(rand,el.dataset.arg||'deadpan',C.ink);
+    else if(mk==='mouth') out=(el.dataset.open==='1'?this.mouthOpen(rand,el.dataset.arg||'deadpan',C.ink):this.mouthClosed(rand,el.dataset.arg||'deadpan',C.ink));
+    else if(mk==='arm') out=this.lBody(g,C.ghost)+this.lArm(rand,el.dataset.arg||'rest',C.ink);
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAllStatic(){
+    const root=this.rootRef.current; if(!root) return;
+    root.querySelectorAll('[data-mk]').forEach(el=>this.drawStatic(el));
+  }
+  tickHero(){
+    const svg=this.heroRef.current; if(!svg) return;
+    const f=this.frame;
+    const combo=this.combos[Math.floor(f/34)%this.combos.length];
+    const talk=(this.props.talk ?? true) && ((f%40)<32);
+    const open=talk && (f%2===0);
+    const boilSeed=(this.props.boil ?? true) ? (600+Math.floor(f/5)) : 600;
+    svg.innerHTML=this.compose(boilSeed,{body:'standing',arm:combo.arm,expr:combo.expr,mouth:open?'open':'closed'});
+  }
+  componentDidMount(){
+    this.drawAllStatic();
+    this.tickHero();
+    this.heroTimer=setInterval(()=>{ this.frame++; this.tickHero(); }, 92);
+  }
+  componentWillUnmount(){ if(this.heroTimer) clearInterval(this.heroTimer); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){
+      const root=this.rootRef.current;
+      if(root) root.querySelectorAll('[data-mk]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; });
+      this.drawAllStatic();
+    }
+  }
+  renderVals(){
+    const arms=['rest','point','hold-mug','gesture','arms-up','shrug'];
+    const exprs=['deadpan','tired','shocked','dead-stare','crying','smug','exasperated','rage','nervous','hopium','defeated','money'];
+    const presets=[
+      {name:'deadpan', body:'standing', arm:'rest', expr:'deadpan', mouth:'closed'},
+      {name:'tired-explaining', body:'standing', arm:'point', expr:'tired', mouth:'open'},
+      {name:'exasperated', body:'standing', arm:'gesture', expr:'exasperated', mouth:'open'},
+      {name:'sweating-nervous', body:'standing', arm:'shrug', expr:'nervous', mouth:'closed'},
+      {name:'smug-told-you', body:'standing', arm:'rest', expr:'smug', mouth:'closed'},
+      {name:'defeated', body:'standing', arm:'rest', expr:'defeated', mouth:'closed'},
+      {name:'shrug-idk', body:'standing', arm:'shrug', expr:'deadpan', mouth:'closed'},
+      {name:'coffee-sip', body:'standing', arm:'hold-mug', expr:'tired', mouth:'closed'},
+      {name:'at-the-desk', body:'atdesk', arm:'rest', expr:'dead-stare', mouth:'closed'},
+      {name:'dead-inside', body:'standing', arm:'rest', expr:'dead-stare', mouth:'closed'},
+      {name:'rage-sell-it', body:'standing', arm:'arms-up', expr:'rage', mouth:'open'},
+      {name:'hopium-please', body:'standing', arm:'arms-up', expr:'hopium', mouth:'open'}
+    ].map((p,i)=>({ ...p, seed:11+i, vb: p.body==='atdesk' ? '150 150 770 800' : '300 130 560 810' }));
+    const matrix=arms.map((arm,ai)=>({ arm, cells: exprs.map((expr,ei)=>({ arm, expr, seed:(ai*61+ei*13+5) })) }));
+    return {
+      rootRef:this.rootRef, heroRef:this.heroRef,
+      presets, matrix,
+      exprSwatches: exprs.map((e,i)=>({ expr:e, seed:40+i })),
+      mouthPairs: ['deadpan','shocked','rage','nervous','crying'].map((e,i)=>({ expr:e, seedC:60+i, seedO:80+i })),
+      armSwatches: arms.map((a,i)=>({ arm:a, seed:100+i }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@700;800&family=Space+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #d3cfc4; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#d3cfc4; color:#232326; font-family:'Space Grotesk',sans-serif; padding:40px 40px 90px;">
+  <div style="max-width:1180px; margin:0 0 30px;">
+    <div style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.24em; color:#ff5247; font-weight:700; margin-bottom:10px;">DENNIS · RESTYLE (BATCH 2) · INJOKES</div>
+    <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:52px; line-height:.95;">Injoke stamps</h1>
+    <p style="margin:12px 0 0; font-size:15px; line-height:1.6; color:#4a473f; max-width:820px;">The channel's recurring bits, redrawn as hand-lettered stamps/tags in the light theme. Same slot names. Transparent 1000×640.</p>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+    <sc-for list="{{ injokes }}" as="j" hint-placeholder-count="8">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#6a675e;">{{ j }}</div>
+        <div data-export="joke/{{ j }}" style="aspect-ratio:1.56; background:#faf9f6; border:1.5px solid #cfccc2; border-radius:5px; display:flex; align-items:center; justify-content:center; padding:12px;">
+          <svg data-ink="joke" data-name="{{ j }}" data-seed="5" viewBox="0 0 500 320" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:560},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', gold:'#c8a23a' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800,rot=o.rot||0; const fam=o.mono?"'Space Mono',monospace":"'Shantell Sans',cursive"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle"'+(rot?' transform="rotate('+rot+' '+x.toFixed(1)+' '+y.toFixed(1)+')"':'')+'>'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _burst(cx,cy,rO,rI,n,rand,o){ const p=[]; for(let i=0;i<=2*n;i++){ const r=i%2?rI:rO,a=-Math.PI/2+Math.PI*i/n; p.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); } return this._stroke(p,rand,{close:true,...o}); }
+  _tag(rand,W,H,line1,line2,col){ const cx=W*0.5,cy=H*0.5; let s=this._stroke(this._ell(cx,cy,W*0.44,H*0.4,-0.12,Math.PI*2+0.5),rand,{w:5,r:2.6,s:col}); s+=this._stroke(this._ell(cx,cy,W*0.4,H*0.34,0.3,Math.PI*2+0.8),rand,{w:2,r:2.2,s:col,op:0.5}); if(line2){ s+=this._t(cx,cy-H*0.1,line1,{size:H*0.19,s:col,w:800}); s+=this._t(cx,cy+H*0.13,line2,{size:H*0.19,s:col,w:800}); } else { s+=this._t(cx,cy,line1,{size:H*0.2,s:col,w:800}); } return s; }
+  joke(rand,W,H,name){
+    const C=this.C;
+    switch(name){
+      case 'rocket-to-the-moon': { let s=this._stroke([[W*0.24,H*0.72],[W*0.34,H*0.4],[W*0.4,H*0.24],[W*0.46,H*0.4],[W*0.5,H*0.72]],rand,{w:4,r:1.8,close:true,s:C.ink}); s+=this._stroke([[W*0.34,H*0.72],[W*0.28,H*0.86],[W*0.4,H*0.78]],rand,{w:3.4,r:1.6,s:C.red})+this._stroke([[W*0.46,H*0.72],[W*0.52,H*0.86],[W*0.4,H*0.78]],rand,{w:3.4,r:1.6,s:C.red}); s+=this._stroke(this._ell(W*0.4,H*0.42,W*0.03,H*0.05,0,Math.PI*2),rand,{w:2.4,r:1,s:C.grey}); s+=this._stroke([[W*0.28,H*0.88],[W*0.24,H*0.98]],rand,{w:3,r:1.4,s:C.red})+this._stroke([[W*0.4,H*0.9],[W*0.4,H*1.0]],rand,{w:3,r:1.4,s:C.red}); s+=this._t(W*0.74,H*0.5,'MOON',{size:H*0.15,s:C.ink,w:800}); s+=this._t(W*0.74,H*0.68,'OR BUST',{size:H*0.09,s:C.red,w:800}); return s; }
+      case 'the-moon': { let s=this._stroke(this._ell(W*0.42,H*0.48,W*0.22,H*0.34,0,Math.PI*2),rand,{w:4.4,r:2,s:C.ink}); s+=this._stroke(this._ell(W*0.36,H*0.36,W*0.04,H*0.06,0,Math.PI*2),rand,{w:2.4,r:1.2,s:C.grey})+this._stroke(this._ell(W*0.5,H*0.56,W*0.05,H*0.08,0,Math.PI*2),rand,{w:2.4,r:1.2,s:C.grey})+this._stroke(this._ell(W*0.44,H*0.64,W*0.03,H*0.05,0,Math.PI*2),rand,{w:2,r:1,s:C.grey}); s+=this._t(W*0.78,H*0.5,'THE',{size:H*0.1,s:C.ink,w:800}); s+=this._t(W*0.78,H*0.66,'MOON',{size:H*0.15,s:C.ink,w:800}); return s; }
+      case 'diamond-hands': { let s=this._stroke([[W*0.4,H*0.16],[W*0.56,H*0.38],[W*0.4,H*0.64],[W*0.24,H*0.38]],rand,{w:4.4,r:1.8,close:true,s:C.ink}); s+=this._stroke([[W*0.31,H*0.29],[W*0.49,H*0.29]],rand,{w:2.4,r:1,s:C.ink})+this._stroke([[W*0.4,H*0.16],[W*0.4,H*0.29]],rand,{w:2,r:0.8,s:C.ink}); s+=this._t(W*0.78,H*0.5,'DIAMOND',{size:H*0.1,s:C.ink,w:800}); s+=this._t(W*0.78,H*0.66,'HANDS',{size:H*0.13,s:C.ink,w:800}); return s; }
+      case 'holding-the-bag': { let s=this._stroke([[W*0.34,H*0.34],[W*0.3,H*0.82],[W*0.58,H*0.82],[W*0.54,H*0.34]],rand,{w:4,r:1.8,close:true,s:C.ink}); s+=this._stroke([[W*0.36,H*0.34],[W*0.4,H*0.22],[W*0.48,H*0.22],[W*0.52,H*0.34]],rand,{w:3,r:1.4,s:C.ink}); s+=this._t(W*0.44,H*0.62,'$',{size:H*0.2,s:C.red,w:800}); s+=this._t(W*0.78,H*0.46,'HOLDING',{size:H*0.095,s:C.ink,w:800}); s+=this._t(W*0.78,H*0.62,'THE BAG',{size:H*0.115,s:C.red,w:800}); return s; }
+      case 'rip-portfolio': { let s=this._stroke([[W*0.28,H*0.5],[W*0.28,H*0.28],[W*0.5,H*0.28],[W*0.5,H*0.5]],rand,{w:4,r:1.8,s:C.ink}); s+=this._stroke(this._ell(W*0.39,H*0.28,W*0.11,H*0.1,Math.PI,Math.PI*2),rand,{w:4,r:1.8,s:C.ink}); s+=this._stroke([[W*0.28,H*0.5],[W*0.5,H*0.5],[W*0.5,H*0.86],[W*0.28,H*0.86]],rand,{w:4,r:1.8,close:true,s:C.ink}); s+=this._t(W*0.39,H*0.66,'RIP',{size:H*0.14,s:C.ink,w:800}); s+=this._t(W*0.78,H*0.5,'PORT-',{size:H*0.1,s:C.red,w:800}); s+=this._t(W*0.78,H*0.66,'FOLIO',{size:H*0.1,s:C.red,w:800}); return s; }
+      case 'stonks-up-only': { let s=this._t(W*0.42,H*0.44,'STONKS',{size:H*0.2,s:C.gdk,w:800}); s+=this._stroke([[W*0.16,H*0.78],[W*0.4,H*0.6],[W*0.6,H*0.66],[W*0.86,H*0.28]],rand,{w:5,r:2,s:C.gdk}); s+=this._head(W*0.86,H*0.28,-0.9,18,rand,{w:5,r:1.4,s:C.gdk}); s+=this._t(W*0.5,H*0.92,'UP ONLY',{size:H*0.1,s:C.ink,w:800}); return s; }
+      case 'crayon-lunch': { let s=this._stroke([[W*0.32,H*0.24],[W*0.4,H*0.78]],rand,{w:H*0.12,r:1.4,s:C.red}); s+=this._stroke([[W*0.32,H*0.24],[W*0.36,H*0.16],[W*0.4,H*0.24]],rand,{w:3,r:1.4,close:true,s:C.red}); s+=this._t(W*0.72,H*0.44,'CRAYON',{size:H*0.11,s:C.ink,w:800}); s+=this._t(W*0.72,H*0.6,'FOR LUNCH',{size:H*0.09,s:C.ink,w:800}); return s; }
+      case 'loss-porn': { let s=this._stroke([[W*0.16,H*0.24],[W*0.44,H*0.82],[W*0.6,H*0.5],[W*0.72,H*0.66],[W*0.9,H*0.9]],rand,{w:4.4,r:2,s:C.red}); s+=this._head(W*0.9,H*0.9,0.6,16,rand,{w:4,r:1.2,s:C.red}); s+=this._t(W*0.5,H*0.2,'\u2212$142K',{size:H*0.13,s:C.red,w:800}); s+=this._t(W*0.5,H*0.94,'LOSS PORN',{size:H*0.1,s:C.ink,w:800}); return s; }
+      default: return this._tag(rand,W,H,name,null,C.ink);
+    }
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 500 320').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973 + (el.dataset.name||'').length*71)>>>0);
+    el.innerHTML=this.joke(rand,W,H,el.dataset.name); el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){ if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); } this.drawAll(); }
+  renderVals(){ return { rootRef:this.rootRef, injokes:['rocket-to-the-moon','the-moon','diamond-hands','holding-the-bag','rip-portfolio','stonks-up-only','crayon-lunch','loss-porn'] }; }
+}
+</script>
+</body>
+</html>

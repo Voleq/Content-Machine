@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  .frame { position:relative; overflow:hidden; container-type:inline-size; border-radius:8px; box-shadow:0 16px 36px -24px rgba(35,35,38,.4); }
+  .frame .tick { position:absolute; left:4.5cqw; top:4cqw; font-family:'Space Mono',monospace; font-weight:700; font-size:2cqw; }
+  .frame .disc { position:absolute; left:4.5cqw; bottom:3.5cqw; font-family:'Space Grotesk',sans-serif; color:#8f8c83; font-size:1.6cqw; }
+  .cap { font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px; }
+  .sec { display:flex; align-items:baseline; gap:16px; margin:24px 0 16px; }
+  .sec .n { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700; }
+  .sec h2 { margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em; }
+  .sec .r { flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent); }
+  .sec .m { font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1200px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 22px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · OPTIONAL CHAPTER · MANAGEMENT &amp; INCENTIVES</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:72px; line-height:.9; letter-spacing:-.02em;">Management &amp; incentives</h1>
+  <p style="margin:16px 0 0; max-width:770px; font-size:17px; line-height:1.6; color:#3a3a3d;">Follow the pay. A <strong>dilution pie</strong> shrinking your slice, the <strong>comp-vs-performance</strong> gap, <strong>insider selling</strong>, an <strong>incentive scorecard</strong>, and Dennis reading the proxy. Full 16:9 frames; each carries a <code>data-export</code> id.</p>
+</header>
+
+<div class="sec"><span class="n">A</span><h2>Dilution &amp; pay</h2><span class="r"></span><span class="m">chapters/management/ · your slice</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">dilution-pie.png · your slice shrinks</div>
+    <div data-export="dilution-pie" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">Your slice.</div>
+      <svg data-ink="pie" data-seed="4" viewBox="0 0 520 340" style="position:absolute; left:6cqw; right:6cqw; top:26cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">share-count-creep.png</div>
+    <div data-export="share-count-creep" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw; color:#ff5247;">Always more shares.</div>
+      <svg data-ink="creep" data-seed="6" viewBox="0 0 460 320" style="position:absolute; left:6cqw; right:6cqw; top:26cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">ceo-pay-callout.png</div>
+    <div data-export="ceo-pay-callout" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+        <div style="font-family:'Space Mono',monospace; font-size:2cqw; letter-spacing:.22em; color:#8f8c83; font-weight:700;">CEO PAY, LAST YEAR</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:13cqw; line-height:.85; color:#232326; margin-top:1cqw;">$24M</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:2.6cqw; color:#ff5247; font-weight:600; margin-top:1cqw;">while the stock fell 34%.</div>
+      </div>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">B</span><h2>Pay vs performance</h2><span class="r"></span><span class="m">the gap</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">comp-vs-performance.png</div>
+    <div data-export="comp-vs-performance" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">Pay up, stock down.</div>
+      <svg data-ink="paygap" data-seed="8" viewBox="0 0 520 320" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">insider-selling.png</div>
+    <div data-export="insider-selling" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw; color:#ff5247;">Selling their own.</div>
+      <svg data-ink="insider" data-seed="10" viewBox="0 0 520 320" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">C</span><h2>Scorecard &amp; the read</h2><span class="r"></span><span class="m">aligned?</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">incentive-scorecard.png</div>
+    <div data-export="incentive-scorecard" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; padding:6cqw 6cqw; display:flex; flex-direction:column;">
+        <div style="font-family:'Space Mono',monospace; font-size:2cqw; letter-spacing:.2em; color:#ff5247; font-weight:700;">ARE THEY ALIGNED?</div>
+        <div style="display:flex; flex-direction:column; gap:2cqw; margin-top:3cqw;">
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="cross" data-seed="2" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Pay tied to the stock price</span></div>
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="cross" data-seed="3" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Owns real shares (not options)</span></div>
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="check" data-seed="4" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Targets are public</span></div>
+        </div>
+        <div style="margin-top:auto; font-family:'Space Grotesk',sans-serif; font-size:2.2cqw; color:#8f8c83; font-style:italic;">paid to grow the count, not the price.</div>
+      </div>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">dennis-reads-proxy.png</div>
+    <div data-export="dennis-reads-proxy" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover;">
+      <div style="position:absolute; right:5cqw; top:14cqw; max-width:32cqw; text-align:right; font-family:'Shantell Sans',cursive; font-weight:800; font-size:3.8cqw; line-height:1.04;">Page 62.<br>There it is.</div>
+      <svg data-ink="dennis" data-arm="hold-doc" data-expr="tired" data-mouth="closed" data-seed="12" viewBox="0 0 560 620" style="position:absolute; left:3cqw; bottom:0; width:34%; height:86%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<section style="margin-top:24px;">
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · full frames 1600×900 · captured per-frame from the scenes above (each carries a data-export id)</div>
+  <div style="background:#d3cfc4; border-radius:6px; padding:16px 20px; font-family:'Space Mono',monospace; font-size:12px; color:#5a574e; line-height:1.7;">dilution-pie · share-count-creep · ceo-pay-callout · comp-vs-performance · insider-selling · incentive-scorecard · dennis-reads-proxy</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:900},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; const dash=o.dash?' stroke-dasharray="'+o.dash+'"':''; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+dash+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,dash:o.dash})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7,dash:o.dash}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800,rot=o.rot||0; const fam=o.mono?"'Space Mono',monospace":o.grot?"'Space Grotesk',sans-serif":"'Shantell Sans',cursive"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle"'+(rot?' transform="rotate('+rot+' '+x.toFixed(1)+' '+y.toFixed(1)+')"':'')+'>'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _slice(rand,cx,cy,R,a0,a1,f,col){ const pts=[[cx,cy]]; for(let t=0;t<=18;t++){ const a=a0+(a1-a0)*t/18; pts.push([cx+R*Math.cos(a),cy+R*Math.sin(a)]); } pts.push([cx,cy]); return this._fill(pts,rand,f,1.2)+this._stroke(pts,rand,{w:2.8,r:1.2,close:true,s:col}); }
+
+  pie(rand,W,H){
+    const C=this.C, cx=W*0.32, cy=H*0.5, R=H*0.4;
+    let s=this._slice(rand,cx,cy,R,-Math.PI/2,-Math.PI/2+Math.PI*2*0.22,'rgba(255,82,71,.18)',C.red);
+    s+=this._slice(rand,cx,cy,R,-Math.PI/2+Math.PI*2*0.22,-Math.PI/2+Math.PI*2,'rgba(35,35,38,.08)',C.ink);
+    s+=this._t(cx+R*0.5,cy-R*0.5,'YOU',{size:H*0.06,s:C.red,w:800});
+    s+=this._t(cx,cy+R*0.3,'them',{size:H*0.055,s:C.grey,w:700,grot:true});
+    s+=this._t(W*0.72,H*0.36,'you owned 1%.',{size:H*0.06,s:C.ink,w:800,grot:true});
+    s+=this._t(W*0.72,H*0.52,'now 0.78%.',{size:H*0.075,s:C.red,w:800});
+    s+=this._t(W*0.72,H*0.68,'same cash, thinner slice.',{size:H*0.042,s:C.grey,w:600,grot:true});
+    return s;
+  }
+  creep(rand,W,H){
+    const C=this.C, x0=W*0.08,y0=H*0.84,x1=W*0.96,yT=H*0.14;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.6,r:1.2,s:C.ink});
+    const vals=[0.3,0.4,0.5,0.62,0.72,0.86], n=vals.length, gw=(x1-x0)/n;
+    for(let i=0;i<n;i++){ const bx=x0+i*gw+gw*0.2, bw=gw*0.6, bh=(y0-yT)*vals[i], last=i===n-1; s+=this._fill([[bx,y0],[bx+bw,y0],[bx+bw,y0-bh],[bx,y0-bh]],rand,last?'rgba(255,82,71,.2)':'rgba(35,35,38,.08)',1)+this._stroke([[bx,y0-bh],[bx,y0],[bx+bw,y0],[bx+bw,y0-bh]],rand,{w:2.6,r:1,s:last?C.red:C.ink}); }
+    s+=this._t(x0+4,yT-H*0.02,'SHARES OUTSTANDING',{size:H*0.05,s:C.grey,w:700,mono:true,anchor:'start'});
+    s+=this._stroke([[x0,y0-(y0-yT)*0.3],[x1,y0-(y0-yT)*0.86]],rand,{w:2,r:1,s:C.red,dash:'7,6'});
+    return s;
+  }
+  paygap(rand,W,H){
+    const C=this.C, x0=W*0.1,y0=H*0.82,x1=W*0.94,yT=H*0.14;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.6,r:1.2,s:C.ink});
+    const pay=[[x0,y0-(y0-yT)*0.4],[x0+(x1-x0)*0.5,y0-(y0-yT)*0.62],[x1,y0-(y0-yT)*0.82]];
+    const perf=[[x0,y0-(y0-yT)*0.6],[x0+(x1-x0)*0.5,y0-(y0-yT)*0.4],[x1,y0-(y0-yT)*0.18]];
+    s+=this._stroke(pay,rand,{w:4,r:2,s:C.ink})+this._head(pay[2][0],pay[2][1],-0.4,13,rand,{w:4,r:1.2,s:C.ink});
+    s+=this._stroke(perf,rand,{w:4,r:2,s:C.red})+this._head(perf[2][0],perf[2][1],0.5,13,rand,{w:4,r:1.2,s:C.red});
+    s+=this._t(x1-W*0.02,y0-(y0-yT)*0.88,'PAY',{size:H*0.06,s:C.ink,w:800,anchor:'end'});
+    s+=this._t(x1-W*0.02,y0-(y0-yT)*0.12,'STOCK',{size:H*0.06,s:C.red,w:800,anchor:'end'});
+    return s;
+  }
+  insider(rand,W,H){
+    const C=this.C, x0=W*0.08,y0=H*0.82,x1=W*0.96,mid=(y0+H*0.16)/2;
+    let s=this._stroke([[x0,mid],[x1,mid]],rand,{w:2.6,r:1.2,s:C.ink});
+    const bars=[['Q1',-0.3],['Q2',-0.5],['Q3',0.2],['Q4',-0.7],['Q5',-0.9]], n=bars.length, gw=(x1-x0)/n;
+    for(let i=0;i<n;i++){ const bx=x0+i*gw+gw*0.22, bw=gw*0.56, v=bars[i][1], bh=(y0-H*0.16)*0.42*Math.abs(v), sell=v<0, col=sell?C.red:C.gdk; const y1=sell?mid+bh:mid-bh; s+=this._fill([[bx,mid],[bx+bw,mid],[bx+bw,y1],[bx,y1]],rand,sell?'rgba(255,82,71,.2)':'rgba(47,213,118,.22)',1)+this._stroke([[bx,y1],[bx,mid],[bx+bw,mid],[bx+bw,y1]],rand,{w:2.4,r:1,s:col}); s+=this._t(bx+bw*0.5,y0+H*0.02,bars[i][0],{size:H*0.045,s:C.grey,w:700,mono:true}); }
+    s+=this._t(x1,mid-H*0.02,'SELL',{size:H*0.05,s:C.red,w:800,anchor:'end'});
+    s+=this._t(x0+4,H*0.14,'INSIDER TRADES',{size:H*0.05,s:C.grey,w:700,mono:true,anchor:'start'});
+    return s;
+  }
+  mk(rand,W,H,name){ const C=this.C; if(name==='check') return this._stroke([[W*0.2,H*0.54],[W*0.42,H*0.76],[W*0.82,H*0.24]],rand,{w:W*0.1,r:1.6,s:C.gdk}); return this._stroke([[W*0.24,H*0.24],[W*0.76,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red})+this._stroke([[W*0.76,H*0.24],[W*0.24,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red}); }
+  dennis(rand,W,H,arm,expr,mouth){
+    const C=this.C, bx=W*0.5, sc=Math.min(W,H)/620, top=H-360*sc, sy=(v)=>top+v*sc;
+    const L=(pts)=>this._stroke(pts,rand,{w:4.4,r:2.2,s:C.ink});
+    let s=this._stroke([[bx-40*sc,sy(150)],[bx+40*sc,sy(150)],[bx+46*sc,sy(300)],[bx-46*sc,sy(300)]],rand,{w:4.4,r:2.4,close:true,s:C.ink});
+    s+=this._stroke([[bx,sy(120)],[bx,sy(150)]],rand,{w:4.4,r:1.6,s:C.ink});
+    s+=this._stroke([[bx-22*sc,sy(300)],[bx-26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink})+this._stroke([[bx+22*sc,sy(300)],[bx+26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink});
+    // both hands hold a document
+    s+=L([[bx-40*sc,sy(170)],[bx-30*sc,sy(210)]])+L([[bx+40*sc,sy(170)],[bx+30*sc,sy(210)]]);
+    s+=this._fill([[bx-46*sc,sy(196)],[bx+46*sc,sy(196)],[bx+46*sc,sy(268)],[bx-46*sc,sy(268)]],rand,'#faf9f6',1.2)+this._stroke([[bx-46*sc,sy(196)],[bx+46*sc,sy(196)],[bx+46*sc,sy(268)],[bx-46*sc,sy(268)]],rand,{w:3,r:1.4,close:true,s:C.ink});
+    for(let i=0;i<4;i++) s+=this._stroke([[bx-36*sc,sy(210+i*14)],[bx+(i%2?18:34)*sc,sy(210+i*14)]],rand,{w:1.8,r:0.8,s:i===2?C.red:C.grey});
+    const hcx=bx, hcy=sy(70), hr=52*sc;
+    s+=this._stroke(this._ell(hcx,hcy,hr,hr*1.08,-0.15,Math.PI*2+0.55),rand,{w:4.4,r:2.6,s:C.ink});
+    s+=this._stroke([[hcx,hcy-hr*1.02],[hcx-14*sc,hcy-hr*1.3],[hcx+8*sc,hcy-hr*1.2],[hcx-4*sc,hcy-hr*0.98]],rand,{w:3.4,r:2.4,s:C.ink});
+    const Lx=hcx-20*sc,Rx=hcx+20*sc,Ey=hcy-6*sc;
+    const bags=()=>this._stroke([[Lx-9*sc,Ey+20*sc],[Lx,Ey+24*sc],[Lx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey})+this._stroke([[Rx-9*sc,Ey+20*sc],[Rx,Ey+24*sc],[Rx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey});
+    s+=this._stroke([[Lx-11*sc,Ey-4*sc],[Lx,Ey+6*sc],[Lx+11*sc,Ey-4*sc]],rand,{w:3,r:1.4,s:C.ink})+this._stroke([[Rx-11*sc,Ey-4*sc],[Rx,Ey+6*sc],[Rx+11*sc,Ey-4*sc]],rand,{w:3,r:1.4,s:C.ink})+bags();
+    const my=hcy+28*sc;
+    s+=this._stroke([[hcx-16*sc,my],[hcx+16*sc,my-2*sc]],rand,{w:3.4,r:1.4,s:C.ink});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 520 320').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out=''; const t=el.dataset.ink;
+    if(t==='pie') out=this.pie(rand,W,H);
+    else if(t==='creep') out=this.creep(rand,W,H);
+    else if(t==='paygap') out=this.paygap(rand,W,H);
+    else if(t==='insider') out=this.insider(rand,W,H);
+    else if(t==='mk') out=this.mk(rand,W,H,el.dataset.name||'check');
+    else if(t==='dennis') out=this.dennis(rand,W,H,el.dataset.arm||'rest',el.dataset.expr||'deadpan',el.dataset.mouth||'closed');
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){ if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); } this.drawAll(); }
+  renderVals(){ return { rootRef:this.rootRef }; }
+}
+</script>
+</body>
+</html>

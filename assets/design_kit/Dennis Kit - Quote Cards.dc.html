@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · QUOTES &amp; TESTIMONY</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">What they said,<br>on the record</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">The kit had press props but nothing for <strong>holding a sentence up to the light</strong>. Four card types: the plain pull quote, the said-then-did pair, the redline (what got quietly cut between filings), and the transcript strip with the evasion circled.</p>
+</header>
+
+<sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ sec.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ sec.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ sec.note }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+      <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="2">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ c.file }}</div>
+          <div data-export="{{ c.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+            <div ref="{{ c.slot }}" style="position:absolute; inset:0;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/quotes/ · 1920×1080 · every frame above carries a data-export id</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · quote cards · pull · said-then-did · redline · transcript</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.slots = {};
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||28; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+
+  circleInk(rand,W,H){ return this._stroke(this._ell(W*0.5,H*0.5,W*0.46,H*0.36,-0.2,Math.PI*2+0.4),rand,{w:H*0.10,r:H*0.06,s:this.C.red}); }
+  strikeInk(rand,W,H){ return this._stroke([[W*0.02,H*0.56],[W*0.36,H*0.44],[W*0.72,H*0.60],[W*0.98,H*0.48]],rand,{w:H*0.16,r:H*0.10,s:this.C.red}); }
+  underInk(rand,W,H){ return this._stroke([[W*0.02,H*0.42],[W*0.34,H*0.60],[W*0.70,H*0.38],[W*0.98,H*0.56]],rand,{w:H*0.14,r:H*0.09,s:this.C.red}); }
+  arrowInk(rand,W,H){ const C=this.C, y=H*0.5;
+    let s=this._stroke([[W*0.06,y],[W*0.78,y]],rand,{w:H*0.13,r:H*0.06,s:C.ink});
+    const a=0,len=H*0.34; s+=this._stroke([[W*0.78,y],[W*0.78+len*Math.cos(a+Math.PI-0.42),y+len*Math.sin(a+Math.PI-0.42)]],rand,{w:H*0.13,r:H*0.05,s:C.ink});
+    s+=this._stroke([[W*0.78,y],[W*0.78+len*Math.cos(a+Math.PI+0.42),y+len*Math.sin(a+Math.PI+0.42)]],rand,{w:H*0.13,r:H*0.05,s:C.ink});
+    return s; }
+  bracketInk(rand,W,H){ const C=this.C;
+    return this._stroke([[W*0.72,H*0.06],[W*0.94,H*0.16],[W*0.94,H*0.84],[W*0.72,H*0.94]],rand,{w:W*0.05,r:W*0.03,s:C.red}); }
+
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 300 100').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const map={ circle:'circleInk', strike:'strikeInk', under:'underInk', arrow:'arrowInk', bracket:'bracketInk' };
+    const fn=map[el.dataset.ink];
+    el.innerHTML = fn? this[fn](rand,W,H) : '';
+    el.setAttribute('data-drawn','1');
+  }
+
+  svgTag(ink,seed,vb,style){ return '<svg data-ink="'+ink+'" data-seed="'+seed+'" viewBox="'+vb+'" style="'+style+'"></svg>'; }
+
+  buildCard(kind){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let html='';
+    if(kind==='pull-blank' || kind==='pull-filled'){
+      const q = kind==='pull-filled' ? 'We\u2019re very pleased with the underlying momentum of the business.' : 'The sentence goes here, in full, with nothing trimmed out.';
+      const who = kind==='pull-filled' ? 'CFO \u00b7 Q3 EARNINGS CALL \u00b7 9 DAYS BEFORE THE CUT' : 'WHO SAID IT \u00b7 WHERE \u00b7 WHEN';
+      html+='<div style="position:absolute; inset:0; padding:9cqw 8cqw; display:flex; flex-direction:column; justify-content:center;">';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:11cqw; line-height:.7; color:'+C.red+'; height:5cqw;">\u201c</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:5.6cqw; line-height:1.12; color:'+C.ink+'; max-width:76cqw;">'+q+'</div>';
+      html+='<div style="display:flex; align-items:center; gap:2.4cqw; margin-top:4cqw;"><span style="width:9cqw; height:0.45cqw; background:'+C.red+'; flex:none;"></span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.2em; color:#6f6c65;">'+who+'</span></div>';
+      html+='</div>';
+      if(kind==='pull-filled') html+=this.svgTag('bracket',5,'0 0 120 300','position:absolute; right:3cqw; top:18cqw; width:9cqw; height:46cqw; overflow:visible;');
+    } else if(kind==='said-did-blank' || kind==='said-did-filled'){
+      const filled = kind==='said-did-filled';
+      const saidT = filled? '\u201cNo change to full-year guidance.\u201d' : '\u201cWhat they said.\u201d';
+      const saidW = filled? 'Q2 CALL \u00b7 MAY' : 'WHEN \u00b7 WHERE';
+      const didT  = filled? 'Guidance cut 14% nine weeks later.' : 'What actually happened.';
+      const didW  = filled? 'Q3 RELEASE \u00b7 JULY' : 'WHEN \u00b7 WHERE';
+      html+='<div style="position:absolute; inset:0; padding:7cqw 7cqw 6cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.26em; color:'+C.red+';">SAID, THEN DID</div>';
+      html+='<div style="flex:1; min-height:0; display:grid; grid-template-rows:1fr auto 1fr; gap:1.6cqw; margin-top:2.6cqw;">';
+      html+='<div style="background:'+C.paper+'; border:0.5cqw solid '+C.ink+'; border-radius:1.4cqw; padding:3cqw 3.4cqw; display:flex; flex-direction:column; justify-content:center;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.18em; color:#8f8c83;">'+saidW+'</div><div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.2cqw; line-height:1.06; margin-top:1cqw;">'+saidT+'</div></div>';
+      html+='<div style="display:flex; align-items:center; gap:2cqw;">'+this.svgTag('arrow',6,'0 0 300 100','width:12cqw; height:4cqw; flex:none; overflow:visible;')+'<span style="font-family:\'Space Grotesk\',sans-serif; font-size:2cqw; color:#8f8c83; font-style:italic;">nine weeks</span></div>';
+      html+='<div style="background:'+C.paper+'; border:0.5cqw solid '+C.red+'; border-radius:1.4cqw; padding:3cqw 3.4cqw; display:flex; flex-direction:column; justify-content:center;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.18em; color:'+C.red+';">'+didW+'</div><div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.2cqw; line-height:1.06; margin-top:1cqw;">'+didT+'</div></div>';
+      html+='</div></div>';
+    } else if(kind==='redline-blank' || kind==='redline-filled'){
+      const filled = kind==='redline-filled';
+      html+='<div style="position:absolute; inset:0; padding:7cqw 7cqw 6cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.26em; color:'+C.red+';">THE REDLINE</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; color:#8f8c83;">FY24 \u2192 FY25 20-F</span></div>';
+      html+='<div style="flex:1; min-height:0; background:'+C.paper+'; border:0.5cqw solid '+C.ink+'; border-radius:1.4cqw; padding:4cqw; margin-top:2.4cqw; display:flex; flex-direction:column; justify-content:center; gap:2.2cqw;">';
+      const kept = filled? 'We expect demand for our hotel channel to remain' : 'The sentence that survived, unchanged,';
+      const cut  = filled? 'strong and broadly in line with prior years.' : 'and the clause that quietly disappeared.';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:3.2cqw; line-height:1.34; color:'+C.ink+';">'+kept+'</div>';
+      html+='<div style="position:relative; align-self:flex-start;"><span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:3.2cqw; line-height:1.34; color:#8f8c83;">'+cut+'</span>'+this.svgTag('strike',7,'0 0 600 60','position:absolute; left:-1cqw; right:-1cqw; top:20%; width:calc(100% + 2cqw); height:3cqw; overflow:visible;')+'</div>';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.16em; color:'+C.red+'; margin-top:1cqw;">'+(filled?'\u2014 GONE IN THIS YEAR\u2019S FILING':'\u2014 WHAT THE DELETION TELLS YOU')+'</div>';
+      html+='</div></div>';
+    } else if(kind==='transcript-blank' || kind==='transcript-filled'){
+      const filled = kind==='transcript-filled';
+      const rows = filled? [
+        ['ANALYST','So on the one customer \u2014 is that contract up for renewal this year?',false],
+        ['CFO','I\u2019d say we feel good about the relationship overall.',true],
+        ['ANALYST','Right, but is it up for renewal?',false],
+        ['CFO','We don\u2019t break out individual customer terms.',true]
+      ] : [
+        ['SPEAKER','The question, asked plainly.',false],
+        ['SPEAKER','The answer that isn\u2019t one.',true],
+        ['SPEAKER','The question, asked again.',false],
+        ['SPEAKER','The second non-answer.',true]
+      ];
+      html+='<div style="position:absolute; inset:0; padding:6cqw 7cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.26em; color:'+C.red+';">TRANSCRIPT</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; color:#8f8c83;">Q&amp;A \u00b7 44:12</span></div>';
+      html+='<div style="flex:1; min-height:0; display:flex; flex-direction:column; gap:1.4cqw; margin-top:2.2cqw; justify-content:center;">';
+      for(let i=0;i<rows.length;i++){
+        const dodge=rows[i][2];
+        html+='<div style="display:flex; gap:2.2cqw; align-items:flex-start;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.1em; color:'+(dodge?C.red:'#8f8c83')+'; width:11cqw; flex:none; padding-top:0.5cqw;">'+rows[i][0]+'</span><span style="position:relative; font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.6cqw; line-height:1.3; color:'+C.ink+';">'+rows[i][1]+(dodge?this.svgTag('under',8+i,'0 0 600 50','position:absolute; left:0; right:0; bottom:-1.4cqw; width:100%; height:2.2cqw; overflow:visible;'):'')+'</span></div>';
+      }
+      html+='</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:3cqw; color:'+C.ink+';">'+(filled?'Asked twice. Answered zero times.':'The evasion, underlined.')+'</div>';
+      html+='</div>';
+    }
+    wrap.innerHTML=html;
+    return wrap;
+  }
+  mountCards(){
+    Object.keys(this.slots).forEach(kind=>{
+      const host=this.slots[kind] && this.slots[kind].current;
+      if(!host || host.getAttribute('data-built')) return;
+      host.appendChild(this.buildCard(kind));
+      host.setAttribute('data-built','1');
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountCards(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const slot=(k)=>{ if(!this.slots[k]) this.slots[k]=React.createRef(); return this.slots[k]; };
+    const card=(k,file,id)=>({ file, id, slot:slot(k) });
+    return {
+      rootRef:this.rootRef,
+      sections:[
+        { n:'01', title:'Pull quote', note:'one sentence, attributed', cards:[
+          card('pull-blank','quote-pull-blank.png · the template','quotes/pull-blank'),
+          card('pull-filled','quote-pull-momentum.png','quotes/pull-momentum')
+        ]},
+        { n:'02', title:'Said, then did', note:'the gap is the point', cards:[
+          card('said-did-blank','quote-said-did-blank.png · the template','quotes/said-did-blank'),
+          card('said-did-filled','quote-said-did-guidance.png','quotes/said-did-guidance')
+        ]},
+        { n:'03', title:'The redline', note:'what got cut between filings', cards:[
+          card('redline-blank','quote-redline-blank.png · the template','quotes/redline-blank'),
+          card('redline-filled','quote-redline-demand.png','quotes/redline-demand')
+        ]},
+        { n:'04', title:'Transcript strip', note:'evasions underlined', cards:[
+          card('transcript-blank','quote-transcript-blank.png · the template','quotes/transcript-blank'),
+          card('transcript-filled','quote-transcript-renewal.png','quotes/transcript-renewal')
+        ]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

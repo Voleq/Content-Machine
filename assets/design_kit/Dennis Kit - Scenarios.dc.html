@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · SCENARIOS &amp; VERDICTS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Three futures,<br>none of them advice</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">The end of every episode needs somewhere to land. Bull/base/bear side by side, the checklist that got us there, a scorecard, and the honest <strong>what would change my mind</strong> card — so the verdict is a position, not a prediction.</p>
+</header>
+
+<sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ sec.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ sec.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ sec.note }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+      <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="2">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ c.file }}</div>
+          <div data-export="{{ c.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+            <div ref="{{ c.slot }}" style="position:absolute; inset:0;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/scenarios/ · 1920×1080 · every frame above carries a data-export id</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · scenarios · bull/base/bear · checklist · scorecard · change-my-mind</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.slots = {};
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+
+  tickInk(rand,W,H){ return this._stroke([[W*0.18,H*0.52],[W*0.40,H*0.76],[W*0.82,H*0.22]],rand,{w:H*0.12,r:H*0.035,s:this.C.gdk}); }
+  crossInk(rand,W,H){ return this._stroke([[W*0.24,H*0.24],[W*0.76,H*0.76]],rand,{w:H*0.12,r:H*0.035,s:this.C.red})+this._stroke([[W*0.76,H*0.24],[W*0.24,H*0.76]],rand,{w:H*0.12,r:H*0.035,s:this.C.red}); }
+  dashInk(rand,W,H){ return this._stroke([[W*0.22,H*0.5],[W*0.78,H*0.5]],rand,{w:H*0.12,r:H*0.035,s:this.C.grey}); }
+  fanInk(rand,W,H){
+    const C=this.C,x0=W*0.08,y0=H*0.78,x1=W*0.96,yT=H*0.10,ph=y0-yT;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.4,r:1,s:C.ink});
+    const hist=[]; for(let i=0;i<5;i++){ const t=i/4*0.42; hist.push([x0+(x1-x0)*t, y0-ph*(0.34+0.10*t+(rand()*2-1)*0.02)]); }
+    s+=this._stroke(hist,rand,{w:3.6,r:1.6,s:C.ink});
+    const start=hist[4], ends=[[0.86,C.gdk],[0.52,C.ink],[0.16,C.red]];
+    for(let k=0;k<ends.length;k++){
+      const pts=[start]; for(let i=1;i<=5;i++){ const t=i/5; pts.push([start[0]+(x1-start[0])*t, start[1]+((y0-ph*ends[k][0])-start[1])*t+(rand()*2-1)*3]); }
+      s+=this._stroke(pts,rand,{w:k===1?3.4:2.8,r:1.6,s:ends[k][1],op:k===1?1:0.9});
+    }
+    s+=this._t(x1,y0-ph*0.90,'BULL',{size:H*0.062,s:C.gdk,anchor:'end'});
+    s+=this._t(x1,y0-ph*0.56,'BASE',{size:H*0.062,s:C.ink,anchor:'end'});
+    s+=this._t(x1,y0-ph*0.10,'BEAR',{size:H*0.062,s:C.red,anchor:'end'});
+    s+=this._stroke([[start[0],yT],[start[0],y0]],rand,{w:1.6,r:0.9,s:C.ghost});
+    s+=this._t(start[0]+W*0.01,yT+H*0.03,'TODAY',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  treeInk(rand,W,H){
+    const C=this.C, x0=W*0.06, cx=W*0.34;
+    let s=this._stroke([[x0,H*0.5],[cx,H*0.5]],rand,{w:3.4,r:1.6,s:C.ink});
+    s+=this._t(x0,H*0.30,'REFINANCE THE',{size:H*0.048,s:C.grey});
+    s+=this._t(x0,H*0.38,'2026 WALL?',{size:H*0.048,s:C.grey});
+    const yes=[cx,H*0.26], no=[cx,H*0.76];
+    s+=this._stroke([[cx,H*0.5],[cx,yes[1]],[W*0.52,yes[1]]],rand,{w:3,r:1.6,s:C.gdk});
+    s+=this._stroke([[cx,H*0.5],[cx,no[1]],[W*0.52,no[1]]],rand,{w:3,r:1.6,s:C.red});
+    s+=this._t(cx+W*0.055,H*0.40,'YES',{size:H*0.055,s:C.gdk});
+    s+=this._t(cx+W*0.055,H*0.63,'NO',{size:H*0.055,s:C.red});
+    const boxes=[[W*0.52,H*0.14,'MARGIN HOLDS?',C.gdk],[W*0.52,H*0.64,'DILUTE',C.red]];
+    for(let i=0;i<boxes.length;i++){
+      const [bx,by,lab,col]=boxes[i];
+      const pts=[[bx,by],[bx+W*0.40,by],[bx+W*0.40,by+H*0.24],[bx,by+H*0.24]];
+      s+=this._fill(pts,rand,col===C.gdk?'rgba(47,213,118,.14)':'rgba(255,82,71,.14)',1.2);
+      s+=this._stroke(pts,rand,{w:2.6,r:1.3,close:true,s:col});
+      s+=this._t(bx+W*0.20,by+H*0.12,lab,{size:H*0.062,s:col,anchor:'middle',hand:true});
+    }
+    return s;
+  }
+  scoreInk(rand,W,H,filled){
+    const C=this.C, rows=[['Growth',4],['Margins',2],['Balance sheet',1],['Management',3],['Price',4]];
+    let s='';
+    for(let i=0;i<rows.length;i++){
+      const y=H*0.16+i*H*0.17;
+      s+=this._t(W*0.04,y,rows[i][0].toUpperCase(),{size:H*0.058,s:C.grey});
+      for(let k=0;k<5;k++){
+        const x=W*(0.44+k*0.10), on=k<rows[i][1], good=rows[i][1]>=3;
+        if(on) s+=this._fill(this._ell(x,y,H*0.042,H*0.042,0,Math.PI*2),rand,good?'rgba(47,213,118,.30)':'rgba(255,82,71,.26)',1);
+        s+=this._stroke(this._ell(x,y,H*0.048,H*0.048,0,Math.PI*2),rand,{w:2.2,r:1.1,close:true,s:on?(good?C.gdk:C.red):C.ghost});
+      }
+    }
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 300 100').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const map={ tick:'tickInk', cross:'crossInk', dash:'dashInk', fan:'fanInk', tree:'treeInk', score:'scoreInk' };
+    const fn=map[el.dataset.ink];
+    el.innerHTML = fn? this[fn](rand,W,H) : '';
+    el.setAttribute('data-drawn','1');
+  }
+  svgTag(ink,seed,vb,style){ return '<svg data-ink="'+ink+'" data-seed="'+seed+'" viewBox="'+vb+'" style="'+style+'"></svg>'; }
+
+  buildCard(kind){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let html='';
+    if(kind==='three-blank' || kind==='three-filled'){
+      const filled = kind==='three-filled';
+      const cols = filled? [
+        ['BEAR','The customer walks','Revenue \u221228%. Refinance at 11%. The equity is an option.','\u00a34',C.red],
+        ['BASE','Nothing much happens','Flat revenue, margin claws back half. Boring, survivable.','\u00a312',C.ink],
+        ['BULL','They renew and grow','Contract renewed, margin recovers, multiple re-rates.','\u00a326',C.gdk]
+      ] : [
+        ['BEAR','What goes wrong','One sentence on the mechanism, not the mood.','\u2014',C.red],
+        ['BASE','What probably happens','The unexciting middle. Usually right.','\u2014',C.ink],
+        ['BULL','What goes right','One sentence. No hockey sticks.','\u2014',C.gdk]
+      ];
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 6cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THREE FUTURES</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; color:#8f8c83;">'+(filled?'3-YEAR VIEW \u00b7 NOT A TARGET':'HORIZON \u00b7 NOT A TARGET')+'</span></div>';
+      html+='<div style="flex:1; display:grid; grid-template-columns:1fr 1fr 1fr; gap:2cqw; margin-top:2.4cqw;">';
+      for(let i=0;i<cols.length;i++){
+        const [tag,head,body,px,col]=cols[i];
+        html+='<div style="background:'+C.paper+'; border:0.5cqw solid '+col+'; border-radius:1.4cqw; padding:2.6cqw 2.6cqw 2.2cqw; display:flex; flex-direction:column;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.2em; color:'+col+';">'+tag+'</div><div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:3.4cqw; line-height:1.04; margin-top:1.2cqw;">'+head+'</div><div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:1.9cqw; line-height:1.32; color:#3a3a3d; margin-top:1.4cqw; flex:1;">'+body+'</div><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:4cqw; color:'+col+'; margin-top:1.2cqw;">'+px+'</div></div>';
+      }
+      html+='</div></div>';
+    } else if(kind==='fan'){
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THE FAN</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.6cqw; line-height:1.02; margin-top:1cqw;">Three paths, one starting point</div>';
+      html+='<div style="flex:1; min-height:0; margin-top:1.6cqw;">'+this.svgTag('fan',4,'0 0 460 240','width:100%; height:100%; overflow:visible;')+'</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#8f8c83; font-style:italic;">The spread is the honest bit. The middle line is not a forecast.</div>';
+      html+='</div>';
+    } else if(kind==='tree'){
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THE ONE DECISION THAT MATTERS</div>';
+      html+='<div style="flex:1; min-height:0; margin-top:2cqw;">'+this.svgTag('tree',6,'0 0 460 230','width:100%; height:100%; overflow:visible;')+'</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#8f8c83; font-style:italic;">Everything else is downstream of this one node.</div>';
+      html+='</div>';
+    } else if(kind==='checklist-blank' || kind==='checklist-filled'){
+      const filled = kind==='checklist-filled';
+      const rows = filled? [
+        ['Revenue still growing','tick'],['Gross margin holding','cross'],['Free cash flow positive','tick'],
+        ['Debt wall handled','cross'],['Insiders buying','dash'],['One customer under 25%','cross']
+      ] : [
+        ['The test, in plain words','tick'],['The test, in plain words','cross'],['The test, in plain words','tick'],
+        ['The test, in plain words','dash'],['The test, in plain words','tick'],['The test, in plain words','cross']
+      ];
+      html+='<div style="position:absolute; inset:0; padding:6cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THE CHECKLIST</span><span style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:3cqw; color:'+C.ink+';">'+(filled?'2 of 6':'n of 6')+'</span></div>';
+      html+='<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:1.4cqw 3cqw; margin-top:2.2cqw; align-content:center;">';
+      for(let i=0;i<rows.length;i++){
+        html+='<div style="display:flex; gap:1.8cqw; align-items:center;">'+this.svgTag(rows[i][1],30+i,'0 0 100 100','width:3.6cqw; height:3.6cqw; flex:none; overflow:visible;')+'<span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.3cqw; line-height:1.2;">'+rows[i][0]+'</span></div>';
+      }
+      html+='</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#8f8c83; font-style:italic;">'+(filled?'Two out of six isn\u2019t a disaster. It\u2019s a price question.':'A dash means \u201cnot enough information\u201d, which is an answer too.')+'</div>';
+      html+='</div>';
+    } else if(kind==='scorecard'){
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THE SCORECARD</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; color:#8f8c83;">5 = GOOD \u00b7 1 = BAD \u00b7 ENTIRELY SUBJECTIVE</span></div>';
+      html+='<div style="flex:1; min-height:0; margin-top:2cqw;">'+this.svgTag('score',8,'0 0 460 200','width:100%; height:100%; overflow:visible;')+'</div>';
+      html+='</div>';
+    } else if(kind==='change-mind'){
+      const rows=['Two clean quarters of gross margin.','The 2026 maturity refinanced below 8%.','Customer concentration under 25%.','An insider buying with their own money.'];
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 6cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">WHAT WOULD CHANGE MY MIND</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:5cqw; line-height:1.02; margin-top:1.2cqw;">On the list. Not in the basket.</div>';
+      html+='<div style="flex:1; display:flex; flex-direction:column; gap:1.6cqw; margin-top:2.4cqw; justify-content:center; max-width:66cqw;">';
+      for(let i=0;i<rows.length;i++){
+        html+='<div style="display:flex; gap:2cqw; align-items:baseline;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.2cqw; color:'+C.red+'; width:4cqw; flex:none;">0'+(i+1)+'</span><span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.6cqw; line-height:1.24;">'+rows[i]+'</span></div>';
+      }
+      html+='</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#8f8c83; font-style:italic;">If none of these happen, nothing has changed and neither have I.</div>';
+      html+='</div>';
+    } else if(kind==='verdict'){
+      html+='<div style="position:absolute; inset:0; display:flex; align-items:stretch;">';
+      html+='<div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 3cqw 6cqw 7cqw;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.8cqw; letter-spacing:.28em; color:'+C.red+';">THE VERDICT</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6.2cqw; line-height:1; margin-top:1.4cqw; white-space:nowrap;">Cheap, fragile,<br>and interesting.</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.3cqw; line-height:1.3; color:#3a3a3d; margin-top:1.6cqw; max-width:42cqw;">Pick two and you have a position. Pick three and you have a problem.</div>';
+      html+='</div>';
+      html+='<div style="width:30cqw; flex:none; display:flex; flex-direction:column; justify-content:center; gap:1.4cqw; padding:0 5cqw 6cqw 0;">';
+      const chips=[['CHEAP','yes, on cash',C.gdk],['FRAGILE','the debt wall',C.red],['INTERESTING','worth watching',C.ink]];
+      for(let i=0;i<chips.length;i++){
+        html+='<div style="background:'+C.paper+'; border-left:0.9cqw solid '+chips[i][2]+'; border-radius:0.8cqw; padding:1.8cqw 2.2cqw;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.18em; color:'+chips[i][2]+';">'+chips[i][0]+'</div><div style="font-family:\'Space Grotesk\',sans-serif; font-size:2cqw; color:#3a3a3d; margin-top:0.5cqw;">'+chips[i][1]+'</div></div>';
+      }
+      html+='</div></div>';
+      html+='<div style="position:absolute; left:0; right:0; bottom:0; background:'+C.ink+'; padding:1.3cqw 7cqw;"><span style="font-family:\'Space Grotesk\',sans-serif; font-size:1.7cqw; color:#e2dfd5;">Opinion and entertainment. Not financial advice. Do your own reading.</span></div>';
+    }
+    wrap.innerHTML=html;
+    return wrap;
+  }
+  mountCards(){
+    Object.keys(this.slots).forEach(kind=>{
+      const host=this.slots[kind] && this.slots[kind].current;
+      if(!host || host.getAttribute('data-built')) return;
+      host.appendChild(this.buildCard(kind));
+      host.setAttribute('data-built','1');
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountCards(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const slot=(k)=>{ if(!this.slots[k]) this.slots[k]=React.createRef(); return this.slots[k]; };
+    const card=(k,file,id)=>({ file, id, slot:slot(k) });
+    return {
+      rootRef:this.rootRef,
+      sections:[
+        { n:'01', title:'Bull, base, bear', note:'three columns, no hockey sticks', cards:[
+          card('three-blank','scen-three-blank.png \u00b7 the template','scenarios/three-blank'),
+          card('three-filled','scen-three-gymx.png','scenarios/three-gymx')
+        ]},
+        { n:'02', title:'Drawn versions', note:'when the shape says it faster', cards:[
+          card('fan','scen-fan.png','scenarios/fan'),
+          card('tree','scen-decision-tree.png','scenarios/decision-tree')
+        ]},
+        { n:'03', title:'Showing your work', note:'the tests behind the verdict', cards:[
+          card('checklist-blank','scen-checklist-blank.png \u00b7 the template','scenarios/checklist-blank'),
+          card('checklist-filled','scen-checklist-gymx.png','scenarios/checklist-gymx'),
+          card('scorecard','scen-scorecard.png','scenarios/scorecard'),
+          card('change-mind','scen-change-my-mind.png','scenarios/change-my-mind')
+        ]},
+        { n:'04', title:'Landing it', note:'the last frame before the end card', cards:[
+          card('verdict','scen-verdict.png','scenarios/verdict')
+        ]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

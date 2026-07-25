@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1400px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · REACTIONS &amp; LOWER THIRDS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:88px; line-height:.9; letter-spacing:-.02em;">Twelve ways to<br>not be surprised</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">Single-beat reaction frames for the cut after a bad number — plus the strap furniture every episode needs. Reactions are <strong>full-body, transparent</strong>, boil-paired; straps are <strong>1920-wide</strong> overlays with alpha.</p>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">01</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">Reactions</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">one beat each · cut in, cut out</span>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:0 0 44px;">
+  <sc-for list="{{ reactions }}" as="r" hint-placeholder-count="12">
+    <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:12px 14px 10px;">
+      <div style="background:#faf9f6; border-radius:4px; padding:6px;">
+        <svg data-ink="pose" data-pose="{{ r.pose }}" data-seed="{{ r.seed }}" viewBox="240 120 700 830" style="width:100%; height:240px; display:block; overflow:visible;"></svg>
+      </div>
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:17px; line-height:1.05; margin-top:9px;">{{ r.title }}</div>
+      <div style="font-size:12px; color:#6f6c65; line-height:1.4; margin-top:3px;">{{ r.blurb }}</div>
+      <div style="font-family:'Space Mono',monospace; font-size:10px; color:#a9a59b; margin-top:5px;">{{ r.file }}</div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">02</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">Lower thirds &amp; straps</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">1920×220 overlays · transparent</span>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:16px; margin:0 0 44px;">
+  <sc-for list="{{ straps }}" as="s" hint-placeholder-count="6">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:7px;">{{ s.file }} — {{ s.note }}</div>
+      <div style="width:100%; background:#dcd8cc url('uploads/bg_light_flat_wide.png') center/cover; border-radius:6px; padding:20px; container-type:inline-size;">
+        <div data-export="{{ s.id }}" ref="{{ s.slot }}" style="width:100%; height:132px; position:relative;"></div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">03</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">Progress &amp; chapter dots</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">where we are in the episode</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+  <sc-for list="{{ dots }}" as="d" hint-placeholder-count="4">
+    <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px 20px;">
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:12px;">{{ d.file }}</div>
+      <div data-export="{{ d.id }}" style="background:#faf9f6; border-radius:4px; padding:14px;">
+        <svg data-ink="dots" data-active="{{ d.active }}" data-total="{{ d.total }}" data-seed="{{ d.seed }}" viewBox="0 0 460 70" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · mascot/reactions/ 700×830 · type/straps/ 1920×220 · every reaction + its _b boil</div>
+  <div style="display:flex; flex-wrap:wrap; gap:14px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exports }}" as="x" hint-placeholder-count="8">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:170px; height:210px; display:flex; align-items:flex-end; justify-content:center;">
+          <svg data-ink="pose" data-pose="{{ x.pose }}" data-seed="{{ x.seed }}" viewBox="240 120 700 830" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · 12 reactions · 6 straps · chapter dots</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc' };
+    this.slots = {};
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _shift(dx,dy,inner){ return '<g transform="translate('+dx.toFixed(1)+','+dy.toFixed(1)+')">'+inner+'</g>'; }
+  _rot(deg,cx,cy,inner){ return '<g transform="rotate('+deg.toFixed(1)+' '+cx+' '+cy+')">'+inner+'</g>'; }
+
+  body(rand){ const c=this.C.ink; let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:c}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:c}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:c}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:c}); return s; }
+  headShape(rand){ const c=this.C.ink; let s=this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c}); s+=this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:c}); return s; }
+  mug(rand,hx,hy){ const c=this.C.ink,C=this.C; let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:c}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:c}); s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:C.grey}); return s; }
+  bags(rand){ const g=this.C.grey; return this._stroke([[438,314],[456,320],[474,314]],rand,{w:3,r:2,s:g})+this._stroke([[526,314],[544,320],[562,314]],rand,{w:3,r:2,s:g}); }
+  eyesTired(rand){ const c=this.C.ink; return this._stroke([[434,284],[456,296],[478,284]],rand,{w:4,r:2,s:c})+this._stroke([[522,284],[544,296],[566,284]],rand,{w:4,r:2,s:c})+this.bags(rand); }
+  eyesFlat(rand){ const c=this.C.ink; return this._stroke([[436,288],[476,290]],rand,{w:4,r:1.5,s:c})+this._stroke([[524,290],[564,288]],rand,{w:4,r:1.5,s:c})+this.bags(rand); }
+  eyesShut(rand){ const c=this.C.ink; return this._stroke([[434,290],[456,282],[478,290]],rand,{w:4,r:1.8,s:c})+this._stroke([[522,290],[544,282],[566,290]],rand,{w:4,r:1.8,s:c})+this.bags(rand); }
+  eyesWide(rand){ const c=this.C.ink; let s=this._stroke(this._ell(456,288,18,20,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:c})+this._stroke(this._ell(544,288,18,20,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:c});
+    s+='<circle cx="456" cy="288" r="4.5" fill="'+c+'"/><circle cx="544" cy="288" r="4.5" fill="'+c+'"/>'; return s+this.bags(rand); }
+  eyesDead(rand){ const c=this.C.ink; let s=this._stroke(this._ell(456,288,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c})+this._stroke(this._ell(544,288,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c});
+    s+='<circle cx="456" cy="288" r="5.5" fill="'+c+'"/><circle cx="544" cy="288" r="5.5" fill="'+c+'"/>'; return s+this.bags(rand); }
+  eyesRoll(rand){ const c=this.C.ink; let s=this._stroke(this._ell(456,288,18,18,0,Math.PI*2),rand,{w:3,r:1.3,close:true,s:c})+this._stroke(this._ell(544,288,18,18,0,Math.PI*2),rand,{w:3,r:1.3,close:true,s:c});
+    s+='<circle cx="454" cy="276" r="5" fill="'+c+'"/><circle cx="542" cy="276" r="5" fill="'+c+'"/>'; return s+this.bags(rand); }
+  mFlat(rand){ return this._stroke([[472,360],[528,358]],rand,{w:4,r:1.6,s:this.C.ink}); }
+  mFrown(rand){ return this._stroke([[474,368],[500,356],[526,368]],rand,{w:4,r:2,s:this.C.ink}); }
+  mOpen(rand,rx,ry){ return this._stroke(this._ell(500,366,rx||16,ry||19,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:this.C.ink}); }
+  mFlatSmall(rand){ return this._stroke([[484,360],[516,359]],rand,{w:3.6,r:1.4,s:this.C.ink}); }
+  arm(rand,pts,w){ return this._stroke(pts,rand,{w:w||5,r:3,s:this.C.ink}); }
+
+  pose(rand,kind){
+    const C=this.C; let s=this.body(rand), head='', extra='';
+    switch(kind){
+      case 'facepalm':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[606,430],[578,352],[520,320]]);
+        head=this.headShape(rand)+this.eyesShut(rand)+this.mFrown(rand);
+        break;
+      case 'head-in-hands':
+        s+=this.arm(rand,[[418,500],[400,420],[436,344],[470,318]]);
+        s+=this.arm(rand,[[582,500],[600,420],[564,344],[530,318]]);
+        head=this._rot(4,500,430,this.headShape(rand)+this.eyesShut(rand)+this.mFrown(rand));
+        break;
+      case 'slow-blink':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+        head=this.headShape(rand)+this.eyesShut(rand)+this.mFlat(rand);
+        break;
+      case 'unimpressed':
+        s+=this.arm(rand,[[420,506],[470,556],[560,548],[584,530]])+this.arm(rand,[[580,506],[530,560],[440,552],[416,534]]);
+        head=this.headShape(rand)+this.eyesFlat(rand)+this.mFlat(rand);
+        break;
+      case 'checks-watch':
+        s+=this.arm(rand,[[418,500],[440,560],[500,566],[540,540]]);
+        s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+        s+=this._stroke(this._ell(516,556,22,16,0,Math.PI*2),rand,{w:3,r:1.4,close:true,s:C.ink});
+        s+=this._stroke([[516,556],[516,546]],rand,{w:2.2,r:0.8,s:C.ink})+this._stroke([[516,556],[524,558]],rand,{w:2.2,r:0.8,s:C.red});
+        head=this._rot(6,500,430,this.headShape(rand)+this.eyesFlat(rand)+this.mFlat(rand));
+        break;
+      case 'spit-take':
+        s+=this.arm(rand,[[418,500],[386,566],[356,610]]);
+        s+=this.arm(rand,[[582,500],[560,470],[520,442],[494,430]])+this.mug(rand,486,424);
+        head=this.headShape(rand)+this.eyesWide(rand)+this.mOpen(rand,20,25);
+        for(let i=0;i<7;i++){
+          const a=-0.5+i*0.16, L=60+rand()*70;
+          extra+=this._stroke([[560,372],[560+L*Math.cos(a),372+L*Math.sin(a)]],rand,{w:3,r:2.4,s:'#7d94b8',op:0.8});
+        }
+        break;
+      case 'thumbs-down':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[640,540],[664,596]]);
+        extra+=this._stroke([[664,596],[664,650]],rand,{w:6,r:2,s:C.red});
+        extra+=this._stroke([[648,596],[684,596],[688,626],[644,626]],rand,{w:4,r:2,close:true,s:C.red});
+        head=this.headShape(rand)+this.eyesFlat(rand)+this.mFrown(rand);
+        break;
+      case 'points-at-head':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[640,430],[622,346],[578,306]]);
+        extra+=this._stroke([[578,306],[560,296]],rand,{w:4,r:1.8,s:C.ink});
+        head=this.headShape(rand)+this.eyesFlat(rand)+this.mFlatSmall(rand);
+        break;
+      case 'shrug-both':
+        s+=this.arm(rand,[[418,500],[356,540],[344,596],[372,614]])+this.arm(rand,[[582,500],[644,540],[656,596],[628,614]]);
+        head=this.headShape(rand)+this.eyesDead(rand)+this.mFlat(rand);
+        break;
+      case 'eye-roll':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+        head=this._rot(-5,500,430,this.headShape(rand)+this.eyesRoll(rand)+this.mFlat(rand));
+        break;
+      case 'sigh':
+        s+=this.arm(rand,[[418,500],[398,576],[416,618],[470,626]])+this.arm(rand,[[582,500],[602,576],[584,618],[530,626]])+this.mug(rand,500,634);
+        head=this._rot(3,500,430,this.headShape(rand)+this.eyesShut(rand)+this.mOpen(rand,13,10));
+        for(let i=0;i<3;i++) extra+=this._stroke([[560+i*26,352-i*6],[596+i*30,340-i*10]],rand,{w:2.6,r:2.2,s:C.grey,op:0.55-i*0.12});
+        break;
+      case 'stares-at-you':
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+        head=this.headShape(rand)+this.eyesDead(rand)+this.mFlat(rand);
+        break;
+      default:
+        s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+        head=this.headShape(rand)+this.eyesTired(rand)+this.mFlat(rand);
+    }
+    return s+head+extra;
+  }
+  dots(rand,W,H,active,total){
+    const C=this.C, n=total||14, y=H*0.5, x0=W*0.04, x1=W*0.96, gap=(x1-x0)/(n-1);
+    let s=this._stroke([[x0,y],[x1,y]],rand,{w:2,r:1,s:C.ghost});
+    for(let i=0;i<n;i++){
+      const x=x0+gap*i, done=i<active, on=i===active;
+      if(on){ s+=this._fill(this._ell(x,y,H*0.17,H*0.17,0,Math.PI*2),rand,'rgba(255,82,71,.22)',1); s+=this._stroke(this._ell(x,y,H*0.20,H*0.20,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:C.red}); }
+      else s+=this._stroke(this._ell(x,y,H*0.10,H*0.10,0,Math.PI*2),rand,{w:2.4,r:1.1,close:true,s:done?C.ink:C.ghost});
+    }
+    s+=this._t(x1,H*0.90,(active+1)+' / '+n,{size:H*0.20,s:C.grey,anchor:'end'});
+    return s;
+  }
+
+  h(tag,style,inner){ const el=document.createElement(tag); if(style) el.setAttribute('style',style); if(inner!=null) el.innerHTML=inner; return el; }
+  buildStrap(kind){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0;');
+    let html='';
+    if(kind==='name'){
+      html='<div style="position:absolute; left:0; bottom:0; display:flex; align-items:stretch;"><div style="width:14px; background:'+C.red+';"></div><div style="background:'+C.ink+'; padding:16px 30px 18px;"><div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:38px; color:#f2f2ef; line-height:1;">Dennis</div><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; letter-spacing:.18em; color:'+C.red+'; margin-top:7px;">HAS READ THE FILING. TWICE.</div></div></div>';
+    } else if(kind==='source'){
+      html='<div style="position:absolute; left:0; bottom:0; background:rgba(35,35,38,.90); padding:11px 24px; border-left:8px solid '+C.red+';"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:15px; letter-spacing:.12em; color:#e2dfd5;">SOURCE · FY24 20-F, P.84 \u2014 NOTE 12</span></div>';
+    } else if(kind==='disclaimer'){
+      html='<div style="position:absolute; left:0; right:0; bottom:0; background:'+C.ink+'; padding:13px 28px; display:flex; justify-content:space-between; align-items:center;"><span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:17px; color:#e2dfd5;">Opinion and entertainment. Not financial advice. Do your own reading.</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; letter-spacing:.2em; color:'+C.red+';">NOT ADVICE</span></div>';
+    } else if(kind==='takeaway'){
+      html='<div style="position:absolute; left:0; right:0; bottom:0; background:#f2f2ef; border-top:5px solid '+C.ink+'; padding:14px 28px; display:flex; gap:22px; align-items:center;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:14px; letter-spacing:.2em; color:'+C.red+'; flex:none;">THE POINT</span><span style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:30px; color:'+C.ink+'; line-height:1.05;">One customer is 41% of revenue.</span></div>';
+    } else if(kind==='ticker'){
+      html='<div style="position:absolute; left:0; right:0; top:0; background:'+C.ink+'; padding:12px 26px; display:flex; gap:44px; align-items:center; font-family:\'Space Mono\',monospace; font-weight:700; font-size:19px;"><span style="color:#f2f2ef;">GYMX <span style="color:'+C.red+';">\u25bc 34%</span></span><span style="color:#8f8c83;">PEER <span style="color:'+C.green+';">\u25b2 6%</span></span><span style="color:#8f8c83;">SECTOR <span style="color:'+C.green+';">\u25b2 2%</span></span><span style="margin-left:auto; color:'+C.red+'; letter-spacing:.2em;">NOT ADVICE</span></div>';
+    } else if(kind==='chapter'){
+      html='<div style="position:absolute; left:0; bottom:0; display:flex; align-items:flex-end; gap:16px;"><div style="background:'+C.red+'; padding:10px 18px;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:26px; color:#f2f2ef;">07</span></div><div style="background:rgba(242,242,239,.94); border-bottom:5px solid '+C.ink+'; padding:12px 24px;"><span style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:30px; color:'+C.ink+';">The Filing</span></div></div>';
+    }
+    wrap.innerHTML=html;
+    return wrap;
+  }
+
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 460 70').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    if(el.dataset.ink==='pose') el.innerHTML=this.pose(rand,el.dataset.pose||'slow-blink');
+    else if(el.dataset.ink==='dots') el.innerHTML=this.dots(rand,W,H,+(el.dataset.active||0),+(el.dataset.total||14));
+    el.setAttribute('data-drawn','1');
+  }
+  mountStraps(){
+    Object.keys(this.slots).forEach(kind=>{
+      const host=this.slots[kind] && this.slots[kind].current;
+      if(!host || host.getAttribute('data-built')) return;
+      host.appendChild(this.buildStrap(kind));
+      host.setAttribute('data-built','1');
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountStraps(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const slot=(k)=>{ if(!this.slots[k]) this.slots[k]=React.createRef(); return this.slots[k]; };
+    const R=[
+      {title:'Facepalm', pose:'facepalm', seed:3, file:'react-facepalm.png', blurb:'For the moment management says \u201csynergies\u201d.'},
+      {title:'Head in hands', pose:'head-in-hands', seed:4, file:'react-head-in-hands.png', blurb:'Worse than a facepalm. Save it.'},
+      {title:'Slow blink', pose:'slow-blink', seed:5, file:'react-slow-blink.png', blurb:'The default. Two mugs, eyes shut, nothing to add.'},
+      {title:'Unimpressed', pose:'unimpressed', seed:6, file:'react-unimpressed.png', blurb:'Arms crossed, flat mouth. The house expression.'},
+      {title:'Checks watch', pose:'checks-watch', seed:7, file:'react-checks-watch.png', blurb:'For a 40-minute call with no numbers in it.'},
+      {title:'Spit-take', pose:'spit-take', seed:8, file:'react-spit-take.png', blurb:'Only for genuinely absurd figures. Once per episode, max.'},
+      {title:'Thumbs down', pose:'thumbs-down', seed:9, file:'react-thumbs-down.png', blurb:'Blunt. Good on a short.'},
+      {title:'Points at own head', pose:'points-at-head', seed:10, file:'react-points-at-head.png', blurb:'\u201cUse this.\u201d The teaching beat.'},
+      {title:'Shrug', pose:'shrug-both', seed:11, file:'react-shrug.png', blurb:'The verdict pose. Nobody knows.'},
+      {title:'Eye roll', pose:'eye-roll', seed:12, file:'react-eye-roll.png', blurb:'For the third \u201crecord quarter\u201d in a row.'},
+      {title:'Sigh', pose:'sigh', seed:13, file:'react-sigh.png', blurb:'Desk lean, eyes shut, visible breath.'},
+      {title:'Stares at you', pose:'stares-at-you', seed:14, file:'react-stares.png', blurb:'Dead-eyed, straight down the barrel. Hold for two seconds.'}
+    ];
+    const straps=[
+      {id:'straps/name-tag', file:'strap-name-tag.png', note:'the host bug, first appearance of each episode', slot:slot('name')},
+      {id:'straps/source', file:'strap-source.png', note:'citation \u2014 use whenever a number is on screen', slot:slot('source')},
+      {id:'straps/disclaimer', file:'strap-disclaimer.png', note:'full-width, opens and closes every episode', slot:slot('disclaimer')},
+      {id:'straps/takeaway', file:'strap-takeaway.png', note:'the point, in one line', slot:slot('takeaway')},
+      {id:'straps/ticker-bar', file:'strap-ticker-bar.png', note:'top bar \u2014 three tickers and the warning', slot:slot('ticker')},
+      {id:'straps/chapter-tag', file:'strap-chapter-tag.png', note:'small chapter mark for mid-episode', slot:slot('chapter')}
+    ];
+    const exports=[];
+    R.forEach(r=>{
+      exports.push({id:'reactions/'+r.file.replace('.png',''), pose:r.pose, seed:r.seed});
+      exports.push({id:'reactions/'+r.file.replace('.png','')+'_b', pose:r.pose, seed:r.seed+100});
+    });
+    return {
+      rootRef:this.rootRef,
+      reactions:R, straps, exports,
+      dots:[
+        {id:'straps/dots-01', file:'dots-chapter-01.png', active:0, total:14, seed:3},
+        {id:'straps/dots-07', file:'dots-chapter-07.png', active:6, total:14, seed:4},
+        {id:'straps/dots-14', file:'dots-chapter-14.png', active:13, total:14, seed:5},
+        {id:'straps/dots-short', file:'dots-short-4beat.png', active:2, total:4, seed:6}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

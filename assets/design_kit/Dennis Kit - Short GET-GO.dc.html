@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  .beat { position:relative; overflow:hidden; container-type:inline-size; background:#f2f2ef; }
+  .beat .tick { position:absolute; left:6cqw; top:5cqw; font-family:'Space Mono',monospace; font-weight:700; }
+  .beat .disc { position:absolute; left:6cqw; bottom:3.5cqw; font-family:'Space Grotesk',sans-serif; color:#8f8c83; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1300px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · SHORT-FORM GET-GO PACK</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:74px; line-height:.9; letter-spacing:-.02em;">Noise or signal?</h1>
+  <p style="margin:16px 0 0; max-width:760px; font-size:17px; line-height:1.6; color:#3a3a3d;">The 4-beat vertical launch set — <strong>hook → why → gut-check → payoff</strong> — plus the shared furniture that makes a short. Reuses the mascot poses, ticker bug, value-trap and the NOISE / SIGNAL / PRICED IN stamps. Full 9:16 frames the pipeline pans and cuts.</p>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">▶</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">The 4 beats</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">1080×1920 · vertical</span>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:18px; margin:0 0 40px;">
+
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">1 · HOOK</div>
+    <div data-export="beat-hook" class="beat" style="width:100%; aspect-ratio:9/16; border-radius:8px; background:#f2f2ef url('uploads/bg_light_room_tall.png') center/cover;">
+      <div class="tick" style="font-size:3.4cqw;"><span>GYMX</span> <span style="color:#ff5247;">▼ 34%</span></div>
+      <div style="position:absolute; left:6cqw; right:6cqw; top:13cqw;">
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:11cqw; line-height:.98;">Down 34%.</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:9cqw; line-height:1.02; margin-top:1.5cqw;">Noise — or <span style="color:#ff5247;">signal?</span></div>
+      </div>
+      <svg data-ink="minichart" data-dir="down" data-seed="3" viewBox="0 0 340 200" style="position:absolute; left:8cqw; right:8cqw; top:40cqw; width:84%; height:auto; overflow:visible;"></svg>
+      <svg data-ink="dennis" data-arm="point" data-expr="tired" data-mouth="open" data-seed="5" viewBox="300 130 560 810" style="position:absolute; right:-2cqw; bottom:0; width:64%; height:64%; overflow:visible;"></svg>
+      <div class="disc" style="font-size:2.6cqw;">Opinion / entertainment. Not advice.</div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">2 · WHY</div>
+    <div data-export="beat-why" class="beat" style="width:100%; aspect-ratio:9/16; border-radius:8px; background:#f2f2ef url('uploads/bg_light_flat_tall.png') center/cover;">
+      <div class="tick" style="font-size:3.4cqw;"><span>GYMX</span> <span style="color:#ff5247;">▼ 34%</span></div>
+      <div style="position:absolute; left:7cqw; right:7cqw; top:13cqw; background:#faf9f6; border:0.7cqw solid #232326; border-radius:2cqw; padding:5cqw 5cqw 6cqw;">
+        <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:2.8cqw; color:#ff5247; letter-spacing:.12em; margin-bottom:2cqw;">THE HEADLINE</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.4cqw; line-height:1.05;">"Guidance cut. Margins slipping."</div>
+      </div>
+      <svg data-ink="dennis" data-arm="rest" data-expr="shocked" data-mouth="open" data-seed="8" viewBox="300 130 560 810" style="position:absolute; left:-4cqw; bottom:0; width:66%; height:62%; overflow:visible;"></svg>
+      <div style="position:absolute; right:6cqw; bottom:26cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:7cqw; color:#ff5247; transform:rotate(-6deg);">wait,<br>what?</div>
+      <div class="disc" style="font-size:2.6cqw;">Opinion / entertainment. Not advice.</div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">3 · GUT-CHECK</div>
+    <div data-export="beat-gutcheck" class="beat" style="width:100%; aspect-ratio:9/16; border-radius:8px; background:#f2f2ef url('uploads/bg_light_flat_tall.png') center/cover;">
+      <div class="tick" style="font-size:3.4cqw;"><span>GYMX</span> <span style="color:#6f6c65;">THE TAPE</span></div>
+      <div style="position:absolute; left:7cqw; right:7cqw; top:13cqw;">
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:7cqw; margin-bottom:3cqw;">The tape</div>
+        <svg data-ink="numbers" data-seed="4" viewBox="0 0 360 280" style="width:100%; height:auto; overflow:visible;"></svg>
+      </div>
+      <svg data-ink="dennis" data-arm="point" data-expr="deadpan" data-mouth="closed" data-seed="12" viewBox="300 130 560 810" style="position:absolute; right:-3cqw; bottom:0; width:62%; height:58%; overflow:visible;"></svg>
+      <div class="disc" style="font-size:2.6cqw;">Opinion / entertainment. Not advice.</div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">4 · PAYOFF</div>
+    <div data-export="beat-payoff" class="beat" style="width:100%; aspect-ratio:9/16; border-radius:8px; background:#f2f2ef url('uploads/bg_light_room_tall.png') center/cover;">
+      <div class="tick" style="font-size:3.4cqw;"><span>GYMX</span> <span style="color:#ff5247;">▼ 34%</span></div>
+      <div style="position:absolute; left:7cqw; right:7cqw; top:12cqw; display:flex; flex-direction:column; gap:3cqw;">
+        <div style="background:#232326; color:#f2f2ef; border-radius:2cqw; padding:4cqw 5cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:8.5cqw; line-height:1;">NOISE?</div>
+        <svg data-ink="stamp" data-label="PRICED IN" data-tone="ink" data-seed="3" viewBox="0 0 300 150" style="width:74%; height:auto; margin-left:6cqw; overflow:visible;"></svg>
+      </div>
+      <svg data-ink="dennis" data-arm="shrug" data-expr="dead-stare" data-mouth="closed" data-seed="9" viewBox="300 130 560 810" style="position:absolute; left:50%; transform:translateX(-50%); bottom:0; width:70%; height:60%; overflow:visible;"></svg>
+      <div class="disc" style="font-size:2.6cqw;">Opinion / entertainment. Not advice.</div>
+    </div>
+  </div>
+
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">✱</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Shared furniture</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">drop-in parts</span>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:0 0 34px;">
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px;">
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-bottom:10px;">mini-chart · down</div>
+    <div data-export="mini-chart-down" style="background:#faf9f6; border-radius:4px; padding:10px;"><svg data-ink="minichart" data-dir="down" data-seed="3" viewBox="0 0 340 200" style="width:100%; height:auto; overflow:visible;"></svg></div>
+  </div>
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px;">
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-bottom:10px;">numbers-sheet</div>
+    <div data-export="numbers-sheet" style="background:#faf9f6; border-radius:4px; padding:10px;"><svg data-ink="numbers" data-seed="4" viewBox="0 0 360 280" style="width:100%; height:auto; overflow:visible;"></svg></div>
+  </div>
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px;">
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-bottom:10px;">value-trap-mini</div>
+    <div data-export="value-trap-mini" style="background:#faf9f6; border-radius:4px; padding:10px;"><svg data-ink="valuetrap-mini" data-seed="7" viewBox="0 0 340 220" style="width:100%; height:auto; overflow:visible;"></svg></div>
+  </div>
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px; display:flex; flex-direction:column; gap:10px;">
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">verdict cards</div>
+    <div data-export="card-noise" style="background:#232326; color:#f2f2ef; border-radius:8px; padding:22px 20px; font-family:'Shantell Sans',cursive; font-weight:800; font-size:40px; text-align:center;">NOISE?</div>
+    <div data-export="card-signal" style="background:#2fd576; color:#0f2a1c; border-radius:8px; padding:22px 20px; font-family:'Shantell Sans',cursive; font-weight:800; font-size:40px; text-align:center;">SIGNAL?</div>
+  </div>
+</div>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · beats 1080×1920 · furniture transparent</div>
+  <div style="display:flex; flex-wrap:wrap; gap:14px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e; width:100%;">Beats + furniture are captured from the frames above (each carries a data-export id).</div>
+    <sc-for list="{{ furnitureExports }}" as="f" hint-placeholder-count="4">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#5a574e;">{{ f }}.png</div>
+        <div style="width:150px; height:100px; background:#efeee9; border-radius:4px;"></div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:900},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', water:'#7d94b8', waterEdge:'#5f76a0' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _drop(x,y){ return this._p('M'+x+','+y+' Q'+(x+9)+','+(y+12)+' '+x+','+(y+22)+' Q'+(x-9)+','+(y+12)+' '+x+','+y+'Z',{f:this.C.water,s:this.C.waterEdge,w:1.5}); }
+
+  lBody(rand,col){ let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:col}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:col}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:col}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:col}); return s; }
+  lHead(rand,col){ let s=this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:col}); s+=this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:col}); return s; }
+  mug(rand,hx,hy,col){ const acc=(col===this.C.ink); let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:col}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:col}); if(acc) s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:this.C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:this.C.grey}); return s; }
+  lArm(rand,arm,col){ let s='',mugAt=null; const L=(pts)=>this._stroke(pts,rand,{w:5,r:3,s:col});
+    switch(arm){
+      case 'rest': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[600,560],[596,586],[556,606]]); mugAt=[552,612]; break;
+      case 'point': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[664,490],[744,478],[802,470]])+this._stroke([[802,470],[826,467]],rand,{w:4,r:2,s:col}); break;
+      case 'hold-mug': s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[560,486],[524,470],[500,452]]); mugAt=[494,452]; break;
+      case 'gesture': s+=L([[418,500],[372,548],[356,600],[382,626]])+L([[582,500],[628,548],[644,600],[618,626]]); break;
+      case 'arms-up': s+=L([[418,500],[386,404],[360,306]])+L([[582,500],[614,404],[640,306]]); break;
+      case 'shrug': s+=L([[418,500],[356,540],[344,596],[372,614]])+L([[582,500],[644,540],[656,596],[628,614]]); break;
+      default: s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[600,560],[596,586],[556,606]]); mugAt=[552,612];
+    }
+    if(mugAt) s+=this.mug(rand,mugAt[0],mugAt[1],col); return s; }
+  lEyes(rand,expr,col){ const Lx=456,Rx=544,Ey=288,C=this.C,acc=(col===C.ink); const dot=(x,y,r)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+col+'"/>'; const gm=acc?C.grey:col; const bags=()=> this._stroke([[Lx-18,314],[Lx,320],[Lx+18,314]],rand,{w:3,r:2,s:gm}) + this._stroke([[Rx-18,314],[Rx,320],[Rx+18,314]],rand,{w:3,r:2,s:gm}); let s='';
+    switch(expr){
+      case 'deadpan': s+=this._stroke([[Lx-20,Ey],[Lx+20,Ey+2]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-20,Ey+2],[Rx+20,Ey]],rand,{w:4,r:1.5,s:col})+bags(); break;
+      case 'tired': s+=this._stroke([[Lx-22,Ey-4],[Lx,Ey+8],[Lx+22,Ey-4]],rand,{w:4,r:2,s:col})+this._stroke([[Rx-22,Ey-4],[Rx,Ey+8],[Rx+22,Ey-4]],rand,{w:4,r:2,s:col})+bags(); break;
+      case 'shocked': s+=this._stroke(this._ell(Lx,Ey,17,19,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:col})+this._stroke(this._ell(Rx,Ey,17,19,0,Math.PI*2),rand,{w:3.4,r:1.4,close:true,s:col})+dot(Lx,Ey,4)+dot(Rx,Ey,4)+this._stroke([[Lx-22,254],[Lx+18,248]],rand,{w:3,r:1.5,s:col})+this._stroke([[Rx-18,248],[Rx+22,254]],rand,{w:3,r:1.5,s:col}); break;
+      case 'dead-stare': s+=this._stroke(this._ell(Lx,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+this._stroke(this._ell(Rx,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:col})+dot(Lx,Ey,5.5)+dot(Rx,Ey,5.5)+bags(); break;
+      default: s+=this._stroke([[Lx-20,Ey],[Lx+20,Ey]],rand,{w:4,r:1.5,s:col})+this._stroke([[Rx-20,Ey],[Rx+20,Ey]],rand,{w:4,r:1.5,s:col})+bags();
+    } return s; }
+  mouthClosed(rand,expr,col){ const My=360; switch(expr){ case 'shocked': return this._stroke(this._ell(500,My+2,9,11,0,Math.PI*2),rand,{w:3.4,r:1.2,close:true,s:col}); case 'defeated': return this._stroke([[474,My+8],[500,My-4],[526,My+8]],rand,{w:4,r:2,s:col}); default: return this._stroke([[472,My],[528,My-2]],rand,{w:4,r:1.6,s:col}); } }
+  mouthOpen(rand,expr,col){ let rx=16,ry=19,cy=366; if(expr==='shocked'){ rx=19; ry=24; cy=368; } return this._stroke(this._ell(500,cy,rx,ry,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:col}); }
+  dennis(rand,arm,expr,mouth){ const C=this.C; let s=this.lBody(rand,C.ink)+this.lArm(rand,arm,C.ink)+this.lHead(rand,C.ink)+this.lEyes(rand,expr,C.ink); s+= mouth==='open'? this.mouthOpen(rand,expr,C.ink): this.mouthClosed(rand,expr,C.ink); return s; }
+
+  miniChart(rand,W,H,dir){
+    const C=this.C, x0=W*0.08,y0=H*0.86,x1=W*0.96,yT=H*0.10;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.4,r:1,s:C.ink});
+    const n=7, down=dir!=='up';
+    const pts=[]; for(let i=0;i<n;i++){ const t=i/(n-1); const base= down? (0.72-0.5*t) : (0.28+0.5*t); const v=Math.max(0.08,Math.min(0.92, base+(rand()*2-1)*0.06)); pts.push([x0+(x1-x0)*t, y0-(y0-yT)*v]); }
+    s+=this._stroke(pts,rand,{w:4,r:2,s:down?C.red:C.gdk});
+    const last=pts[n-1], prev=pts[n-2];
+    s+=this._head(last[0],last[1],Math.atan2(last[1]-prev[1],last[0]-prev[0]),16,rand,{w:4,r:1.2,s:down?C.red:C.gdk});
+    return s;
+  }
+  numbers(rand,W,H){
+    const C=this.C; const rows=[['REVENUE','+4%','up'],['MARGIN','-310bps','down'],['FCF','-18%','down'],['DEBT','+$2.1B','down']];
+    let s=this._stroke([[W*0.04,H*0.06],[W*0.96,H*0.06],[W*0.96,H*0.94],[W*0.04,H*0.94]],rand,{w:3,r:1.4,close:true,s:C.ink});
+    for(let i=0;i<rows.length;i++){ const ry=H*0.20+i*H*0.20, up=rows[i][2]==='up', col=up?C.gdk:C.red;
+      s+=this._t(W*0.09,ry,rows[i][0],{size:H*0.075,s:C.ink,w:700});
+      s+=this._t(W*0.74,ry,rows[i][1],{size:H*0.075,s:col,w:700,anchor:'end'});
+      const tx=W*0.80, tri= up? [[tx,ry-H*0.03],[tx+H*0.05,ry-H*0.03],[tx+H*0.025,ry-H*0.07]] : [[tx,ry+H*0.03],[tx+H*0.05,ry+H*0.03],[tx+H*0.025,ry+H*0.07]];
+      s+=this._fill(tri,rand,col,1)+this._p(this.rpath(tri,rand,1)+'Z',{s:col,w:2});
+      if(i<rows.length-1) s+=this._stroke([[W*0.08,ry+H*0.10],[W*0.92,ry+H*0.10]],rand,{w:1.4,r:0.6,s:C.ghost});
+    }
+    return s;
+  }
+  valuetrapMini(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.84,x1=W*0.94,yT=H*0.12,ph=y0-yT,pw=x1-x0;
+    const yv=v=>y0-ph*v, xs=(i,n)=>x0+pw*i/(n-1);
+    const pv=[.74,.66,.56,.46,.39,.34], pp=[.30,.31,.29,.31,.30,.32], n=6;
+    const V=pv.map((v,i)=>[xs(i,n),yv(v)]), P=pp.map((v,i)=>[xs(i,n),yv(v)]);
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2,r:1,s:C.ink});
+    s+=this._fill(V.concat(P.slice().reverse()),rand,'rgba(255,82,71,.14)',1);
+    s+=this._stroke(V,rand,{w:3,r:1.4,s:C.ink})+this._stroke(P,rand,{w:3,r:1.4,s:C.ink});
+    s+=this._t(x0+6,yv(pv[0])-H*0.06,'VALUE',{size:H*0.07,s:C.ink,w:700});
+    s+=this._t(x0+6,yv(pp[0])+H*0.08,'PRICE',{size:H*0.07,s:C.grey,w:700});
+    s+=this._stroke(this._ell(x1-4,yv(pp[n-1]),14,12,0,Math.PI*2),rand,{w:2.4,r:1.2,s:C.red});
+    return s;
+  }
+  stamp(rand,W,H,label,tone){ const C=this.C,cx=W*0.5,cy=H*0.5,k=H/150; const col=tone==='good'?C.gdk:tone==='bad'?C.red:C.ink; const long=label.length>9; const rx=W*0.46,ry=long?H*0.30:H*0.40; let s=this._stroke(this._ell(cx,cy,rx,ry,-0.12,Math.PI*2+0.5),rand,{w:5*k,r:2.6*k,s:col}); s+=this._stroke(this._ell(cx,cy,rx-8*k,ry-6*k,0.3,Math.PI*2+0.8),rand,{w:2*k,r:2.2*k,s:col,op:0.55}); s+=this._t(cx,cy,label,{size:(long?34:44)*k,s:col,w:800,anchor:'middle',hand:true}); return s; }
+
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const type=el.dataset.ink, W=+((el.getAttribute('viewBox')||'0 0 340 200').split(' ')[2]), H=+((el.getAttribute('viewBox')||'0 0 340 200').split(' ')[3]);
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out='';
+    if(type==='dennis') out=this.dennis(rand,el.dataset.arm||'rest',el.dataset.expr||'deadpan',el.dataset.mouth||'closed');
+    else if(type==='minichart') out=this.miniChart(rand,W,H,el.dataset.dir||'down');
+    else if(type==='numbers') out=this.numbers(rand,W,H);
+    else if(type==='valuetrap-mini') out=this.valuetrapMini(rand,W,H);
+    else if(type==='stamp') out=this.stamp(rand,W,H,el.dataset.label||'PRICED IN',el.dataset.tone||'ink');
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){ if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); } this.drawAll(); }
+  renderVals(){
+    return {
+      rootRef:this.rootRef,
+      furnitureExports:['mini-chart-down','numbers-sheet','value-trap-mini','card-noise / card-signal']
+    };
+  }
+}
+</script>
+</body>
+</html>

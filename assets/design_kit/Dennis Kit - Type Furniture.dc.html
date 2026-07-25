@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1300px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · TYPE FURNITURE</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:78px; line-height:.9; letter-spacing:-.02em;">Agenda &amp; verdict cards</h1>
+  <p style="margin:16px 0 0; max-width:760px; font-size:17px; line-height:1.6; color:#3a3a3d;">Two reusable full-frame templates that carry the show's structure — the deadpan <strong>roadmap</strong> ("here are the [N] things") and the <strong>thesis-update scorecard</strong> that powers the earnings / thesis format. Same paper, ink + red, marker hand.</p>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">01</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Roadmap / agenda card</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">THE "N THINGS" DEVICE · flexible</span>
+</div>
+
+<div style="display:flex; flex-direction:column; gap:22px; margin:0 0 40px;">
+  <sc-for list="{{ agendas }}" as="a" hint-placeholder-count="2">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ a.note }}</div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 20px 44px -28px rgba(35,35,38,.4); container-type:inline-size;">
+        <div style="position:absolute; inset:0; padding:7cqw 8cqw; display:flex; flex-direction:column;">
+          <div style="font-family:'Space Mono',monospace; font-size:2.2cqw; letter-spacing:.24em; color:#ff5247; font-weight:700;">{{ a.kicker }}</div>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:7.2cqw; line-height:.95; margin:1.2cqw 0 0;">{{ a.title }}</div>
+          <div style="display:flex; flex-direction:column; gap:1.5cqw; margin-top:4cqw;">
+            <sc-for list="{{ a.items }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex; align-items:baseline; gap:2.4cqw;">
+                <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:2.7cqw; color:#ff5247; min-width:3.4cqw;">{{ it.n }}</span>
+                <span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.9cqw; color:#232326;">{{ it.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:auto; font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic;">{{ a.footer }}</div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">02</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Thesis-update scorecard</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">INTACT · CRACKING · BROKEN</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin:0 0 34px;">
+  <sc-for list="{{ scorecards }}" as="c" hint-placeholder-count="3">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">thesis-{{ c.status }}.png</div>
+      <div style="width:100%; aspect-ratio:4/5; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_tall.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+        <div style="position:absolute; inset:0; padding:9cqw 8cqw; display:flex; flex-direction:column;">
+          <div style="font-family:'Space Mono',monospace; font-size:3.4cqw; letter-spacing:.26em; color:#8f8c83; font-weight:700;">THESIS</div>
+          <div style="margin:3cqw 0 1cqw;"><svg data-ink="stamp" data-status="{{ c.status }}" data-seed="{{ c.seed }}" width="360" height="150" viewBox="0 0 360 150" style="width:82%; height:auto; display:block; overflow:visible;"></svg></div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:3.1cqw; color:#3a3a3d; line-height:1.35; margin-bottom:5cqw;">{{ c.blurb }}</div>
+          <div style="display:flex; flex-direction:column; gap:2.2cqw; margin-top:auto;">
+            <div>
+              <div style="font-family:'Space Mono',monospace; font-size:2.5cqw; letter-spacing:.16em; color:#1f9e56; font-weight:700; margin-bottom:1.6cqw;">CONFIRMS</div>
+              <sc-for list="{{ c.confirms }}" as="ln" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:2cqw; margin-bottom:1.4cqw;"><svg data-ink="check" data-seed="{{ ln.seed }}" width="60" height="60" viewBox="0 0 60 60" style="width:4.6cqw; height:4.6cqw; flex:none; overflow:visible;"></svg><span style="font-size:2.7cqw; color:#232326;">{{ ln.t }}</span></div>
+              </sc-for>
+            </div>
+            <div>
+              <div style="font-family:'Space Mono',monospace; font-size:2.5cqw; letter-spacing:.16em; color:#ff5247; font-weight:700; margin-bottom:1.6cqw;">BREAKS</div>
+              <sc-for list="{{ c.breaks }}" as="ln" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:2cqw; margin-bottom:1.4cqw;"><svg data-ink="cross" data-seed="{{ ln.seed }}" width="60" height="60" viewBox="0 0 60 60" style="width:4.6cqw; height:4.6cqw; flex:none; overflow:visible;"></svg><span style="font-size:2.7cqw; color:#232326;">{{ ln.t }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT FRAMES · agenda 1600×900 · scorecard 1000×1250 · stamps 1000²</div>
+  <div style="display:flex; flex-wrap:wrap; gap:16px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exportsAgenda }}" as="x" hint-placeholder-count="2">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:400px; height:225px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <div style="position:absolute; inset:0; padding:7cqw 8cqw; display:flex; flex-direction:column;">
+            <div style="font-family:'Space Mono',monospace; font-size:2.2cqw; letter-spacing:.24em; color:#ff5247; font-weight:700;">{{ x.kicker }}</div>
+            <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:7.2cqw; line-height:.95; margin:1.2cqw 0 0;">{{ x.title }}</div>
+            <div style="display:flex; flex-direction:column; gap:1.5cqw; margin-top:4cqw;">
+              <sc-for list="{{ x.items }}" as="it" hint-placeholder-count="5">
+                <div style="display:flex; align-items:baseline; gap:2.4cqw;"><span style="font-family:'Space Mono',monospace; font-weight:700; font-size:2.7cqw; color:#ff5247; min-width:3.4cqw;">{{ it.n }}</span><span style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.9cqw; color:#232326;">{{ it.label }}</span></div>
+              </sc-for>
+            </div>
+            <div style="margin-top:auto; font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic;">{{ x.footer }}</div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <sc-for list="{{ exportsCard }}" as="c" hint-placeholder-count="3">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e;">{{ c.id }}.png</div>
+        <div data-export="{{ c.id }}" style="width:240px; height:300px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_tall.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <div style="position:absolute; inset:0; padding:9cqw 8cqw; display:flex; flex-direction:column;">
+            <div style="font-family:'Space Mono',monospace; font-size:3.4cqw; letter-spacing:.26em; color:#8f8c83; font-weight:700;">THESIS</div>
+            <div style="margin:3cqw 0 1cqw;"><svg data-ink="stamp" data-status="{{ c.status }}" data-seed="{{ c.seed }}" width="360" height="150" viewBox="0 0 360 150" style="width:82%; height:auto; display:block; overflow:visible;"></svg></div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:3.1cqw; color:#3a3a3d; line-height:1.35; margin-bottom:5cqw;">{{ c.blurb }}</div>
+            <div style="display:flex; flex-direction:column; gap:2.2cqw; margin-top:auto;">
+              <div>
+                <div style="font-family:'Space Mono',monospace; font-size:2.5cqw; letter-spacing:.16em; color:#1f9e56; font-weight:700; margin-bottom:1.6cqw;">CONFIRMS</div>
+                <sc-for list="{{ c.confirms }}" as="ln" hint-placeholder-count="2">
+                  <div style="display:flex; align-items:center; gap:2cqw; margin-bottom:1.4cqw;"><svg data-ink="check" data-seed="{{ ln.seed }}" width="60" height="60" viewBox="0 0 60 60" style="width:4.6cqw; height:4.6cqw; flex:none; overflow:visible;"></svg><span style="font-size:2.7cqw; color:#232326;">{{ ln.t }}</span></div>
+                </sc-for>
+              </div>
+              <div>
+                <div style="font-family:'Space Mono',monospace; font-size:2.5cqw; letter-spacing:.16em; color:#ff5247; font-weight:700; margin-bottom:1.6cqw;">BREAKS</div>
+                <sc-for list="{{ c.breaks }}" as="ln" hint-placeholder-count="2">
+                  <div style="display:flex; align-items:center; gap:2cqw; margin-bottom:1.4cqw;"><svg data-ink="cross" data-seed="{{ ln.seed }}" width="60" height="60" viewBox="0 0 60 60" style="width:4.6cqw; height:4.6cqw; flex:none; overflow:visible;"></svg><span style="font-size:2.7cqw; color:#232326;">{{ ln.t }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:900},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="\'Shantell Sans\',cursive" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  check(rand,W,H){ const k=W/60; return this._stroke([[W*0.2,H*0.52],[W*0.42,H*0.74],[W*0.82,H*0.24]],rand,{w:6*k,r:1.6*k,s:this.C.gdk}); }
+  cross(rand,W,H){ const k=W/60; return this._stroke([[W*0.24,H*0.24],[W*0.76,H*0.76]],rand,{w:6*k,r:1.6*k,s:this.C.red})+this._stroke([[W*0.76,H*0.24],[W*0.24,H*0.76]],rand,{w:6*k,r:1.6*k,s:this.C.red}); }
+  stamp(rand,W,H,status){
+    const C=this.C, cx=W*0.5, cy=H*0.5, k=H/150;
+    const col = status==='intact'? C.gdk : C.red;
+    const label = status==='intact'?'INTACT': status==='cracking'?'CRACKING':'BROKEN';
+    const rx=W*0.46, ry=H*0.42;
+    let s=this._stroke(this._ell(cx,cy,rx,ry,-0.15,Math.PI*2+0.45),rand,{w:5*k,r:2.6*k,s:col});
+    s+=this._stroke(this._ell(cx,cy,rx-7*k,ry-6*k,0.2,Math.PI*2+0.7),rand,{w:2*k,r:2.2*k,s:col,op:0.6});
+    const fs = status==='cracking'? 42*k : status==='broken'? 46*k : 50*k;
+    s+=this._t(cx,cy,label,{size:fs,s:col,w:800});
+    if(status==='cracking'){
+      s+=this._stroke([[cx-2*k,cy-ry],[cx+8*k,cy-ry*0.4],[cx-6*k,cy+ry*0.2],[cx+6*k,cy+ry]],rand,{w:3*k,r:3*k,s:col,op:0.9});
+    } else if(status==='broken'){
+      s+=this._stroke([[cx-6*k,cy-ry],[cx+10*k,cy-ry*0.35],[cx-8*k,cy+ry*0.15],[cx+8*k,cy+ry]],rand,{w:3.4*k,r:3.4*k,s:col});
+      s+=this._stroke([[cx-14*k,cy-ry*0.55],[cx-2*k,cy-ry*0.2]],rand,{w:2.4*k,r:2*k,s:col,op:0.8});
+      s+=this._stroke([[cx+16*k,cy+ry*0.1],[cx+4*k,cy+ry*0.5]],rand,{w:2.4*k,r:2*k,s:col,op:0.8});
+    }
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const type=el.dataset.ink, W=+el.getAttribute('width'), H=+el.getAttribute('height');
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out='';
+    if(type==='check') out=this.check(rand,W,H);
+    else if(type==='cross') out=this.cross(rand,W,H);
+    else if(type==='stamp') out=this.stamp(rand,W,H,el.dataset.status||'intact');
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const mkItems=(arr)=>arr.map((label,i)=>({ n:String(i+1).padStart(2,'0'), label }));
+    const agendaFive={ note:'agenda · 5-item (the signature device)', kicker:'THE AGENDA · 5 THINGS', title:'Five things', footer:'none of them will make you feel better.', items:mkItems(['What they actually sell','Where the money really goes','The number management won\u2019t say','What the stock already assumes','The one line in the filing']) };
+    const agendaThree={ note:'agenda · 3-item variant', kicker:'BEFORE WE START · 3 THINGS', title:'Three things', footer:'then you can decide if it\u2019s noise.', items:mkItems(['What changed today','What it\u2019s worth','What you\u2019re paying for it']) };
+    const scoreIntact={ status:'intact', seed:3, blurb:'The story still holds. Nothing today breaks it.', confirms:[{t:'Margins held the line',seed:11},{t:'Cash still converting',seed:12}], breaks:[{t:'Growth cooling a touch',seed:13}] };
+    const scoreCracking={ status:'cracking', seed:7, blurb:'Hairline fractures. Watch the next print closely.', confirms:[{t:'Top line still grew',seed:21}], breaks:[{t:'Guidance quietly trimmed',seed:22},{t:'Inventory piling up',seed:23}] };
+    const scoreBroken={ status:'broken', seed:5, blurb:'The reason you owned it is gone.', confirms:[{t:'Buyback still running',seed:31}], breaks:[{t:'Core segment shrinking',seed:32},{t:'Debt wall next year',seed:33}] };
+    return {
+      rootRef:this.rootRef,
+      agendas:[agendaFive, agendaThree],
+      scorecards:[scoreIntact, scoreCracking, scoreBroken],
+      exportsAgenda:[
+        {id:'agenda-5-things', ...agendaFive},
+        {id:'agenda-3-things', ...agendaThree}
+      ],
+      exportsCard:[
+        {id:'thesis-intact', ...scoreIntact},
+        {id:'thesis-cracking', ...scoreCracking},
+        {id:'thesis-broken', ...scoreBroken}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

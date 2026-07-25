@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1300px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · MANAGEMENT &amp; NEWS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:76px; line-height:.9; letter-spacing:-.02em;">Reading management</h1>
+  <p style="margin:16px 0 0; max-width:760px; font-size:17px; line-height:1.6; color:#3a3a3d;">The pieces Dennis uses to <strong>read management</strong> and react to news — a figure at the <strong>podium</strong>, a <strong>guidance card</strong> that gets raised or cut. Same paper, ink + red, marker hand. (Actions-vs-words &amp; the prayer gag live in <a href="#">Concepts</a>.)</p>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">01</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">At the podium</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CEO · FED · speaker at a lectern</span>
+</div>
+<section style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin:0 0 20px;">
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:26px 30px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:26px;">THE CEO</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">earnings-call mode</div></div>
+    <div style="font-size:14px; color:#6f6c65; margin-bottom:12px; line-height:1.5;">A suit at the lectern, mic on, one slide behind — "everything's on track."</div>
+    <svg data-ink="podium" data-who="ceo" data-seed="4" width="540" height="400" viewBox="0 0 540 400" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+  </div>
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:26px 30px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:26px;">THE FED</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">macro mode · press</div></div>
+    <div style="font-size:14px; color:#6f6c65; margin-bottom:12px; line-height:1.5;">Same lectern, official seal — the macro speaker the /headline shorts cut to.</div>
+    <svg data-ink="podium" data-who="fed" data-seed="9" width="540" height="400" viewBox="0 0 540 400" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+  </div>
+</section>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:22px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">02</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Guidance card</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">RAISED ▲ · CUT ▼ · REAFFIRMED</span>
+</div>
+<section style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin:0 0 34px;">
+  <sc-for list="{{ guidances }}" as="g" hint-placeholder-count="3">
+    <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:22px 24px;">
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:10px;">guidance-{{ g.dir }}.png</div>
+      <svg data-ink="guidance" data-dir="{{ g.dir }}" data-seed="{{ g.seed }}" width="360" height="300" viewBox="0 0 360 300" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+    </div>
+  </sc-for>
+</section>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:22px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">03</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">News &amp; earnings props</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">/headline news modes</span>
+</div>
+<section style="display:grid; grid-template-columns:1fr 1fr; gap:26px; margin:0 0 20px;">
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:26px 30px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:24px;">PRESS RELEASE</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">company news</div></div>
+    <div style="font-size:14px; color:#6f6c65; margin-bottom:12px; line-height:1.5;">A document prop — bold red headline bar + a source chip. Dennis reads it skeptically.</div>
+    <svg data-ink="press-release" data-seed="14" width="440" height="440" viewBox="0 0 440 440" style="width:74%; height:auto; display:block; margin:0 auto; overflow:visible;"></svg>
+  </div>
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:26px 30px;">
+    <div style="display:flex; align-items:baseline; gap:12px; margin-bottom:4px;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:24px;">REPORT CARD</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">earnings</div></div>
+    <div style="font-size:14px; color:#6f6c65; margin-bottom:12px; line-height:1.5;">The earnings "report card" — line items stamped BEAT / MISS / IN-LINE.</div>
+    <svg data-ink="earnings-card" data-seed="16" width="440" height="440" viewBox="0 0 440 440" style="width:82%; height:auto; display:block; margin:0 auto; overflow:visible;"></svg>
+  </div>
+</section>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:22px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">04</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Payoff stamps</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">the verdict slap</span>
+</div>
+<section style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:0 0 20px;">
+  <sc-for list="{{ stamps }}" as="st" hint-placeholder-count="8">
+    <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px; display:flex; align-items:center; justify-content:center; min-height:120px;">
+      <svg data-ink="stamp" data-label="{{ st.label }}" data-tone="{{ st.tone }}" data-seed="{{ st.seed }}" width="300" height="150" viewBox="0 0 300 150" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+    </div>
+  </sc-for>
+</section>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:22px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">05</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Macro instruments</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CPI · rates · jobs</span>
+</div>
+<section style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; margin:0 0 20px;">
+  <sc-for list="{{ macros }}" as="m" hint-placeholder-count="3">
+    <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:20px 22px;">
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:10px;">{{ m.label }}</div>
+      <svg data-ink="{{ m.type }}" data-kind="{{ m.kind }}" data-seed="{{ m.seed }}" width="340" height="300" viewBox="0 0 340 300" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+    </div>
+  </sc-for>
+</section>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:22px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">06</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">BREAKING lower-third</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">news bug</span>
+</div>
+<section style="margin:0 0 20px;">
+  <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:20px; overflow:hidden;">
+    <svg data-ink="breaking" data-seed="26" width="1000" height="220" viewBox="0 0 1000 220" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+  </div>
+</section>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT FRAMES · props transparent 1000² · stamps 1000×500 · breaking 1600×360</div>
+  <div style="display:flex; flex-wrap:wrap; gap:16px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exports }}" as="x" hint-placeholder-count="10">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:280px; height:280px; position:relative;">
+          <svg data-ink="{{ x.type }}" data-who="{{ x.who }}" data-dir="{{ x.dir }}" data-kind="{{ x.kind }}" data-seed="{{ x.seed }}" width="1000" height="1000" viewBox="0 0 1000 1000" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+    <sc-for list="{{ stampExports }}" as="x" hint-placeholder-count="8">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:280px; height:140px; position:relative;">
+          <svg data-ink="stamp" data-label="{{ x.label }}" data-tone="{{ x.tone }}" data-seed="{{ x.seed }}" width="1000" height="500" viewBox="0 0 1000 500" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+      <div style="font-family:'Space Mono',monospace; font-size:12px; color:#5a574e;">breaking-lower-third.png</div>
+      <div data-export="breaking-lower-third" style="width:640px; height:230px; position:relative;">
+        <svg data-ink="breaking" data-seed="26" width="1600" height="360" viewBox="0 0 1600 360" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:880},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800; const fam=o.mono?"'Space Mono',monospace":"'Shantell Sans',cursive"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  podium(rand,W,H,who){
+    const C=this.C, k=H/400, gy=H*0.90, cx=W*0.42;
+    let s='';
+    const scx=W*0.70, scy=H*0.24, sw=W*0.26, sh=H*0.30;
+    s+=this._stroke([[scx,scy],[scx+sw,scy],[scx+sw,scy+sh],[scx,scy+sh]],rand,{w:3*k,r:1.2*k,close:true,s:C.ink});
+    if(who==='fed'){
+      s+=this._stroke(this._ell(scx+sw*0.5,scy+sh*0.42,sw*0.2,sh*0.24,0,Math.PI*2),rand,{w:2.4*k,r:1*k,s:C.grey});
+      s+=this._t(scx+sw*0.5,scy+sh*0.42,'\u272A',{size:26*k,s:C.grey,w:700});
+      s+=this._t(scx+sw*0.5,scy+sh*0.80,'RATE DECISION',{size:11*k,s:C.grey,w:700,mono:true});
+    } else {
+      s+=this._stroke([[scx+sw*0.16,scy+sh*0.7],[scx+sw*0.36,scy+sh*0.4],[scx+sw*0.55,scy+sh*0.55],[scx+sw*0.84,scy+sh*0.25]],rand,{w:3*k,r:1.3*k,s:C.gdk});
+      s+=this._head(scx+sw*0.84,scy+sh*0.25,-0.7,11*k,rand,{w:3*k,r:1*k,s:C.gdk});
+      s+=this._t(scx+sw*0.5,scy+sh*0.90,'ON TRACK',{size:11*k,s:C.grey,w:700,mono:true});
+    }
+    const hy=H*0.30;
+    s+=this._stroke(this._ell(cx,hy,W*0.055,H*0.075,-0.15,Math.PI*2+0.4),rand,{w:3.4*k,r:1.6*k,s:C.ink});
+    s+='<circle cx="'+(cx-W*0.02)+'" cy="'+(hy-2*k)+'" r="'+(2.6*k)+'" fill="'+C.ink+'"/>';
+    s+='<circle cx="'+(cx+W*0.02)+'" cy="'+(hy-2*k)+'" r="'+(2.6*k)+'" fill="'+C.ink+'"/>';
+    s+=this._stroke([[cx-W*0.02,hy+H*0.03],[cx+W*0.02,hy+H*0.03]],rand,{w:2.4*k,r:1*k,s:C.ink});
+    s+=this._stroke([[cx,hy+H*0.075],[cx+W*0.004,H*0.52]],rand,{w:4.4*k,r:2*k,s:C.ink});
+    s+=this._stroke([[cx-W*0.05,H*0.60],[cx-W*0.05,H*0.44],[cx-W*0.004,H*0.42]],rand,{w:3.4*k,r:1.6*k,s:C.ink});
+    s+=this._stroke([[cx+W*0.05,H*0.60],[cx+W*0.05,H*0.44],[cx+W*0.004,H*0.42]],rand,{w:3.4*k,r:1.6*k,s:C.ink});
+    const lx=cx-W*0.12, lw=W*0.24, lyt=H*0.58;
+    s+=this._fill([[lx,lyt],[lx+lw,lyt],[lx+lw*0.86,gy],[lx+lw*0.14,gy]],rand,'#f2f2ef',1.2*k);
+    s+=this._stroke([[lx,lyt],[lx+lw,lyt],[lx+lw*0.86,gy],[lx+lw*0.14,gy]],rand,{w:3.4*k,r:1.5*k,close:true,s:C.ink});
+    s+=this._stroke([[lx+lw*0.5,lyt],[lx+lw*0.5,H*0.50]],rand,{w:2.4*k,r:1*k,s:C.ink});
+    s+=this._stroke(this._ell(lx+lw*0.5,H*0.485,7*k,9*k,0,Math.PI*2),rand,{w:2.4*k,r:0.9*k,s:C.ink});
+    s+=this._stroke([[W*0.06,gy],[W*0.66,gy]],rand,{w:2.6*k,r:1*k,s:C.ink});
+    return s;
+  }
+  guidance(rand,W,H,dir){
+    const C=this.C, k=H/300;
+    const col = dir==='raised'? C.gdk : dir==='cut'? C.red : C.grey;
+    let s=this._stroke([[W*0.10,H*0.12],[W*0.90,H*0.12],[W*0.90,H*0.88],[W*0.10,H*0.88]],rand,{w:3.4*k,r:1.5*k,close:true,s:C.ink});
+    s+=this._t(W*0.20,H*0.26,'GUIDANCE',{size:20*k,s:C.grey,w:700,mono:true,anchor:'start'});
+    s+=this._t(W*0.30,H*0.52,'$4.20',{size:58*k,s:C.ink,w:800,anchor:'middle'});
+    s+=this._t(W*0.30,H*0.73,'FY EPS',{size:15*k,s:C.grey,w:700,mono:true,anchor:'middle'});
+    const ax=W*0.68, ay=H*0.5;
+    if(dir==='raised'){
+      s+=this._stroke([[ax,ay+H*0.16],[ax+W*0.02,ay-H*0.16]],rand,{w:7*k,r:1.4*k,s:col});
+      s+=this._head(ax+W*0.02,ay-H*0.16,-Math.PI/2,20*k,rand,{w:7*k,r:1.2*k,s:col});
+      s+=this._t(ax+W*0.015,ay+H*0.30,'RAISED',{size:17*k,s:col,w:800});
+    } else if(dir==='cut'){
+      s+=this._stroke([[ax,ay-H*0.16],[ax+W*0.02,ay+H*0.16]],rand,{w:7*k,r:1.4*k,s:col});
+      s+=this._head(ax+W*0.02,ay+H*0.16,Math.PI/2,20*k,rand,{w:7*k,r:1.2*k,s:col});
+      s+=this._t(ax+W*0.015,ay-H*0.30,'CUT',{size:17*k,s:col,w:800});
+    } else {
+      s+=this._stroke([[ax-W*0.03,ay],[ax+W*0.07,ay]],rand,{w:7*k,r:1.4*k,s:col});
+      s+=this._t(ax+W*0.02,ay+H*0.26,'HELD',{size:16*k,s:col,w:800});
+    }
+    return s;
+  }
+  pressRelease(rand,W,H){
+    const C=this.C,k=H/1000, px=W*0.16, py=H*0.10, pw=W*0.68, ph=H*0.80;
+    let s=this._stroke([[px+14*k,py+14*k],[px+pw+14*k,py+14*k],[px+pw+14*k,py+ph+14*k],[px+14*k,py+ph+14*k]],rand,{w:2.6*k,r:1.4*k,close:true,s:C.ghost});
+    s+=this._fill([[px,py],[px+pw,py],[px+pw,py+ph],[px,py+ph]],rand,'#faf9f6',1.4*k);
+    s+=this._stroke([[px,py],[px+pw,py],[px+pw,py+ph],[px,py+ph]],rand,{w:3.4*k,r:1.6*k,close:true,s:C.ink});
+    s+=this._stroke([[px+38*k,py+64*k],[px+pw*0.42,py+64*k]],rand,{w:9*k,r:1*k,s:C.red});
+    s+=this._t(px+38*k,py+62*k,'',{});
+    s+=this._stroke([[px+38*k,py+118*k],[px+pw-40*k,py+118*k]],rand,{w:11*k,r:1.2*k,s:C.ink});
+    s+=this._stroke([[px+38*k,py+156*k],[px+pw-120*k,py+156*k]],rand,{w:11*k,r:1.2*k,s:C.ink});
+    for(let i=0;i<9;i++){ const ly=py+230*k+i*54*k, w2=(i%4===3)?pw*0.44:pw*0.82; s+=this._stroke([[px+40*k,ly],[px+40*k+w2,ly]],rand,{w:3.4*k,r:0.9*k,s:i<2?'#7c7970':'#b8b4a9'}); }
+    const chx=px+40*k, chy=py+ph-70*k;
+    s+=this._stroke([[chx,chy],[chx+150*k,chy],[chx+150*k,chy+40*k],[chx,chy+40*k]],rand,{w:2.6*k,r:1*k,close:true,s:C.red});
+    s+=this._t(chx+75*k,chy+21*k,'SOURCE',{size:20*k,s:C.red,w:700,mono:true});
+    return s;
+  }
+  earningsCard(rand,W,H){
+    const C=this.C,k=H/1000, px=W*0.12,py=H*0.12,pw=W*0.76,ph=H*0.76;
+    let s=this._stroke([[px,py],[px+pw,py],[px+pw,py+ph],[px,py+ph]],rand,{w:3.6*k,r:1.6*k,close:true,s:C.ink});
+    s+=this._t(px+pw*0.5,py+64*k,'REPORT CARD',{size:34*k,s:C.ink,w:800});
+    s+=this._stroke([[px+40*k,py+100*k],[px+pw-40*k,py+100*k]],rand,{w:2.4*k,r:1*k,s:C.ghost});
+    const rows=[['REVENUE','BEAT',C.gdk],['EPS','BEAT',C.gdk],['MARGIN','MISS',C.red],['GUIDANCE','IN-LINE',C.grey]];
+    for(let i=0;i<rows.length;i++){ const ry=py+160*k+i*128*k;
+      s+=this._t(px+42*k,ry,rows[i][0],{size:30*k,s:C.ink,w:700,mono:true,anchor:'start'});
+      const bx=px+pw-190*k, col=rows[i][2];
+      s+=this._stroke([[bx,ry-30*k],[bx+150*k,ry-30*k],[bx+150*k,ry+30*k],[bx,ry+30*k]],rand,{w:3*k,r:1.1*k,close:true,s:col});
+      s+=this._t(bx+75*k,ry,rows[i][1],{size:26*k,s:col,w:800});
+      if(i<rows.length-1) s+=this._stroke([[px+40*k,ry+64*k],[px+pw-40*k,ry+64*k]],rand,{w:1.8*k,r:0.8*k,s:C.ghost});
+    }
+    return s;
+  }
+  stamp(rand,W,H,label,tone){
+    const C=this.C,cx=W*0.5,cy=H*0.5,k=H/300;
+    const col = tone==='good'?C.gdk: tone==='bad'?C.red: C.ink;
+    const long = label.length>9;
+    const rx=W*0.46, ry=long?H*0.26:H*0.34;
+    let s=this._stroke(this._ell(cx,cy,rx,ry,-0.12,Math.PI*2+0.5),rand,{w:5*k,r:2.6*k,s:col});
+    s+=this._stroke(this._ell(cx,cy,rx-8*k,ry-6*k,0.3,Math.PI*2+0.8),rand,{w:2*k,r:2.2*k,s:col,op:0.55});
+    s+=this._t(cx,cy,label,{size:(long?34:44)*k,s:col,w:800});
+    return s;
+  }
+  gauge(rand,W,H,kind){
+    const C=this.C,k=H/400;
+    if(kind==='cpi'){
+      const bx=W*0.42, by=H*0.12, bw=W*0.16, bh=H*0.66;
+      let s2=this._stroke([[bx,by],[bx,by+bh]],rand,{w:2.4*k,r:1*k,s:C.ink});
+      s2+=this._stroke(this._ell(bx+bw*0.5,by+bh+W*0.06,W*0.10,W*0.10,0,Math.PI*2),rand,{w:3.4*k,r:1.4*k,s:C.ink});
+      s2+=this._fill(this._ell(bx+bw*0.5,by+bh+W*0.06,W*0.075,W*0.075,0,Math.PI*2),rand,C.red,1*k);
+      s2+=this._stroke([[bx,by],[bx+bw,by],[bx+bw,by+bh],[bx,by+bh]],rand,{w:3*k,r:1.2*k,close:true,s:C.ink});
+      s2+=this._fill([[bx+3*k,by+bh*0.42],[bx+bw-3*k,by+bh*0.42],[bx+bw-3*k,by+bh],[bx+3*k,by+bh]],rand,C.red,1*k);
+      for(let i=1;i<6;i++){ const ty=by+bh*i/6; s2+=this._stroke([[bx+bw,ty],[bx+bw+14*k,ty]],rand,{w:2*k,r:0.7*k,s:C.ink}); }
+      s2+=this._t(bx+bw+70*k,by+bh*0.36,'HOT',{size:22*k,s:C.red,w:800,anchor:'start'});
+      s2+=this._t(bx-bw*0.2,by-14*k,'CPI',{size:22*k,s:C.ink,w:800,anchor:'middle'});
+      return s2;
+    }
+    const cx=W*0.5, cy=H*0.72, R=W*0.34;
+    let s=this._stroke(this._ell(cx,cy,R,R,Math.PI,Math.PI*2,32),rand,{w:4*k,r:1.4*k,s:C.ink});
+    s+=this._stroke([[cx-R,cy],[cx+R,cy]],rand,{w:2.4*k,r:0.8*k,s:C.ink});
+    for(let i=0;i<=6;i++){ const a=Math.PI+Math.PI*i/6; s+=this._stroke([[cx+ (R-4*k)*Math.cos(a),cy+(R-4*k)*Math.sin(a)],[cx+(R-20*k)*Math.cos(a),cy+(R-20*k)*Math.sin(a)]],rand,{w:2*k,r:0.6*k,s:C.grey}); }
+    const na=Math.PI+Math.PI*0.72;
+    s+=this._stroke([[cx,cy],[cx+(R-24*k)*Math.cos(na),cy+(R-24*k)*Math.sin(na)]],rand,{w:5*k,r:1.2*k,s:C.red});
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(8*k)+'" fill="'+C.ink+'"/>';
+    s+=this._t(cx,cy-R-18*k,'RATE',{size:22*k,s:C.ink,w:800});
+    s+=this._t(cx-R,cy+30*k,'LOW',{size:15*k,s:C.grey,w:700,mono:true});
+    s+=this._t(cx+R,cy+30*k,'HIGH',{size:15*k,s:C.grey,w:700,mono:true});
+    return s;
+  }
+  jobsBar(rand,W,H){
+    const C=this.C,k=H/400, x0=W*0.14,y0=H*0.82,bw=W*0.11,gap=W*0.04;
+    let s=this._stroke([[W*0.08,y0],[W*0.92,y0]],rand,{w:2.6*k,r:1*k,s:C.ink});
+    const vals=[0.30,0.42,0.38,0.52,0.66,0.48];
+    for(let i=0;i<vals.length;i++){ const bx=x0+i*(bw+gap), bh=(y0-H*0.14)*vals[i], col=i===vals.length-1?C.gdk:'#b8b4a9';
+      s+=this._fill([[bx,y0],[bx+bw,y0],[bx+bw,y0-bh],[bx,y0-bh]],rand,i===vals.length-1?'rgba(47,213,118,.3)':'rgba(184,180,169,.4)',1*k);
+      s+=this._stroke([[bx,y0-bh],[bx,y0],[bx+bw,y0],[bx+bw,y0-bh]],rand,{w:2.8*k,r:1*k,s:i===vals.length-1?C.gdk:C.ink});
+    }
+    s+=this._t(W*0.5,H*0.12,'JOBS',{size:24*k,s:C.ink,w:800});
+    return s;
+  }
+  breaking(rand,W,H){
+    const C=this.C,k=H/220;
+    let s=this._fill([[0,H*0.30],[W,H*0.30],[W,H],[0,H]],rand,'#232326',1.2*k);
+    s+=this._stroke([[W*0.04,H*0.42],[W*0.30,H*0.42],[W*0.30,H*0.74],[W*0.04,H*0.74]],rand,{w:3*k,r:1.2*k,close:true,s:C.red,f:C.red});
+    s+=this._fill([[W*0.04,H*0.42],[W*0.30,H*0.42],[W*0.30,H*0.74],[W*0.04,H*0.74]],rand,C.red,1*k);
+    s+=this._t(W*0.17,H*0.58,'BREAKING',{size:30*k,s:'#f2f2ef',w:800,mono:true});
+    s+='<text x="'+(W*0.34)+'" y="'+(H*0.55)+'" fill="#f2f2ef" font-size="'+(34*k)+'" font-family="\'Shantell Sans\',cursive" font-weight="800" text-anchor="start" dominant-baseline="middle">Headline goes here</text>';
+    s+='<text x="'+(W*0.34)+'" y="'+(H*0.80)+'" fill="#a9a59b" font-size="'+(18*k)+'" font-family="\'Space Mono\',monospace" font-weight="700" text-anchor="start" dominant-baseline="middle">TICKER \u25BC 4.2%  \u00b7  LIVE</text>';
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const type=el.dataset.ink, W=+el.getAttribute('width'), H=+el.getAttribute('height');
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out='';
+    if(type==='podium') out=this.podium(rand,W,H,el.dataset.who||'ceo');
+    else if(type==='guidance') out=this.guidance(rand,W,H,el.dataset.dir||'raised');
+    else if(type==='press-release') out=this.pressRelease(rand,W,H);
+    else if(type==='earnings-card') out=this.earningsCard(rand,W,H);
+    else if(type==='stamp') out=this.stamp(rand,W,H,el.dataset.label||'PRICED IN',el.dataset.tone||'ink');
+    else if(type==='gauge') out=this.gauge(rand,W,H,el.dataset.kind||'cpi');
+    else if(type==='jobs') out=this.jobsBar(rand,W,H);
+    else if(type==='breaking') out=this.breaking(rand,W,H);
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    return {
+      rootRef:this.rootRef,
+      guidances:[ {dir:'raised',seed:2}, {dir:'cut',seed:6}, {dir:'reaffirmed',seed:10} ],
+      stamps:[
+        {label:'PRICED IN', tone:'ink', seed:3},
+        {label:'NOTHINGBURGER', tone:'ink', seed:5},
+        {label:'ACTUALLY MATTERS', tone:'bad', seed:7},
+        {label:'NOISE', tone:'ink', seed:9},
+        {label:'SIGNAL', tone:'good', seed:11},
+        {label:'BEAT', tone:'good', seed:13},
+        {label:'MISS', tone:'bad', seed:15},
+        {label:'IN-LINE', tone:'ink', seed:17}
+      ],
+      macros:[
+        {type:'gauge', kind:'cpi', label:'CPI thermometer', seed:20},
+        {type:'gauge', kind:'rate', label:'Interest-rate dial', seed:22},
+        {type:'jobs', kind:'', label:'Jobs bar', seed:24}
+      ],
+      exports:[
+        {id:'podium-ceo', type:'podium', who:'ceo', dir:'', kind:'', label:'', tone:'', seed:4},
+        {id:'podium-fed', type:'podium', who:'fed', dir:'', kind:'', label:'', tone:'', seed:9},
+        {id:'guidance-raised', type:'guidance', who:'', dir:'raised', kind:'', label:'', tone:'', seed:2},
+        {id:'guidance-cut', type:'guidance', who:'', dir:'cut', kind:'', label:'', tone:'', seed:6},
+        {id:'guidance-reaffirmed', type:'guidance', who:'', dir:'reaffirmed', kind:'', label:'', tone:'', seed:10},
+        {id:'press-release', type:'press-release', who:'', dir:'', kind:'', label:'', tone:'', seed:14},
+        {id:'earnings-report-card', type:'earnings-card', who:'', dir:'', kind:'', label:'', tone:'', seed:16},
+        {id:'cpi-gauge', type:'gauge', who:'', dir:'', kind:'cpi', label:'', tone:'', seed:20},
+        {id:'rate-dial', type:'gauge', who:'', dir:'', kind:'rate', label:'', tone:'', seed:22},
+        {id:'jobs-bar', type:'jobs', who:'', dir:'', kind:'', label:'', tone:'', seed:24}
+      ],
+      stampExports:[
+        {id:'stamp-priced-in', label:'PRICED IN', tone:'ink', seed:3},
+        {id:'stamp-nothingburger', label:'NOTHINGBURGER', tone:'ink', seed:5},
+        {id:'stamp-actually-matters', label:'ACTUALLY MATTERS', tone:'bad', seed:7},
+        {id:'stamp-noise', label:'NOISE', tone:'ink', seed:9},
+        {id:'stamp-signal', label:'SIGNAL', tone:'good', seed:11},
+        {id:'stamp-beat', label:'BEAT', tone:'good', seed:13},
+        {id:'stamp-miss', label:'MISS', tone:'bad', seed:15},
+        {id:'stamp-in-line', label:'IN-LINE', tone:'ink', seed:17}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

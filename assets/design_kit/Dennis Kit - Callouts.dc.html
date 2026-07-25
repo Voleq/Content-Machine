@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1320px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · CALLOUT CARDS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:82px; line-height:.9; letter-spacing:-.02em;">Teach one thing</h1>
+  <p style="margin:16px 0 0; max-width:820px; font-size:17px; line-height:1.6; color:#3a3a3d;">Two full-frame cards for the deep-dive moments: the <strong>term card</strong> (a word and the one sentence that actually explains it) and the <strong>big number</strong> (one figure, one label, one arrow). Plus two cut frames — a <strong>page turn</strong> and a <strong>coffee-ring stamp</strong> — for host↔evidence transitions.</p>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">01</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Term card</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">1920×1080 · blank + 4 filled</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+  <sc-for list="{{ terms }}" as="t" hint-placeholder-count="5">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ t.file }}</div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+        <svg data-ink="rule" data-seed="{{ t.seed }}" width="1600" height="200" viewBox="0 0 1600 200" preserveAspectRatio="none" style="position:absolute; left:8cqw; top:46cqh; width:56cqw; height:2cqh; overflow:visible;"></svg>
+        <div style="position:absolute; inset:0; padding:11cqw 8cqw; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-family:'Space Mono',monospace; font-size:1.8cqw; letter-spacing:.3em; color:#ff5247; font-weight:700;">{{ t.kicker }}</div>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:8.2cqw; line-height:.94; letter-spacing:-.025em; margin-top:1.2cqw;">{{ t.term }}</div>
+          <div style="height:4.4cqw;"></div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:3.1cqw; line-height:1.34; color:#232326; max-width:62cqw;">{{ t.defn }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic; margin-top:2.4cqw; max-width:56cqw; line-height:1.4;">{{ t.aside }}</div>
+        </div>
+        <div style="position:absolute; right:6cqw; bottom:6cqw; font-family:'Space Mono',monospace; font-size:1.6cqw; letter-spacing:.2em; color:#c2beb4; font-weight:700;">{{ t.corner }}</div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">02</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Big number</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">one figure · one label · one arrow</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+  <sc-for list="{{ bigNums }}" as="n" hint-placeholder-count="4">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ n.file }}</div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+        <div style="position:absolute; inset:0; padding:8cqw; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+          <div style="font-family:'Space Mono',monospace; font-size:1.9cqw; letter-spacing:.3em; color:#8f8c83; font-weight:700;">{{ n.kicker }}</div>
+          <div style="display:flex; align-items:center; gap:2.2cqw; margin-top:1.6cqw;">
+            <svg data-ink="arrow" data-dir="{{ n.dir }}" data-seed="{{ n.seed }}" width="200" height="260" viewBox="0 0 200 260" style="width:7cqw; height:9.1cqw; flex:none; overflow:visible;"></svg>
+            <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:15cqw; line-height:.86; letter-spacing:-.03em; color:{{ n.col }};">{{ n.figure }}</span>
+          </div>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.4cqw; line-height:1.02; margin-top:2cqw; max-width:70cqw;">{{ n.label }}</div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#6f6c65; font-style:italic; margin-top:1.6cqw; max-width:56cqw; line-height:1.4;">{{ n.aside }}</div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">03</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Compare card</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">two words people swap by mistake</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+  <sc-for list="{{ compares }}" as="c" hint-placeholder-count="2">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ c.file }}</div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+        <div style="position:absolute; inset:0; padding:7cqw 7cqw 6cqw; display:flex; flex-direction:column;">
+          <div style="font-family:'Space Mono',monospace; font-size:1.7cqw; letter-spacing:.26em; color:#ff5247; font-weight:700;">{{ c.kicker }}</div>
+          <div style="flex:1; display:grid; grid-template-columns:1fr auto 1fr; gap:3cqw; align-items:center; margin-top:2.6cqw;">
+            <div>
+              <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.2cqw; line-height:1;">{{ c.a }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.5cqw; line-height:1.32; color:#3a3a3d; margin-top:1.6cqw;">{{ c.at }}</div>
+            </div>
+            <div style="width:0.4cqw; align-self:stretch; background:#232326; opacity:.14;"></div>
+            <div>
+              <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.2cqw; line-height:1; color:#ff5247;">{{ c.b }}</div>
+              <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.5cqw; line-height:1.32; color:#3a3a3d; margin-top:1.6cqw;">{{ c.bt }}</div>
+            </div>
+          </div>
+          <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic; line-height:1.4;">{{ c.foot }}</div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:6px 0 18px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">04</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">Transitions</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">host ↔ evidence cuts · 4 frames</span>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 18px;">
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">ink-wipe.png · brush wipe, left→right</div>
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4);">
+      <svg data-ink="inkwipe" data-seed="7" width="1600" height="900" viewBox="0 0 1600 900" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+    </div>
+  </div>
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">mug-slide.png · the mug enters, we cut</div>
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4);">
+      <svg data-ink="mugslide" data-seed="5" width="1600" height="900" viewBox="0 0 1600 900" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">page-turn.png · corner curl, wipe left→right</div>
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+      <svg data-ink="pageturn" data-seed="9" width="1600" height="900" viewBox="0 0 1600 900" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+      <div style="position:absolute; left:7cqw; bottom:7cqw; font-family:'Space Mono',monospace; font-size:1.7cqw; letter-spacing:.24em; color:#a9a59b; font-weight:700;">NEXT PAGE</div>
+    </div>
+  </div>
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">coffee-ring.png · stamp punch-in on the cut</div>
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+      <svg data-ink="coffeering" data-seed="4" width="1600" height="900" viewBox="0 0 1600 900" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/callouts/ · 1920×1080 · held frames get _b boil pairs</div>
+  <div style="display:flex; flex-wrap:wrap; gap:16px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exportsTerm }}" as="x" hint-placeholder-count="6">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:480px; height:270px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <svg data-ink="rule" data-seed="{{ x.seed }}" width="1600" height="200" viewBox="0 0 1600 200" preserveAspectRatio="none" style="position:absolute; left:8cqw; top:46cqh; width:56cqw; height:2cqh; overflow:visible;"></svg>
+          <div style="position:absolute; inset:0; padding:11cqw 8cqw; display:flex; flex-direction:column; justify-content:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:1.8cqw; letter-spacing:.3em; color:#ff5247; font-weight:700;">{{ x.kicker }}</div>
+            <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:8.2cqw; line-height:.94; letter-spacing:-.025em; margin-top:1.2cqw;">{{ x.term }}</div>
+            <div style="height:4.4cqw;"></div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:3.1cqw; line-height:1.34; color:#232326; max-width:62cqw;">{{ x.defn }}</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic; margin-top:2.4cqw; max-width:56cqw; line-height:1.4;">{{ x.aside }}</div>
+          </div>
+          <div style="position:absolute; right:6cqw; bottom:6cqw; font-family:'Space Mono',monospace; font-size:1.6cqw; letter-spacing:.2em; color:#c2beb4; font-weight:700;">{{ x.corner }}</div>
+        </div>
+      </div>
+    </sc-for>
+    <sc-for list="{{ exportsNum }}" as="x" hint-placeholder-count="5">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:480px; height:270px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <div style="position:absolute; inset:0; padding:8cqw; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+            <div style="font-family:'Space Mono',monospace; font-size:1.9cqw; letter-spacing:.3em; color:#8f8c83; font-weight:700;">{{ x.kicker }}</div>
+            <div style="display:flex; align-items:center; gap:2.2cqw; margin-top:1.6cqw;">
+              <svg data-ink="arrow" data-dir="{{ x.dir }}" data-seed="{{ x.seed }}" width="200" height="260" viewBox="0 0 200 260" style="width:7cqw; height:9.1cqw; flex:none; overflow:visible;"></svg>
+              <span style="font-family:'Space Mono',monospace; font-weight:700; font-size:15cqw; line-height:.86; letter-spacing:-.03em; color:{{ x.col }};">{{ x.figure }}</span>
+            </div>
+            <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.4cqw; line-height:1.02; margin-top:2cqw; max-width:70cqw;">{{ x.label }}</div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#6f6c65; font-style:italic; margin-top:1.6cqw; max-width:56cqw; line-height:1.4;">{{ x.aside }}</div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <sc-for list="{{ exportsCompare }}" as="x" hint-placeholder-count="3">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:480px; height:270px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <div style="position:absolute; inset:0; padding:7cqw 7cqw 6cqw; display:flex; flex-direction:column;">
+            <div style="font-family:'Space Mono',monospace; font-size:1.7cqw; letter-spacing:.26em; color:#ff5247; font-weight:700;">{{ x.kicker }}</div>
+            <div style="flex:1; display:grid; grid-template-columns:1fr auto 1fr; gap:3cqw; align-items:center; margin-top:2.6cqw;">
+              <div>
+                <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.2cqw; line-height:1;">{{ x.a }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.5cqw; line-height:1.32; color:#3a3a3d; margin-top:1.6cqw;">{{ x.at }}</div>
+              </div>
+              <div style="width:0.4cqw; align-self:stretch; background:#232326; opacity:.14;"></div>
+              <div>
+                <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.2cqw; line-height:1; color:#ff5247;">{{ x.b }}</div>
+                <div style="font-family:'Space Grotesk',sans-serif; font-weight:500; font-size:2.5cqw; line-height:1.32; color:#3a3a3d; margin-top:1.6cqw;">{{ x.bt }}</div>
+              </div>
+            </div>
+            <div style="font-family:'Space Grotesk',sans-serif; font-size:2.1cqw; color:#8f8c83; font-style:italic; line-height:1.4;">{{ x.foot }}</div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+    <sc-for list="{{ exportsTrans }}" as="x" hint-placeholder-count="6">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:480px; height:270px; position:relative; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; overflow:hidden; container-type:inline-size;">
+          <svg data-ink="{{ x.ink }}" data-seed="{{ x.seed }}" width="1600" height="900" viewBox="0 0 1600 900" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · callouts · 9 term cards · 8 big numbers · compare cards · 4 transitions</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:960},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ring:'#a98467' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||28; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+
+  rule(rand,W,H){ return this._stroke([[10,H*0.5],[W*0.34,H*0.44],[W*0.68,H*0.56],[W-10,H*0.48]],rand,{w:9,r:5,s:this.C.red}); }
+  arrow(rand,W,H,dir){
+    const up = dir!=='down';
+    const col = up? this.C.gdk : this.C.red;
+    const y0 = up? H*0.94 : H*0.06, y1 = up? H*0.1 : H*0.9;
+    let s=this._stroke([[W*0.5,y0],[W*0.46,H*0.5],[W*0.52,y1]],rand,{w:16,r:6,s:col});
+    const hy = up? H*0.28 : H*0.72, sgn = up? 1 : -1;
+    s+=this._stroke([[W*0.14,hy],[W*0.5,y1],[W*0.88,hy+ (sgn*0) ]],rand,{w:15,r:6,s:col});
+    return s;
+  }
+  pageturn(rand,W,H){
+    const C=this.C;
+    let s=this._stroke([[W*0.02,H*0.04],[W*0.02,H*0.96]],rand,{w:6,r:4,s:C.grey,op:0.55});
+    for(let i=0;i<4;i++){
+      const x=W*(0.06+i*0.012);
+      s+=this._stroke([[x,H*0.07],[x+8,H*0.5],[x,H*0.93]],rand,{w:2.6,r:3,s:C.grey,op:0.38});
+    }
+    s+=this._stroke([[W*0.62,H*0.02],[W*0.66,H*0.36],[W*0.60,H*0.7],[W*0.64,H*0.98]],rand,{w:5,r:6,s:C.ink,op:0.5});
+    s+=this._stroke([[W*0.64,H*0.98],[W*0.84,H*0.86],[W*0.92,H*0.6],[W*0.88,H*0.34]],rand,{w:6,r:6,s:C.ink});
+    s+=this._stroke([[W*0.88,H*0.34],[W*0.7,H*0.5],[W*0.64,H*0.98]],rand,{w:4,r:5,s:C.grey,op:0.6});
+    s+=this._p('M'+(W*0.64)+','+(H*0.98)+' Q'+(W*0.82)+','+(H*0.8)+' '+(W*0.88)+','+(H*0.34)+' Q'+(W*0.72)+','+(H*0.56)+' '+(W*0.64)+','+(H*0.98)+'Z',{f:'#e2ded2',s:'none',op:0.55});
+    s+=this._stroke([[W*0.955,H*0.42],[W*0.985,H*0.5],[W*0.955,H*0.58]],rand,{w:6,r:3,s:C.red});
+    s+=this._stroke([[W*0.9,H*0.5],[W*0.985,H*0.5]],rand,{w:6,r:3,s:C.red});
+    return s;
+  }
+  coffeering(rand,W,H){
+    const C=this.C, cx=W*0.5, cy=H*0.5, rx=W*0.2, ry=H*0.33;
+    let s=this._stroke(this._ell(cx,cy,rx,ry,-0.2,Math.PI*2+0.4),rand,{w:16,r:9,s:C.ring,op:0.5});
+    s+=this._stroke(this._ell(cx,cy,rx-16,ry-11,0.3,Math.PI*2+0.9),rand,{w:6,r:8,s:C.ring,op:0.34});
+    s+=this._stroke(this._ell(cx+W*0.012,cy+H*0.02,rx+10,ry+7,1.1,Math.PI*2+1.3),rand,{w:4,r:9,s:C.ring,op:0.22});
+    for(let i=0;i<7;i++){
+      const a=rand()*Math.PI*2, d=1+rand()*0.16;
+      s+=this._stroke([[cx+rx*d*Math.cos(a),cy+ry*d*Math.sin(a)],[cx+rx*(d+0.1)*Math.cos(a+0.1),cy+ry*(d+0.1)*Math.sin(a+0.1)]],rand,{w:3,r:4,s:C.ring,op:0.3});
+    }
+    s+=this._stroke(this._ell(cx-W*0.24,cy-H*0.3,W*0.026,H*0.04,0,Math.PI*2),rand,{w:4,r:5,s:C.ring,op:0.3});
+    s+=this._stroke(this._ell(cx+W*0.28,cy+H*0.3,W*0.02,H*0.03,0,Math.PI*2),rand,{w:3.4,r:5,s:C.ring,op:0.26});
+    return s;
+  }
+  inkWipe(rand,W,H){
+    const C=this.C;
+    let s='';
+    for(let i=0;i<9;i++){
+      const t=i/8, x=W*(0.06+t*0.62), h=H*(0.30+rand()*0.5), y=H*0.5-h/2;
+      s+=this._stroke([[x,y],[x+W*0.02,y+h*0.5],[x,y+h]],rand,{w:W*0.055,r:8,s:C.ink,op:0.9-t*0.75});
+    }
+    s+=this._stroke([[W*0.70,H*0.16],[W*0.78,H*0.5],[W*0.72,H*0.84]],rand,{w:16,r:10,s:C.ink,op:0.2});
+    s+=this._stroke([[W*0.84,H*0.36],[W*0.9,H*0.5],[W*0.85,H*0.64]],rand,{w:9,r:9,s:C.ink,op:0.12});
+    return s;
+  }
+  mugSlide(rand,W,H){
+    const C=this.C, cy=H*0.56, hx=W*0.42, k=H/150;
+    let s=this._stroke([[hx-90,cy-70],[hx+90,cy-70],[hx+90,cy+70],[hx-90,cy+70]],rand,{w:7,r:3.4,close:true,s:C.ink});
+    s+=this._stroke([[hx+90,cy-48],[hx+150,cy-34],[hx+138,cy+34],[hx+90,cy+42]],rand,{w:6,r:3,s:C.ink});
+    s+=this._stroke([[hx-40,cy-96],[hx-64,cy-150],[hx-32,cy-196]],rand,{w:5,r:5,s:C.grey,op:0.75});
+    s+=this._stroke([[hx+24,cy-96],[hx+2,cy-150],[hx+34,cy-196]],rand,{w:5,r:5,s:C.grey,op:0.75});
+    for(let i=0;i<4;i++){
+      const x=hx-150-i*W*0.085;
+      s+=this._stroke([[x,cy-40+i*6],[x-W*0.06,cy-40+i*6]],rand,{w:6-i,r:4,s:C.ink,op:0.34-i*0.07});
+      s+=this._stroke([[x,cy+30-i*6],[x-W*0.06,cy+30-i*6]],rand,{w:6-i,r:4,s:C.ink,op:0.30-i*0.06});
+    }
+    s+=this._stroke([[hx-110,cy+92],[hx+150,cy+96]],rand,{w:4,r:4,s:C.grey,op:0.5});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const type=el.dataset.ink, W=+el.getAttribute('width'), H=+el.getAttribute('height');
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out='';
+    if(type==='rule') out=this.rule(rand,W,H);
+    else if(type==='arrow') out=this.arrow(rand,W,H,el.dataset.dir||'up');
+    else if(type==='pageturn') out=this.pageturn(rand,W,H);
+    else if(type==='coffeering') out=this.coffeering(rand,W,H);
+    else if(type==='inkwipe') out=this.inkWipe(rand,W,H);
+    else if(type==='mugslide') out=this.mugSlide(rand,W,H);
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const blank={ file:'term-card-blank.png · the template', kicker:'THE WORD OF THE DAY', term:'The Term', defn:'One sentence. Plain words. No jargon defending jargon.', aside:'if it takes two sentences, it\u2019s two cards.', corner:'DEEP DIVE', seed:3 };
+    const terms=[
+      blank,
+      { file:'term-roic.png', kicker:'THE WORD OF THE DAY', term:'ROIC', defn:'Return on invested capital \u2014 what the business earns on every dollar shoved into it.', aside:'high and steady is a moat. high and falling is a warning.', corner:'DEEP DIVE', seed:11 },
+      { file:'term-owner-earnings.png', kicker:'THE WORD OF THE DAY', term:'Owner\nearnings', defn:'The cash a buyer actually keeps after the business is kept alive.', aside:'not net income. net income has opinions in it.', corner:'DEEP DIVE', seed:12 },
+      { file:'term-fcf-yield.png', kicker:'THE WORD OF THE DAY', term:'FCF yield', defn:'Free cash flow divided by what the whole company costs you today.', aside:'the closest thing to an interest rate on a stock.', corner:'DEEP DIVE', seed:13 },
+      { file:'term-reinvestment-runway.png', kicker:'THE WORD OF THE DAY', term:'Reinvestment\nrunway', defn:'How much more of itself the business can profitably build before it runs out of room.', aside:'great returns with no runway is a dividend, not a compounder.', corner:'DEEP DIVE', seed:14 },
+      { file:'term-margin-of-safety.png', kicker:'THE WORD OF THE DAY', term:'Margin of\nsafety', defn:'The gap between what a thing is worth and what you paid, so you can be wrong and survive it.', aside:'you will be wrong. that\u2019s the point of the gap.', corner:'DEEP DIVE', seed:15 },
+      { file:'term-operating-leverage.png', kicker:'THE WORD OF THE DAY', term:'Operating\nleverage', defn:'Costs that stay put while revenue moves \u2014 so profit swings harder than sales in both directions.', aside:'it\u2019s a hero on the way up and a menace on the way down.', corner:'DEEP DIVE', seed:16 },
+      { file:'term-working-capital.png', kicker:'THE WORD OF THE DAY', term:'Working\ncapital', defn:'Cash tied up in stock and unpaid invoices just to keep the doors open.', aside:'growth eats this first. that\u2019s why profitable firms run out of money.', corner:'DEEP DIVE', seed:17 },
+      { file:'term-dilution.png', kicker:'THE WORD OF THE DAY', term:'Dilution', defn:'The company issues more shares, so your slice of the same pie gets thinner.', aside:'the pie can grow and your slice can still shrink.', corner:'DEEP DIVE', seed:18 }
+    ];
+    const C=this.C;
+    const bigNums=[
+      { file:'big-number-blank.png · the template', kicker:'THE NUMBER', figure:'00.0%', label:'What the number is', dir:'up', col:C.ink, aside:'one line of context. no more.', seed:21 },
+      { file:'big-number-roic-up.png', kicker:'RETURN ON INVESTED CAPITAL', figure:'31%', label:'and it has been for nine\nstraight years', dir:'up', col:C.gdk, aside:'that\u2019s the whole bull case in one figure.', seed:22 },
+      { file:'big-number-margin-down.png', kicker:'GROSS MARGIN', figure:'\u221214pts', label:'in six quarters', dir:'down', col:C.red, aside:'nobody on the call used the word \u201cmargin\u201d.', seed:23 },
+      { file:'big-number-fcf.png', kicker:'FREE CASH FLOW YIELD', figure:'2.1%', label:'you are paying a lot for\nnot very much cash', dir:'down', col:C.red, aside:'the ten-year pays more and doesn\u2019t hold earnings calls.', seed:24 },
+      { file:'big-number-share-count.png', kicker:'SHARES OUTSTANDING', figure:'+22%', label:'in three years, and nobody\ncalled it a cost', dir:'down', col:C.red, aside:'same company. smaller slice.', seed:25 },
+      { file:'big-number-debt-wall.png', kicker:'DEBT DUE WITHIN 18 MONTHS', figure:'$1.9B', label:'against $240m of cash', dir:'down', col:C.red, aside:'refinance or dilute. those are the options.', seed:26 },
+      { file:'big-number-buyback.png', kicker:'SHARE COUNT', figure:'\u221218%', label:'bought back, quietly,\nwhile everyone panicked', dir:'up', col:C.gdk, aside:'the only buyback that counts is one done cheap.', seed:27 },
+      { file:'big-number-customer-conc.png', kicker:'ONE CUSTOMER', figure:'41%', label:'of revenue', dir:'down', col:C.red, aside:'page 84, footnote 12. nobody read it.', seed:28 }
+    ];
+    const compares=[
+      { file:'compare-growth-vs-compounding.png', kicker:'TWO WORDS PEOPLE SWAP BY MISTAKE', a:'Growth', at:'Revenue gets bigger.', b:'Compounding', bt:'Each pound reinvested earns like the last one did.', foot:'plenty of growth destroys value. that\u2019s the whole trap.', seed:31 },
+      { file:'compare-profit-vs-cash.png', kicker:'TWO WORDS PEOPLE SWAP BY MISTAKE', a:'Profit', at:'An opinion, formed by accountants.', b:'Cash', bt:'A fact, visible at the bank.', foot:'when the two disagree for long, believe the bank.', seed:32 }
+    ];
+    return {
+      rootRef:this.rootRef,
+      terms, bigNums, compares,
+      exportsTerm:[
+        {id:'callouts/term-card-blank', ...blank},
+        {id:'callouts/term-card-blank_b', ...blank, seed:103},
+        {id:'callouts/term-roic', ...terms[1]},
+        {id:'callouts/term-roic_b', ...terms[1], seed:111},
+        {id:'callouts/term-owner-earnings', ...terms[2]},
+        {id:'callouts/term-fcf-yield', ...terms[3]},
+        {id:'callouts/term-reinvestment-runway', ...terms[4]},
+        {id:'callouts/term-margin-of-safety', ...terms[5]},
+        {id:'callouts/term-operating-leverage', ...terms[6]},
+        {id:'callouts/term-working-capital', ...terms[7]},
+        {id:'callouts/term-dilution', ...terms[8]}
+      ],
+      exportsCompare:[
+        {id:'callouts/compare-growth-vs-compounding', ...compares[0]},
+        {id:'callouts/compare-profit-vs-cash', ...compares[1]},
+        {id:'callouts/compare-blank', kicker:'TWO WORDS PEOPLE SWAP BY MISTAKE', a:'Term A', at:'One line.', b:'Term B', bt:'One line.', foot:'the difference, in a sentence.', seed:33}
+      ],
+      exportsNum:[
+        {id:'callouts/big-number-blank', ...bigNums[0]},
+        {id:'callouts/big-number-roic-up', ...bigNums[1]},
+        {id:'callouts/big-number-roic-up_b', ...bigNums[1], seed:122},
+        {id:'callouts/big-number-margin-down', ...bigNums[2]},
+        {id:'callouts/big-number-margin-down_b', ...bigNums[2], seed:123},
+        {id:'callouts/big-number-fcf', ...bigNums[3]},
+        {id:'callouts/big-number-share-count', ...bigNums[4]},
+        {id:'callouts/big-number-debt-wall', ...bigNums[5]},
+        {id:'callouts/big-number-debt-wall_b', ...bigNums[5], seed:126},
+        {id:'callouts/big-number-buyback', ...bigNums[6]},
+        {id:'callouts/big-number-customer-conc', ...bigNums[7]},
+        {id:'callouts/big-number-customer-conc_b', ...bigNums[7], seed:128}
+      ],
+      exportsTrans:[
+        {id:'callouts/page-turn', ink:'pageturn', seed:9},
+        {id:'callouts/page-turn_b', ink:'pageturn', seed:109},
+        {id:'callouts/coffee-ring', ink:'coffeering', seed:4},
+        {id:'callouts/coffee-ring_b', ink:'coffeering', seed:104},
+        {id:'callouts/ink-wipe', ink:'inkwipe', seed:7},
+        {id:'callouts/ink-wipe_b', ink:'inkwipe', seed:107},
+        {id:'callouts/mug-slide', ink:'mugslide', seed:5},
+        {id:'callouts/mug-slide_b', ink:'mugslide', seed:105}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

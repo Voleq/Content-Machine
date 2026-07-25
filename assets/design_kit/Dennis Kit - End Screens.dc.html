@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · END SCREENS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Twenty seconds<br>of scaffolding</h1>
+  <p style="margin:18px 0 0; max-width:860px; font-size:17px; line-height:1.6; color:#3a3a3d;">These are not the closing <em>argument</em> — that lives in Episode Furniture. These are the frames the platform draws clickable boxes on top of, so the job is <strong>leaving holes in the right places</strong>. The dashed slots below mark where the elements land; Dennis and every word sit clear of them.</p>
+  <div style="margin-top:20px; padding:14px 18px; background:#f2f2ef; border-left:5px solid #ff5247; border-radius:5px; max-width:860px;">
+    <div style="font-family:'Space Mono',monospace; font-size:11.5px; letter-spacing:.16em; color:#ff5247; font-weight:700; margin-bottom:6px;">BEFORE YOU SHIP</div>
+    <div style="font-size:14px; line-height:1.5; color:#3a3a3d;">The slot positions here follow the usual central safe area, but platforms move their goalposts — check the current element guidance once, then treat these as locked. Every frame keeps a clear margin at the edges so a resize or a different player chrome doesn’t eat anything.</div>
+  </div>
+</header>
+
+<sc-for list="{{ screens }}" as="s" hint-placeholder-count="6">
+  <div style="margin:0 0 42px;">
+    <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ s.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">{{ s.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ s.note }}</span>
+    </div>
+    <div style="font-size:13.5px; color:#6f6c65; line-height:1.5; max-width:820px; margin:0 0 14px;">{{ s.blurb }}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+      <div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ s.file }} · WITH SLOT GUIDES</div>
+        <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+          <div ref="{{ s.guideHost }}" style="position:absolute; inset:0;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ s.file }}.png · CLEAN · THE EXPORT</div>
+        <div data-export="{{ s.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+          <div ref="{{ s.cleanHost }}" style="position:absolute; inset:0;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/end-screens/ · 1920×1080 · export the CLEAN frame; the guide frame is for checking only</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · end screens · 6 layouts · slots kept clear</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.hosts = {};
+    this.defs = [
+      {n:'01', key:'two-up', title:'Two videos + subscribe', note:'the default', file:'end-two-up', id:'end-screens/two-up',
+       blurb:'The one to use unless there is a reason not to. Two video slots on the right, subscribe bottom-left, and Dennis shrugging in the gap between them.'},
+      {n:'02', key:'hero', title:'One video, big', note:'when there is an obvious next watch', file:'end-hero', id:'end-screens/hero',
+       blurb:'A single 16:9 slot with the title written beside it, for when the next episode is a direct sequel and you want one click, not a choice.'},
+      {n:'03', key:'subscribe', title:'Subscribe only', note:'no video slots', file:'end-subscribe', id:'end-screens/subscribe',
+       blurb:'For the end of a series, or a video that shouldn\u2019t hand off to anything. One circular slot, Dennis large, one line of copy.'},
+      {n:'04', key:'playlist', title:'Playlist grid', note:'three slots', file:'end-playlist', id:'end-screens/playlist',
+       blurb:'Three square slots for the back catalogue, with Dennis in the right-hand lane. Copy sits above the grid because there is no room beside it \u2014 keep it to six words.'},
+      {n:'05', key:'writeup', title:'Video + write-up', note:'one slot, one link', file:'end-writeup', id:'end-screens/writeup',
+       blurb:'A video slot on one side and the written version called out on the other. The link goes in the description; this frame just points at it.'},
+      {n:'06', key:'zones', title:'Safe-zone reference', note:'not for export', file:'end-safe-zones', id:'end-screens/safe-zones',
+       blurb:'The measuring frame. Every slot position in the family drawn at once with the outer margin marked, so a new layout can be checked against it in one glance.'}
+    ];
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _shift(dx,dy,inner){ return '<g transform="translate('+dx.toFixed(1)+','+dy.toFixed(1)+')">'+inner+'</g>'; }
+
+  body(rand){ const c=this.C.ink; let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:c}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:c}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:c}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:c}); return s; }
+  headFront(rand){ const c=this.C.ink; return this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c})+this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:c}); }
+  headSide(rand,dir){ const c=this.C.ink,sign=dir==='right'?1:-1; let s=this._stroke(this._ell(500,300,116,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c}); s+=this._stroke([[500+sign*96,322],[500+sign*124,340],[500+sign*96,356]],rand,{w:4,r:2.2,s:c}); const tx=500-sign*30; s+=this._stroke([[tx,176],[tx-sign*18,150],[tx+sign*12,160],[tx-sign*4,180]],rand,{w:4,r:3,s:c}); s+=this._stroke(this._ell(500-sign*116,306,10,18,0,Math.PI*2),rand,{w:3.4,r:2,s:c}); return s; }
+  mug(rand,hx,hy){ const c=this.C.ink,C=this.C; let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:c}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:c}); s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:C.grey}); return s; }
+  bags(rand,a,b){ const g=this.C.grey; return this._stroke([[a-18,314],[a,320],[a+18,314]],rand,{w:3,r:2,s:g})+this._stroke([[b-18,314],[b,320],[b+18,314]],rand,{w:3,r:2,s:g}); }
+  eyes(rand,kind){
+    const c=this.C.ink,L=456,R=544,Ey=288;
+    if(kind==='dead'){ let s=this._stroke(this._ell(L,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c})+this._stroke(this._ell(R,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c}); s+='<circle cx="'+L+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/><circle cx="'+R+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/>'; return s+this.bags(rand,L,R); }
+    if(kind==='flat') return this._stroke([[L-20,Ey],[L+20,Ey+2]],rand,{w:4,r:1.5,s:c})+this._stroke([[R-20,Ey+2],[R+20,Ey]],rand,{w:4,r:1.5,s:c})+this.bags(rand,L,R);
+    return this._stroke([[L-22,Ey-4],[L,Ey+8],[L+22,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[R-22,Ey-4],[R,Ey+8],[R+22,Ey-4]],rand,{w:4,r:2,s:c})+this.bags(rand,L,R);
+  }
+  eyesSide(rand,dir){ const c=this.C.ink,sign=dir==='right'?1:-1,Ey=288,n=500+sign*64,f=500+sign*6;
+    return this._stroke([[n-20,Ey-4],[n,Ey+8],[n+20,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[f-15,Ey-3],[f,Ey+7],[f+15,Ey-3]],rand,{w:3.6,r:2,s:c})+this.bags(rand,n,f); }
+  mFlat(rand){ return this._stroke([[472,360],[528,358]],rand,{w:4,r:1.6,s:this.C.ink}); }
+  mOpen(rand){ return this._stroke(this._ell(500,366,16,19,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:this.C.ink}); }
+  arm(rand,pts){ return this._stroke(pts,rand,{w:5,r:3,s:this.C.ink}); }
+
+  dennis(rand,kind){
+    let s=this.body(rand);
+    if(kind==='shrug'){ s+=this.arm(rand,[[418,500],[356,540],[344,596],[372,614]])+this.arm(rand,[[582,500],[644,540],[656,596],[628,614]]);
+      return s+this.headFront(rand)+this.eyes(rand,'dead')+this.mFlat(rand); }
+    if(kind==='point-right'){ s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+      s+=this.arm(rand,[[582,500],[664,486],[748,470],[806,460]])+this._stroke([[806,460],[834,456]],rand,{w:4,r:2,s:this.C.ink});
+      return s+this.headSide(rand,'right')+this.eyesSide(rand,'right')+this._shift(40,2,this.mOpen(rand)); }
+    if(kind==='point-left'){ s+=this.arm(rand,[[582,500],[596,590],[602,636]])+this.mug(rand,602,648);
+      s+=this.arm(rand,[[418,500],[336,486],[252,470],[194,460]])+this._stroke([[194,460],[166,456]],rand,{w:4,r:2,s:this.C.ink});
+      return s+this.headSide(rand,'left')+this.eyesSide(rand,'left')+this._shift(-40,2,this.mOpen(rand)); }
+    s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+    s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+    return s+this.headFront(rand)+this.eyes(rand,'flat')+this.mFlat(rand);
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    el.innerHTML=this.dennis(rand,el.dataset.pose||'shrug');
+    el.setAttribute('data-drawn','1');
+  }
+  dennisSvg(pose,seed,style){
+    const vb = pose==='point-right' ? '300 130 620 800' : pose==='point-left' ? '150 130 620 800' : '300 130 560 810';
+    return '<svg data-ink="dennis" data-pose="'+pose+'" data-seed="'+seed+'" viewBox="'+vb+'" preserveAspectRatio="xMidYMax meet" style="'+style+'"></svg>';
+  }
+
+  // ---- slot chrome ----
+  slot(o){
+    // o: {left,top,w,h,round,label,sub,guide}
+    const C=this.C;
+    const r = o.round ? '50%' : '1.2cqw';
+    let s='<div style="position:absolute; left:'+o.left+'cqw; top:'+o.top+'cqw; width:'+o.w+'cqw; height:'+o.h+'cqw; border-radius:'+r+';';
+    if(o.guide){
+      s+=' border:0.34cqw dashed '+C.red+'; background:rgba(255,82,71,.07);';
+      s+='display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.5cqw; text-align:center; padding:0.8cqw;">';
+      s+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.4cqw; letter-spacing:.14em; color:'+C.red+';">'+o.label+'</div>';
+      if(o.sub) s+='<div style="font-family:\'Space Mono\',monospace; font-size:1.15cqw; color:#8f8c83;">'+o.sub+'</div>';
+      s+='</div>';
+    } else {
+      s+='"></div>';
+    }
+    return s;
+  }
+  disclaimer(){
+    const C=this.C;
+    return '<div style="position:absolute; left:0; right:0; bottom:0; background:'+C.ink+'; padding:1.25cqw 5cqw; display:flex; justify-content:space-between; align-items:center;">'
+      + '<span style="font-family:\'Space Grotesk\',sans-serif; font-size:1.6cqw; color:#e2dfd5;">Opinion and entertainment. Not financial advice.</span>'
+      + '<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.4cqw; letter-spacing:.2em; color:'+C.red+';">NOT ADVICE</span></div>';
+  }
+
+  buildScreen(key,guide){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let h='';
+    if(key==='two-up'){
+      h+='<div style="position:absolute; left:5cqw; top:7cqw; width:36cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.24em; color:'+C.red+';">THAT\u2019S THE LOT</div>';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:5.4cqw; line-height:1; margin-top:1.4cqw;">Two more,<br>if you must.</div>';
+      h+='</div>';
+      h+=this.dennisSvg('point-right',5,'position:absolute; left:2cqw; bottom:6.5cqw; width:26cqw; height:52cqw; overflow:visible;');
+      h+=this.slot({left:53,top:11,w:22,h:12.4,label:'VIDEO',sub:'16:9',guide:guide});
+      h+=this.slot({left:78,top:11,w:22,h:12.4,label:'VIDEO',sub:'16:9',guide:guide});
+      h+=this.slot({left:53,top:29,w:11,h:11,round:true,label:'SUBSCRIBE',guide:guide});
+      h+=this.disclaimer();
+    } else if(key==='hero'){
+      h+='<div style="position:absolute; left:5cqw; top:8cqw; width:34cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.24em; color:'+C.red+';">NEXT EPISODE</div>';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:5cqw; line-height:1.02; margin-top:1.4cqw;">The filing,<br>page by page.</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#6f6c65; font-style:italic; margin-top:1.6cqw;">Bring coffee. It runs long.</div>';
+      h+='</div>';
+      h+=this.dennisSvg('point-right',7,'position:absolute; left:1cqw; bottom:6.5cqw; width:24cqw; height:44cqw; overflow:visible;');
+      h+=this.slot({left:48,top:12,w:34,h:19.1,label:'VIDEO',sub:'16:9 \u00b7 the hero slot',guide:guide});
+      h+=this.slot({left:85,top:12,w:11,h:11,round:true,label:'SUBSCRIBE',guide:guide});
+      h+=this.disclaimer();
+    } else if(key==='subscribe'){
+      h+='<div style="position:absolute; left:5cqw; top:9cqw; width:44cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.24em; color:'+C.red+';">END OF THE SERIES</div>';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6cqw; line-height:1; margin-top:1.4cqw;">Go and read<br>the filing.</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:2cqw; color:#6f6c65; font-style:italic; margin-top:1.8cqw; max-width:36cqw; line-height:1.35;">Genuinely. It is free, it is boring, and it is the only homework that counts.</div>';
+      h+='</div>';
+      h+=this.dennisSvg('shrug',9,'position:absolute; left:44cqw; bottom:6.5cqw; width:32cqw; height:50cqw; overflow:visible;');
+      h+=this.slot({left:80,top:20,w:14,h:14,round:true,label:'SUBSCRIBE',guide:guide});
+      h+=this.disclaimer();
+    } else if(key==='playlist'){
+      h+='<div style="position:absolute; left:5cqw; top:5.5cqw; right:5cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.24em; color:'+C.red+';">THE REST OF THE SERIES</div>';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.4cqw; line-height:1; margin-top:1cqw;">Fourteen chapters. Start anywhere.</div>';
+      h+='</div>';
+      for(let i=0;i<3;i++) h+=this.slot({left:6+i*22.5,top:19,w:19,h:19,label:'VIDEO',sub:'1:1',guide:guide});
+      h+=this.dennisSvg('shrug',11,'position:absolute; left:74cqw; bottom:6.5cqw; width:23cqw; height:32cqw; overflow:visible;');
+      h+=this.disclaimer();
+    } else if(key==='writeup'){
+      h+='<div style="position:absolute; left:5cqw; top:8cqw; width:32cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.24em; color:'+C.red+';">TWO WAYS ON</div>';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.8cqw; line-height:1.02; margin-top:1.4cqw;">Watch the next one,<br>or read the long one.</div>';
+      h+='</div>';
+      h+='<div style="position:absolute; left:5cqw; bottom:14cqw; width:30cqw; background:'+C.paper+'; border:0.42cqw solid '+C.ink+'; border-radius:1.2cqw; padding:2cqw 2.2cqw;">';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.4cqw; letter-spacing:.18em; color:'+C.red+';">THE WRITE-UP</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:600; font-size:2.1cqw; line-height:1.2; margin-top:0.8cqw;">Every number, with the page references. Link in the description.</div>';
+      h+='</div>';
+      h+=this.dennisSvg('point-right',13,'position:absolute; left:34cqw; bottom:6.5cqw; width:24cqw; height:40cqw; overflow:visible;');
+      h+=this.slot({left:57,top:13,w:32,h:18,label:'VIDEO',sub:'16:9',guide:guide});
+      h+=this.slot({left:57,top:34,w:11,h:11,round:true,label:'SUBSCRIBE',guide:guide});
+      h+=this.disclaimer();
+    } else if(key==='zones'){
+      h+='<div style="position:absolute; left:4cqw; top:4cqw; right:4cqw; bottom:10cqw; border:0.28cqw dashed '+C.grey+'; border-radius:0.8cqw;"></div>';
+      h+='<div style="position:absolute; left:4.6cqw; top:5.2cqw; font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.3cqw; letter-spacing:.16em; color:'+C.grey+';">OUTER MARGIN \u00b7 KEEP EVERYTHING INSIDE</div>';
+      h+=this.slot({left:53,top:11,w:22,h:12.4,label:'A \u00b7 VIDEO',sub:'two-up left',guide:true});
+      h+=this.slot({left:78,top:11,w:22,h:12.4,label:'B \u00b7 VIDEO',sub:'two-up right',guide:true});
+      h+=this.slot({left:48,top:26,w:34,h:19.1,label:'C \u00b7 HERO VIDEO',sub:'16:9',guide:true});
+      h+=this.slot({left:85,top:26,w:11,h:11,round:true,label:'D \u00b7 SUB',guide:true});
+      h+='<div style="position:absolute; left:5cqw; top:12cqw; width:38cqw;">';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.4cqw; line-height:1.02;">The copy lane</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; line-height:1.35; color:#3a3a3d; margin-top:1.2cqw;">Nothing clickable ever lands here, so headlines and Dennis live on this side in every layout in the family.</div>';
+      h+='</div>';
+      h+='<div style="position:absolute; left:5cqw; bottom:12.5cqw; font-family:\'Space Mono\',monospace; font-size:1.35cqw; color:#8f8c83; letter-spacing:.1em;">DISCLAIMER BAR OCCUPIES THE BOTTOM STRIP \u00b7 NO SLOTS BELOW THE LINE</div>';
+      h+=this.disclaimer();
+    }
+    wrap.innerHTML=h;
+    return wrap;
+  }
+  mountAll(){
+    this.defs.forEach(d=>{
+      const g=this.hosts[d.key+':guide'] && this.hosts[d.key+':guide'].current;
+      if(g){ g.textContent=''; g.appendChild(this.buildScreen(d.key,true)); }
+      const c=this.hosts[d.key+':clean'] && this.hosts[d.key+':clean'].current;
+      if(c){ c.textContent=''; c.appendChild(this.buildScreen(d.key,d.key==='zones')); }
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountAll(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const ref=(k)=>{ if(!this.hosts[k]) this.hosts[k]=React.createRef(); return this.hosts[k]; };
+    return {
+      rootRef:this.rootRef,
+      screens:this.defs.map(d=>({ ...d, guideHost:ref(d.key+':guide'), cleanHost:ref(d.key+':clean') }))
+    };
+  }
+}
+</script>
+</body>
+</html>

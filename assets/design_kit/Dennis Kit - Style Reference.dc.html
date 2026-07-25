@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 100px;">
+<div style="max-width:1440px; margin:0 auto; padding:0 40px;">
+
+<header style="position:relative; margin:0 -40px 44px; height:440px; overflow:hidden; background:#f2f2ef url('uploads/bg_light_room_border_wide.png') center/cover no-repeat;">
+  <div style="position:absolute; inset:0; padding:0 84px; display:flex; flex-direction:column; justify-content:center;">
+    <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:16px;">VISUAL KIT · STYLE REFERENCE v1</div>
+    <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:128px; line-height:.86; letter-spacing:-.02em; color:#232326;">DENNIS</h1>
+    <p style="margin:20px 0 0; max-width:640px; font-size:19px; line-height:1.55; color:#3a3a3d;">The light, hand-drawn “Benjamin-style” finance explainer kit — ink on bright paper, black + <span style="color:#ff5247; font-weight:600;">red</span>. This file is the <strong>code-built layer</strong>: type, bugs, charts, layouts &amp; marks. The drawn library (mascot · concepts · props) drops into the marked slots.</p>
+  </div>
+  <div style="position:absolute; top:52px; right:84px; font-family:'Space Mono',monospace; line-height:1.15; text-align:right;">
+    <div style="display:flex; align-items:baseline; justify-content:flex-end; gap:.55em; font-size:27px; font-weight:700;">
+      <span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span><span>$12.40</span><span style="color:#8f8c83; font-size:.68em; font-weight:400;">4:00PM ET</span>
+    </div>
+    <div style="font-size:14px; color:#8f8c83; letter-spacing:.03em; margin-top:4px;">VOL 1M · AVG 3M 500K</div>
+  </div>
+  <div style="position:absolute; bottom:34px; left:84px; font-size:18px; color:#8f8c83;">Opinion / entertainment. Not financial advice.</div>
+</header>
+
+<nav style="display:flex; flex-wrap:wrap; gap:10px; margin:0 0 44px;">
+  <a href="#foundations" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">01 · FOUNDATIONS</a>
+  <a href="#furniture" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">02 · TYPE FURNITURE</a>
+  <a href="#bugs" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">03 · BUGS</a>
+  <a href="#charts" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">04 · CHARTS</a>
+  <a href="#marks" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">05 · MARKS</a>
+  <a href="#marks2" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">05+ · MARKS LIBRARY</a>
+  <a href="#patterns" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">04+ · PATTERNS</a>
+  <a href="#concepts" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">CONCEPTS</a>
+  <a href="#variants" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">★ VARIANT GRIDS</a>
+  <a href="#scenes" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">06 · SCENES</a>
+  <a href="#thumbs" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">07 · THUMBNAILS</a>
+  <a href="#library" style="padding:8px 17px; border:1.5px solid #d3d0c6; border-radius:999px; font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.08em; background:#f2f2ef;">08 · DROP-IN LIBRARY</a>
+</nav>
+
+<section id="foundations" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 30px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">01</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Foundations</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">PALETTE + TYPE · LOCKED</span>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:14px; margin-bottom:40px;">
+    <div><div style="height:96px; border-radius:3px; background:#f2f2ef; border:1.5px solid #d9d6cc;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Paper / wall</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#f2f2ef</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#dbd4c8;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Floor</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#dbd4c8</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#232326;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Ink</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#232326</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#ff5247;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Red · down/warn</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#ff5247</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#2fd576;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Green · up only</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#2fd576</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#9aa7b0;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Muted blue</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#9aa7b0</div></div>
+    <div><div style="height:96px; border-radius:3px; background:#c9c2b4;"></div><div style="margin-top:9px; font-weight:600; font-size:13px;">Muted tan</div><div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">#c9c2b4</div></div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:26px 28px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:78px; line-height:1; margin-bottom:14px;">Aa</div>
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px;">Shantell Sans</div>
+      <div style="font-size:13.5px; color:#6f6c65; margin:6px 0 14px; line-height:1.5;">Marker labels, captions, wordmark, chart titles. The “hand” of the whole kit.</div>
+      <div style="font-family:'Space Mono',monospace; font-size:11.5px; color:#8f8c83;">700 · 800</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:26px 28px;">
+      <div style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:78px; line-height:1; margin-bottom:14px;">Aa</div>
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px;">Space Grotesk</div>
+      <div style="font-size:13.5px; color:#6f6c65; margin:6px 0 14px; line-height:1.5;">Clean captions, UI text, the disclaimer. The calm, legible voice.</div>
+      <div style="font-family:'Space Mono',monospace; font-size:11.5px; color:#8f8c83;">400 · 500 · 600 · 700</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:26px 28px;">
+      <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:70px; line-height:1; margin-bottom:22px;">Aa</div>
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px;">Space Mono</div>
+      <div style="font-size:13.5px; color:#6f6c65; margin:6px 0 14px; line-height:1.5;">Tickers, prices, timestamps, volumes — anything that reads as data.</div>
+      <div style="font-family:'Space Mono',monospace; font-size:11.5px; color:#8f8c83;">400 · 700</div>
+    </div>
+  </div>
+</section>
+
+<section id="furniture" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 32px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">02</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Type furniture</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CAPTIONS · VERDICTS · CHAPTERS</span>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.14em; color:#8f8c83; margin-bottom:18px;">CAPTION SYSTEM · black word + red emphasis + scribble underline · 3 variants</div>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-bottom:44px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:34px 30px; min-height:220px; display:flex; flex-direction:column; justify-content:center;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:28px; color:#6f6c65; margin-bottom:6px;">the pump</div>
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:58px; line-height:.95; letter-spacing:-.01em;">PROBABLY <span style="position:relative; color:#ff5247; white-space:nowrap;">NOISE.<svg data-ink="underline-red" data-seed="21" width="300" height="30" viewBox="0 0 300 30" style="position:absolute; left:-4px; bottom:-16px; width:100%; height:auto; overflow:visible;"></svg></span></div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:26px;">left · kicker + two-tone + underline</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:34px 30px; min-height:220px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:70px; line-height:.9;">IT’S<br><span style="color:#ff5247;">OVER.</span></div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:24px;">centered · stacked payoff</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:34px 30px; min-height:220px; display:flex; flex-direction:column; justify-content:center;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:52px; line-height:.98;">BUY THE <span style="position:relative; display:inline-block;">DIP?<svg data-ink="mark-oval" data-seed="14" width="150" height="120" viewBox="0 0 150 120" style="position:absolute; left:-24%; top:-34%; width:150%; height:auto; overflow:visible;"></svg></span></div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:26px;">scribble-circled emphasis</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:24px; margin-bottom:40px;">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.14em; color:#8f8c83; margin-bottom:16px;">PAYOFF CARD · the “NOISE / SIGNAL?” verdict</div>
+      <div style="border:1.5px solid #e2dfd5; border-radius:4px; overflow:hidden; display:grid; grid-template-columns:1fr auto 1fr;">
+        <div style="padding:40px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;">
+          <svg data-ink="mark-cross" data-seed="31" width="92" height="92" viewBox="0 0 92 92" style="width:64px; height:64px; overflow:visible;"></svg>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:48px; color:#ff5247;">NOISE</div>
+        </div>
+        <div style="width:1.5px; background:#e2dfd5;"></div>
+        <div style="padding:40px 20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;">
+          <svg data-ink="mark-check" data-seed="32" width="92" height="92" viewBox="0 0 92 92" style="width:64px; height:64px; overflow:visible;"></svg>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:48px; color:#2fd576;">SIGNAL?</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.14em; color:#8f8c83; margin-bottom:16px;">VERDICT / TAG STAMPS</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #ff5247; color:#ff5247; border-radius:3px; transform:rotate(-1.5deg);">OVERVALUED</span>
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #232326; border-radius:3px; transform:rotate(1deg);">PRICED IN</span>
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #ff5247; color:#ff5247; border-radius:3px; transform:rotate(.5deg);">RED FLAG</span>
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #2fd576; color:#1f9e56; border-radius:3px; transform:rotate(-1deg);">WIDE MOAT</span>
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #232326; border-radius:3px; transform:rotate(1.5deg);">NOT ADVICE</span>
+        <span style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:22px; padding:6px 16px; border:2.5px solid #ff5247; color:#ff5247; border-radius:3px; transform:rotate(-.5deg);">THE GAP</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.14em; color:#8f8c83; margin-bottom:16px;">CHAPTER CARDS · long-form · subtle centre-lift paper</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:4px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+        <div style="font-family:'Space Mono',monospace; font-size:15px; letter-spacing:.2em; color:#ff5247; font-weight:700;">CHAPTER 01</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:64px; line-height:.95; margin-top:8px;">THE SETUP</div>
+        <div style="font-family:'Space Mono',monospace; font-size:13px; color:#8f8c83; margin-top:14px;">GYMX · DEEP DIVE</div>
+      </div>
+    </div>
+    <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:4px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+        <div style="font-family:'Space Mono',monospace; font-size:15px; letter-spacing:.2em; color:#ff5247; font-weight:700;">CHAPTER 02</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:64px; line-height:.95; margin-top:8px;">THE <span style="color:#ff5247;">NUMBERS</span></div>
+        <div style="font-family:'Space Mono',monospace; font-size:13px; color:#8f8c83; margin-top:14px;">MARGINS · DEBT · CASH</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="bugs" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 32px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">03</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Bugs &amp; overlays</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">SPACE MONO · CORNER PERSISTENT</span>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:30px; background:url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="font-family:'Space Mono',monospace; line-height:1.15;">
+        <div style="display:flex; align-items:baseline; gap:.5em; font-size:28px; font-weight:700;"><span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span><span>$12.40</span></div>
+        <div style="font-size:15px; color:#8f8c83; margin-top:5px;">4:00PM ET · VOL 1M · AVG 3M 500K</div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:22px;">ticker bug · DOWN (red ▼)</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:30px; background:url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="font-family:'Space Mono',monospace; line-height:1.15;">
+        <div style="display:flex; align-items:baseline; gap:.5em; font-size:28px; font-weight:700;"><span>SIGL</span><span style="color:#1f9e56;">▲&nbsp;12%</span><span>$48.90</span></div>
+        <div style="font-size:15px; color:#8f8c83; margin-top:5px;">4:00PM ET · VOL 3M · AVG 3M 900K</div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:22px;">ticker bug · UP (green ▲)</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:30px; background:url('uploads/bg_light_flat_wide.png') center/cover; display:flex; flex-direction:column; justify-content:space-between;">
+      <div style="font-size:22px; color:#8f8c83; font-family:'Space Grotesk',sans-serif;">Opinion / entertainment. Not financial advice.</div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:22px;">disclaimer bug · bottom-left</div>
+    </div>
+  </div>
+</section>
+
+<section id="charts" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 14px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">04</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Chart-style templates</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CODE-RENDERED · up=green · down=red</span>
+  </div>
+  <p style="margin:0 0 28px; font-size:14px; color:#6f6c65; max-width:760px; line-height:1.55;">The <em>look</em>, not the data — wobble ink axes, marker titles, Space Mono numbers. Real charts get rendered from live price/financials to match these.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Pump → dump</div>
+      <svg data-ink="chart-line" data-seed="3" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">line · wobble · red peak + drop</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Quarterly</div>
+      <svg data-ink="chart-bar" data-seed="5" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">bar · down quarter = red</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Where it goes</div>
+      <svg data-ink="chart-pie" data-seed="7" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">donut · muted flats + one red</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Rev → net bridge</div>
+      <svg data-ink="chart-waterfall" data-seed="11" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">waterfall · up green / down red</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Cohort retention</div>
+      <svg data-ink="chart-retention" data-seed="13" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">retention curve · churn shaded</div>
+    </div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Priced vs delivered</div>
+      <svg data-ink="chart-priced" data-seed="17" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">priced-for-perfection gap</div>
+    </div>
+  </div>
+</section>
+
+<section id="marks" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 30px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">05</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Marks &amp; annotations</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CODE-DRAWN · restyles the old doodle slots</span>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:16px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-circle" data-seed="41" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">scrawl-circle</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-oval" data-seed="42" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">scrawl-oval-wide</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-curve-down" data-seed="43" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-curved-down</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-curve-up" data-seed="44" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-curved-up</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-jab" data-seed="45" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-straight-jab</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-underline" data-seed="46" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">squiggle-underline</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-cross" data-seed="47" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">cross-out-nope</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-check" data-seed="48" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">check-yes</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-bracket" data-seed="49" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">curly-bracket</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-redaction" data-seed="50" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">redaction-bar</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-you-are-here" data-seed="51" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">you-are-here</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;"><div style="display:flex; gap:14px;"><svg data-ink="mark-tri-down" data-seed="52" width="40" height="36" viewBox="0 0 40 36" style="width:34px; height:auto; overflow:visible;"></svg><svg data-ink="mark-tri-up" data-seed="53" width="40" height="36" viewBox="0 0 40 36" style="width:34px; height:auto; overflow:visible;"></svg></div><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83;">ticker triangles</div></div>
+  </div>
+</section>
+
+<section id="marks2" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 30px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">05+</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Marks library — extended</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">MANY VARIANTS · re-seed for endless more</span>
+  </div>
+  <p style="margin:0 0 24px; font-size:14px; color:#6f6c65; max-width:820px; line-height:1.55;">Each of these is one seed of a generator — swap the <code style="font-family:'Space Mono',monospace;">data-seed</code> and every stroke re-wobbles into a fresh, on-style variant, so the library scales to dozens of each without new code.</p>
+  <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:16px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-circle-loop" data-seed="81" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">circle-loop</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-circle-2" data-seed="82" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">circle-double</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-oval-tall" data-seed="83" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">oval-tall</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-box" data-seed="84" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">box-highlight</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-star" data-seed="85" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">star</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-sparkle" data-seed="86" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">sparkle</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-asterisk" data-seed="87" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">asterisk</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-exclaim" data-seed="88" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">exclaim</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-question" data-seed="89" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">question</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-brace-both" data-seed="90" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">brace-both</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-highlight" data-seed="91" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">marker-swipe</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-strike" data-seed="92" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">strike</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-scribble-out" data-seed="93" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">scribble-out</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-underline-straight" data-seed="94" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">underline</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-underline-double" data-seed="95" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">underline-double</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-underline-zigzag" data-seed="96" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">underline-zigzag</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-check-2" data-seed="97" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">check-bold</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-down" data-seed="98" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-down</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-up" data-seed="99" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-up</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-left" data-seed="100" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-left</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-right" data-seed="101" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-right</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-curve-left" data-seed="102" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-curve-left</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-curve-right" data-seed="103" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-curve-right</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-swoop" data-seed="104" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-swoop</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-arrow-zigzag" data-seed="105" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">arrow-zigzag</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:14px; text-align:center;"><svg data-ink="mark-double-arrow" data-seed="106" width="150" height="120" viewBox="0 0 150 120" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:6px;">double-arrow</div></div>
+  </div>
+</section>
+
+<section id="patterns" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 14px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">04+</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">More chart templates</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">CANDLES · AREA · PATTERNS · GAUGE</span>
+  </div>
+  <p style="margin:0 0 28px; font-size:14px; color:#6f6c65; max-width:760px; line-height:1.55;">Restyles the old chart-pattern doodles (double-top, head-&amp;-shoulders, candlestick-101) into the light ink look, plus a sentiment gauge for hooks.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:22px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Candlesticks</div><svg data-ink="chart-candles" data-seed="111" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">candlestick-101 · up green / down red</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Area / trend</div><svg data-ink="chart-area" data-seed="112" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">filled area · muted flat</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Stacked bars</div><svg data-ink="chart-stacked" data-seed="113" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">segments · top red = warning</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Double top</div><svg data-ink="chart-double-top" data-seed="114" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">pattern · red neckline break</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Head &amp; shoulders</div><svg data-ink="chart-hns" data-seed="115" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">pattern · neckline marked</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:22px 22px 18px;"><div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:20px; margin-bottom:4px;">Fear / greed</div><svg data-ink="chart-gauge" data-seed="116" width="440" height="270" viewBox="0 0 440 270" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b;">sentiment gauge · needle</div></div>
+  </div>
+</section>
+
+<section id="concepts" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 14px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">C</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Concept diagrams</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">GEOMETRIC · code-drawn</span>
+  </div>
+  <p style="margin:0 0 28px; font-size:14px; color:#6f6c65; max-width:820px; line-height:1.55;">The concept metaphors that are <strong>geometric</strong> (steps, funnels, scales, stacks) I can build from the ink engine. The <strong>character/object</strong> ones — debt-anvil, cash-printer, moat-castle, treadmill — stay illustration slots in the drop-in library below.</p>
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:20px;">
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:20px; text-align:center;"><svg data-ink="concept-staircase" data-seed="121" width="240" height="220" viewBox="0 0 240 220" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:6px;">growth-staircase</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:20px; text-align:center;"><svg data-ink="concept-funnel" data-seed="122" width="240" height="220" viewBox="0 0 240 220" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:6px;">margin-funnel</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:20px; text-align:center;"><svg data-ink="concept-scale" data-seed="123" width="240" height="220" viewBox="0 0 240 220" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:6px;">valuation-scale</div></div>
+    <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:20px; text-align:center;"><svg data-ink="concept-house" data-seed="124" width="240" height="220" viewBox="0 0 240 220" style="width:100%; height:auto; overflow:visible;"></svg><div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:6px;">house-of-cards</div></div>
+  </div>
+</section>
+
+<section id="variants" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 14px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">★</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Auto-emitted variant grids</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">ONE GENERATOR → N UNIQUE DRAWINGS</span>
+  </div>
+  <p style="margin:0 0 28px; font-size:14px; color:#6f6c65; max-width:820px; line-height:1.55;">This is how the library gets <strong>enormous</strong> without new art: every drawing is a generator seeded by a number, so each row below is the same asset re-rolled into unique, on-style variants. Dial <strong>Variant count</strong> in Tweaks (4–24 per row) — a bulk render surface for the pipeline.</p>
+  <sc-for list="{{ variantSets }}" as="set" hint-placeholder-count="6">
+    <div style="margin-bottom:26px;">
+      <div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; letter-spacing:.1em; margin-bottom:12px;">{{ set.label }}</div>
+      <div style="display:flex; flex-wrap:wrap; gap:12px;">
+        <sc-for list="{{ set.seeds }}" as="seed" hint-placeholder-count="12">
+          <div style="border:1.5px solid #e2dfd5; border-radius:4px; padding:10px; background:#f2f2ef; display:flex;">
+            <svg data-ink="{{ set.type }}" data-seed="{{ seed }}" width="{{ set.w }}" height="{{ set.h }}" viewBox="{{ set.viewBox }}" style="height:auto; max-width:100%; overflow:visible; display:block;"></svg>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</section>
+
+<section id="scenes" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 30px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">06</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Scene layouts</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">FULL FRAMES · bug + caption + chart + slot</span>
+  </div>
+
+  <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.12em; color:#8f8c83; margin-bottom:14px;">WIDE · 1920×1080 · video frame</div>
+  <div style="width:100%; overflow-x:auto; margin-bottom:38px;">
+    <div style="width:1160px; height:652.5px; position:relative; border-radius:4px; overflow:hidden; box-shadow:0 24px 50px -28px rgba(35,35,38,.4);">
+      <div style="position:absolute; top:0; left:0; width:1920px; height:1080px; transform:scale(0.604167); transform-origin:top left; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover no-repeat;">
+        <div style="position:absolute; left:64px; top:58px; font-family:'Space Mono',monospace; line-height:1.15;">
+          <div style="display:flex; align-items:baseline; gap:.5em; font-size:32px; font-weight:700;"><span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span><span>$12.40</span></div>
+          <div style="font-size:17px; color:#8f8c83; margin-top:5px;">4:00PM ET · VOL 1M · AVG 3M 500K</div>
+        </div>
+        <div style="position:absolute; right:90px; top:110px; text-align:right; width:900px;">
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:104px; line-height:.9; letter-spacing:-.01em;">PROBABLY <span style="position:relative; color:#ff5247; white-space:nowrap;">NOISE.<svg data-ink="underline-red" data-seed="61" width="300" height="30" viewBox="0 0 300 30" style="position:absolute; left:0; bottom:-26px; width:100%; height:auto; overflow:visible;"></svg></span></div>
+        </div>
+        <div style="position:absolute; left:1010px; top:300px; font-family:'Shantell Sans',cursive; font-weight:700; font-size:46px; color:#3a3a3d;">the pump</div>
+        <svg data-ink="chart-line" data-seed="62" width="820" height="470" viewBox="0 0 820 470" style="position:absolute; left:1000px; top:360px; width:820px; height:auto; overflow:visible;"></svg>
+        <div style="position:absolute; left:120px; top:300px; width:380px; height:700px; background:repeating-linear-gradient(-45deg,#e7e5de 0 11px,#efece6 11px 22px); border:2.5px dashed #bdb9af; border-radius:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:16px;">
+          <div style="font-family:'Space Mono',monospace; font-size:20px; color:#928f86;">mascot/tired-explaining.png</div>
+          <div style="font-family:'Space Mono',monospace; font-size:15px; color:#b3afa5;">＋ DROP-IN · transparent PNG</div>
+        </div>
+        <div style="position:absolute; left:64px; bottom:56px; font-family:'Space Grotesk',sans-serif; font-size:28px; color:#8f8c83;">Opinion / entertainment. Not financial advice.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:auto 1fr; gap:34px; align-items:start;">
+    <div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.12em; color:#8f8c83; margin-bottom:14px;">TALL · 1080×1920 · short</div>
+      <div style="width:340px; height:604.4px; position:relative; border-radius:4px; overflow:hidden; box-shadow:0 24px 50px -28px rgba(35,35,38,.4);">
+        <div style="position:absolute; top:0; left:0; width:1080px; height:1920px; transform:scale(0.314815); transform-origin:top left; background:#f2f2ef url('uploads/bg_light_room_tall.png') center/cover no-repeat;">
+          <div style="position:absolute; left:56px; top:70px; font-family:'Space Mono',monospace; line-height:1.15;">
+            <div style="display:flex; align-items:baseline; gap:.5em; font-size:40px; font-weight:700;"><span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span></div>
+            <div style="font-size:22px; color:#8f8c83; margin-top:6px;">$12.40 · 4:00PM ET</div>
+          </div>
+          <div style="position:absolute; left:0; right:0; top:250px; text-align:center; padding:0 60px;">
+            <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:130px; line-height:.9;">PROBABLY<br><span style="position:relative; color:#ff5247;">NOISE.<svg data-ink="underline-red" data-seed="63" width="300" height="30" viewBox="0 0 300 30" style="position:absolute; left:6%; bottom:-30px; width:88%; height:auto; overflow:visible;"></svg></span></div>
+          </div>
+          <div style="position:absolute; left:200px; top:820px; width:680px; height:820px; background:repeating-linear-gradient(-45deg,#e7e5de 0 14px,#efece6 14px 28px); border:3px dashed #bdb9af; border-radius:6px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; padding:20px;">
+            <div style="font-family:'Space Mono',monospace; font-size:30px; color:#928f86;">mascot/exasperated.png</div>
+            <div style="font-family:'Space Mono',monospace; font-size:22px; color:#b3afa5;">＋ DROP-IN</div>
+          </div>
+          <div style="position:absolute; left:56px; bottom:70px; font-family:'Space Grotesk',sans-serif; font-size:34px; color:#8f8c83;">Not financial advice.</div>
+        </div>
+      </div>
+    </div>
+    <div style="padding-top:34px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:700; font-size:24px; margin-bottom:12px;">Anatomy of a frame</div>
+      <ul style="margin:0; padding-left:18px; font-size:15px; line-height:1.85; color:#3a3a3d;">
+        <li><strong>Ticker bug</strong> — top-left, always on. Space Mono, red/green triangle.</li>
+        <li><strong>Caption</strong> — Shantell, black word + red emphasis + scribble underline.</li>
+        <li><strong>Illustration slot</strong> — one Dennis (or concept) drop-in carries the frame.</li>
+        <li><strong>Chart</strong> — code-rendered to the templates above, composited in.</li>
+        <li><strong>Disclaimer</strong> — bottom-left, muted Space Grotesk, always on.</li>
+      </ul>
+      <div style="margin-top:20px; font-size:14px; color:#6f6c65; line-height:1.6; padding:16px 18px; border-left:3px solid #ff5247; background:#faf9f6;">Room background = wall + warm floor. Flat paper for close-ups &amp; charts. Frames shown scaled; labels note true export size.</div>
+    </div>
+  </div>
+</section>
+
+<section id="thumbs" style="background:#f2f2ef; border-radius:4px; box-shadow:0 1px 0 rgba(35,35,38,.05),0 24px 50px -30px rgba(35,35,38,.32); padding:46px 50px; margin:0 0 32px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 30px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">07</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em;">Thumbnails</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+    <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">1280×720 · ticker + number + face + red mark</span>
+  </div>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px;">
+    <div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:4px; box-shadow:0 16px 34px -24px rgba(35,35,38,.5); container-type:inline-size; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+        <div style="position:absolute; left:6%; top:7%; font-family:'Space Mono',monospace; font-weight:700; font-size:clamp(11px,2.6cqw,17px);"><span>GYMX</span> <span style="color:#ff5247;">▼</span></div>
+        <div style="position:absolute; left:6%; top:26%; display:flex; flex-direction:column;">
+          <div style="position:relative; font-family:'Shantell Sans',cursive; font-weight:800; font-size:clamp(44px,15cqw,96px); line-height:.86; color:#ff5247;">−34%<svg data-ink="mark-circle" data-seed="71" width="150" height="120" viewBox="0 0 150 120" style="position:absolute; left:-12%; top:-18%; width:124%; height:auto; overflow:visible;"></svg></div>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:clamp(16px,4.6cqw,30px); margin-top:6px;">IT’S OVER?</div>
+        </div>
+        <div style="position:absolute; right:5%; bottom:6%; width:34%; height:74%; background:repeating-linear-gradient(-45deg,#e7e5de 0 8px,#efece6 8px 16px); border:2px dashed #bdb9af; border-radius:3px; display:flex; align-items:center; justify-content:center; text-align:center;"><span style="font-family:'Space Mono',monospace; font-size:11px; color:#928f86;">mascot/shocked.png</span></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:8px;">A · big shock number + face</div>
+    </div>
+    <div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:4px; box-shadow:0 16px 34px -24px rgba(35,35,38,.5); container-type:inline-size; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover;">
+        <div style="position:absolute; left:4%; top:8%; bottom:8%; width:38%; background:repeating-linear-gradient(-45deg,#e7e5de 0 8px,#efece6 8px 16px); border:2px dashed #bdb9af; border-radius:3px; display:flex; align-items:center; justify-content:center; text-align:center;"><span style="font-family:'Space Mono',monospace; font-size:11px; color:#928f86;">mascot/pointing.png</span></div>
+        <div style="position:absolute; right:5%; top:20%; width:50%; text-align:right; font-family:'Shantell Sans',cursive; font-weight:800; font-size:clamp(26px,8cqw,54px); line-height:.9;">PROBABLY <span style="color:#ff5247;">NOISE.</span></div>
+        <div style="position:absolute; right:5%; bottom:8%; font-family:'Space Mono',monospace; font-weight:700; font-size:clamp(10px,2.4cqw,15px);"><span>GYMX</span> <span style="color:#ff5247;">▼ 34%</span></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:8px;">B · face left, caption right</div>
+    </div>
+    <div>
+      <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:4px; box-shadow:0 16px 34px -24px rgba(35,35,38,.5); container-type:inline-size; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center;"><div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:clamp(34px,11cqw,74px); line-height:.86;">IT’S<br><span style="color:#ff5247;">OVER.</span></div></div>
+        <svg data-ink="mark-arrow-curve-down" data-seed="72" width="150" height="120" viewBox="0 0 150 120" style="position:absolute; left:7%; top:16%; width:20%; height:auto; overflow:visible;"></svg>
+        <div style="position:absolute; right:4%; bottom:5%; width:26%; height:56%; background:repeating-linear-gradient(-45deg,#e7e5de 0 8px,#efece6 8px 16px); border:2px dashed #bdb9af; border-radius:3px; display:flex; align-items:center; justify-content:center; text-align:center;"><span style="font-family:'Space Mono',monospace; font-size:10px; color:#928f86;">mascot/defeated.png</span></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; margin-top:8px;">C · centered payoff + mark</div>
+    </div>
+  </div>
+</section>
+
+<section id="library" style="background:#232326; color:#f2f2ef; border-radius:4px; box-shadow:0 24px 50px -30px rgba(35,35,38,.5); padding:46px 50px; margin:0 0 10px;">
+  <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 26px;">
+    <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">08</span>
+    <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:38px; letter-spacing:-.01em; color:#f2f2ef;">The drop-in library</h2>
+    <span style="flex:1; height:1px; background:linear-gradient(90deg,#4a4a4e,transparent);"></span>
+  </div>
+  <p style="margin:0 0 30px; max-width:820px; font-size:15.5px; line-height:1.65; color:#c9c6bf;">Everything above is <strong style="color:#f2f2ef;">built from code</strong> and ships in this kit. The three libraries below are <strong style="color:#ff5247;">hand-drawn illustration</strong> — they need a real illustrator (or image generation) to hold “one Dennis, one hand.” They land as transparent PNGs in the marked slots, keeping the old asset names 1:1.</p>
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px;">
+    <div style="border:1.5px solid #3a3a3d; border-radius:4px; padding:26px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:26px; color:#ff5247;">mascot/</div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; margin:6px 0 14px;">TARGET 100+ pose × expression</div>
+      <div style="font-size:13.5px; line-height:1.6; color:#c9c6bf;">deadpan · tired-explaining · exasperated · sweating · smug · defeated · shrug · coffee-sip · at-the-desk · dead-inside</div>
+    </div>
+    <div style="border:1.5px solid #3a3a3d; border-radius:4px; padding:26px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:26px; color:#ff5247;">concepts/</div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; margin:6px 0 14px;">TARGET 200+ · 4–6 per idea</div>
+      <div style="font-size:13.5px; line-height:1.6; color:#c9c6bf;">growth-staircase · margin-funnel · debt-anvil · dilution-pie · cash-printer · moat-castle · valuation-scale · tightrope · house-of-cards</div>
+    </div>
+    <div style="border:1.5px solid #3a3a3d; border-radius:4px; padding:26px;">
+      <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:26px; color:#ff5247;">props/</div>
+      <div style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; margin:6px 0 14px;">TARGET 150–200+ objects</div>
+      <div style="font-size:13.5px; line-height:1.6; color:#c9c6bf;">price-tag · calculator · filing-page · warehouse · calendar · phone · money-stack · magnifier · podium · treadmill · box</div>
+    </div>
+  </div>
+  <div style="margin-top:26px; font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; letter-spacing:.04em;">SLOT CONVENTION → striped box + kebab-case name = where a transparent PNG drops in · trim-to-content · ~1000×1000</div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · light Benjamin-style · style reference v1 · code layer</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;},&quot;showAnnotations&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Ink&quot;},&quot;variantCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:12,&quot;min&quot;:4,&quot;max&quot;:24,&quot;step&quot;:1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', tan:'#dbd4c8', paper:'#f2f2ef', blue:'#9aa7b0', grey:'#8f8c83' };
+  }
+
+  prng(seed){
+    let s = (seed >>> 0) || 1;
+    return () => {
+      s = (Math.imul(s ^ (s >>> 15), 1 | s)) >>> 0;
+      s = (s + Math.imul(s ^ (s >>> 7), 61 | s)) >>> 0;
+      return ((s ^ (s >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+
+  rpath(pts, rand, r){
+    let d = '';
+    for (let i = 0; i < pts.length; i++){
+      const jx = (rand()*2-1)*r, jy = (rand()*2-1)*r;
+      const x = pts[i][0]+jx, y = pts[i][1]+jy;
+      if (i === 0){ d += 'M'+x.toFixed(1)+','+y.toFixed(1); }
+      else {
+        const px = pts[i-1][0], py = pts[i-1][1];
+        const mx = (px+pts[i][0])/2 + (rand()*2-1)*r*1.4;
+        const my = (py+pts[i][1])/2 + (rand()*2-1)*r*1.4;
+        d += 'Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);
+      }
+    }
+    return d;
+  }
+  _p(d, o){
+    o = o || {};
+    const s = o.s || this.C.ink, w = o.w == null ? 3 : o.w, f = o.f || 'none';
+    const dash = o.dash ? ' stroke-dasharray="'+o.dash+'"' : '';
+    const op = o.op == null ? 1 : o.op;
+    const cap = o.cap || 'round';
+    return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="'+cap+'" stroke-linejoin="round"'+dash+(op!==1?' opacity="'+op+'"':'')+'/>';
+  }
+  _t(x, y, str, o){
+    o = o || {};
+    const s = o.s || this.C.ink, size = o.size || 12, anchor = o.anchor || 'start', w = o.w || 400;
+    const fam = o.mono === false ? "'Space Grotesk', sans-serif" : "'Space Mono', monospace";
+    return '<text x="'+(+x).toFixed(1)+'" y="'+(+y).toFixed(1)+'" fill="'+s+'" font-size="'+size+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'">'+str+'</text>';
+  }
+  _stroke(pts, rand, o){
+    o = o || {};
+    const r = (o.r == null ? 2 : o.r) * this._rk();
+    const w = o.w == null ? 3 : o.w;
+    let d1 = this.rpath(pts, rand, r), d2 = this.rpath(pts, rand, r);
+    if (o.close){ d1 += 'Z'; d2 += 'Z'; }
+    return this._p(d1, {s:o.s, w:w, dash:o.dash}) + this._p(d2, {s:o.s, w:+(w*0.7).toFixed(1), op:0.7});
+  }
+  _fill(pts, rand, f, r){
+    r = (r == null ? 1.5 : r) * this._rk();
+    return this._p(this.rpath(pts, rand, r)+'Z', {f:f, s:'none', w:0});
+  }
+  _ell(cx, cy, rx, ry, a0, a1, n){
+    n = n || 22; const pts = [];
+    for (let i = 0; i <= n; i++){ const a = a0 + (a1-a0)*i/n; pts.push([cx+rx*Math.cos(a), cy+ry*Math.sin(a)]); }
+    return pts;
+  }
+  _head(x, y, ang, len, rand, o){
+    const a1 = ang + Math.PI - 0.42, a2 = ang + Math.PI + 0.42;
+    return this._stroke([[x,y],[x+len*Math.cos(a1), y+len*Math.sin(a1)]], rand, o)
+         + this._stroke([[x,y],[x+len*Math.cos(a2), y+len*Math.sin(a2)]], rand, o);
+  }
+
+  cAxes(rand, W, H){
+    const x0 = 52, y0 = H-42, x1 = W-22, yT = 26;
+    return this._stroke([[x0,yT],[x0,y0]], rand, {w:2.6, r:1.5})
+         + this._stroke([[x0,y0],[x1,y0]], rand, {w:2.6, r:1.5});
+  }
+  cLine(rand, W, H){
+    const x0=52, y0=H-42, x1=W-22, yT=26, pw=x1-x0, ph=y0-yT;
+    const v=[.30,.34,.31,.44,.55,.68,.86,.74,.58,.44,.33,.24];
+    const pts=v.map((val,i)=>[x0+pw*i/(v.length-1), y0-ph*val]);
+    let s=this.cAxes(rand,W,H);
+    s+=this._stroke(pts,rand,{w:3.2,r:2});
+    if (this.props.showAnnotations ?? true){
+      const pk=pts[6];
+      s+=this._stroke(this._ell(pk[0]+4,pk[1]-2,28,22,-0.3,Math.PI*2+0.4),rand,{s:this.C.red,w:2.6,r:2});
+      const ax=pts[9][0]+16;
+      s+=this._stroke([[ax,yT+14],[ax,pts[9][1]-8]],rand,{s:this.C.red,w:3,r:1.3});
+      s+=this._head(ax,pts[9][1]-8,Math.PI/2,14,rand,{s:this.C.red,w:3,r:1});
+    }
+    s+=this._t(x0-9,y0+4,'$0',{anchor:'end',size:12,s:this.C.grey});
+    s+=this._t(x0-9,yT+8,'$20',{anchor:'end',size:12,s:this.C.grey});
+    s+=this._t(x0,y0+22,'OPEN',{size:11,s:this.C.grey});
+    s+=this._t(x1,y0+22,'CLOSE',{anchor:'end',size:11,s:this.C.grey});
+    return s;
+  }
+  cBar(rand, W, H){
+    const x0=52, y0=H-42, x1=W-22, yT=26, pw=x1-x0, ph=y0-yT;
+    const v=[.48,.6,.55,.72,.4], labs=['Q1','Q2','Q3','Q4','Q1'], n=v.length, band=pw/n, bw=band*0.5;
+    let s=this.cAxes(rand,W,H);
+    for (let i=0;i<n;i++){
+      const cx=x0+band*(i+0.5), top=y0-ph*v[i];
+      const rp=[[cx-bw/2,y0],[cx-bw/2,top],[cx+bw/2,top],[cx+bw/2,y0]];
+      const dn=i===n-1;
+      s+=this._fill(rp,rand,dn?'rgba(255,82,71,.16)':'rgba(154,167,176,.20)',1.1);
+      s+=this._stroke(rp,rand,{s:dn?this.C.red:this.C.ink,w:2.4,r:1.2});
+      s+=this._t(cx,top-8,Math.round(v[i]*100),{anchor:'middle',size:12,s:dn?this.C.red:'#6f6c65',w:700});
+      s+=this._t(cx,y0+21,labs[i],{anchor:'middle',size:12,s:this.C.grey});
+    }
+    return s;
+  }
+  cPie(rand, W, H){
+    const cx=W*0.4, cy=H*0.5, R=Math.min(W,H)*0.36, rin=R*0.5;
+    const segs=[{v:42,c:'rgba(154,167,176,.34)',l:'42%'},{v:28,c:'rgba(219,212,200,.85)',l:'28%'},{v:18,c:'rgba(201,194,180,.8)',l:'18%'},{v:12,c:'rgba(255,82,71,.30)',l:'12%',red:true}];
+    let s='', a=-Math.PI/2;
+    for (const seg of segs){
+      const a2=a+Math.PI*2*seg.v/100;
+      const poly=this._ell(cx,cy,R,R,a,a2,14).concat(this._ell(cx,cy,rin,rin,a2,a,14));
+      s+=this._fill(poly,rand,seg.c,1);
+      s+=this._stroke(poly,rand,{s:seg.red?this.C.red:this.C.ink,w:2,r:1,close:true});
+      const mid=(a+a2)/2, lr=R+18;
+      s+=this._t(cx+lr*Math.cos(mid),cy+lr*Math.sin(mid)+4,seg.l,{anchor:'middle',size:12,s:seg.red?this.C.red:'#6f6c65',w:700});
+      a=a2;
+    }
+    return s;
+  }
+  cWaterfall(rand, W, H){
+    const x0=46, y0=H-42, x1=W-18, yT=26, pw=x1-x0, ph=y0-yT, maxV=110;
+    const yv=(val)=>y0-ph*(val/maxV);
+    const steps=[{l:'REV',d:100,t:'up'},{l:'COGS',d:-42,t:'dn'},{l:'OPEX',d:-30,t:'dn'},{l:'OP',t:'tot'},{l:'TAX',d:-8,t:'dn'},{l:'NET',t:'tot'}];
+    const n=steps.length, band=pw/n, bw=band*0.5;
+    let s=this.cAxes(rand,W,H), run=0, prev=null;
+    for (let i=0;i<n;i++){
+      const st=steps[i], cx=x0+band*(i+0.5); let a,b;
+      if (st.t==='tot'){ a=0; b=run; } else { a=run; b=run+st.d; run=b; }
+      const yA=yv(a), yB=yv(b), top=Math.min(yA,yB), bot=Math.max(yA,yB);
+      const rp=[[cx-bw/2,bot],[cx-bw/2,top],[cx+bw/2,top],[cx+bw/2,bot]];
+      let fill, stroke;
+      if (st.t==='up'){ fill='rgba(47,213,118,.22)'; stroke=this.C.ink; }
+      else if (st.t==='dn'){ fill='rgba(255,82,71,.18)'; stroke=this.C.red; }
+      else { fill='rgba(219,212,200,.85)'; stroke=this.C.ink; }
+      s+=this._fill(rp,rand,fill,1);
+      s+=this._stroke(rp,rand,{s:stroke,w:2.2,r:1});
+      if (prev!==null) s+=this._p(this.rpath([[prev.x,prev.y],[cx-bw/2,yA]],rand,0.7),{s:'#a9a59b',w:1.6,dash:'5,5'});
+      prev={x:cx+bw/2,y:yB};
+      s+=this._t(cx,top-8,(st.t==='tot'?run:Math.abs(st.d)),{anchor:'middle',size:11,s:stroke===this.C.ink?'#6f6c65':stroke,w:700});
+      s+=this._t(cx,y0+18,st.l,{anchor:'middle',size:10.5,s:this.C.grey});
+    }
+    return s;
+  }
+  cRetention(rand, W, H){
+    const x0=52, y0=H-42, x1=W-22, yT=26, pw=x1-x0, ph=y0-yT;
+    const v=[100,64,48,39,33,29,26];
+    const pts=v.map((val,i)=>[x0+pw*i/(v.length-1), y0-ph*val/100]);
+    let s=this.cAxes(rand,W,H);
+    const top=yT+2;
+    s+=this._fill(pts.concat([[pts[pts.length-1][0],top],[pts[0][0],top]]),rand,'rgba(255,82,71,.12)',0.7);
+    s+=this._stroke(pts,rand,{w:3,r:1.7});
+    pts.forEach(p=> s+='<circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.2" fill="'+this.C.ink+'"/>');
+    s+=this._t(x0-9,y0+4,'0%',{anchor:'end',size:11,s:this.C.grey});
+    s+=this._t(x0-9,yT+8,'100%',{anchor:'end',size:11,s:this.C.grey});
+    for (let i=0;i<v.length;i++) s+=this._t(x0+pw*i/(v.length-1),y0+18,'M'+i,{anchor:'middle',size:11,s:this.C.grey});
+    s+=this._t((x0+x1)/2,yT+28,'CHURN',{anchor:'middle',size:13,s:this.C.red,w:700,mono:false});
+    return s;
+  }
+  cPriced(rand, W, H){
+    const x0=40, y0=H-46, x1=W-30, yT=30, pw=x1-x0, ph=y0-yT, maxV=100;
+    const yv=(val)=>y0-ph*val/maxV;
+    const cats=[{l:'PRICED FOR',v:100,red:false},{l:'DELIVERED',v:55,red:true}];
+    const band=pw/2, bw=band*0.42;
+    let s=this._stroke([[x0,y0],[x1,y0]],rand,{w:2.6,r:1.3});
+    s+=this._p(this.rpath([[x0,yv(100)],[x1,yv(100)]],rand,0.7),{s:'#a9a59b',w:1.8,dash:'6,6'});
+    cats.forEach((c,i)=>{
+      const cx=x0+band*(i+0.5), top=yv(c.v);
+      const rp=[[cx-bw/2,y0],[cx-bw/2,top],[cx+bw/2,top],[cx+bw/2,y0]];
+      s+=this._fill(rp,rand,c.red?'rgba(255,82,71,.20)':'rgba(154,167,176,.22)',1);
+      s+=this._stroke(rp,rand,{s:c.red?this.C.red:this.C.ink,w:2.4,r:1.1});
+      s+=this._t(cx,top-10,c.v,{anchor:'middle',size:13,s:c.red?this.C.red:'#6f6c65',w:700});
+      s+=this._t(cx,y0+20,c.l,{anchor:'middle',size:11,s:'#6f6c65',w:700,mono:false});
+    });
+    if (this.props.showAnnotations ?? true){
+      const cx2=x0+band*1.5, gx=cx2+bw/2+14;
+      s+=this._stroke([[gx,yv(100)],[gx,yv(55)]],rand,{s:this.C.red,w:2,r:0.9});
+      s+=this._head(gx,yv(55),Math.PI/2,10,rand,{s:this.C.red,w:2,r:0.8});
+      s+=this._t(gx+8,(yv(100)+yv(55))/2+4,'THE GAP',{size:11,s:this.C.red,w:700,mono:false});
+    }
+    return s;
+  }
+
+  mark(type, rand, W, H){
+    const cx=W/2, cy=H/2, C=this.C;
+    switch(type){
+      case 'mark-circle': return this._stroke(this._ell(cx,cy,W*0.36,H*0.34,-0.3,Math.PI*2+0.5),rand,{w:3,r:2.2});
+      case 'mark-oval': return this._stroke(this._ell(cx,cy,W*0.42,H*0.28,-0.2,Math.PI*2+0.5),rand,{w:3,r:2.2});
+      case 'mark-arrow-curve-down': { const p=[[W*0.2,H*0.2],[W*0.34,H*0.5],[W*0.64,H*0.72]]; return this._stroke(p,rand,{s:C.red,w:3.2,r:1.7})+this._head(p[2][0],p[2][1],Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]),15,rand,{s:C.red,w:3.2,r:1}); }
+      case 'mark-arrow-curve-up': { const p=[[W*0.2,H*0.8],[W*0.34,H*0.5],[W*0.64,H*0.28]]; return this._stroke(p,rand,{s:C.gdk,w:3.2,r:1.7})+this._head(p[2][0],p[2][1],Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]),15,rand,{s:C.gdk,w:3.2,r:1}); }
+      case 'mark-jab': { const a=[[W*0.22,H*0.26],[W*0.72,H*0.72]]; return this._stroke(a,rand,{s:C.red,w:3.6,r:1.5})+this._head(a[1][0],a[1][1],Math.atan2(a[1][1]-a[0][1],a[1][0]-a[0][0]),17,rand,{s:C.red,w:3.6,r:1}); }
+      case 'mark-underline': return this._stroke([[W*0.14,H*0.48],[W*0.4,H*0.56],[W*0.68,H*0.46],[W*0.86,H*0.56]],rand,{w:3.4,r:2})+this._stroke([[W*0.16,H*0.66],[W*0.5,H*0.6],[W*0.84,H*0.68]],rand,{w:2.6,r:1.8,s:'#6f6c65'});
+      case 'mark-cross': return this._stroke([[W*0.28,H*0.28],[W*0.72,H*0.72]],rand,{s:C.red,w:4.2,r:2})+this._stroke([[W*0.72,H*0.28],[W*0.28,H*0.72]],rand,{s:C.red,w:4.2,r:2});
+      case 'mark-check': return this._stroke([[W*0.24,H*0.54],[W*0.44,H*0.74],[W*0.78,H*0.28]],rand,{s:C.gdk,w:4.6,r:2});
+      case 'mark-bracket': { const x=W*0.5; return this._stroke([[x+16,H*0.16],[x-2,H*0.24],[x+3,H*0.42],[x-16,H*0.5],[x+3,H*0.58],[x-2,H*0.76],[x+16,H*0.84]],rand,{w:3,r:1.5}); }
+      case 'mark-redaction': { const rp=[[W*0.12,H*0.4],[W*0.88,H*0.4],[W*0.88,H*0.6],[W*0.12,H*0.6]]; return this._fill(rp,rand,C.ink,0.9)+this._stroke(rp,rand,{w:2,r:0.9,close:true}); }
+      case 'mark-you-are-here': { const dx=W*0.72, dy=H*0.62; let o='<circle cx="'+dx+'" cy="'+dy+'" r="7" fill="'+C.red+'"/>'; o+=this._stroke([[W*0.16,H*0.24],[W*0.4,H*0.4],[dx-16,dy-10]],rand,{s:C.red,w:3,r:1.5}); o+=this._head(dx-16,dy-10,Math.atan2((dy-10)-H*0.4,(dx-16)-W*0.4),12,rand,{s:C.red,w:3,r:1}); return o; }
+      case 'mark-tri-down': { const p=[[W*0.22,H*0.34],[W*0.78,H*0.34],[W*0.5,H*0.74]]; return this._fill(p,rand,C.red,0.7)+this._stroke(p,rand,{s:C.red,w:1.6,r:0.7,close:true}); }
+      case 'mark-tri-up': { const p=[[W*0.22,H*0.66],[W*0.78,H*0.66],[W*0.5,H*0.26]]; return this._fill(p,rand,C.gdk,0.7)+this._stroke(p,rand,{s:C.gdk,w:1.6,r:0.7,close:true}); }
+      case 'mark-circle-loop': return this._stroke(this._ell(cx,cy,W*0.34,H*0.32,-0.4,Math.PI*2+1.1),rand,{w:3,r:2.2});
+      case 'mark-oval-tall': return this._stroke(this._ell(cx,cy,W*0.26,H*0.4,-0.2,Math.PI*2+0.5),rand,{w:3,r:2.2});
+      case 'mark-circle-2': return this._stroke(this._ell(cx-3,cy,W*0.35,H*0.32,-0.3,Math.PI*2+0.4),rand,{w:2.6,r:2})+this._stroke(this._ell(cx+3,cy+2,W*0.35,H*0.32,-0.2,Math.PI*2+0.5),rand,{w:2.6,r:2});
+      case 'mark-box': return this._stroke([[W*0.16,H*0.24],[W*0.84,H*0.24],[W*0.84,H*0.76],[W*0.16,H*0.76]],rand,{w:3,r:2,close:true});
+      case 'mark-arrow-down': { const a=[[cx,H*0.18],[cx,H*0.78]]; return this._stroke(a,rand,{s:C.red,w:3.4,r:1.4})+this._head(a[1][0],a[1][1],Math.PI/2,16,rand,{s:C.red,w:3.4,r:1}); }
+      case 'mark-arrow-up': { const a=[[cx,H*0.82],[cx,H*0.22]]; return this._stroke(a,rand,{s:C.gdk,w:3.4,r:1.4})+this._head(a[1][0],a[1][1],-Math.PI/2,16,rand,{s:C.gdk,w:3.4,r:1}); }
+      case 'mark-arrow-left': { const a=[[W*0.8,cy],[W*0.2,cy]]; return this._stroke(a,rand,{s:C.red,w:3.4,r:1.4})+this._head(a[1][0],a[1][1],Math.PI,16,rand,{s:C.red,w:3.4,r:1}); }
+      case 'mark-arrow-right': { const a=[[W*0.2,cy],[W*0.8,cy]]; return this._stroke(a,rand,{w:3.4,r:1.4})+this._head(a[1][0],a[1][1],0,16,rand,{w:3.4,r:1}); }
+      case 'mark-arrow-curve-left': { const p=[[W*0.8,H*0.24],[W*0.5,H*0.4],[W*0.26,H*0.66]]; return this._stroke(p,rand,{s:C.red,w:3.2,r:1.7})+this._head(p[2][0],p[2][1],Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]),15,rand,{s:C.red,w:3.2,r:1}); }
+      case 'mark-arrow-curve-right': { const p=[[W*0.2,H*0.24],[W*0.5,H*0.4],[W*0.74,H*0.66]]; return this._stroke(p,rand,{w:3.2,r:1.7})+this._head(p[2][0],p[2][1],Math.atan2(p[2][1]-p[1][1],p[2][0]-p[1][0]),15,rand,{w:3.2,r:1}); }
+      case 'mark-arrow-swoop': { const p=[[W*0.14,H*0.32],[W*0.4,H*0.62],[W*0.58,H*0.34],[W*0.84,H*0.64]]; return this._stroke(p,rand,{s:C.red,w:3.2,r:1.6})+this._head(p[3][0],p[3][1],Math.atan2(p[3][1]-p[2][1],p[3][0]-p[2][0]),15,rand,{s:C.red,w:3.2,r:1}); }
+      case 'mark-arrow-zigzag': { const p=[[W*0.2,H*0.28],[W*0.42,H*0.46],[W*0.3,H*0.58],[W*0.56,H*0.74]]; return this._stroke(p,rand,{s:C.red,w:3,r:1.4})+this._head(p[3][0],p[3][1],Math.atan2(p[3][1]-p[2][1],p[3][0]-p[2][0]),14,rand,{s:C.red,w:3,r:1}); }
+      case 'mark-double-arrow': { const a=[[W*0.2,cy],[W*0.8,cy]]; return this._stroke(a,rand,{w:3,r:1.2})+this._head(a[1][0],a[1][1],0,14,rand,{w:3,r:1})+this._head(a[0][0],a[0][1],Math.PI,14,rand,{w:3,r:1}); }
+      case 'mark-underline-straight': return this._stroke([[W*0.14,H*0.55],[W*0.86,H*0.57]],rand,{w:3.4,r:1.2});
+      case 'mark-underline-double': return this._stroke([[W*0.14,H*0.5],[W*0.86,H*0.52]],rand,{w:3,r:1.2})+this._stroke([[W*0.16,H*0.64],[W*0.84,H*0.66]],rand,{w:2.4,r:1});
+      case 'mark-underline-zigzag': return this._stroke([[W*0.14,H*0.5],[W*0.3,H*0.62],[W*0.46,H*0.5],[W*0.62,H*0.62],[W*0.78,H*0.5],[W*0.88,H*0.58]],rand,{w:3,r:1.2});
+      case 'mark-strike': return this._stroke([[W*0.12,cy],[W*0.88,cy]],rand,{s:C.red,w:4,r:1.6});
+      case 'mark-scribble-out': { let o=''; for(let i=0;i<5;i++) o+=this._stroke([[W*(0.16+i*0.02),H*(0.3+(i%2)*0.03)],[W*(0.82-i*0.01),H*(0.72-(i%2)*0.03)]],rand,{s:C.red,w:2.2,r:2}); return o; }
+      case 'mark-check-2': return this._stroke([[W*0.22,H*0.52],[W*0.44,H*0.76],[W*0.8,H*0.24]],rand,{s:C.gdk,w:5.5,r:2});
+      case 'mark-star': return this._stroke(this._star(cx,cy,W*0.36,W*0.15,5),rand,{w:2.8,r:1.3,close:true});
+      case 'mark-sparkle': return this._stroke(this._star(cx,cy,W*0.34,W*0.08,4),rand,{s:C.red,w:2.6,r:1,close:true});
+      case 'mark-asterisk': { let o=''; for(let k=0;k<3;k++){ const a=k*Math.PI/3; o+=this._stroke([[cx-W*0.28*Math.cos(a),cy-W*0.28*Math.sin(a)],[cx+W*0.28*Math.cos(a),cy+W*0.28*Math.sin(a)]],rand,{w:3,r:1.2}); } return o; }
+      case 'mark-exclaim': return this._stroke([[cx,H*0.2],[cx,H*0.6]],rand,{s:C.red,w:5,r:1.2})+'<circle cx="'+cx+'" cy="'+(H*0.76)+'" r="4.5" fill="'+C.red+'"/>';
+      case 'mark-question': return this._stroke([[W*0.36,H*0.34],[W*0.5,H*0.2],[W*0.64,H*0.34],[W*0.5,H*0.48],[W*0.5,H*0.6]],rand,{w:4,r:1.4})+'<circle cx="'+(W*0.5)+'" cy="'+(H*0.75)+'" r="4.5" fill="'+C.ink+'"/>';
+      case 'mark-brace-both': return this._stroke([[W*0.34,H*0.16],[W*0.2,H*0.24],[W*0.24,H*0.42],[W*0.12,H*0.5],[W*0.24,H*0.58],[W*0.2,H*0.76],[W*0.34,H*0.84]],rand,{w:2.6,r:1.2})+this._stroke([[W*0.66,H*0.16],[W*0.8,H*0.24],[W*0.76,H*0.42],[W*0.88,H*0.5],[W*0.76,H*0.58],[W*0.8,H*0.76],[W*0.66,H*0.84]],rand,{w:2.6,r:1.2});
+      case 'mark-highlight': return this._fill([[W*0.1,H*0.4],[W*0.9,H*0.36],[W*0.9,H*0.64],[W*0.1,H*0.6]],rand,'rgba(255,82,71,.22)',1.4);
+      case 'underline-red': return this._stroke([[6,H*0.4],[W*0.34,H*0.62],[W*0.7,H*0.44],[W-6,H*0.58]],rand,{s:C.red,w:5,r:2.3});
+      default: return '';
+    }
+  }
+
+  _star(cx,cy,rO,rI,n){ const p=[]; for(let i=0;i<=2*n;i++){ const r=i%2?rI:rO, a=-Math.PI/2+Math.PI*i/n; p.push([cx+r*Math.cos(a),cy+r*Math.sin(a)]); } return p; }
+  cCandles(rand,W,H){
+    const x0=52,y0=H-42,x1=W-22,yT=26,pw=x1-x0,ph=y0-yT,n=14,band=pw/n,bw=band*0.44;
+    let s=this.cAxes(rand,W,H), price=0.5;
+    for(let i=0;i<n;i++){
+      const o=price, c=Math.max(0.1,Math.min(0.9,o+(rand()-0.47)*0.17));
+      const hi=Math.min(0.98,Math.max(o,c)+rand()*0.06), lo=Math.max(0.02,Math.min(o,c)-rand()*0.06);
+      const cx=x0+band*(i+0.5), up=c>=o, col=up?this.C.gdk:this.C.red;
+      const yO=y0-ph*o,yC=y0-ph*c,yH=y0-ph*hi,yL=y0-ph*lo;
+      s+=this._stroke([[cx,yH],[cx,yL]],rand,{s:col,w:1.8,r:0.7});
+      const rp=[[cx-bw/2,Math.max(yO,yC)],[cx-bw/2,Math.min(yO,yC)],[cx+bw/2,Math.min(yO,yC)],[cx+bw/2,Math.max(yO,yC)]];
+      s+=this._fill(rp,rand,up?'rgba(47,213,118,.28)':'rgba(255,82,71,.24)',0.7)+this._stroke(rp,rand,{s:col,w:1.8,r:0.7});
+      price=c;
+    }
+    return s;
+  }
+  cArea(rand,W,H){
+    const x0=52,y0=H-42,x1=W-22,yT=26,pw=x1-x0,ph=y0-yT;
+    const v=[.35,.4,.5,.46,.6,.7,.66,.78,.7,.6,.52,.44];
+    const pts=v.map((val,i)=>[x0+pw*i/(v.length-1),y0-ph*val]);
+    let s=this.cAxes(rand,W,H);
+    s+=this._fill(pts.concat([[pts[pts.length-1][0],y0],[pts[0][0],y0]]),rand,'rgba(154,167,176,.22)',0.7);
+    s+=this._stroke(pts,rand,{w:3,r:1.7});
+    return s;
+  }
+  cStacked(rand,W,H){
+    const x0=52,y0=H-42,x1=W-22,yT=26,pw=x1-x0,ph=y0-yT;
+    const data=[[.28,.16],[.32,.2],[.3,.26],[.36,.3],[.34,.14]],n=data.length,band=pw/n,bw=band*0.5;
+    let s=this.cAxes(rand,W,H);
+    for(let i=0;i<n;i++){
+      const cx=x0+band*(i+0.5); let base=y0;
+      const segs=[{h:data[i][0],c:'rgba(154,167,176,.30)',st:this.C.ink},{h:data[i][1],c:i===n-1?'rgba(255,82,71,.22)':'rgba(219,212,200,.85)',st:i===n-1?this.C.red:this.C.ink}];
+      for(const sg of segs){ const top=base-ph*sg.h, rp=[[cx-bw/2,base],[cx-bw/2,top],[cx+bw/2,top],[cx+bw/2,base]]; s+=this._fill(rp,rand,sg.c,1)+this._stroke(rp,rand,{s:sg.st,w:2,r:1}); base=top; }
+    }
+    return s;
+  }
+  cDoubleTop(rand,W,H){
+    const x0=52,y0=H-42,x1=W-22,yT=26,pw=x1-x0,ph=y0-yT;
+    const v=[.3,.5,.78,.54,.8,.5,.26], pts=v.map((val,i)=>[x0+pw*i/(v.length-1),y0-ph*val]);
+    let s=this.cAxes(rand,W,H); s+=this._stroke(pts,rand,{w:3,r:1.8});
+    const ny=y0-ph*0.5; s+=this._p(this.rpath([[x0,ny],[x1,ny]],rand,0.8),{s:this.C.red,w:2,dash:'6,6'});
+    if(this.props.showAnnotations ?? true){
+      s+=this._stroke(this._ell(pts[2][0],pts[2][1]-2,24,18,-0.3,Math.PI*2+0.4),rand,{s:this.C.red,w:2.2,r:1.5});
+      s+=this._stroke(this._ell(pts[4][0],pts[4][1]-2,24,18,-0.3,Math.PI*2+0.4),rand,{s:this.C.red,w:2.2,r:1.5});
+      s+=this._stroke([[pts[6][0],pts[6][1]-26],[pts[6][0],pts[6][1]-6]],rand,{s:this.C.red,w:2.6,r:1})+this._head(pts[6][0],pts[6][1]-6,Math.PI/2,12,rand,{s:this.C.red,w:2.6,r:1});
+    }
+    return s;
+  }
+  cHns(rand,W,H){
+    const x0=52,y0=H-42,x1=W-22,yT=26,pw=x1-x0,ph=y0-yT;
+    const v=[.28,.54,.42,.76,.42,.52,.26], pts=v.map((val,i)=>[x0+pw*i/(v.length-1),y0-ph*val]);
+    let s=this.cAxes(rand,W,H); s+=this._stroke(pts,rand,{w:3,r:1.8});
+    const ny=y0-ph*0.42; s+=this._p(this.rpath([[x0,ny],[x1,ny]],rand,0.8),{s:this.C.red,w:2,dash:'6,6'});
+    if(this.props.showAnnotations ?? true) s+=this._t((x0+x1)/2,yT+22,'NECKLINE',{anchor:'middle',size:11,s:this.C.red,w:700,mono:false});
+    return s;
+  }
+  cGauge(rand,W,H){
+    const cx=W/2,cy=H-56,R=Math.min(W*0.36,H*0.52);
+    let s=this._stroke(this._ell(cx,cy,R,R,Math.PI,Math.PI*2,26),rand,{w:3,r:1.3});
+    for(let i=0;i<=5;i++){ const a=Math.PI+Math.PI*i/5; s+=this._stroke([[cx+(R-2)*Math.cos(a),cy+(R-2)*Math.sin(a)],[cx+(R-14)*Math.cos(a),cy+(R-14)*Math.sin(a)]],rand,{w:2,r:0.5}); }
+    const na=Math.PI*1.82,nx=cx+(R-20)*Math.cos(na),ny=cy+(R-20)*Math.sin(na);
+    s+=this._stroke([[cx,cy],[nx,ny]],rand,{s:this.C.red,w:3.4,r:1})+'<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+this.C.ink+'"/>';
+    s+=this._t(cx-R+4,cy+18,'FEAR',{size:11,s:'#6f6c65',w:700,mono:false})+this._t(cx+R-4,cy+18,'GREED',{anchor:'end',size:11,s:this.C.red,w:700,mono:false});
+    return s;
+  }
+  cStaircase(rand,W,H){
+    const x0=W*0.16,y0=H*0.82,steps=4,sw=(W*0.66)/steps,sh=(H*0.56)/steps;
+    let pts=[[x0,y0]],x=x0,y=y0;
+    for(let i=0;i<steps;i++){ y-=sh; pts.push([x,y]); x+=sw; pts.push([x,y]); }
+    let s=this._stroke(pts,rand,{w:3,r:1.5});
+    s+=this._stroke([[x0+6,y0-4],[x-8,y+sh*0.2]],rand,{s:this.C.gdk,w:2.4,r:1.2,dash:'2,7'});
+    s+=this._head(x-8,y+sh*0.2,Math.atan2((y+sh*0.2)-(y0-4),(x-8)-(x0+6)),14,rand,{s:this.C.gdk,w:2.4,r:1});
+    return s;
+  }
+  cFunnel(rand,W,H){
+    const cx=W/2,top=H*0.18,bw=W*0.6,nw=W*0.16,mid=H*0.6,stemH=H*0.2;
+    let s=this._stroke([[cx-bw/2,top],[cx+bw/2,top],[cx+nw/2,mid],[cx-nw/2,mid]],rand,{w:3,r:1.5,close:true});
+    s+=this._p(this.rpath([[cx-bw*0.3,top+(mid-top)*0.34],[cx+bw*0.3,top+(mid-top)*0.34]],rand,1),{s:'#a9a59b',w:1.6,dash:'5,5'});
+    s+=this._stroke([[cx-nw/2,mid],[cx-nw/2,mid+stemH]],rand,{w:2.6,r:0.9})+this._stroke([[cx+nw/2,mid],[cx+nw/2,mid+stemH]],rand,{w:2.6,r:0.9});
+    s+=this._stroke([[cx,mid+stemH],[cx,mid+stemH+5]],rand,{s:this.C.red,w:2,r:0.5})+'<circle cx="'+cx+'" cy="'+(mid+stemH+11)+'" r="6" fill="'+this.C.red+'"/>';
+    return s;
+  }
+  cScale(rand,W,H){
+    const cx=W/2,baseY=H*0.8,topY=H*0.24,tilt=6,bx=W*0.3,lY=topY+tilt,rY=topY-tilt;
+    let s=this._stroke([[cx,baseY],[cx,topY+8]],rand,{w:3,r:1.1});
+    s+=this._stroke([[cx-16,baseY],[cx+16,baseY],[cx,baseY-22]],rand,{w:2.4,r:0.9,close:true});
+    s+=this._stroke([[cx-bx,lY],[cx+bx,rY]],rand,{w:3,r:1.1});
+    s+=this._stroke(this._ell(cx-bx,lY+34,26,10,0,Math.PI,12),rand,{w:2.2,r:0.8})+this._stroke([[cx-bx,lY],[cx-bx,lY+24]],rand,{w:1.6,r:0.5});
+    s+=this._stroke(this._ell(cx+bx,rY+30,26,10,0,Math.PI,12),rand,{s:this.C.red,w:2.2,r:0.8})+this._stroke([[cx+bx,rY],[cx+bx,rY+20]],rand,{w:1.6,r:0.5});
+    return s;
+  }
+  cHouse(rand,W,H){
+    const cx=W/2,baseY=H*0.82,cardW=W*0.16,cardH=H*0.2,rows=3;
+    let s='';
+    for(let r=0;r<rows;r++){
+      const count=rows-r,y=baseY-r*(cardH*0.86),spread=cardW*1.05,startX=cx-(count-1)*spread/2;
+      for(let i=0;i<count;i++){
+        const x=startX+i*spread,fall=(r===rows-1),col=fall?this.C.red:this.C.ink;
+        s+=this._stroke([[x-cardW/2,y],[x,y-cardH]],rand,{s:col,w:2.4,r:1.1})+this._stroke([[x+cardW/2,y],[x,y-cardH]],rand,{s:col,w:2.4,r:1.1});
+        if(r<rows-1) s+=this._stroke([[x-cardW*0.4,y-cardH],[x+cardW*0.4,y-cardH]],rand,{w:2,r:0.7});
+      }
+    }
+    if(this.props.showAnnotations ?? true){ const ty=baseY-(rows-1)*(cardH*0.86)-cardH; s+=this._stroke([[cx+14,ty-14],[cx+40,ty-2]],rand,{s:this.C.red,w:2.4,r:1})+this._head(cx+40,ty-2,Math.atan2(12,26),11,rand,{s:this.C.red,w:2.4,r:1}); }
+    return s;
+  }
+  drawInk(el){
+    if (el.getAttribute('data-drawn')) return;
+    const type = el.dataset.ink;
+    const W = +el.getAttribute('width'), H = +el.getAttribute('height');
+    const rand = this.prng(((+el.dataset.seed || 1) * 1973) >>> 0);
+    let out = '';
+    if (type === 'frame') out = this._stroke([[6,6],[W-6,6],[W-6,H-6],[6,H-6]],rand,{w:2.2,r:1.1,close:true});
+    else if (type === 'axes') out = this.cAxes(rand,W,H);
+    else if (type === 'chart-line') out = this.cLine(rand,W,H);
+    else if (type === 'chart-bar') out = this.cBar(rand,W,H);
+    else if (type === 'chart-pie') out = this.cPie(rand,W,H);
+    else if (type === 'chart-waterfall') out = this.cWaterfall(rand,W,H);
+    else if (type === 'chart-retention') out = this.cRetention(rand,W,H);
+    else if (type === 'chart-priced') out = this.cPriced(rand,W,H);
+    else if (type === 'chart-candles') out = this.cCandles(rand,W,H);
+    else if (type === 'chart-area') out = this.cArea(rand,W,H);
+    else if (type === 'chart-stacked') out = this.cStacked(rand,W,H);
+    else if (type === 'chart-double-top') out = this.cDoubleTop(rand,W,H);
+    else if (type === 'chart-hns') out = this.cHns(rand,W,H);
+    else if (type === 'chart-gauge') out = this.cGauge(rand,W,H);
+    else if (type === 'concept-staircase') out = this.cStaircase(rand,W,H);
+    else if (type === 'concept-funnel') out = this.cFunnel(rand,W,H);
+    else if (type === 'concept-scale') out = this.cScale(rand,W,H);
+    else if (type === 'concept-house') out = this.cHouse(rand,W,H);
+    else out = this.mark(type,rand,W,H);
+    el.innerHTML = out;
+    el.setAttribute('data-drawn','1');
+  }
+  drawAll(){
+    const root = this.rootRef.current;
+    if (!root) return;
+    root.querySelectorAll('[data-ink]').forEach(el => this.drawInk(el));
+  }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if (prev.roughness !== this.props.roughness || prev.showAnnotations !== this.props.showAnnotations){
+      const root = this.rootRef.current;
+      if (root) root.querySelectorAll('[data-ink]').forEach(el => { el.removeAttribute('data-drawn'); el.innerHTML=''; });
+    }
+    this.drawAll();
+  }
+  renderVals(){
+    const n = Math.max(2, Math.round(this.props.variantCount ?? 12));
+    const mk = (type, label, w, h) => {
+      const base = (type.length * 97) % 500 + 40;
+      return { type, label, w, h, viewBox: '0 0 ' + w + ' ' + h, seeds: Array.from({length:n}, (_,i)=> base + i*13 + 5) };
+    };
+    return {
+      rootRef: this.rootRef,
+      variantSets: [
+        mk('mark-circle', 'scrawl-circle', 150, 120),
+        mk('mark-arrow-curve-down', 'arrow-curved-down', 150, 120),
+        mk('mark-cross', 'cross-out-nope', 150, 120),
+        mk('mark-check', 'check-yes', 150, 120),
+        mk('mark-underline', 'squiggle-underline', 150, 120),
+        mk('mark-star', 'star', 150, 120),
+        mk('chart-line', 'pump-dump line', 300, 190),
+        mk('chart-candles', 'candlesticks', 300, 190)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
