@@ -58,6 +58,12 @@ class TagType(str, Enum):
     ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
     DOODLE = "DOODLE"            # crude hand-drawn overlay (owned, top layer)
     SCRIBBLE = "SCRIBBLE"        # drawn annotation on a number/point (top layer)
+    # design-kit families, resolved by name through pipeline.kit
+    TERM = "TERM"                # the "teach one framework" definition card
+    BIGNUM = "BIGNUM"            # the single-stat card
+    TABLE = "TABLE"              # a strict readable table (P&L, comps, …)
+    PROP = "PROP"                # a generic object cutaway (warehouse, servers…)
+    ALERT = "ALERT"              # mid-frame lower-third interjection (overlay)
 
 
 # tag types that claim a visual SEGMENT on the LONG timeline (the base
@@ -66,11 +72,22 @@ class TagType(str, Enum):
 VISUAL_TAG_TYPES = frozenset({
     TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
     TagType.CHART, TagType.SHOW_FILING, TagType.SCREENGRAB, TagType.ASSET,
+    TagType.TERM, TagType.BIGNUM, TagType.TABLE, TagType.PROP,
 })
 
 # overlay tag types — composited over the current frame, not a segment.
 # These are the only tags allowed inline in a SHORT audio_script.
-OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE})
+OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
+
+# Kit families the design-kit tags resolve against, and how long each needs
+# on screen. A term card and a table are read, not glanced at.
+KIT_TAG_FAMILIES = {
+    TagType.TERM: "type/callouts",
+    TagType.BIGNUM: "type/callouts",
+    TagType.TABLE: "type/tables",
+    TagType.PROP: "props/objects",
+    TagType.ALERT: "type/alerts",
+}
 
 
 class ScribbleStyle(str, Enum):
@@ -350,10 +367,15 @@ class CueKind(str, Enum):
     FILING = "filing"
     SCREENGRAB = "screengrab"
     ASSET = "asset"
+    TERM = "term"                # the framework/definition card
+    BIGNUM = "bignum"            # the single-stat card
+    TABLE = "table"              # a strict readable table
+    PROP = "prop"                # a generic object cutaway
     SOUND = "sound"
     # hand-drawn overlays (both formats) — composited on top, no segment
     DOODLE = "doodle"
     SCRIBBLE = "scribble"
+    ALERT = "alert"              # lower-third interjection over the frame
 
 
 class Cue(BaseModel):

@@ -314,15 +314,25 @@ _TAG_TO_KIND = {
     TagType.ASSET: CueKind.ASSET,
     TagType.DOODLE: CueKind.DOODLE,
     TagType.SCRIBBLE: CueKind.SCRIBBLE,
+    TagType.TERM: CueKind.TERM,
+    TagType.BIGNUM: CueKind.BIGNUM,
+    TagType.TABLE: CueKind.TABLE,
+    TagType.PROP: CueKind.PROP,
+    TagType.ALERT: CueKind.ALERT,
 }
 
 # cue kinds that claim a visual segment on the LONG timeline (the base
 # frame). DOODLE/SCRIBBLE are overlays; SOUND is audio — none claim a cut.
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
-                    CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET)
+                    CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET,
+                    CueKind.TERM, CueKind.BIGNUM, CueKind.TABLE, CueKind.PROP)
 
 # how long a hand-drawn overlay stays on screen before it lifts off
 DOODLE_HOLD_S = 2.0
+
+# a lower-third alert holds 3-4s per the kit's own note — long enough to
+# read the correction, short enough not to sit on the shot
+ALERT_HOLD_S = 3.5
 
 
 def build_long_timeline(
@@ -339,10 +349,11 @@ def build_long_timeline(
         payload = {"order": idx, "value": e.payload, "tag": e.type.value}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
-        if kind is CueKind.SCRIBBLE:
+        if kind in (CueKind.SCRIBBLE, CueKind.DOODLE):
             payload["hold"] = DOODLE_HOLD_S
-        elif kind is CueKind.DOODLE:
-            payload["hold"] = DOODLE_HOLD_S
+        elif kind is CueKind.ALERT:
+            # a lower-third interjection: long enough to read, never longer
+            payload["hold"] = ALERT_HOLD_S
         cues.append(Cue(t=t, kind=kind, payload=payload))
     cues.sort(key=lambda c: (c.t, c.payload.get("order", 0)))
     return cues
@@ -379,17 +390,24 @@ DEFAULT_HOLDS = {
     CueKind.SCREENGRAB: 6.0,
     CueKind.ASSET: 8.0,
     CueKind.MEME: 3.0,
+    # the design-kit cards: a term definition and a table are READ
+    CueKind.TERM: 7.0,
+    CueKind.BIGNUM: 6.0,
+    CueKind.TABLE: 8.0,
+    CueKind.PROP: 5.0,
 }
 
 # Kinds carrying data a viewer has to READ rather than glance at. These never
 # cut early: a later visual is pushed back rather than truncating one of
 # these, and the voice-over simply keeps running underneath.
-READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET)
+READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET,
+                  CueKind.TERM, CueKind.BIGNUM, CueKind.TABLE)
 MIN_READABLE_S = 5.0
 
 # Designed panels sit BESIDE Dennis (the two-shot); real photographs,
 # footage, filings and memes take the whole frame raw.
-TWO_SHOT_KINDS = (CueKind.CHART, CueKind.ASSET)
+TWO_SHOT_KINDS = (CueKind.CHART, CueKind.ASSET, CueKind.TERM, CueKind.BIGNUM,
+                  CueKind.TABLE, CueKind.PROP)
 
 # Dennis bookends every chapter: this much host on each side of a chapter
 # boundary is reserved, so a chapter always opens and closes on his face.

@@ -123,6 +123,11 @@ Then write the script using that hook as its first line.
 [DOODLE: key]           EXTRA punctuation only — a doodle from the catalog, over the current media. Never the main visual of a cut.
 [SCRIBBLE: circle|arrow|underline -> target]  a drawn mark + target callout over whatever media is on screen
 [ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
+[TERM: key]             the owned "word of the day" card — use it for the ONE framework you teach (roic · owner-earnings · fcf-yield · reverse-dcf · …)
+[BIGNUM: key]           the owned single-stat card, for the one number a chapter turns on
+[TABLE: kind]           a strict readable table from the owned kit (pl · comps · segments · maturities). 6 rows, 4 columns — held ~8s, so write narration over it
+[PROP: key]             a generic object cutaway when no real photo fits (warehouse · servers · van · laptop · safe · scales · calendar · …)
+[ALERT: kind]           a lower-third interjection over whatever is on screen (correction · fact-check · definition · disclosure · developing · flag). Holds 3–4s, never longer
 
 ## DIRECTION RULES — DENNIS IS ON SCREEN; EVIDENCE IS THE CUTAWAY
 This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host** — the renderer puts him on screen and lip-syncs him to your words. You are not filling dead air; you are choosing the few moments worth leaving his face for.

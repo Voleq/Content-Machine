@@ -410,7 +410,7 @@ def render_short(
     for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
         trap_img = text_panel(settings, c.payload["text"], width=px(980),
                               font_name=SHANTELL, font_size=px(46), accent=RED,
-                              bg=(12, 12, 14, 240))
+                              bg=(250, 249, 246, 242))
         trap_path = rdir / "cheap_or_trap.png"
         trap_img.save(trap_path)
         layers.append(OverlayLayer(
@@ -423,7 +423,7 @@ def render_short(
     payoff_layout = _layout(PAYOFF_LAYOUTS, conclusion.payload.get("variant"))
     conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
                           font_name=SHANTELL, font_size=px(payoff_layout["size"]),
-                          accent=payoff_layout["accent"], bg=(12, 12, 14, 245))
+                          accent=payoff_layout["accent"], bg=(250, 249, 246, 246))
     conc_path = rdir / "conclusion.png"
     conc_img.save(conc_path)
     layers.append(OverlayLayer(
@@ -446,7 +446,7 @@ def render_short(
 
     # -------------------------------------------------------- disclaimer
     disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(30),
-                           fill=(235, 235, 235, 210), stroke_width=2)
+                           fill=(143, 140, 131, 235), stroke_width=0)
     disc_path = rdir / "disclaimer.png"
     disc_img.save(disc_path)
     layers.append(OverlayLayer(

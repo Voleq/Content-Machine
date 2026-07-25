@@ -29,15 +29,15 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from config import Settings
 
-# dark-surface palette — the Dennis kit tokens (validated: contrast ≥ 3:1)
-SURFACE = (19, 19, 25)        # #131319 card
-FRAME = (10, 10, 11)          # #0a0a0b around the card
-INK = (242, 242, 239)         # #f2f2ef primary text
-MUTED = (107, 107, 112)       # #6b6b70 secondary text
-GRID = (30, 30, 36)           # #1e1e24 recessive gridlines
-UP = (47, 213, 118)           # #2fd576 signal green
-DOWN = (255, 82, 71)          # #ff5247 marker red
-ACCENT = (47, 213, 118)       # single-hue magnitude (brand green)
+# light-surface palette — the Dennis kit tokens (validated: contrast ≥ 3:1)
+SURFACE = (250, 249, 246)     # #faf9f6 card
+FRAME = (242, 242, 239)       # #f2f2ef paper around the card
+INK = (35, 35, 38)            # #232326 primary text
+MUTED = (143, 140, 131)       # #8f8c83 secondary text
+GRID = (222, 219, 209)        # #dedbd1 recessive gridlines
+UP = (47, 213, 118)           # #2fd576 UP ONLY
+DOWN = (255, 82, 71)          # #ff5247 down / emphasis
+ACCENT = (255, 82, 71)        # single-hue magnitude (the light kit leads red)
 
 # brand fonts (reproduced from the .dc.html kits)
 _SANS = "SpaceGrotesk-Bold.ttf"      # numbers / UI sans

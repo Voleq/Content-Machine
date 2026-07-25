@@ -39,24 +39,30 @@ MONO = "SpaceMono-Regular.ttf"
 MONO_BOLD = "SpaceMono-Bold.ttf"
 DISPLAY_BOLD = GROTESK_BOLD          # UI display sans (back-compat alias)
 
-# Palette — the exact tokens from the Dennis visual-identity kits.
-BG = (10, 10, 11)          # #0a0a0b  page
-BG_CARD = (12, 12, 14)     # #0c0c0e  the tall beat card
-BG_MARK = (5, 5, 6)        # #050506  marker chart black
-CARD = (19, 19, 25)        # #131319  inner card
-CARD2 = (25, 25, 32)       # #191920
-CARD_LINE = (35, 35, 41)   # #232329  inner card border
-BORDER = (35, 35, 38)      # #232326  card border
-BORDER2 = (42, 42, 52)     # #2a2a34  chip border
-INK = (242, 242, 239)      # #f2f2ef  text
-MUTED = (107, 107, 112)    # #6b6b70  muted text
-MUTED2 = (201, 201, 204)   # #c9c9cc  secondary text
-FAINT = (74, 74, 79)       # #4a4a4f  faintest label
-GREEN = (47, 213, 118)     # #2fd576  up / signal green
-RED = (255, 82, 71)        # #ff5247  down / marker red
-GRID = (30, 30, 36)        # #1e1e24  chart gridlines
-ACCENT = GREEN             # the brand accent (the kit uses no gold)
-GOLD = GREEN               # back-compat alias — accent is the signal green
+# Palette — the LIGHT kit. Dennis is drawn in dark ink on paper, and the
+# names below keep their meaning through the swap: BG is whatever the page
+# is, INK is whatever text is drawn in. Only the values inverted, so every
+# card, chart and caption in this module followed without touching them.
+#
+# Red carries down-moves and emphasis; green is UP ONLY — it is the one
+# colour the kit refuses to use decoratively.
+BG = (242, 242, 239)       # #f2f2ef  paper
+BG_CARD = (250, 249, 246)  # #faf9f6  the tall beat card
+BG_MARK = (242, 242, 239)  # #f2f2ef  marker chart paper
+CARD = (250, 249, 246)     # #faf9f6  inner card
+CARD2 = (238, 236, 229)    # #eeece5
+CARD_LINE = (226, 223, 213)  # #e2dfd5  inner card border
+BORDER = (207, 204, 194)   # #cfccc2  card border
+BORDER2 = (211, 207, 196)  # #d3cfc4  chip border
+INK = (35, 35, 38)         # #232326  text
+MUTED = (143, 140, 131)    # #8f8c83  muted text
+MUTED2 = (74, 71, 63)      # #4a473f  secondary text
+FAINT = (179, 176, 166)    # #b3b0a6  faintest label
+GREEN = (47, 213, 118)     # #2fd576  UP ONLY
+RED = (255, 82, 71)        # #ff5247  down / emphasis
+GRID = (222, 219, 209)     # #dedbd1  chart gridlines
+ACCENT = RED               # the light kit leads with red, not green
+GOLD = RED                 # back-compat alias
 PANEL = CARD               # back-compat alias
 PANEL_LINE = CARD_LINE     # back-compat alias
 
@@ -88,7 +94,7 @@ def text_panel(
     width: int,
     font_name: str = DISPLAY_BOLD,
     font_size: int = 64,
-    fg=(255, 255, 255, 255),
+    fg=(*INK, 255),
     bg=(*PANEL, 235),
     accent=None,
     pad: int = 36,
@@ -126,9 +132,9 @@ def simple_text(
     *,
     font_name: str = MONO_BOLD,
     font_size: int = 44,
-    fill=(255, 255, 255, 255),
+    fill=(*INK, 255),
     stroke_width: int = 0,
-    stroke_fill=(0, 0, 0, 255),
+    stroke_fill=(*BG, 255),
 ) -> Image.Image:
     font = load_font(settings, font_name, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
@@ -156,12 +162,10 @@ def brand_bug(settings: Settings, opener: str, *, width: int,
     img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     # wordmark, with the signature red terminal dot
-    d.text(((width - nw) / 2 - 6, 0), name, font=name_font, fill=(*INK, 255),
-           stroke_width=2, stroke_fill=(0, 0, 0, 200))
-    d.text(((width - nw) / 2 - 6 + nw, 0), ".", font=name_font, fill=(*RED, 255),
-           stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    d.text(((width - nw) / 2 - 6, 0), name, font=name_font, fill=(*INK, 255))
+    d.text(((width - nw) / 2 - 6 + nw, 0), ".", font=name_font, fill=(*RED, 255))
     d.text(((width - lw) / 2, name_font.size + 12), opener, font=line_font,
-           fill=(*MUTED, 235), stroke_width=2, stroke_fill=(0, 0, 0, 200))
+           fill=(*MUTED, 255))
     return img
 
 
@@ -176,7 +180,7 @@ def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40) -> Imag
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([0, 0, w - 1, h - 1], radius=int(h * 0.22), fill=(*GREEN, 255))
-    d.text((padx, pady - 2), label, font=font, fill=(10, 10, 11, 255))
+    d.text((padx, pady - 2), label, font=font, fill=(*INK, 255))
     return img
 
 
@@ -403,10 +407,12 @@ def long_backdrop(
     W, H = width, height
     fam = variant % LONG_BACKDROP_FAMILIES
     rng = random.Random(f"{seed}|{variant}")
-    accent = RED if rng.random() < 0.4 else GREEN
-    # lifted card tones so a designed backdrop clearly reads as a card, never
-    # as a bare black frame
-    LIFT_HI, LIFT_MID, LIFT_LO = (40, 42, 56), (28, 29, 40), (20, 20, 28)
+    # The light kit leads with red; green is reserved for up-moves, so a
+    # decorative backdrop never uses it.
+    accent = RED
+    # Paper tones, close together — this is the room Dennis stands in, and it
+    # must stay quiet enough for dark ink to read on top of it.
+    LIFT_HI, LIFT_MID, LIFT_LO = (250, 249, 246), (242, 242, 239), (233, 231, 225)
     img = Image.new("RGB", (W, H), LIFT_MID)
     d = ImageDraw.Draw(img, "RGBA")
 
@@ -440,7 +446,7 @@ def long_backdrop(
             tw = probe.textlength(f"${ticker}", font=wf)
             wx = rng.choice([int(W * 0.06), (W - tw) / 2, W - tw - int(W * 0.06)])
             wy = rng.choice([int(H * 0.16), (H - wf.size) / 2, int(H * 0.62)])
-            od.text((wx, wy), f"${ticker}", font=wf, fill=(74, 76, 92, 60))
+            od.text((wx, wy), f"${ticker}", font=wf, fill=(*FAINT, 90))
         hy = rng.choice([0.2, 0.5, 0.82])
         od.line([(0, int(H * hy)), (W, int(H * hy))], fill=(*accent, 120),
                 width=max(int(H * 0.008), 3))
@@ -456,7 +462,7 @@ def long_backdrop(
         y0, y1 = int(H * 0.26), int(H * 0.8)
         for k in range(4):
             gy = y0 + (y1 - y0) * k / 3
-            d.line([(x0, gy), (x1, gy)], fill=(56, 58, 72, 255), width=1)
+            d.line([(x0, gy), (x1, gy)], fill=(*GRID, 255), width=1)
         n = 10
         ys = [rng.uniform(y0, y1) for _ in range(n)]
         pts = [(x0 + (x1 - x0) * i / (n - 1), ys[i]) for i in range(n)]
@@ -477,7 +483,7 @@ def long_backdrop(
         gd = ImageDraw.Draw(img)
         step = max(H // 14, 44)
         for x in range(0, W, step):
-            gd.line([x, 0, x, H], fill=(48, 50, 64), width=1)
+            gd.line([x, 0, x, H], fill=CARD_LINE, width=1)
         d = ImageDraw.Draw(img, "RGBA")
         kf = load_font(settings, MONO_BOLD, int(H * 0.034))
         bf = load_font(settings, SHANTELL, int(H * 0.12))
@@ -496,7 +502,7 @@ def long_backdrop(
         step = max(H // 18, 40)
         for yy in range(step, H, step):
             for xx in range(step, W, step):
-                d.ellipse([xx - 3, yy - 3, xx + 3, yy + 3], fill=(70, 72, 90, 255))
+                d.ellipse([xx - 3, yy - 3, xx + 3, yy + 3], fill=(*BORDER, 255))
         band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         ImageDraw.Draw(band).line([(0, int(H * 0.78)), (W, int(H * 0.32))],
                                   fill=(*accent, 90), width=max(int(H * 0.05), 18))
@@ -506,14 +512,15 @@ def long_backdrop(
         d.line([(0, int(H * 0.78)), (W, int(H * 0.32))], fill=(*accent, 220),
                width=max(int(H * 0.006), 3))
 
-    # a gentle vignette keeps every family cinematic but never crushes the
-    # edges to black (the whole point is that a filler beat reads as designed)
+    # a gentle vignette gives the room some depth. On paper it only settles
+    # the edges a little — crushing them would put a dark ring behind a host
+    # drawn in dark ink.
     vig = Image.new("L", (W, H), 0)
     ImageDraw.Draw(vig).ellipse([-int(W * 0.25), -int(H * 0.25),
                                  int(W * 1.25), int(H * 1.25)], fill=255)
     vig = vig.filter(ImageFilter.GaussianBlur(int(W * 0.05)))
-    dark = ImageEnhance.Brightness(img).enhance(0.82)
-    return Image.composite(img, dark, vig)
+    settled = ImageEnhance.Brightness(img).enhance(0.96)
+    return Image.composite(img, settled, vig)
 
 
 # --------------------------------------------------------------------------
@@ -992,12 +999,16 @@ def build_karaoke_ass(
 
     # BorderStyle, Outline (box padding / stroke), Shadow, and the outline/back
     # colours differ between the outline caption (SHORT) and the fitted box (LONG)
+    # On the light kit the caption band is paper, not a dark slab: a
+    # near-opaque #faf9f6 box for the LONG, and a paper outline for the SHORT
+    # so text stays legible over photography without punching a hole in the
+    # frame. (&HAABBGGRR — AA is 00 opaque, FF transparent.)
     if box:
         border_style, outline, shadow = 3, 12, 0
-        outline_c, back_c = "&H73121216", "&H73121216"
+        outline_c, back_c = "&H14F6F9FA", "&H14F6F9FA"
     else:
         border_style, outline, shadow = 1, 4, 2
-        outline_c, back_c = "&H000A0A0A", "&H96000000"
+        outline_c, back_c = "&H00EFF2F2", "&H78F6F9FA"
 
     header = f"""[Script Info]
 ScriptType: v4.00+

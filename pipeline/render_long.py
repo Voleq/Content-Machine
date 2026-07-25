@@ -50,10 +50,13 @@ from config import Settings
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip
+from pipeline.kit import load_kit
 from pipeline.models import (
     CueKind,
+    KIT_TAG_FAMILIES,
     LongScript,
     SFX_KEYS,
+    TagType,
     TTSResult,
     parse_scribble_payload,
 )
@@ -173,6 +176,7 @@ def render_long(
 
     website = str(company_data.get("website") or "") if company_data is not None else ""
     overrides = broll_overrides or {}
+    kit = load_kit(settings.assets_dir)
 
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
 
@@ -336,6 +340,27 @@ def render_long(
                 still_i = _still_input(visual.path)
                 chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
                                          settings.fps)
+        elif seg.kind in ("term", "bignum", "table", "prop"):
+            # owned design-kit artwork, addressed by name through the registry
+            visual = None
+            family = KIT_TAG_FAMILIES[TagType(seg.kind.upper())]
+            still = kit.resolve(family, value)
+            if still is None:
+                log.warning("kit asset %s/%s missing — designed backdrop instead",
+                            family, value)
+                still = _backdrop_path(seg.payload.get("variant", i))
+            host = (_host_input(i, seg, seg_len, panel=True)
+                    if seg.payload.get("layout") == "two-shot" else None)
+            if host is None:
+                still_i = _still_input(still)
+                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
+                                         settings.fps)
+            else:
+                panel = _panel_frame(still, seg.payload.get("host_side", "left"),
+                                     rdir / f"panel_{i}.png", variant=i)
+                bg_i = _still_input(panel)
+                host_i, hx, hy = host
+                chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -503,7 +528,7 @@ def render_long(
     # corner bug: ticker + as-of date (top-right; the as-of stays visible)
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
     bug = simple_text(settings, bug_text, font_size=px(34),
-                      fill=(255, 255, 255, 200), stroke_width=2)
+                      fill=(35, 35, 38, 220), stroke_width=0)
     bug_path = rdir / "corner_bug.png"
     bug.save(bug_path)
     layers.append(OverlayLayer(
@@ -523,7 +548,7 @@ def render_long(
     ))
 
     disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                       fill=(235, 235, 235, 190), stroke_width=2)
+                       fill=(143, 140, 131, 235), stroke_width=0)
     disc_path = rdir / "disclaimer.png"
     disc.save(disc_path)
     layers.append(OverlayLayer(

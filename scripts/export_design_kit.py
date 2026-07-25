@@ -513,6 +513,9 @@ def export_doc(page, base_url: str, spec: DocSpec, doc_path: Path,
                         clip={"x": 0, "y": 0, "width": clip_w, "height": clip_h})
         res.written += 1
         MANIFEST_ROWS.append({
+            # `name` is the kit-relative path without the extension, and is
+            # how everything downstream addresses an asset.
+            "name": rel,
             "id": eid,
             "path": str(dest.relative_to(ROOT)),
             "doc": doc_path.name,
@@ -696,7 +699,7 @@ def verify_and_manifest(out_root: Path, results: list[DocResult], started: float
              "warnings": r.warnings}
             for r in results
         ],
-        "assets": {row["id"] if "/" in row["id"] else row["path"]: row for row in MANIFEST_ROWS},
+        "assets": {row["name"]: row for row in sorted(MANIFEST_ROWS, key=lambda r: r["name"])},
     }, indent=1, sort_keys=False) + "\n")
     return {"transparent": transparent, "opaque": opaque}
 
