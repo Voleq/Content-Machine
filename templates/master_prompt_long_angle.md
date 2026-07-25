@@ -33,9 +33,9 @@ Rules for the angles:
 - The numbers you'd feature must come from the chartable-metrics list (they need a multi-year series so the renderer can draw the trend).
 - Honest both ways: if the business is genuinely good, the angle can be "great company, wrong price". Let the data pick the polarity — never manufacture doom or hype.
 - Confidence is about how well the DATA supports the angle, not how spicy it is. If an angle is thin, say "I'd skip it" and why.
-- SCOPE each angle. Length is an OUTPUT of the story's complexity, never a target: a clean thesis is 2–3 chapters (~12 min); a messy, contested one is 7+ chapters (~40 min). Estimate the runtime and chapter count so the operator approves the ambition (and the TTS cost) before the write step. The chapter menu the writer builds from:
-  - Core (always run): cold-open reframe · what they actually do · the numbers that matter · valuation / what you're paying for · resigned close.
-  - Optional (add ONLY when the data earns it): management & incentives (when dilution is a story) · capital allocation (when the balance sheet is a story) · industry / competitive reality (when the moat is the crux) · "how we got here" (fallen angels) · the smoking-gun filing walk (when the 10-K has receipts) · bull steelman (always present; expands for contested names).
+- SCOPE each angle. Length is an OUTPUT of the story's complexity, never a target: a clean thesis is 3 chapters (~12–14 min); a messy, contested one is 7+ chapters (up to ~40 min). Estimate the runtime and chapter count so the operator approves the ambition (and the TTS cost) before the write step. The chapter menu the writer builds from:
+  - Core (always run, in this order): cold-open reframe · what they actually do · **how the money is made (unit economics)** · the numbers that matter · **valuation / what you're paying for** · bull vs bear · resigned close.
+  - Optional (add ONLY when the data earns it): management & incentives (dilution, comp, actions vs words) · capital allocation (buybacks, dividends, debt maturities) · moat / competitive reality (when the moat is the crux) · "how we got here" (fallen angels) · sector comps (when the peer percentiles are the story) · short interest (when positioning is the story) · guidance & estimates (when the print vs the guide is the story) · **the risk nobody's pricing** (the non-obvious one — not the risk already in every headline) · the smoking-gun filing walk (when the 10-K has receipts).
 
 ## OUTPUT — EXACTLY THIS SHAPE, NOTHING ELSE
 ${{ticker}} — pick an angle
