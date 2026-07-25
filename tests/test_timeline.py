@@ -93,7 +93,7 @@ def test_short_timeline_structure(short_script):
 
     kinds = [c.kind for c in cues]
     assert kinds.count(CueKind.HOOK) == 1
-    assert kinds.count(CueKind.TRANSITION) == 3          # why / gut / payoff
+    assert kinds.count(CueKind.TRANSITION) == 4          # why / gut / trap / payoff
     assert kinds.count(CueKind.HEADLINE) == len(short_script.headlines)
     assert kinds.count(CueKind.NUMBERS) == 1
     assert kinds.count(CueKind.NUMBER_ROW) == len(short_script.numbers)
@@ -102,7 +102,11 @@ def test_short_timeline_structure(short_script):
     assert kinds.count(CueKind.MEME) == 1
     assert kinds.count(CueKind.CONCLUSION) == 1
 
-    assert cues[0].kind is CueKind.HOOK and cues[0].t == 0.0
+    # the short opens on Dennis talking; the hook card rides the same t=0
+    assert kinds.count(CueKind.HOST_OPEN) == 1
+    assert kinds.count(CueKind.HOST_CLOSE) == 1
+    assert cues[0].t == 0.0
+    assert {c.kind for c in cues if c.t == 0.0} == {CueKind.HOST_OPEN, CueKind.HOOK}
     times = [c.t for c in cues]
     assert times == sorted(times)
     assert all(0 <= t <= duration for t in times)
@@ -402,3 +406,77 @@ def test_adjacent_same_type_real_cuts_are_flagged():
     _, warnings = plan_long_segments(cues, 30.0)
     assert any("same visual type" in w for w in warnings), \
         "two clips back-to-back should warn the variety planner"
+
+
+# --------------------------------------------------------------------------
+# SHORT: host bookends, the cheap-or-trap hold, deterministic beat variants
+# --------------------------------------------------------------------------
+
+
+def test_short_opens_and_closes_on_the_host(short_script):
+    """Dennis bookends the short: ~3-5s on camera at each end."""
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    opener = next(c for c in cues if c.kind is CueKind.HOST_OPEN)
+    closer = next(c for c in cues if c.kind is CueKind.HOST_CLOSE)
+
+    assert opener.t == 0.0
+    assert 3.0 <= float(opener.payload["until"]) <= 5.0
+    assert float(closer.payload["until"]) == duration
+    assert 3.0 <= duration - closer.t <= 5.0
+    # the closer must not open before the payoff it rides on
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    assert closer.t >= conclusion.t - 0.01
+
+
+def test_cheap_or_trap_is_held_long_enough_to_read(short_script):
+    from pipeline.timeline import SHORT_MIN_READABLE_S
+
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+
+    assert float(trap.payload["until"]) - trap.t >= SHORT_MIN_READABLE_S - 0.01
+    # it sits between the numbers sheet and the payoff, and the sheet gets
+    # its own readable window first
+    assert trap.t - numbers.t >= SHORT_MIN_READABLE_S - 0.01
+    rows = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
+    assert max(c.t for c in rows) <= trap.t, "the sheet must finish typing before the cut"
+
+
+def test_a_short_without_the_trap_beat_still_builds(short_script):
+    """The beat is optional — scripts written to the four-beat format parse."""
+    script = short_script.model_copy(update={"cheap_or_trap": None})
+    duration = 68.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration), duration)
+    assert not [c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP]
+    assert next(c for c in cues if c.kind is CueKind.CONCLUSION)
+
+
+def test_beat_variants_are_deterministic_and_rotate():
+    from pipeline.timeline import SHORT_BEAT_VARIANTS, pick_beat_variant
+
+    for beat, options in SHORT_BEAT_VARIANTS.items():
+        assert pick_beat_variant(beat, "abc123") == pick_beat_variant(beat, "abc123")
+        picked = {pick_beat_variant(beat, f"sha{i:04d}") for i in range(400)}
+        assert picked == set(options), f"{beat} never reached every variant"
+
+    # two different scripts should not share every beat layout
+    a = {b: pick_beat_variant(b, "script-one") for b in SHORT_BEAT_VARIANTS}
+    b = {b: pick_beat_variant(b, "script-two") for b in SHORT_BEAT_VARIANTS}
+    assert a != b
+
+
+def test_beat_variants_reach_the_cues(short_script):
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    hook = next(c for c in cues if c.kind is CueKind.HOOK)
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    for cue, beat in ((hook, "hook"), (numbers, "gutcheck"), (conclusion, "payoff")):
+        from pipeline.timeline import SHORT_BEAT_VARIANTS
+        assert cue.payload["variant"] in SHORT_BEAT_VARIANTS[beat]

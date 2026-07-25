@@ -175,6 +175,10 @@ class ShortScript(BaseModel):
     numbers: list[NumberRow] = Field(min_length=1, max_length=6)
     years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
     numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
+    # the CHEAP-OR-TRAP beat: is the multiple a bargain or a value trap? Held
+    # on screen ~4-5s so it can actually be read. Optional so scripts written
+    # against the four-beat format still parse.
+    cheap_or_trap: str | None = Field(default=None, max_length=260)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
     chart_style: ChartStyle = ChartStyle.CLEAN  # open on clean or marker chart
     meme: CutawayTag | None = None
@@ -319,6 +323,7 @@ class TTSResult(BaseModel):
 
 class CueKind(str, Enum):
     # SHORT beats (Noise or signal?)
+    HOST_OPEN = "host_open"      # Dennis talking, before the hook lands
     HOOK = "hook"
     TRANSITION = "transition"
     HEADLINE = "headline"
@@ -326,7 +331,9 @@ class CueKind(str, Enum):
     NUMBER_ROW = "number_row"    # one row types on
     ANNOTATION = "annotation"    # hand-drawn scribble
     ZOOM = "zoom"                # zoom-punch on the key number
+    CHEAP_OR_TRAP = "cheap_or_trap"  # the value-trap beat, held to be read
     CONCLUSION = "conclusion"
+    HOST_CLOSE = "host_close"    # Dennis talking, after the payoff
     CUTAWAY = "cutaway"          # ironic broll cutaway (SHORT)
     # LONG visuals (MEME + SOUND are shared by both formats)
     MEME = "meme"

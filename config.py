@@ -82,8 +82,10 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------- character budgets
     # SHORT is 60–75s of retention-first "Noise or signal?": ~180–210 spoken
-    # words at the mock ~2.7 w/s, so ~1200 chars is the ceiling (not a target).
-    short_max_chars: int = Field(default=1200, alias="SHORT_MAX_CHARS")
+    # words at the mock ~2.7 w/s. 210 words of ordinary English runs right at
+    # 1200 chars, which left the budget with no headroom at all — 1400 is the
+    # ceiling (not a target) so a script at the top of the word range fits.
+    short_max_chars: int = Field(default=1400, alias="SHORT_MAX_CHARS")
     # LONG length is complexity-driven, not fixed: a clean thesis is a few
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a

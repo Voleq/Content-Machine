@@ -39,17 +39,23 @@ Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
 {{broll_palette}}
 
 ## THE FORMAT — "Noise or signal?"
-A trending stock gets ~60–75 seconds over four fixed beats. Each beat has its own on-screen element (the render kit is fixed — you only supply the rotating content):
-1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" (the polished branded card) or "marker" (a crude hand-drawn "napkin" chart on black — reach for it when the tone is extra deadpan / degenerate).
+A trending stock gets ~60–75 seconds. **Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence. Five beats:
+
+0. HOST OPEN (~3–5s) — the first sentence is Dennis on screen, saying the hook out loud. Write it as a spoken line, not a caption.
+1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" (the polished branded card) or "marker" (a crude hand-drawn "napkin" chart — reach for it when the tone is extra deadpan / degenerate).
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
-3. GUT CHECK — the MULTI-YEAR numbers from the data above appear on a designed numbers sheet. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES above sharpen the read, you MAY drop a SINGLE percentile one-liner here ("90th percentile expensive, 20th on margins") — at most one, never a table.
-4. PAYOFF — noise (just market activity) or signal (actually one to watch). Deadpan free text. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
+4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
+5. PAYOFF + HOST CLOSE — noise (just market activity) or signal (actually one to watch). Deadpan free text, spoken by Dennis back on camera. There is NO verdict enum, NO stamp — the writing carries the conclusion and the viewer draws their own.
+
+## PACE — faster than long-form, but NOT machine-gun
+The extra runtime exists so the two data beats can breathe. The numbers sheet and the cheap-or-trap card each hold for four to five seconds — write enough narration over each to fill that. Do not write a script that needs a cut every two seconds; a viewer who cannot read the numbers has watched a screensaver.
 
 ## RETENTION — the extra ~15 seconds buys attention, not filler
-The four beats are fixed; the added runtime goes to keeping the viewer, never to more talking:
+The beats are fixed; the added runtime goes to keeping the viewer, never to more talking:
 1. FRONT-LOAD THE HOOK. The first ~3 seconds decide scroll-through — open on the sharpest version of the move and the doubt, no wind-up. `hook_text` stays ≤ 90 chars and mute-safe; the spoken first sentence hits just as hard.
 2. ONE MID-POINT RE-HOOK, around the 30-second mark (the WHY → GUT CHECK seam): a single line that re-opens the question so nobody drops at the halfway point — e.g. "but here's the part nobody screenshots". Exactly one; it's a turn back into the story, not a tangent.
-3. OPTIONAL SECOND LOOK (a 5th micro-beat — most shorts skip it): immediately before the payoff, ONE counter-observation — the strongest point AGAINST the read you're about to give — so the payoff lands as considered, not reflexive. One line, then the conclusion.
+3. The CHEAP-OR-TRAP beat carries the counter-observation — the strongest point against the read you're about to give — so the payoff lands as considered, not reflexive.
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
@@ -60,7 +66,7 @@ The channel's visual language is crude marker doodles composited on top of the f
 Keep it to ~1–3 inline marks per short. They ride on top of the fixed beats; they don't replace the JSON `annotations` (which anchor precisely to the chart's move and the numbers rows).
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1200 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
@@ -87,7 +93,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<180-210 spoken words, <= 1200 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
   "chart_style": "clean",
   "headlines": [
@@ -98,6 +104,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
     {"label": "Revenue", "values": ["<oldest>", "...", "<newest>"]}
   ],
   "numbers_comment": "<holistic read of the trend>",
+  "cheap_or_trap": "<the value-trap beat: name the multiple, then what would have to be true for it to be cheap; <= 260 chars>",
   "conclusion": "<noise-or-signal, free text>",
   "meme": {"key": "<meme key>", "anchor_word": "<word>"},
   "broll": null,

@@ -20,6 +20,7 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 
 from __future__ import annotations
 
+import hashlib
 import math
 from dataclasses import dataclass, field
 
@@ -91,6 +92,30 @@ def _first_sentence_end(words: list[WordTimestamp], duration: float) -> float:
 # --------------------------------------------------------------------------
 
 
+# Per-beat layout variants shipped by the design kit. "a" is the original
+# GET-GO layout; the kit adds b..e per beat. One is picked per short from the
+# script hash, so consecutive daily shorts do not repeat a layout — and the
+# same script always renders the same way.
+SHORT_BEAT_VARIANTS: dict[str, tuple[str, ...]] = {
+    "hook": ("a", "b", "c", "d", "e"),
+    "why": ("a", "b", "c", "d"),
+    "gutcheck": ("a", "b", "c", "d"),
+    "payoff": ("a", "b", "c", "d", "e"),
+}
+
+# A short is faster than long-form but must never machine-gun: the beats that
+# carry data have to survive long enough to be read.
+SHORT_MIN_READABLE_S = 4.5   # numbers sheet and the cheap-or-trap card
+HOST_BOOKEND_S = (3.0, 5.0)  # Dennis opens and closes on camera
+
+
+def pick_beat_variant(beat: str, script_sha: str) -> str:
+    """Deterministically choose this short's layout for one beat."""
+    options = SHORT_BEAT_VARIANTS[beat]
+    digest = hashlib.sha256(f"{script_sha}|{beat}".encode()).hexdigest()
+    return options[int(digest[:8], 16) % len(options)]
+
+
 def build_short_timeline(
     script: ShortScript,
     words: list[WordTimestamp],
@@ -105,6 +130,8 @@ def build_short_timeline(
     """Every SHORT cue, positioned off the spoken audio. No number in the
     renderer may override these."""
     cues: list[Cue] = []
+    sha = script.content_sha()
+    variants = {b: pick_beat_variant(b, sha) for b in SHORT_BEAT_VARIANTS}
 
     # ---- beat boundaries, scaled by the real duration, refined by anchors
     hook_end = clamp(_first_sentence_end(words, duration), duration)
@@ -129,12 +156,35 @@ def build_short_timeline(
     gut_t = max(gut_t, hook_end + 1.5)
     gut_t = min(gut_t, max(payoff_t - 1.5, hook_end + 1.5))
 
+    # ---- the CHEAP-OR-TRAP beat sits between the numbers and the payoff,
+    #      and is held long enough to read. It only earns its own slot when
+    #      there is room for it; otherwise it rides on the numbers sheet.
+    trap_t: float | None = None
+    if script.cheap_or_trap:
+        anchored = find_anchor_time(words, " ".join(script.cheap_or_trap.split()[:3]))
+        candidate = anchored if anchored is not None else payoff_t - SHORT_MIN_READABLE_S
+        window_open = gut_t + SHORT_MIN_READABLE_S
+        if payoff_t - window_open >= 1.0:
+            trap_t = clamp(min(max(candidate, window_open), payoff_t - 0.5), duration)
+
+    # ---- 0. host bookend: Dennis opens on camera before the hook card lands
+    host_open_end = clamp(min(max(hook_end, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1]),
+                          duration)
+    cues.append(Cue(t=0.0, kind=CueKind.HOST_OPEN,
+                    payload={"until": host_open_end, "text": script.hook_text,
+                             "variant": "open"}))
+
     # ---- 1. cold open: hook card over the branded chart, from t=0
     cues.append(Cue(t=0.0, kind=CueKind.HOOK,
-                    payload={"text": script.hook_text, "until": hook_end}))
+                    payload={"text": script.hook_text, "until": hook_end,
+                             "variant": variants["hook"]}))
 
-    # ---- beat-transition stingers (fast cuts between the fixed beats)
-    for name, t in (("why", hook_end), ("gut", gut_t), ("payoff", payoff_t)):
+    # ---- beat-transition stingers (cuts between the fixed beats)
+    beats = [("why", hook_end), ("gut", gut_t)]
+    if trap_t is not None:
+        beats.append(("trap", trap_t))
+    beats.append(("payoff", payoff_t))
+    for name, t in beats:
         cues.append(Cue(t=clamp(t, duration), kind=CueKind.TRANSITION,
                         payload={"name": name}))
 
@@ -147,15 +197,19 @@ def build_short_timeline(
             t=clamp(min(t, gut_t - 0.2), duration),
             kind=CueKind.HEADLINE,
             payload={"index": i, "text": h.text, "meaning": h.meaning,
-                     "until": gut_t},
+                     "until": gut_t, "variant": variants["why"]},
         ))
 
     # ---- 3. gut check: the numbers sheet slides in, rows type on
     cues.append(Cue(t=gut_t, kind=CueKind.NUMBERS,
-                    payload={"rows": len(script.numbers), "until": duration}))
+                    payload={"rows": len(script.numbers), "until": duration,
+                             "variant": variants["gutcheck"]}))
     n_rows = len(script.numbers)
     rows_start = gut_t + 0.35
-    rows_end = max(payoff_t - 0.5, rows_start + 0.5)
+    # The sheet must finish typing before the beat that follows it, so the
+    # last row is readable rather than still animating when the frame cuts.
+    rows_deadline = trap_t if trap_t is not None else payoff_t
+    rows_end = max(rows_deadline - 0.5, rows_start + 0.5)
     slot = (rows_end - rows_start) / n_rows
     row_times: list[float] = []
     for i, row in enumerate(script.numbers):
@@ -221,9 +275,24 @@ def build_short_timeline(
         cues.append(Cue(t=t, kind=CueKind.SCRIBBLE,
                         payload={"value": e.payload, "hold": doodle_hold_s}))
 
-    # ---- 4. payoff: the deadpan conclusion (noise or signal — no stamp)
+    # ---- 4. cheap or trap: the value-trap read, held long enough to land
+    if trap_t is not None:
+        cues.append(Cue(t=trap_t, kind=CueKind.CHEAP_OR_TRAP,
+                        payload={"text": script.cheap_or_trap,
+                                 "until": clamp(max(trap_t + SHORT_MIN_READABLE_S,
+                                                    payoff_t), duration)}))
+
+    # ---- 5. payoff: the deadpan conclusion (noise or signal — no stamp)
     cues.append(Cue(t=payoff_t, kind=CueKind.CONCLUSION, fallback=payoff_fallback,
-                    payload={"text": script.conclusion, "until": duration}))
+                    payload={"text": script.conclusion, "until": duration,
+                             "variant": variants["payoff"]}))
+
+    # ---- 6. host bookend: Dennis closes on camera over the last words
+    host_close_len = min(max(duration - payoff_t, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1])
+    cues.append(Cue(t=clamp(duration - host_close_len, duration),
+                    kind=CueKind.HOST_CLOSE,
+                    payload={"until": duration, "text": script.conclusion,
+                             "variant": "close"}))
 
     cues.sort(key=lambda c: c.t)
     return cues
