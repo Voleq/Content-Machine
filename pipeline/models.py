@@ -28,6 +28,13 @@ SFX_KEYS = (
     "sad_trombone",
     "camera_shutter",
     "vine_boom",
+    # the deadpan set — dry, lo-fi, no drama. Used sparsely: these are the
+    # room Dennis is sitting in, not a punchline.
+    "coffee_slurp",
+    "keyboard_clack",
+    "paper_rustle",
+    "buzzer",
+    "ding",
 )
 
 

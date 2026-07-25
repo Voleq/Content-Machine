@@ -118,7 +118,8 @@ Then write the script using that hook as its first line.
 [CHART: metric]         auto chart; metric from the chartable list. Add `style=marker` for the crude napkin chart, e.g. [CHART: price style=marker]
 [SHOW FILING: file.png] full-screen data flash from the uploaded screenshots; labelled generically ("from the 10-K")
 [SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks like [ASSET] until the file exists.
-[SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom
+[SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding
+                        Use SPARSELY — a few per video at most. The deadpan set (coffee_slurp, keyboard_clack, paper_rustle, buzzer, ding) is the room he's sitting in, dry and undramatic; it punctuates, it never announces.
 [DOODLE: key]           EXTRA punctuation only — a doodle from the catalog, over the current media. Never the main visual of a cut.
 [SCRIBBLE: circle|arrow|underline -> target]  a drawn mark + target callout over whatever media is on screen
 [ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
