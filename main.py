@@ -13,6 +13,7 @@ import logging
 
 from config import detect_ffmpeg, get_settings
 from pipeline.jobs import RenderJobQueue
+from pipeline.render_common import set_render_politeness
 
 from bot.handlers import BotCore, build_application
 
@@ -29,6 +30,9 @@ def main() -> None:
 
     ffmpeg, _ = detect_ffmpeg()
     log.info("ffmpeg: %s | mock_mode=%s", ffmpeg, settings.mock_mode)
+    # Renders are unattended on what is also somebody's desktop: cap the
+    # ffmpeg thread pools and drop the child processes below normal priority.
+    set_render_politeness(settings)
     if not settings.telegram_bot_token:
         raise SystemExit(
             "TELEGRAM_BOT_TOKEN is not set. Create a bot with @BotFather and put "

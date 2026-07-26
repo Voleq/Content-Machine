@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -25,13 +27,78 @@ class RenderError(Exception):
     pass
 
 
+# The render box is somebody's daily-driver desktop. These are set once from
+# Settings at startup so every ffmpeg call — including the ones inside
+# rasters.py — is capped and de-prioritised without threading the settings
+# object through every helper.
+_POLITENESS: dict = {"threads": 0, "below_normal": False}
+
+
+def set_render_politeness(settings) -> None:
+    """Apply the encode-politeness knobs process-wide."""
+    _POLITENESS["threads"] = settings.resolved_render_threads()
+    _POLITENESS["below_normal"] = settings.render_below_normal_priority
+    log.info("render politeness: %d ffmpeg threads, below-normal=%s",
+             _POLITENESS["threads"], _POLITENESS["below_normal"])
+
+
+def _politeness_args() -> list[str]:
+    """ffmpeg flags that cap CPU use. The filter graph — not the encode — is
+    the bottleneck here, so the filter thread pools are capped too."""
+    n = _POLITENESS["threads"]
+    if not n:
+        return []
+    return ["-threads", str(n),
+            "-filter_threads", str(n),
+            "-filter_complex_threads", str(n)]
+
+
+def _deprioritise(proc: subprocess.Popen) -> None:
+    """Drop an already-spawned child below the desktop's priority.
+
+    Done from the parent rather than via `preexec_fn`, which is documented as
+    unsafe in a threaded process — and the bot is threaded.
+    """
+    if not _POLITENESS["below_normal"]:
+        return
+    try:
+        if hasattr(os, "setpriority"):          # POSIX
+            os.setpriority(os.PRIO_PROCESS, proc.pid, 10)
+    except (OSError, AttributeError, ValueError) as e:
+        log.debug("could not de-prioritise pid %s: %s", proc.pid, e)
+
+
+def _creationflags() -> int:
+    """Windows spawns at below-normal directly; POSIX renices after spawn."""
+    if _POLITENESS["below_normal"] and sys.platform == "win32":
+        return getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+    return 0
+
+
+def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
+    """subprocess.run, but nice to the machine it is running on."""
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        creationflags=_creationflags(),
+    )
+    _deprioritise(proc)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
 def run_ffmpeg(args: list[str], timeout: int = 3600) -> None:
     """Run ffmpeg with -y and sane logging; raise RenderError with the
     stderr tail on failure."""
     ffmpeg, _ = detect_ffmpeg()
-    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", *args]
+    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+           *_politeness_args(), *args]
     log.debug("ffmpeg %s", " ".join(args[:12]))
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    proc = _run_polite(cmd, timeout)
     if proc.returncode != 0:
         tail = (proc.stderr or "")[-2000:]
         raise RenderError(f"ffmpeg failed ({proc.returncode}):\n{tail}")

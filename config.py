@@ -13,6 +13,7 @@ Hard rules encoded here:
 
 from __future__ import annotations
 
+import os
 import shutil
 from functools import lru_cache
 from pathlib import Path
@@ -181,6 +182,21 @@ class Settings(BaseSettings):
     sfx_gain_db: float = -6.0
     use_hardware_encoder: bool = True      # if detected; falls back to libx264
 
+    # --- encode politeness ------------------------------------------------
+    # The render box is the operator's daily-driver desktop, and renders are
+    # unattended: slower-but-polite is the right trade. ffmpeg is capped to a
+    # share of the cores and runs de-prioritised, so a 40-minute LONG never
+    # makes the machine unusable.
+    #
+    # `render_thread_fraction` is a share of os.cpu_count(); the resolved cap
+    # is at least 1 and never exceeds the core count. Set
+    # `render_threads` to pin an exact number instead (0 = derive it).
+    render_thread_fraction: float = Field(default=0.5, ge=0.05, le=1.0)
+    render_threads: int = Field(default=0, ge=0)
+    # Below-normal priority on Windows, +10 nice on POSIX. Off means the
+    # render competes with the desktop on equal terms.
+    render_below_normal_priority: bool = True
+
     # --------------------------------------------------------------- delivery
     delivery_backend: str = Field(default="gdrive", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
@@ -285,6 +301,13 @@ class Settings(BaseSettings):
         for d in (self.workspace_dir, self.cache_dir, self.state_dir):
             d.mkdir(parents=True, exist_ok=True)
 
+    def resolved_render_threads(self) -> int:
+        """How many threads ffmpeg may use, leaving the desktop responsive."""
+        cores = os.cpu_count() or 4
+        if self.render_threads:
+            return max(1, min(self.render_threads, cores))
+        return max(1, min(cores, round(cores * self.render_thread_fraction)))
+
 
 def detect_ffmpeg() -> tuple[str, str]:
     """Locate ffmpeg/ffprobe or fail loudly at startup."""
@@ -292,7 +315,10 @@ def detect_ffmpeg() -> tuple[str, str]:
     ffprobe = shutil.which("ffprobe")
     if not ffmpeg or not ffprobe:
         raise RuntimeError(
-            "ffmpeg/ffprobe not found on PATH. Install FFmpeg 6+ (apt install ffmpeg)."
+            "ffmpeg/ffprobe not found on PATH. Install FFmpeg 6+ — "
+            "Linux: `apt install ffmpeg`; "
+            "Windows: `winget install Gyan.FFmpeg` (then reopen the terminal "
+            "so PATH refreshes)."
         )
     return ffmpeg, ffprobe
 

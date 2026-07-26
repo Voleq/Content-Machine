@@ -126,6 +126,39 @@ python3.11 -m venv .venv
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
 
+### Windows 11 (the render desktop)
+
+Runs **natively on Windows, not under WSL** — Playwright, FFmpeg and NVENC
+all behave better outside the WSL boundary, and the GPU is directly
+available.
+
+```powershell
+winget install Gyan.FFmpeg Python.Python.3.12   # then reopen the terminal
+powershell -ExecutionPolicy Bypass -File deploy\bootstrap.ps1
+notepad .env                                     # token + operator chat id
+.venv\Scripts\python.exe main.py
+```
+
+`bootstrap.ps1` is the counterpart to `bootstrap.sh`: venv, pinned deps,
+FFmpeg check, an NVENC heads-up, headless Chromium, `.env` scaffold,
+generated assets, design-kit check, offline suite. It is idempotent.
+
+To leave the bot up across reboots, register the logon task:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\install-task.ps1
+```
+
+Task Scheduler rather than a service, deliberately: the task runs as the
+logged-in user, so it inherits the normal PATH, environment and GPU.
+Manual `python main.py` stays the default way to run it.
+
+**Encode politeness.** This is somebody's daily-driver desktop and renders
+are unattended, so FFmpeg is capped to about half the cores and its
+processes run below normal priority — slower, but the machine stays usable.
+Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
+`RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
+
 ### VPS (production)
 
 ```bash
@@ -137,6 +170,8 @@ sudo systemctl enable --now dennis
 The bootstrap installs apt deps, builds the venv from the **pinned**
 `pyproject.toml`, generates assets, runs the offline suite, and installs
 the service + daily cleanup timer. No display server, no ImageMagick.
+The Linux path stays supported — a weaker always-on box can host the bot
+with the desktop acting as a render worker later.
 
 ### Going live (spending real money)
 
