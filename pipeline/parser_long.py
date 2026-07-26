@@ -34,8 +34,10 @@ from pathlib import Path
 from typing import Iterable
 
 from config import Settings
+from pipeline.kit import load_kit
 from pipeline.models import (
     HISTORY_FIELDS,
+    KIT_TAG_FAMILIES,
     SFX_KEYS,
     LongScript,
     TagEvent,
@@ -237,6 +239,7 @@ def validate_long_script(
         )
 
     custom_dir = settings.assets_dir / "custom"
+    kit = load_kit(settings.assets_dir)
     for e in script.events:
         if e.type in (TagType.CLIP, TagType.BROLL):
             if e.payload not in palette:
@@ -274,6 +277,17 @@ def validate_long_script(
             if doodle_lib.match(e.payload) is None:
                 warnings.append(
                     f'doodle "{e.payload}" not in the owned library — skipped at render'
+                )
+        elif e.type in KIT_TAG_FAMILIES:
+            # design-kit families ([TERM]/[BIGNUM]/[TABLE]/[PROP]/[ALERT]) are
+            # owned artwork: an unknown key degrades to a host beat rather
+            # than blocking, but the operator should hear about it.
+            family = KIT_TAG_FAMILIES[e.type]
+            if kit.resolve(family, e.payload) is None:
+                options = ", ".join(n.rsplit("/", 1)[-1] for n in kit.family(family)[:8])
+                warnings.append(
+                    f'[{e.type.value}: {e.payload}] is not in the {family} kit '
+                    f"— skipped at render. Available: {options}…"
                 )
         elif e.type is TagType.SCREENGRAB:
             hits = list(custom_dir.glob(f"{e.payload}.*")) if custom_dir.is_dir() else []

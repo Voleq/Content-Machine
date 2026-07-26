@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 26px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · COMPARISON SLIDERS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Drag the claim<br>off the truth</h1>
+  <p style="margin:18px 0 0; max-width:860px; font-size:17px; line-height:1.6; color:#3a3a3d;">The claim fills the frame. <strong>Drag right</strong> and the arithmetic pushes it out from the left — so the story is still on screen while the numbers arrive, which is the whole point. <strong>Drag any frame below</strong> to feel it, then export the three fixed positions (<code style="font-family:'Space Mono',monospace; font-size:15px; color:#ff5247;">p00 · p50 · p100</code>) and animate the wipe in the edit.</p>
+</header>
+
+<sc-for list="{{ sliders }}" as="s" hint-placeholder-count="5">
+  <div style="margin:0 0 44px;">
+    <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ s.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">{{ s.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ s.note }}</span>
+    </div>
+    <div style="font-size:13.5px; color:#6f6c65; line-height:1.5; max-width:820px; margin:0 0 14px;">{{ s.blurb }}</div>
+
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:7px;">LIVE · DRAG ME · {{ s.posLabel }}</div>
+    <div ref="{{ s.liveRef }}" onPointerDown="{{ s.onDown }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; cursor:ew-resize; touch-action:none; user-select:none; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+      <div ref="{{ s.liveHost }}" style="position:absolute; inset:0;"></div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:16px;">
+      <sc-for list="{{ s.stops }}" as="f" hint-placeholder-count="3">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#a9a59b; letter-spacing:.08em; margin-bottom:6px;">{{ f.label }}</div>
+          <div data-export="{{ f.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:5px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; border:1px solid #dcd8cc; container-type:inline-size;">
+            <div ref="{{ f.host }}" style="position:absolute; inset:0;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/sliders/&lt;name&gt;/p00 · p50 · p100 · 1920×1080 · wipe between them in the edit</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · comparison sliders · 5 pairs · 15 frames</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.defs = [
+      {n:'01', key:'said', title:'Said vs did', note:'the guidance line', file:'said-vs-did',
+       blurb:'The one this channel needs most. On the left, the sentence from the call; on the right, what the release said nine weeks later. Nothing else changes between the two halves.'},
+      {n:'02', key:'adjusted', title:'Adjusted vs reported', note:'the same year, twice', file:'adjusted-vs-reported',
+       blurb:'Same period, two sets of figures. Wipe from the press-release version to the audited one and let the gap do the talking.'},
+      {n:'03', key:'chart', title:'Total vs per share', note:'growth with the dilution put back', file:'total-vs-per-share',
+       blurb:'Revenue climbing on the left. The same revenue divided by a share count that grew faster on the right \u2014 the single most useful wipe in the kit.'},
+      {n:'04', key:'margin', title:'Then vs now', note:'2019 against 2025', file:'then-vs-now',
+       blurb:'Two bar sets, identical scale, six years apart. Use when the business is the same shape but a worse version of itself.'},
+      {n:'05', key:'story', title:'Story vs tape', note:'narrative against numbers', file:'story-vs-tape',
+       blurb:'The headline everyone repeated on the left, the four numbers that contradict it on the right. Ends the argument without raising a voice.'}
+    ];
+    const pos={}; this.defs.forEach(d=>{ pos[d.key]=0.5; });
+    this.state = { pos };
+    this.liveRefs={}; this.hosts={};
+    this.drag=null;
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+
+  lineChart(rand,W,H,mode){
+    const C=this.C,x0=W*0.10,y0=H*0.80,x1=W*0.94,yT=H*0.20,ph=y0-yT;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.4,r:1,s:C.ink});
+    const up=(mode==='total');
+    const pts=[]; for(let i=0;i<8;i++){ const t=i/7;
+      const v = up? (0.28+0.52*t) : (0.62-0.30*t);
+      pts.push([x0+(x1-x0)*t, y0-ph*(v+(rand()*2-1)*0.02)]); }
+    s+=this._fill(pts.concat([[x1,y0],[x0,y0]]),rand, up?'rgba(47,213,118,.13)':'rgba(255,82,71,.14)',1.6);
+    s+=this._stroke(pts,rand,{w:4,r:1.8,s:up?C.gdk:C.red});
+    const a=pts[7],b=pts[6];
+    s+=this._head(a[0],a[1],Math.atan2(a[1]-b[1],a[0]-b[0]),H*0.055,rand,{w:4,r:1.4,s:up?C.gdk:C.red});
+    s+=this._t(x0,H*0.14,up?'REVENUE, \u00a3m':'REVENUE PER SHARE, p',{size:H*0.038,s:C.grey});
+    s+=this._t(x1,y0-ph*(up?0.86:0.24),up?'+38%':'\u221214%',{size:H*0.075,s:up?C.gdk:C.red,anchor:'end'});
+    return s;
+  }
+  barPair(rand,W,H,year){
+    const C=this.C,x0=W*0.12,y0=H*0.78,ph=y0-H*0.22,n=4;
+    const vals = year==='2019'? [0.82,0.74,0.68,0.58] : [0.80,0.52,0.34,0.22];
+    const labels=['REVENUE','GROSS','OPERATING','FREE CASH'];
+    let s=this._stroke([[x0,H*0.22],[x0,y0],[W*0.94,y0]],rand,{w:2.4,r:1,s:C.ink});
+    const bw=(W*0.94-x0)/n*0.52;
+    for(let i=0;i<n;i++){
+      const bx=x0+(W*0.94-x0)*(i/n)+(W*0.94-x0)/n*0.24, v=vals[i], by=y0-ph*v;
+      const bad = year!=='2019' && i>0;
+      s+=this._fill([[bx,by],[bx+bw,by],[bx+bw,y0],[bx,y0]],rand,bad?'rgba(255,82,71,.18)':'rgba(35,35,38,.10)',1.4);
+      s+=this._stroke([[bx,by],[bx+bw,by],[bx+bw,y0],[bx,y0]],rand,{w:2.6,r:1.3,close:true,s:bad?C.red:C.ink});
+      s+=this._t(bx+bw/2,y0+H*0.055,labels[i],{size:H*0.032,s:C.grey,anchor:'middle'});
+    }
+    s+=this._t(x0,H*0.15,year,{size:H*0.085,s:year==='2019'?C.ink:C.red});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 480 270').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const t=el.dataset.ink;
+    if(t==='line') el.innerHTML=this.lineChart(rand,W,H,el.dataset.mode||'total');
+    else if(t==='bars') el.innerHTML=this.barPair(rand,W,H,el.dataset.year||'2019');
+    el.setAttribute('data-drawn','1');
+  }
+  svgTag(ink,attrs,vb,style){ let a=''; Object.keys(attrs||{}).forEach(k=>{ a+=' data-'+k+'="'+attrs[k]+'"'; }); return '<svg data-ink="'+ink+'"'+a+' viewBox="'+vb+'" style="'+style+'"></svg>'; }
+
+  // ---- the two halves of each slider ----
+  layer(key,side){
+    const C=this.C, claim=(side==='claim');
+    const pad='position:absolute; inset:0; padding:6cqw 6.5cqw; display:flex; flex-direction:column;';
+    const tag=(txt,col)=>'<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.24em; color:'+col+';">'+txt+'</div>';
+    let h='';
+    if(key==='said'){
+      h+='<div style="'+pad+' justify-content:center;">';
+      h+=tag(claim?'WHAT THEY SAID \u00b7 Q2 CALL':'WHAT HAPPENED \u00b7 Q3 RELEASE', claim?C.grey:C.red);
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6cqw; line-height:1.04; margin-top:2cqw; max-width:80cqw;">'+(claim?'\u201cNo change to full-year guidance.\u201d':'Guidance cut 14%.')+'</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.3cqw; line-height:1.3; color:'+(claim?'#6f6c65':C.ink)+'; margin-top:2.4cqw; max-width:70cqw;">'+(claim?'Said twice, unprompted, in the same forty minutes.':'Nine weeks later. No mention of the earlier answer.')+'</div>';
+      h+='</div>';
+    } else if(key==='adjusted'){
+      const rows = claim
+        ? [['EBITDA','\u00a3486m'],['Operating profit','\u00a3204m'],['EPS','41.2p'],['Net debt/EBITDA','3.9\u00d7']]
+        : [['EBITDA','\u00a3389m'],['Operating profit','\u00a3121m'],['EPS','18.6p'],['Net debt/EBITDA','4.9\u00d7']];
+      h+='<div style="'+pad+'">';
+      h+=tag(claim?'AS ADJUSTED \u00b7 THE PRESS RELEASE':'AS REPORTED \u00b7 THE AUDITED ACCOUNTS', claim?C.grey:C.red);
+      h+='<div style="flex:1; min-height:0; display:flex; flex-direction:column; justify-content:space-evenly; margin-top:1.4cqw;">';
+      rows.forEach((r,i)=>{
+        h+='<div style="display:flex; justify-content:space-between; align-items:baseline; gap:2cqw;"><span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.5cqw; color:'+C.ink+';">'+r[0]+'</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:3.4cqw; color:'+(claim?C.ink:C.red)+';">'+r[1]+'</span></div>';
+        if(i<rows.length-1) h+='<div style="height:1px; background:'+C.ghost+';"></div>';
+      });
+      h+='</div></div>';
+    } else if(key==='chart'){
+      h+='<div style="'+pad+'">';
+      h+=tag(claim?'THE NUMBER THEY LEAD WITH':'THE SAME NUMBER, PER SHARE', claim?C.grey:C.red);
+      h+='<div style="flex:1; min-height:0; margin-top:1cqw;">'+this.svgTag('line',{mode:claim?'total':'pershare',seed:claim?4:9},'0 0 480 250','width:100%; height:100%; overflow:visible;')+'</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:'+(claim?'#8f8c83':C.red)+'; font-style:italic;">'+(claim?'Revenue up 38% over the period.':'Share count grew faster. Your slice shrank.')+'</div>';
+      h+='</div>';
+    } else if(key==='margin'){
+      h+='<div style="'+pad+'">';
+      h+=tag(claim?'2019 \u00b7 THE BUSINESS THEY DESCRIBE':'2025 \u00b7 THE BUSINESS THEY RUN', claim?C.grey:C.red);
+      h+='<div style="flex:1; min-height:0; margin-top:0.6cqw;">'+this.svgTag('bars',{year:claim?'2019':'2025',seed:claim?5:12},'0 0 480 250','width:100%; height:100%; overflow:visible;')+'</div>';
+      h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:'+(claim?'#8f8c83':C.red)+'; font-style:italic;">'+(claim?'Same four lines. Same scale.':'Revenue held. Everything under it did not.')+'</div>';
+      h+='</div>';
+    } else if(key==='story'){
+      if(claim){
+        h+='<div style="'+pad+' justify-content:center;">';
+        h+=tag('THE STORY EVERYONE REPEATED', C.grey);
+        h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6.4cqw; line-height:1.02; margin-top:2cqw; max-width:74cqw;">\u201cGrowth is over at this company.\u201d</div>';
+        h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:2.2cqw; color:#8f8c83; font-style:italic; margin-top:2.4cqw;">Four outlets, same afternoon, same phrase.</div>';
+        h+='</div>';
+      } else {
+        const rows=[['Revenue','+4%',true],['Free cash flow','\u00a3186m',true],['Customers','+9%',true],['Gross margin','\u2212350bp',false]];
+        h+='<div style="'+pad+'">';
+        h+=tag('THE TAPE', C.red);
+        h+='<div style="flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:1.6cqw; margin-top:1.6cqw;">';
+        rows.forEach(r=>{
+          h+='<div style="background:'+C.paper+'; border:0.4cqw solid '+(r[2]?C.gdk:C.red)+'; border-radius:1.2cqw; padding:1.8cqw 2cqw; display:flex; flex-direction:column; justify-content:center;"><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.14em; color:#8f8c83;">'+r[0].toUpperCase()+'</div><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:3.4cqw; color:'+(r[2]?C.gdk:C.red)+'; margin-top:0.4cqw;">'+r[1]+'</div></div>';
+        });
+        h+='</div></div>';
+      }
+    }
+    return h;
+  }
+  buildSlider(key,p){
+    const C=this.C, pct=(p*100).toFixed(2);
+    const wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let h='';
+    // reality underneath (right side shows through)
+    h+='<div style="position:absolute; inset:0;">'+this.layer(key,'reality')+'</div>';
+    // claim on top, clipped to the left of the handle
+    h+='<div style="position:absolute; inset:0; clip-path:inset(0 0 0 '+pct+'%); background:#f2f2ef url(\'uploads/bg_light_flat_wide.png\') center/cover;">'+this.layer(key,'claim')+'</div>';
+    // handle
+    if(p>0.001 && p<0.999){
+      h+='<div style="position:absolute; top:0; bottom:0; left:'+pct+'%; width:0.5cqw; margin-left:-0.25cqw; background:'+C.red+';"></div>';
+      h+='<div style="position:absolute; top:50%; left:'+pct+'%; transform:translate(-50%,-50%); width:5.4cqw; height:5.4cqw; border-radius:50%; background:'+C.red+'; display:flex; align-items:center; justify-content:center; box-shadow:0 0.4cqw 1.2cqw rgba(35,35,38,.28);">';
+      h+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.2cqw; color:#f2f2ef; letter-spacing:-.04em;">\u2039\u203a</span></div>';
+    }
+    wrap.innerHTML=h;
+    return wrap;
+  }
+  mountAll(){
+    this.defs.forEach(d=>{
+      const live=this.hosts[d.key+':live'] && this.hosts[d.key+':live'].current;
+      if(live){ live.textContent=''; live.appendChild(this.buildSlider(d.key,this.state.pos[d.key])); }
+      [0,0.5,1].forEach(p=>{
+        const ref=this.hosts[d.key+':'+p];
+        const host=ref && ref.current;
+        if(host){ host.textContent=''; host.appendChild(this.buildSlider(d.key,p)); }
+      });
+    });
+  }
+  setPos(key,clientX){
+    const ref=this.liveRefs[key], el=ref && ref.current;
+    if(!el) return;
+    const r=el.getBoundingClientRect();
+    const p=Math.max(0.04,Math.min(0.96,(clientX-r.left)/r.width));
+    this.setState(s=>({ pos:{...s.pos, [key]:p} }));
+  }
+  componentDidMount(){
+    this.mountAll();
+    this.onMove=(e)=>{ if(this.drag) this.setPos(this.drag, e.clientX); };
+    this.onUp=()=>{ this.drag=null; };
+    window.addEventListener('pointermove',this.onMove);
+    window.addEventListener('pointerup',this.onUp);
+  }
+  componentWillUnmount(){
+    window.removeEventListener('pointermove',this.onMove);
+    window.removeEventListener('pointerup',this.onUp);
+  }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.mountAll();
+    const root=this.rootRef.current;
+    if(root) root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el));
+  }
+  renderVals(){
+    const ref=(k)=>{ if(!this.hosts[k]) this.hosts[k]=React.createRef(); return this.hosts[k]; };
+    const lref=(k)=>{ if(!this.liveRefs[k]) this.liveRefs[k]=React.createRef(); return this.liveRefs[k]; };
+    const sliders=this.defs.map(d=>({
+      ...d,
+      liveRef:lref(d.key),
+      liveHost:ref(d.key+':live'),
+      posLabel:Math.round(this.state.pos[d.key]*100)+'%',
+      onDown:(e)=>{ this.drag=d.key; this.setPos(d.key,e.clientX); },
+      stops:[
+        { label:'p00.png · claim only', id:'sliders/'+d.file+'/p00', host:ref(d.key+':0') },
+        { label:'p50.png · halfway', id:'sliders/'+d.file+'/p50', host:ref(d.key+':0.5') },
+        { label:'p100.png · reality only', id:'sliders/'+d.file+'/p100', host:ref(d.key+':1') }
+      ]
+    }));
+    return { rootRef:this.rootRef, sliders };
+  }
+}
+</script>
+</body>
+</html>

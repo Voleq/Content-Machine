@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · DATA TABLES</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Six rows,<br>read them out</h1>
+  <p style="margin:18px 0 0; max-width:860px; font-size:17px; line-height:1.6; color:#3a3a3d;">A table on screen is a <strong>reading exercise</strong>, so the rules are strict: six rows maximum, four columns maximum, figures in Space Mono so the digits line up, one red column and no more. Every table has a <strong>highlight state</strong> — the row Dennis is talking about — so the pipeline can hold the plain frame, then cut to the marked one.</p>
+</header>
+
+<sc-for list="{{ sections }}" as="sec" hint-placeholder-count="5">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ sec.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ sec.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ sec.note }}</span>
+    </div>
+    <div style="font-size:13.5px; color:#6f6c65; line-height:1.5; max-width:820px; margin:0 0 14px;">{{ sec.blurb }}</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 42px;">
+      <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="2">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ c.file }}</div>
+          <div data-export="{{ c.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+            <div ref="{{ c.slot }}" style="position:absolute; inset:0;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/tables/ · 1920×1080 · plain frame then highlight frame, same geometry</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · data tables · 5 kinds · plain + highlight pairs</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.slots = {};
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||28; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+
+  ringInk(rand,W,H){ return this._stroke(this._ell(W*0.5,H*0.5,W*0.47,H*0.34,-0.18,Math.PI*2+0.42),rand,{w:H*0.13,r:H*0.07,s:this.C.red}); }
+  arrowInk(rand,W,H){
+    const C=this.C, y=H*0.5, tip=W*0.78;
+    let s=this._stroke([[W*0.08,y],[tip,y]],rand,{w:H*0.13,r:H*0.05,s:C.red});
+    const len=H*0.34;
+    s+=this._stroke([[tip,y],[tip+len*Math.cos(Math.PI-0.42),y+len*Math.sin(Math.PI-0.42)]],rand,{w:H*0.13,r:H*0.05,s:C.red});
+    s+=this._stroke([[tip,y],[tip+len*Math.cos(Math.PI+0.42),y+len*Math.sin(Math.PI+0.42)]],rand,{w:H*0.13,r:H*0.05,s:C.red});
+    return s;
+  }
+  braceInk(rand,W,H){ return this._stroke([[W*0.70,H*0.04],[W*0.94,H*0.16],[W*0.94,H*0.84],[W*0.70,H*0.96]],rand,{w:W*0.05,r:W*0.028,s:this.C.red}); }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 300 100').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const map={ ring:'ringInk', arrow:'arrowInk', brace:'braceInk' };
+    const fn=map[el.dataset.ink];
+    el.innerHTML = fn? this[fn](rand,W,H) : '';
+    el.setAttribute('data-drawn','1');
+  }
+  svgTag(ink,seed,vb,style,par){ return '<svg data-ink="'+ink+'" data-seed="'+seed+'" viewBox="'+vb+'"'+(par?' preserveAspectRatio="'+par+'"':'')+' style="'+style+'"></svg>'; }
+
+  // grid table: cols = [{label, w, align, tone}], rows = [[cells...]]
+  grid(o){
+    const C=this.C, hi=o.highlight;
+    let h='<div style="position:absolute; inset:0; padding:5.5cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+    h+='<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2.4cqw;">';
+    h+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.26em; color:'+C.red+';">'+o.kicker+'</span>';
+    h+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; color:#8f8c83;">'+o.source+'</span>';
+    h+='</div>';
+    const cols=o.cols, tmpl=cols.map(c=>c.w).join(' ');
+    h+='<div style="flex:1; min-height:0; display:flex; flex-direction:column;">';
+    h+='<div style="display:grid; grid-template-columns:'+tmpl+'; gap:0 2cqw; padding-bottom:1.1cqw; border-bottom:0.34cqw solid '+C.ink+';">';
+    cols.forEach(c=>{
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.55cqw; letter-spacing:.16em; color:#8f8c83; text-align:'+(c.align||'left')+';">'+c.label+'</div>';
+    });
+    h+='</div>';
+    h+='<div style="flex:1; min-height:0; display:flex; flex-direction:column; justify-content:space-evenly;">';
+    o.rows.forEach((row,ri)=>{
+      const on=(hi===ri);
+      h+='<div style="position:relative; display:grid; grid-template-columns:'+tmpl+'; gap:0 2cqw; align-items:center; padding:0.9cqw 1.4cqw; margin:0 -1.4cqw; border-radius:0.7cqw; background:'+(on?'rgba(255,82,71,.11)':'transparent')+';">';
+      row.forEach((cell,ci)=>{
+        const c=cols[ci], mono=(ci>0);
+        let col=C.ink;
+        if(c.tone==='delta') col = /^[-−]/.test(String(cell))? C.red : /^\+/.test(String(cell))? C.gdk : C.ink;
+        else if(c.tone==='muted') col=C.grey;
+        const size = mono? (o.big?'2.5cqw':'2.2cqw') : (o.big?'2.6cqw':'2.3cqw');
+        const fam = mono? "'Space Mono',monospace" : "'Space Grotesk',sans-serif";
+        const wt = mono? 700 : (on?700:500);
+        h+='<div style="font-family:'+fam+'; font-weight:'+wt+'; font-size:'+size+'; line-height:1.15; color:'+col+'; text-align:'+(c.align||'left')+';">'+cell+'</div>';
+      });
+      if(on && o.mark==='ring') h+=this.svgTag('ring',3+ri,'0 0 300 90','position:absolute; right:-0.6cqw; top:-0.9cqw; width:26cqw; height:6.4cqw; overflow:visible;','none');
+      h+='</div>';
+      if(ri<o.rows.length-1) h+='<div style="height:1px; background:'+C.ghost+'; opacity:.85;"></div>';
+    });
+    h+='</div></div>';
+    if(o.foot) h+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:1.85cqw; color:'+(o.footRed?C.red:'#8f8c83')+'; font-style:italic; margin-top:1.8cqw;">'+o.foot+'</div>';
+    h+='</div>';
+    if(o.mark==='arrow' && hi!=null){
+      const top = 26 + hi*11.4;
+      h+=this.svgTag('arrow',9,'0 0 300 90','position:absolute; left:-1cqw; top:'+top+'cqw; width:12cqw; height:4cqw; overflow:visible;','none');
+    }
+    return h;
+  }
+
+  buildCard(kind){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let html='';
+    if(kind==='pl-plain' || kind==='pl-hi'){
+      html=this.grid({
+        kicker:'THE INCOME STATEMENT, HONESTLY',
+        source:'FY24 20-F \u00b7 \u00a3m',
+        cols:[{label:'LINE',w:'1.5fr'},{label:'FY23',w:'1fr',align:'right'},{label:'FY24',w:'1fr',align:'right'},{label:'CHANGE',w:'1fr',align:'right',tone:'delta'}],
+        rows:[
+          ['Revenue','1,196','1,244','+4%'],
+          ['Gross profit','412','386','\u22126%'],
+          ['Gross margin','34.5%','31.0%','\u2212350bp'],
+          ['Operating profit','168','121','\u221228%'],
+          ['Free cash flow','227','186','\u221218%'],
+          ['Net debt','1,640','1,902','+16%']
+        ],
+        highlight: kind==='pl-hi'? 2 : null,
+        mark: kind==='pl-hi'? 'ring' : null,
+        foot: kind==='pl-hi'? 'Revenue up, everything under it down. That is the whole episode.' : 'Six rows. Anything longer and nobody reads it.',
+        footRed: kind==='pl-hi'
+      });
+    } else if(kind==='comps-plain' || kind==='comps-hi'){
+      html=this.grid({
+        kicker:'THE NEIGHBOURS',
+        source:'CONSENSUS \u00b7 LAST CLOSE',
+        cols:[{label:'COMPANY',w:'1.5fr'},{label:'EV/EBITDA',w:'1fr',align:'right'},{label:'FCF YIELD',w:'1fr',align:'right'},{label:'NET DEBT/EBITDA',w:'1.1fr',align:'right'}],
+        rows:[
+          ['GYMX','4.1\u00d7','8.4%','3.9\u00d7'],
+          ['Peer A','7.8\u00d7','4.1%','1.2\u00d7'],
+          ['Peer B','9.2\u00d7','3.4%','0.8\u00d7'],
+          ['Peer C','6.6\u00d7','5.0%','2.1\u00d7'],
+          ['Sector median','7.2\u00d7','4.4%','1.4\u00d7']
+        ],
+        big:true,
+        highlight: kind==='comps-hi'? 0 : null,
+        mark: kind==='comps-hi'? 'arrow' : null,
+        foot: kind==='comps-hi'? 'Cheapest on two measures and the most indebted on the third. Pick which one you believe.' : 'One red column maximum \u2014 the eye needs somewhere to rest.',
+        footRed: kind==='comps-hi'
+      });
+    } else if(kind==='segments-plain' || kind==='segments-hi'){
+      html=this.grid({
+        kicker:'BY SEGMENT',
+        source:'FY24 \u00b7 \u00a3m',
+        cols:[{label:'SEGMENT',w:'1.4fr'},{label:'REVENUE',w:'1fr',align:'right'},{label:'MARGIN',w:'1fr',align:'right'},{label:'VS LAST YEAR',w:'1.1fr',align:'right',tone:'delta'}],
+        rows:[
+          ['Hotels','771','36.2%','+2%'],
+          ['Gyms','298','21.4%','\u221211%'],
+          ['Direct','175','14.8%','+31%']
+        ],
+        big:true,
+        highlight: kind==='segments-hi'? 1 : null,
+        mark: kind==='segments-hi'? 'ring' : null,
+        foot: kind==='segments-hi'? 'The shrinking segment is the one with the contract renewal in it.' : 'Three rows is fine. Do not pad a table to fill the frame.',
+        footRed: kind==='segments-hi'
+      });
+    } else if(kind==='maturity-plain' || kind==='maturity-hi'){
+      html=this.grid({
+        kicker:'WHEN THE DEBT IS DUE',
+        source:'FY24 20-F \u00b7 NOTE 18 \u00b7 \u00a3m',
+        cols:[{label:'DUE',w:'1fr'},{label:'AMOUNT',w:'1fr',align:'right'},{label:'COUPON',w:'1fr',align:'right'},{label:'COVERED BY CASH',w:'1.2fr',align:'right'}],
+        rows:[
+          ['2026','1,900','4.1%','no'],
+          ['2027','120','4.4%','yes'],
+          ['2028','480','5.2%','no'],
+          ['2029','210','5.6%','yes'],
+          ['Cash on hand','240','\u2014','\u2014']
+        ],
+        highlight: kind==='maturity-hi'? 0 : null,
+        mark: kind==='maturity-hi'? 'ring' : null,
+        foot: kind==='maturity-hi'? '\u00a31.9bn due against \u00a3240m of cash. Refinance or dilute \u2014 those are the options.' : 'Put the cash line last so the comparison lands without narration.',
+        footRed: kind==='maturity-hi'
+      });
+    } else if(kind==='adjusted'){
+      html=this.grid({
+        kicker:'ADJUSTED VS ACTUAL',
+        source:'FY24 \u00b7 \u00a3m',
+        cols:[{label:'MEASURE',w:'1.5fr'},{label:'AS ADJUSTED',w:'1.1fr',align:'right'},{label:'AS REPORTED',w:'1.1fr',align:'right'},{label:'THE GAP',w:'1fr',align:'right',tone:'delta'}],
+        rows:[
+          ['EBITDA','486','389','\u221297'],
+          ['Operating profit','204','121','\u221283'],
+          ['EPS','41.2p','18.6p','\u221222.6p'],
+          ['Net debt/EBITDA','3.9\u00d7','4.9\u00d7','\u22121.0\u00d7']
+        ],
+        big:true,
+        highlight:2,
+        mark:'ring',
+        foot:'Every adjustment runs the same direction. That is not an accident.',
+        footRed:true
+      });
+    } else if(kind==='footnote'){
+      html='<div style="position:absolute; inset:0; padding:5.5cqw 6cqw 5cqw; display:flex; flex-direction:column;">';
+      html+='<div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2.2cqw;">';
+      html+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.26em; color:'+C.red+';">THE TABLE, AND WHAT IT LEAVES OUT</span>';
+      html+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; color:#8f8c83;">P.84 \u00b7 NOTE 12</span>';
+      html+='</div>';
+      html+='<div style="flex:1; min-height:0; display:grid; grid-template-columns:1.25fr 1fr; gap:3.4cqw;">';
+      html+='<div style="display:flex; flex-direction:column; justify-content:space-evenly;">';
+      const rows=[['Customer A','512','41%'],['Customer B','149','12%'],['Customer C','96','8%'],['All others','487','39%']];
+      html+='<div style="display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:0 1.6cqw; padding-bottom:1cqw; border-bottom:0.34cqw solid '+C.ink+';">';
+      ['CUSTOMER','\u00a3m','SHARE'].forEach((l,i)=>{ html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.16em; color:#8f8c83; text-align:'+(i?'right':'left')+';">'+l+'</div>'; });
+      html+='</div>';
+      rows.forEach((r,ri)=>{
+        const on=(ri===0);
+        html+='<div style="display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:0 1.6cqw; align-items:center; padding:0.9cqw 1.2cqw; margin:0 -1.2cqw; border-radius:0.7cqw; background:'+(on?'rgba(255,82,71,.11)':'transparent')+';">';
+        html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:'+(on?700:500)+'; font-size:2.2cqw; color:'+C.ink+';">'+r[0]+'</div>';
+        html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.2cqw; text-align:right; color:'+C.ink+';">'+r[1]+'</div>';
+        html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.2cqw; text-align:right; color:'+(on?C.red:C.ink)+';">'+r[2]+'</div>';
+        html+='</div>';
+        if(ri<rows.length-1) html+='<div style="height:1px; background:'+C.ghost+';"></div>';
+      });
+      html+='</div>';
+      html+='<div style="display:flex; flex-direction:column; justify-content:center; gap:1.6cqw;">';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:3.6cqw; line-height:1.04; color:'+C.ink+';">The table is fine.<br>The footnote is<br>the story.</div>';
+      html+='<div style="background:'+C.paper+'; border-left:0.7cqw solid '+C.red+'; border-radius:0.6cqw; padding:1.8cqw 2cqw;"><div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:1.9cqw; line-height:1.3; color:#3a3a3d;">\u201cThe contract with Customer A is subject to renewal in the next financial year.\u201d</div></div>';
+      html+='</div>';
+      html+='</div></div>';
+    }
+    wrap.innerHTML=html;
+    return wrap;
+  }
+  mountCards(){
+    Object.keys(this.slots).forEach(kind=>{
+      const host=this.slots[kind] && this.slots[kind].current;
+      if(!host) return;
+      host.textContent='';
+      host.appendChild(this.buildCard(kind));
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountCards(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const slot=(k)=>{ if(!this.slots[k]) this.slots[k]=React.createRef(); return this.slots[k]; };
+    const card=(k,file,id)=>({ file, id, slot:slot(k) });
+    return {
+      rootRef:this.rootRef,
+      sections:[
+        { n:'01', title:'The income statement', note:'6 rows \u00b7 the maximum', blurb:'The workhorse. Plain frame first while Dennis sets it up, then cut to the highlight frame when he reaches the margin line \u2014 same geometry, so the cut doesn\u2019t jump.', cards:[
+          card('pl-plain','table-pl.png \u00b7 plain','tables/pl-plain'),
+          card('pl-hi','table-pl-hi.png \u00b7 margin row ringed','tables/pl-highlight')
+        ]},
+        { n:'02', title:'Peer comps', note:'us against the median', blurb:'Our name first, sector median last, nothing in between that isn\u2019t a real comparable. The arrow marks the row rather than colouring the whole table.', cards:[
+          card('comps-plain','table-comps.png \u00b7 plain','tables/comps-plain'),
+          card('comps-hi','table-comps-hi.png \u00b7 our row marked','tables/comps-highlight')
+        ]},
+        { n:'03', title:'Segments', note:'3 rows \u00b7 don\u2019t pad it', blurb:'Short tables are allowed. Three real segments beat six invented ones, and the frame is designed to look deliberate at that height.', cards:[
+          card('segments-plain','table-segments.png \u00b7 plain','tables/segments-plain'),
+          card('segments-hi','table-segments-hi.png \u00b7 shrinking row','tables/segments-highlight')
+        ]},
+        { n:'04', title:'Debt maturities', note:'cash line last, on purpose', blurb:'The schedule that decides the story. Putting cash on the bottom row means the comparison lands before Dennis says a word.', cards:[
+          card('maturity-plain','table-maturities.png \u00b7 plain','tables/maturities-plain'),
+          card('maturity-hi','table-maturities-hi.png \u00b7 the wall ringed','tables/maturities-highlight')
+        ]},
+        { n:'05', title:'Two specials', note:'adjusted vs actual \u00b7 table + footnote', blurb:'Two frames that only exist because the channel keeps needing them: the adjustments laid next to the reported figures, and a table paired with the footnote that undermines it.', cards:[
+          card('adjusted','table-adjusted.png','tables/adjusted'),
+          card('footnote','table-with-footnote.png','tables/with-footnote')
+        ]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

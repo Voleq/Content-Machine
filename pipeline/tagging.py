@@ -18,8 +18,9 @@ from dataclasses import dataclass
 
 from pipeline.models import TagType
 
-# A broad net so unknown tag types are stripped rather than spoken.
-_ANY_TAG_RE = re.compile(r"\[([A-Z][A-Z -]*?):\s*([^\]\n]+)\]")
+# A broad net so unknown tag types are stripped rather than spoken. The
+# payload is optional: delivery directives ([BEAT], [SIGH]) carry none.
+_ANY_TAG_RE = re.compile(r"\[([A-Z][A-Z -]*?)(?::\s*([^\]\n]+))?\]")
 _KNOWN_TYPES = {t.value: t for t in TagType}
 
 # [CHART: revenue style=marker] — optional trailing style token.
@@ -57,7 +58,7 @@ def tokenize_tags(
         last = m.end()
 
         type_str = m.group(1).strip()
-        payload = m.group(2).strip()
+        payload = (m.group(2) or "").strip()
         tag_type = _KNOWN_TYPES.get(type_str)
         if tag_type is None:
             warnings.append(

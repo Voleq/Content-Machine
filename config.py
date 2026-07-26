@@ -13,6 +13,7 @@ Hard rules encoded here:
 
 from __future__ import annotations
 
+import os
 import shutil
 from functools import lru_cache
 from pathlib import Path
@@ -82,8 +83,10 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------- character budgets
     # SHORT is 60–75s of retention-first "Noise or signal?": ~180–210 spoken
-    # words at the mock ~2.7 w/s, so ~1200 chars is the ceiling (not a target).
-    short_max_chars: int = Field(default=1200, alias="SHORT_MAX_CHARS")
+    # words at the mock ~2.7 w/s. 210 words of ordinary English runs right at
+    # 1200 chars, which left the budget with no headroom at all — 1400 is the
+    # ceiling (not a target) so a script at the top of the word range fits.
+    short_max_chars: int = Field(default=1400, alias="SHORT_MAX_CHARS")
     # LONG length is complexity-driven, not fixed: a clean thesis is a few
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
@@ -141,6 +144,127 @@ class Settings(BaseSettings):
         default="https://models.inference.ai.azure.com", alias="GITHUB_MODELS_ENDPOINT")
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_base_url: str = "https://api.openai.com"
+    # --- LLM routing ------------------------------------------------------
+    # The cheap passes run local-first: a 7-8B model on the render box's GPU
+    # has no rate limit and no quota, and is still $0. Hosted tiers are the
+    # fallback. Comma-separated; empty means ollama,github,openai.
+    llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
+    # A render built on a stale snapshot states old numbers as current.
+    data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
+    data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
+
+    # ------------------------------------- by-products + status page (P3.6)
+    # Every finished render emits the kit's thumbnail layouts, social cards
+    # and end screens — free, since the artwork and the data already exist.
+    byproducts_enabled: bool = Field(default=True, alias="BYPRODUCTS_ENABLED")
+    # Where golden reference frames live. Blank = fixtures/golden. Overridden
+    # in tests so a run can never bless frames into the repo's own fixtures.
+    golden_dir: str = Field(default="", alias="GOLDEN_DIR")
+    # A read-only localhost view of queue/backlog/renders. Loopback only: it
+    # shows the render box's internals and has no authentication.
+    status_page_enabled: bool = Field(default=False, alias="STATUS_PAGE_ENABLED")
+    status_page_port: int = Field(default=8787, alias="STATUS_PAGE_PORT")
+    status_refresh_s: int = Field(default=20, alias="STATUS_REFRESH_S")
+
+    # -------------------------------------- YouTube publishing (P3.5 + 5b)
+    # Uploads are ALWAYS private or scheduled — never public straight out of a
+    # machine. Long-form gets made in batches, so a publish datetime can be
+    # set per video and the cadence runs itself.
+    youtube_enabled: bool = Field(default=False, alias="YOUTUBE_ENABLED")
+    youtube_credentials: str = Field(default="", alias="YOUTUBE_CREDENTIALS")
+    youtube_category_id: str = Field(default="25", alias="YOUTUBE_CATEGORY_ID")  # News & Politics
+    # How far back the Analytics query looks when pulling retention.
+    retention_window_days: int = Field(default=28, alias="RETENTION_WINDOW_DAYS")
+
+    # ------------------------------------------------ free sources (P3.4)
+    # 8-K/EX-99.1, Form 4 and 13F reuse the EDGAR client above (SEC_USER_AGENT
+    # and the fair-access interval apply). FRED needs its own free key. Every
+    # source degrades to "unavailable" rather than failing a run.
+    fred_api_key: str = Field(default="", alias="FRED_API_KEY")
+    fred_base_url: str = "https://api.stlouisfed.org"
+    # Optional webcast transcription. Slow and GPU-hungry; nothing waits on it.
+    whisper_enabled: bool = Field(default=False, alias="WHISPER_ENABLED")
+    whisper_model: str = Field(default="base.en", alias="WHISPER_MODEL")
+    whisper_cuda: bool = Field(default=True, alias="WHISPER_CUDA")
+
+    # ---------------------------------------------- intraday alerting (3b)
+    # Short-form is time-sensitive, and one pre-market digest doesn't cover
+    # it. These watch covered names during market hours. Every knob here
+    # exists to stop the bot being chatty: a muted alerter is worse than none.
+    alerts_enabled: bool = Field(default=True, alias="ALERTS_ENABLED")
+    alert_poll_minutes: int = Field(default=15, alias="ALERT_POLL_MINUTES")
+    alert_move_pct: float = Field(default=6.0, alias="ALERT_MOVE_PCT")
+    alert_volume_multiple: float = Field(default=3.0, alias="ALERT_VOLUME_MULTIPLE")
+    # A mover we've never covered has to be much bigger to be worth saying —
+    # otherwise this just duplicates the screener, loudly.
+    alert_unwatched_pct: float = Field(default=12.0, alias="ALERT_UNWATCHED_PCT")
+    alert_cooldown_minutes: int = Field(default=180, alias="ALERT_COOLDOWN_MINUTES")
+    # Inside the cooldown, a repeat needs to be this much bigger to speak.
+    alert_escalation_factor: float = Field(default=1.75, alias="ALERT_ESCALATION_FACTOR")
+    alert_max_per_poll: int = Field(default=4, alias="ALERT_MAX_PER_POLL")
+    # The hours alerts ARE allowed, local time (may cross midnight).
+    alert_start_hour: int = Field(default=9, alias="ALERT_START_HOUR")
+    alert_end_hour: int = Field(default=17, alias="ALERT_END_HOUR")
+    alert_weekends: bool = Field(default=False, alias="ALERT_WEEKENDS")
+
+    # ------------------------------------------------ standing state (P3.3)
+    # What the bot remembers between sessions: each covered ticker's thesis
+    # and the numbers behind it, a ranked idea backlog, and renders queued to
+    # run unattended overnight.
+    thesis_tracking: bool = Field(default=True, alias="THESIS_TRACKING")
+    idea_queue_max_age_days: int = Field(default=30, alias="IDEA_QUEUE_MAX_AGE_DAYS")
+    repurpose_clips: int = Field(default=3, alias="REPURPOSE_CLIPS")
+    # The unattended window, local time. The render box is a desktop that
+    # sleeps, so a batch that does not run is a non-event — the work waits.
+    batch_start_hour: int = Field(default=1, alias="BATCH_START_HOUR")
+    batch_end_hour: int = Field(default=7, alias="BATCH_END_HOUR")
+    batch_enabled: bool = Field(default=True, alias="BATCH_ENABLED")
+
+    # -------------------------------------------------- local TTS (drafts)
+    # A third audio tier between the mock hum and the paid voice: a local
+    # neural voice on the render box's GPU, free, listenable, and marked
+    # draft. Purpose is to iterate on pacing and edit points without spending;
+    # the final still buys one ElevenLabs generation. Absent Piper, a draft
+    # falls back to mock — never to paid.
+    local_tts_enabled: bool = Field(default=True, alias="LOCAL_TTS_ENABLED")
+    local_tts_binary: str = Field(default="piper", alias="LOCAL_TTS_BINARY")
+    local_tts_model: str = Field(default="", alias="LOCAL_TTS_MODEL")  # .onnx voice
+    local_tts_speaker: int = Field(default=-1, alias="LOCAL_TTS_SPEAKER")  # -1 = default
+    local_tts_cuda: bool = Field(default=True, alias="LOCAL_TTS_CUDA")
+
+    # ------------------------------------------------- Excel refresh (COM)
+    # The render box runs Windows with Excel and the LSEG/CIQ add-in loaded,
+    # so the bot refreshes the data template itself instead of asking for an
+    # upload. Off-Windows (and with the switch off) the manual upload is the
+    # only path — which is exactly what it was before this existed.
+    excel_refresh_enabled: bool = Field(default=True, alias="EXCEL_REFRESH_ENABLED")
+    excel_template_path: str = Field(default="", alias="EXCEL_TEMPLATE_PATH")
+    # v3.1 template: the plain Capital IQ ticker goes in Snapshot!C3 and every
+    # CIQ formula reads it; B3 DERIVES the Refinitiv RIC from it and must not
+    # be written. Override only if the template moves them.
+    excel_ticker_cell: str = Field(default="C3", alias="EXCEL_TICKER_CELL")
+    excel_ric_cell: str = Field(default="E2", alias="EXCEL_RIC_CELL")
+    # Normally blank: the template looks the RIC suffix up from the exchange
+    # itself (the hidden _RICMap table), which beats guessing. Set this to
+    # force one — ".O" makes PLTR into PLTR.O. Per-ticker pins in
+    # state/excel_symbols.json beat this, and both land in the RIC override
+    # cell, never in the ticker cell.
+    excel_symbol_suffix: str = Field(default="", alias="EXCEL_SYMBOL_SUFFIX")
+    # Which add-in macro fires the refresh differs by vintage; comma-separated
+    # candidates, tried in order, falling back to a full recalculation.
+    excel_refresh_macros: str = Field(default="", alias="EXCEL_REFRESH_MACROS")
+    # CIQ/LSEG refreshes are asynchronous. Finishing early yields a workbook
+    # full of blanks that looks like success, so the poll is generous and a
+    # timeout is a hard failure.
+    excel_refresh_timeout_s: float = Field(default=240.0, alias="EXCEL_REFRESH_TIMEOUT_S")
+    excel_poll_interval_s: float = Field(default=2.0, alias="EXCEL_POLL_INTERVAL_S")
+    # Consecutive unchanged polls before the snapshot is called settled.
+    excel_settle_polls: int = Field(default=3, alias="EXCEL_SETTLE_POLLS")
+    excel_visible: bool = Field(default=False, alias="EXCEL_VISIBLE")
+    ollama_base_url: str = Field(default="http://127.0.0.1:11434",
+                                 alias="OLLAMA_BASE_URL")
+    ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
+    ollama_timeout_s: float = 120.0
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")
@@ -158,9 +282,13 @@ class Settings(BaseSettings):
     long_width: int = 1920
     long_height: int = 1080
     short_target_seconds: float = 70.0  # 60–75s "Noise or signal?" band midpoint
-    # fast-cut pacing (§editing): ~1.5–3s cuts everywhere, no static shots
-    long_min_cut_s: float = 1.5
-    long_max_cut_s: float = 3.0
+    # Deliberate pacing (§editing): Dennis holds the frame and cuts away to
+    # evidence that stays up long enough to read. `long_min_readable_s` is the
+    # floor for data visuals — a later cut is deferred rather than truncating
+    # a chart or a filing the viewer is still reading.
+    long_min_readable_s: float = 5.0
+    # host on each side of a chapter boundary, so chapters bookend on his face
+    long_chapter_host_s: float = 2.5
 
     # encode profiles (§7.3) — libx264 assumed on a cheap VPS; hardware
     # encoders are auto-detected at startup and used when present.
@@ -170,13 +298,45 @@ class Settings(BaseSettings):
     long_crf: int = 22
     draft_crf: int = 32
     draft_scale: float = 0.5               # draft renders at half resolution
+    # PREVIEW is a third, cheaper tier below draft: 480p at 15fps, for
+    # judging edit and pacing when neither resolution nor smoothness
+    # matters. Halving the frame rate roughly halves the filter-graph work,
+    # which is where the time actually goes.
+    preview_scale: float = 0.25
+    preview_fps: int = 15
+    preview_crf: int = 34
     audio_bitrate: str = "192k"
     music_gain_db: float = -22.0           # music bed under the VO
     sfx_gain_db: float = -6.0
     use_hardware_encoder: bool = True      # if detected; falls back to libx264
 
+    # --- encode politeness ------------------------------------------------
+    # The render box is the operator's daily-driver desktop, and renders are
+    # unattended: slower-but-polite is the right trade. ffmpeg is capped to a
+    # share of the cores and runs de-prioritised, so a 40-minute LONG never
+    # makes the machine unusable.
+    #
+    # `render_thread_fraction` is a share of os.cpu_count(); the resolved cap
+    # is at least 1 and never exceeds the core count. Set
+    # `render_threads` to pin an exact number instead (0 = derive it).
+    render_thread_fraction: float = Field(default=0.5, ge=0.05, le=1.0)
+    render_threads: int = Field(default=0, ge=0)
+    # Below-normal priority on Windows, +10 nice on POSIX. Off means the
+    # render competes with the desktop on equal terms.
+    render_below_normal_priority: bool = True
+    # Encode each beat as its own clip — content-hash cached, encoded in
+    # parallel, resumable across a reboot — then concatenate. False falls back
+    # to the original monolithic filter_complex, kept for comparison.
+    render_segmented: bool = Field(default=True, alias="RENDER_SEGMENTED")
+    # Bound the segment cache; it lives outside the workspace on purpose so it
+    # survives cleanup and reboots.
+    segment_cache_max_files: int = 4000
+
     # --------------------------------------------------------------- delivery
-    delivery_backend: str = Field(default="gdrive", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
+    # The renderer is now the operator's own machine, so a Drive round-trip
+    # is pure latency: write to a watched folder and post the path. gdrive
+    # stays available for when the bot moves to a separate always-on host.
+    delivery_backend: str = Field(default="local", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
     gdrive_root_folder_id: str = Field(default="", alias="GDRIVE_ROOT_FOLDER_ID")
     gdrive_folder_name: str = "Dennis"
@@ -279,6 +439,13 @@ class Settings(BaseSettings):
         for d in (self.workspace_dir, self.cache_dir, self.state_dir):
             d.mkdir(parents=True, exist_ok=True)
 
+    def resolved_render_threads(self) -> int:
+        """How many threads ffmpeg may use, leaving the desktop responsive."""
+        cores = os.cpu_count() or 4
+        if self.render_threads:
+            return max(1, min(self.render_threads, cores))
+        return max(1, min(cores, round(cores * self.render_thread_fraction)))
+
 
 def detect_ffmpeg() -> tuple[str, str]:
     """Locate ffmpeg/ffprobe or fail loudly at startup."""
@@ -286,7 +453,10 @@ def detect_ffmpeg() -> tuple[str, str]:
     ffprobe = shutil.which("ffprobe")
     if not ffmpeg or not ffprobe:
         raise RuntimeError(
-            "ffmpeg/ffprobe not found on PATH. Install FFmpeg 6+ (apt install ffmpeg)."
+            "ffmpeg/ffprobe not found on PATH. Install FFmpeg 6+ — "
+            "Linux: `apt install ffmpeg`; "
+            "Windows: `winget install Gyan.FFmpeg` (then reopen the terminal "
+            "so PATH refreshes)."
         )
     return ffmpeg, ffprobe
 

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1340px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · EPISODE FURNITURE</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Top and tail</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">Everything that isn’t the argument: the title card, the agenda, the interstitials that buy a breath, and the end card. All <strong>1920×1080</strong>, same room, same ink — so an episode top-and-tails itself without anyone opening a design file.</p>
+</header>
+
+<sc-for list="{{ sections }}" as="sec" hint-placeholder-count="4">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ sec.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ sec.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ sec.note }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:0 0 40px;">
+      <sc-for list="{{ sec.cards }}" as="c" hint-placeholder-count="2">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">{{ c.file }}</div>
+          <div data-export="{{ c.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+            <div ref="{{ c.slot }}" style="position:absolute; inset:0;"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/episode/ · 1920×1080 · every frame above carries a data-export id</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · episode furniture · title · agenda · interstitials · end card</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1340,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6' };
+    this.slots = {};
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _shift(dx,dy,inner){ return '<g transform="translate('+dx.toFixed(1)+','+dy.toFixed(1)+')">'+inner+'</g>'; }
+
+  body(rand){ const c=this.C.ink; let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:c}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:c}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:c}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:c}); return s; }
+  headFront(rand){ const c=this.C.ink; return this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c})+this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:c}); }
+  headSide(rand,dir){ const c=this.C.ink,sign=dir==='right'?1:-1; let s=this._stroke(this._ell(500,300,116,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c}); s+=this._stroke([[500+sign*96,322],[500+sign*124,340],[500+sign*96,356]],rand,{w:4,r:2.2,s:c}); const tx=500-sign*30; s+=this._stroke([[tx,176],[tx-sign*18,150],[tx+sign*12,160],[tx-sign*4,180]],rand,{w:4,r:3,s:c}); s+=this._stroke(this._ell(500-sign*116,306,10,18,0,Math.PI*2),rand,{w:3.4,r:2,s:c}); return s; }
+  mug(rand,hx,hy){ const c=this.C.ink,C=this.C; let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:c}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:c}); s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:C.grey}); return s; }
+  bags(rand,a,b){ const g=this.C.grey; return this._stroke([[a-18,314],[a,320],[a+18,314]],rand,{w:3,r:2,s:g})+this._stroke([[b-18,314],[b,320],[b+18,314]],rand,{w:3,r:2,s:g}); }
+  eyesFront(rand,kind){ const c=this.C.ink,L=456,R=544,Ey=288;
+    if(kind==='dead') { let s=this._stroke(this._ell(L,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c})+this._stroke(this._ell(R,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c}); s+='<circle cx="'+L+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/><circle cx="'+R+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/>'; return s+this.bags(rand,L,R); }
+    return this._stroke([[L-22,Ey-4],[L,Ey+8],[L+22,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[R-22,Ey-4],[R,Ey+8],[R+22,Ey-4]],rand,{w:4,r:2,s:c})+this.bags(rand,L,R); }
+  eyesSide(rand,dir){ const c=this.C.ink,sign=dir==='right'?1:-1,Ey=288,n=500+sign*64,f=500+sign*6;
+    return this._stroke([[n-20,Ey-4],[n,Ey+8],[n+20,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[f-15,Ey-3],[f,Ey+7],[f+15,Ey-3]],rand,{w:3.6,r:2,s:c})+this.bags(rand,n,f); }
+  mFlat(rand){ return this._stroke([[472,360],[528,358]],rand,{w:4,r:1.6,s:this.C.ink}); }
+  mOpen(rand){ return this._stroke(this._ell(500,366,16,19,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:this.C.ink}); }
+  arm(rand,pts){ return this._stroke(pts,rand,{w:5,r:3,s:this.C.ink}); }
+
+  dennis(rand,kind){
+    let s=this.body(rand);
+    if(kind==='present'){
+      s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+      s+=this.arm(rand,[[582,500],[648,462],[712,420],[762,392]])+this._stroke([[762,392],[790,382],[794,406],[770,410]],rand,{w:4,r:2.2,s:this.C.ink});
+      return s+this.headSide(rand,'right')+this.eyesSide(rand,'right')+this._shift(40,2,this.mOpen(rand));
+    }
+    if(kind==='shrug'){
+      s+=this.arm(rand,[[418,500],[356,540],[344,596],[372,614]])+this.arm(rand,[[582,500],[644,540],[656,596],[628,614]]);
+      return s+this.headFront(rand)+this.eyesFront(rand,'dead')+this.mFlat(rand);
+    }
+    if(kind==='mug-both'){
+      s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+      s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+      return s+this.headFront(rand)+this.eyesFront(rand,'tired')+this.mFlat(rand);
+    }
+    s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+    s+=this.arm(rand,[[582,500],[664,490],[744,478],[802,470]])+this._stroke([[802,470],[826,467]],rand,{w:4,r:2,s:this.C.ink});
+    return s+this.headFront(rand)+this.eyesFront(rand,'tired')+this.mOpen(rand);
+  }
+  ruleInk(rand,W,H){ return this._stroke([[W*0.02,H*0.5],[W*0.34,H*0.34],[W*0.68,H*0.62],[W*0.98,H*0.44]],rand,{w:H*0.32,r:H*0.18,s:this.C.red}); }
+  boxInk(rand,W,H){ return this._stroke([[W*0.03,H*0.06],[W*0.97,H*0.04],[W*0.98,H*0.95],[W*0.02,H*0.96]],rand,{w:H*0.035,r:H*0.02,close:true,s:this.C.ink}); }
+  tickInk(rand,W,H){ return this._stroke([[W*0.18,H*0.52],[W*0.40,H*0.76],[W*0.82,H*0.22]],rand,{w:H*0.12,r:H*0.035,s:this.C.gdk}); }
+
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 300 100').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const t=el.dataset.ink;
+    if(t==='dennis') el.innerHTML=this.dennis(rand,el.dataset.pose||'point');
+    else if(t==='rule') el.innerHTML=this.ruleInk(rand,W,H);
+    else if(t==='box') el.innerHTML=this.boxInk(rand,W,H);
+    else if(t==='tick') el.innerHTML=this.tickInk(rand,W,H);
+    el.setAttribute('data-drawn','1');
+  }
+  svgTag(ink,attrs,vb,style){ let a=''; Object.keys(attrs||{}).forEach(k=>{ a+=' data-'+k+'="'+attrs[k]+'"'; }); return '<svg data-ink="'+ink+'"'+a+' viewBox="'+vb+'" style="'+style+'"></svg>'; }
+
+  buildCard(kind){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let html='';
+    if(kind==='title-blank' || kind==='title-filled'){
+      const filled = kind==='title-filled';
+      const tick = filled? 'GYMX' : 'TICK';
+      const move = filled? '\u25bc 34%' : '\u25bc 00%';
+      const title = filled? 'Down 34%.<br>Noise or signal?' : 'The question,<br>in two lines.';
+      const sub = filled? 'A hotel-gym rental business, and a very loud week.' : 'One deadpan sentence of setup.';
+      html+='<div style="position:absolute; inset:0; display:flex; align-items:stretch;">';
+      html+='<div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 2cqw 0 7cqw;">';
+      html+='<div style="display:flex; align-items:baseline; gap:1.4cqw; font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.6cqw;"><span>'+tick+'</span><span style="color:'+C.red+';">'+move+'</span></div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:8.2cqw; line-height:.98; letter-spacing:-.02em; margin-top:1.6cqw;">'+title+'</div>';
+      html+=this.svgTag('rule',{seed:3},'0 0 400 40','width:34cqw; height:3.4cqw; margin-top:2cqw; overflow:visible;');
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:2.4cqw; color:#6f6c65; font-style:italic; margin-top:1.6cqw; max-width:40cqw; line-height:1.4;">'+sub+'</div>';
+      html+='</div>';
+      html+='<div style="width:38cqw; display:flex; align-items:flex-end; justify-content:center;">'+this.svgTag('dennis',{pose:'present',seed:5},'300 120 610 820','width:92%; height:96%; overflow:visible;')+'</div>';
+      html+='</div>';
+      html+='<div style="position:absolute; left:7cqw; bottom:3.4cqw; font-family:\'Space Grotesk\',sans-serif; font-size:1.7cqw; color:#8f8c83;">Opinion / entertainment. Not advice.</div>';
+    } else if(kind==='agenda'){
+      const rows=[['01','The Setup','who they are'],['02','How the Money is Made','unit economics'],['03','The Numbers','the arithmetic'],['04','The Filing','page 84'],['05','The Verdict','a shrug, honestly']];
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 7cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.9cqw; letter-spacing:.28em; color:'+C.red+';">WHAT WE\u2019RE DOING FOR THE NEXT 22 MINUTES</div>';
+      html+='<div style="flex:1; min-height:0; display:flex; flex-direction:column; gap:1.1cqw; margin-top:2.6cqw; justify-content:center; max-width:62cqw;">';
+      for(let i=0;i<rows.length;i++){
+        html+='<div style="display:flex; align-items:baseline; gap:2cqw;"><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:2.6cqw; color:'+C.red+'; width:5cqw; flex:none;">'+rows[i][0]+'</span><span style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.4cqw; line-height:1.04;">'+rows[i][1]+'</span><span style="flex:1; height:1px; background:#cfccc2;"></span><span style="font-family:\'Space Grotesk\',sans-serif; font-size:1.9cqw; color:#8f8c83; font-style:italic; flex:none;">'+rows[i][2]+'</span></div>';
+      }
+      html+='</div></div>';
+      html+='<div style="position:absolute; right:-2cqw; bottom:0; width:32cqw;">'+this.svgTag('dennis',{pose:'mug-both',seed:7},'300 130 560 810','width:100%; height:auto; overflow:visible;')+'</div>';
+    } else if(kind==='coming-up'){
+      const tiles=[['THE MOAT','or the puddle'],['THE FILING','footnote 12'],['THE MONEY','where it went'],['THE VERDICT','no advice']];
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 7cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.9cqw; letter-spacing:.28em; color:'+C.red+';">STILL TO COME</div>';
+      html+='<div style="flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:2cqw; margin-top:2.4cqw;">';
+      for(let i=0;i<tiles.length;i++){
+        html+='<div style="background:'+C.paper+'; border:0.5cqw solid '+C.ink+'; border-radius:1.4cqw; padding:2.6cqw 3cqw; display:flex; flex-direction:column; justify-content:center;"><div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4cqw; line-height:1;">'+tiles[i][0]+'</div><div style="font-family:\'Space Grotesk\',sans-serif; font-size:2cqw; color:#8f8c83; font-style:italic; margin-top:0.8cqw;">'+tiles[i][1]+'</div></div>';
+      }
+      html+='</div></div>';
+    } else if(kind==='breath'){
+      html+='<div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 10cqw;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.9cqw; letter-spacing:.3em; color:'+C.red+';">RIGHT.</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:8.4cqw; line-height:1.02; margin-top:2cqw;">That\u2019s the boring<br>half done.</div>';
+      html+=this.svgTag('rule',{seed:11},'0 0 400 40','width:38cqw; height:3.4cqw; margin-top:2.6cqw; overflow:visible;');
+      html+='</div>';
+      html+='<div style="position:absolute; left:-2cqw; bottom:0; width:30cqw;">'+this.svgTag('dennis',{pose:'mug-both',seed:12},'300 130 560 810','width:100%; height:auto; overflow:visible;')+'</div>';
+    } else if(kind==='methodology'){
+      const rows=['Numbers from the filings, not the press release.','Adjusted figures shown next to the real ones.','No price targets. No positions disclosed because there aren\u2019t any.','If I got something wrong, it\u2019s pinned in the description.'];
+      html+='<div style="position:absolute; inset:0; padding:6.5cqw 7cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.9cqw; letter-spacing:.28em; color:'+C.red+';">HOW THIS WAS PUT TOGETHER</div>';
+      html+='<div style="flex:1; min-height:0; display:flex; flex-direction:column; gap:2cqw; margin-top:2.8cqw; justify-content:center; max-width:64cqw;">';
+      for(let i=0;i<rows.length;i++){
+        html+='<div style="display:flex; gap:2.4cqw; align-items:flex-start;">'+this.svgTag('tick',{seed:20+i},'0 0 100 100','width:4.4cqw; height:4.4cqw; flex:none; overflow:visible;')+'<span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.9cqw; line-height:1.26;">'+rows[i]+'</span></div>';
+      }
+      html+='</div></div>';
+    } else if(kind==='end-card'){
+      html+='<div style="position:absolute; inset:0; display:flex; align-items:stretch;">';
+      html+='<div style="width:36cqw; display:flex; align-items:flex-end; justify-content:center;">'+this.svgTag('dennis',{pose:'shrug',seed:15},'300 130 560 810','width:88%; height:94%; overflow:visible;')+'</div>';
+      html+='<div style="flex:1; display:flex; flex-direction:column; justify-content:center; padding:0 7cqw 0 1cqw;">';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:7.4cqw; line-height:1;">That\u2019s all<br>I\u2019ve got.</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-size:2.4cqw; color:#3a3a3d; line-height:1.4; margin-top:2cqw; max-width:42cqw;">Go and read the filing yourself. Genuinely \u2014 it\u2019s free and it\u2019s the only homework that counts.</div>';
+      html+='<div style="display:flex; gap:1.6cqw; margin-top:3cqw;"><span style="background:'+C.ink+'; color:#f2f2ef; font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.18em; padding:1.2cqw 2.2cqw; border-radius:0.8cqw;">NEXT EPISODE</span><span style="border:0.35cqw solid '+C.ink+'; font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.7cqw; letter-spacing:.18em; padding:1.2cqw 2.2cqw; border-radius:0.8cqw;">THE FULL WRITE-UP</span></div>';
+      html+='</div></div>';
+      html+='<div style="position:absolute; left:0; right:0; bottom:0; background:'+C.ink+'; padding:1.4cqw 7cqw; display:flex; justify-content:space-between; align-items:center;"><span style="font-family:\'Space Grotesk\',sans-serif; font-size:1.7cqw; color:#e2dfd5;">Opinion and entertainment. Not financial advice. Do your own reading.</span><span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.2em; color:'+C.red+';">NOT ADVICE</span></div>';
+    } else if(kind==='corrections'){
+      html+='<div style="position:absolute; inset:0; padding:7cqw; display:flex; flex-direction:column; justify-content:center;">';
+      html+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.9cqw; letter-spacing:.28em; color:'+C.red+';">CORRECTION</div>';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6.4cqw; line-height:1.02; margin-top:1.8cqw; max-width:66cqw;">I said 41%. It\u2019s 38%.</div>';
+      html+='<div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.7cqw; line-height:1.32; color:#3a3a3d; margin-top:2.4cqw; max-width:60cqw;">Doesn\u2019t change the argument, but it\u2019s wrong and now it\u2019s fixed. Thanks to whoever checked.</div>';
+      html+='</div>';
+      html+='<div style="position:absolute; right:-3cqw; bottom:0; width:28cqw;">'+this.svgTag('dennis',{pose:'shrug',seed:18},'300 130 560 810','width:100%; height:auto; overflow:visible;')+'</div>';
+    } else if(kind==='credits'){
+      const cols=[['WRITTEN &amp; DRAWN BY','Dennis, allegedly'],['SOURCES','FY24 20-F \u00b7 Q3 8-K \u00b7 the call transcript'],['CORRECTIONS','pinned in the description'],['NOT INCLUDED','financial advice']];
+      html+='<div style="position:absolute; inset:0; padding:7cqw; display:flex; flex-direction:column;">';
+      html+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:6cqw; line-height:1;">The small print</div>';
+      html+='<div style="flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:2.6cqw 4cqw; margin-top:3cqw; align-content:center;">';
+      for(let i=0;i<cols.length;i++){
+        html+='<div><div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.6cqw; letter-spacing:.2em; color:'+C.red+';">'+cols[i][0]+'</div><div style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:2.5cqw; line-height:1.26; margin-top:0.8cqw;">'+cols[i][1]+'</div></div>';
+      }
+      html+='</div></div>';
+    }
+    wrap.innerHTML=html;
+    return wrap;
+  }
+  mountCards(){
+    Object.keys(this.slots).forEach(kind=>{
+      const host=this.slots[kind] && this.slots[kind].current;
+      if(!host || host.getAttribute('data-built')) return;
+      host.appendChild(this.buildCard(kind));
+      host.setAttribute('data-built','1');
+    });
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; this.mountCards(); root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const slot=(k)=>{ if(!this.slots[k]) this.slots[k]=React.createRef(); return this.slots[k]; };
+    const card=(k,file,id)=>({ file, id, slot:slot(k) });
+    return {
+      rootRef:this.rootRef,
+      sections:[
+        { n:'01', title:'Opening', note:'the first fifteen seconds', cards:[
+          card('title-blank','ep-title-blank.png \u00b7 the template','episode/title-blank'),
+          card('title-filled','ep-title-gymx.png','episode/title-gymx')
+        ]},
+        { n:'02', title:'Setting expectations', note:'what and how', cards:[
+          card('agenda','ep-agenda.png','episode/agenda'),
+          card('methodology','ep-methodology.png','episode/methodology')
+        ]},
+        { n:'03', title:'Interstitials', note:'buy a breath mid-episode', cards:[
+          card('breath','ep-breath.png','episode/breath'),
+          card('coming-up','ep-coming-up.png','episode/coming-up')
+        ]},
+        { n:'04', title:'Closing', note:'tail of the episode', cards:[
+          card('end-card','ep-end-card.png','episode/end-card'),
+          card('credits','ep-credits.png','episode/credits'),
+          card('corrections','ep-correction.png','episode/correction')
+        ]}
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

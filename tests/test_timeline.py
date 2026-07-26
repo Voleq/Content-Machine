@@ -93,7 +93,7 @@ def test_short_timeline_structure(short_script):
 
     kinds = [c.kind for c in cues]
     assert kinds.count(CueKind.HOOK) == 1
-    assert kinds.count(CueKind.TRANSITION) == 3          # why / gut / payoff
+    assert kinds.count(CueKind.TRANSITION) == 4          # why / gut / trap / payoff
     assert kinds.count(CueKind.HEADLINE) == len(short_script.headlines)
     assert kinds.count(CueKind.NUMBERS) == 1
     assert kinds.count(CueKind.NUMBER_ROW) == len(short_script.numbers)
@@ -102,7 +102,11 @@ def test_short_timeline_structure(short_script):
     assert kinds.count(CueKind.MEME) == 1
     assert kinds.count(CueKind.CONCLUSION) == 1
 
-    assert cues[0].kind is CueKind.HOOK and cues[0].t == 0.0
+    # the short opens on Dennis talking; the hook card rides the same t=0
+    assert kinds.count(CueKind.HOST_OPEN) == 1
+    assert kinds.count(CueKind.HOST_CLOSE) == 1
+    assert cues[0].t == 0.0
+    assert {c.kind for c in cues if c.t == 0.0} == {CueKind.HOST_OPEN, CueKind.HOOK}
     times = [c.t for c in cues]
     assert times == sorted(times)
     assert all(0 <= t <= duration for t in times)
@@ -295,12 +299,13 @@ def _tiled(segments, duration):
         assert a.end == pytest.approx(b.start)
 
 
-def test_segments_no_cues_all_filler():
+def test_untagged_narration_is_one_held_host_beat():
+    """No tags means Dennis holds the frame — not a run of filler cards."""
     segments, warnings = plan_long_segments([], 22.0)
     _tiled(segments, 22.0)
-    assert all(s.kind == "filler" for s in segments)
-    assert all(s.length <= 3.0 + 1e-6 for s in segments), "fast cuts: ≤3s"
-    assert all(s.length >= 1.5 - 1e-6 for s in segments)
+    assert [s.kind for s in segments] == ["host"]
+    assert segments[0].length == pytest.approx(22.0)
+    assert segments[0].payload["layout"] == "host-full"
 
 
 def test_segments_with_cues(long_valid_text, settings):
@@ -318,7 +323,7 @@ def test_segments_with_cues(long_valid_text, settings):
     hit = sum(1 for c in clip_cues if round(c.t, 3) in started)
     assert hit >= len(clips)  # every kept clip segment maps to a cue
     kinds = {s.kind for s in segments}
-    assert {"clip", "img", "chart", "filing", "meme", "filler"} <= kinds
+    assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
     assert all(s.length >= 0.25 - 1e-9 for s in segments)
 
 
@@ -336,18 +341,21 @@ def test_segments_meme_holds_shorter_than_clips():
     _tiled(segments, 40.0)
 
 
-def test_segments_stacked_cues_keep_later(settings):
+def test_stacked_cues_are_deferred_not_dropped(settings):
+    """Two tags on adjacent words: the second waits its turn rather than
+    cutting the first one short."""
     from pipeline.models import Cue
 
     cues = [
         Cue(t=5.0, kind=CueKind.CLIP, payload={"value": "a"}),
         Cue(t=5.1, kind=CueKind.CLIP, payload={"value": "b"}),
     ]
-    segments, warnings = plan_long_segments(cues, 20.0)
-    _tiled(segments, 20.0)
+    segments, warnings = plan_long_segments(cues, 30.0)
+    _tiled(segments, 30.0)
     kept = [s for s in segments if s.kind == "clip"]
-    assert len(kept) == 1 and kept[0].payload["value"] == "b"
-    assert warnings
+    assert [k.payload["value"] for k in kept] == ["a", "b"]
+    assert kept[0].end == pytest.approx(kept[1].start)
+    assert any("deferred" in w for w in warnings)
 
 
 def test_segments_cue_near_end_dropped():
@@ -356,40 +364,56 @@ def test_segments_cue_near_end_dropped():
     cues = [Cue(t=19.9, kind=CueKind.CLIP, payload={"value": "a"})]
     segments, warnings = plan_long_segments(cues, 20.0)
     _tiled(segments, 20.0)
-    assert all(s.kind == "filler" for s in segments)
-    assert any("too close to the end" in w for w in warnings)
+    assert all(s.kind == "host" for s in segments)
+    assert any("no longer fits before the end" in w for w in warnings)
 
 
-def test_segments_hold_capped_by_next_cue():
+def test_data_visuals_are_never_cut_short():
+    """A chart the viewer is still reading is not cut for the next tag."""
     from pipeline.models import Cue
+    from pipeline.timeline import MIN_READABLE_S
 
     cues = [
-        Cue(t=2.0, kind=CueKind.CLIP, payload={"value": "a"}),
+        Cue(t=2.0, kind=CueKind.CHART, payload={"value": "revenue"}),
         Cue(t=3.5, kind=CueKind.CLIP, payload={"value": "b"}),
     ]
-    segments, _ = plan_long_segments(cues, 30.0)
-    first = next(s for s in segments if s.kind == "clip")
-    assert first.end == pytest.approx(3.5), "a hold never runs over the next cue"
-    _tiled(segments, 30.0)
+    segments, _ = plan_long_segments(cues, 40.0)
+    chart = next(s for s in segments if s.kind == "chart")
+    clip = next(s for s in segments if s.kind == "clip")
+    assert chart.length >= MIN_READABLE_S
+    assert clip.start >= chart.end - 1e-9, "the clip waits for the chart to finish"
+    _tiled(segments, 40.0)
+
+
+def test_holds_are_deliberate_not_machine_gun():
+    """Every kind holds long enough to register; data kinds longest."""
+    from pipeline.models import Cue
+    from pipeline.timeline import DEFAULT_HOLDS
+
+    for kind, hold in DEFAULT_HOLDS.items():
+        cues = [Cue(t=2.0, kind=kind, payload={"value": "x"})]
+        segments, _ = plan_long_segments(cues, 60.0)
+        seg = next(s for s in segments if s.kind == kind.value)
+        assert seg.length == pytest.approx(hold)
+        assert seg.length >= 3.0, f"{kind.value} still machine-guns"
+    assert DEFAULT_HOLDS[CueKind.ASSET] >= DEFAULT_HOLDS[CueKind.MEME] * 2
 
 
 # ------------------------------------------------------ scene-variety planner
 
 
-def test_adjacent_fillers_get_distinct_looks():
-    """A run of filler cuts (a long gap with no media) must not read as the
-    same bare frame — consecutive fillers get different backdrop families."""
-    segments, _ = plan_long_segments([], 24.0)  # all filler
-    fillers = [s for s in segments if s.kind == "filler"]
-    assert len(fillers) >= 4
-    for a, b in zip(segments, segments[1:]):
-        if a.kind == "filler" and b.kind == "filler":
-            assert a.payload["variant"] != b.payload["variant"], \
-                "consecutive fillers must not share a backdrop look"
-    # a longer timeline exercises more than the old 4-look rotation
-    long_segments, _ = plan_long_segments([], 120.0)
-    looks = {s.payload["variant"] for s in long_segments if s.kind == "filler"}
-    assert len(looks) >= 3
+def test_host_beats_get_distinct_looks():
+    """Consecutive host beats are numbered so the renderer never returns to
+    an identical shot."""
+    from pipeline.models import Cue
+
+    cues = [Cue(t=t, kind=CueKind.CLIP, payload={"value": f"c{i}"})
+            for i, t in enumerate((10.0, 25.0, 40.0, 55.0))]
+    segments, _ = plan_long_segments(cues, 80.0)
+    hosts = [s for s in segments if s.kind == "host"]
+    assert len(hosts) >= 4
+    variants = [h.payload["variant"] for h in hosts]
+    assert variants == sorted(variants) and len(set(variants)) == len(variants)
 
 
 def test_adjacent_same_type_real_cuts_are_flagged():
@@ -402,3 +426,77 @@ def test_adjacent_same_type_real_cuts_are_flagged():
     _, warnings = plan_long_segments(cues, 30.0)
     assert any("same visual type" in w for w in warnings), \
         "two clips back-to-back should warn the variety planner"
+
+
+# --------------------------------------------------------------------------
+# SHORT: host bookends, the cheap-or-trap hold, deterministic beat variants
+# --------------------------------------------------------------------------
+
+
+def test_short_opens_and_closes_on_the_host(short_script):
+    """Dennis bookends the short: ~3-5s on camera at each end."""
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    opener = next(c for c in cues if c.kind is CueKind.HOST_OPEN)
+    closer = next(c for c in cues if c.kind is CueKind.HOST_CLOSE)
+
+    assert opener.t == 0.0
+    assert 3.0 <= float(opener.payload["until"]) <= 5.0
+    assert float(closer.payload["until"]) == duration
+    assert 3.0 <= duration - closer.t <= 5.0
+    # the closer must not open before the payoff it rides on
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    assert closer.t >= conclusion.t - 0.01
+
+
+def test_cheap_or_trap_is_held_long_enough_to_read(short_script):
+    from pipeline.timeline import SHORT_MIN_READABLE_S
+
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+
+    assert float(trap.payload["until"]) - trap.t >= SHORT_MIN_READABLE_S - 0.01
+    # it sits between the numbers sheet and the payoff, and the sheet gets
+    # its own readable window first
+    assert trap.t - numbers.t >= SHORT_MIN_READABLE_S - 0.01
+    rows = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
+    assert max(c.t for c in rows) <= trap.t, "the sheet must finish typing before the cut"
+
+
+def test_a_short_without_the_trap_beat_still_builds(short_script):
+    """The beat is optional — scripts written to the four-beat format parse."""
+    script = short_script.model_copy(update={"cheap_or_trap": None})
+    duration = 68.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration), duration)
+    assert not [c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP]
+    assert next(c for c in cues if c.kind is CueKind.CONCLUSION)
+
+
+def test_beat_variants_are_deterministic_and_rotate():
+    from pipeline.timeline import SHORT_BEAT_VARIANTS, pick_beat_variant
+
+    for beat, options in SHORT_BEAT_VARIANTS.items():
+        assert pick_beat_variant(beat, "abc123") == pick_beat_variant(beat, "abc123")
+        picked = {pick_beat_variant(beat, f"sha{i:04d}") for i in range(400)}
+        assert picked == set(options), f"{beat} never reached every variant"
+
+    # two different scripts should not share every beat layout
+    a = {b: pick_beat_variant(b, "script-one") for b in SHORT_BEAT_VARIANTS}
+    b = {b: pick_beat_variant(b, "script-two") for b in SHORT_BEAT_VARIANTS}
+    assert a != b
+
+
+def test_beat_variants_reach_the_cues(short_script):
+    duration = 68.0
+    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
+                                duration)
+    hook = next(c for c in cues if c.kind is CueKind.HOOK)
+    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
+    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    for cue, beat in ((hook, "hook"), (numbers, "gutcheck"), (conclusion, "payoff")):
+        from pipeline.timeline import SHORT_BEAT_VARIANTS
+        assert cue.payload["variant"] in SHORT_BEAT_VARIANTS[beat]

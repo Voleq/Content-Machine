@@ -15,7 +15,9 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
+from typing import Callable
 
 from PIL import Image, ImageDraw
 
@@ -32,12 +34,29 @@ from pipeline.cost import (
     build_short_report,
 )
 from pipeline.delivery import deliver
+from pipeline.excel_refresh import (
+    ExcelUnavailable,
+    RefreshError,
+    RefreshTimeout,
+    excel_available,
+    refresh_age_days,
+    refresh_for_ticker,
+    set_symbol_override,
+)
+from pipeline.gates import run_gates
 from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
 from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 from pipeline.parser_short import ScriptParseError, parse_short_script
 from pipeline.rasters import load_font
 from pipeline.render_long import render_long
+from pipeline.script_edit import (
+    EditError,
+    diff_lines,
+    edit_lines,
+    numbered,
+    replace_text,
+)
 from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 from pipeline.workspace import ActiveContext, Workspace, today_str
@@ -49,12 +68,26 @@ log = logging.getLogger(__name__)
 
 HELP_TEXT = """Dennis — operator commands
 
-/new TICKER — open today's workspace, get the data template
+/short TICKER — start a SHORT (9:16, 60–75s); refreshes the numbers itself
+/long TICKER — start a LONG (16:9 deep dive, value lane)
+/refresh TICKER [RIC] — re-pull the numbers in Excel; a RIC pins the override
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
-/prompts — re-send the pre-filled master prompts
+/prompts — re-send this lane's pre-filled master prompt
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
-/render TICKER — render the approved SHORT
-/render_long TICKER — render the approved LONG
+/ideas — the ranked backlog; /idea TICKER <why> adds, /unidea TICKER drops
+/thesis [TICKER] — what we said, and whether the numbers still back it
+/batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
+/upload TICKER [YYYY-MM-DD HH:MM] — YouTube, private or scheduled (never public)
+/scheduled — what's queued to publish and when
+/retention [TICKER] — per-chapter drop-off; no ticker = the evidence across all
+/watch [TICKER | drop TICKER] — intraday watch (published names join automatically)
+/earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
+/render TICKER — render the approved script for this ticker's lane
+/render_long TICKER — force the LONG (only needed if a ticker has both)
+/script — the stored script, numbered, ready to edit
+/edit N <text> — replace line N (N-M for a range; no text deletes it)
+/replace old => new — fix a figure or a phrase in place (all: for every hit)
+/undo — step back one revision
 /draft TICKER — cheap low-res LONG timing check (no TTS spend)
 /repurpose TICKER — free 9:16 SHORT from the finished LONG
 /status — job queue
@@ -62,10 +95,13 @@ HELP_TEXT = """Dennis — operator commands
 /cost — month-to-date spend vs cap
 /help — this text
 
-Flow: /new → upload dennis_data.xlsx → run the prompts in Claude/GPT →
+Flow: /short or /long TICKER (the numbers refresh themselves; upload
+dennis_data.xlsx if Excel isn't available) → run the prompt in Claude/GPT →
 (LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
-here → review the validation & cost report → Approve ✅ → /render. Nothing
-paid happens before Approve. If a LONG uses [ASSET] tags, paste the appended
+here → review the validation & cost report → tweak it in chat if you want
+(/script, /edit, /replace — every revision re-runs the gates and re-prices)
+→ Approve ✅ → /render. Nothing paid happens before Approve, and the approval
+is pinned to the exact version you approved. If a LONG uses [ASSET] tags, paste the appended
 prompt into Claude Design and upload the exported PNG here — the render
 stays blocked until every asset file exists."""
 
@@ -138,6 +174,9 @@ class BotCore:
         self.tts = TTSEngine(settings, ledger=self.ledger)
         self.content = ContentManager(settings, ledger=self.ledger)
         self.context = ActiveContext(settings)
+        # Set by main.py: a thread-safe way for the worker to hand a file
+        # (storyboard, thumbnail) to the operator mid-job.
+        self.file_pusher: Callable[[Path, str], None] | None = None
         self.queue: RenderJobQueue | None = None  # attached in main.py
 
     # ------------------------------------------------------------- helpers
@@ -153,13 +192,86 @@ class BotCore:
         except CompanyDataError:
             return None
 
-    # ---------------------------------------------------------------- /new
-    def new_ticker(self, chat_id: int, ticker: str) -> Reply:
+    # -------------------------------------------------- /short · /long (1d)
+    # The format is declared up front rather than inferred from which of two
+    # prompts the operator happened to run. Each command prepares only its own
+    # lane's prompt, and /render follows from the lane.
+    def start_lane(self, chat_id: int, lane: str, ticker: str) -> Reply:
         ticker = ticker.strip().upper()
         if not ticker or not ticker.replace(".", "").replace("-", "").isalnum():
-            return Reply("Usage: /new TICKER")
+            return Reply(f"Usage: /{lane} TICKER")
+        ws = Workspace(self.settings, ticker, today_str()).create()
+        ws.set_lane(lane)
+        self.context.set(chat_id, ticker, ws.workdate)
+        if lane == "long":
+            ws.set_awaiting_angle()
+        else:
+            ws.clear_awaiting_angle()
+
+        label = "SHORT (9:16, 60–75s)" if lane == "short" else "LONG (16:9 deep dive)"
+        head = f"📁 {ticker} / {ws.workdate} — {label}"
+        warn = self._lane_warning(ticker, lane)
+
+        can_refresh, _why = excel_available(self.settings)
+        if can_refresh:
+            return Reply(
+                f"{head}{warn}\n\nRefreshing {ticker} in Excel now — a minute "
+                f"while the add-in resolves. The {lane} prompt follows when the "
+                f"numbers are in.")
+        template = self.settings.templates_dir / "dennis_data_template.xlsx"
+        return Reply(
+            f"{head}{warn}\n\nRefresh the attached template for {ticker} and "
+            f"upload it here as dennis_data.xlsx — I'll reply with the {lane} "
+            f"prompt.",
+            files=[template] if template.exists() else [],
+        )
+
+    def _lane_warning(self, ticker: str, lane: str) -> str:
+        """Flag an apparent wrong-lane pick. Advisory, never a refusal.
+
+        The editorial rule is that long-form is the beaten-down/value lane and
+        never the trending name of the day — but the screener is a suggestion
+        engine, and the operator has reasons it cannot see. So this says its
+        piece and gets out of the way.
+        """
+        from pipeline.screener import last_screen_lane
+
+        seen = last_screen_lane(self.settings, ticker)
+        if not seen:
+            return ""      # the screener has nothing to say about this ticker
+        if lane == "long" and seen == "trending":
+            return ("\n⚠️ the screener had this in the *trending* lane. Long-form "
+                    "is the beaten-down/value lane — a name that ran today is "
+                    "usually a SHORT. Carrying on if you meant it.")
+        if lane == "short" and seen == "value":
+            return ("\n⚠️ the screener had this in the *value* lane, which is "
+                    "usually long-form material. A SHORT still works if there's "
+                    "a move to hang it on.")
+        return ""
+
+    # ---------------------------------------------------------------- /new
+    def new_ticker(self, chat_id: int, ticker: str) -> Reply:
+        """Deprecated: kept for one release as an alias.
+
+        It cannot know the lane, so it does what it always did — prepares both
+        prompts — and points at the replacement.
+        """
+        ticker = ticker.strip().upper()
+        if not ticker or not ticker.replace(".", "").replace("-", "").isalnum():
+            return Reply("Usage: /short TICKER  or  /long TICKER")
         ws = Workspace(self.settings, ticker, today_str()).create()
         self.context.set(chat_id, ticker, ws.workdate)
+        # On the Windows box with Excel + the add-in the bot refreshes the
+        # numbers itself; the template only goes out when it can't (P3.1b).
+        can_refresh, _why = excel_available(self.settings)
+        if can_refresh:
+            return Reply(
+                f"📁 Workspace ready: {ticker} / {ws.workdate}\n\n"
+                f"Refreshing {ticker} in Excel now — this takes a minute while "
+                f"the add-in resolves. I'll send the prompts when the numbers "
+                f"are in. (Upload a workbook yourself any time to override, or "
+                f"/refresh {ticker} to try again.)"
+            )
         template = self.settings.templates_dir / "dennis_data_template.xlsx"
         return Reply(
             f"📁 Workspace ready: {ticker} / {ws.workdate}\n\n"
@@ -174,11 +286,87 @@ class BotCore:
             files=[template] if template.exists() else [],
         )
 
+    # ------------------------------------------------------------ /refresh
+    def refresh_data(self, chat_id: int, args: list[str]) -> Reply:
+        """Refresh this ticker's workbook in Excel and hand back the prompts.
+
+        Blocking — the add-in takes tens of seconds — so callers run it off
+        the event loop. A failure here is loud and changes nothing: whatever
+        workbook the workspace already had is still the workbook it has, and
+        the manual upload is still open.
+        """
+        ticker = args[0].strip().upper() if args else ""
+        symbol = args[1].strip() if len(args) > 1 else None
+
+        if ticker:
+            ws = Workspace(self.settings, ticker, today_str()).create()
+            self.context.set(chat_id, ticker, ws.workdate)
+        else:
+            ws = self._active_ws(chat_id)
+            if ws is None:
+                return Reply("Usage: /refresh TICKER [VENDOR_SYMBOL] "
+                             "— or /short TICKER first.")
+            ticker = ws.ticker
+
+        ok, why = excel_available(self.settings)
+        if not ok:
+            template = self.settings.templates_dir / "dennis_data_template.xlsx"
+            return Reply(
+                f"⛔ Can't drive Excel here: {why}\n"
+                f"Refresh the attached template for {ticker} by hand and upload "
+                f"it — that path is unchanged.",
+                files=[template] if template.exists() else [],
+            )
+
+        if symbol:
+            # An explicit vendor symbol is worth remembering: the ticker→RIC
+            # mapping is an entitlement question the bot can't answer itself.
+            set_symbol_override(self.settings, ticker, symbol)
+
+        try:
+            result = refresh_for_ticker(self.settings, ticker, ws.path,
+                                        symbol=symbol)
+        except ExcelUnavailable as e:
+            return Reply(f"⛔ Excel is not usable: {e}\n"
+                         f"The manual upload still works.")
+        except RefreshTimeout as e:
+            return Reply(
+                f"⛔ {ticker}: {e}\n"
+                f"Nothing was saved — a half-refreshed workbook is worse than "
+                f"none. Check the add-in is signed in, then /refresh {ticker} "
+                f"again. If the symbol is wrong for the add-in, pin it: "
+                f"/refresh {ticker} {ticker}.O")
+        except RefreshError as e:
+            return Reply(f"⛔ {ticker}: refresh failed — {e}\n"
+                         f"Nothing was saved; upload a workbook to proceed.")
+        except Exception as e:  # noqa: BLE001 - COM raises anything
+            log.exception("excel refresh blew up")
+            return Reply(f"💥 {ticker}: Excel refresh error — {e}\n"
+                         f"The manual upload still works.")
+
+        # New numbers invalidate an approval. The approval pins the script's
+        # hash, which does not change when the data underneath it does — so
+        # without this, approve → refresh → render would ship figures the
+        # operator never saw in the cost + fact-check report.
+        withdrawn = [fmt for fmt in ("short", "long") if ws.is_approved(fmt)]
+        for fmt in withdrawn:
+            ws._invalidate_approval(fmt)
+
+        reply = self.prompts_reply(chat_id)
+        reply.text = f"{result.summary()}\n\n{reply.text}"
+        if withdrawn:
+            reply.text += (
+                f"\n\n⚠️ the {'/'.join(withdrawn)} approval was withdrawn — "
+                f"these are different numbers than the report you approved. "
+                f"Re-read the report and Approve again.")
+        reply.files = list(reply.files) + [result.archive]
+        return reply
+
     # ------------------------------------------------------------ /prompts
     def prompts_reply(self, chat_id: int) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — start with /new TICKER.")
+            return Reply("No active workspace — start with /short TICKER or /long TICKER.")
         try:
             data = load_company_data(ws.path)
         except CompanyDataError as e:
@@ -191,30 +379,47 @@ class BotCore:
         from pipeline.screener import last_screen_context
 
         move_context = last_screen_context(self.settings, ws.ticker)
+        # One lane, one prompt (1d). A workspace opened by the deprecated
+        # /new has no lane, so it still gets both — that is the alias's whole
+        # job for the release it survives.
+        lane = ws.lane()
+        wanted = {"short": ["short"], "long": ["long_angle"]}.get(
+            lane, ["short", "long_angle"])
         files = []
-        # SHORT is one paste; LONG is now two manual steps in Claude — Step 1
-        # (angle) here, Step 2 (write) after the operator replies with a pick.
-        for fmt in ("short", "long_angle"):
+        for fmt in wanted:
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
                                move_context=move_context)
             f = ws.path / f"prompt_{fmt}.md"
             f.write_text(text)
             files.append(f)
-        ws.set_awaiting_angle()
+        # LONG is two manual steps in Claude — Step 1 (angle) here, Step 2
+        # (write) after the operator replies with a pick.
+        if "long_angle" in wanted:
+            ws.set_awaiting_angle()
         warn = ""
         if not data.has_history:
             warn += ("\n⚠️ no History sheet — the multi-year gut check will "
                      "have nothing to show; re-export with both sheets")
         if data.warning_missing:
             warn += f"\n⚠️ optional fields missing: {', '.join(data.warning_missing[:6])}"
-        return Reply(
-            f"📋 Prompts for {ws.ticker} (as of {data.get('as_of_date')}).\n"
-            f"• SHORT: run prompt_short.md, paste the output back.\n"
-            f"• LONG: run prompt_long_angle.md (Step 1) — it returns ranked "
-            f"angles. Reply here with a number (or a tweak) and I'll hand you "
-            f"Step 2, the writing prompt.{warn}",
-            files=files,
-        )
+        # When the bot refreshed the numbers itself, say how old they really
+        # are — the sheet's =TODAY() only records the last recalculation.
+        age = refresh_age_days(ws.path)
+        if age is not None:
+            warn += (f"\n🕒 numbers refreshed "
+                     + ("just now" if age < 0.02 else
+                        f"{age * 24:.0f}h ago" if age < 1 else f"{age:.1f} days ago"))
+        lines = [f"📋 {ws.ticker} (as of {data.get('as_of_date')})"]
+        if "short" in wanted:
+            lines.append("• SHORT: run prompt_short.md, paste the output back.")
+        if "long_angle" in wanted:
+            lines.append("• LONG: run prompt_long_angle.md (Step 1) — it returns "
+                         "ranked angles. Reply here with a number (or a tweak) "
+                         "and I'll hand you Step 2, the writing prompt.")
+        if not lane:
+            lines.append("(/new is deprecated — /short TICKER or /long TICKER "
+                         "prepares just the one prompt.)")
+        return Reply("\n".join(lines) + warn, files=files)
 
     # ---------------------------------------------------------- /headline
     def headline_command(self, chat_id: int, args: list[str]) -> Reply:
@@ -248,6 +453,11 @@ class BotCore:
         self.context.set(chat_id, ws_ticker, ws.workdate)
         ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
         display_headline, summary = self._enrich_headline(headline)
+        # Free primary sources (P3.4): the 8-K's EX-99.1 for an earnings
+        # print, the FRED series for a macro one. Best-effort — an
+        # unavailable source leaves the operator's own headline as the
+        # grounding, which is exactly how it worked before.
+        summary = self._ground_headline(mode, ws_ticker, summary)
         ws.set_headline({"mode": mode, "symbol": ws_ticker,
                          "headline": display_headline, "summary": summary})
 
@@ -284,6 +494,36 @@ class BotCore:
             files=[f],
         )
 
+    def _ground_headline(self, mode: str, ticker: str, summary: str) -> str:
+        """Add the primary source behind the headline, when there is one.
+
+        An earnings headline is a claim; the EX-99.1 is the receipt. A macro
+        headline is a claim; the FRED series is the number. Both are free, and
+        both are strictly additive — a source that is unavailable leaves the
+        summary exactly as it was.
+        """
+        try:
+            from pipeline.sources import fred_series, latest_8k, summarise
+
+            if mode == "earnings":
+                got = latest_8k(ticker, self.settings)
+                if got.get("status") == "ok" and got.get("exhibit_text"):
+                    head = got["exhibit_text"][:1500]
+                    return (f"{summary}\n\nFROM THE PRESS RELEASE "
+                            f"({got.get('filed', '')}):\n{head}").strip()
+            elif mode == "macro":
+                lines = []
+                for name in ("cpi", "unemployment", "fed_funds"):
+                    payload = fred_series(name, self.settings)
+                    if payload.get("status") == "ok":
+                        lines.append(f"  {name}: {summarise(payload)}")
+                if lines:
+                    return (f"{summary}\n\nTHE ACTUAL SERIES:\n"
+                            + "\n".join(lines)).strip()
+        except Exception as e:  # noqa: BLE001 - grounding is never required
+            log.warning("could not ground the headline (%s)", e)
+        return summary
+
     def _enrich_headline(self, headline: str) -> tuple[str, str]:
         """If the headline is a URL, best-effort fetch + summarize ONCE so the
         'what it actually means' beat is grounded. Never blocks: in MOCK_MODE /
@@ -302,7 +542,7 @@ class BotCore:
     def handle_upload(self, chat_id: int, filename: str, data: bytes) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — start with /new TICKER, then re-upload.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first, then re-upload.")
         name = Path(filename).name
         suffix = Path(name).suffix.lower()
 
@@ -387,7 +627,7 @@ class BotCore:
     def intake_script(self, chat_id: int, text: str) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — /new TICKER first.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
         # LONG two-step: a plain-text reply while awaiting the angle pick is
         # the operator's angle choice, not a script — hand back Step 2.
         if ws.awaiting_angle() and text.strip() and not self._looks_like_script(text):
@@ -409,6 +649,105 @@ class BotCore:
             return self._intake_long(ws, text)
         except LongScriptError as e:
             return Reply(f"⛔ LONG script rejected:\n{e}")
+
+    # ------------------------------------------- in-chat revision (P3.1c)
+    def script_listing(self, chat_id: int) -> Reply:
+        """The stored script, numbered, so `/edit N` and `/script` agree."""
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        fmt = ws.current_format()
+        raw = ws.raw_script(fmt) if fmt else None
+        if not raw:
+            return Reply("No script on file yet — paste one first.")
+        listing = numbered(raw)
+        f = ws.path / f"script_{fmt}.numbered.txt"
+        f.write_text(listing)
+        state = "approved ✅" if ws.is_approved(fmt) else "not approved"
+        revs = ws.revision_count(fmt)
+        head = (f"📄 {ws.ticker} {fmt.upper()} — {len(raw.splitlines())} lines, "
+                f"{state}"
+                + (f", {revs} revision{'s' if revs != 1 else ''} behind" if revs else "")
+                + ".\n`/edit N text` · `/edit N-M text` · `/edit N` deletes · "
+                  "`/replace old => new` · `/undo`")
+        # Short scripts fit in a message; a forty-minute LONG does not.
+        if len(listing) <= 3500:
+            return Reply(f"{head}\n\n```\n{listing}\n```")
+        return Reply(head, files=[f])
+
+    def edit_script(self, chat_id: int, args: list[str], *,
+                    mode: str = "lines") -> Reply:
+        """Apply a targeted edit, then re-run the whole intake on the result.
+
+        The revision is only stored if it parses, so an edit can never leave
+        the workspace holding a script the renderer would choke on. Because it
+        goes back through the ordinary intake, the gates re-run and a fresh
+        cost report comes back — and saving invalidates the approval, so the
+        approval stays pinned to the version actually read.
+        """
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        fmt = ws.current_format()
+        raw = ws.raw_script(fmt) if fmt else None
+        if not raw:
+            return Reply("No script on file to edit — paste one first.")
+
+        try:
+            if mode == "replace":
+                result = replace_text(raw, " ".join(args))
+            else:
+                if not args:
+                    raise EditError(
+                        "Usage: `/edit N new text` · `/edit N-M new text` · "
+                        "`/edit N` to delete. `/script` shows the numbers.")
+                result = edit_lines(raw, args[0], " ".join(args[1:]))
+        except EditError as e:
+            return Reply(f"⛔ {e}")
+
+        return self._revise(ws, fmt, raw, result.text,
+                            note=f"✏️ {result.summary}",
+                            diff=diff_lines(raw, result.text))
+
+    def undo_edit(self, chat_id: int) -> Reply:
+        """Step back one revision. The stack survives a restart."""
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        fmt = ws.current_format()
+        if fmt is None:
+            return Reply("No script on file.")
+        current = ws.raw_script(fmt) or ""
+        previous = ws.pop_revision(fmt)
+        if previous is None:
+            return Reply("Nothing to undo — this is the script as pasted.")
+        reply = self._revise(ws, fmt, current, previous,
+                             note="↩️ reverted to the previous revision",
+                             diff=diff_lines(current, previous))
+        # `_revise` saved, which pushed `current` onto the stack; drop it so a
+        # second /undo goes further back rather than toggling between two.
+        ws.pop_revision(fmt)
+        return reply
+
+    def _revise(self, ws: Workspace, fmt: str, before: str, after: str,
+                *, note: str, diff: str = "") -> Reply:
+        """Validate a candidate script and, only if it holds up, store it.
+
+        On rejection the workspace keeps `before` untouched: the operator gets
+        the parser's complaint and can try again, with nothing lost.
+        """
+        try:
+            reply = (self._intake_short(ws, after) if fmt == "short"
+                     else self._intake_long(ws, after))
+        except (ScriptParseError, LongScriptError) as e:
+            return Reply(
+                f"⛔ that edit doesn't parse, so I've left the script alone:\n{e}"
+                f"\n\nThe script is unchanged — /script to see it.")
+        head = note
+        if diff:
+            head += f"\n```\n{diff}\n```"
+        reply.text = f"{head}\n\n{reply.text}"
+        return reply
 
     def _intake_angle(self, ws: Workspace, text: str) -> Reply:
         """The operator picked a LONG angle — store it, run the thesis-aware
@@ -529,6 +868,14 @@ class BotCore:
         v_warnings, v_blocking = validate_long_script(
             script, palette_keys(), ws.path, self.settings, data_metrics=data_metrics
         )
+        # The automated gates run here — before approval, before any spend —
+        # and only speak up on failure. A fabricated figure is the one error
+        # nobody downstream can catch.
+        gates = run_gates(script, self.settings, data=data,
+                          as_of=str((data.get("as_of_date") if data else "") or ""),
+                          workspace=ws.path)
+        for f in gates.findings:
+            (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
         prompt_files = self._save_asset_prompts(ws, script)
@@ -653,26 +1000,42 @@ class BotCore:
         return reply
 
     # ------------------------------------------------------------- renders
-    def render_request(self, ticker: str, fmt: str, draft: bool = False) -> tuple[JobKind | None, str, Workspace | None]:
+    def render_request(self, ticker: str, fmt: str | None = None,
+                       draft: bool = False) -> tuple[JobKind | None, str, Workspace | None]:
+        """Queue a render. `fmt=None` takes the format from the workspace's lane.
+
+        Since /short and /long declare the format up front (1d), plain /render
+        follows from it rather than making the operator pick twice.
+        """
         ws = self._ws_or_error(ticker)
         if ws is None:
-            return None, f"No workspace for {ticker} — /new {ticker} first.", None
+            return None, (f"No workspace for {ticker} — /short {ticker} or "
+                          f"/long {ticker} first."), None
+        if fmt is None:
+            fmt = ws.current_format()
+            if fmt is None:
+                return None, (
+                    f"No script for {ticker} yet, so I can't tell which format "
+                    f"you mean. /short {ticker} or /long {ticker} sets the lane."
+                ), None
         script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None, f"No {fmt.upper()} script for {ticker} — paste it first.", None
         if draft and fmt == "long":
-            # a draft's FIRST run triggers the one paid TTS generation, so it
-            # sits behind the same approval gate in live mode; in MOCK_MODE
-            # (or once audio is cached) it is free
-            if (not self.settings.mock_mode
-                    and not self.tts.is_cached(script.narration, "long")
-                    and not ws.is_approved("long")):
-                return None, (
-                    f"⛔ draft for {ticker} would trigger the paid TTS call — "
-                    f"approve the LONG report first (the draft then generates "
-                    f"the audio once; the final render reuses it)."
-                ), None
-            return JobKind.RENDER_DRAFT_LONG, f"🎬 queued LOW-RES DRAFT for {ticker}", ws
+            # Since P3.2 a draft never buys audio: it uses the free local
+            # voice, or the mock hum where there isn't one. So the old
+            # "a draft would trigger the paid call" gate is gone — there is
+            # nothing left for it to gate.
+            tier = self.tts.tier_for(True)
+            note = {
+                "local": "free local voice — listenable, timings interpolated "
+                         "within each sentence",
+                "mock": "mock hum — the local voice isn't installed, so this "
+                        "checks timing only",
+            }.get(tier, tier)
+            return JobKind.RENDER_DRAFT_LONG, (
+                f"🎬 queued LOW-RES DRAFT for {ticker}\n🎧 {note}. $0 either "
+                f"way; the final still needs the paid voice."), ws
         if not ws.is_approved(fmt):
             return None, (
                 f"⛔ {ticker} {fmt.upper()} is not approved (or the script changed "
@@ -715,7 +1078,8 @@ class BotCore:
             if script is None or not ws.is_approved("short"):
                 raise RuntimeError("script/approval vanished before render")
             checkpoint("tts")
-            tts = self.tts.synthesize(script.audio_script, "short")
+            tts = self.tts.synthesize(script.audio_script, "short",
+                                      events=script.inline_events)
             checkpoint("render")
             out, manifest = render_short(script, tts, ws.path, self.settings,
                                          content=self.content)
@@ -732,14 +1096,33 @@ class BotCore:
             if not draft and not ws.is_approved("long"):
                 raise RuntimeError("approval vanished before render")
             checkpoint("tts")
-            tts = self.tts.synthesize(script.narration, "long")
-            checkpoint("render")
+            # A draft asks for the free tier (P3.2): the local neural voice if
+            # the box has one, the mock hum otherwise. Never ElevenLabs — the
+            # whole point of a draft is to iterate on pacing without spending.
+            tts = self.tts.synthesize(script.narration, "long",
+                                      events=script.events, draft=draft)
+            if tts.draft:
+                checkpoint(f"draft audio ({tts.tier}) — not the real voice")
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
+            # The storyboard costs seconds and lands before the encode, so a
+            # dead b-roll key or a missing screenshot is caught now rather
+            # than forty minutes from now.
+            checkpoint("storyboard")
+            self._send_storyboard(job, script, tts, ws, data)
+            checkpoint("render")
+
+            def seg_progress(done: int, total: int) -> None:
+                # Real progress, not a spinner: the operator can see a
+                # forty-minute cut advancing beat by beat.
+                if done == total or done % 5 == 0:
+                    checkpoint(f"render {done}/{total} segments")
+
             out, manifest = render_long(
                 script, tts, ws.path, self.settings, content=self.content,
                 draft=draft, broll_overrides=ws.broll_overrides(),
                 as_of=as_of, company_data=data,
+                on_progress=seg_progress,
             )
             if draft:
                 job.delivered_link = f"file://{out}"
@@ -755,13 +1138,42 @@ class BotCore:
                     extra.append(thumb)
             except ImportError:
                 pass
+            # Free by-products of a finished render: subtitles straight off
+            # the master clock (so they match the burned-in captions exactly)
+            # and the upload package. Best-effort — neither is worth losing a
+            # completed render over.
+            try:
+                from pipeline.publish import build_package, write_srt
+
+                extra.append(write_srt(tts.words, ws.path / f"{job.ticker}.srt"))
+                pkg = build_package(script, self.settings, ticker=job.ticker,
+                                    runtime_min=tts.duration_s / 60.0)
+                pkg_path = ws.path / "upload_package.txt"
+                pkg_path.write_text(pkg.render_text(), encoding="utf-8")
+                extra.append(pkg_path)
+            except Exception:  # noqa: BLE001
+                log.exception("publishing by-products failed — delivering anyway")
+            # The rest of the kit's by-products (P3.6): eight thumbnail
+            # layouts, the social cards, the end screens. All free — same data,
+            # artwork already drawn — and the alternative is making them by
+            # hand at midnight.
+            if self.settings.byproducts_enabled:
+                try:
+                    from pipeline.byproducts import build_byproducts
+
+                    made = build_byproducts(ws.path, self.settings,
+                                            ticker=job.ticker, script=script,
+                                            data=data)
+                    checkpoint(f"by-products: {made.total()} assets")
+                except Exception:  # noqa: BLE001 - never lose a finished render
+                    log.exception("by-products failed — delivering anyway")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=attributions, extra_files=extra)
             self._finish(job, result)
             return str(out)
 
         if job.kind is JobKind.REPURPOSE:
-            from pipeline.repurpose import repurpose_short_from_long
+            from pipeline.repurpose import repurpose_clips_from_long
 
             long_mp4 = ws.path / "long_final.mp4"
             manifest = ws.path / "render_long_manifest.json"
@@ -769,21 +1181,78 @@ class BotCore:
                 raise RuntimeError("no finished LONG render to repurpose")
             script = ws.load_long()
             words = None
-            if script and self.tts.is_cached(script.narration, "long"):
-                words = self.tts.synthesize(script.narration, "long").words  # cache hit
+            if script and self.tts.is_cached(script.narration, "long",
+                                             events=script.events):
+                words = self.tts.synthesize(script.narration, "long",
+                                            events=script.events).words  # cache hit
             checkpoint("repurpose")
-            out, info = repurpose_short_from_long(
-                long_mp4, manifest, self.settings, words=words
+            # A forty-minute cut has more than one good minute in it (P3.3).
+            clips = repurpose_clips_from_long(
+                long_mp4, manifest, self.settings,
+                n=self.settings.repurpose_clips, words=words,
             )
+            if not clips:
+                raise RuntimeError("no usable window in the finished LONG")
             checkpoint("delivery")
             import json as _json
             attributions = _json.loads(manifest.read_text()).get("attributions", [])
-            result = deliver(out, job.ticker, job.workdate, self.settings,
-                             attributions=attributions)
+            result = ""
+            for i, (path, _info) in enumerate(clips, 1):
+                checkpoint(f"delivery {i}/{len(clips)}")
+                result = deliver(path, job.ticker, job.workdate, self.settings,
+                                 attributions=attributions)
             self._finish(job, result)
-            return str(out)
+            return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")
+
+    def _send_storyboard(self, job: JobRecord, script, tts, ws, data) -> None:
+        """Contact sheet of the planned cut, pushed before the encode starts.
+
+        Best-effort by design: a storyboard that fails to build must never
+        stop a render the operator has already approved.
+        """
+        try:
+            from pipeline.storyboard import build_storyboard
+            from pipeline.timeline import (
+                build_long_timeline, chapter_start_times, plan_long_segments,
+            )
+
+            cues = build_long_timeline(script, tts.words, tts.duration_s)
+            segments, _ = plan_long_segments(
+                cues, tts.duration_s,
+                chapter_starts=chapter_start_times(script.chapters, tts.duration_s),
+                min_readable_s=self.settings.long_min_readable_s,
+                chapter_host_s=self.settings.long_chapter_host_s,
+            )
+            sheet, problems = build_storyboard(
+                segments, tts.words, ws.path / "storyboard.png", self.settings,
+                content=self.content, ticker=job.ticker, company_data=data,
+                workspace=ws.path, title=f"{job.ticker} — LONG",
+            )
+        except Exception as e:  # noqa: BLE001
+            log.warning("storyboard failed for %s (%s) — rendering anyway",
+                        job.ticker, e)
+            return
+        caption = f"{job.ticker} — storyboard, {len(segments)} beats"
+        if problems:
+            caption += "\n⚠ " + "\n⚠ ".join(problems[:6])
+        self.push_file(sheet, caption)
+
+    def push_file(self, path: Path, caption: str = "") -> None:
+        """Send a file to the operator from a worker thread.
+
+        `file_pusher` is wired by main.py against the bot's event loop; when
+        it is absent (tests, CLI) the path is logged instead, which is all a
+        local run needs.
+        """
+        if self.file_pusher is None:
+            log.info("%s%s", caption + "\n" if caption else "", path)
+            return
+        try:
+            self.file_pusher(path, caption)
+        except Exception:  # noqa: BLE001
+            log.exception("could not push %s to the operator", path)
 
     def _finish(self, job: JobRecord, result) -> None:
         job.delivered_link = result.link
@@ -793,6 +1262,358 @@ class BotCore:
                 fresh.delivered_link = result.link
                 fresh.detail = f"delivered via {result.backend}"
                 self.queue.store.save(fresh)
+        self._record_thesis(job)
+
+    def _record_thesis(self, job: JobRecord) -> None:
+        """Pin the thesis and its numbers when a video ships (P3.3).
+
+        At ship time, because that is the moment the claim becomes public —
+        and best-effort, because a bookkeeping failure must never turn a
+        delivered video into a failed job.
+        """
+        if not self.settings.thesis_tracking:
+            return
+        if job.kind not in (JobKind.RENDER_LONG, JobKind.RENDER_SHORT):
+            return
+        try:
+            from pipeline.standing import ThesisBook
+
+            ws = Workspace(self.settings, job.ticker, job.workdate)
+            data = self._company_data(ws)
+            if data is None:
+                return
+            summary = ws.chosen_angle() or ""
+            if not summary:
+                script = ws.load_long() or ws.load_short()
+                summary = (getattr(script, "title", "")
+                           or getattr(script, "hook_text", "") or "")
+            ThesisBook(self.settings).record(job.ticker, summary, data,
+                                             workdate=job.workdate)
+        except Exception as e:  # noqa: BLE001 - never fail a shipped video
+            log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
+
+    # --------------------------------------------- standing state (P3.3)
+    def queue_text(self, limit: int = 10) -> Reply:
+        """The ranked backlog, so a session never starts from a blank page."""
+        from pipeline.standing import IdeaQueue
+
+        q = IdeaQueue(self.settings)
+        q.prune(self.settings.idea_queue_max_age_days)
+        return Reply(q.render(limit) + "\n\n/short TICKER or /long TICKER to start one.")
+
+    def queue_add(self, args: list[str]) -> Reply:
+        from pipeline.standing import IdeaQueue
+
+        if not args:
+            return Reply("Usage: /idea TICKER <why it's worth covering>")
+        ticker = args[0].upper()
+        reason = " ".join(args[1:]).strip() or "operator pick"
+        IdeaQueue(self.settings).add(ticker, reason, source="operator", score=2.0)
+        return Reply(f"🗂 queued {ticker} — {reason}")
+
+    def queue_drop(self, args: list[str]) -> Reply:
+        from pipeline.standing import IdeaQueue
+
+        if not args:
+            return Reply("Usage: /unidea TICKER")
+        ticker = args[0].upper()
+        dropped = IdeaQueue(self.settings).drop(ticker)
+        return Reply(f"🗂 {'dropped' if dropped else 'not in the queue'}: {ticker}")
+
+    def thesis_text(self, args: list[str]) -> Reply:
+        """What we said about a ticker, and whether it still holds.
+
+        Re-reads the pinned numbers against the current export, so this is a
+        live check rather than a recital of what was stored.
+        """
+        from pipeline.standing import ThesisBook, ideas_from_thesis_moves, update_warranted
+
+        book = ThesisBook(self.settings)
+        if not args:
+            covered = book.tickers()
+            if not covered:
+                return Reply("No theses on file yet — one is pinned each time a "
+                             "video ships.")
+            rows = []
+            for t in covered:
+                th = book.get(t)
+                icon = {"intact": "🟢", "cracking": "🟡", "broken": "🔴"}.get(
+                    th.status, "⚪")
+                rows.append(f"{icon} {t} — {th.summary[:60] or '(no summary)'}")
+            return Reply("📌 Theses on file\n" + "\n".join(rows)
+                         + "\n\n/thesis TICKER re-checks one against today's numbers.")
+
+        ticker = args[0].upper()
+        th = book.get(ticker)
+        if th is None:
+            return Reply(f"No thesis on file for {ticker}.")
+        ws = Workspace.latest_for(self.settings, ticker)
+        data = self._company_data(ws) if ws else None
+        if data is None:
+            return Reply(f"📌 {ticker}: {th.summary}\n"
+                         f"(no current data to check it against — /refresh {ticker})")
+        th, moves = book.check(ticker, data)
+        icon = {"intact": "🟢", "cracking": "🟡", "broken": "🔴"}.get(th.status, "⚪")
+        body = f"{icon} {ticker} — THESIS: {th.status.upper()}\n{th.summary}"
+        note = update_warranted(moves)
+        if note:
+            ideas_from_thesis_moves(self.settings, ticker, moves)
+            body += f"\n\n{note}\n(added to the idea queue)"
+        else:
+            body += "\n\nNothing behind it has moved materially."
+        return Reply(body)
+
+    def batch_text(self, args: list[str]) -> Reply:
+        """Queue renders to run unattended overnight."""
+        from pipeline.standing import BatchQueue
+
+        b = BatchQueue(self.settings)
+        if not args:
+            return Reply(b.render())
+        head = args[0].lower()
+        if head == "clear":
+            return Reply(f"🌙 cleared {b.clear()} batch entr(ies).")
+        ticker = head.upper()
+        fmt = (args[1].lower() if len(args) > 1 else "")
+        if fmt not in ("short", "long"):
+            ws = Workspace.latest_for(self.settings, ticker)
+            fmt = (ws.current_format() if ws else None) or "long"
+        b.add(ticker, fmt)
+        return Reply(f"🌙 {ticker} {fmt.upper()} queued for the overnight batch.\n"
+                     + b.render())
+
+    def batch_plan(self) -> tuple[list[tuple], list[str], str]:
+        """(submittable, skipped reasons, note). Pure — submitting is async.
+
+        Everything that can't run is reported rather than dropped: a batch
+        that silently skipped the one render you cared about is worse than no
+        batch. Nothing expires either — if the machine was asleep, the work is
+        still here the next time the window opens.
+        """
+        from pipeline.standing import BatchQueue, in_batch_window
+
+        b = BatchQueue(self.settings)
+        pending = b.pending()
+        if not self.settings.batch_enabled:
+            return [], [], "🌙 the overnight batch is switched off (BATCH_ENABLED)."
+        if not pending:
+            return [], [], "🌙 nothing queued."
+        submittable: list[tuple] = []
+        skipped: list[str] = []
+        for item in pending:
+            kind, text, ws = self.render_request(item.ticker, item.fmt)
+            if kind is None or ws is None:
+                skipped.append(f"{item.ticker} {item.fmt.upper()}: {text}")
+                continue
+            submittable.append((kind, ws, item))
+        note = "" if in_batch_window(self.settings) else (
+            "(outside the overnight window — running anyway because you asked)")
+        return submittable, skipped, note
+
+    def batch_done(self, ticker: str, fmt: str, error: str = "") -> None:
+        from pipeline.standing import BatchQueue
+
+        BatchQueue(self.settings).mark_done(ticker, fmt, error)
+
+    # --------------------------------- YouTube publishing (P3.5 + 5b)
+    def upload_command(self, args: list[str]) -> Reply:
+        """`/upload TICKER [YYYY-MM-DD HH:MM]` — private, or scheduled.
+
+        Never public: the most this does unattended is schedule, and a human
+        still decides whether that schedule was right.
+        """
+        from pipeline.youtube import (
+            UploadError, YouTubeUnavailable, available, resolve_publish_at,
+            upload_video,
+        )
+
+        if not args:
+            return Reply("Usage: /upload TICKER [YYYY-MM-DD HH:MM]\n"
+                         "No time = private. A time = scheduled publish.")
+        ticker = args[0].upper()
+        when_raw = " ".join(args[1:]).strip()
+        try:
+            when = resolve_publish_at(when_raw or None)
+        except ValueError as e:
+            return Reply(f"⛔ {e}")
+
+        ws = Workspace.latest_for(self.settings, ticker)
+        if ws is None:
+            return Reply(f"No workspace for {ticker}.")
+        fmt = ws.current_format() or "long"
+        video = ws.path / ("long_final.mp4" if fmt == "long" else "short_final.mp4")
+        if not video.exists():
+            return Reply(f"No finished {fmt.upper()} render for {ticker} yet.")
+
+        pkg_path = ws.path / "upload_package.txt"
+        package = self._upload_package(ws, fmt)
+        if package is None:
+            return Reply("⛔ no upload package on file — re-render to build one.")
+
+        ok, why = available(self.settings)
+        if not ok:
+            return Reply(
+                f"⛔ can't upload from here: {why}\n"
+                f"The package is attached — post it by hand.",
+                files=[pkg_path] if pkg_path.exists() else [])
+        try:
+            record = upload_video(
+                video, package, self.settings, publish_at=when,
+                workdate=ws.workdate,
+                chapters=self._chapter_pairs(ws, fmt),
+                duration_s=self._render_duration(ws, fmt))
+        except (UploadError, YouTubeUnavailable) as e:
+            return Reply(f"⛔ upload failed: {e}\nThe package is still yours "
+                         f"to post by hand.",
+                         files=[pkg_path] if pkg_path.exists() else [])
+        except Exception as e:  # noqa: BLE001
+            log.exception("youtube upload blew up")
+            return Reply(f"💥 upload error: {e}")
+
+        if record.privacy == "scheduled":
+            tail = f"scheduled to publish {record.publish_at}"
+        else:
+            tail = "uploaded PRIVATE — publish it when you're ready"
+        return Reply(f"📺 {ticker}: {tail}\n{record.url()}")
+
+    def scheduled_text(self) -> Reply:
+        from pipeline.youtube import VideoLog
+
+        rows = VideoLog(self.settings).scheduled()
+        if not rows:
+            return Reply("📺 nothing scheduled.\n"
+                         "/upload TICKER 2026-08-07 18:00 schedules one.")
+        lines = ["📺 Scheduled"]
+        for v in rows:
+            lines.append(f"  {v.publish_at[:16].replace('T', ' ')} — "
+                         f"{v.ticker}: {v.title[:50]}")
+        return Reply("\n".join(lines))
+
+    def retention_text(self, args: list[str]) -> Reply:
+        """Per-chapter retention for one video, or the evidence across all."""
+        from pipeline.youtube import (
+            VideoLog, chapter_type_evidence, pull_retention, retention_report,
+        )
+
+        log_ = VideoLog(self.settings)
+        if not args:
+            evidence = chapter_type_evidence(self.settings)
+            if not evidence:
+                return Reply("No retention data yet. /retention TICKER pulls it "
+                             "for a published video (YouTube needs a day or two "
+                             "of views first).")
+            lines = ["📊 Which chapter types hold attention (all videos)"]
+            for row in evidence[:12]:
+                lines.append(f"  {row['avg_watch_ratio'] * 100:5.1f}%  "
+                             f"{row['chapter'][:40]}  (n={row['videos']})")
+            lines.append("\nWorst first. One video is an anecdote; the same "
+                         "chapter type dropping across several is evidence.")
+            return Reply("\n".join(lines))
+
+        ticker = args[0].upper()
+        videos = log_.for_ticker(ticker)
+        if not videos:
+            return Reply(f"Nothing published for {ticker} yet.")
+        video = videos[-1]
+        payload = pull_retention(video.video_id, self.settings)
+        if payload.get("status") != "ok":
+            stored = (video.retention or {}).get("chapters")
+            if stored:
+                return Reply(f"({payload.get('reason', 'live pull unavailable')})"
+                             f"\n\n{retention_report(stored)}")
+            return Reply(f"📊 {ticker}: {payload.get('reason', payload['status'])}")
+        return Reply(f"📊 {ticker} — {video.title[:60]}\n"
+                     + retention_report(payload["chapters"]))
+
+    def _upload_package(self, ws: Workspace, fmt: str):
+        from pipeline.cost import build_long_report  # noqa: F401  (import guard)
+        from pipeline.publish import build_package
+
+        script = ws.load_long() if fmt == "long" else ws.load_short()
+        if script is None:
+            return None
+        return build_package(script, self.settings, ticker=ws.ticker,
+                             runtime_min=self._render_duration(ws, fmt) / 60.0)
+
+    def _chapter_pairs(self, ws: Workspace, fmt: str) -> list:
+        from pipeline.publish import normalise_chapters
+
+        script = ws.load_long() if fmt == "long" else None
+        return normalise_chapters(getattr(script, "chapters", "") or "")
+
+    def _render_duration(self, ws: Workspace, fmt: str) -> float:
+        name = ("render_long_manifest.json" if fmt == "long"
+                else "render_short_manifest.json")
+        try:
+            import json as _json
+            return float(_json.loads((ws.path / name).read_text()).get("duration", 0))
+        except (FileNotFoundError, ValueError, KeyError, OSError):
+            return 0.0
+
+    # ------------------------------------------ intraday alerting (3b)
+    def watch_command(self, args: list[str]) -> Reply:
+        """What gets watched intraday, and when the watched names report."""
+        from pipeline.alerts import EarningsCalendar, Watchlist, in_quiet_hours
+
+        wl = Watchlist(self.settings)
+        if args:
+            head = args[0].lower()
+            if head in ("drop", "remove", "off") and len(args) > 1:
+                ticker = args[1].upper()
+                gone = wl.remove(ticker)
+                return Reply(f"👁 {'unpinned' if gone else 'was not pinned'}: {ticker}"
+                             f"\n(names with a thesis on file are always watched.)")
+            ticker = head.upper()
+            wl.add(ticker)
+            return Reply(f"👁 watching {ticker} intraday.")
+
+        watched = wl.all()
+        if not watched:
+            return Reply("👁 nothing on the intraday watch yet.\n"
+                         "/watch TICKER pins one; every ticker you publish is "
+                         "watched automatically.")
+        lines = ["👁 Intraday watch", "  " + ", ".join(watched)]
+        soon = EarningsCalendar(self.settings).upcoming()
+        if soon:
+            lines.append("\n📊 Reporting soon")
+            for e in soon:
+                slot = {"bmo": "before the open", "amc": "after the close"}.get(
+                    e.when, "")
+                lines.append(f"  {e.ticker} — {e.date}{' ' + slot if slot else ''}")
+        if in_quiet_hours(self.settings):
+            lines.append("\n(quiet hours right now — nothing will be pushed)")
+        return Reply("\n".join(lines))
+
+    def earnings_command(self, args: list[str]) -> Reply:
+        """Tell the bot when a name reports, so it can flag both sides."""
+        from pipeline.alerts import EarningsCalendar
+
+        if len(args) < 2:
+            return Reply("Usage: /earnings TICKER YYYY-MM-DD [bmo|amc]")
+        ticker = args[0].upper()
+        when_date = args[1]
+        try:
+            date.fromisoformat(when_date)
+        except ValueError:
+            return Reply(f"⛔ {when_date!r} isn't a date — use YYYY-MM-DD.")
+        slot = args[2].lower() if len(args) > 2 else ""
+        if slot and slot not in ("bmo", "amc"):
+            return Reply("⛔ the third argument is bmo (before open) or amc "
+                         "(after close).")
+        EarningsCalendar(self.settings).set(ticker, when_date, slot)
+        return Reply(f"📊 {ticker} reports {when_date}"
+                     f"{' ' + slot if slot else ''}. I'll flag it before and after.")
+
+    def poll_alerts(self) -> list:
+        """One alert pass. Sync, so the scheduler and tests share a path."""
+        from pipeline.alerts import (
+            Watchlist, fetch_filings, fetch_quotes, poll_once,
+        )
+
+        tickers = Watchlist(self.settings).all()
+        quotes = fetch_quotes(self.settings, tickers)
+        filings = fetch_filings(self.settings, tickers)
+        return poll_once(self.settings, quotes=quotes, filings=filings)
 
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
@@ -862,10 +1683,46 @@ def build_application(settings: Settings, core: BotCore):
     async def cmd_start(update, ctx):
         await _send(update, Reply(HELP_TEXT))
 
+    async def _run_refresh(update, args: list[str]) -> None:
+        """The Excel refresh blocks for tens of seconds — off the loop it goes,
+        or the bot stops answering while the add-in thinks."""
+        import asyncio
+        reply = await asyncio.to_thread(
+            core.refresh_data, update.effective_chat.id, args)
+        await _send(update, reply)
+
+    async def _start_lane(update, lane: str, args: list[str]) -> None:
+        ticker = args[0] if args else ""
+        await _send(update, core.start_lane(update.effective_chat.id, lane, ticker))
+        # The refresh follows immediately — the manual data step is what P3.1b
+        # removes, and the lane's prompt comes back with the numbers.
+        if ticker and excel_available(core.settings)[0]:
+            await _run_refresh(update, [ticker])
+
+    @guard
+    async def cmd_short(update, ctx):
+        await _start_lane(update, "short", list(ctx.args or []))
+
+    @guard
+    async def cmd_long(update, ctx):
+        await _start_lane(update, "long", list(ctx.args or []))
+
     @guard
     async def cmd_new(update, ctx):
         ticker = ctx.args[0] if ctx.args else ""
         await _send(update, core.new_ticker(update.effective_chat.id, ticker))
+        if ticker and excel_available(core.settings)[0]:
+            await _run_refresh(update, [ticker])
+
+    @guard
+    async def cmd_refresh(update, ctx):
+        if not (ctx.args or core.context.get(update.effective_chat.id)):
+            await _send(update, Reply("Usage: /refresh TICKER [VENDOR_SYMBOL]"))
+            return
+        if excel_available(core.settings)[0]:
+            await _send(update, Reply(
+                "🔄 Refreshing in Excel — waiting for the add-in to resolve…"))
+        await _run_refresh(update, list(ctx.args or []))
 
     @guard
     async def cmd_headline(update, ctx):
@@ -876,7 +1733,8 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.prompts_reply(update.effective_chat.id))
 
     @guard
-    async def cmd_render(update, ctx, fmt: str = "short", draft: bool = False):
+    async def cmd_render(update, ctx, fmt: str | None = None, draft: bool = False):
+        """Plain /render follows the workspace's lane (1d)."""
         if not ctx.args:
             await _send(update, Reply("Usage: /render TICKER"))
             return
@@ -934,6 +1792,86 @@ def build_application(settings: Settings, core: BotCore):
         except ValueError as e:
             text = f"⛔ {e}"
         await _send(update, Reply(text))
+
+    @guard
+    async def cmd_script(update, ctx):
+        await _send(update, core.script_listing(update.effective_chat.id))
+
+    @guard
+    async def cmd_edit(update, ctx):
+        await _send(update, core.edit_script(update.effective_chat.id,
+                                            list(ctx.args or [])))
+
+    @guard
+    async def cmd_replace(update, ctx):
+        await _send(update, core.edit_script(update.effective_chat.id,
+                                            list(ctx.args or []),
+                                            mode="replace"))
+
+    @guard
+    async def cmd_undo(update, ctx):
+        await _send(update, core.undo_edit(update.effective_chat.id))
+
+    @guard
+    async def cmd_upload(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.upload_command, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_scheduled(update, ctx):
+        await _send(update, core.scheduled_text())
+
+    @guard
+    async def cmd_retention(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.retention_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_watch(update, ctx):
+        await _send(update, core.watch_command(list(ctx.args or [])))
+
+    @guard
+    async def cmd_earnings(update, ctx):
+        await _send(update, core.earnings_command(list(ctx.args or [])))
+
+    @guard
+    async def cmd_ideas(update, ctx):
+        await _send(update, core.queue_text())
+
+    @guard
+    async def cmd_idea(update, ctx):
+        await _send(update, core.queue_add(list(ctx.args or [])))
+
+    @guard
+    async def cmd_unidea(update, ctx):
+        await _send(update, core.queue_drop(list(ctx.args or [])))
+
+    @guard
+    async def cmd_thesis(update, ctx):
+        await _send(update, core.thesis_text(list(ctx.args or [])))
+
+    @guard
+    async def cmd_batch(update, ctx):
+        args = list(ctx.args or [])
+        if args and args[0].lower() == "run":
+            submittable, skipped, note = core.batch_plan()
+            queued = 0
+            for kind, ws, item in submittable:
+                try:
+                    await core.queue.submit(kind, ws.ticker, ws.workdate)
+                    core.batch_done(item.ticker, item.fmt)
+                    queued += 1
+                except ValueError as e:
+                    skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
+            lines = [f"🌙 batch: {queued} queued, {len(skipped)} skipped"]
+            lines += [f"  ⛔ {s}" for s in skipped[:6]]
+            if note:
+                lines.append(f"  {note}")
+            await _send(update, Reply("\n".join(lines)))
+            return
+        await _send(update, core.batch_text(args))
 
     @guard
     async def cmd_status(update, ctx):
@@ -1022,13 +1960,30 @@ def build_application(settings: Settings, core: BotCore):
     app = builder.build()
 
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
-    app.add_handler(CommandHandler("new", cmd_new))
+    app.add_handler(CommandHandler("short", cmd_short))
+    app.add_handler(CommandHandler("long", cmd_long))
+    app.add_handler(CommandHandler("new", cmd_new))     # deprecated alias
+    app.add_handler(CommandHandler("refresh", cmd_refresh))
     app.add_handler(CommandHandler("headline", cmd_headline))
     app.add_handler(CommandHandler("prompts", cmd_prompts))
     app.add_handler(CommandHandler("render", cmd_render))
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
+    app.add_handler(CommandHandler("upload", cmd_upload))
+    app.add_handler(CommandHandler("scheduled", cmd_scheduled))
+    app.add_handler(CommandHandler("retention", cmd_retention))
+    app.add_handler(CommandHandler("watch", cmd_watch))
+    app.add_handler(CommandHandler("earnings", cmd_earnings))
+    app.add_handler(CommandHandler("ideas", cmd_ideas))
+    app.add_handler(CommandHandler("idea", cmd_idea))
+    app.add_handler(CommandHandler("unidea", cmd_unidea))
+    app.add_handler(CommandHandler("thesis", cmd_thesis))
+    app.add_handler(CommandHandler("batch", cmd_batch))
+    app.add_handler(CommandHandler("script", cmd_script))
+    app.add_handler(CommandHandler("edit", cmd_edit))
+    app.add_handler(CommandHandler("replace", cmd_replace))
+    app.add_handler(CommandHandler("undo", cmd_undo))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("cost", cmd_cost))

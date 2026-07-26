@@ -123,14 +123,28 @@ def _sec_get(url: str, settings: Settings) -> "object | None":
         return None
 
 
+# Images that ship a browser at a known path (the container build does).
+# A normal Windows or Linux install has none of these and lets Playwright
+# resolve its own download instead.
+_PREPROVISIONED_CHROMIUM = (
+    Path("/opt/pw-browsers/chromium"),
+    Path(r"C:\pw-browsers\chromium\chrome.exe"),
+)
+
+
 def _chromium_executable(settings: Settings) -> str | None:
     """Explicit path wins; otherwise use a pre-provisioned browser if present,
-    else let Playwright pick its own bundled Chromium."""
+    else let Playwright pick its own bundled Chromium.
+
+    Returning None is the normal case on a machine where
+    `playwright install chromium` has run — Playwright then finds its own
+    browser, on Windows and Linux alike.
+    """
     if settings.playwright_chromium_path:
         return settings.playwright_chromium_path
-    for cand in ("/opt/pw-browsers/chromium",):
-        if Path(cand).exists():
-            return cand
+    for cand in _PREPROVISIONED_CHROMIUM:
+        if cand.exists():
+            return str(cand)
     return None
 
 

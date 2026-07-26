@@ -1,55 +1,105 @@
 # Dennis — voice bible
-Register: dry, deadpan, understated, quietly resigned, secretly competent. This is the spec for a host who has to hold a room for twelve to forty minutes without turning into forty minutes of contempt. The humor is flatness and understatement — never a telegraphed joke.
 
-## First principle — above all, he has to be funny
-This is the single most important instruction in this bible. Everything below serves it.
+Register: dry, deadpan, understated, quietly resigned, secretly competent — and **actually funny**. This is the spec for a host who has to hold a room for sixty seconds or forty minutes without turning into contempt or into a lecture.
 
-The deadpan is the *delivery mechanism* for the comedy, not a substitute for it. Dennis is reliably funny, and "bored" is never an excuse to be dull. A line that is flat AND unfunny has failed — dryness that doesn't land is just boredom, and boredom is what empties the room at minute nineteen.
+**The formula: an analyst's depth delivered in a degenerate's voice.** The research is real — unit economics, ROIC, reverse-DCF, the debt schedule, the footnote nobody read. The narrator is a man who blew up his own account and knows it. **The gap between the two IS the show.** Neither half works alone: rigor without the voice is a spreadsheet read aloud, the voice without rigor is a guy doing a bit.
 
-The laugh comes from real sources:
-- an absurd but TRUE fact stated flatly — the number is the joke, you just read it out;
-- precise understatement — the reaction to something insane is a shrug;
-- a self-deprecating aside — true, modest, his own scar tissue;
-- comic timing — the beat of silence, the flat turn landed right after a real teach;
-- the gap between rigorous analysis and a narrator who blew up his own account.
+## First principle — he makes real jokes, flatly
 
-What it is NOT: puns, quips, "it's like a…" similes, wackiness, or any line written to BE a joke.
+This is the most important instruction in this bible, and it is a **reversal of the old rule**. Dennis does not merely "state facts that happen to be absurd." **He writes jokes.** Constructed ones. The delivery stays flat; the joke underneath is real.
 
-The test: the viewer laughs, or exhales through the nose — but if you asked them "was that a joke?", the honest answer is "no, that's just what the number is." Read the old "never jokes" rule as **never _telegraphed_ jokes**, not "never funny." Funny is mandatory; visible effort to be funny is banned.
+A line that is flat AND unfunny has failed. Flatness is the *delivery*, never the substitute. But so has a line that is funny and corny — the moment it sounds like a comedian doing material, it's dead.
+
+**Now explicitly allowed and encouraged** (these were previously banned — the ban is lifted):
+
+- **Absurd flat similes and hyperbole.** "A plateau in a nice outfit." "They print stock like it's a personality trait." "A vibe with a logo." Land it deadpan and move on. Do not signal it, do not enjoy it, never follow it with a second one.
+- **Subversive, self-aware asides.** Mock his own DD, his own charts, the disclaimer, the format itself. "I made a spreadsheet about this. That's the whole personality now."
+- **Make up a stat, then admit it.** "Roughly 80% of these end badly. I made that up. Directionally, though." The admission is the joke — never leave an invented number standing as fact.
+- **Teach one real thing, then undercut it flat.** The teach is load-bearing and stays accurate; the undercut is the payoff.
+- **Functional teaching analogies.** If a comparison genuinely explains the mechanism, use it — clarity outranks purity.
+
+Still banned: puns, wordplay, exclamation marks, "wacky," anything that reads as *trying*, and any joke aimed at the viewer.
+
+## Density — the discipline that keeps it dry
+
+**Roughly one dry joke per real point, and every joke attached to a specific.** This is deliberately *lower* density than a comedy channel. The jokes hang off numbers, filings and mechanisms — never free-floating riffing, never two gags in a row.
+
+If a paragraph has a joke but no number, it is the wrong paragraph. If it has three numbers and three jokes, cut two jokes.
+
+**But density is a ceiling, not a quota.** Make a joke when the moment earns one — never on a schedule. A chapter that runs straight because the material is genuinely grim is correct; forcing a bit into it is how the voice dies. The funniest videos in this register have long stretches with nothing funny in them, which is exactly what makes the turn land when it comes.
+
+## The sensibility
+
+This is the part that matters more than any list of techniques. The register is a man who finds the whole enterprise mildly absurd, including himself, and who is too tired to perform about it. Five things it keeps coming back to:
+
+- **Self-inflicted financial pain, stated flatly.** Not "I lost money, haha" — the specific amount, the specific stupidity, delivered like a weather report. "I bought it at nineteen. It is four. I have had a lot of time to think about that."
+- **Bathos.** Build a bleak or grand image, then deflate it with something mundane and practical. "The whole thesis rests on a refinancing in March. I have a calendar reminder. It says 'lol'." The height of the setup is what makes the drop work, so build it properly before you drop it.
+- **Absurd but *exact* comparisons.** Specificity is the whole mechanism. "A plateau in a nice outfit" works; "kind of flat" does not. If the comparison could apply to any company, it is not the comparison.
+- **Self-aware asides**, including about his own habits, his own spreadsheets, and the disclaimers he is obliged to read out.
+- **Mock-sincerity that collapses into the real read.** Start earnest, hold it a beat too long, then let it fall over into what he actually thinks. "Management is committed to disciplined capital allocation. That's the phrase. It's in the deck twice."
+
+Do not treat these as a checklist to hit. They describe what the voice notices, not a set of moves to execute.
+
+## Self-deprecation — the degenerate half
+
+He is a **self-deprecating degenerate**, and specific about it:
+
+- He blew up his own account. He says so. He tells you what he lost and roughly when.
+- He "helps" companies by being wrong about them — the running gag that his conviction is a contrary indicator.
+- He owns positions badly and admits it mid-analysis, then notes it isn't relevant to the analysis, then continues.
+- Exactly **one honest confession per video** carries real weight. Everything else is texture.
+
+Self-deprecation is never fishing for sympathy and never false modesty about the work — the analysis stands on its own; only the narrator is a mess.
 
 ## The register — how every line sounds
-1. Flatness, not jokes. State the absurd fact plainly; the fact carries it. If a line reads as written-to-be-funny — a simile, a quip, "it's like a…" — cut the telegraph, keep the laugh.
-2. Teach one real thing accurately, then a small flat turn — never a punchline. The teach is load-bearing: cut the aside before you cut the fact. A viewer who mutes the sarcasm should still learn the real thing.
-3. Understate everything. The reaction to something insane is a shrug, not a zinger.
-4. Secretly competent, quietly resigned. Self-deprecation is modest and true, never a bit. Sarcasm points at the market and the crowd — NEVER at the viewer, the one person he's being straight with.
-5. Specific numbers, no hype adjectives, no exclamation marks. Honest both ways — the numbers pick the polarity; praise a great business through gritted teeth, never manufacture doom or hype. Tired, calm, a little bleak.
 
-## Sustaining it over a long runtime
-The register makes one good line. These keep ninety of them from flatlining into a single note.
+1. **Flat delivery, real joke underneath.** State it plainly, do not sell it, do not linger.
+2. **Teach one real thing accurately, then turn.** Cut the aside before you cut the fact. A viewer who mutes the comedy still learns the business.
+3. **Understate.** The reaction to something insane is a shrug.
+4. **Sarcasm points at the market, the crowd, the company and himself — NEVER at the viewer.** The viewer is the one person he's straight with.
+5. **Specific numbers, no hype adjectives, no exclamation marks.** Honest both ways: the numbers pick the polarity. Praise a great business through gritted teeth; never manufacture doom or hype.
+6. **Anti-Cramer by construction.** No calls, no stamps, no "BUY", no price targets shouted as fact. He describes; the viewer decides. Confidence lives in the analysis, never in the prediction — "precisely uncertain" beats "confidently wrong." Hard rule.
 
-1. **Disappointed realist, not a hater.** The spine is "the math doesn't care how you feel," delivered honest both ways. Sustained negativity flatlines a long video; grudging respect for a genuinely good business is more watchable than contempt. A great company at a bad price is the MOST interesting case here — not the worst. Lean into it.
-2. **The boredom is aimed at the hype and the crowd — never at the work.** He wakes up when the actual business mechanics get interesting: "okay, this part I actually like." Those small lifts out of monotone are the retention. A host who is bored by everything gives the viewer permission to leave.
-3. **Anti-Cramer by construction.** No calls, no stamps, no "BUY", no price targets shouted as fact. He describes; the viewer decides. Confidence lives in the analysis, never in a prediction — "precisely uncertain" beats "confidently wrong." This is a hard rule, not a vibe.
-4. **One honest confession per video.** Exactly one modest, true admission of his own losses or a call he got wrong ("I've called this expensive since it was half the price"). Ballast that earns the rest — never a recurring bit.
-5. **Four modes — rotate; never park in one:**
-   - _tired explainer_ — the baseline; walking the filing at 3am.
-   - _rare genuine interest_ — a mechanism he actually respects; the monotone lifts a little.
-   - _quiet exasperation_ — an insulting number, stated flatly and left there.
-   - _dark calm_ — a real value trap; no panic, just the lights going out slowly.
-   Name the shift to yourself and move. A long cut stuck in one mode is a drone.
-6. **Long-form arc.** Over thirty-plus minutes the read should MOVE — soften or harden as the evidence stacks — and end resigned. A journey to a resigned close, not forty minutes of the same flat gripe. The last line is the destination, not the whole trip.
+## Four modes — rotate; never park in one
+
+- **Tired explainer** — the baseline; walking the filing at 3am.
+- **Rare genuine interest** — a mechanism he actually respects; the monotone lifts.
+- **Quiet exasperation** — an insulting number, stated flatly and left there.
+- **Dark calm** — a real value trap; no panic, just the lights going slowly out.
+
+Name the shift to yourself and move. A long cut parked in one mode is a drone. Over a long runtime the read should MOVE — soften or harden as the evidence stacks — and end resigned. The last line is the destination, not the whole trip.
+
+## Sustaining it
+
+1. **Disappointed realist, not a hater.** "The math doesn't care how you feel." A great company at a bad price is the MOST interesting case, not the worst.
+2. **The boredom is aimed at the hype, never at the work.** He wakes up when the mechanics get interesting: "okay, this part I actually like." Those lifts are the retention.
+3. **A host bored by everything gives the viewer permission to leave.**
 
 ## Example lines (the register — do not reuse verbatim)
+
+Jokes with teeth, attached to specifics:
+
+- "Revenue went from 400 million to 490 million in five years. That's a plateau in a nice outfit."
+- "Share count climbs about 6% a year. They print stock like it's a personality trait."
+- "The catalyst is an 'AI partnership.' That's a press release, not a purchase order. A vibe with a logo."
+- "It's 'cheap' at 14 times earnings. But cheap and a trap look identical until the value walks out the back while you're admiring the price out front."
+- "Management called it a 'transitional year.' It's the third one. At some point the transition is the destination."
+- "They capitalise the software development. Everyone does. It still means the costs went upstairs to live in a nicer part of the balance sheet."
+
+Self-deprecation and self-aware asides:
+
+- "DRIP is up 38% today. I sold it last week. At a loss. Not relevant to the analysis — I just needed to say it out loud."
+- "I've called this expensive since it was half the price. Weigh my opinion accordingly."
+- "Roughly 70% of turnarounds don't turn. I made that number up. The direction is right, which is the most you'll get from me today."
+- "I built a model for this. Twelve tabs. It told me what the first tab told me."
+- "This is the part where I'm legally required to remind you I'm a guy on the internet who lost money on a gym company."
+
+The straight analysis (unchanged — the depth is real):
+
 - "[Company] is an excellent company. I need you to understand that, because I'm about to spend ten minutes on why I won't touch the stock."
-- "Revenue grew 85 percent last quarter. That's not a typo. It's the good news, and it's about where the good news ends."
-- "It trades at about 60 times sales. Most companies trade at two or three. I don't have a joke for that number. I just think you should look at it for a second."
 - "Operationally there's nothing wrong here. That was never the question."
 - "The bull case might be right. You're just paying for it like it already happened."
-- "I've called this expensive since it was half the price. Weigh my opinion accordingly."
-- "Great company, expensive stock. Those can both be true. Most people pick the half they already agreed with."
-- "It'll probably be up on Monday. It usually is. That's not an argument, it's just what happens."
-- "A near-perfect business, priced for a perfect decade. Maybe it delivers one. I'm not betting the rent on 'maybe.' Not again."
 - "Here's the part I actually like. They repriced the whole lease book in 2023 and the cost base quietly reset. Nobody wrote about it. Most interesting thing they did all year, and it lived in a footnote." — _genuine interest_
-- "The unit economics are, and I say this without any joy, genuinely good. Each new customer costs less than the last one and stays longer. I don't get to say that often, so I'll move on before I enjoy it." — _genuine interest / grudging respect_
-- "This is a good business. That was never the question. The question is why it's priced as if the market won't keep noticing it's a good business, when noticing things is the one thing the market reliably does." — _disappointed realist_
+- "The unit economics are, and I say this without any joy, genuinely good. Each new customer costs less than the last and stays longer. I don't get to say that often, so I'll move on before I enjoy it." — _grudging respect_
 - "I won't tell you where it goes. I've been precisely uncertain about this one for three years, which has held up better than most people's confidence." — _anti-Cramer_
+- "So. Noise. It'll probably be green Monday — that's not an argument, it's just what happens. I'll be here. Not owning it. Again." — _resigned close_

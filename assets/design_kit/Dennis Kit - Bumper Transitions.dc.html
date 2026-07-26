@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1400px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 24px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · BUMPER TRANSITIONS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:86px; line-height:.9; letter-spacing:-.02em;">Cover the cut,<br>carry a word</h1>
+  <p style="margin:18px 0 0; max-width:880px; font-size:17px; line-height:1.6; color:#3a3a3d;">A <strong>sting</strong> lands on the frame you are already looking at — half a second, decorative, the shot never changes. A <strong>bumper</strong> takes the screen away from you: it hides a hard cut, moves the episode somewhere else, and holds a word while it does. Each one is <strong>three frames — IN, HOLD, OUT</strong> — and the HOLD is the only place copy ever goes.</p>
+  <div style="display:flex; align-items:center; gap:16px; margin-top:22px; padding:14px 18px; background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; width:fit-content;">
+    <div style="font-family:'Space Mono',monospace; font-size:12px; letter-spacing:.14em; color:#8f8c83;">PREVIEW</div>
+    <div style="display:flex; gap:8px;">
+      <button type="button" onClick="{{ togglePlay }}" style="font-family:'Space Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.12em; padding:8px 16px; border-radius:4px; border:1.5px solid #232326; background:{{ playBg }}; color:{{ playFg }}; cursor:pointer;">{{ playLabel }}</button>
+      <button type="button" onClick="{{ stepStage }}" style="font-family:'Space Mono',monospace; font-weight:700; font-size:12px; letter-spacing:.12em; padding:8px 16px; border-radius:4px; border:1.5px solid #232326; background:transparent; color:#232326; cursor:pointer;">STEP</button>
+    </div>
+    <div style="font-family:'Space Mono',monospace; font-size:12px; color:#232326; font-weight:700;">{{ stageLabel }}</div>
+  </div>
+</header>
+
+<div style="display:flex; align-items:baseline; gap:16px; margin:14px 0 6px;">
+  <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">00</span>
+  <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">Which one, when</h2>
+  <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+  <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">read this before picking</span>
+</div>
+<div style="font-size:13.5px; color:#6f6c65; line-height:1.5; max-width:840px; margin:0 0 16px;">Seven bumpers is already more than most episodes need. The decision card exists so the choice is made on what the cut is doing, not on which animation is nearest to hand.</div>
+<div style="display:grid; grid-template-columns:1fr; gap:18px; margin:0 0 44px;">
+  <div>
+    <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px;">bumper-decision.png · internal reference</div>
+    <div data-export="bumpers/decision" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 18px 40px -26px rgba(35,35,38,.4); container-type:inline-size;">
+      <div ref="{{ decisionHost }}" style="position:absolute; inset:0;"></div>
+    </div>
+  </div>
+</div>
+
+<sc-for list="{{ bumpers }}" as="b" hint-placeholder-count="6">
+  <div style="margin:0 0 44px;">
+    <div style="display:flex; align-items:baseline; gap:16px; margin:0 0 6px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ b.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em;">{{ b.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ b.dur }}</span>
+    </div>
+    <div style="font-size:13.5px; color:#6f6c65; line-height:1.5; max-width:840px; margin:0 0 14px;">{{ b.blurb }}</div>
+    <div style="display:grid; grid-template-columns:300px 1fr; gap:20px; align-items:start;">
+      <div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:7px;">LIVE</div>
+        <div style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:6px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; box-shadow:0 14px 34px -22px rgba(35,35,38,.45); container-type:inline-size;">
+          <div ref="{{ b.liveHost }}" style="position:absolute; inset:0;"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:7px;">{{ b.file }} · in → hold → out</div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px;">
+          <sc-for list="{{ b.stages }}" as="s" hint-placeholder-count="3">
+            <div>
+              <div data-export="{{ s.id }}" style="width:100%; aspect-ratio:16/9; position:relative; overflow:hidden; border-radius:5px; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover; border:1px solid #dcd8cc; container-type:inline-size;">
+                <div ref="{{ s.host }}" style="position:absolute; inset:0;"></div>
+              </div>
+              <div style="font-family:'Space Mono',monospace; font-size:10px; color:#a9a59b; text-align:center; margin-top:5px; letter-spacing:.1em;">{{ s.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-for>
+
+<div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · type/bumpers/&lt;name&gt;/in · hold · out · 1920×1080 · IN and OUT are 6 frames each in the edit; HOLD is a still</div>
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · bumper transitions · 7 bumpers · 21 frames · copy only ever on HOLD</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', paper:'#faf9f6', warm:'#a98467' };
+    this.state = { stage:1, playing:true };
+    this.hosts = {}; this.liveHosts = {};
+    this.defs = [
+      {n:'01', key:'paper', title:'Paper slide', file:'bumper-paper-slide', dur:'0.9s \u00b7 the default', word:'THE FILING',
+       blurb:'A sheet crosses the frame right to left, holds, keeps going. The most neutral bumper in the kit \u2014 it changes the subject without commenting on it. Use it unless another one is specifically right.'},
+      {n:'02', key:'ink', title:'Ink flood', file:'bumper-ink-flood', dur:'0.7s \u00b7 tone change', word:'NOW THE BAD NEWS',
+       blurb:'Red floods in from the bottom corner and drains out of the top. Signals that the register is about to change \u2014 from explaining to judging. Once an episode.'},
+      {n:'03', key:'blackout', title:'Blackout', file:'bumper-blackout', dur:'0.6s \u00b7 hard stop', word:'STOP',
+       blurb:'Solid ink drops through frame. The heaviest transition available and the only one that should ever follow a number the viewer needs to sit with.'},
+      {n:'04', key:'mug', title:'Mug ring', file:'bumper-mug-ring', dur:'1.2s \u00b7 the breather', word:'BACK IN A SEC',
+       blurb:'A coffee ring spreads until it owns the frame, then contracts. The friendly one \u2014 for a genuine pause, an ad read, or the gap before a long segment.'},
+      {n:'05', key:'tear', title:'Torn edge', file:'bumper-torn-edge', dur:'0.8s \u00b7 new source', word:'FROM THE FILING',
+       blurb:'A torn paper edge crosses the frame. Reserved for moving between kinds of evidence \u2014 host to document, document to chart. The tear says the material changed, not just the topic.'},
+      {n:'06', key:'board', title:'Board rise', file:'bumper-board-rise', dur:'1.0s \u00b7 host to full-screen', word:'THE NUMBERS',
+       blurb:'The board slides up over the host and stays. Technically a bumper with no OUT \u2014 the third frame is the board settled and locked, ready for content to land on it.'},
+      {n:'07', key:'rewind', title:'Rewind', file:'bumper-rewind', dur:'1.1s \u00b7 going backwards', word:'JANUARY 2025',
+       blurb:'Sheets streak the wrong way \u2014 left to right, against the paper slide \u2014 and the HOLD carries a date rather than a topic. The only bumper that means time moved, not subject: use it for a flashback to an earlier call, an earlier chapter, or the year the trouble started. Coming back to the present, run it reversed.'}
+    ];
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r,op){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0,op:op}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||30; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+
+  body(rand){ const c=this.C.ink; let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:c}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:c}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:c}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:c}); return s; }
+  headFront(rand){ const c=this.C.ink; return this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c})+this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:c}); }
+  mug(rand,hx,hy){ const c=this.C.ink,C=this.C; let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:c}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:c}); s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:C.grey}); return s; }
+  bags(rand,a,b){ const g=this.C.grey; return this._stroke([[a-18,314],[a,320],[a+18,314]],rand,{w:3,r:2,s:g})+this._stroke([[b-18,314],[b,320],[b+18,314]],rand,{w:3,r:2,s:g}); }
+  eyesDead(rand){ const c=this.C.ink,L=456,R=544,Ey=288; let s=this._stroke(this._ell(L,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c})+this._stroke(this._ell(R,Ey,20,16,0,Math.PI*2),rand,{w:2.6,r:1.2,close:true,s:c}); s+='<circle cx="'+L+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/><circle cx="'+R+'" cy="'+Ey+'" r="5.5" fill="'+c+'"/>'; return s+this.bags(rand,L,R); }
+  arm(rand,pts){ return this._stroke(pts,rand,{w:5,r:3,s:this.C.ink}); }
+  dennis(rand){
+    let s=this.body(rand);
+    s+=this.arm(rand,[[418,500],[404,590],[398,636]])+this.mug(rand,398,648);
+    s+=this.arm(rand,[[582,500],[600,560],[596,586],[556,606]])+this.mug(rand,552,612);
+    return s+this.headFront(rand)+this.eyesDead(rand)+this._stroke([[472,360],[528,358]],rand,{w:4,r:1.6,s:this.C.ink});
+  }
+
+  // ragged vertical edge at x (0..1 of W), full height
+  raggedV(rand,W,H,x,fill,side){
+    const n=14, pts=[];
+    for(let i=0;i<=n;i++){ const t=i/n; pts.push([W*x+(rand()*2-1)*W*0.012+Math.sin(t*7)*W*0.006, H*t]); }
+    const close = side==='left' ? [[-4,H],[-4,0]] : [[W+4,H],[W+4,0]];
+    const all = side==='left' ? pts.concat([[W+4,H],[W+4,0]]) : pts.concat(close);
+    return this._fill(side==='left'? pts.concat([[-4,H],[-4,0]]).reverse() : all, rand, fill, 2.2);
+  }
+  raggedH(rand,W,H,y,fill,side){
+    const n=16, pts=[];
+    for(let i=0;i<=n;i++){ const t=i/n; pts.push([W*t, H*y+(rand()*2-1)*H*0.02+Math.cos(t*9)*H*0.012]); }
+    const tail = side==='top' ? [[W+4,-4],[-4,-4]] : [[W+4,H+4],[-4,H+4]];
+    return this._fill(pts.concat(tail), rand, fill, 2.6);
+  }
+  tornStrip(rand,W,H,x0,x1,fill){
+    const n=12, top=[], bot=[];
+    for(let i=0;i<=n;i++){ const t=i/n; top.push([x0+(x1-x0)*t, -4+ (rand()*2-1)*H*0.02]); }
+    for(let i=n;i>=0;i--){ const t=i/n; bot.push([x0+(x1-x0)*t, H+4+(rand()*2-1)*H*0.02]); }
+    let s=this._fill(top.concat(bot),rand,fill,2.4);
+    const e1=[],e2=[];
+    for(let i=0;i<=n;i++){ const t=i/n; e1.push([x0+(rand()*2-1)*W*0.014, H*t]); e2.push([x1+(rand()*2-1)*W*0.014, H*t]); }
+    s+=this._stroke(e1,rand,{w:H*0.012,r:2.6,s:this.C.ink,op:0.55});
+    s+=this._stroke(e2,rand,{w:H*0.012,r:2.6,s:this.C.ink,op:0.55});
+    return s;
+  }
+
+  // returns svg innerHTML for a bumper stage; W/H = 480/270
+  stageInk(kind,stage,rand){
+    const C=this.C, W=480, H=270;
+    if(kind==='paper'){
+      const x = stage===0 ? 0.58 : stage===1 ? -0.02 : -0.62;
+      let s=this._fill([[W*x,-4],[W*(x+1.04),-4],[W*(x+1.04),H+4],[W*x,H+4]],rand,C.paper,2.4);
+      s+=this.raggedV(rand,W,H,x,C.paper,'right');
+      const n=14,pts=[]; for(let i=0;i<=n;i++) pts.push([W*x+(rand()*2-1)*W*0.012, H*(i/n)]);
+      s+=this._stroke(pts,rand,{w:H*0.014,r:2.4,s:C.ink,op:0.7});
+      return s;
+    }
+    if(kind==='ink'){
+      const r = stage===0 ? 0.55 : stage===1 ? 1.45 : 0.6;
+      const cx = stage===2 ? W*1.02 : -W*0.02, cy = stage===2 ? -H*0.05 : H*1.05;
+      return this._fill(this._ell(cx,cy,W*r,H*r*1.5,0,Math.PI*2),rand,C.red,3.2);
+    }
+    if(kind==='blackout'){
+      const y = stage===0 ? -0.56 : stage===1 ? 0 : 0.58;
+      let s=this._fill([[-4,H*y],[W+4,H*y],[W+4,H*(y+1.02)],[-4,H*(y+1.02)]],rand,C.ink,2.6);
+      s+=this.raggedH(rand,W,H,y+1.0,C.ink,'top');
+      return s;
+    }
+    if(kind==='mug'){
+      const rr = stage===0 ? 0.42 : stage===1 ? 1.35 : 0.5;
+      let s=this._fill(this._ell(W*0.5,H*0.5,W*rr*0.9,H*rr*1.5,0,Math.PI*2),rand,'rgba(169,132,103,.93)',3);
+      for(let i=0;i<2;i++){
+        const k=rr*(1.02+i*0.09);
+        s+=this._stroke(this._ell(W*0.5,H*0.5,W*k*0.9,H*k*1.5,0,Math.PI*2),rand,{w:H*0.022,r:3.4,close:true,s:'#8a6a52',op:0.55-i*0.18});
+      }
+      return s;
+    }
+    if(kind==='tear'){
+      const x0 = stage===0 ? -W*0.06 : stage===1 ? -W*0.05 : W*0.62;
+      const x1 = stage===0 ? W*0.40 : stage===1 ? W*1.05 : W*1.06;
+      return this.tornStrip(rand,W,H,x0,x1,C.paper);
+    }
+    if(kind==='rewind'){
+      // sheets travel LEFT to RIGHT — the opposite of paper slide — so the direction reads as backwards
+      const lead = stage===0 ? -0.34 : stage===1 ? 0.02 : 0.66;
+      let s='';
+      for(let i=2;i>=0;i--){
+        const x = lead - i*0.13;
+        const op = stage===1 ? 1 : 0.55+i*0.15;
+        s+=this._fill([[W*(x-1.04),-4],[W*x,-4],[W*x,H+4],[W*(x-1.04),H+4]],rand,C.paper,2.4,op);
+        const n=12,pts=[]; for(let k=0;k<=n;k++) pts.push([W*x+(rand()*2-1)*W*0.012, H*(k/n)]);
+        s+=this._stroke(pts,rand,{w:H*0.013,r:2.4,s:C.ink,op:0.28+i*0.20});
+      }
+      if(stage!==1){
+        for(let i=0;i<6;i++){
+          const yy=H*(0.08+i*0.16), len=W*(0.06+((i*29)%17)/120);
+          s+=this._stroke([[W*lead+W*0.02,yy],[W*lead+W*0.02+len,yy]],rand,{w:H*0.014,r:2.6,s:C.grey,op:0.5});
+        }
+      }
+      return s;
+    }
+    if(kind==='board'){
+      const y = stage===0 ? 0.56 : 0.06;
+      let s=this._fill([[W*0.02,H*y],[W*0.98,H*y],[W*0.98,H*1.06],[W*0.02,H*1.06]],rand,C.paper,2.2);
+      s+=this._stroke([[W*0.02,H*y],[W*0.98,H*y],[W*0.98,H*1.06],[W*0.02,H*1.06]],rand,{w:H*0.016,r:2.4,close:true,s:C.ink});
+      if(stage>=1){
+        for(let i=1;i<4;i++) s+=this._stroke([[W*0.02,H*(y+(1.06-y)*i/4)],[W*0.98,H*(y+(1.06-y)*i/4)]],rand,{w:H*0.006,r:1.6,s:C.ghost,op:0.8});
+      }
+      if(stage===2) s+=this._stroke([[W*0.06,H*(y+0.10)],[W*0.34,H*(y+0.10)]],rand,{w:H*0.026,r:2.6,s:C.red});
+      return s;
+    }
+    return '';
+  }
+  wordOn(kind){
+    const C=this.C;
+    if(kind==='ink' || kind==='blackout') return { col:'#f2f2ef', sub:'#e2dfd5' };
+    if(kind==='mug') return { col:'#faf6f0', sub:'#e8dcd0' };
+    return { col:C.ink, sub:C.grey };
+  }
+
+  buildStage(kind,stage,seed){
+    const C=this.C, def=this.defs.find(d=>d.key===kind);
+    const wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    let h='';
+    // the outgoing shot lives underneath every bumper
+    h+='<svg data-ink="dennis" data-seed="'+(seed+40)+'" viewBox="300 130 560 810" preserveAspectRatio="xMidYMax meet" style="position:absolute; left:5cqw; bottom:0; width:26cqw; height:52cqw; overflow:visible;"></svg>';
+    h+='<div style="position:absolute; right:6cqw; top:12cqw; font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.2em; color:'+C.grey+';">OUTGOING SHOT</div>';
+    h+='<svg data-bumper="'+kind+'" data-stage="'+stage+'" data-seed="'+seed+'" viewBox="0 0 480 270" preserveAspectRatio="none" style="position:absolute; inset:0; width:100%; height:100%; overflow:hidden;"></svg>';
+    if(stage===1 && def){
+      const w=this.wordOn(kind);
+      h+='<div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 8cqw;">';
+      h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:7cqw; line-height:1.02; color:'+w.col+';">'+def.word+'</div>';
+      h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.26em; color:'+w.sub+'; margin-top:1.6cqw;">HOLD \u00b7 COPY GOES HERE, NOWHERE ELSE</div>';
+      h+='</div>';
+    }
+    wrap.innerHTML=h;
+    return wrap;
+  }
+  buildDecision(){
+    const C=this.C, wrap=document.createElement('div');
+    wrap.setAttribute('style','position:absolute; inset:0; overflow:hidden;');
+    const rows=[
+      ['Topic changes, nothing else','Paper slide','the neutral default',C.ink],
+      ['Register changes \u2014 explaining to judging','Ink flood','once an episode',C.red],
+      ['A number needs to land before you move','Blackout','heaviest in the kit',C.ink],
+      ['A real pause \u2014 ad read, long segment ahead','Mug ring','the friendly one',C.warm],
+      ['The kind of evidence changes','Torn edge','host \u2192 document \u2192 chart',C.ink],
+      ['Host shot \u2192 full-screen board','Board rise','no OUT, it stays',C.gdk],
+      ['Time moves, not the subject','Rewind','HOLD carries a date',C.ink]
+    ];
+    let h='';
+    h+='<div style="position:absolute; left:4.5cqw; right:4.5cqw; top:5cqw;">';
+    h+='<div style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.5cqw; letter-spacing:.26em; color:'+C.red+';">PICK ON WHAT THE CUT IS DOING</div>';
+    h+='<div style="font-family:\'Shantell Sans\',cursive; font-weight:800; font-size:4.2cqw; line-height:1; margin-top:0.9cqw;">Not on which one you like</div></div>';
+    h+='<div style="position:absolute; left:4.5cqw; right:4.5cqw; top:15cqw; bottom:7cqw; display:flex; flex-direction:column; justify-content:space-evenly; overflow:hidden;">';
+    rows.forEach(r=>{
+      h+='<div style="display:flex; align-items:center; gap:2cqw;">';
+      h+='<span style="font-family:\'Space Grotesk\',sans-serif; font-weight:500; font-size:1.95cqw; line-height:1.2; flex:1.5; min-width:0;">'+r[0]+'</span>';
+      h+='<span style="flex:none; width:2.6cqw; height:0.22cqw; background:'+C.ghost+';"></span>';
+      h+='<span style="font-family:\'Space Mono\',monospace; font-weight:700; font-size:1.75cqw; letter-spacing:.1em; color:'+r[3]+'; flex:none; width:17cqw;">'+r[1].toUpperCase()+'</span>';
+      h+='<span style="font-family:\'Space Grotesk\',sans-serif; font-size:1.6cqw; color:'+C.grey+'; font-style:italic; flex:none; width:19cqw; text-align:right;">'+r[2]+'</span>';
+      h+='</div>';
+    });
+    h+='</div>';
+    h+='<div style="position:absolute; left:4.5cqw; right:4.5cqw; bottom:3.2cqw; font-family:\'Space Mono\',monospace; font-size:1.3cqw; letter-spacing:.13em; color:'+C.grey+';">TWO BUMPERS IN A ROW MEANS THE EDIT IS HIDING SOMETHING \u00b7 CUT THE SEGMENT INSTEAD</div>';
+    wrap.innerHTML=h;
+    return wrap;
+  }
+  drawBumperSvg(el){
+    const key=el.dataset.bumper+':'+el.dataset.stage+':'+(this.props.roughness??2);
+    if(el.getAttribute('data-key')===key) return;
+    const rand=this.prng((((+el.dataset.seed||3)+ (+el.dataset.stage)*57)*2654435761)>>>0);
+    el.innerHTML=this.stageInk(el.dataset.bumper, +el.dataset.stage, rand);
+    el.setAttribute('data-key',key);
+  }
+  drawDennis(el){
+    if(el.getAttribute('data-drawn')) return;
+    el.innerHTML=this.dennis(this.prng(((+el.dataset.seed||1)*1973)>>>0));
+    el.setAttribute('data-drawn','1');
+  }
+  mountAll(){
+    const dh=this.decisionHost && this.decisionHost.current;
+    if(dh && !dh.getAttribute('data-built')){ dh.appendChild(this.buildDecision()); dh.setAttribute('data-built','1'); }
+    this.defs.forEach((d,di)=>{
+      [0,1,2].forEach(st=>{
+        const ref=this.hosts[d.key+':'+st], el=ref && ref.current;
+        if(el && !el.getAttribute('data-built')){ el.appendChild(this.buildStage(d.key,st,11+di*7)); el.setAttribute('data-built','1'); }
+      });
+      const lref=this.liveHosts[d.key], lel=lref && lref.current;
+      if(lel && lel.getAttribute('data-stage')!==String(this.state.stage)){
+        lel.textContent='';
+        lel.appendChild(this.buildStage(d.key,this.state.stage,11+di*7));
+        lel.setAttribute('data-stage',String(this.state.stage));
+      }
+    });
+  }
+  drawAll(){
+    const root=this.rootRef.current; if(!root) return;
+    this.mountAll();
+    root.querySelectorAll('[data-bumper]').forEach(el=>this.drawBumperSvg(el));
+    root.querySelectorAll('[data-ink="dennis"]').forEach(el=>this.drawDennis(el));
+  }
+  componentDidMount(){ this.drawAll(); this.timer=setInterval(()=>{ if(this.state.playing) this.setState(s=>({stage:(s.stage+1)%3})); },900); }
+  componentWillUnmount(){ if(this.timer) clearInterval(this.timer); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){
+      const root=this.rootRef.current;
+      if(root){ root.querySelectorAll('[data-bumper]').forEach(el=>el.removeAttribute('data-key'));
+        root.querySelectorAll('[data-ink="dennis"]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    }
+    this.drawAll();
+  }
+  renderVals(){
+    const ref=(k)=>{ if(!this.hosts[k]) this.hosts[k]=React.createRef(); return this.hosts[k]; };
+    const lref=(k)=>{ if(!this.liveHosts[k]) this.liveHosts[k]=React.createRef(); return this.liveHosts[k]; };
+    if(!this.decisionHost) this.decisionHost=React.createRef();
+    const names=['IN','HOLD','OUT'];
+    const playing=this.state.playing;
+    return {
+      rootRef:this.rootRef,
+      decisionHost:this.decisionHost,
+      bumpers:this.defs.map(d=>({
+        ...d,
+        liveHost:lref(d.key),
+        stages:[0,1,2].map(st=>({
+          id:'bumpers/'+d.key+'/'+names[st].toLowerCase(),
+          label:names[st]+(d.key==='board'&&st===2?' \u00b7 LOCKED':''),
+          host:ref(d.key+':'+st)
+        }))
+      })),
+      stageLabel:names[this.state.stage],
+      playLabel: playing?'PAUSE':'PLAY',
+      playBg: playing?'#232326':'transparent',
+      playFg: playing?'#f2f2ef':'#232326',
+      togglePlay:()=>this.setState(s=>({playing:!s.playing})),
+      stepStage:()=>this.setState(s=>({playing:false, stage:(s.stage+1)%3}))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -67,7 +67,7 @@ def test_streams_and_duration(rendered):
     assert float(info["format"]["duration"]) == pytest.approx(tts.duration_s, abs=0.7)
 
 
-def test_fast_cut_structure_with_all_kinds(rendered):
+def test_host_anchored_structure_with_all_kinds(rendered):
     settings, script, tts, out, manifest = rendered
     segs = manifest["segments"]
     # tiles the whole duration
@@ -76,17 +76,24 @@ def test_fast_cut_structure_with_all_kinds(rendered):
     for a, b in zip(segs, segs[1:]):
         assert a["end"] == pytest.approx(b["start"], abs=0.01)
     kinds = {s["kind"] for s in segs}
-    assert {"clip", "img", "chart", "filing", "meme", "filler"} <= kinds
-    # fast cuts: fillers never exceed the max cut
+    assert {"clip", "img", "chart", "filing", "meme", "host"} <= kinds
+
+    # deliberate pacing: nothing flashes by, and every gap is ONE held host
+    # beat rather than a run of chopped filler
     for s in segs:
-        if s["kind"] == "filler":
-            assert s["end"] - s["start"] <= settings.long_max_cut_s + 1e-6
-    # visual segments start exactly on their cue's anchor-word time
+        assert s["end"] - s["start"] >= 1.0, f"{s['kind']} flashes by"
+    for a, b in zip(segs, segs[1:]):
+        assert not (a["kind"] == "host" and b["kind"] == "host"), \
+            "consecutive host beats mean the gap was chopped"
+
+    # visual segments start on their cue's anchor-word time, or later when a
+    # data visual before them was still being read
     cues = build_long_timeline(script, tts.words, tts.duration_s)
-    cue_times = {round(c.t, 3) for c in cues if c.kind is not CueKind.SOUND}
+    cue_times = sorted(c.t for c in cues if c.kind is not CueKind.SOUND)
     for seg in segs:
-        if seg["kind"] != "filler":
-            assert round(seg["start"], 3) in cue_times
+        if seg["kind"] == "host":
+            continue
+        assert any(seg["start"] >= t - 1e-3 for t in cue_times)
 
 
 def test_cue_times_reached_the_filtergraph(rendered):
@@ -94,8 +101,16 @@ def test_cue_times_reached_the_filtergraph(rendered):
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     refin = next(s for s in manifest["segments"] if s["kind"] == "filing")
     assert f"between(t,{refin['start']:.4f}" in filter_text  # the glitch flash
-    assert "concat=n=%d" % len(manifest["segments"]) in filter_text
     assert "subtitles=filename=" in filter_text
+    # In segmented mode the beats are separate encodes concatenated with
+    # -c copy, so the final graph carries only the overlays; in single-graph
+    # mode the concat filter is in there.
+    if manifest["segmented"]:
+        assert (out.parent / "render_long" / "base.mp4").exists()
+        assert len(manifest["segments"]) == len(
+            [s for s in manifest["segments"] if s.get("filter")])
+    else:
+        assert "concat=n=%d" % len(manifest["segments"]) in filter_text
     # sounds mixed at their cue times
     cues = build_long_timeline(script, tts.words, tts.duration_s)
     for c in cues:
@@ -123,17 +138,42 @@ def test_sources_and_attributions_carried(rendered):
 # ---- the overhaul: media-is-the-background, motion, design system --------
 
 
-def test_every_still_gets_ken_burns_motion(rendered):
-    """No still is a static hold — pans ride a time-varying crop, zooms ride
-    zoompan; over the timeline both kinds of move appear."""
+def test_nothing_pans_or_zooms(rendered):
+    """No drift on anything — photos, backdrops and b-roll included.
+
+    Motion is the host (mouth flap, boil pairs), the cuts, and real video
+    clips. Every still is scale + pad, held. This is also what makes a
+    segment cacheable: its output no longer depends on where it sits in the
+    timeline.
+    """
     settings, script, tts, out, manifest = rendered
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     W, H = manifest["resolution"]
-    assert "zoompan=" in filter_text, "at least one still zooms (Ken Burns)"
+    segs = manifest["segments"]
+    # every filter this render used: the overlay graph plus each beat's own
+    graphs = [(out.parent / (out.stem + ".filter.txt")).read_text()]
+    graphs += [s.get("filter", "") for s in segs]
+    all_filters = "\n".join(graphs)
+
+    assert "zoompan" not in all_filters, "zoompan is gone for good"
     # a pan is a crop with a time-varying x/y expression
-    assert f"crop={W}:{H}:x='(iw-ow)" in filter_text, "stills pan (Ken Burns)"
-    # the old static pad-fit hold is gone
-    assert f"pad={W}:{H}" not in filter_text, "no more static letterbox hold"
+    assert "(iw-ow)*t/" not in all_filters and "(ih-oh)*t/" not in all_filters, \
+        "no time-varying crop anywhere"
+    assert "1.14" not in all_filters, "the Ken Burns upscale is gone"
+
+    # every still segment is the plain contain-fit hold
+    still_kinds = {"chart", "filing", "screengrab", "asset", "img", "meme",
+                   "table", "term", "bignum", "prop", "host"}
+    stills = [s for s in segs if s["kind"] in still_kinds]
+    assert stills
+    assert f"pad={W}:{H}" in all_filters
+
+
+def test_the_ken_burns_vocabulary_is_deleted():
+    """Removed outright, not left behind a flag."""
+    import pipeline.render_long as rl
+
+    for gone in ("_KB_MODES", "_ken_burns_chain", "_STILL_KINDS"):
+        assert not hasattr(rl, gone), f"{gone} should no longer exist"
 
 
 def test_long_captions_are_a_fitted_box(rendered):
@@ -145,20 +185,21 @@ def test_long_captions_are_a_fitted_box(rendered):
     assert ",1,4,2,2," not in ass, "not the SHORT outline style"
 
 
-def test_fillers_are_designed_backdrops_not_repeated_cards(rendered):
+def test_host_holds_the_untagged_stretches(rendered):
+    """Untagged narration is Dennis on screen, not a designed filler card."""
     settings, script, tts, out, manifest = rendered
     rdir = out.parent / "render_long"
-    backdrops = sorted(rdir.glob("backdrop_*.png"))
-    assert len(backdrops) >= 3, "a pool of designed backdrops is drawn"
     assert not list(rdir.glob("card_*.png")), "the repeated mascot cards are gone"
-    fillers = [s for s in manifest["segments"] if s["kind"] == "filler"]
-    assert fillers, "the sample has filler beats"
-    # fillers are numbered sequentially so consecutive ones can never map to
-    # the same pooled backdrop (variant % pool differs for consecutive ints)
-    segs = manifest["segments"]
-    for a, b in zip(segs, segs[1:]):
-        if a["kind"] == "filler" and b["kind"] == "filler":
-            assert a["variant"] != b["variant"], "adjacent fillers must differ"
+
+    hosts = [s for s in manifest["segments"] if s["kind"] == "host"]
+    assert hosts, "the sample has host beats"
+    assert all(h["layout"] == "host-full" for h in hosts)
+    # a real talking clip was composited for each one
+    clips = sorted(rdir.glob("host_*.mov"))
+    assert len(clips) >= len(hosts), "every host beat gets a lip-synced clip"
+    # host beats are numbered sequentially so the renderer can vary the shot
+    variants = [h["variant"] for h in hosts]
+    assert len(set(variants)) == len(variants)
 
 
 def test_design_system_furniture_present_and_clear(rendered):

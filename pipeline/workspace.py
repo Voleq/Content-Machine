@@ -53,14 +53,84 @@ class Workspace:
 
     # -------------------------------------------------------------- scripts
     def save_short(self, script: ShortScript, raw: str) -> None:
+        self._push_revision("short")
         (self.path / "script_short.raw.txt").write_text(raw)
         (self.path / "script_short.json").write_text(script.model_dump_json(indent=2))
         self._invalidate_approval("short")
 
     def save_long(self, script: LongScript, raw: str) -> None:
+        self._push_revision("long")
         (self.path / "script_long.raw.txt").write_text(raw)
         (self.path / "script_long.json").write_text(script.model_dump_json(indent=2))
         self._invalidate_approval("long")
+
+    def raw_script(self, fmt: str) -> str | None:
+        f = self.path / f"script_{fmt}.raw.txt"
+        return f.read_text() if f.exists() else None
+
+    # ------------------------------------------------------------ lane (1d)
+    # `/short` and `/long` declare the format up front instead of preparing
+    # both prompts and leaving it implicit, so /render follows from the lane
+    # rather than being a second, separate choice.
+    def _lane_file(self) -> Path:
+        return self.path / "lane.json"
+
+    def set_lane(self, lane: str) -> None:
+        self.path.mkdir(parents=True, exist_ok=True)
+        self._lane_file().write_text(json.dumps({"lane": lane}))
+
+    def lane(self) -> str:
+        try:
+            return str(json.loads(self._lane_file().read_text()).get("lane") or "")
+        except (FileNotFoundError, json.JSONDecodeError):
+            return ""
+
+    def current_format(self) -> str | None:
+        """Which format this workspace is working in.
+
+        A pasted script is the strongest signal, then the declared lane. LONG
+        wins a tie between two scripts: a workspace holding both is one where a
+        SHORT was cut from the LONG, and the LONG is the thing being edited.
+        """
+        if (self.path / "script_long.json").exists():
+            return "long"
+        if (self.path / "script_short.json").exists():
+            return "short"
+        return self.lane() or None
+
+    # ------------------------------------------------------- revisions (P3.1c)
+    # In-chat editing needs an undo. Every save stacks the previous raw here
+    # first, so a revision that parses but reads badly is one command away
+    # from being reverted — and one that does NOT parse never lands at all
+    # (the caller validates before saving).
+    def _revision_dir(self, fmt: str) -> Path:
+        return self.path / "revisions" / fmt
+
+    def _push_revision(self, fmt: str) -> None:
+        current = self.path / f"script_{fmt}.raw.txt"
+        if not current.exists():
+            return
+        d = self._revision_dir(fmt)
+        d.mkdir(parents=True, exist_ok=True)
+        n = len(list(d.glob("*.txt")))
+        (d / f"{n:03d}.txt").write_text(current.read_text())
+
+    def revision_count(self, fmt: str) -> int:
+        d = self._revision_dir(fmt)
+        return len(list(d.glob("*.txt"))) if d.is_dir() else 0
+
+    def pop_revision(self, fmt: str) -> str | None:
+        """The previous raw script, removed from the stack. None if empty."""
+        d = self._revision_dir(fmt)
+        if not d.is_dir():
+            return None
+        files = sorted(d.glob("*.txt"))
+        if not files:
+            return None
+        last = files[-1]
+        text = last.read_text()
+        last.unlink()
+        return text
 
     def load_short(self) -> ShortScript | None:
         f = self.path / "script_short.json"

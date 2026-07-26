@@ -9,10 +9,12 @@ APIs — the bot itself talks to Telegram normally).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from config import detect_ffmpeg, get_settings
 from pipeline.jobs import RenderJobQueue
+from pipeline.render_common import set_render_politeness
 
 from bot.handlers import BotCore, build_application
 
@@ -29,6 +31,9 @@ def main() -> None:
 
     ffmpeg, _ = detect_ffmpeg()
     log.info("ffmpeg: %s | mock_mode=%s", ffmpeg, settings.mock_mode)
+    # Renders are unattended on what is also somebody's desktop: cap the
+    # ffmpeg thread pools and drop the child processes below normal priority.
+    set_render_politeness(settings)
     if not settings.telegram_bot_token:
         raise SystemExit(
             "TELEGRAM_BOT_TOKEN is not set. Create a bot with @BotFather and put "
@@ -49,12 +54,28 @@ def main() -> None:
             for chat_id in settings.operator_chat_ids:
                 await application.bot.send_message(chat_id, text)
 
+        loop = asyncio.get_running_loop()
+
+        def push_file(path, caption: str = "") -> None:
+            """Called from the render worker thread — hop back to the bot's
+            loop to actually send."""
+            async def _send() -> None:
+                for chat_id in settings.operator_chat_ids:
+                    with open(path, "rb") as fh:
+                        await application.bot.send_photo(chat_id, fh,
+                                                         caption=caption[:1024])
+            asyncio.run_coroutine_threadsafe(_send(), loop)
+
+        core.file_pusher = push_file
         core.queue = RenderJobQueue(settings, core.execute_job, notify)
         core.queue.start()
 
         try:  # scheduled screener digest (§14) — degrades silently if absent
-            from pipeline.screener import schedule_digest
+            from pipeline.screener import schedule_alerts, schedule_digest
             schedule_digest(application, core)
+            # Intraday watch (3b): the digest covers the value lane, this
+            # covers short-form, which goes stale in hours.
+            schedule_alerts(application, core)
         except ImportError:
             log.info("screener module not present; digest not scheduled")
 

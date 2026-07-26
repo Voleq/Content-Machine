@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  .frame { position:relative; overflow:hidden; container-type:inline-size; border-radius:8px; box-shadow:0 16px 36px -24px rgba(35,35,38,.4); }
+  .frame .tick { position:absolute; left:4.5cqw; top:4cqw; font-family:'Space Mono',monospace; font-weight:700; font-size:2cqw; }
+  .frame .disc { position:absolute; left:4.5cqw; bottom:3.5cqw; font-family:'Space Grotesk',sans-serif; color:#8f8c83; font-size:1.6cqw; }
+  .cap { font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px; }
+  .sec { display:flex; align-items:baseline; gap:16px; margin:24px 0 16px; }
+  .sec .n { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700; }
+  .sec h2 { margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em; }
+  .sec .r { flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent); }
+  .sec .m { font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1200px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 22px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · OPTIONAL CHAPTER · THE MOAT</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:72px; line-height:.9; letter-spacing:-.02em;">The moat</h1>
+  <p style="margin:16px 0 0; max-width:770px; font-size:17px; line-height:1.6; color:#3a3a3d;">The competitive-advantage chapter — a <strong>castle</strong> behind a <strong>moat</strong>, with <strong>competitors at the wall</strong>. Wide-moat vs narrowing-moat variants, the <strong>breach</strong>, and Dennis inspecting the walls. Full 16:9 frames; each carries a <code>data-export</code> id.</p>
+</header>
+
+<div class="sec"><span class="n">A</span><h2>The castle &amp; moat</h2><span class="r"></span><span class="m">chapters/moat/ · wide vs narrowing</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">moat-wide.png · the fortress</div>
+    <div data-export="moat-wide" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.4cqw; color:#1f9e56;">Wide moat.</div>
+      <svg data-ink="moat" data-mode="wide" data-seed="4" viewBox="0 0 800 420" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">moat-narrow.png · draining</div>
+    <div data-export="moat-narrow" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.4cqw; color:#ff5247;">Moat's draining.</div>
+      <svg data-ink="moat" data-mode="narrow" data-seed="8" viewBox="0 0 800 420" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">B</span><h2>Competitors &amp; the breach</h2><span class="r"></span><span class="m">at the wall</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">competitors-at-the-wall.png</div>
+    <div data-export="competitors-at-the-wall" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">Everyone wants in.</div>
+      <svg data-ink="moat" data-mode="siege" data-seed="12" viewBox="0 0 800 420" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">the-breach.png · wall cracks</div>
+    <div data-export="the-breach" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw; color:#ff5247;">Then it cracked.</div>
+      <svg data-ink="moat" data-mode="breach" data-seed="16" viewBox="0 0 800 420" style="position:absolute; inset:0; width:100%; height:100%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">C</span><h2>The four walls &amp; the verdict</h2><span class="r"></span><span class="m">what holds it up</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">four-walls.png · sources of moat</div>
+    <div data-export="four-walls" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; padding:6cqw 6cqw; display:flex; flex-direction:column;">
+        <div style="font-family:'Space Mono',monospace; font-size:2cqw; letter-spacing:.2em; color:#ff5247; font-weight:700;">FOUR WALLS</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:2cqw 3cqw; margin-top:3cqw;">
+          <div style="display:flex; align-items:center; gap:2cqw;"><svg data-ink="mk" data-name="check" data-seed="2" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Brand</span></div>
+          <div style="display:flex; align-items:center; gap:2cqw;"><svg data-ink="mk" data-name="check" data-seed="3" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Network</span></div>
+          <div style="display:flex; align-items:center; gap:2cqw;"><svg data-ink="mk" data-name="cross" data-seed="4" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Switching cost</span></div>
+          <div style="display:flex; align-items:center; gap:2cqw;"><svg data-ink="mk" data-name="cross" data-seed="5" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Scale cost</span></div>
+        </div>
+        <div style="margin-top:auto; font-family:'Space Grotesk',sans-serif; font-size:2.2cqw; color:#8f8c83; font-style:italic;">two holding, two gone.</div>
+      </div>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">moat-meter.png · how deep</div>
+    <div data-export="moat-meter" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:0; right:0; top:8cqw; text-align:center; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">Getting shallow.</div>
+      <svg data-ink="meter" data-seed="20" viewBox="0 0 480 300" style="position:absolute; left:12cqw; right:12cqw; top:26cqw; width:76%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">dennis-inspects.png · taps the wall</div>
+    <div data-export="dennis-inspects" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover;">
+      <div style="position:absolute; right:5cqw; top:14cqw; max-width:32cqw; text-align:right; font-family:'Shantell Sans',cursive; font-weight:800; font-size:3.8cqw; line-height:1.04;">Hollow.<br>Hear that?</div>
+      <svg data-ink="dennis" data-arm="point" data-expr="dead-stare" data-mouth="closed" data-seed="24" viewBox="0 0 560 620" style="position:absolute; left:3cqw; bottom:0; width:32%; height:86%; overflow:visible;"></svg>
+      <svg data-ink="wallchunk" data-seed="25" viewBox="0 0 260 300" style="position:absolute; right:6cqw; bottom:18cqw; width:26%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<section style="margin-top:24px;">
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · full frames 1600×900 · captured per-frame from the scenes above (each carries a data-export id)</div>
+  <div style="background:#d3cfc4; border-radius:6px; padding:16px 20px; font-family:'Space Mono',monospace; font-size:12px; color:#5a574e; line-height:1.7;">moat-wide · moat-narrow · competitors-at-the-wall · the-breach · four-walls · moat-meter · dennis-inspects</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:900},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', water:'#7d94b8', waterEdge:'#5f76a0', ghost:'#c9c6bc' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; const dash=o.dash?' stroke-dasharray="'+o.dash+'"':''; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+dash+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,dash:o.dash})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7,dash:o.dash}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800,rot=o.rot||0; const fam=o.mono?"'Space Mono',monospace":o.grot?"'Space Grotesk',sans-serif":"'Shantell Sans',cursive"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle"'+(rot?' transform="rotate('+rot+' '+x.toFixed(1)+' '+y.toFixed(1)+')"':'')+'>'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _crenel(rand,x0,x1,yTop,col,seg){ seg=seg||6; const step=(x1-x0)/seg, pts=[[x0,yTop+step*0.5]]; for(let i=0;i<seg;i++){ const bx=x0+i*step; const up=i%2===0; pts.push([bx,up?yTop:yTop+step*0.5]); pts.push([bx+step,up?yTop:yTop+step*0.5]); } pts.push([x1,yTop+step*0.5]); return this._stroke(pts,rand,{w:3.4,r:1.4,s:col}); }
+  castle(rand,cx,base,w,col){
+    const C=this.C, h=w*0.62, x0=cx-w/2, x1=cx+w/2, yTop=base-h;
+    let s=this._stroke([[x0,base],[x0,yTop],[x1,yTop],[x1,base]],rand,{w:3.6,r:1.6,s:col});
+    s+=this._crenel(rand,x0,x1,yTop-w*0.05,col,6);
+    // towers
+    const tw=w*0.16;
+    [x0,x1].forEach(tx=>{ s+=this._stroke([[tx-tw/2,base],[tx-tw/2,yTop-w*0.14],[tx+tw/2,yTop-w*0.14],[tx+tw/2,base]],rand,{w:3.6,r:1.4,s:col}); s+=this._crenel(rand,tx-tw/2,tx+tw/2,yTop-w*0.2,col,3); });
+    // gate + flag
+    s+=this._stroke([[cx-w*0.1,base],[cx-w*0.1,base-h*0.4],[cx,base-h*0.5],[cx+w*0.1,base-h*0.4],[cx+w*0.1,base]],rand,{w:3,r:1.4,s:col});
+    s+=this._stroke([[cx,yTop-w*0.05],[cx,yTop-w*0.24]],rand,{w:2.4,r:1,s:col})+this._fill([[cx,yTop-w*0.24],[cx+w*0.1,yTop-w*0.2],[cx,yTop-w*0.15]],rand,'rgba(255,82,71,.5)',1);
+    return s;
+  }
+  water(rand,x0,x1,yTop,depth,col){ let s=this._fill([[x0,yTop],[x1,yTop],[x1,yTop+depth],[x0,yTop+depth]],rand,col||'rgba(125,148,184,.28)',1.6); for(let i=0;i<4;i++){ const wy=yTop+8+i*(depth/5); s+=this._stroke([[x0+10,wy],[x0+(x1-x0)*0.4,wy-4],[x1-10,wy]],rand,{w:1.8,r:1.2,s:this.C.waterEdge,op:0.6}); } return s; }
+  competitor(rand,x,base,scl,col){ scl=scl||1; const C=this.C; let s=this._stroke([[x-14*scl,base],[x-14*scl,base-30*scl],[x+14*scl,base-30*scl],[x+14*scl,base]],rand,{w:2.8,r:1.2,s:col}); s+=this._stroke([[x-14*scl,base-30*scl],[x-14*scl,base-40*scl],[x-6*scl,base-40*scl],[x-6*scl,base-34*scl],[x+2*scl,base-34*scl],[x+2*scl,base-40*scl],[x+10*scl,base-40*scl],[x+14*scl,base-40*scl],[x+14*scl,base-30*scl]],rand,{w:2.4,r:1,s:col}); s+=this._stroke([[x,base-40*scl],[x-4*scl,base-58*scl]],rand,{w:2.4,r:1.2,s:C.red})+this._fill([[x-4*scl,base-58*scl],[x-16*scl,base-56*scl],[x-6*scl,base-48*scl]],rand,'rgba(255,82,71,.5)',1); return s; }
+  moat(rand,W,H,mode){
+    const C=this.C, ground=H*0.86;
+    let s=this._stroke([[0,ground],[W,ground]],rand,{w:2.6,r:1.2,s:C.ink});
+    const cx=W*0.5, cw=W*0.26, base=ground;
+    // moat width by mode
+    let mw = mode==='wide'? W*0.2 : mode==='narrow'? W*0.09 : W*0.14;
+    const mL=cx-cw/2-mw, mR=cx+cw/2+mw, depth=H*0.14;
+    // island the castle sits on
+    s+=this._stroke([[cx-cw/2-mw*0.2,base],[cx+cw/2+mw*0.2,base]],rand,{w:4,r:1.4,s:C.ink});
+    // moat water left+right
+    if(mode!=='breach'){ s+=this.water(rand,mL,cx-cw/2-mw*0.2,base,depth)+this.water(rand,cx+cw/2+mw*0.2,mR,base,depth); }
+    else { s+=this.water(rand,mL,cx-cw/2-mw*0.2,base,depth*0.4)+this.water(rand,cx+cw/2+mw*0.2,mR,base,depth*0.4); }
+    s+=this.castle(rand,cx,base-2,cw,C.ink);
+    if(mode==='wide'){ s+=this._t(cx,base+H*0.1,'WIDE MOAT',{size:H*0.045,s:C.gdk,w:800}); s+=this._stroke([[mL,base+H*0.055],[cx-cw/2-mw*0.2,base+H*0.055]],rand,{w:2,r:0.8,s:C.gdk})+this._stroke([[cx+cw/2+mw*0.2,base+H*0.055],[mR,base+H*0.055]],rand,{w:2,r:0.8,s:C.gdk}); }
+    if(mode==='narrow'){ s+=this._t(cx,base+H*0.1,'NARROW',{size:H*0.045,s:C.red,w:800}); s+=this.competitor(rand,mL-W*0.02,base,1,C.ink)+this.competitor(rand,mR+W*0.02,base,1,C.ink); s+=this._stroke([[mL-W*0.02,base-H*0.02],[mL+W*0.02,base-H*0.02]],rand,{w:2,r:1,s:C.red}); }
+    if(mode==='siege'){ for(let i=0;i<3;i++){ s+=this.competitor(rand,mL-W*0.03-i*W*0.05,base,1,C.ink); s+=this.competitor(rand,mR+W*0.03+i*W*0.05,base,1,C.ink); } s+=this._t(cx,base+H*0.1,'UNDER SIEGE',{size:H*0.04,s:C.grey,w:800,mono:true}); }
+    if(mode==='breach'){ s+=this._stroke([[cx-cw*0.2,base-cw*0.3],[cx-cw*0.05,base-cw*0.05],[cx-cw*0.15,base-cw*0.4],[cx+cw*0.05,base-cw*0.1]],rand,{w:3.4,r:2.6,s:C.red}); s+=this.competitor(rand,cx+cw*0.1,base,1,C.red); s+=this._t(cx,base+H*0.1,'BREACHED',{size:H*0.045,s:C.red,w:800}); }
+    return s;
+  }
+  meter(rand,W,H){
+    const C=this.C, cx=W*0.5, cy=H*0.74, R=W*0.32;
+    let s=this._stroke(this._ell(cx,cy,R,R,Math.PI,Math.PI*2,30),rand,{w:4,r:1.2,s:C.ink})+this._stroke([[cx-R,cy],[cx+R,cy]],rand,{w:2.2,r:0.7,s:C.ink});
+    for(let i=0;i<=6;i++){ const a=Math.PI+Math.PI*i/6; s+=this._stroke([[cx+(R-4)*Math.cos(a),cy+(R-4)*Math.sin(a)],[cx+(R-16)*Math.cos(a),cy+(R-16)*Math.sin(a)]],rand,{w:2,r:0.6,s:C.grey}); }
+    s+=this._t(cx-R,cy+H*0.08,'SHALLOW',{size:H*0.05,s:C.red,w:800,anchor:'start'})+this._t(cx+R,cy+H*0.08,'DEEP',{size:H*0.05,s:C.gdk,w:800,anchor:'end'});
+    const na=Math.PI+Math.PI*0.32; s+=this._stroke([[cx,cy],[cx+(R-18)*Math.cos(na),cy+(R-18)*Math.sin(na)]],rand,{w:5,r:1.2,s:C.red})+'<circle cx="'+cx+'" cy="'+cy+'" r="7" fill="'+C.ink+'"/>';
+    s+=this._t(cx,cy-R-H*0.04,'MOAT DEPTH',{size:H*0.05,s:C.grey,w:700,mono:true});
+    return s;
+  }
+  wallchunk(rand,W,H){ const C=this.C; let s=this._stroke([[W*0.2,H*0.4],[W*0.7,H*0.34],[W*0.78,H*0.8],[W*0.24,H*0.86]],rand,{w:3.4,r:2,close:true,s:C.ink}); for(let i=0;i<3;i++){ s+=this._stroke([[W*0.3+i*W*0.14,H*0.42],[W*0.32+i*W*0.14,H*0.8]],rand,{w:1.8,r:1.4,s:C.grey,op:0.7}); } s+=this._stroke([[W*0.5,H*0.5],[W*0.56,H*0.62],[W*0.48,H*0.7]],rand,{w:2.4,r:2,s:C.red}); return s; }
+  mk(rand,W,H,name){ const C=this.C; if(name==='check') return this._stroke([[W*0.2,H*0.54],[W*0.42,H*0.76],[W*0.82,H*0.24]],rand,{w:W*0.1,r:1.6,s:C.gdk}); return this._stroke([[W*0.24,H*0.24],[W*0.76,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red})+this._stroke([[W*0.76,H*0.24],[W*0.24,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red}); }
+  dennis(rand,W,H,arm,expr,mouth){
+    const C=this.C, bx=W*0.5, sc=Math.min(W,H)/620, top=H-360*sc, sy=(v)=>top+v*sc;
+    const L=(pts)=>this._stroke(pts,rand,{w:4.4,r:2.2,s:C.ink});
+    let s=this._stroke([[bx-40*sc,sy(150)],[bx+40*sc,sy(150)],[bx+46*sc,sy(300)],[bx-46*sc,sy(300)]],rand,{w:4.4,r:2.4,close:true,s:C.ink});
+    s+=this._stroke([[bx,sy(120)],[bx,sy(150)]],rand,{w:4.4,r:1.6,s:C.ink});
+    s+=this._stroke([[bx-22*sc,sy(300)],[bx-26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink})+this._stroke([[bx+22*sc,sy(300)],[bx+26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink});
+    if(arm==='point'){ s+=L([[bx-40*sc,sy(170)],[bx-52*sc,sy(240)]])+L([[bx+40*sc,sy(170)],[bx+120*sc,sy(150)],[bx+186*sc,sy(120)]]); }
+    else { s+=L([[bx-40*sc,sy(170)],[bx-50*sc,sy(240)]])+L([[bx+40*sc,sy(170)],[bx+54*sc,sy(220)],[bx+40*sc,sy(250)]]); }
+    const hcx=bx, hcy=sy(70), hr=52*sc;
+    s+=this._stroke(this._ell(hcx,hcy,hr,hr*1.08,-0.15,Math.PI*2+0.55),rand,{w:4.4,r:2.6,s:C.ink});
+    s+=this._stroke([[hcx,hcy-hr*1.02],[hcx-14*sc,hcy-hr*1.3],[hcx+8*sc,hcy-hr*1.2],[hcx-4*sc,hcy-hr*0.98]],rand,{w:3.4,r:2.4,s:C.ink});
+    const Lx=hcx-20*sc,Rx=hcx+20*sc,Ey=hcy-6*sc, dot=(x,y,r)=>'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(r*sc).toFixed(1)+'" fill="'+C.ink+'"/>';
+    const bags=()=>this._stroke([[Lx-9*sc,Ey+20*sc],[Lx,Ey+24*sc],[Lx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey})+this._stroke([[Rx-9*sc,Ey+20*sc],[Rx,Ey+24*sc],[Rx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey});
+    s+=this._stroke(this._ell(Lx,Ey,10*sc,8*sc,0,Math.PI*2),rand,{w:2.2,r:1,close:true,s:C.ink})+this._stroke(this._ell(Rx,Ey,10*sc,8*sc,0,Math.PI*2),rand,{w:2.2,r:1,close:true,s:C.ink})+dot(Lx,Ey,3)+dot(Rx,Ey,3)+bags();
+    const my=hcy+28*sc;
+    s+= mouth==='open'? this._stroke(this._ell(hcx,my,9*sc,11*sc,0,Math.PI*2),rand,{w:3,close:true,s:C.ink}) : this._stroke([[hcx-16*sc,my],[hcx+16*sc,my-2*sc]],rand,{w:3.4,r:1.4,s:C.ink});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 800 420').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out=''; const t=el.dataset.ink;
+    if(t==='moat') out=this.moat(rand,W,H,el.dataset.mode||'wide');
+    else if(t==='meter') out=this.meter(rand,W,H);
+    else if(t==='wallchunk') out=this.wallchunk(rand,W,H);
+    else if(t==='mk') out=this.mk(rand,W,H,el.dataset.name||'check');
+    else if(t==='dennis') out=this.dennis(rand,W,H,el.dataset.arm||'rest',el.dataset.expr||'deadpan',el.dataset.mouth||'closed');
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>{ if(el.dataset.ink!=='none') this.drawInk(el); }); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){ if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); } this.drawAll(); }
+  renderVals(){ return { rootRef:this.rootRef }; }
+}
+</script>
+</body>
+</html>

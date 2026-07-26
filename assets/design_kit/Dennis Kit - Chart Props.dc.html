@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1400px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · CHART PROP LIBRARY</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:88px; line-height:.9; letter-spacing:-.02em;">Twenty ways to<br>show a number</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">The chapter files each carry their own bespoke charts. This is the <strong>generic set</strong> — the shapes that come up in every episode, drawn in the same hand so any of them can drop into any chapter. Transparent PNG, <strong>920×600</strong>, every one with a <strong>_b</strong> boil pair.</p>
+</header>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ g.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ g.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ g.note }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:20px; margin:0 0 40px;">
+      <sc-for list="{{ g.charts }}" as="c" hint-placeholder-count="4">
+        <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:18px 20px 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:4px;">
+            <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:22px;">{{ c.title }}</div>
+            <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#a9a59b;">{{ c.file }}</div>
+          </div>
+          <div style="font-size:13px; color:#6f6c65; line-height:1.45; margin-bottom:12px;">{{ c.blurb }}</div>
+          <div style="background:#faf9f6; border-radius:4px; padding:12px;">
+            <svg data-ink="{{ c.ink }}" data-seed="{{ c.seed }}" viewBox="0 0 460 300" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · props/charts/ · transparent PNG 920×600 · every frame + its _b boil</div>
+  <div style="display:flex; flex-wrap:wrap; gap:14px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exports }}" as="x" hint-placeholder-count="8">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:230px; height:150px; display:flex; align-items:center; justify-content:center;">
+          <svg data-ink="{{ x.ink }}" data-seed="{{ x.seed }}" viewBox="0 0 460 300" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · chart props · 20 primitives · 40 frames with boils</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', warm:'#a98467' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _box(x,y,w,h,rand,o){ o=o||{}; const pts=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; let s=''; if(o.f) s+=this._fill(pts,rand,o.f,1.2); return s+this._stroke(pts,rand,{w:o.w==null?2.6:o.w,r:o.r==null?1.3:o.r,close:true,s:o.s}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||28; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _axes(rand,W,H,o){ o=o||{}; const x0=o.x0||W*0.10,y0=o.y0||H*0.84,x1=o.x1||W*0.95,yT=o.yT||H*0.10; return this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.4,r:1,s:this.C.ink}); }
+
+  candles(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.84,yT=H*0.10,ph=y0-yT,n=11;
+    let s=this._axes(rand,W,H);
+    let lvl=0.72;
+    for(let i=0;i<n;i++){
+      const x=x0+(W*0.85-x0)*(i+0.5)/n, drift=i<6? -0.02: -0.055;
+      const o=lvl, c=Math.max(0.12,Math.min(0.92,lvl+drift+(rand()*2-1)*0.07)); lvl=c;
+      const up=c>o, col=up?C.gdk:C.red, bw=(W*0.85-x0)/n*0.46;
+      const hi=Math.max(o,c)+0.04+rand()*0.03, lo=Math.min(o,c)-0.04-rand()*0.03;
+      s+=this._stroke([[x,y0-ph*hi],[x,y0-ph*lo]],rand,{w:2,r:1,s:col});
+      const yA=y0-ph*Math.max(o,c), yB=y0-ph*Math.min(o,c);
+      s+=this._box(x-bw/2,yA,bw,Math.max(3,yB-yA),rand,{f:up?'rgba(47,213,118,.22)':'rgba(255,82,71,.20)',s:col,w:2.2});
+    }
+    s+=this._t(x0,H*0.055,'PRICE, 11 SESSIONS',{size:H*0.052,s:C.grey});
+    return s;
+  }
+  waterfall(rand,W,H){
+    const C=this.C,x0=W*0.09,y0=H*0.82,ph=y0-H*0.14;
+    const steps=[['REV',1.0,'base'],['COGS',-0.42,'down'],['SG&A',-0.24,'down'],['R&D',-0.11,'down'],['OP',0.23,'base']];
+    let s=this._axes(rand,W,H,{y0:y0});
+    let acc=0; const bw=(W*0.88-x0)/steps.length*0.56;
+    for(let i=0;i<steps.length;i++){
+      const [lab,v,kind]=steps[i], x=x0+(W*0.88-x0)*(i+0.5)/steps.length-bw/2;
+      let top,hgt,col,fillc;
+      if(kind==='base'){ top=y0-ph*Math.abs(v); hgt=ph*Math.abs(v); acc=Math.abs(v); col=C.ink; fillc='rgba(35,35,38,.10)'; }
+      else { const from=acc, to=acc+v; top=y0-ph*Math.max(from,to); hgt=ph*Math.abs(v); acc=to; col=C.red; fillc='rgba(255,82,71,.18)'; }
+      s+=this._box(x,top,bw,Math.max(4,hgt),rand,{f:fillc,s:col,w:2.4});
+      s+=this._t(x+bw/2,y0+H*0.06,lab,{size:H*0.05,s:C.grey,anchor:'middle'});
+      if(i<steps.length-1) s+=this._stroke([[x+bw,y0-ph*acc],[x+(W*0.88-x0)/steps.length,y0-ph*acc]],rand,{w:1.4,r:0.8,s:C.ghost});
+    }
+    s+=this._t(x0,H*0.075,'WHERE A POUND OF REVENUE GOES',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  stacked(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.82,ph=y0-H*0.16,n=5;
+    const segs=[[0.46,'rgba(35,35,38,.14)',C.ink],[0.28,'rgba(255,82,71,.16)',C.red],[0.14,'rgba(35,35,38,.05)',C.grey]];
+    let s=this._axes(rand,W,H,{y0:y0});
+    const bw=(W*0.9-x0)/n*0.56;
+    for(let i=0;i<n;i++){
+      const x=x0+(W*0.9-x0)*(i+0.5)/n-bw/2, grow=1+i*0.10;
+      let base=y0;
+      for(let j=0;j<segs.length;j++){
+        const h=ph*segs[j][0]*grow*(j===1?1-i*0.06:1);
+        s+=this._box(x,base-h,bw,h,rand,{f:segs[j][1],s:segs[j][2],w:2.2});
+        base-=h;
+      }
+      s+=this._t(x+bw/2,y0+H*0.06,'Y'+(i+1),{size:H*0.05,s:C.grey,anchor:'middle'});
+    }
+    s+=this._t(x0,H*0.09,'REVENUE BY SEGMENT',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  donut(rand,W,H){
+    const C=this.C,cx=W*0.30,cy=H*0.52,R=H*0.34,r=H*0.18;
+    const parts=[[0.62,'rgba(35,35,38,.16)',C.ink,'Hotels 62%'],[0.24,'rgba(255,82,71,.18)',C.red,'Gyms 24%'],[0.14,'rgba(35,35,38,.05)',C.grey,'Direct 14%']];
+    let s='',a0=-Math.PI/2;
+    for(let i=0;i<parts.length;i++){
+      const a1=a0+parts[i][0]*Math.PI*2;
+      const outer=this._ell(cx,cy,R,R,a0,a1,18), inner=this._ell(cx,cy,r,r,a1,a0,18);
+      s+=this._fill(outer.concat(inner),rand,parts[i][1],1.2);
+      s+=this._stroke(outer.concat(inner),rand,{w:2.4,r:1.3,close:true,s:parts[i][2]});
+      a0=a1;
+    }
+    for(let i=0;i<parts.length;i++){
+      const yy=H*0.28+i*H*0.19;
+      s+=this._box(W*0.66,yy-H*0.045,H*0.075,H*0.075,rand,{f:parts[i][1],s:parts[i][2],w:2});
+      s+=this._t(W*0.72,yy-H*0.008,parts[i][3],{size:H*0.062,s:C.ink});
+    }
+    return s;
+  }
+  scatter(rand,W,H){
+    const C=this.C,x0=W*0.12,y0=H*0.82,x1=W*0.94,yT=H*0.12;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0,x1:x1,yT:yT});
+    const pts=[[0.18,0.30],[0.30,0.42],[0.42,0.38],[0.52,0.58],[0.64,0.62],[0.74,0.78],[0.86,0.70]];
+    for(let i=0;i<pts.length;i++){
+      const x=x0+(x1-x0)*pts[i][0], y=y0-(y0-yT)*pts[i][1];
+      s+=this._stroke(this._ell(x,y,H*0.035,H*0.035,0,Math.PI*2),rand,{w:2.2,r:1.1,close:true,s:C.grey});
+    }
+    const hx=x0+(x1-x0)*0.28, hy=y0-(y0-yT)*0.20;
+    s+=this._fill(this._ell(hx,hy,H*0.045,H*0.045,0,Math.PI*2),rand,'rgba(255,82,71,.25)',1);
+    s+=this._stroke(this._ell(hx,hy,H*0.05,H*0.05,0,Math.PI*2),rand,{w:3,r:1.4,close:true,s:C.red});
+    s+=this._t(hx+H*0.08,hy,'GYMX',{size:H*0.062,s:C.red,w:700});
+    s+=this._t(x1,y0+H*0.07,'GROWTH \u2192',{size:H*0.05,s:C.grey,anchor:'end'});
+    s+=this._t(x0-H*0.02,yT,'\u2190 MULTIPLE',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  funnel(rand,W,H){
+    const C=this.C, rows=[['VISITS','1.2m',1.0],['TRIALS','180k',0.66],['PAID','42k',0.40],['RETAINED','29k',0.28]];
+    let s='';
+    const cx=W*0.42, top=H*0.14, hh=H*0.16;
+    for(let i=0;i<rows.length;i++){
+      const wTop=W*0.60*rows[i][2], wBot=W*0.60*(i<rows.length-1?rows[i+1][2]:rows[i][2]*0.86);
+      const y=top+i*hh;
+      const pts=[[cx-wTop/2,y],[cx+wTop/2,y],[cx+wBot/2,y+hh*0.86],[cx-wBot/2,y+hh*0.86]];
+      s+=this._fill(pts,rand,i===rows.length-1?'rgba(47,213,118,.18)':'rgba(35,35,38,.08)',1.2);
+      s+=this._stroke(pts,rand,{w:2.4,r:1.3,close:true,s:i===rows.length-1?C.gdk:C.ink});
+      s+=this._t(W*0.80,y+hh*0.42,rows[i][0],{size:H*0.052,s:C.grey});
+      s+=this._t(W*0.80,y+hh*0.42+H*0.062,rows[i][1],{size:H*0.068,s:C.ink});
+    }
+    return s;
+  }
+  flow(rand,W,H){
+    const C=this.C;
+    let s=this._box(W*0.04,H*0.34,W*0.20,H*0.30,rand,{f:'rgba(35,35,38,.07)',s:C.ink,w:2.6});
+    s+=this._t(W*0.14,H*0.49,'CASH IN',{size:H*0.058,s:C.ink,anchor:'middle'});
+    const outs=[['REINVEST',0.16,'rgba(47,213,118,.18)',C.gdk],['BUYBACK',0.42,'rgba(35,35,38,.07)',C.ink],['DEBT',0.68,'rgba(255,82,71,.16)',C.red]];
+    for(let i=0;i<outs.length;i++){
+      const y=H*outs[i][1];
+      s+=this._stroke([[W*0.24,H*0.49],[W*0.42,H*0.49],[W*0.52,y+H*0.09],[W*0.66,y+H*0.09]],rand,{w:H*0.045,r:2.4,s:outs[i][3],op:0.32});
+      s+=this._box(W*0.66,y,W*0.28,H*0.18,rand,{f:outs[i][2],s:outs[i][3],w:2.4});
+      s+=this._t(W*0.80,y+H*0.09,outs[i][0],{size:H*0.052,s:outs[i][3],anchor:'middle'});
+    }
+    return s;
+  }
+  cohort(rand,W,H){
+    const C=this.C,x0=W*0.12,y0=H*0.82,x1=W*0.94,yT=H*0.14,ph=y0-yT;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0,x1:x1,yT:yT});
+    const decays=[[0.92,0.55,C.ink],[0.90,0.42,C.grey],[0.88,0.28,C.red]];
+    for(let k=0;k<decays.length;k++){
+      const pts=[]; for(let i=0;i<7;i++){ const t=i/6; const v=decays[k][0]*Math.pow(decays[k][1],t*1.1)+(rand()*2-1)*0.015; pts.push([x0+(x1-x0)*t, y0-ph*v]); }
+      s+=this._stroke(pts,rand,{w:k===2?3.6:3,r:1.5,s:decays[k][2]});
+    }
+    s+=this._t(x0,H*0.09,'RETENTION BY COHORT',{size:H*0.05,s:C.grey});
+    s+=this._t(x1,y0-ph*0.20,'newest',{size:H*0.055,s:C.red,anchor:'end',hand:true});
+    return s;
+  }
+  seasonality(rand,W,H){
+    const C=this.C,x0=W*0.08,y0=H*0.82,ph=y0-H*0.16,n=12;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0});
+    const bw=(W*0.94-x0)/n*0.56;
+    for(let i=0;i<n;i++){
+      const t=i/(n-1), v=0.35+0.45*Math.pow(Math.sin(t*Math.PI),1.6)+(rand()*2-1)*0.04;
+      const x=x0+(W*0.94-x0)*(i+0.5)/n-bw/2, peak=v>0.68;
+      s+=this._box(x,y0-ph*v,bw,ph*v,rand,{f:peak?'rgba(255,82,71,.18)':'rgba(35,35,38,.08)',s:peak?C.red:C.ink,w:2});
+    }
+    s+=this._t(x0,H*0.09,'REVENUE BY MONTH \u2014 IT\u2019S A SUMMER BUSINESS',{size:H*0.048,s:C.grey});
+    return s;
+  }
+  indexed(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.82,x1=W*0.94,yT=H*0.12,ph=y0-yT;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0,x1:x1,yT:yT});
+    s+=this._stroke([[x0,y0-ph*0.42],[x1,y0-ph*0.42]],rand,{w:1.4,r:0.7,s:C.ghost});
+    const A=[],B=[];
+    for(let i=0;i<9;i++){ const t=i/8; A.push([x0+(x1-x0)*t, y0-ph*(0.42+0.34*t+(rand()*2-1)*0.03)]); B.push([x0+(x1-x0)*t, y0-ph*(0.42-0.24*t+(rand()*2-1)*0.03)]); }
+    s+=this._stroke(A,rand,{w:3.2,r:1.5,s:C.grey})+this._stroke(B,rand,{w:4,r:1.7,s:C.red});
+    s+=this._t(x1-W*0.02,A[8][1]-H*0.05,'SECTOR',{size:H*0.055,s:C.grey,anchor:'end'});
+    s+=this._t(x1-W*0.02,B[8][1]+H*0.06,'GYMX',{size:H*0.06,s:C.red,anchor:'end'});
+    s+=this._t(x0,H*0.075,'INDEXED TO 100, 2 YEARS',{size:H*0.048,s:C.grey});
+    return s;
+  }
+  drawdown(rand,W,H){
+    const C=this.C,x0=W*0.10,yTop=H*0.20,x1=W*0.94,yBot=H*0.84,ph=yBot-yTop;
+    let s=this._stroke([[x0,yTop],[x1,yTop]],rand,{w:2.4,r:1,s:C.ink});
+    s+=this._stroke([[x0,yTop],[x0,yBot]],rand,{w:2.4,r:1,s:C.ink});
+    const pts=[[x0,yTop]];
+    const prof=[0.05,0.22,0.14,0.46,0.62,0.52,0.78,0.66,0.40];
+    for(let i=0;i<prof.length;i++) pts.push([x0+(x1-x0)*(i+1)/prof.length, yTop+ph*prof[i]]);
+    s+=this._fill(pts.concat([[x1,yTop]]),rand,'rgba(255,82,71,.14)',1.2);
+    s+=this._stroke(pts,rand,{w:3.4,r:1.6,s:C.red});
+    s+=this._t(x0+W*0.02,H*0.11,'DRAWDOWN FROM THE HIGH',{size:H*0.05,s:C.grey});
+    s+=this._t(x1,yTop+ph*0.80,'\u221234%',{size:H*0.075,s:C.red,anchor:'end'});
+    return s;
+  }
+  football(rand,W,H){
+    const C=this.C,x0=W*0.24,x1=W*0.94;
+    const rows=[['DCF','0.30','0.78'],['PEERS','0.42','0.66'],['PRECEDENT','0.20','0.58'],['52-WK','0.36','0.88']];
+    let s='';
+    for(let i=0;i<rows.length;i++){
+      const y=H*0.22+i*H*0.17, a=+rows[i][1], b=+rows[i][2];
+      s+=this._box(x0+(x1-x0)*a,y-H*0.055,(x1-x0)*(b-a),H*0.11,rand,{f:'rgba(35,35,38,.09)',s:C.ink,w:2.2});
+      s+=this._t(x0-W*0.02,y,rows[i][0],{size:H*0.052,s:C.grey,anchor:'end'});
+    }
+    const px=x0+(x1-x0)*0.34;
+    s+=this._stroke([[px,H*0.14],[px,H*0.90]],rand,{w:3.4,r:1.4,s:C.red});
+    s+=this._t(px+W*0.012,H*0.10,'TODAY',{size:H*0.052,s:C.red});
+    return s;
+  }
+  tornado(rand,W,H){
+    const C=this.C,cx=W*0.56;
+    const rows=[['CHURN','0.30'],['PRICE','0.24'],['COGS','0.18'],['FX','0.10']];
+    let s=this._stroke([[cx,H*0.12],[cx,H*0.90]],rand,{w:2.4,r:1,s:C.ink});
+    for(let i=0;i<rows.length;i++){
+      const y=H*0.24+i*H*0.17, m=+rows[i][1]*W*0.7;
+      s+=this._box(cx-m/2,y-H*0.055,m/2,H*0.11,rand,{f:'rgba(255,82,71,.16)',s:C.red,w:2.2});
+      s+=this._box(cx,y-H*0.055,m/2,H*0.11,rand,{f:'rgba(47,213,118,.16)',s:C.gdk,w:2.2});
+      s+=this._t(W*0.04,y,rows[i][0],{size:H*0.052,s:C.grey});
+    }
+    s+=this._t(W*0.04,H*0.10,'WHAT MOVES THE ANSWER',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  histogram(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.82,ph=y0-H*0.16,n=11;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0});
+    const bw=(W*0.92-x0)/n*0.62;
+    for(let i=0;i<n;i++){
+      const t=(i-(n-1)/2)/((n-1)/2), v=Math.exp(-t*t*1.9)*(0.92)+(rand()*2-1)*0.03;
+      const x=x0+(W*0.92-x0)*(i+0.5)/n-bw/2, tail=i<2;
+      s+=this._box(x,y0-ph*v,bw,ph*Math.max(0.03,v),rand,{f:tail?'rgba(255,82,71,.20)':'rgba(35,35,38,.09)',s:tail?C.red:C.ink,w:2});
+    }
+    s+=this._t(x0,H*0.09,'RANGE OF OUTCOMES \u2014 THE LEFT TAIL IS THE ONE THAT MATTERS',{size:H*0.045,s:C.grey});
+    return s;
+  }
+  gauge(rand,W,H){
+    const C=this.C,cx=W*0.5,cy=H*0.74,R=H*0.50;
+    let s=this._stroke(this._ell(cx,cy,R,R,Math.PI,Math.PI*2,26),rand,{w:4,r:2,s:C.ink});
+    s+=this._stroke(this._ell(cx,cy,R*0.78,R*0.78,Math.PI,Math.PI*1.34,10),rand,{w:H*0.06,r:2.4,s:C.gdk,op:0.34});
+    s+=this._stroke(this._ell(cx,cy,R*0.78,R*0.78,Math.PI*1.66,Math.PI*2,10),rand,{w:H*0.06,r:2.4,s:C.red,op:0.34});
+    const a=Math.PI*1.74;
+    s+=this._stroke([[cx,cy],[cx+R*0.82*Math.cos(a),cy+R*0.82*Math.sin(a)]],rand,{w:4.4,r:1.6,s:C.ink});
+    s+=this._fill(this._ell(cx,cy,H*0.035,H*0.035,0,Math.PI*2),rand,C.ink,1);
+    s+=this._t(cx-R*0.86,cy+H*0.08,'CHEAP',{size:H*0.055,s:C.gdk,anchor:'middle'});
+    s+=this._t(cx+R*0.86,cy+H*0.08,'PRICEY',{size:H*0.055,s:C.red,anchor:'middle'});
+    return s;
+  }
+  table(rand,W,H){
+    const C=this.C,x0=W*0.06,x1=W*0.94,y0=H*0.14,y1=H*0.88;
+    let s=this._box(x0,y0,x1-x0,y1-y0,rand,{s:C.ink,w:3});
+    s+=this._stroke([[x0,y0+(y1-y0)*0.20],[x1,y0+(y1-y0)*0.20]],rand,{w:2.4,r:1,s:C.ink});
+    for(let i=1;i<3;i++) s+=this._stroke([[x0+(x1-x0)*(0.46+0.27*(i-1)),y0],[x0+(x1-x0)*(0.46+0.27*(i-1)),y1]],rand,{w:1.8,r:0.9,s:C.ghost});
+    const rows=[['Revenue','\u00a31.24b','+4%'],['Margin','11.2%','\u2212310bp'],['FCF','\u00a3186m','\u221218%']];
+    s+=this._t(x0+W*0.03,y0+(y1-y0)*0.11,'LINE',{size:H*0.05,s:C.grey});
+    s+=this._t(x0+(x1-x0)*0.55,y0+(y1-y0)*0.11,'THIS YEAR',{size:H*0.05,s:C.grey});
+    s+=this._t(x0+(x1-x0)*0.82,y0+(y1-y0)*0.11,'CHANGE',{size:H*0.05,s:C.grey});
+    for(let i=0;i<rows.length;i++){
+      const yy=y0+(y1-y0)*(0.36+i*0.22), bad=rows[i][2].indexOf('\u2212')===0;
+      s+=this._t(x0+W*0.03,yy,rows[i][0],{size:H*0.062,s:C.ink,hand:true});
+      s+=this._t(x0+(x1-x0)*0.55,yy,rows[i][1],{size:H*0.062,s:C.ink});
+      s+=this._t(x0+(x1-x0)*0.82,yy,rows[i][2],{size:H*0.062,s:bad?C.red:C.gdk});
+      if(i<rows.length-1) s+=this._stroke([[x0,yy+(y1-y0)*0.11],[x1,yy+(y1-y0)*0.11]],rand,{w:1.2,r:0.6,s:C.ghost});
+    }
+    return s;
+  }
+  timelineWide(rand,W,H){
+    const C=this.C,y=H*0.52,x0=W*0.07,x1=W*0.95;
+    let s=this._stroke([[x0,y],[x1,y]],rand,{w:3.4,r:1.6,s:C.ink});
+    const ev=[['2021','IPO',false],['2022','peak',false],['2023','warning',false],['2024','cut',true],['2025','now',true]];
+    for(let i=0;i<ev.length;i++){
+      const x=x0+(x1-x0)*(i+0.5)/ev.length, bad=ev[i][2], col=bad?C.red:C.ink, up=i%2===0;
+      s+=this._stroke([[x,y],[x,up?y-H*0.14:y+H*0.14]],rand,{w:2.4,r:1.2,s:col});
+      s+=this._fill(this._ell(x,y,H*0.038,H*0.038,0,Math.PI*2),rand,col,1);
+      s+=this._t(x,up?y-H*0.22:y+H*0.22,ev[i][0],{size:H*0.055,s:C.grey,anchor:'middle'});
+      s+=this._t(x,up?y-H*0.31:y+H*0.31,ev[i][1],{size:H*0.065,s:col,anchor:'middle',hand:true});
+    }
+    return s;
+  }
+  treemap(rand,W,H){
+    const C=this.C,x0=W*0.06,y0=H*0.14,w=W*0.88,h=H*0.74;
+    let s=this._box(x0,y0,w*0.56,h,rand,{f:'rgba(35,35,38,.12)',s:C.ink,w:2.8});
+    s+=this._t(x0+w*0.28,y0+h*0.46,'HOTELS',{size:H*0.075,s:C.ink,anchor:'middle',hand:true});
+    s+=this._t(x0+w*0.28,y0+h*0.60,'62%',{size:H*0.06,s:C.grey,anchor:'middle'});
+    s+=this._box(x0+w*0.56,y0,w*0.44,h*0.56,rand,{f:'rgba(255,82,71,.16)',s:C.red,w:2.6});
+    s+=this._t(x0+w*0.78,y0+h*0.24,'GYMS 24%',{size:H*0.06,s:C.red,anchor:'middle',hand:true});
+    s+=this._box(x0+w*0.56,y0+h*0.56,w*0.44,h*0.44,rand,{f:'rgba(35,35,38,.05)',s:C.grey,w:2.4});
+    s+=this._t(x0+w*0.78,y0+h*0.78,'DIRECT 14%',{size:H*0.055,s:C.grey,anchor:'middle',hand:true});
+    return s;
+  }
+  dupont(rand,W,H){
+    const C=this.C,bw=W*0.24,bh=H*0.26,y=H*0.36;
+    const cells=[['MARGIN','11%',W*0.05],['TURNOVER','1.4\u00d7',W*0.38],['LEVERAGE','2.1\u00d7',W*0.71]];
+    let s='';
+    for(let i=0;i<cells.length;i++){
+      s+=this._box(cells[i][2],y,bw,bh,rand,{f:'rgba(35,35,38,.07)',s:C.ink,w:2.6});
+      s+=this._t(cells[i][2]+bw/2,y+bh*0.34,cells[i][0],{size:H*0.05,s:C.grey,anchor:'middle'});
+      s+=this._t(cells[i][2]+bw/2,y+bh*0.68,cells[i][1],{size:H*0.085,s:C.ink,anchor:'middle'});
+      if(i<2) s+=this._t(cells[i][2]+bw+W*0.045,y+bh/2,'\u00d7',{size:H*0.09,s:C.grey,anchor:'middle'});
+    }
+    s+=this._stroke([[W*0.05,y+bh+H*0.09],[W*0.95,y+bh+H*0.09]],rand,{w:2.4,r:1.2,s:C.ink});
+    s+=this._t(W*0.50,y+bh+H*0.20,'= ROE 32%',{size:H*0.085,s:C.red,anchor:'middle',hand:true});
+    s+=this._t(W*0.05,H*0.14,'WHERE THE RETURN ACTUALLY COMES FROM',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  bridgeMargin(rand,W,H){
+    const C=this.C,x0=W*0.08,y0=H*0.82,ph=y0-H*0.18;
+    const steps=[['FY24',0.62,C.ink],['PRICE',0.12,C.gdk],['MIX',-0.10,C.red],['INPUT',-0.22,C.red],['FY25',0.42,C.ink]];
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0});
+    let acc=0; const bw=(W*0.92-x0)/steps.length*0.54;
+    for(let i=0;i<steps.length;i++){
+      const [lab,v,col]=steps[i], x=x0+(W*0.92-x0)*(i+0.5)/steps.length-bw/2;
+      const anchor=(i===0||i===steps.length-1);
+      let top,hgt;
+      if(anchor){ acc=v; top=y0-ph*v; hgt=ph*v; }
+      else { const from=acc,to=acc+v; top=y0-ph*Math.max(from,to); hgt=ph*Math.abs(v); acc=to; }
+      s+=this._box(x,top,bw,Math.max(4,hgt),rand,{f:col===C.gdk?'rgba(47,213,118,.18)':col===C.red?'rgba(255,82,71,.18)':'rgba(35,35,38,.10)',s:col,w:2.4});
+      s+=this._t(x+bw/2,y0+H*0.06,lab,{size:H*0.048,s:C.grey,anchor:'middle'});
+    }
+    s+=this._t(x0,H*0.10,'GROSS MARGIN BRIDGE',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  ownership(rand,W,H){
+    const C=this.C,x0=W*0.08,x1=W*0.92,y=H*0.44,bh=H*0.16;
+    const parts=[[0.42,'rgba(35,35,38,.14)',C.ink,'Institutions 42%'],[0.28,'rgba(255,82,71,.16)',C.red,'Insiders 28%'],[0.18,'rgba(35,35,38,.06)',C.grey,'Retail 18%'],[0.12,'rgba(47,213,118,.18)',C.gdk,'Index 12%']];
+    let s='',x=x0;
+    for(let i=0;i<parts.length;i++){
+      const w=(x1-x0)*parts[i][0];
+      s+=this._box(x,y,w,bh,rand,{f:parts[i][1],s:parts[i][2],w:2.4});
+      x+=w;
+    }
+    for(let i=0;i<parts.length;i++){
+      const yy=H*0.70+Math.floor(i/2)*H*0.14, xx=x0+(i%2)*(x1-x0)*0.5;
+      s+=this._box(xx,yy-H*0.04,H*0.07,H*0.07,rand,{f:parts[i][1],s:parts[i][2],w:2});
+      s+=this._t(xx+H*0.11,yy-H*0.005,parts[i][3],{size:H*0.058,s:C.ink});
+    }
+    s+=this._t(x0,H*0.24,'WHO ACTUALLY OWNS IT',{size:H*0.05,s:C.grey});
+    return s;
+  }
+  spread(rand,W,H){
+    const C=this.C,x0=W*0.10,y0=H*0.82,x1=W*0.94,yT=H*0.14,ph=y0-yT;
+    let s=this._axes(rand,W,H,{x0:x0,y0:y0,x1:x1,yT:yT});
+    const hi=[],lo=[],mid=[];
+    for(let i=0;i<9;i++){ const t=i/8, c=0.36+0.30*t, sp=0.10+0.14*t;
+      hi.push([x0+(x1-x0)*t, y0-ph*(c+sp)]); lo.push([x0+(x1-x0)*t, y0-ph*(c-sp)]); mid.push([x0+(x1-x0)*t, y0-ph*c]); }
+    s+=this._fill(hi.concat(lo.slice().reverse()),rand,'rgba(35,35,38,.08)',1.2);
+    s+=this._stroke(hi,rand,{w:2.4,r:1.3,s:C.grey})+this._stroke(lo,rand,{w:2.4,r:1.3,s:C.grey});
+    s+=this._stroke(mid,rand,{w:3.6,r:1.5,s:C.ink});
+    s+=this._t(x0,H*0.09,'THE FORECAST CONE \u2014 IT GETS WIDER, NOT NARROWER',{size:H*0.045,s:C.grey});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 460 300').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const fn={ candles:'candles', waterfall:'waterfall', stacked:'stacked', donut:'donut', scatter:'scatter', funnel:'funnel', flow:'flow', cohort:'cohort', seasonality:'seasonality', indexed:'indexed', drawdown:'drawdown', football:'football', tornado:'tornado', histogram:'histogram', gauge:'gauge', table:'table', timeline:'timelineWide', treemap:'treemap', dupont:'dupont', bridge:'bridgeMargin', ownership:'ownership', spread:'spread' }[el.dataset.ink];
+    el.innerHTML = fn? this[fn](rand,W,H) : '';
+    el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const G=[
+      { n:'01', title:'Price & time', note:'the tape', charts:[
+        {title:'Candles', file:'chart-candles.png', ink:'candles', seed:3, blurb:'Eleven sessions, wobbly bodies and wicks. For when the price action itself is the story.'},
+        {title:'Indexed vs. sector', file:'chart-indexed.png', ink:'indexed', seed:4, blurb:'Both rebased to 100. The only honest way to say \u201cit underperformed\u201d.'},
+        {title:'Drawdown', file:'chart-drawdown.png', ink:'drawdown', seed:5, blurb:'Underwater from the high. Reads as pain much better than a price line.'},
+        {title:'Event timeline', file:'chart-timeline.png', ink:'timeline', seed:6, blurb:'Five dated beats along one line, alternating above and below.'}
+      ]},
+      { n:'02', title:'Where the money goes', note:'income statement shapes', charts:[
+        {title:'Waterfall', file:'chart-waterfall.png', ink:'waterfall', seed:7, blurb:'Revenue in, costs stepping down, operating profit left over. The workhorse.'},
+        {title:'Margin bridge', file:'chart-bridge.png', ink:'bridge', seed:8, blurb:'Last year to this year, with the bits that helped and hurt in between.'},
+        {title:'Stacked segments', file:'chart-stacked.png', ink:'stacked', seed:9, blurb:'Five years of revenue by segment \u2014 shows the mix shifting under the total.'},
+        {title:'Cash flow', file:'chart-flow.png', ink:'flow', seed:10, blurb:'One box in, three boxes out. Reinvest, buy back, pay down.'}
+      ]},
+      { n:'03', title:'Mix & concentration', note:'who and what', charts:[
+        {title:'Revenue mix ring', file:'chart-donut.png', ink:'donut', seed:11, blurb:'A donut with a legend. Use when one slice is embarrassingly large.'},
+        {title:'Treemap', file:'chart-treemap.png', ink:'treemap', seed:12, blurb:'Same information, more brutal. Area does the arguing for you.'},
+        {title:'Ownership bar', file:'chart-ownership.png', ink:'ownership', seed:13, blurb:'One stacked bar: institutions, insiders, retail, index.'},
+        {title:'Funnel', file:'chart-funnel.png', ink:'funnel', seed:14, blurb:'Visits to trials to paid to retained, with the numbers alongside.'}
+      ]},
+      { n:'04', title:'Valuation & comps', note:'what you\u2019re paying', charts:[
+        {title:'Football field', file:'chart-football.png', ink:'football', seed:15, blurb:'Four valuation ranges and one red line for today\u2019s price.'},
+        {title:'Peer scatter', file:'chart-scatter.png', ink:'scatter', seed:16, blurb:'Multiple against growth, with our name circled in red.'},
+        {title:'Cheap / pricey dial', file:'chart-gauge.png', ink:'gauge', seed:17, blurb:'A gauge for the gut-feel moment before the real numbers.'},
+        {title:'DuPont boxes', file:'chart-dupont.png', ink:'dupont', seed:18, blurb:'Margin \u00d7 turnover \u00d7 leverage = the return, decomposed.'}
+      ]},
+      { n:'05', title:'Uncertainty', note:'honest about not knowing', charts:[
+        {title:'Outcome histogram', file:'chart-histogram.png', ink:'histogram', seed:19, blurb:'A distribution with the left tail flagged red. Good for base-case caveats.'},
+        {title:'Forecast cone', file:'chart-spread.png', ink:'spread', seed:20, blurb:'A band that widens with time \u2014 the opposite of most guidance slides.'},
+        {title:'Sensitivity tornado', file:'chart-tornado.png', ink:'tornado', seed:21, blurb:'Which inputs actually move the answer, sorted by how much.'},
+        {title:'Cohort retention', file:'chart-cohort.png', ink:'cohort', seed:22, blurb:'Three decay curves. The newest cohort is the one to watch.'}
+      ]},
+      { n:'06', title:'Just the numbers', note:'when a chart would be showing off', charts:[
+        {title:'Data table', file:'chart-table.png', ink:'table', seed:23, blurb:'Three rows, three columns, red and green in the change column.'},
+        {title:'Seasonality', file:'chart-seasonality.png', ink:'seasonality', seed:24, blurb:'Twelve monthly bars with the peak months called out.'}
+      ]}
+    ];
+    const inks=[['candles',3],['indexed',4],['drawdown',5],['timeline',6],['waterfall',7],['bridge',8],['stacked',9],['flow',10],['donut',11],['treemap',12],['ownership',13],['funnel',14],['football',15],['scatter',16],['gauge',17],['dupont',18],['histogram',19],['spread',20],['tornado',21],['cohort',22],['table',23],['seasonality',24]];
+    const exports=[];
+    inks.forEach(([ink,seed])=>{
+      exports.push({id:'charts/chart-'+ink, ink, seed});
+      exports.push({id:'charts/chart-'+ink+'_b', ink, seed:seed+100});
+    });
+    return { rootRef:this.rootRef, groups:G, exports };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #cfccc2; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#cfccc2; padding:36px;">
+  <div data-export="style-ref" style="width:1680px; height:1050px; position:relative; overflow:hidden; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover; font-family:'Space Grotesk',sans-serif;">
+
+    <div style="position:absolute; left:52px; top:40px; right:52px; display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.3em; color:#ff5247; font-weight:700;">DENNIS · VISUAL KIT · STYLE REFERENCE</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:62px; line-height:.9; color:#232326; margin-top:6px;">One hand, one room</div>
+        <div style="font-size:16px; color:#6f6c65; margin-top:7px; max-width:660px; line-height:1.45;">Bright paper room, black ink and red, one crude wobbly line. <span style="color:#232326; font-weight:600;">He never smiles.</span> Anything new joins this sheet or it isn’t on-model.</div>
+      </div>
+      <div style="text-align:right; font-family:'Space Mono',monospace;">
+        <div style="display:flex; align-items:baseline; gap:.4em; font-size:25px; font-weight:700; color:#232326; justify-content:flex-end;"><span>GYMX</span><span style="color:#ff5247;">▼&nbsp;34%</span></div>
+        <div style="font-size:12px; color:#8f8c83; margin-top:4px;">ticker bug · Space Mono 700</div>
+      </div>
+    </div>
+
+    <div style="position:absolute; left:52px; top:196px; width:556px; display:flex; flex-direction:column; gap:16px;">
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 16px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11.5px; letter-spacing:.16em; color:#8f8c83; margin-bottom:8px;">THE FLAP · closed → mid → open</div>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px;">
+          <sc-for list="{{ flap }}" as="f" hint-placeholder-count="3">
+            <div style="text-align:center;">
+              <svg data-ink="head" data-side="{{ f.side }}" data-mouth="{{ f.mouth }}" data-seed="{{ f.seed }}" viewBox="340 150 340 300" style="width:100%; height:104px; display:block; overflow:visible;"></svg>
+              <div style="font-family:'Space Mono',monospace; font-size:10px; color:#8f8c83; margin-top:2px;">{{ f.name }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:12px 12px 8px;">
+          <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83;">FRONT RIG · to camera</div>
+          <svg data-ink="dennis" data-arm="point" data-expr="tired" data-mouth="open" data-seed="5" viewBox="300 130 580 800" style="width:100%; height:430px; display:block; overflow:visible;"></svg>
+        </div>
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:12px 12px 8px;">
+          <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83;">HOST RIG · to the board</div>
+          <svg data-ink="side" data-dir="right" data-arm="present-right" data-expr="interested" data-mouth="open" data-seed="15" viewBox="300 120 610 810" style="width:100%; height:430px; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+      <div style="font-size:15px; color:#8f8c83;">Opinion / entertainment. Not financial advice.</div>
+    </div>
+
+    <div style="position:absolute; left:640px; top:196px; width:988px; display:flex; flex-direction:column; gap:16px;">
+
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:12px;">
+        <sc-for list="{{ palette }}" as="p" hint-placeholder-count="5">
+          <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:10px;">
+            <div style="height:44px; border-radius:4px; background:{{ p.hex }}; border:1px solid rgba(35,35,38,.10);"></div>
+            <div style="font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:#232326; margin-top:7px;">{{ p.hex }}</div>
+            <div style="font-size:11px; color:#6f6c65;">{{ p.role }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:12px;">
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 16px;">
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:34px; color:#232326; line-height:.95;">Probably <span style="color:#ff5247;">noise.</span></div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:7px;">Shantell Sans 800 · every headline</div>
+        </div>
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 16px;">
+          <div style="font-weight:600; font-size:19px; color:#232326; line-height:1.15;">Body, labels<br>&amp; disclaimer.</div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:8px;">Space Grotesk 500/600</div>
+        </div>
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 16px;">
+          <div style="font-family:'Space Mono',monospace; font-weight:700; font-size:20px; color:#232326;">$12.40 <span style="color:#ff5247;">▼</span></div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:#8f8c83; margin-top:8px;">Space Mono 700 · figures, kickers</div>
+        </div>
+      </div>
+
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:12px 14px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11.5px; letter-spacing:.16em; color:#8f8c83; margin-bottom:10px;">MARKS &amp; THE VERDICT SLAP</div>
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px;">
+          <sc-for list="{{ marks }}" as="m" hint-placeholder-count="6">
+            <div style="background:#f2f2ef; border:1px solid #e8e5db; border-radius:5px; height:78px; display:flex; align-items:center; justify-content:center;">
+              <svg data-ink="mark" data-name="{{ m }}" data-seed="6" viewBox="0 0 200 130" style="width:92%; height:88%; overflow:visible;"></svg>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="background:#232326; border-radius:6px; padding:14px 18px;">
+          <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#ff5247; margin-bottom:7px;">DENNIS · NEVER OFF-MODEL</div>
+          <div style="font-size:13.5px; color:#e2dfd5; line-height:1.5;">Tired half-closed eyes with bags · dead-flat mouth · one bed-hair tuft · coffee mug welded on · same crude line, same face, every single frame.</div>
+        </div>
+        <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 18px;">
+          <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#8f8c83; margin-bottom:7px;">RED = DOWN / WARN · GREEN = UP ONLY</div>
+          <div style="font-size:13.5px; color:#3a3a3d; line-height:1.5;">Muted flat fills allowed. One line weight per frame. Held frames ship a <strong>_b</strong> boil pair; talk frames ship a mouth pair. More variety <em>inside</em> the one style — never more styles.</div>
+        </div>
+      </div>
+
+      <div style="background:#faf9f6; border:1.5px solid #e2dfd5; border-radius:6px; padding:12px 16px;">
+        <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#ff5247; margin-bottom:8px;">LONG-FORM CHAPTERS · 14</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <sc-for list="{{ chapters }}" as="c" hint-placeholder-count="14">
+            <span style="font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:#232326; background:#efeee9; border:1px solid #e2dfd5; border-radius:4px; padding:4px 7px;">{{ c }}</span>
+          </sc-for>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.14em; color:#ff5247; margin:12px 0 8px;">HOST ADD-ON · the two-shot &amp; its furniture</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <sc-for list="{{ hostBatch }}" as="h" hint-placeholder-count="8">
+            <span style="font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:#232326; background:#efeee9; border:1px solid #e2dfd5; border-radius:4px; padding:4px 7px;">{{ h }}</span>
+          </sc-for>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1752,&quot;height&quot;:1122},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800,rot=o.rot||0; return '<text x="'+x+'" y="'+y+'" fill="'+s+'" font-size="'+size+'" font-family="\'Shantell Sans\',cursive" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle"'+(rot?' transform="rotate('+rot+' '+x+' '+y+')"':'')+'>'+str+'</text>'; }
+  _head2(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+  _shift(dx,dy,inner){ return '<g transform="translate('+dx.toFixed(1)+','+dy.toFixed(1)+')">'+inner+'</g>'; }
+
+  lBody(rand){ const c=this.C.ink; let s=this._stroke([[416,470],[584,470],[596,706],[404,706]],rand,{w:5,r:3,close:true,s:c}); s+=this._stroke([[500,420],[500,468]],rand,{w:5,r:2,s:c}); s+=this._stroke([[456,706],[452,800],[446,884],[424,894]],rand,{w:5,r:3,s:c}); s+=this._stroke([[544,706],[548,800],[554,884],[576,894]],rand,{w:5,r:3,s:c}); return s; }
+  lHead(rand){ const c=this.C.ink; let s=this._stroke(this._ell(500,300,118,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c}); s+=this._stroke([[500,176],[482,150],[512,160],[496,180]],rand,{w:4,r:3,s:c}); return s; }
+  lHeadSide(rand,dir){ const c=this.C.ink,sign=dir==='right'?1:-1; let s=this._stroke(this._ell(500,300,116,128,-0.15,Math.PI*2+0.55),rand,{w:5,r:3.5,s:c}); s+=this._stroke([[500+sign*96,322],[500+sign*124,340],[500+sign*96,356]],rand,{w:4,r:2.2,s:c}); const tx=500-sign*30; s+=this._stroke([[tx,176],[tx-sign*18,150],[tx+sign*12,160],[tx-sign*4,180]],rand,{w:4,r:3,s:c}); s+=this._stroke(this._ell(500-sign*116,306,10,18,0,Math.PI*2),rand,{w:3.4,r:2,s:c}); return s; }
+  mug(rand,hx,hy){ const c=this.C.ink; let s=this._stroke([[hx-24,hy-4],[hx+24,hy-4],[hx+24,hy+36],[hx-24,hy+36]],rand,{w:4,r:2,close:true,s:c}); s+=this._stroke([[hx+24,hy+2],[hx+40,hy+6],[hx+36,hy+24],[hx+24,hy+26]],rand,{w:3.4,r:2,s:c}); s+=this._stroke([[hx-8,hy-14],[hx-14,hy-30],[hx-6,hy-44]],rand,{w:3,r:3,s:this.C.grey})+this._stroke([[hx+10,hy-14],[hx+4,hy-30],[hx+12,hy-44]],rand,{w:3,r:3,s:this.C.grey}); return s; }
+  lArm(rand,arm){ const c=this.C.ink; const L=(pts)=>this._stroke(pts,rand,{w:5,r:3,s:c}); let s='',mugAt=null;
+    if(arm==='present-right'){ s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[648,462],[712,420],[762,392]])+this._stroke([[762,392],[790,382],[794,406],[770,410]],rand,{w:4,r:2.2,s:c}); mugAt=[398,648]; }
+    else { s+=L([[418,500],[404,590],[398,636]])+L([[582,500],[664,490],[744,478],[802,470]])+this._stroke([[802,470],[826,467]],rand,{w:4,r:2,s:c}); mugAt=[398,648]; }
+    if(mugAt) s+=this.mug(rand,mugAt[0],mugAt[1]); return s; }
+  lEyes(rand){ const c=this.C.ink,Lx=456,Rx=544,Ey=288; let s=this._stroke([[Lx-22,Ey-4],[Lx,Ey+8],[Lx+22,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[Rx-22,Ey-4],[Rx,Ey+8],[Rx+22,Ey-4]],rand,{w:4,r:2,s:c}); s+=this._stroke([[Lx-18,314],[Lx,320],[Lx+18,314]],rand,{w:3,r:2,s:this.C.grey})+this._stroke([[Rx-18,314],[Rx,320],[Rx+18,314]],rand,{w:3,r:2,s:this.C.grey}); return s; }
+  lEyesSide(rand,dir,expr){ const c=this.C.ink,sign=dir==='right'?1:-1,Ey=288,nearX=500+sign*64,farX=500+sign*6,px=sign*6;
+    const dot=(x,y,r)=>'<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="'+c+'"/>';
+    const bag=(x)=>this._stroke([[x-15,314],[x,319],[x+15,314]],rand,{w:3,r:2,s:this.C.grey});
+    let s='';
+    if(expr==='interested'){
+      s+=this._stroke(this._ell(nearX,Ey,17,18,0,Math.PI*2),rand,{w:3,r:1.3,close:true,s:c})+this._stroke(this._ell(farX,Ey,12,15,0,Math.PI*2),rand,{w:2.8,r:1.2,close:true,s:c});
+      s+=dot(nearX+px,Ey+1,5)+dot(farX+px*0.6,Ey+1,4);
+      s+=this._stroke([[nearX-16,Ey-25],[nearX+15,Ey-29]],rand,{w:3,r:1.4,s:c})+this._stroke([[farX-11,Ey-23],[farX+11,Ey-26]],rand,{w:2.6,r:1.3,s:c});
+    } else {
+      s+=this._stroke([[nearX-20,Ey-4],[nearX,Ey+8],[nearX+20,Ey-4]],rand,{w:4,r:2,s:c})+this._stroke([[farX-15,Ey-3],[farX,Ey+7],[farX+15,Ey-3]],rand,{w:3.6,r:2,s:c});
+    }
+    return s+bag(nearX)+bag(farX); }
+  mClosed(rand){ return this._stroke([[472,360],[528,358]],rand,{w:4,r:1.6,s:this.C.ink}); }
+  mMid(rand,scale){ scale=scale||1; const rx=15*scale; return this._stroke(this._ell(500,362,rx,8,0,Math.PI*2),rand,{w:3.4,r:1.3,close:true,s:this.C.ink})+this._stroke([[500-rx*0.7,361],[500+rx*0.7,361]],rand,{w:2,r:0.7,s:this.C.ink,op:0.65}); }
+  mOpen(rand){ return this._stroke(this._ell(500,366,16,19,0,Math.PI*2),rand,{w:3.6,r:1.5,close:true,s:this.C.ink}); }
+  mouth(rand,kind,scale){ return kind==='open'? this.mOpen(rand): kind==='mid'? this.mMid(rand,scale): this.mClosed(rand); }
+
+  dennis(rand,arm,mouth){ return this.lBody(rand)+this.lArm(rand,arm)+this.lHead(rand)+this.lEyes(rand)+this.mouth(rand,mouth); }
+  side(rand,dir,arm,expr,mouth){ const sign=dir==='right'?1:-1; return this.lBody(rand)+this.lArm(rand,arm)+this.lHeadSide(rand,dir)+this.lEyesSide(rand,dir,expr)+this._shift(sign*40,2,this.mouth(rand,mouth,0.9)); }
+  headOnly(rand,isSide,mouth){
+    if(isSide) return this.lHeadSide(rand,'right')+this.lEyesSide(rand,'right','tired')+this._shift(40,2,this.mouth(rand,mouth,0.9));
+    return this.lHead(rand)+this.lEyes(rand)+this.mouth(rand,mouth);
+  }
+  mark(rand,name,W,H){
+    const C=this.C;
+    switch(name){
+      case 'circle': return this._stroke(this._ell(W*0.5,H*0.5,W*0.34,H*0.38,-0.2,Math.PI*2+0.4),rand,{w:6,r:3.4,s:C.red});
+      case 'arrow': return this._stroke([[W*0.16,H*0.5],[W*0.72,H*0.5]],rand,{w:7,r:2,s:C.ink})+this._head2(W*0.72,H*0.5,0,22,rand,{w:7,r:1.4,s:C.ink});
+      case 'check': return this._stroke([[W*0.24,H*0.52],[W*0.42,H*0.74],[W*0.78,H*0.26]],rand,{w:8,r:2,s:C.gdk});
+      case 'cross': return this._stroke([[W*0.28,H*0.28],[W*0.72,H*0.74]],rand,{w:8,r:2,s:C.red})+this._stroke([[W*0.72,H*0.28],[W*0.28,H*0.74]],rand,{w:8,r:2,s:C.red});
+      case 'stamp': { const cx=W*0.5,cy=H*0.5; return this._stroke(this._ell(cx,cy,W*0.46,H*0.4,-0.12,Math.PI*2+0.5),rand,{w:5,r:2.6,s:C.ink})+this._t(cx,cy,'PRICED IN',{size:30,s:C.ink,w:800,rot:-5}); }
+      case 'ring': { const cx=W*0.5,cy=H*0.5; let s=this._stroke(this._ell(cx,cy,W*0.30,H*0.40,-0.2,Math.PI*2+0.4),rand,{w:14,r:7,s:'#a98467',op:0.5}); s+=this._stroke(this._ell(cx,cy,W*0.24,H*0.31,0.3,Math.PI*2+0.9),rand,{w:5,r:6,s:'#a98467',op:0.32}); return s; }
+      default: return '';
+    }
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 200 130').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973 + (el.dataset.name||'').length*53)>>>0);
+    const t=el.dataset.ink;
+    let out='';
+    if(t==='dennis') out=this.dennis(rand,el.dataset.arm||'point',el.dataset.mouth||'open');
+    else if(t==='side') out=this.side(rand,el.dataset.dir||'right',el.dataset.arm||'present-right',el.dataset.expr||'interested',el.dataset.mouth||'open');
+    else if(t==='head') out=this.headOnly(rand,el.dataset.side==='1',el.dataset.mouth||'closed');
+    else out=this.mark(rand,el.dataset.name,W,H);
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    return {
+      rootRef:this.rootRef,
+      palette:[ {hex:'#f2f2ef',role:'wall / paper'}, {hex:'#dbd4c8',role:'warm floor'}, {hex:'#232326',role:'ink'}, {hex:'#ff5247',role:'red · down / warn'}, {hex:'#2fd576',role:'green · up only'} ],
+      marks:['circle','arrow','check','cross','stamp','ring'],
+      flap:[
+        {name:'closed', mouth:'closed', side:'0', seed:31},
+        {name:'mid', mouth:'mid', side:'0', seed:32},
+        {name:'open · side head', mouth:'open', side:'1', seed:43}
+      ],
+      chapters:['cold-open','the-numbers','valuation','bull-vs-bear','resigned-close','how-the-money-is-made','how-we-got-here','moat','management','capital-allocation','filing-walk','guidance-estimates','sector-comps','short-interest'],
+      hostBatch:['mascot/host · side-glance + look-down','mouth-mid · 3-step flap','point-at-board · arms-crossed · hands-out','type/chapter-opener · 14 openers','mid-chapter beat · 4 closers','type/callouts · 9 terms','8 big-numbers · compare cards','page-turn · coffee-ring · ink-wipe · mug-slide','short/variants · 16 beats','4 cutaways · 8 concept minis','short/host-bookend','props/charts · 22 primitives','props/objects · 24 objects','mascot/reactions · 12 beats','type/straps · 6 lower thirds + chapter dots','type/quotes · pull · said-then-did · redline · transcript','type/episode · title · agenda · interstitials · end card','type/scenarios · bull/base/bear · checklist · verdict','thumbs · 8 layouts · 1280×720 · four words max','stings · 14 stings × 6 frames on twos','props/geo · 8 maps · real Natural Earth geometry','type/tables · 5 kinds · plain + highlight pairs','type/sliders · 5 pairs · p00 · p50 · p100','type/end-screens · 6 layouts · slots kept clear','social · 9 cards · 1:1 and 4:5 · handle bar','type/alerts · 3 severities · 8 alerts · lane map','type/recap · 3 accumulating states · 8 boards inc. two- and three-company','type/transcript · 8 pull-outs · cuts always shown','type/bumpers · 7 bumpers × in/hold/out + decision card']
+    };
+  }
+}
+</script>
+</body>
+</html>

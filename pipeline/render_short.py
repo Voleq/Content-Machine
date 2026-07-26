@@ -68,6 +68,38 @@ from pipeline.timeline import build_short_timeline
 log = logging.getLogger(__name__)
 
 
+# Per-beat layout variants from the design kit's Short Variants sheet. The
+# timeline picks one per beat from the script hash (see `pick_beat_variant`),
+# so two shorts cut on the same day do not share a layout while any single
+# script always renders identically. Coordinates are in the 1080-wide design
+# space and scaled to the output resolution.
+HOOK_LAYOUTS: dict[str, dict] = {
+    "a": {"y": 1040, "size": 60, "width": 960, "accent": GREEN},   # the original
+    "b": {"y": 300, "size": 76, "width": 920, "accent": RED},      # hook up top
+    "c": {"y": 1180, "size": 54, "width": 980, "accent": INK},     # low and wide
+    "d": {"y": 240, "size": 66, "width": 880, "accent": RED},      # narrow, high
+    "e": {"y": 980, "size": 68, "width": 940, "accent": GREEN},    # centre-low
+}
+NUMBERS_LAYOUTS: dict[str, dict] = {
+    "a": {"y": 990, "width": 1000},
+    "b": {"y": 900, "width": 1000},
+    "c": {"y": 1050, "width": 960},
+    "d": {"y": 940, "width": 980},
+}
+PAYOFF_LAYOUTS: dict[str, dict] = {
+    "a": {"y": 430, "size": 48, "accent": GREEN},
+    "b": {"y": 620, "size": 52, "accent": RED},
+    "c": {"y": 360, "size": 46, "accent": INK},
+    "d": {"y": 540, "size": 50, "accent": GREEN},
+    "e": {"y": 700, "size": 44, "accent": RED},
+}
+
+
+def _layout(table: dict[str, dict], variant: str | None) -> dict:
+    """The layout for a beat variant, falling back to the original."""
+    return table.get(variant or "a", table["a"])
+
+
 def sample_hook_opener(script_sha: str, settings: Settings) -> str:
     """Deterministically sample the hook bank (seeded by the script sha so
     re-renders are idempotent, different scripts get fresh openers)."""
@@ -93,6 +125,14 @@ def render_short(
     out_name: str = "short_final.mp4",
 ) -> tuple[Path, Path]:
     """Render the SHORT. Returns (mp4_path, manifest_path)."""
+    # A SHORT has no draft mode — it is a minute of video — so draft audio has
+    # no business here at all. Same reason as the LONG: interpolated word
+    # timings must never be the master clock of a published cut (P3.2).
+    if getattr(tts, "draft", False):
+        raise RenderError(
+            f"refusing to render a SHORT from {tts.tier} draft audio — its "
+            f"word timings are interpolated. Approve the script so the paid "
+            f"voice runs first.")
     content = content or ContentManager(settings)
     prices = prices or get_price_history(script.ticker, settings)
 
@@ -152,12 +192,14 @@ def render_short(
     ))
 
     # ------------------------------------------------------------ hook card
-    hook_img = text_panel(settings, hook.payload["text"], width=px(960),
-                          font_name=SHANTELL, font_size=px(60), accent=GREEN)
+    hook_layout = _layout(HOOK_LAYOUTS, hook.payload.get("variant"))
+    hook_img = text_panel(settings, hook.payload["text"], width=px(hook_layout["width"]),
+                          font_name=SHANTELL, font_size=px(hook_layout["size"]),
+                          accent=hook_layout["accent"])
     hook_path = rdir / "hook.png"
     hook_img.save(hook_path)
     layers.append(OverlayLayer(
-        path=hook_path, x=int((W - hook_img.width) / 2), y=px(1040),
+        path=hook_path, x=int((W - hook_img.width) / 2), y=px(hook_layout["y"]),
         t_start=0.0, t_end=float(hook.payload["until"]), name="hook",
     ))
 
@@ -195,12 +237,13 @@ def render_short(
         ))
 
     # -------------------------------------------------- the numbers sheet
+    sheet_layout = _layout(NUMBERS_LAYOUTS, numbers.payload.get("variant"))
     sheet_img, layout = numbers_sheet_base(
-        settings, len(script.numbers), script.years, width=px(1000),
+        settings, len(script.numbers), script.years, width=px(sheet_layout["width"]),
     )
     sheet_path = rdir / "sheet.png"
     sheet_img.save(sheet_path)
-    sheet_pos = (px(40), px(990))
+    sheet_pos = (px(40), px(sheet_layout["y"]))
     layers.append(OverlayLayer(
         path=sheet_path, x=sheet_pos[0], y=sheet_pos[1],
         t_start=numbers.t, t_end=duration, fade_in=0.2, name="numbers_sheet",
@@ -369,14 +412,30 @@ def render_short(
             name=f"flash_{c.payload['name']}",
         ))
 
+    # ------------------------------- cheap or trap: the value-trap beat
+    # Held for SHORT_MIN_READABLE_S by the timeline — this is the one card in
+    # a short the viewer is expected to read rather than glance at.
+    for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
+        trap_img = text_panel(settings, c.payload["text"], width=px(980),
+                              font_name=SHANTELL, font_size=px(46), accent=RED,
+                              bg=(250, 249, 246, 242))
+        trap_path = rdir / "cheap_or_trap.png"
+        trap_img.save(trap_path)
+        layers.append(OverlayLayer(
+            path=trap_path, x=int((W - trap_img.width) / 2), y=px(560),
+            t_start=c.t, t_end=float(c.payload["until"]), fade_in=0.25,
+            name="cheap_or_trap",
+        ))
+
     # ------------------------------------------------- the payoff card
+    payoff_layout = _layout(PAYOFF_LAYOUTS, conclusion.payload.get("variant"))
     conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
-                          font_name=SHANTELL, font_size=px(48), accent=GREEN,
-                          bg=(12, 12, 14, 245))
+                          font_name=SHANTELL, font_size=px(payoff_layout["size"]),
+                          accent=payoff_layout["accent"], bg=(250, 249, 246, 246))
     conc_path = rdir / "conclusion.png"
     conc_img.save(conc_path)
     layers.append(OverlayLayer(
-        path=conc_path, x=int((W - conc_img.width) / 2), y=px(430),
+        path=conc_path, x=int((W - conc_img.width) / 2), y=px(payoff_layout["y"]),
         t_start=conclusion.t, t_end=duration, fade_in=0.25, name="conclusion",
     ))
 
@@ -395,7 +454,7 @@ def render_short(
 
     # -------------------------------------------------------- disclaimer
     disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(30),
-                           fill=(235, 235, 235, 210), stroke_width=2)
+                           fill=(143, 140, 131, 235), stroke_width=0)
     disc_path = rdir / "disclaimer.png"
     disc_img.save(disc_path)
     layers.append(OverlayLayer(
@@ -411,7 +470,7 @@ def render_short(
     ))
 
     # ------------------------------------------------------------- audio
-    audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0)]
+    audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0, voice=True)]
     music = settings.assets_dir / "music" / "dennis_bed.m4a"
     if music.exists():
         audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
@@ -444,22 +503,21 @@ def render_short(
                                     gain_db=settings.sfx_gain_db))
 
     # ------------------------------------------------------------ encode
-    # a subtle, slow Ken Burns drift on the branded backdrop so the SHORT is
-    # never a dead static hold (the fixed beat UI composites over it); ~6%
-    # over the whole runtime — designed, not busy
+    # The backdrop holds dead still. Nothing in this pipeline pans or zooms —
+    # the motion is Dennis, the beat cuts and the row type-ons composited over
+    # this plate, and a drifting backdrop under a numbers sheet only made the
+    # sheet harder to read.
     bg = settings.assets_dir / "backgrounds" / "dennis_bg_tall.png"
-    zw = int(W * 1.06) // 2 * 2
-    dur = max(duration, 0.1)
-    base_ken_burns = (
-        f"scale={zw}:-2,crop={W}:{H}:x='(iw-ow)*t/{dur:.3f}':y='(ih-oh)*t/{dur:.3f}',"
-        f"setsar=1,format=yuv420p"
+    base_filter = (
+        f"scale={W}:{H}:force_original_aspect_ratio=increase,"
+        f"crop={W}:{H},setsar=1,format=yuv420p"
     )
     spec = CompositeSpec(
         base_input_args=[
             "-loop", "1", "-framerate", str(settings.fps),
             "-t", f"{duration:.3f}", "-i", str(bg),
         ],
-        base_filter=base_ken_burns,
+        base_filter=base_filter,
         layers=layers,
         audio=audio,
         ass_path=ass_path,

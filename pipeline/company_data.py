@@ -1,14 +1,19 @@
 """Company-data export reader + filing-screenshot prep (§3).
 
-The operator has an Excel add-in (Refinitiv/LSEG TR formulas), not API
-access, so the data contract is the v3 template — the PRIVATE data source.
-The add-in resolves the formulas in the operator's Excel; the file the bot
-receives carries CACHED VALUES, so this reads with openpyxl data_only=True
-(values, never formula strings). Sheets are read strictly BY NAME (any
-hidden add-in helper sheets are ignored):
+The operator has an Excel add-in (Capital IQ, with Refinitiv/LSEG mnemonics
+alongside), not API access, so the data contract is the shipped template — the
+PRIVATE data source. The add-in resolves the formulas in Excel — since P3.1b
+the bot can drive that itself; see `excel_refresh.py` — and the file this
+reads carries CACHED VALUES, so it opens with openpyxl data_only=True
+(values, never formula strings). Sheets are read strictly BY NAME, so the
+add-in's hidden helper sheets (`_CIQHiddenCacheSheet`, `_RICMap`, a GUID-named
+cache) are ignored:
 
-  * `Snapshot`  — point-in-time: `field_key` column + a `Value (auto)`
-    column, grouped by Section.
+  * `Snapshot`  — point-in-time: a `field_key` column + a value column,
+    grouped by Section. The value column's title has changed between template
+    revisions (`Value (auto)` → `Value (Capital IQ) MM`), so it is located by
+    prefix — an exact match once read zero fields off a perfectly good
+    workbook.
   * `History`   — 6 periods (FY-4 … FY-0, LTM) under the header row; the
     period columns are read DYNAMICALLY from that header, never hardcoded.
   * `Dashboard` — the one-glance summary + flags (this is exactly what the
@@ -150,9 +155,21 @@ def _header_row(rows: list[tuple], marker: str) -> int | None:
 
 
 def _col_of(header: tuple, *names: str) -> int | None:
-    wanted = {n.strip().lower() for n in names}
-    for j, c in enumerate(header):
-        if _cell_text(c).lower() in wanted:
+    """Column index whose header matches one of `names`.
+
+    Exact match first, then a prefix match. The prefix pass matters: the value
+    column is titled `Value (auto)` in one template revision and
+    `Value (Capital IQ) MM` in the next, and an exact-only match silently read
+    ZERO snapshot fields off the newer one — a workbook that looked present
+    and parsed to nothing.
+    """
+    wanted = [n.strip().lower() for n in names]
+    cells = [_cell_text(c).lower() for c in header]
+    for j, text in enumerate(cells):
+        if text in wanted:
+            return j
+    for j, text in enumerate(cells):
+        if text and any(text.startswith(w) for w in wanted):
             return j
     return None
 

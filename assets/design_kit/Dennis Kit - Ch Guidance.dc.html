@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  .frame { position:relative; overflow:hidden; container-type:inline-size; border-radius:8px; box-shadow:0 16px 36px -24px rgba(35,35,38,.4); }
+  .frame .tick { position:absolute; left:4.5cqw; top:4cqw; font-family:'Space Mono',monospace; font-weight:700; font-size:2cqw; }
+  .frame .disc { position:absolute; left:4.5cqw; bottom:3.5cqw; font-family:'Space Grotesk',sans-serif; color:#8f8c83; font-size:1.6cqw; }
+  .cap { font-family:'Space Mono',monospace; font-size:11px; color:#a9a59b; letter-spacing:.1em; margin-bottom:8px; }
+  .sec { display:flex; align-items:baseline; gap:16px; margin:24px 0 16px; }
+  .sec .n { font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700; }
+  .sec h2 { margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:30px; letter-spacing:-.01em; }
+  .sec .r { flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent); }
+  .sec .m { font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 90px;">
+<div style="max-width:1200px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 22px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · OPTIONAL CHAPTER · GUIDANCE &amp; ESTIMATES</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:72px; line-height:.9; letter-spacing:-.02em;">Guidance &amp; estimates</h1>
+  <p style="margin:16px 0 0; max-width:770px; font-size:17px; line-height:1.6; color:#3a3a3d;">The expectations game. The <strong>guidance range</strong>, the quiet <strong>cut</strong>, <strong>consensus vs actual</strong>, <strong>estimate revisions</strong> drifting down, the <strong>sandbag</strong>, and Dennis walking the lowered bar. Full 16:9; each carries a <code>data-export</code> id.</p>
+</header>
+
+<div class="sec"><span class="n">A</span><h2>The range &amp; the cut</h2><span class="r"></span><span class="m">chapters/guidance-estimates/</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">guidance-range.png · low / mid / high</div>
+    <div data-export="guidance-range" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">The range.</div>
+      <svg data-ink="range" data-seed="4" viewBox="0 0 520 340" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">guidance-cut.png · prior vs revised</div>
+    <div data-export="guidance-cut" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw; color:#ff5247;">Quietly cut.</div>
+      <svg data-ink="cut" data-seed="8" viewBox="0 0 520 340" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">sandbagging-callout.png</div>
+    <div data-export="sandbagging-callout" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 6cqw;">
+        <div style="font-family:'Space Mono',monospace; font-size:2cqw; letter-spacing:.22em; color:#8f8c83; font-weight:700;">THE OLDEST TRICK</div>
+        <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:6.4cqw; line-height:.95; margin-top:1cqw;">Lower the bar,<br>then <span style="color:#1f9e56;">"beat"</span> it.</div>
+        <div style="font-family:'Space Grotesk',sans-serif; font-size:2.6cqw; color:#8f8c83; margin-top:1.5cqw;">a beat of a number they cut in April.</div>
+      </div>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">B</span><h2>Consensus &amp; revisions</h2><span class="r"></span><span class="m">where the estimates went</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">consensus-vs-actual.png</div>
+    <div data-export="consensus-vs-actual" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw;">Street vs reality.</div>
+      <svg data-ink="consensus" data-seed="10" viewBox="0 0 540 320" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">estimate-revisions.png · drifting down</div>
+    <div data-export="estimate-revisions" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; left:5cqw; top:8cqw; font-family:'Shantell Sans',cursive; font-weight:800; font-size:4.2cqw; color:#ff5247;">Always down.</div>
+      <svg data-ink="revisions" data-seed="12" viewBox="0 0 540 320" style="position:absolute; left:6cqw; right:6cqw; top:24cqw; width:88%; height:auto; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<div class="sec"><span class="n">C</span><h2>The walk &amp; the scorecard</h2><span class="r"></span><span class="m">read the guide</span></div>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:14px;">
+  <div>
+    <div class="cap">guide-down-walk.png · Dennis points</div>
+    <div data-export="guide-down-walk" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_room_wide.png') center/cover;">
+      <div style="position:absolute; right:5cqw; top:13cqw; max-width:34cqw; text-align:right; font-family:'Shantell Sans',cursive; font-weight:800; font-size:3.8cqw; line-height:1.04;">Down again.<br>Third time.</div>
+      <svg data-ink="lowbar" data-seed="14" viewBox="0 0 300 300" style="position:absolute; right:8cqw; bottom:22cqw; width:26%; height:auto; overflow:visible;"></svg>
+      <svg data-ink="dennis" data-arm="point" data-expr="tired" data-mouth="closed" data-seed="16" viewBox="0 0 560 620" style="position:absolute; left:3cqw; bottom:0; width:34%; height:86%; overflow:visible;"></svg>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">guidance-scorecard.png</div>
+    <div data-export="guidance-scorecard" class="frame" style="width:100%; aspect-ratio:16/9; background:#f2f2ef url('uploads/bg_light_flat_wide.png') center/cover;">
+      <div style="position:absolute; inset:0; padding:6cqw 6cqw; display:flex; flex-direction:column;">
+        <div style="font-family:'Space Mono',monospace; font-size:2cqw; letter-spacing:.2em; color:#ff5247; font-weight:700;">READ THE GUIDE</div>
+        <div style="display:flex; flex-direction:column; gap:2cqw; margin-top:3cqw;">
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="cross" data-seed="2" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Full-year guide <b>RAISED</b></span></div>
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="cross" data-seed="3" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Beat on <b>real</b> numbers</span></div>
+          <div style="display:flex; align-items:center; gap:2.4cqw;"><svg data-ink="mk" data-name="check" data-seed="4" viewBox="0 0 60 60" style="width:5cqw;height:5cqw;flex:none;overflow:visible;"></svg><span style="font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:2.9cqw;">Kept the range wide</span></div>
+        </div>
+        <div style="margin-top:auto; font-family:'Space Grotesk',sans-serif; font-size:2.2cqw; color:#8f8c83; font-style:italic;">cut in April, "beat" in July.</div>
+      </div>
+      <div class="disc">Opinion / entertainment. Not financial advice.</div>
+    </div>
+  </div>
+</div>
+
+<section style="margin-top:24px;">
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · full frames 1600×900 · captured per-frame from the scenes above (each carries a data-export id)</div>
+  <div style="background:#d3cfc4; border-radius:6px; padding:16px 20px; font-family:'Space Mono',monospace; font-size:12px; color:#5a574e; line-height:1.7;">guidance-range · guidance-cut · sandbagging-callout · consensus-vs-actual · estimate-revisions · guide-down-walk · guidance-scorecard</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:900},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; const dash=o.dash?' stroke-dasharray="'+o.dash+'"':''; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+dash+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,dash:o.dash})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:0.7,dash:o.dash}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||24; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'middle',w=o.w||800,rot=o.rot||0; const fam=o.mono?"'Space Mono',monospace":o.grot?"'Space Grotesk',sans-serif":"'Shantell Sans',cursive"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle"'+(rot?' transform="rotate('+rot+' '+x.toFixed(1)+' '+y.toFixed(1)+')"':'')+'>'+str+'</text>'; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+
+  range(rand,W,H){
+    const C=this.C, x0=W*0.1,y0=H*0.84,x1=W*0.94,yT=H*0.14;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.6,r:1.2,s:C.ink});
+    // fan: low/mid/high bars widening to the right
+    const cx=x0+(x1-x0)*0.5, lo=[0.34,0.28,0.22], mid=[0.5,0.5,0.5], hi=[0.66,0.72,0.78];
+    const xs=[x0+(x1-x0)*0.16,x0+(x1-x0)*0.5,x0+(x1-x0)*0.84];
+    const yv=v=>y0-(y0-yT)*v;
+    // shaded band
+    const band=xs.map((x,i)=>[x,yv(hi[i])]).concat(xs.map((x,i)=>[x,yv(lo[i])]).reverse());
+    s+=this._fill(band,rand,'rgba(35,35,38,.08)',1.2);
+    s+=this._stroke(xs.map((x,i)=>[x,yv(hi[i])]),rand,{w:3,r:1.4,s:C.gdk});
+    s+=this._stroke(xs.map((x,i)=>[x,yv(mid[i])]),rand,{w:3,r:1.4,s:C.ink,dash:'8,6'});
+    s+=this._stroke(xs.map((x,i)=>[x,yv(lo[i])]),rand,{w:3,r:1.4,s:C.red});
+    s+=this._t(x1-W*0.01,yv(0.8),'HIGH $4.60',{size:H*0.05,s:C.gdk,w:800,anchor:'end'});
+    s+=this._t(x1-W*0.01,yv(0.5),'MID $4.20',{size:H*0.05,s:C.ink,w:800,anchor:'end'});
+    s+=this._t(x1-W*0.01,yv(0.18),'LOW $3.80',{size:H*0.05,s:C.red,w:800,anchor:'end'});
+    return s;
+  }
+  cut(rand,W,H){
+    const C=this.C, y0=H*0.82, yT=H*0.16;
+    const yv=v=>y0-(y0-yT)*v;
+    // two vertical range bars: prior (higher) vs revised (lower)
+    const b=(x,loV,hiV,col,fill,label)=>{ let o=this._stroke([[x-W*0.05,yv(hiV)],[x+W*0.05,yv(hiV)],[x+W*0.05,yv(loV)],[x-W*0.05,yv(loV)]],rand,{w:3,r:1.2,close:true,s:col,f:fill}); o+=this._t(x,yv(hiV)-H*0.05,label,{size:H*0.05,s:col,w:800}); return o; };
+    let s=this._stroke([[W*0.1,y0],[W*0.9,y0]],rand,{w:2.6,r:1,s:C.ink});
+    s+=b(W*0.3,0.5,0.78,C.grey,'rgba(154,152,143,.18)','PRIOR');
+    s+=b(W*0.66,0.28,0.5,C.red,'rgba(255,82,71,.2)','REVISED');
+    // down arrow between
+    s+=this._stroke([[W*0.48,yv(0.62)],[W*0.5,yv(0.36)]],rand,{w:5,r:1.4,s:C.red});
+    s+=this._head(W*0.5,yv(0.36),Math.PI/2,16,rand,{w:5,r:1.2,s:C.red});
+    s+=this._t(W*0.5,yv(0.9),'\u2212$0.40',{size:H*0.06,s:C.red,w:800});
+    return s;
+  }
+  consensus(rand,W,H){
+    const C=this.C, x0=W*0.1,y0=H*0.82,x1=W*0.94,yT=H*0.16;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.6,r:1.2,s:C.ink});
+    const n=6, xs=(i)=>x0+(x1-x0)*i/(n-1), yv=v=>y0-(y0-yT)*v;
+    const est=[0.6,0.62,0.58,0.6,0.59,0.6];
+    const act=[0.66,0.5,0.7,0.44,0.68,0.4];
+    s+=this._stroke(est.map((v,i)=>[xs(i),yv(v)]),rand,{w:3,r:1.4,s:C.grey,dash:'8,6'});
+    for(let i=0;i<n;i++){ const beat=act[i]>=est[i], col=beat?C.gdk:C.red; s+='<circle cx="'+xs(i).toFixed(1)+'" cy="'+yv(act[i]).toFixed(1)+'" r="'+(H*0.02).toFixed(1)+'" fill="'+col+'"/>'; }
+    s+=this._t(x0+W*0.02,yT+H*0.02,'\u00b7\u00b7 consensus',{size:H*0.05,s:C.grey,w:700,mono:true,anchor:'start'});
+    s+=this._t(x1-W*0.01,yv(0.4)+H*0.06,'MISS',{size:H*0.05,s:C.red,w:800,anchor:'end'});
+    return s;
+  }
+  revisions(rand,W,H){
+    const C=this.C, x0=W*0.1,y0=H*0.82,x1=W*0.94,yT=H*0.16;
+    let s=this._stroke([[x0,yT],[x0,y0],[x1,y0]],rand,{w:2.6,r:1.2,s:C.ink});
+    const n=8, xs=(i)=>x0+(x1-x0)*i/(n-1), yv=v=>y0-(y0-yT)*v;
+    const pts=[]; for(let i=0;i<n;i++){ pts.push([xs(i), yv(0.8-0.5*i/(n-1))]); }
+    s+=this._stroke(pts,rand,{w:4,r:2,s:C.red});
+    s+=this._head(pts[n-1][0],pts[n-1][1],0.5,14,rand,{w:4,r:1.2,s:C.red});
+    s+=this._t(x0+W*0.02,yT+H*0.02,'FY EPS ESTIMATE',{size:H*0.05,s:C.grey,w:700,mono:true,anchor:'start'});
+    s+=this._t(pts[0][0]+W*0.04,pts[0][1]-H*0.05,'$4.60',{size:H*0.05,s:C.grey,w:700});
+    s+=this._t(pts[n-1][0]-W*0.02,pts[n-1][1]+H*0.06,'$3.10',{size:H*0.055,s:C.red,w:800,anchor:'end'});
+    return s;
+  }
+  lowbar(rand,W,H){
+    const C=this.C, y0=H*0.9, x0=W*0.14;
+    let s=this._stroke([[W*0.06,y0],[W*0.94,y0]],rand,{w:2.6,r:1,s:C.ink});
+    const vals=[0.8,0.56,0.34], gw=W*0.26;
+    for(let i=0;i<3;i++){ const bx=x0+i*gw, bw=gw*0.6, bh=(y0-H*0.14)*vals[i], last=i===2, col=last?C.red:C.grey; s+=this._fill([[bx,y0],[bx+bw,y0],[bx+bw,y0-bh],[bx,y0-bh]],rand,last?'rgba(255,82,71,.2)':'rgba(154,152,143,.2)',1)+this._stroke([[bx,y0-bh],[bx,y0],[bx+bw,y0],[bx+bw,y0-bh]],rand,{w:2.8,r:1,s:col}); }
+    return s;
+  }
+  mk(rand,W,H,name){ const C=this.C; if(name==='check') return this._stroke([[W*0.2,H*0.54],[W*0.42,H*0.76],[W*0.82,H*0.24]],rand,{w:W*0.1,r:1.6,s:C.gdk}); return this._stroke([[W*0.24,H*0.24],[W*0.76,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red})+this._stroke([[W*0.76,H*0.24],[W*0.24,H*0.76]],rand,{w:W*0.1,r:1.6,s:C.red}); }
+  dennis(rand,W,H,arm,expr,mouth){
+    const C=this.C, bx=W*0.5, sc=Math.min(W,H)/620, top=H-360*sc, sy=(v)=>top+v*sc;
+    const L=(pts)=>this._stroke(pts,rand,{w:4.4,r:2.2,s:C.ink});
+    let s=this._stroke([[bx-40*sc,sy(150)],[bx+40*sc,sy(150)],[bx+46*sc,sy(300)],[bx-46*sc,sy(300)]],rand,{w:4.4,r:2.4,close:true,s:C.ink});
+    s+=this._stroke([[bx,sy(120)],[bx,sy(150)]],rand,{w:4.4,r:1.6,s:C.ink});
+    s+=this._stroke([[bx-22*sc,sy(300)],[bx-26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink})+this._stroke([[bx+22*sc,sy(300)],[bx+26*sc,sy(360)]],rand,{w:4.4,r:2,s:C.ink});
+    if(arm==='point'){ s+=L([[bx-40*sc,sy(170)],[bx-52*sc,sy(240)]])+L([[bx+40*sc,sy(170)],[bx+120*sc,sy(150)],[bx+186*sc,sy(120)]]); }
+    else { s+=L([[bx-40*sc,sy(170)],[bx-50*sc,sy(240)]])+L([[bx+40*sc,sy(170)],[bx+54*sc,sy(220)],[bx+40*sc,sy(250)]]); }
+    const hcx=bx, hcy=sy(70), hr=52*sc;
+    s+=this._stroke(this._ell(hcx,hcy,hr,hr*1.08,-0.15,Math.PI*2+0.55),rand,{w:4.4,r:2.6,s:C.ink});
+    s+=this._stroke([[hcx,hcy-hr*1.02],[hcx-14*sc,hcy-hr*1.3],[hcx+8*sc,hcy-hr*1.2],[hcx-4*sc,hcy-hr*0.98]],rand,{w:3.4,r:2.4,s:C.ink});
+    const Lx=hcx-20*sc,Rx=hcx+20*sc,Ey=hcy-6*sc;
+    const bags=()=>this._stroke([[Lx-9*sc,Ey+20*sc],[Lx,Ey+24*sc],[Lx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey})+this._stroke([[Rx-9*sc,Ey+20*sc],[Rx,Ey+24*sc],[Rx+9*sc,Ey+20*sc]],rand,{w:2.4,r:1.4,s:C.grey});
+    s+=this._stroke([[Lx-11*sc,Ey-4*sc],[Lx,Ey+6*sc],[Lx+11*sc,Ey-4*sc]],rand,{w:3,r:1.4,s:C.ink})+this._stroke([[Rx-11*sc,Ey-4*sc],[Rx,Ey+6*sc],[Rx+11*sc,Ey-4*sc]],rand,{w:3,r:1.4,s:C.ink})+bags();
+    const my=hcy+28*sc;
+    s+= mouth==='open'? this._stroke(this._ell(hcx,my,9*sc,11*sc,0,Math.PI*2),rand,{w:3,close:true,s:C.ink}) : this._stroke([[hcx-16*sc,my],[hcx+16*sc,my-2*sc]],rand,{w:3.4,r:1.4,s:C.ink});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 520 340').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    let out=''; const t=el.dataset.ink;
+    if(t==='range') out=this.range(rand,W,H);
+    else if(t==='cut') out=this.cut(rand,W,H);
+    else if(t==='consensus') out=this.consensus(rand,W,H);
+    else if(t==='revisions') out=this.revisions(rand,W,H);
+    else if(t==='lowbar') out=this.lowbar(rand,W,H);
+    else if(t==='mk') out=this.mk(rand,W,H,el.dataset.name||'check');
+    else if(t==='dennis') out=this.dennis(rand,W,H,el.dataset.arm||'rest',el.dataset.expr||'deadpan',el.dataset.mouth||'closed');
+    el.innerHTML=out; el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){ if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); } this.drawAll(); }
+  renderVals(){ return { rootRef:this.rootRef }; }
+}
+</script>
+</body>
+</html>

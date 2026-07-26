@@ -28,6 +28,13 @@ SFX_KEYS = (
     "sad_trombone",
     "camera_shutter",
     "vine_boom",
+    # the deadpan set — dry, lo-fi, no drama. Used sparsely: these are the
+    # room Dennis is sitting in, not a punchline.
+    "coffee_slurp",
+    "keyboard_clack",
+    "paper_rustle",
+    "buzzer",
+    "ding",
 )
 
 
@@ -51,6 +58,17 @@ class TagType(str, Enum):
     ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
     DOODLE = "DOODLE"            # crude hand-drawn overlay (owned, top layer)
     SCRIBBLE = "SCRIBBLE"        # drawn annotation on a number/point (top layer)
+    # design-kit families, resolved by name through pipeline.kit
+    TERM = "TERM"                # the "teach one framework" definition card
+    BIGNUM = "BIGNUM"            # the single-stat card
+    TABLE = "TABLE"              # a strict readable table (P&L, comps, …)
+    PROP = "PROP"                # a generic object cutaway (warehouse, servers…)
+    ALERT = "ALERT"              # mid-frame lower-third interjection (overlay)
+    # delivery direction — stripped from captions, passed to TTS
+    BEAT = "BEAT"                # a deliberate pause
+    SIGH = "SIGH"
+    FLAT = "FLAT"                # hold the register flatter than baseline
+    DRY = "DRY"
 
 
 # tag types that claim a visual SEGMENT on the LONG timeline (the base
@@ -59,11 +77,28 @@ class TagType(str, Enum):
 VISUAL_TAG_TYPES = frozenset({
     TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
     TagType.CHART, TagType.SHOW_FILING, TagType.SCREENGRAB, TagType.ASSET,
+    TagType.TERM, TagType.BIGNUM, TagType.TABLE, TagType.PROP,
 })
 
 # overlay tag types — composited over the current frame, not a segment.
 # These are the only tags allowed inline in a SHORT audio_script.
-OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE})
+OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
+
+# Delivery direction. These never reach the screen — they are stripped from
+# the captions and re-inserted into the TTS request, because deadpan comedy
+# is timing and the pipeline was sending flat text with none of it.
+DELIVERY_TAG_TYPES = frozenset({TagType.BEAT, TagType.SIGH, TagType.FLAT,
+                                TagType.DRY})
+
+# Kit families the design-kit tags resolve against, and how long each needs
+# on screen. A term card and a table are read, not glanced at.
+KIT_TAG_FAMILIES = {
+    TagType.TERM: "type/callouts",
+    TagType.BIGNUM: "type/callouts",
+    TagType.TABLE: "type/tables",
+    TagType.PROP: "props/objects",
+    TagType.ALERT: "type/alerts",
+}
 
 
 class ScribbleStyle(str, Enum):
@@ -175,6 +210,10 @@ class ShortScript(BaseModel):
     numbers: list[NumberRow] = Field(min_length=1, max_length=6)
     years: list[str] = Field(default_factory=list, max_length=6)  # sheet columns
     numbers_comment: str = Field(min_length=1, max_length=300)    # holistic read
+    # the CHEAP-OR-TRAP beat: is the multiple a bargain or a value trap? Held
+    # on screen ~4-5s so it can actually be read. Optional so scripts written
+    # against the four-beat format still parse.
+    cheap_or_trap: str | None = Field(default=None, max_length=260)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
     chart_style: ChartStyle = ChartStyle.CLEAN  # open on clean or marker chart
     meme: CutawayTag | None = None
@@ -315,10 +354,23 @@ class TTSResult(BaseModel):
     chars: int
     cached: bool
     cost_usd: float  # 0.0 when served from cache or mock
+    # Which tier produced it: mock | local | paid.
+    #
+    # `draft` means specifically "the word timings are INTERPOLATED and are
+    # being passed off as real" — which is true of the local voice and of
+    # nothing else. Mock audio has synthetic timings too, but MOCK_MODE is the
+    # established offline contract: the suite and the whole dev loop render
+    # finals from it, and everyone involved knows the video is a test artifact.
+    # The local tier is the one that produces something that SOUNDS finished
+    # while being a fraction of a second out, which is why it alone is fenced
+    # off from final renders (P3.2).
+    tier: str = "paid"
+    draft: bool = False
 
 
 class CueKind(str, Enum):
     # SHORT beats (Noise or signal?)
+    HOST_OPEN = "host_open"      # Dennis talking, before the hook lands
     HOOK = "hook"
     TRANSITION = "transition"
     HEADLINE = "headline"
@@ -326,7 +378,9 @@ class CueKind(str, Enum):
     NUMBER_ROW = "number_row"    # one row types on
     ANNOTATION = "annotation"    # hand-drawn scribble
     ZOOM = "zoom"                # zoom-punch on the key number
+    CHEAP_OR_TRAP = "cheap_or_trap"  # the value-trap beat, held to be read
     CONCLUSION = "conclusion"
+    HOST_CLOSE = "host_close"    # Dennis talking, after the payoff
     CUTAWAY = "cutaway"          # ironic broll cutaway (SHORT)
     # LONG visuals (MEME + SOUND are shared by both formats)
     MEME = "meme"
@@ -336,10 +390,15 @@ class CueKind(str, Enum):
     FILING = "filing"
     SCREENGRAB = "screengrab"
     ASSET = "asset"
+    TERM = "term"                # the framework/definition card
+    BIGNUM = "bignum"            # the single-stat card
+    TABLE = "table"              # a strict readable table
+    PROP = "prop"                # a generic object cutaway
     SOUND = "sound"
     # hand-drawn overlays (both formats) — composited on top, no segment
     DOODLE = "doodle"
     SCRIBBLE = "scribble"
+    ALERT = "alert"              # lower-third interjection over the frame
 
 
 class Cue(BaseModel):
@@ -367,9 +426,12 @@ class Cue(BaseModel):
 DATA_FIELDS: dict[str, list[str]] = {
     "identity": ["company_name", "ticker", "exchange", "sector", "industry",
                  "country", "currency", "as_of_date"],
+    # `shares_dill_out` (diluted) arrived with the v3.1 template; the basic
+    # count stays the required one, and the dilution gap between them is the
+    # interesting number.
     "size": ["price", "market_cap", "enterprise_value", "shares_out",
-             "avg_volume_3m", "beta", "week52_high", "week52_low",
-             "pct_from_52w_high"],
+             "shares_dill_out", "avg_volume_3m", "beta", "week52_high",
+             "week52_low", "pct_from_52w_high"],
     "valuation": ["pe_ttm", "forward_pe", "ps_ttm", "ev_ebitda", "ev_sales",
                   "ev_fcf", "pb", "p_fcf", "peg", "earnings_yield",
                   "fcf_yield", "dividend_yield", "buyback_yield",
@@ -631,6 +693,9 @@ class CostReport(BaseModel):
     chars: int
     tts_cached: bool
     est_tts_usd: float
+    # Delivery direction changes the request text and the voice settings, so
+    # it changes the cache key: it has to be authored before the paid run.
+    delivery_directives: int = 0
     # SHORT specifics
     headline_count: int = 0
     numbers_rows: int = 0
@@ -676,6 +741,10 @@ class CostReport(BaseModel):
 
         tts = f"Audio: {self.words} words / {self.chars} chars / ~{self.est_runtime_min:.0f} min video"
         tts += "  (cached — $0.00 TTS)" if self.tts_cached else f"  (~${self.est_tts_usd:.2f} TTS)"
+        if self.delivery_directives:
+            tts += (f"\n  {self.delivery_directives} delivery directive(s) "
+                    f"([BEAT]/[SIGH]/[FLAT]/[DRY]) are baked into this "
+                    f"generation — adding one later re-bills the whole script.")
         lines.append(tts)
 
         if self.fmt == "short":

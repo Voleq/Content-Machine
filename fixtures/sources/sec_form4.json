@@ -1,0 +1,31 @@
+{
+  "status": "ok",
+  "ticker": "EXMPL",
+  "count": 3,
+  "filings": [
+    {
+      "ticker": "EXMPL",
+      "form": "4",
+      "filed": "2026-07-22",
+      "accession": "0000320193-26-000079",
+      "url": "https://www.sec.gov/x/1.htm",
+      "title": "CEO \u2014 open-market sale"
+    },
+    {
+      "ticker": "EXMPL",
+      "form": "4",
+      "filed": "2026-07-21",
+      "accession": "0000320193-26-000078",
+      "url": "https://www.sec.gov/x/2.htm",
+      "title": "CFO \u2014 option exercise"
+    },
+    {
+      "ticker": "EXMPL",
+      "form": "4",
+      "filed": "2026-07-18",
+      "accession": "0000320193-26-000077",
+      "url": "https://www.sec.gov/x/3.htm",
+      "title": "Director \u2014 open-market purchase"
+    }
+  ]
+}

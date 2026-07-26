@@ -89,12 +89,49 @@ def gen_sfx() -> None:
            "-f", "lavfi", "-i", "sine=f=52:d=0.9",
            "-af", "volume=1.4,afade=t=in:st=0:d=0.005,afade=t=out:st=0.15:d=0.75,aecho=0.8:0.6:60:0.35",
            *wav)
+    # ---- the deadpan set: dry, lo-fi, no drama --------------------------
+    # These are placeholders so a MOCK_MODE render is never silent. The
+    # shipping versions are generated in ElevenLabs and dropped in over the
+    # top — same filenames, same keys, nothing in the pipeline changes.
+    _lavfi(out / "coffee_slurp.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.42:color=brown:seed=11",
+           "-af", "bandpass=f=620:width_type=h:w=400,tremolo=f=11:d=0.5,"
+                  "afade=t=in:st=0:d=0.05,afade=t=out:st=0.28:d=0.14,volume=0.5",
+           *wav)
+    _lavfi(out / "keyboard_clack.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.02:color=white:seed=21",
+           "-f", "lavfi", "-i", "anullsrc=d=0.07",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.02:color=white:seed=22",
+           "-f", "lavfi", "-i", "anullsrc=d=0.05",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.02:color=white:seed=23",
+           "-filter_complex",
+           "[0]volume=0.8[a];[1]volume=0[b];[2]volume=0.7[c];[3]volume=0[d];"
+           "[4]volume=0.75[e];[a][b][c][d][e]concat=n=5:v=0:a=1,"
+           "bandpass=f=2400:width_type=h:w=1800,volume=0.6",
+           *wav)
+    _lavfi(out / "paper_rustle.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=0.55:color=pink:seed=31",
+           "-af", "highpass=f=2200,tremolo=f=17:d=0.7,"
+                  "afade=t=in:st=0:d=0.08,afade=t=out:st=0.34:d=0.2,volume=0.42",
+           *wav)
+    _lavfi(out / "buzzer.wav",
+           "-f", "lavfi", "-i", "sine=f=196:d=0.45",
+           "-f", "lavfi", "-i", "sine=f=208:d=0.45",
+           "-filter_complex",
+           "[0][1]amix=inputs=2:normalize=0,lowpass=f=1400,"
+           "afade=t=out:st=0.34:d=0.11,volume=0.5",
+           *wav)
+    _lavfi(out / "ding.wav",
+           "-f", "lavfi", "-i", "sine=f=1760:d=0.6",
+           "-af", "afade=t=in:st=0:d=0.004,afade=t=out:st=0.05:d=0.55,volume=0.34",
+           *wav)
+
     # UI sound used by the renderers themselves (beat transitions)
     _lavfi(out / "whoosh.wav",
            "-f", "lavfi", "-i", "anoisesrc=d=0.45:color=pink:seed=6",
            "-af", "lowpass=f=1100,afade=t=in:st=0:d=0.12,afade=t=out:st=0.2:d=0.25,volume=0.7",
            *wav)
-    print("sfx: 8 written")
+    print("sfx: 13 written")
 
 
 def gen_overlays() -> None:

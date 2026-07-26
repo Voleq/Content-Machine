@@ -50,6 +50,18 @@ filings = [
     "playwright==1.61.0",
     "beautifulsoup4==4.15.0",
 ]
+# Driving Excel for the data refresh (P3.1b). Windows-only by nature — the
+# COM bridge does not exist elsewhere — and optional: without it the bot
+# reports Excel as unavailable and the manual upload path carries on.
+excel = [
+    "pywin32==313; sys_platform == 'win32'",
+]
+# YouTube upload + retention feedback (P3.5). Optional: without it the bot
+# hands you the upload package to post by hand, exactly as before.
+youtube = [
+    "google-api-python-client==2.190.0",
+    "google-auth-oauthlib==1.2.2",
+]
 
 [project.scripts]
 dennis = "main:main"

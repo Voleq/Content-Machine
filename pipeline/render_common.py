@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -25,13 +27,89 @@ class RenderError(Exception):
     pass
 
 
-def run_ffmpeg(args: list[str], timeout: int = 3600) -> None:
+# The render box is somebody's daily-driver desktop. These are set once from
+# Settings at startup so every ffmpeg call — including the ones inside
+# rasters.py — is capped and de-prioritised without threading the settings
+# object through every helper.
+_POLITENESS: dict = {"threads": 0, "below_normal": False}
+
+
+def set_render_politeness(settings) -> None:
+    """Apply the encode-politeness knobs process-wide."""
+    _POLITENESS["threads"] = settings.resolved_render_threads()
+    _POLITENESS["below_normal"] = settings.render_below_normal_priority
+    log.info("render politeness: %d ffmpeg threads, below-normal=%s",
+             _POLITENESS["threads"], _POLITENESS["below_normal"])
+
+
+def _politeness_args(threads: int | None = None) -> list[str]:
+    """ffmpeg flags that cap CPU use. The filter graph — not the encode — is
+    the bottleneck here, so the filter thread pools are capped too.
+
+    `threads` overrides the process-wide cap, which is how the parallel
+    segment encoder stays polite: several workers each take a slice of the
+    budget rather than each taking the whole thing.
+    """
+    n = threads if threads else _POLITENESS["threads"]
+    if not n:
+        return []
+    return ["-threads", str(n),
+            "-filter_threads", str(n),
+            "-filter_complex_threads", str(n)]
+
+
+def render_thread_budget() -> int:
+    """The aggregate ffmpeg thread cap currently in force."""
+    return _POLITENESS["threads"] or (os.cpu_count() or 4)
+
+
+def _deprioritise(proc: subprocess.Popen) -> None:
+    """Drop an already-spawned child below the desktop's priority.
+
+    Done from the parent rather than via `preexec_fn`, which is documented as
+    unsafe in a threaded process — and the bot is threaded.
+    """
+    if not _POLITENESS["below_normal"]:
+        return
+    try:
+        if hasattr(os, "setpriority"):          # POSIX
+            os.setpriority(os.PRIO_PROCESS, proc.pid, 10)
+    except (OSError, AttributeError, ValueError) as e:
+        log.debug("could not de-prioritise pid %s: %s", proc.pid, e)
+
+
+def _creationflags() -> int:
+    """Windows spawns at below-normal directly; POSIX renices after spawn."""
+    if _POLITENESS["below_normal"] and sys.platform == "win32":
+        return getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+    return 0
+
+
+def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
+    """subprocess.run, but nice to the machine it is running on."""
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        creationflags=_creationflags(),
+    )
+    _deprioritise(proc)
+    try:
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        raise
+    return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
+
+
+def run_ffmpeg(args: list[str], timeout: int = 3600,
+               threads: int | None = None) -> None:
     """Run ffmpeg with -y and sane logging; raise RenderError with the
     stderr tail on failure."""
     ffmpeg, _ = detect_ffmpeg()
-    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y", *args]
+    cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+           *_politeness_args(threads), *args]
     log.debug("ffmpeg %s", " ".join(args[:12]))
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    proc = _run_polite(cmd, timeout)
     if proc.returncode != 0:
         tail = (proc.stderr or "")[-2000:]
         raise RenderError(f"ffmpeg failed ({proc.returncode}):\n{tail}")
@@ -106,12 +184,18 @@ def detect_hardware_encoder() -> str | None:
     return None
 
 
-def encode_profile(settings: Settings, fmt: str, draft: bool = False) -> EncodeProfile:
+def encode_profile(settings: Settings, fmt: str, draft: bool = False,
+                   preview: bool = False) -> EncodeProfile:
     vcodec = "libx264"
-    if settings.use_hardware_encoder and not draft:
+    if settings.use_hardware_encoder and not (draft or preview):
         hw = detect_hardware_encoder()
         if hw:
             vcodec = hw
+    if preview:
+        # x264 ultrafast beats the GPU here: the preview is filter-bound and
+        # NVENC's setup cost is not worth paying for a throwaway pass.
+        return EncodeProfile(vcodec="libx264", preset="ultrafast",
+                             crf=settings.preview_crf)
     if draft:
         return EncodeProfile(vcodec="libx264", preset=settings.draft_preset, crf=settings.draft_crf)
     crf = settings.short_crf if fmt == "short" else settings.long_crf
@@ -149,6 +233,7 @@ class AudioTrack:
     start_s: float = 0.0
     gain_db: float = 0.0
     loop: bool = False       # e.g. the music bed
+    voice: bool = False      # the VO — gets light compression before the mix
 
 
 @dataclass
@@ -164,6 +249,12 @@ class CompositeSpec:
     fonts_dir: Path | None = None
     duration: float = 0.0
     fps: int = 30
+    # Master bus. -14 LUFS is the streaming reference (YouTube normalises to
+    # roughly this); -1.5 dBTP leaves headroom for lossy encoding artefacts.
+    loudness_lufs: float = -14.0
+    true_peak_db: float = -1.5
+    loudness_range: float = 11.0
+    limiter_ceiling: float = 0.95
 
     def input_count(self) -> int:
         return sum(1 for a in self.base_input_args if a == "-i")
@@ -222,6 +313,12 @@ def composite_video(
         else:
             inputs += ["-i", str(track.path)]
         chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
+        if track.voice:
+            # Light compression on the voice only, before the mix: a deadpan
+            # read has a wide dynamic range, and the quiet asides are exactly
+            # the lines that carry the joke.
+            chain += (",acompressor=threshold=-18dB:ratio=3:attack=8"
+                      ":release=180:makeup=2")
         if track.start_s > 0:
             chain += f",adelay={int(track.start_s * 1000)}:all=1"
         chain += f",volume={track.gain_db:.1f}dB"
@@ -229,12 +326,21 @@ def composite_video(
         a_labels.append(f"[a{j}]")
         idx += 1
     if len(a_labels) == 1:
-        lines.append(f"{a_labels[0]}anull[aout]")
+        lines.append(f"{a_labels[0]}anull[amixed]")
     else:
         lines.append(
             f"{''.join(a_labels)}amix=inputs={len(a_labels)}"
-            f":duration=longest:normalize=0[aout]"
+            f":duration=longest:normalize=0[amixed]"
         )
+    # Master: normalise the programme to the streaming target and cap true
+    # peak, so uploads are not quietly turned down (or up) after the fact.
+    # Single-pass loudnorm — a two-pass measurement would double the audio
+    # work for a correction well under the threshold of audibility here.
+    lines.append(
+        f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
+        f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
+        f"[aout]"
+    )
 
     script = out_path.with_suffix(".filter.txt")
     script.write_text(";\n".join(lines) + "\n")

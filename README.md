@@ -25,10 +25,14 @@ machine does 100% of voice, asset fetching, composition and rendering.
 no hardcoded scene timings anywhere in the render code.
 
 ```
-/new TICKER → upload dennis_data.xlsx → run the pre-filled master prompt
-in Claude/GPT → paste the output back → validation + cost report →
-Approve ✅ → /render TICKER → shareable Drive link
+/short TICKER  (or /long TICKER) → the bot refreshes the numbers in Excel
+itself → run the pre-filled master prompt in Claude/GPT → paste the output
+back → validation + cost report → tweak in chat if needed → Approve ✅ →
+/render TICKER → shareable link
 ```
+
+(Off the Windows render box, or with no data add-in loaded, step two is the
+manual upload it always was — `dennis_data.xlsx` into the chat.)
 
 ---
 
@@ -41,13 +45,18 @@ Approve ✅ → /render TICKER → shareable Drive link
 | Character budgets (`SHORT_MAX_CHARS=800`, `LONG_MAX_CHARS=22000`) rejected **before** any spend | parsers + `TTSEngine` |
 | Nothing paid before the operator taps **Approve** on the cost report | `bot/handlers.py` approval gate; approvals pin the script sha |
 | Monthly cap (`MONTHLY_SPEND_CAP=50`) blocks paid calls in code | `pipeline/cost.py` SpendLedger, checked inside `TTSEngine` |
-| One final render per approved ticker; draft = same cached audio, low-res | job queue + `/draft`; no variant generation exists |
+| One final render per approved ticker | job queue + `/draft`; no variant generation exists |
+| A `/draft` never spends: free local voice, else the mock hum — never ElevenLabs | `TTSEngine.tier_for`; the tier is part of the cache key |
+| Draft audio can never become a final render (its word timings are interpolated) | `render_long` / `render_short` refuse `tts.draft` |
 | Visuals: owned library → cache → fetch → filler; a missing item **never** aborts a render | `pipeline/broll.py` content engine, `pipeline/memes.py` |
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[ASSET]` tags **block** the render until the designed file exists | `validate_long_script` + `assets/custom/` |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
+| Uploads are private or scheduled — never public from a machine | `pipeline/youtube.py` `build_body` |
+| Every free source degrades to "unavailable"; none can fail a run | `pipeline/sources.py` |
+| The status page binds loopback only (no auth, shows internals) | `pipeline/status_page.py` `serve` |
 
 ---
 
@@ -85,6 +94,19 @@ pipeline/
   memes.py               owned meme library (meme_index.json) + providers
   doodles.py             owned doodle library (doodles_index.json) + boil
   company_data.py        two-sheet Excel export reader + filing screenshots
+  excel_refresh.py       drives Excel over COM to refresh the data itself
+  local_tts.py           the free draft voice (Piper) + sentence-anchored timings
+  standing.py            thesis book, ranked idea queue, overnight batch
+  alerts.py              intraday watch: moves, volume, earnings, filings —
+                         de-duplicated, quiet-hours aware, one-tap /short
+  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS,
+                         optional Whisper — cached, rate-limited, degrading
+  youtube.py             upload (private/scheduled, never public) + retention
+                         mapped onto chapters
+  byproducts.py          golden-frame regression + the kit's thumbnails,
+                         social cards and end screens
+  status_page.py         read-only localhost view (loopback, no auth)
+  script_edit.py         in-chat revision: line/range edits, find-replace, undo
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
   delivery.py            gdrive (default) / s3 / telegram / local
@@ -95,7 +117,8 @@ pipeline/
   workspace.py           per-ticker/date dirs, approvals, chat context
 bot/
   handlers.py            BotCore (all logic, Telegram-free) + PTB glue
-  prompts.py             master-prompt placeholder filling
+  prompts.py             master-prompt placeholder filling + the kit catalog
+                         generated from the manifest (never a hand-kept list)
   keyboards.py           Approve / Swap clip / Cancel, candidate buttons
 assets/                  fonts, backgrounds, overlays, sfx, music,
                          hook_bank.json, meme_library/ (16 owned memes +
@@ -126,6 +149,39 @@ python3.11 -m venv .venv
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
 
+### Windows 11 (the render desktop)
+
+Runs **natively on Windows, not under WSL** — Playwright, FFmpeg and NVENC
+all behave better outside the WSL boundary, and the GPU is directly
+available.
+
+```powershell
+winget install Gyan.FFmpeg Python.Python.3.12   # then reopen the terminal
+powershell -ExecutionPolicy Bypass -File deploy\bootstrap.ps1
+notepad .env                                     # token + operator chat id
+.venv\Scripts\python.exe main.py
+```
+
+`bootstrap.ps1` is the counterpart to `bootstrap.sh`: venv, pinned deps,
+FFmpeg check, an NVENC heads-up, headless Chromium, `.env` scaffold,
+generated assets, design-kit check, offline suite. It is idempotent.
+
+To leave the bot up across reboots, register the logon task:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\install-task.ps1
+```
+
+Task Scheduler rather than a service, deliberately: the task runs as the
+logged-in user, so it inherits the normal PATH, environment and GPU.
+Manual `python main.py` stays the default way to run it.
+
+**Encode politeness.** This is somebody's daily-driver desktop and renders
+are unattended, so FFmpeg is capped to about half the cores and its
+processes run below normal priority — slower, but the machine stays usable.
+Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
+`RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
+
 ### VPS (production)
 
 ```bash
@@ -137,6 +193,8 @@ sudo systemctl enable --now dennis
 The bootstrap installs apt deps, builds the venv from the **pinned**
 `pyproject.toml`, generates assets, runs the offline suite, and installs
 the service + daily cleanup timer. No display server, no ImageMagick.
+The Linux path stays supported — a weaker always-on box can host the bot
+with the desktop acting as a render worker later.
 
 ### Going live (spending real money)
 
@@ -155,15 +213,33 @@ the service + daily cleanup timer. No display server, no ImageMagick.
 
 ## Operator flow (one video, start to finish)
 
-1. `/screen` (or the pre-market digest) → tap a candidate, or `/new TICKER`.
-   Trending lane → SHORT; beaten-down value lane → LONG. The screener's
-   move context is baked into the SHORT prompt automatically.
-2. Refresh `templates/dennis_data_template.xlsx` for the ticker in Excel
-   (both sheets: `Latest` snapshot + 5-year `History`), upload it here.
-   Optionally upload raw screenshot PNGs for `[SHOW FILING: file.png]`
-   moments — they get a generic "FROM THE 10-K" label on screen.
-3. The bot replies with both **pre-filled master prompts** — run one in
-   Claude/GPT, paste the model's output back (message or .txt).
+1. `/screen` (or the pre-market digest) → tap a candidate, or name the lane
+   yourself: **`/short TICKER`** or **`/long TICKER`**. One command prepares
+   one prompt, and `/render` follows from the lane rather than being a second
+   choice. Trending lane → SHORT; beaten-down value lane → LONG, and picking
+   a trending name for a LONG gets a warning, not a refusal — the screener is
+   a suggestion engine. The screener's move context is baked into the SHORT
+   prompt automatically. (`/new` still works for one release, preparing both
+   prompts as before.)
+2. The numbers arrive on their own: `/new` copies
+   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!C3`,
+   fires the add-in's refresh, waits for it to genuinely finish, and files a
+   dated copy in the workspace. `/refresh TICKER` re-pulls; a second argument
+   pins a **RIC override** for good (`/refresh PLTR PLTR.O`) for the cases the
+   template's own exchange lookup can't get right. Anywhere without Excel and
+   a loaded add-in the bot says so and takes the manual upload instead — that
+   path is unchanged. Optionally upload raw screenshot PNGs for
+   `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
+   label on screen.
+3. The bot replies with the lane's **pre-filled master prompt** — run it in
+   Claude/GPT, paste the model's output back (message or .txt). The prompt
+   carries a **kit catalog generated from the manifest at fill time**: exactly
+   which `[TERM]`, `[BIGNUM]`, `[TABLE]`, `[PROP]` and `[ALERT]` keys have
+   artwork, the concept illustrations with a one-line "use when", the chapter
+   kits, the host's poses and reactions — plus the expressivity tags and the
+   pacing rules. Validation already rejects unknown keys; this stops them
+   being invented, and because it is read off disk it cannot drift from what
+   is shipped.
 4. Read the **validation + cost report** (chars, $ estimate, cache hits,
    visual sources + contact sheet, meme count, blockers, month-to-date
    spend). If the LONG used `[ASSET: slug]` tags, the bot attaches each
@@ -171,14 +247,29 @@ the service + daily cleanup timer. No display server, no ImageMagick.
    render until you paste it into Claude Design, export, and upload the
    PNG (bespoke visuals never come from an image-generation API).
    `Swap clip 🔄` rotates any `[CLIP]` pick. Approve ✅ arms the render.
-5. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
-   `/draft TICKER` first gives a half-res timing check that reuses the
-   same audio. Progress and failures arrive as messages.
-6. Delivery: Google Drive link (default) posted in chat with attribution
+5. Tweak it in chat, without going back to the model. `/script` prints the
+   script numbered; `/edit 12 <new text>` replaces line 12 (`12-14` for a
+   range, no text to delete it); `/replace four point seven => four point six`
+   fixes a figure by its own words (`all:` for every occurrence); `/undo`
+   steps back. **An edit that doesn't parse never lands** — the workspace
+   keeps the script it had and you get the parser's complaint. Every revision
+   that does land re-runs the gates, re-prices, and drops the approval, so
+   nothing renders from a version nobody read. A full re-paste still works too.
+6. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
+   `/draft TICKER` first gives a half-res check for **free**: it uses the
+   local neural voice (Piper) when the box has one, the mock hum otherwise,
+   and never ElevenLabs. Draft audio is listenable but its word timings are
+   exact per sentence and interpolated within one, so judge pacing and edit
+   points, not lip-sync — and the renderer refuses to build a final from it.
+   Progress and failures arrive as messages.
+7. Delivery: Google Drive link (default) posted in chat with attribution
    (Pexels + Wikimedia credits written beside the file);
-   `/repurpose TICKER` afterwards cuts the best ~58s of the LONG into a
-   free vertical SHORT.
-7. `/status`, `/cancel TICKER`, `/cost` any time.
+   `/repurpose TICKER` afterwards cuts the best two or three ~58s windows
+   of the LONG into free vertical SHORTs (non-overlapping, best first).
+8. `/status`, `/cancel TICKER`, `/cost` any time. `/ideas` is the ranked
+   backlog (fed by every screen and by any thesis that moves), `/thesis
+   TICKER` re-checks what you said against today's numbers, and `/batch`
+   queues renders to run unattended overnight.
 
 ### The data contract (private, no API)
 
@@ -198,6 +289,54 @@ the snapshot only. Nothing in scripts, tags, overlays or captions may
 name the data vendor — the parsers reject it, and on screen the data is
 "from the 10-K".
 
+#### Refreshing it without touching Excel yourself
+
+`pipeline/excel_refresh.py` drives Excel over COM on the render box.
+
+Two input cells, and they mean different things. **`Snapshot!C3`** takes the
+plain ticker and every `CIQ(...)` formula reads it. **`Snapshot!B3` derives**
+the Refinitiv RIC from C3, looking the suffix up from the exchange via the
+hidden `_RICMap` table — it is a formula and writing to it would silently
+detach every green cell from the ticker. **`Snapshot!E2`** forces a RIC for
+the cases the lookup can't know (a dual listing, a share class); leave it
+empty and the template does the work, which is right more often than a guess.
+`/refresh PLTR PLTR.O` pins E2 for that ticker permanently.
+
+The step that matters is the wait: the add-in resolves **asynchronously**, so
+the refresh call returns instantly while cells still read `#N/A` or
+`Requesting Data...`. Reading at that moment produces a workbook full of
+blanks that looks like a successful refresh — a video built on nothing. So the
+refresh only counts as done when every field worth waiting for has resolved
+*and* the sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive
+reads.
+
+"Worth waiting for" is two tiers, because the template grades its own fields
+in the `Priority` column and grades twelve as Required where `DATA_REQUIRED`
+names six. The poll waits for all twelve — a stronger completion signal, so it
+cannot stop while the valuation block is still filling in — but only the six
+are hard: a thinly-covered small-cap missing `ev_ebitda` gets a warning and a
+usable workbook, not a failed refresh.
+
+Consequences, by design:
+
+- A timeout, or a `DATA_REQUIRED` field still unresolved, is a **hard failure**
+  with the fields and the symbol named. Nothing is written to
+  `dennis_data.xlsx`; a workbook already in the workspace is left exactly as
+  it was.
+- Excel or the add-in missing is **reported**, not crashed on, and the manual
+  upload takes over.
+- The scratch copy is deleted and Excel is quit — and killed by PID if a
+  modal dialog swallowed the quit — on every path, including failure.
+- Freshness is measured from `data_refresh.json`'s recorded refresh time, not
+  from the sheet's `=TODAY()` (which only says when it was last recalculated)
+  and not from the file's mtime (which re-saving resets without changing a
+  single number).
+
+The add-in's refresh macro is named differently in every vintage, so
+`EXCEL_REFRESH_MACROS` is a list of candidates tried in order, falling back to
+a full recalculation — most add-in formulas are volatile, so that works too,
+just less directly. Set the var once you know which macro your box has.
+
 ---
 
 ## Configuration reference (env / .env)
@@ -215,9 +354,21 @@ name the data vendor — the parsers reject it, and on screen the data is
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
+| `EXCEL_REFRESH_ENABLED` | true | let the bot refresh its own numbers (Windows + add-in) |
+| `EXCEL_SYMBOL_SUFFIX` | — | `.O` builds `PLTR.O`; per-ticker pins beat it |
+| `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
+| `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
+| `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned) |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
+| `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
+| `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
+| `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
+| `WHISPER_ENABLED` | false | optional webcast transcription; never blocks |
+| `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
+| `BYPRODUCTS_ENABLED` | true | thumbnails, social cards, end screens per render |
+| `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
 | `DISCLAIMER_TEXT` | Opinion / entertainment… | burned into every frame |
 
 Full list with encode/voice/pacing knobs: `config.py` (every field is an

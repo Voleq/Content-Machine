@@ -392,7 +392,7 @@ class MockImageClient:
         """On-brand imagery stand-in: a full-frame COLOURED card (subject
         seeds a distinct deep-tone gradient) with the subject labelled in
         Space Grotesk — so a MOCK long previews the real composition
-        (full-frame media + Ken Burns), not text on black."""
+        (full-frame media, held still), not text on black."""
         self.download_calls.append(url)
         import colorsys
 
@@ -462,7 +462,7 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     background). Real photos cover the frame edge-to-edge; logos and tall
     grabs are contained sharp over a blurred, brand-tinted cover of
     themselves — a designed full-frame shot, never a letterboxed black
-    frame. Ken Burns then rides over the whole WxH still in the renderer."""
+    frame. The renderer then holds that WxH still — nothing drifts."""
     from pipeline.rasters import cover_fill_frame
 
     W, H = settings.long_resolution
@@ -682,10 +682,12 @@ class ContentManager:
         if not path.exists():
             W, H = self.settings.long_resolution
             path.parent.mkdir(parents=True, exist_ok=True)
-            img = Image.new("RGB", (W, H), (14, 17, 23))
+            from pipeline.rasters import BG, BORDER, MUTED
+
+            img = Image.new("RGB", (W, H), BG)
             d = ImageDraw.Draw(img)
-            d.rectangle([16, 16, W - 17, H - 17], outline=(90, 96, 108), width=3)
-            d.text((W // 8, H // 2), "( imagery unavailable )", fill=(170, 176, 188))
+            d.rectangle([16, 16, W - 17, H - 17], outline=BORDER, width=3)
+            d.text((W // 8, H // 2), "( imagery unavailable )", fill=MUTED)
             img.save(path)
         return Visual(key=query, kind=kind, path=path, is_video=False, source="filler")
 

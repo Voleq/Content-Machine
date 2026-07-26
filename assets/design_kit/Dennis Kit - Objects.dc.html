@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shantell+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: #e7e6e1; }
+  a { color: #ff5247; text-decoration: none; }
+  a:hover { color: #232326; }
+  ::selection { background: #ff5247; color: #f2f2ef; }
+</style>
+</helmet>
+<div ref="{{ rootRef }}" style="min-height:100vh; background:#e7e6e1; color:#232326; font-family:'Space Grotesk',sans-serif; padding:0 0 96px;">
+<div style="max-width:1400px; margin:0 auto; padding:0 40px;">
+
+<header style="padding:52px 0 30px;">
+  <div style="font-family:'Space Mono',monospace; font-size:14px; letter-spacing:.26em; color:#ff5247; font-weight:700; margin-bottom:14px;">DENNIS · OBJECTS &amp; PROPS</div>
+  <h1 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:88px; line-height:.9; letter-spacing:-.02em;">Things to<br>put on the desk</h1>
+  <p style="margin:18px 0 0; max-width:840px; font-size:17px; line-height:1.6; color:#3a3a3d;">Cutaway objects, drawn in the same crude line as Dennis. Drop them beside him, pan across them, or stack a few for a busy-desk shot. Transparent PNG, sized to sit next to a 900px-tall Dennis, all <strong>_b</strong> boil-paired.</p>
+</header>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+  <div>
+    <div style="display:flex; align-items:baseline; gap:16px; margin:8px 0 18px;">
+      <span style="font-family:'Space Mono',monospace; font-size:13px; letter-spacing:.18em; color:#ff5247; font-weight:700;">{{ g.n }}</span>
+      <h2 style="margin:0; font-family:'Shantell Sans',cursive; font-weight:800; font-size:32px; letter-spacing:-.01em;">{{ g.title }}</h2>
+      <span style="flex:1; height:1px; background:linear-gradient(90deg,#cfccc2,transparent);"></span>
+      <span style="font-family:'Space Mono',monospace; font-size:12px; color:#8f8c83;">{{ g.note }}</span>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:0 0 40px;">
+      <sc-for list="{{ g.items }}" as="o" hint-placeholder-count="4">
+        <div style="background:#f2f2ef; border:1.5px solid #e2dfd5; border-radius:6px; padding:14px 14px 10px;">
+          <div style="background:#faf9f6; border-radius:4px; padding:10px; margin-bottom:10px;">
+            <svg data-ink="{{ o.ink }}" data-seed="{{ o.seed }}" viewBox="0 0 300 300" style="width:100%; height:auto; display:block; overflow:visible;"></svg>
+          </div>
+          <div style="font-family:'Shantell Sans',cursive; font-weight:800; font-size:17px; line-height:1.05;">{{ o.title }}</div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; color:#a9a59b; margin-top:3px;">{{ o.file }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</sc-for>
+
+<section>
+  <div style="font-family:'Space Mono',monospace; font-size:13px; color:#4a473f; letter-spacing:.14em; margin:0 0 14px; padding-top:8px; border-top:1.5px solid #cfccc2;">EXPORT · props/objects/ · transparent PNG 600² · every frame + its _b boil</div>
+  <div style="display:flex; flex-wrap:wrap; gap:14px; background:#d3cfc4; border-radius:6px; padding:20px; align-items:flex-start;">
+    <sc-for list="{{ exports }}" as="x" hint-placeholder-count="8">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="font-family:'Space Mono',monospace; font-size:10.5px; color:#5a574e;">{{ x.id }}.png</div>
+        <div data-export="{{ x.id }}" style="width:150px; height:150px; display:flex; align-items:center; justify-content:center;">
+          <svg data-ink="{{ x.ink }}" data-seed="{{ x.seed }}" viewBox="0 0 300 300" style="width:100%; height:100%; display:block; overflow:visible;"></svg>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<div style="text-align:center; font-family:'Space Mono',monospace; font-size:12px; color:#a9a59b; padding-top:22px;">DENNIS VISUAL KIT · objects &amp; props · 24 objects · 48 frames with boils</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1000},&quot;roughness&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:2,&quot;min&quot;:0.4,&quot;max&quot;:3,&quot;step&quot;:0.1,&quot;unit&quot;:&quot;px&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Ink&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    this.rootRef = React.createRef();
+    this.C = { ink:'#232326', red:'#ff5247', green:'#2fd576', gdk:'#1f9e56', grey:'#8f8c83', ghost:'#c9c6bc', warm:'#a98467', paper:'#faf9f6' };
+  }
+  prng(seed){ let s=(seed>>>0)||1; return()=>{ s=(Math.imul(s^(s>>>15),1|s))>>>0; s=(s+Math.imul(s^(s>>>7),61|s))>>>0; return((s^(s>>>14))>>>0)/4294967296; }; }
+  _rk(){ return ((this.props.roughness ?? 2) / 2); }
+  rpath(pts,rand,r){ let d=''; for(let i=0;i<pts.length;i++){ const jx=(rand()*2-1)*r,jy=(rand()*2-1)*r; const x=pts[i][0]+jx,y=pts[i][1]+jy; if(i===0)d+='M'+x.toFixed(1)+','+y.toFixed(1); else{ const px=pts[i-1][0],py=pts[i-1][1]; const mx=(px+pts[i][0])/2+(rand()*2-1)*r*1.4,my=(py+pts[i][1])/2+(rand()*2-1)*r*1.4; d+='Q'+mx.toFixed(1)+','+my.toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1);} } return d; }
+  _p(d,o){ o=o||{}; const s=o.s||this.C.ink,w=o.w==null?3:o.w,f=o.f||'none'; const op=o.op==null?1:o.op; return '<path d="'+d+'" fill="'+f+'" stroke="'+s+'" stroke-width="'+w+'" stroke-linecap="round" stroke-linejoin="round"'+(op!==1?' opacity="'+op+'"':'')+'/>'; }
+  _stroke(pts,rand,o){ o=o||{}; const r=(o.r==null?2:o.r)*this._rk(),w=o.w==null?3:o.w; let d1=this.rpath(pts,rand,r),d2=this.rpath(pts,rand,r); if(o.close){d1+='Z';d2+='Z';} return this._p(d1,{s:o.s,w:w,op:o.op})+this._p(d2,{s:o.s,w:+(w*0.7).toFixed(1),op:(o.op==null?0.7:o.op*0.7)}); }
+  _fill(pts,rand,f,r){ r=(r==null?1.5:r)*this._rk(); return this._p(this.rpath(pts,rand,r)+'Z',{f:f,s:'none',w:0}); }
+  _box(x,y,w,h,rand,o){ o=o||{}; const pts=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]]; let s=''; if(o.f) s+=this._fill(pts,rand,o.f,1.2); return s+this._stroke(pts,rand,{w:o.w==null?3:o.w,r:o.r==null?1.6:o.r,close:true,s:o.s}); }
+  _ell(cx,cy,rx,ry,a0,a1,n){ n=n||28; const p=[]; for(let i=0;i<=n;i++){ const a=a0+(a1-a0)*i/n; p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)]); } return p; }
+  _circ(cx,cy,r,rand,o){ o=o||{}; let s=''; const pts=this._ell(cx,cy,r,r,0,Math.PI*2); if(o.f) s+=this._fill(pts,rand,o.f,1.2); return s+this._stroke(pts,rand,{w:o.w==null?3:o.w,r:o.r==null?1.5:o.r,close:true,s:o.s}); }
+  _t(x,y,str,o){ o=o||{}; const s=o.s||this.C.ink,size=o.size||12,anchor=o.anchor||'start',w=o.w||700; const fam=o.hand?"'Shantell Sans',cursive":"'Space Mono',monospace"; return '<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" fill="'+s+'" font-size="'+size.toFixed(1)+'" font-family="'+fam+'" font-weight="'+w+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+str+'</text>'; }
+  _lines(rand,x,y,w,n,gap,o){ o=o||{}; let s=''; for(let i=0;i<n;i++){ const ww=w*(0.72+((i*37)%29)/100); s+=this._stroke([[x,y+i*gap],[x+ww,y+i*gap]],rand,{w:o.w||2.2,r:o.r||1.1,s:o.s||this.C.grey,op:o.op==null?0.85:o.op}); } return s; }
+  _head(x,y,ang,len,rand,o){ const a1=ang+Math.PI-0.42,a2=ang+Math.PI+0.42; return this._stroke([[x,y],[x+len*Math.cos(a1),y+len*Math.sin(a1)]],rand,o)+this._stroke([[x,y],[x+len*Math.cos(a2),y+len*Math.sin(a2)]],rand,o); }
+
+  filingStack(rand,W,H){
+    const C=this.C; let s='';
+    for(let i=0;i<4;i++){
+      const y=H*0.68-i*H*0.055, x=W*0.20+(i%2?4:-3), w=W*0.60;
+      s+=this._box(x,y,w,H*0.075,rand,{f:C.paper,s:C.ink,w:2.8});
+    }
+    s+=this._box(W*0.22,H*0.20,W*0.56,H*0.44,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._t(W*0.28,H*0.29,'FORM 10-K',{size:H*0.055,s:C.ink});
+    s+=this._lines(rand,W*0.28,H*0.38,W*0.44,5,H*0.045);
+    s+=this._stroke([[W*0.62,H*0.50],[W*0.74,H*0.50]],rand,{w:H*0.03,r:2,s:C.red,op:0.45});
+    return s;
+  }
+  laptop(rand,W,H){
+    const C=this.C; let s=this._box(W*0.18,H*0.26,W*0.64,H*0.40,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._box(W*0.22,H*0.30,W*0.56,H*0.32,rand,{f:'rgba(35,35,38,.05)',s:C.grey,w:2});
+    const pts=[]; for(let i=0;i<7;i++) pts.push([W*0.26+W*0.48*i/6, H*0.50-H*0.14*(i/6)*(i%2?0.8:1)+ (rand()*2-1)*3]);
+    s+=this._stroke(pts,rand,{w:3,r:1.5,s:C.red});
+    s+=this._stroke([[W*0.12,H*0.70],[W*0.88,H*0.70],[W*0.82,H*0.66],[W*0.18,H*0.66]],rand,{w:3,r:1.8,close:true,s:C.ink});
+    return s;
+  }
+  phone(rand,W,H){
+    const C=this.C; let s=this._box(W*0.34,H*0.12,W*0.32,H*0.76,rand,{f:C.paper,s:C.ink,w:3.6});
+    s+=this._stroke([[W*0.45,H*0.17],[W*0.55,H*0.17]],rand,{w:2.4,r:1,s:C.grey});
+    s+=this._t(W*0.39,H*0.27,'GYMX',{size:H*0.05,s:C.ink});
+    s+=this._t(W*0.61,H*0.27,'\u25bc34%',{size:H*0.05,s:C.red,anchor:'end'});
+    const pts=[]; for(let i=0;i<8;i++) pts.push([W*0.38+W*0.24*i/7, H*0.40+H*0.16*(i/7)+(rand()*2-1)*3]);
+    s+=this._stroke(pts,rand,{w:2.8,r:1.4,s:C.red});
+    s+=this._lines(rand,W*0.38,H*0.66,W*0.24,4,H*0.05,{w:2});
+    return s;
+  }
+  newspaper(rand,W,H){
+    const C=this.C; let s=this._box(W*0.10,H*0.20,W*0.80,H*0.60,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._stroke([[W*0.50,H*0.20],[W*0.50,H*0.80]],rand,{w:2,r:1.2,s:C.ghost});
+    s+=this._t(W*0.16,H*0.30,'THE DAILY PANIC',{size:H*0.05,s:C.red});
+    s+=this._stroke([[W*0.14,H*0.35],[W*0.46,H*0.35]],rand,{w:2.4,r:1.2,s:C.ink});
+    s+=this._t(W*0.14,H*0.43,'\u201cROUT\u201d',{size:H*0.085,s:C.ink,hand:true});
+    s+=this._lines(rand,W*0.14,H*0.52,W*0.30,5,H*0.045);
+    s+=this._box(W*0.54,H*0.26,W*0.32,H*0.20,rand,{f:'rgba(35,35,38,.06)',s:C.grey,w:2});
+    s+=this._lines(rand,W*0.54,H*0.52,W*0.32,6,H*0.045);
+    return s;
+  }
+  calculator(rand,W,H){
+    const C=this.C; let s=this._box(W*0.26,H*0.14,W*0.48,H*0.72,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._box(W*0.31,H*0.20,W*0.38,H*0.14,rand,{f:'rgba(35,35,38,.05)',s:C.grey,w:2});
+    s+=this._t(W*0.66,H*0.27,'\u2212310',{size:H*0.065,s:C.red,anchor:'end'});
+    for(let r=0;r<4;r++) for(let c=0;c<3;c++){
+      s+=this._box(W*(0.31+c*0.135),H*(0.40+r*0.115),W*0.10,H*0.085,rand,{s:C.ink,w:2,r:1.2});
+    }
+    return s;
+  }
+  whiteboard(rand,W,H){
+    const C=this.C; let s=this._box(W*0.08,H*0.16,W*0.84,H*0.58,rand,{f:C.paper,s:C.ink,w:3.6});
+    const pts=[]; for(let i=0;i<7;i++) pts.push([W*0.16+W*0.60*i/6, H*0.58-H*0.30*(i/6)+(rand()*2-1)*5]);
+    s+=this._stroke(pts,rand,{w:3.4,r:2,s:C.red});
+    s+=this._head(pts[6][0],pts[6][1],Math.atan2(pts[6][1]-pts[5][1],pts[6][0]-pts[5][0]),14,rand,{w:3.4,r:1.4,s:C.red});
+    s+=this._t(W*0.14,H*0.26,'up? maybe?',{size:H*0.055,s:C.ink,hand:true});
+    s+=this._stroke([[W*0.20,H*0.74],[W*0.20,H*0.86]],rand,{w:3,r:1.6,s:C.grey});
+    s+=this._stroke([[W*0.80,H*0.74],[W*0.80,H*0.86]],rand,{w:3,r:1.6,s:C.grey});
+    return s;
+  }
+  corkboard(rand,W,H){
+    const C=this.C; let s=this._box(W*0.08,H*0.14,W*0.84,H*0.72,rand,{f:'rgba(169,132,103,.13)',s:C.warm,w:3.4});
+    const cards=[[0.16,0.22],[0.56,0.20],[0.34,0.48],[0.66,0.56],[0.14,0.60]];
+    for(let i=0;i<cards.length;i++){
+      s+=this._box(W*cards[i][0],H*cards[i][1],W*0.22,H*0.16,rand,{f:C.paper,s:C.ink,w:2.4});
+      s+=this._lines(rand,W*cards[i][0]+W*0.02,H*cards[i][1]+H*0.05,W*0.17,3,H*0.035,{w:1.8});
+    }
+    for(let i=0;i<cards.length-1;i++){
+      s+=this._stroke([[W*(cards[i][0]+0.11),H*(cards[i][1]+0.08)],[W*(cards[i+1][0]+0.11),H*(cards[i+1][1]+0.08)]],rand,{w:2,r:2.4,s:C.red,op:0.7});
+    }
+    return s;
+  }
+  magnifier(rand,W,H){
+    const C=this.C; let s=this._circ(W*0.44,H*0.40,W*0.26,rand,{f:'rgba(125,148,184,.10)',s:C.ink,w:4});
+    s+=this._stroke([[W*0.62,H*0.58],[W*0.82,H*0.80]],rand,{w:H*0.045,r:2,s:C.ink});
+    s+=this._t(W*0.44,H*0.40,'41%',{size:H*0.14,s:C.red,anchor:'middle',hand:true});
+    s+=this._stroke(this._ell(W*0.36,H*0.30,W*0.09,H*0.06,3.6,5.0),rand,{w:2.4,r:1,s:'#ffffff',op:0.8});
+    return s;
+  }
+  filingCabinet(rand,W,H){
+    const C=this.C; let s=this._box(W*0.24,H*0.12,W*0.52,H*0.76,rand,{f:C.paper,s:C.ink,w:3.6});
+    for(let i=0;i<4;i++){
+      const y=H*(0.17+i*0.18);
+      s+=this._box(W*0.28,y,W*0.44,H*0.15,rand,{s:C.ink,w:2.4});
+      s+=this._stroke([[W*0.44,y+H*0.075],[W*0.56,y+H*0.075]],rand,{w:3,r:1.4,s:C.grey});
+    }
+    s+=this._box(W*0.30,H*0.53,W*0.40,H*0.15,rand,{f:'rgba(255,82,71,.10)',s:C.red,w:2.8});
+    return s;
+  }
+  clock(rand,W,H){
+    const C=this.C; let s=this._circ(W*0.5,H*0.5,W*0.34,rand,{f:C.paper,s:C.ink,w:4});
+    for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; const r1=W*0.28,r2=W*0.31;
+      s+=this._stroke([[W*0.5+r1*Math.cos(a),H*0.5+r1*Math.sin(a)],[W*0.5+r2*Math.cos(a),H*0.5+r2*Math.sin(a)]],rand,{w:2,r:0.8,s:C.grey}); }
+    s+=this._stroke([[W*0.5,H*0.5],[W*0.5+W*0.16*Math.cos(-0.5),H*0.5+W*0.16*Math.sin(-0.5)]],rand,{w:4,r:1.4,s:C.ink});
+    s+=this._stroke([[W*0.5,H*0.5],[W*0.5+W*0.24*Math.cos(1.9),H*0.5+W*0.24*Math.sin(1.9)]],rand,{w:3.2,r:1.4,s:C.red});
+    s+=this._circ(W*0.5,H*0.5,W*0.02,rand,{f:C.ink,s:C.ink,w:1.5});
+    return s;
+  }
+  coffeePot(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.32,H*0.30],[W*0.68,H*0.30],[W*0.72,H*0.78],[W*0.28,H*0.78]],rand,{w:3.6,r:2,close:true,s:C.ink});
+    s+=this._fill([[W*0.31,H*0.52],[W*0.70,H*0.52],[W*0.72,H*0.78],[W*0.28,H*0.78]],rand,'rgba(169,132,103,.30)',1.4);
+    s+=this._stroke([[W*0.68,H*0.38],[W*0.84,H*0.44],[W*0.80,H*0.62],[W*0.70,H*0.64]],rand,{w:3,r:2,s:C.ink});
+    s+=this._stroke([[W*0.34,H*0.30],[W*0.32,H*0.22],[W*0.66,H*0.22],[W*0.66,H*0.30]],rand,{w:3,r:1.6,s:C.ink});
+    s+=this._stroke([[W*0.44,H*0.16],[W*0.40,H*0.06]],rand,{w:2.6,r:2.4,s:C.grey,op:0.7});
+    s+=this._stroke([[W*0.56,H*0.16],[W*0.60,H*0.06]],rand,{w:2.6,r:2.4,s:C.grey,op:0.7});
+    return s;
+  }
+  mugStack(rand,W,H){
+    const C=this.C; let s='';
+    const mug=(x,y,sc)=>{ let t=this._stroke([[x-30*sc,y-26*sc],[x+30*sc,y-26*sc],[x+30*sc,y+26*sc],[x-30*sc,y+26*sc]],rand,{w:3.4*sc,r:2,close:true,s:C.ink});
+      t+=this._stroke([[x+30*sc,y-16*sc],[x+50*sc,y-10*sc],[x+46*sc,y+14*sc],[x+30*sc,y+16*sc]],rand,{w:3*sc,r:1.8,s:C.ink}); return t; };
+    s+=mug(W*0.36,H*0.68,1.0)+mug(W*0.62,H*0.62,0.86)+mug(W*0.46,H*0.40,0.72);
+    s+=this._stroke([[W*0.44,H*0.28],[W*0.40,H*0.16]],rand,{w:2.4,r:2.4,s:C.grey,op:0.6});
+    s+=this._t(W*0.78,H*0.86,'\u00d7 4',{size:H*0.075,s:C.grey,anchor:'end',hand:true});
+    return s;
+  }
+  envelope(rand,W,H){
+    const C=this.C; let s=this._box(W*0.14,H*0.28,W*0.72,H*0.44,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._stroke([[W*0.14,H*0.28],[W*0.50,H*0.54],[W*0.86,H*0.28]],rand,{w:3,r:1.8,s:C.ink});
+    s+=this._box(W*0.62,H*0.16,W*0.24,H*0.16,rand,{f:'rgba(255,82,71,.12)',s:C.red,w:2.4});
+    s+=this._t(W*0.74,H*0.24,'8-K',{size:H*0.06,s:C.red,anchor:'middle'});
+    return s;
+  }
+  calendar(rand,W,H){
+    const C=this.C; let s=this._box(W*0.16,H*0.18,W*0.68,H*0.66,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._stroke([[W*0.16,H*0.32],[W*0.84,H*0.32]],rand,{w:2.8,r:1.4,s:C.ink});
+    s+=this._t(W*0.50,H*0.25,'EARNINGS',{size:H*0.055,s:C.red,anchor:'middle'});
+    for(let r=0;r<3;r++) for(let c=0;c<5;c++){
+      const x=W*(0.20+c*0.13), y=H*(0.38+r*0.15), hit=(r===1&&c===3);
+      s+=this._box(x,y,W*0.10,H*0.11,rand,{f:hit?'rgba(255,82,71,.18)':'none',s:hit?C.red:C.ghost,w:hit?2.8:1.8});
+    }
+    s+=this._stroke([[W*0.28,H*0.18],[W*0.28,H*0.10]],rand,{w:3,r:1.6,s:C.grey});
+    s+=this._stroke([[W*0.72,H*0.18],[W*0.72,H*0.10]],rand,{w:3,r:1.6,s:C.grey});
+    return s;
+  }
+  piggyBank(rand,W,H){
+    const C=this.C; let s=this._stroke(this._ell(W*0.48,H*0.52,W*0.28,H*0.22,0,Math.PI*2),rand,{w:3.6,r:2,close:true,s:C.ink});
+    s+=this._stroke(this._ell(W*0.74,H*0.48,W*0.10,H*0.09,0,Math.PI*2),rand,{w:3,r:1.6,close:true,s:C.ink});
+    s+=this._circ(W*0.78,H*0.47,W*0.014,rand,{f:C.ink,s:C.ink,w:1.2});
+    for(let i=0;i<4;i++) s+=this._stroke([[W*(0.34+i*0.11),H*0.72],[W*(0.34+i*0.11),H*0.82]],rand,{w:3.4,r:1.6,s:C.ink});
+    s+=this._stroke([[W*0.40,H*0.32],[W*0.56,H*0.32]],rand,{w:3,r:1.4,s:C.ink});
+    s+=this._stroke([[W*0.48,H*0.20],[W*0.48,H*0.30]],rand,{w:2.6,r:1.6,s:C.grey});
+    s+=this._t(W*0.48,H*0.14,'\u00a3',{size:H*0.09,s:C.gdk,anchor:'middle',hand:true});
+    return s;
+  }
+  safe(rand,W,H){
+    const C=this.C; let s=this._box(W*0.18,H*0.18,W*0.64,H*0.64,rand,{f:C.paper,s:C.ink,w:4});
+    s+=this._box(W*0.24,H*0.24,W*0.52,H*0.52,rand,{s:C.grey,w:2.2});
+    s+=this._circ(W*0.50,H*0.50,W*0.11,rand,{s:C.ink,w:3.4});
+    for(let i=0;i<8;i++){ const a=i/8*Math.PI*2;
+      s+=this._stroke([[W*0.50+W*0.11*Math.cos(a),H*0.50+W*0.11*Math.sin(a)],[W*0.50+W*0.135*Math.cos(a),H*0.50+W*0.135*Math.sin(a)]],rand,{w:2,r:0.8,s:C.grey}); }
+    s+=this._stroke([[W*0.50,H*0.50],[W*0.50+W*0.08*Math.cos(-1.1),H*0.50+W*0.08*Math.sin(-1.1)]],rand,{w:3.4,r:1.2,s:C.red});
+    return s;
+  }
+  factory(rand,W,H){
+    const C=this.C; let s=this._box(W*0.14,H*0.48,W*0.72,H*0.34,rand,{f:C.paper,s:C.ink,w:3.4});
+    for(let i=0;i<3;i++){
+      const x=W*(0.20+i*0.20);
+      s+=this._stroke([[x,H*0.48],[x+W*0.08,H*0.38],[x+W*0.16,H*0.48]],rand,{w:2.8,r:1.6,s:C.ink});
+    }
+    s+=this._box(W*0.70,H*0.24,W*0.10,H*0.24,rand,{f:C.paper,s:C.ink,w:3});
+    s+=this._stroke([[W*0.74,H*0.20],[W*0.70,H*0.10],[W*0.78,H*0.04]],rand,{w:3,r:3,s:C.grey,op:0.7});
+    for(let i=0;i<4;i++) s+=this._box(W*(0.20+i*0.16),H*0.58,W*0.09,H*0.10,rand,{f:'rgba(35,35,38,.06)',s:C.grey,w:2});
+    return s;
+  }
+  warehouse(rand,W,H){
+    const C=this.C; let s=this._box(W*0.12,H*0.40,W*0.76,H*0.44,rand,{f:C.paper,s:C.ink,w:3.4});
+    s+=this._stroke([[W*0.12,H*0.40],[W*0.50,H*0.22],[W*0.88,H*0.40]],rand,{w:3.4,r:2,s:C.ink});
+    s+=this._box(W*0.38,H*0.58,W*0.24,H*0.26,rand,{s:C.ink,w:2.8});
+    for(let i=0;i<3;i++) s+=this._stroke([[W*0.38,H*(0.64+i*0.07)],[W*0.62,H*(0.64+i*0.07)]],rand,{w:2,r:1,s:C.ghost});
+    s+=this._box(W*0.18,H*0.62,W*0.12,H*0.10,rand,{f:'rgba(255,82,71,.12)',s:C.red,w:2.2});
+    s+=this._box(W*0.70,H*0.62,W*0.12,H*0.10,rand,{f:'rgba(35,35,38,.06)',s:C.grey,w:2.2});
+    return s;
+  }
+  van(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.10,H*0.44],[W*0.56,H*0.44],[W*0.56,H*0.68],[W*0.10,H*0.68]],rand,{w:3.4,r:2,close:true,s:C.ink});
+    s+=this._stroke([[W*0.56,H*0.50],[W*0.72,H*0.50],[W*0.84,H*0.60],[W*0.84,H*0.68],[W*0.56,H*0.68]],rand,{w:3.4,r:2,close:true,s:C.ink});
+    s+=this._box(W*0.60,H*0.52,W*0.11,H*0.08,rand,{f:'rgba(125,148,184,.14)',s:C.grey,w:2});
+    s+=this._circ(W*0.26,H*0.72,W*0.07,rand,{f:'rgba(35,35,38,.10)',s:C.ink,w:3});
+    s+=this._circ(W*0.70,H*0.72,W*0.07,rand,{f:'rgba(35,35,38,.10)',s:C.ink,w:3});
+    s+=this._t(W*0.32,H*0.56,'GYMX',{size:H*0.05,s:C.red});
+    return s;
+  }
+  serverRack(rand,W,H){
+    const C=this.C; let s=this._box(W*0.28,H*0.12,W*0.44,H*0.76,rand,{f:C.paper,s:C.ink,w:3.6});
+    for(let i=0;i<7;i++){
+      const y=H*(0.17+i*0.10);
+      s+=this._box(W*0.32,y,W*0.36,H*0.075,rand,{s:C.grey,w:1.8});
+      s+=this._circ(W*0.64,y+H*0.037,W*0.012,rand,{f:i===3?C.red:C.gdk,s:'none',w:0});
+    }
+    return s;
+  }
+  shoppingBasket(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.22,H*0.44],[W*0.78,H*0.44],[W*0.70,H*0.76],[W*0.30,H*0.76]],rand,{w:3.6,r:2,close:true,s:C.ink});
+    for(let i=1;i<4;i++) s+=this._stroke([[W*(0.22+i*0.14),H*0.44],[W*(0.28+i*0.115),H*0.76]],rand,{w:2,r:1.2,s:C.ghost});
+    s+=this._stroke([[W*0.34,H*0.44],[W*0.38,H*0.28],[W*0.62,H*0.28],[W*0.66,H*0.44]],rand,{w:3,r:1.8,s:C.ink});
+    s+=this._circ(W*0.42,H*0.58,W*0.05,rand,{f:'rgba(47,213,118,.20)',s:C.gdk,w:2.4});
+    s+=this._box(W*0.54,H*0.52,W*0.14,H*0.14,rand,{f:'rgba(255,82,71,.14)',s:C.red,w:2.4});
+    return s;
+  }
+  gymRack(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.16,H*0.30],[W*0.16,H*0.80]],rand,{w:4,r:2,s:C.ink});
+    s+=this._stroke([[W*0.84,H*0.30],[W*0.84,H*0.80]],rand,{w:4,r:2,s:C.ink});
+    s+=this._stroke([[W*0.10,H*0.80],[W*0.90,H*0.80]],rand,{w:3.4,r:2,s:C.ink});
+    for(let i=0;i<3;i++){
+      const y=H*(0.38+i*0.15);
+      s+=this._stroke([[W*0.22,y],[W*0.78,y]],rand,{w:3,r:1.6,s:C.ink});
+      s+=this._circ(W*0.26,y,W*0.045,rand,{f:'rgba(35,35,38,.10)',s:C.ink,w:2.4});
+      s+=this._circ(W*0.74,y,W*0.045,rand,{f:'rgba(35,35,38,.10)',s:C.ink,w:2.4});
+    }
+    return s;
+  }
+  scales(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.50,H*0.20],[W*0.50,H*0.78]],rand,{w:4,r:2,s:C.ink});
+    s+=this._stroke([[W*0.36,H*0.80],[W*0.64,H*0.80]],rand,{w:3.4,r:1.8,s:C.ink});
+    s+=this._stroke([[W*0.18,H*0.32],[W*0.82,H*0.26]],rand,{w:3.4,r:2,s:C.ink});
+    s+=this._stroke([[W*0.18,H*0.32],[W*0.12,H*0.50],[W*0.30,H*0.50]],rand,{w:3,r:1.8,close:true,s:C.red});
+    s+=this._stroke([[W*0.82,H*0.26],[W*0.74,H*0.42],[W*0.92,H*0.42]],rand,{w:3,r:1.8,close:true,s:C.gdk});
+    s+=this._t(W*0.21,H*0.44,'PRICE',{size:H*0.045,s:C.red,anchor:'middle'});
+    s+=this._t(W*0.83,H*0.36,'VALUE',{size:H*0.045,s:C.gdk,anchor:'middle'});
+    return s;
+  }
+  hourglass(rand,W,H){
+    const C=this.C; let s=this._stroke([[W*0.30,H*0.18],[W*0.70,H*0.18],[W*0.54,H*0.50],[W*0.70,H*0.82],[W*0.30,H*0.82],[W*0.46,H*0.50]],rand,{w:3.6,r:2,close:true,s:C.ink});
+    s+=this._fill([[W*0.32,H*0.20],[W*0.68,H*0.20],[W*0.53,H*0.46],[W*0.47,H*0.46]],rand,'rgba(169,132,103,.26)',1.4);
+    s+=this._fill([[W*0.47,H*0.54],[W*0.53,H*0.54],[W*0.66,H*0.80],[W*0.34,H*0.80]],rand,'rgba(169,132,103,.34)',1.4);
+    s+=this._stroke([[W*0.50,H*0.50],[W*0.50,H*0.68]],rand,{w:1.8,r:1,s:C.warm});
+    s+=this._stroke([[W*0.26,H*0.16],[W*0.74,H*0.16]],rand,{w:3.4,r:1.6,s:C.ink});
+    s+=this._stroke([[W*0.26,H*0.84],[W*0.74,H*0.84]],rand,{w:3.4,r:1.6,s:C.ink});
+    return s;
+  }
+  drawInk(el){
+    if(el.getAttribute('data-drawn')) return;
+    const vb=(el.getAttribute('viewBox')||'0 0 300 300').split(' '); const W=+vb[2], H=+vb[3];
+    const rand=this.prng(((+el.dataset.seed||1)*1973)>>>0);
+    const map={ filing:'filingStack', laptop:'laptop', phone:'phone', newspaper:'newspaper', calculator:'calculator', whiteboard:'whiteboard', corkboard:'corkboard', magnifier:'magnifier', cabinet:'filingCabinet', clock:'clock', pot:'coffeePot', mugs:'mugStack', envelope:'envelope', calendar:'calendar', piggy:'piggyBank', safe:'safe', factory:'factory', warehouse:'warehouse', van:'van', servers:'serverRack', basket:'shoppingBasket', gymrack:'gymRack', scales:'scales', hourglass:'hourglass' };
+    const fn=map[el.dataset.ink];
+    el.innerHTML = fn? this[fn](rand,W,H) : '';
+    el.setAttribute('data-drawn','1');
+  }
+  drawAll(){ const root=this.rootRef.current; if(!root) return; root.querySelectorAll('[data-ink]').forEach(el=>this.drawInk(el)); }
+  componentDidMount(){ this.drawAll(); }
+  componentDidUpdate(prev){
+    if(prev.roughness!==this.props.roughness){ const root=this.rootRef.current; if(root) root.querySelectorAll('[data-ink]').forEach(el=>{ el.removeAttribute('data-drawn'); el.innerHTML=''; }); }
+    this.drawAll();
+  }
+  renderVals(){
+    const G=[
+      { n:'01', title:'The desk', note:'what\u2019s in arm\u2019s reach', items:[
+        {title:'Filing stack', file:'obj-filing.png', ink:'filing', seed:3},
+        {title:'Laptop', file:'obj-laptop.png', ink:'laptop', seed:4},
+        {title:'Phone', file:'obj-phone.png', ink:'phone', seed:5},
+        {title:'Calculator', file:'obj-calculator.png', ink:'calculator', seed:6},
+        {title:'Coffee pot', file:'obj-pot.png', ink:'pot', seed:7},
+        {title:'Four dead mugs', file:'obj-mugs.png', ink:'mugs', seed:8},
+        {title:'Newspaper', file:'obj-newspaper.png', ink:'newspaper', seed:9},
+        {title:'Envelope · 8-K', file:'obj-envelope.png', ink:'envelope', seed:10}
+      ]},
+      { n:'02', title:'The wall', note:'for the conspiracy shots', items:[
+        {title:'Whiteboard', file:'obj-whiteboard.png', ink:'whiteboard', seed:11},
+        {title:'Corkboard + string', file:'obj-corkboard.png', ink:'corkboard', seed:12},
+        {title:'Filing cabinet', file:'obj-cabinet.png', ink:'cabinet', seed:13},
+        {title:'Calendar', file:'obj-calendar.png', ink:'calendar', seed:14}
+      ]},
+      { n:'03', title:'Metaphor props', note:'use sparingly', items:[
+        {title:'Magnifier on a number', file:'obj-magnifier.png', ink:'magnifier', seed:15},
+        {title:'Scales · price vs. value', file:'obj-scales.png', ink:'scales', seed:16},
+        {title:'Hourglass', file:'obj-hourglass.png', ink:'hourglass', seed:17},
+        {title:'Clock', file:'obj-clock.png', ink:'clock', seed:18},
+        {title:'Piggy bank', file:'obj-piggy.png', ink:'piggy', seed:19},
+        {title:'Safe', file:'obj-safe.png', ink:'safe', seed:20}
+      ]},
+      { n:'04', title:'The business itself', note:'b-roll for \u201cwhat they actually do\u201d', items:[
+        {title:'Factory', file:'obj-factory.png', ink:'factory', seed:21},
+        {title:'Warehouse', file:'obj-warehouse.png', ink:'warehouse', seed:22},
+        {title:'Delivery van', file:'obj-van.png', ink:'van', seed:23},
+        {title:'Server rack', file:'obj-servers.png', ink:'servers', seed:24},
+        {title:'Shopping basket', file:'obj-basket.png', ink:'basket', seed:25},
+        {title:'Gym rack', file:'obj-gymrack.png', ink:'gymrack', seed:26}
+      ]}
+    ];
+    const exports=[];
+    G.forEach(g=>g.items.forEach(it=>{
+      exports.push({id:'objects/'+it.file.replace('.png',''), ink:it.ink, seed:it.seed});
+      exports.push({id:'objects/'+it.file.replace('.png','')+'_b', ink:it.ink, seed:it.seed+100});
+    }));
+    return { rootRef:this.rootRef, groups:G, exports };
+  }
+}
+</script>
+</body>
+</html>

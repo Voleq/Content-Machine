@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "url": "https://ir.example.com/rss",
+  "items": [
+    {
+      "title": "EXMPL Corp to Report Second Quarter Results on July 29",
+      "link": "https://ir.example.com/1",
+      "published": "Tue, 21 Jul 2026 12:00:00 GMT"
+    },
+    {
+      "title": "EXMPL Corp Announces $200 Million Share Repurchase Program",
+      "link": "https://ir.example.com/2",
+      "published": "Mon, 13 Jul 2026 12:00:00 GMT"
+    }
+  ]
+}
