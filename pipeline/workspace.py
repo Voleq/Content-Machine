@@ -68,17 +68,35 @@ class Workspace:
         f = self.path / f"script_{fmt}.raw.txt"
         return f.read_text() if f.exists() else None
 
-    def current_format(self) -> str | None:
-        """Which lane this workspace is actually working in.
+    # ------------------------------------------------------------ lane (1d)
+    # `/short` and `/long` declare the format up front instead of preparing
+    # both prompts and leaving it implicit, so /render follows from the lane
+    # rather than being a second, separate choice.
+    def _lane_file(self) -> Path:
+        return self.path / "lane.json"
 
-        LONG wins a tie: a workspace that has both is one where a SHORT was
-        cut from the LONG, and the LONG is the thing being edited.
+    def set_lane(self, lane: str) -> None:
+        self.path.mkdir(parents=True, exist_ok=True)
+        self._lane_file().write_text(json.dumps({"lane": lane}))
+
+    def lane(self) -> str:
+        try:
+            return str(json.loads(self._lane_file().read_text()).get("lane") or "")
+        except (FileNotFoundError, json.JSONDecodeError):
+            return ""
+
+    def current_format(self) -> str | None:
+        """Which format this workspace is working in.
+
+        A pasted script is the strongest signal, then the declared lane. LONG
+        wins a tie between two scripts: a workspace holding both is one where a
+        SHORT was cut from the LONG, and the LONG is the thing being edited.
         """
         if (self.path / "script_long.json").exists():
             return "long"
         if (self.path / "script_short.json").exists():
             return "short"
-        return None
+        return self.lane() or None
 
     # ------------------------------------------------------- revisions (P3.1c)
     # In-chat editing needs an undo. Every save stacks the previous raw here

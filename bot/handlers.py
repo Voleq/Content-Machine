@@ -67,13 +67,14 @@ log = logging.getLogger(__name__)
 
 HELP_TEXT = """Dennis — operator commands
 
-/new TICKER — open today's workspace (refreshes the numbers itself on the render box)
-/refresh TICKER [SYMBOL] — re-pull the numbers in Excel; pass a vendor symbol to pin it
+/short TICKER — start a SHORT (9:16, 60–75s); refreshes the numbers itself
+/long TICKER — start a LONG (16:9 deep dive, value lane)
+/refresh TICKER [RIC] — re-pull the numbers in Excel; a RIC pins the override
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
-/prompts — re-send the pre-filled master prompts
+/prompts — re-send this lane's pre-filled master prompt
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
-/render TICKER — render the approved SHORT
-/render_long TICKER — render the approved LONG
+/render TICKER — render the approved script for this ticker's lane
+/render_long TICKER — force the LONG (only needed if a ticker has both)
 /script — the stored script, numbered, ready to edit
 /edit N <text> — replace line N (N-M for a range; no text deletes it)
 /replace old => new — fix a figure or a phrase in place (all: for every hit)
@@ -85,8 +86,8 @@ HELP_TEXT = """Dennis — operator commands
 /cost — month-to-date spend vs cap
 /help — this text
 
-Flow: /new (the numbers refresh themselves; upload dennis_data.xlsx if Excel
-isn't available) → run the prompts in Claude/GPT →
+Flow: /short or /long TICKER (the numbers refresh themselves; upload
+dennis_data.xlsx if Excel isn't available) → run the prompt in Claude/GPT →
 (LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
 here → review the validation & cost report → tweak it in chat if you want
 (/script, /edit, /replace — every revision re-runs the gates and re-prices)
@@ -182,11 +183,73 @@ class BotCore:
         except CompanyDataError:
             return None
 
-    # ---------------------------------------------------------------- /new
-    def new_ticker(self, chat_id: int, ticker: str) -> Reply:
+    # -------------------------------------------------- /short · /long (1d)
+    # The format is declared up front rather than inferred from which of two
+    # prompts the operator happened to run. Each command prepares only its own
+    # lane's prompt, and /render follows from the lane.
+    def start_lane(self, chat_id: int, lane: str, ticker: str) -> Reply:
         ticker = ticker.strip().upper()
         if not ticker or not ticker.replace(".", "").replace("-", "").isalnum():
-            return Reply("Usage: /new TICKER")
+            return Reply(f"Usage: /{lane} TICKER")
+        ws = Workspace(self.settings, ticker, today_str()).create()
+        ws.set_lane(lane)
+        self.context.set(chat_id, ticker, ws.workdate)
+        if lane == "long":
+            ws.set_awaiting_angle()
+        else:
+            ws.clear_awaiting_angle()
+
+        label = "SHORT (9:16, 60–75s)" if lane == "short" else "LONG (16:9 deep dive)"
+        head = f"📁 {ticker} / {ws.workdate} — {label}"
+        warn = self._lane_warning(ticker, lane)
+
+        can_refresh, _why = excel_available(self.settings)
+        if can_refresh:
+            return Reply(
+                f"{head}{warn}\n\nRefreshing {ticker} in Excel now — a minute "
+                f"while the add-in resolves. The {lane} prompt follows when the "
+                f"numbers are in.")
+        template = self.settings.templates_dir / "dennis_data_template.xlsx"
+        return Reply(
+            f"{head}{warn}\n\nRefresh the attached template for {ticker} and "
+            f"upload it here as dennis_data.xlsx — I'll reply with the {lane} "
+            f"prompt.",
+            files=[template] if template.exists() else [],
+        )
+
+    def _lane_warning(self, ticker: str, lane: str) -> str:
+        """Flag an apparent wrong-lane pick. Advisory, never a refusal.
+
+        The editorial rule is that long-form is the beaten-down/value lane and
+        never the trending name of the day — but the screener is a suggestion
+        engine, and the operator has reasons it cannot see. So this says its
+        piece and gets out of the way.
+        """
+        from pipeline.screener import last_screen_lane
+
+        seen = last_screen_lane(self.settings, ticker)
+        if not seen:
+            return ""      # the screener has nothing to say about this ticker
+        if lane == "long" and seen == "trending":
+            return ("\n⚠️ the screener had this in the *trending* lane. Long-form "
+                    "is the beaten-down/value lane — a name that ran today is "
+                    "usually a SHORT. Carrying on if you meant it.")
+        if lane == "short" and seen == "value":
+            return ("\n⚠️ the screener had this in the *value* lane, which is "
+                    "usually long-form material. A SHORT still works if there's "
+                    "a move to hang it on.")
+        return ""
+
+    # ---------------------------------------------------------------- /new
+    def new_ticker(self, chat_id: int, ticker: str) -> Reply:
+        """Deprecated: kept for one release as an alias.
+
+        It cannot know the lane, so it does what it always did — prepares both
+        prompts — and points at the replacement.
+        """
+        ticker = ticker.strip().upper()
+        if not ticker or not ticker.replace(".", "").replace("-", "").isalnum():
+            return Reply("Usage: /short TICKER  or  /long TICKER")
         ws = Workspace(self.settings, ticker, today_str()).create()
         self.context.set(chat_id, ticker, ws.workdate)
         # On the Windows box with Excel + the add-in the bot refreshes the
@@ -233,7 +296,7 @@ class BotCore:
             ws = self._active_ws(chat_id)
             if ws is None:
                 return Reply("Usage: /refresh TICKER [VENDOR_SYMBOL] "
-                             "— or /new TICKER first.")
+                             "— or /short TICKER first.")
             ticker = ws.ticker
 
         ok, why = excel_available(self.settings)
@@ -294,7 +357,7 @@ class BotCore:
     def prompts_reply(self, chat_id: int) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — start with /new TICKER.")
+            return Reply("No active workspace — start with /short TICKER or /long TICKER.")
         try:
             data = load_company_data(ws.path)
         except CompanyDataError as e:
@@ -307,16 +370,23 @@ class BotCore:
         from pipeline.screener import last_screen_context
 
         move_context = last_screen_context(self.settings, ws.ticker)
+        # One lane, one prompt (1d). A workspace opened by the deprecated
+        # /new has no lane, so it still gets both — that is the alias's whole
+        # job for the release it survives.
+        lane = ws.lane()
+        wanted = {"short": ["short"], "long": ["long_angle"]}.get(
+            lane, ["short", "long_angle"])
         files = []
-        # SHORT is one paste; LONG is now two manual steps in Claude — Step 1
-        # (angle) here, Step 2 (write) after the operator replies with a pick.
-        for fmt in ("short", "long_angle"):
+        for fmt in wanted:
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
                                move_context=move_context)
             f = ws.path / f"prompt_{fmt}.md"
             f.write_text(text)
             files.append(f)
-        ws.set_awaiting_angle()
+        # LONG is two manual steps in Claude — Step 1 (angle) here, Step 2
+        # (write) after the operator replies with a pick.
+        if "long_angle" in wanted:
+            ws.set_awaiting_angle()
         warn = ""
         if not data.has_history:
             warn += ("\n⚠️ no History sheet — the multi-year gut check will "
@@ -330,14 +400,17 @@ class BotCore:
             warn += (f"\n🕒 numbers refreshed "
                      + ("just now" if age < 0.02 else
                         f"{age * 24:.0f}h ago" if age < 1 else f"{age:.1f} days ago"))
-        return Reply(
-            f"📋 Prompts for {ws.ticker} (as of {data.get('as_of_date')}).\n"
-            f"• SHORT: run prompt_short.md, paste the output back.\n"
-            f"• LONG: run prompt_long_angle.md (Step 1) — it returns ranked "
-            f"angles. Reply here with a number (or a tweak) and I'll hand you "
-            f"Step 2, the writing prompt.{warn}",
-            files=files,
-        )
+        lines = [f"📋 {ws.ticker} (as of {data.get('as_of_date')})"]
+        if "short" in wanted:
+            lines.append("• SHORT: run prompt_short.md, paste the output back.")
+        if "long_angle" in wanted:
+            lines.append("• LONG: run prompt_long_angle.md (Step 1) — it returns "
+                         "ranked angles. Reply here with a number (or a tweak) "
+                         "and I'll hand you Step 2, the writing prompt.")
+        if not lane:
+            lines.append("(/new is deprecated — /short TICKER or /long TICKER "
+                         "prepares just the one prompt.)")
+        return Reply("\n".join(lines) + warn, files=files)
 
     # ---------------------------------------------------------- /headline
     def headline_command(self, chat_id: int, args: list[str]) -> Reply:
@@ -425,7 +498,7 @@ class BotCore:
     def handle_upload(self, chat_id: int, filename: str, data: bytes) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — start with /new TICKER, then re-upload.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first, then re-upload.")
         name = Path(filename).name
         suffix = Path(name).suffix.lower()
 
@@ -510,7 +583,7 @@ class BotCore:
     def intake_script(self, chat_id: int, text: str) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — /new TICKER first.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
         # LONG two-step: a plain-text reply while awaiting the angle pick is
         # the operator's angle choice, not a script — hand back Step 2.
         if ws.awaiting_angle() and text.strip() and not self._looks_like_script(text):
@@ -538,7 +611,7 @@ class BotCore:
         """The stored script, numbered, so `/edit N` and `/script` agree."""
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — /new TICKER first.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
         fmt = ws.current_format()
         raw = ws.raw_script(fmt) if fmt else None
         if not raw:
@@ -570,7 +643,7 @@ class BotCore:
         """
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — /new TICKER first.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
         fmt = ws.current_format()
         raw = ws.raw_script(fmt) if fmt else None
         if not raw:
@@ -596,7 +669,7 @@ class BotCore:
         """Step back one revision. The stack survives a restart."""
         ws = self._active_ws(chat_id)
         if ws is None:
-            return Reply("No active workspace — /new TICKER first.")
+            return Reply("No active workspace — /short TICKER or /long TICKER first.")
         fmt = ws.current_format()
         if fmt is None:
             return Reply("No script on file.")
@@ -883,10 +956,24 @@ class BotCore:
         return reply
 
     # ------------------------------------------------------------- renders
-    def render_request(self, ticker: str, fmt: str, draft: bool = False) -> tuple[JobKind | None, str, Workspace | None]:
+    def render_request(self, ticker: str, fmt: str | None = None,
+                       draft: bool = False) -> tuple[JobKind | None, str, Workspace | None]:
+        """Queue a render. `fmt=None` takes the format from the workspace's lane.
+
+        Since /short and /long declare the format up front (1d), plain /render
+        follows from it rather than making the operator pick twice.
+        """
         ws = self._ws_or_error(ticker)
         if ws is None:
-            return None, f"No workspace for {ticker} — /new {ticker} first.", None
+            return None, (f"No workspace for {ticker} — /short {ticker} or "
+                          f"/long {ticker} first."), None
+        if fmt is None:
+            fmt = ws.current_format()
+            if fmt is None:
+                return None, (
+                    f"No script for {ticker} yet, so I can't tell which format "
+                    f"you mean. /short {ticker} or /long {ticker} sets the lane."
+                ), None
         script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None, f"No {fmt.upper()} script for {ticker} — paste it first.", None
@@ -1180,12 +1267,26 @@ def build_application(settings: Settings, core: BotCore):
             core.refresh_data, update.effective_chat.id, args)
         await _send(update, reply)
 
+    async def _start_lane(update, lane: str, args: list[str]) -> None:
+        ticker = args[0] if args else ""
+        await _send(update, core.start_lane(update.effective_chat.id, lane, ticker))
+        # The refresh follows immediately — the manual data step is what P3.1b
+        # removes, and the lane's prompt comes back with the numbers.
+        if ticker and excel_available(core.settings)[0]:
+            await _run_refresh(update, [ticker])
+
+    @guard
+    async def cmd_short(update, ctx):
+        await _start_lane(update, "short", list(ctx.args or []))
+
+    @guard
+    async def cmd_long(update, ctx):
+        await _start_lane(update, "long", list(ctx.args or []))
+
     @guard
     async def cmd_new(update, ctx):
         ticker = ctx.args[0] if ctx.args else ""
         await _send(update, core.new_ticker(update.effective_chat.id, ticker))
-        # When Excel is drivable, /new goes straight on to the refresh — the
-        # manual data step is what P3.1b removes.
         if ticker and excel_available(core.settings)[0]:
             await _run_refresh(update, [ticker])
 
@@ -1208,7 +1309,8 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.prompts_reply(update.effective_chat.id))
 
     @guard
-    async def cmd_render(update, ctx, fmt: str = "short", draft: bool = False):
+    async def cmd_render(update, ctx, fmt: str | None = None, draft: bool = False):
+        """Plain /render follows the workspace's lane (1d)."""
         if not ctx.args:
             await _send(update, Reply("Usage: /render TICKER"))
             return
@@ -1373,7 +1475,9 @@ def build_application(settings: Settings, core: BotCore):
     app = builder.build()
 
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
-    app.add_handler(CommandHandler("new", cmd_new))
+    app.add_handler(CommandHandler("short", cmd_short))
+    app.add_handler(CommandHandler("long", cmd_long))
+    app.add_handler(CommandHandler("new", cmd_new))     # deprecated alias
     app.add_handler(CommandHandler("refresh", cmd_refresh))
     app.add_handler(CommandHandler("headline", cmd_headline))
     app.add_handler(CommandHandler("prompts", cmd_prompts))

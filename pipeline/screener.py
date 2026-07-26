@@ -375,6 +375,25 @@ def last_screen_context(settings: Settings, ticker: str) -> str:
     return " · ".join(bits)
 
 
+def last_screen_lane(settings: Settings, ticker: str) -> str:
+    """Which lane the last screen put this ticker in — `""` if it didn't.
+
+    Used by `/short` and `/long` to warn when a ticker looks like the wrong
+    lane. Deliberately advisory: the screener is a suggestion engine and the
+    operator's judgement outranks it, so a mismatch is a sentence in the reply,
+    never a refusal.
+    """
+    path = settings.state_dir / "last_screen.json"
+    try:
+        data = json.loads(path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return ""
+    if time.time() - float(data.get("ts", 0)) > 86400:
+        return ""
+    entry = (data.get("tickers") or {}).get(ticker.upper())
+    return str(entry.get("lane") or "") if entry else ""
+
+
 def digest_text(result: dict) -> str:
     lines: list[str] = []
     if "trending" in result:
