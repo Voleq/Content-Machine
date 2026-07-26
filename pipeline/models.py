@@ -64,6 +64,11 @@ class TagType(str, Enum):
     TABLE = "TABLE"              # a strict readable table (P&L, comps, …)
     PROP = "PROP"                # a generic object cutaway (warehouse, servers…)
     ALERT = "ALERT"              # mid-frame lower-third interjection (overlay)
+    # delivery direction — stripped from captions, passed to TTS
+    BEAT = "BEAT"                # a deliberate pause
+    SIGH = "SIGH"
+    FLAT = "FLAT"                # hold the register flatter than baseline
+    DRY = "DRY"
 
 
 # tag types that claim a visual SEGMENT on the LONG timeline (the base
@@ -78,6 +83,12 @@ VISUAL_TAG_TYPES = frozenset({
 # overlay tag types — composited over the current frame, not a segment.
 # These are the only tags allowed inline in a SHORT audio_script.
 OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
+
+# Delivery direction. These never reach the screen — they are stripped from
+# the captions and re-inserted into the TTS request, because deadpan comedy
+# is timing and the pipeline was sending flat text with none of it.
+DELIVERY_TAG_TYPES = frozenset({TagType.BEAT, TagType.SIGH, TagType.FLAT,
+                                TagType.DRY})
 
 # Kit families the design-kit tags resolve against, and how long each needs
 # on screen. A term card and a table are read, not glanced at.
@@ -667,6 +678,9 @@ class CostReport(BaseModel):
     chars: int
     tts_cached: bool
     est_tts_usd: float
+    # Delivery direction changes the request text and the voice settings, so
+    # it changes the cache key: it has to be authored before the paid run.
+    delivery_directives: int = 0
     # SHORT specifics
     headline_count: int = 0
     numbers_rows: int = 0
@@ -712,6 +726,10 @@ class CostReport(BaseModel):
 
         tts = f"Audio: {self.words} words / {self.chars} chars / ~{self.est_runtime_min:.0f} min video"
         tts += "  (cached — $0.00 TTS)" if self.tts_cached else f"  (~${self.est_tts_usd:.2f} TTS)"
+        if self.delivery_directives:
+            tts += (f"\n  {self.delivery_directives} delivery directive(s) "
+                    f"([BEAT]/[SIGH]/[FLAT]/[DRY]) are baked into this "
+                    f"generation — adding one later re-bills the whole script.")
         lines.append(tts)
 
         if self.fmt == "short":

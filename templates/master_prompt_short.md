@@ -63,6 +63,8 @@ Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws
 The channel's visual language is crude marker doodles composited on top of the frame. Use them to punctuate the UNDERCUT, not the teach — the doodle is the visual version of the flat aside. Place them inline in `audio_script`, immediately before the word they should hit; the parser strips them out (they are never spoken) and fires them on that word:
 - `[DOODLE: key]` — drop a crude doodle over the current frame (key or tag from the doodle list above). e.g. "...from twenty-five k to zero. [DOODLE: scribble-explosion]"
 - `[SCRIBBLE: circle -> target]` / `[SCRIBBLE: arrow -> target]` / `[SCRIBBLE: underline -> target]` — a drawn mark plus the target text as a callout, pointing at what you're talking about.
+You may also place DELIVERY DIRECTION inline — `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. These never reach the screen; they reach the voice. A [BEAT] before the payoff is what turns a sentence into a joke. Use them sparingly, and write them NOW — they change what gets generated, so adding one later means paying twice.
+
 Keep it to ~1–3 inline marks per short. They ride on top of the fixed beats; they don't replace the JSON `annotations` (which anchor precisely to the chart's move and the numbers rows).
 
 ## HARD RULES

@@ -145,7 +145,8 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
 
-    cached = tts_engine.is_cached(script.audio_script, "short")
+    cached = tts_engine.is_cached(script.audio_script, "short",
+                                  events=script.inline_events)
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
     missing = set(script.missing_anchor_words())
     notes = []
@@ -174,6 +175,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         meme_count=1 if script.meme else 0,
         meme_cap=settings.meme_max_per_long,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
+        delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
@@ -183,13 +185,20 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
     )
 
 
+def _count_directives(script) -> int:
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    events = getattr(script, "events", None) or getattr(script, "inline_events", [])
+    return sum(1 for e in events if e.type in DELIVERY_TAG_TYPES)
+
+
 def build_long_report(
     script, parse_warnings, validation_warnings, validation_blocking,
     settings, ledger, tts_engine, visual_plan, filing_count,
 ) -> "CostReport":
     from pipeline.models import CostReport, VisualPlanItem
 
-    cached = tts_engine.is_cached(script.narration, "long")
+    cached = tts_engine.is_cached(script.narration, "long", events=script.events)
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
     blocking = list(validation_blocking)
     if not cached and ledger.would_exceed(est):
@@ -213,6 +222,7 @@ def build_long_report(
         meme_count=script.meme_count(),
         meme_cap=settings.meme_max_per_long,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_long),
+        delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,

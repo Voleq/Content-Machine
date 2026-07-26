@@ -129,6 +129,13 @@ Then write the script using that hook as its first line.
 [PROP: key]             a generic object cutaway when no real photo fits (warehouse · servers · van · laptop · safe · scales · calendar · …)
 [ALERT: kind]           a lower-third interjection over whatever is on screen (correction · fact-check · definition · disclosure · developing · flag). Holds 3–4s, never longer
 
+DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
+[BEAT]                  a deliberate pause. The single most useful tool you have: deadpan lands on timing, and a beat before the flat turn is what makes it a joke rather than a sentence.
+[SIGH]                  an audible exhale before a line he resents having to say
+[FLAT]                  hold the whole read flatter than baseline
+[DRY]                   same, drier
+Use them SPARINGLY — a [BEAT] on every line is a stutter, not a rhythm. Note they change what gets generated, so they must be written NOW: adding one after the audio exists means paying for the generation twice.
+
 ## DIRECTION RULES — DENNIS IS ON SCREEN; EVIDENCE IS THE CUTAWAY
 This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host** — the renderer puts him on screen and lip-syncs him to your words. You are not filling dead air; you are choosing the few moments worth leaving his face for.
 

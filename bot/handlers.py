@@ -677,7 +677,8 @@ class BotCore:
             # sits behind the same approval gate in live mode; in MOCK_MODE
             # (or once audio is cached) it is free
             if (not self.settings.mock_mode
-                    and not self.tts.is_cached(script.narration, "long")
+                    and not self.tts.is_cached(script.narration, "long",
+                                               events=script.events)
                     and not ws.is_approved("long")):
                 return None, (
                     f"⛔ draft for {ticker} would trigger the paid TTS call — "
@@ -727,7 +728,8 @@ class BotCore:
             if script is None or not ws.is_approved("short"):
                 raise RuntimeError("script/approval vanished before render")
             checkpoint("tts")
-            tts = self.tts.synthesize(script.audio_script, "short")
+            tts = self.tts.synthesize(script.audio_script, "short",
+                                      events=script.inline_events)
             checkpoint("render")
             out, manifest = render_short(script, tts, ws.path, self.settings,
                                          content=self.content)
@@ -744,7 +746,7 @@ class BotCore:
             if not draft and not ws.is_approved("long"):
                 raise RuntimeError("approval vanished before render")
             checkpoint("tts")
-            tts = self.tts.synthesize(script.narration, "long")
+            tts = self.tts.synthesize(script.narration, "long", events=script.events)
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
             # The storyboard costs seconds and lands before the encode, so a
@@ -786,8 +788,10 @@ class BotCore:
                 raise RuntimeError("no finished LONG render to repurpose")
             script = ws.load_long()
             words = None
-            if script and self.tts.is_cached(script.narration, "long"):
-                words = self.tts.synthesize(script.narration, "long").words  # cache hit
+            if script and self.tts.is_cached(script.narration, "long",
+                                             events=script.events):
+                words = self.tts.synthesize(script.narration, "long",
+                                            events=script.events).words  # cache hit
             checkpoint("repurpose")
             out, info = repurpose_short_from_long(
                 long_mp4, manifest, self.settings, words=words

@@ -222,6 +222,7 @@ class AudioTrack:
     start_s: float = 0.0
     gain_db: float = 0.0
     loop: bool = False       # e.g. the music bed
+    voice: bool = False      # the VO — gets light compression before the mix
 
 
 @dataclass
@@ -237,6 +238,12 @@ class CompositeSpec:
     fonts_dir: Path | None = None
     duration: float = 0.0
     fps: int = 30
+    # Master bus. -14 LUFS is the streaming reference (YouTube normalises to
+    # roughly this); -1.5 dBTP leaves headroom for lossy encoding artefacts.
+    loudness_lufs: float = -14.0
+    true_peak_db: float = -1.5
+    loudness_range: float = 11.0
+    limiter_ceiling: float = 0.95
 
     def input_count(self) -> int:
         return sum(1 for a in self.base_input_args if a == "-i")
@@ -295,6 +302,12 @@ def composite_video(
         else:
             inputs += ["-i", str(track.path)]
         chain = f"atrim=0:{max(spec.duration - track.start_s, 0.1):.3f}"
+        if track.voice:
+            # Light compression on the voice only, before the mix: a deadpan
+            # read has a wide dynamic range, and the quiet asides are exactly
+            # the lines that carry the joke.
+            chain += (",acompressor=threshold=-18dB:ratio=3:attack=8"
+                      ":release=180:makeup=2")
         if track.start_s > 0:
             chain += f",adelay={int(track.start_s * 1000)}:all=1"
         chain += f",volume={track.gain_db:.1f}dB"
@@ -302,12 +315,21 @@ def composite_video(
         a_labels.append(f"[a{j}]")
         idx += 1
     if len(a_labels) == 1:
-        lines.append(f"{a_labels[0]}anull[aout]")
+        lines.append(f"{a_labels[0]}anull[amixed]")
     else:
         lines.append(
             f"{''.join(a_labels)}amix=inputs={len(a_labels)}"
-            f":duration=longest:normalize=0[aout]"
+            f":duration=longest:normalize=0[amixed]"
         )
+    # Master: normalise the programme to the streaming target and cap true
+    # peak, so uploads are not quietly turned down (or up) after the fact.
+    # Single-pass loudnorm — a two-pass measurement would double the audio
+    # work for a correction well under the threshold of audibility here.
+    lines.append(
+        f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
+        f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
+        f"[aout]"
+    )
 
     script = out_path.with_suffix(".filter.txt")
     script.write_text(";\n".join(lines) + "\n")

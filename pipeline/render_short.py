@@ -462,7 +462,7 @@ def render_short(
     ))
 
     # ------------------------------------------------------------- audio
-    audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0)]
+    audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0, voice=True)]
     music = settings.assets_dir / "music" / "dennis_bed.m4a"
     if music.exists():
         audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))

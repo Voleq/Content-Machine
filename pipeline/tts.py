@@ -127,6 +127,83 @@ def words_from_alignment(text: str, alignment: dict) -> list[WordTimestamp]:
     return words
 
 
+# --------------------------------------------------------------------------
+# Delivery direction (§expressivity).
+# --------------------------------------------------------------------------
+
+# Deadpan comedy is timing, and the pipeline used to send plain stripped text
+# with none of it. These directives are stripped from the captions and
+# re-inserted into the TTS request only.
+#
+# `<break>` is honoured by the v2/turbo models this pipeline uses. Bracketed
+# audio tags like `[sighs]` are an eleven_v3 feature; on any other model they
+# would be READ ALOUD, which is why SIGH degrades to a pause rather than
+# gambling on support. That is the "degrade silently" rule: never emit a
+# control the configured model cannot honour.
+V3_MODELS = ("eleven_v3",)
+
+DELIVERY_BREAKS = {
+    "BEAT": 0.6,
+    "SIGH": 0.4,   # without audio-tag support, a held pause is the honest read
+}
+
+
+def expand_delivery(clean_text: str, events, model_id: str) -> tuple[str, dict]:
+    """Re-insert delivery direction into the text bound for TTS.
+
+    Returns (tts_text, voice_setting_overrides). The captions keep the clean
+    text, so nothing here can reach the screen.
+    """
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    directives = [e for e in (events or []) if e.type in DELIVERY_TAG_TYPES]
+    if not directives:
+        return clean_text, {}
+
+    supports_tags = any(m in (model_id or "") for m in V3_MODELS)
+    pieces: list[str] = []
+    cursor = 0
+    overrides: dict = {}
+    for e in sorted(directives, key=lambda e: e.char_offset):
+        name = e.type.value
+        offset = min(max(e.char_offset, 0), len(clean_text))
+        pieces.append(clean_text[cursor:offset])
+        cursor = offset
+        if name in ("FLAT", "DRY"):
+            # A register instruction, not an inline event: hold the whole
+            # generation flatter. Stability up, style down.
+            overrides["stability"] = 0.85
+            overrides["style"] = 0.0
+            continue
+        if name == "SIGH" and supports_tags:
+            pieces.append("[sighs] ")
+            continue
+        pieces.append(f'<break time="{DELIVERY_BREAKS[name]}s" /> ')
+    pieces.append(clean_text[cursor:])
+    return "".join(pieces), overrides
+
+
+def remap_to_clean(words: list[WordTimestamp], clean_text: str) -> list[WordTimestamp]:
+    """Re-index word char offsets onto the CLEAN text.
+
+    Alignment offsets mirror the request, which now carries break tags the
+    clean text does not have. The timeline resolves every visual cue through
+    these offsets, so leaving them pointing at the request text would drift
+    every tag in the video. Words that do not appear in the clean text are
+    directive fragments and are dropped.
+    """
+    out: list[WordTimestamp] = []
+    cursor = 0
+    for w in words:
+        idx = clean_text.find(w.word, cursor)
+        if idx < 0:
+            continue
+        out.append(w.model_copy(update={"char_start": idx,
+                                        "char_end": idx + len(w.word)}))
+        cursor = idx + len(w.word)
+    return out
+
+
 def mock_words(text: str, duration: float, lead_in: float = 0.15) -> list[WordTimestamp]:
     """Deterministic linear word timing weighted by word length."""
     spans: list[tuple[int, int]] = []
@@ -180,18 +257,25 @@ class TTSEngine:
         self._client = client  # injectable for tests (httpx.MockTransport)
 
     # ------------------------------------------------------------------ API
-    def is_cached(self, text: str, fmt: str) -> bool:
+    def is_cached(self, text: str, fmt: str, *, events=None) -> bool:
         """Would synthesize() be free? (drives the §9.3 cost report)"""
         voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
-        key = cache_key(
-            voice_id, self.settings.active_eleven_model,
-            self.settings.voice_settings(fmt), text,
-        )
+        model_id = self.settings.active_eleven_model
+        vsettings = dict(self.settings.voice_settings(fmt))
+        text, overrides = expand_delivery(text, events, model_id)
+        vsettings.update(overrides)
+        key = cache_key(voice_id, model_id, vsettings, text)
         cdir = self.settings.cache_dir / "tts" / key
         return (cdir / "audio.m4a").exists() and (cdir / "words.json").exists()
 
-    def synthesize(self, text: str, fmt: str) -> TTSResult:
-        """text must be the CLEAN script (tags stripped). fmt: short|long."""
+    def synthesize(self, text: str, fmt: str, *, events=None) -> TTSResult:
+        """text must be the CLEAN script (tags stripped). fmt: short|long.
+
+        `events` carries the script's delivery direction ([BEAT], [SIGH],
+        [FLAT], [DRY]). Those change the request text and the voice settings,
+        and therefore the cache key — which is exactly why they have to be
+        authored BEFORE the paid generation rather than added afterwards.
+        """
         if fmt not in ("short", "long"):
             raise ValueError(f"fmt must be short|long, got {fmt!r}")
         budget = self.settings.max_chars(fmt)
@@ -203,7 +287,10 @@ class TTSEngine:
 
         voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
         model_id = self.settings.active_eleven_model
-        vsettings = self.settings.voice_settings(fmt)
+        vsettings = dict(self.settings.voice_settings(fmt))
+        clean_text = text
+        text, overrides = expand_delivery(clean_text, events, model_id)
+        vsettings.update(overrides)
         key = cache_key(voice_id, model_id, vsettings, text)
         cdir = self.settings.cache_dir / "tts" / key
         audio_path = cdir / "audio.m4a"
@@ -260,6 +347,12 @@ class TTSEngine:
         for f in chunk_files:
             if f != audio_path:
                 f.unlink(missing_ok=True)
+
+        # Alignment offsets mirror the REQUEST, which carries break tags the
+        # clean script does not. The timeline resolves every visual cue
+        # through these offsets, so put them back on the clean text.
+        if clean_text != text:
+            words = remap_to_clean(words, clean_text)
 
         duration = ffprobe_duration(audio_path)
         words_path.write_text(json.dumps([w.model_dump() for w in words]))
