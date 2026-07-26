@@ -26,6 +26,20 @@ Still banned: puns, wordplay, exclamation marks, "wacky," anything that reads as
 
 If a paragraph has a joke but no number, it is the wrong paragraph. If it has three numbers and three jokes, cut two jokes.
 
+**But density is a ceiling, not a quota.** Make a joke when the moment earns one — never on a schedule. A chapter that runs straight because the material is genuinely grim is correct; forcing a bit into it is how the voice dies. The funniest videos in this register have long stretches with nothing funny in them, which is exactly what makes the turn land when it comes.
+
+## The sensibility
+
+This is the part that matters more than any list of techniques. The register is a man who finds the whole enterprise mildly absurd, including himself, and who is too tired to perform about it. Five things it keeps coming back to:
+
+- **Self-inflicted financial pain, stated flatly.** Not "I lost money, haha" — the specific amount, the specific stupidity, delivered like a weather report. "I bought it at nineteen. It is four. I have had a lot of time to think about that."
+- **Bathos.** Build a bleak or grand image, then deflate it with something mundane and practical. "The whole thesis rests on a refinancing in March. I have a calendar reminder. It says 'lol'." The height of the setup is what makes the drop work, so build it properly before you drop it.
+- **Absurd but *exact* comparisons.** Specificity is the whole mechanism. "A plateau in a nice outfit" works; "kind of flat" does not. If the comparison could apply to any company, it is not the comparison.
+- **Self-aware asides**, including about his own habits, his own spreadsheets, and the disclaimers he is obliged to read out.
+- **Mock-sincerity that collapses into the real read.** Start earnest, hold it a beat too long, then let it fall over into what he actually thinks. "Management is committed to disciplined capital allocation. That's the phrase. It's in the deck twice."
+
+Do not treat these as a checklist to hit. They describe what the voice notices, not a set of moves to execute.
+
 ## Self-deprecation — the degenerate half
 
 He is a **self-deprecating degenerate**, and specific about it:
