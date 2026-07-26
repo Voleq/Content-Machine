@@ -4636,10 +4636,10 @@
    "h": 912,
    "alpha": false
   },
-  "restyle/con/alert": {
-   "name": "restyle/con/alert",
+  "restyle/concepts/alert": {
+   "name": "restyle/concepts/alert",
    "id": "con/alert",
-   "path": "assets/kit/restyle/con/alert.png",
+   "path": "assets/kit/restyle/concepts/alert.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4647,10 +4647,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/call-payoff": {
-   "name": "restyle/con/call-payoff",
+  "restyle/concepts/call-payoff": {
+   "name": "restyle/concepts/call-payoff",
    "id": "con/call-payoff",
-   "path": "assets/kit/restyle/con/call-payoff.png",
+   "path": "assets/kit/restyle/concepts/call-payoff.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4658,10 +4658,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/candlestick-101": {
-   "name": "restyle/con/candlestick-101",
+  "restyle/concepts/candlestick-101": {
+   "name": "restyle/concepts/candlestick-101",
    "id": "con/candlestick-101",
-   "path": "assets/kit/restyle/con/candlestick-101.png",
+   "path": "assets/kit/restyle/concepts/candlestick-101.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4669,10 +4669,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/flames": {
-   "name": "restyle/con/flames",
+  "restyle/concepts/flames": {
+   "name": "restyle/concepts/flames",
    "id": "con/flames",
-   "path": "assets/kit/restyle/con/flames.png",
+   "path": "assets/kit/restyle/concepts/flames.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4680,10 +4680,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/flying-cash": {
-   "name": "restyle/con/flying-cash",
+  "restyle/concepts/flying-cash": {
+   "name": "restyle/concepts/flying-cash",
    "id": "con/flying-cash",
-   "path": "assets/kit/restyle/con/flying-cash.png",
+   "path": "assets/kit/restyle/concepts/flying-cash.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4691,10 +4691,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/halo": {
-   "name": "restyle/con/halo",
+  "restyle/concepts/halo": {
+   "name": "restyle/concepts/halo",
    "id": "con/halo",
-   "path": "assets/kit/restyle/con/halo.png",
+   "path": "assets/kit/restyle/concepts/halo.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4702,10 +4702,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/hype-vs-reality": {
-   "name": "restyle/con/hype-vs-reality",
+  "restyle/concepts/hype-vs-reality": {
+   "name": "restyle/concepts/hype-vs-reality",
    "id": "con/hype-vs-reality",
-   "path": "assets/kit/restyle/con/hype-vs-reality.png",
+   "path": "assets/kit/restyle/concepts/hype-vs-reality.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4713,10 +4713,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/idea": {
-   "name": "restyle/con/idea",
+  "restyle/concepts/idea": {
+   "name": "restyle/concepts/idea",
    "id": "con/idea",
-   "path": "assets/kit/restyle/con/idea.png",
+   "path": "assets/kit/restyle/concepts/idea.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4724,10 +4724,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/impact-pow": {
-   "name": "restyle/con/impact-pow",
+  "restyle/concepts/impact-pow": {
+   "name": "restyle/concepts/impact-pow",
    "id": "con/impact-pow",
-   "path": "assets/kit/restyle/con/impact-pow.png",
+   "path": "assets/kit/restyle/concepts/impact-pow.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4735,10 +4735,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/money-printer": {
-   "name": "restyle/con/money-printer",
+  "restyle/concepts/money-printer": {
+   "name": "restyle/concepts/money-printer",
    "id": "con/money-printer",
-   "path": "assets/kit/restyle/con/money-printer.png",
+   "path": "assets/kit/restyle/concepts/money-printer.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4746,10 +4746,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/motion-lines": {
-   "name": "restyle/con/motion-lines",
+  "restyle/concepts/motion-lines": {
+   "name": "restyle/concepts/motion-lines",
    "id": "con/motion-lines",
-   "path": "assets/kit/restyle/con/motion-lines.png",
+   "path": "assets/kit/restyle/concepts/motion-lines.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4757,10 +4757,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/mug": {
-   "name": "restyle/con/mug",
+  "restyle/concepts/mug": {
+   "name": "restyle/concepts/mug",
    "id": "con/mug",
-   "path": "assets/kit/restyle/con/mug.png",
+   "path": "assets/kit/restyle/concepts/mug.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4768,10 +4768,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/question": {
-   "name": "restyle/con/question",
+  "restyle/concepts/question": {
+   "name": "restyle/concepts/question",
    "id": "con/question",
-   "path": "assets/kit/restyle/con/question.png",
+   "path": "assets/kit/restyle/concepts/question.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4779,10 +4779,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/risk-reward": {
-   "name": "restyle/con/risk-reward",
+  "restyle/concepts/risk-reward": {
+   "name": "restyle/concepts/risk-reward",
    "id": "con/risk-reward",
-   "path": "assets/kit/restyle/con/risk-reward.png",
+   "path": "assets/kit/restyle/concepts/risk-reward.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4790,10 +4790,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/sparkle": {
-   "name": "restyle/con/sparkle",
+  "restyle/concepts/sparkle": {
+   "name": "restyle/concepts/sparkle",
    "id": "con/sparkle",
-   "path": "assets/kit/restyle/con/sparkle.png",
+   "path": "assets/kit/restyle/concepts/sparkle.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4801,10 +4801,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/supply-demand": {
-   "name": "restyle/con/supply-demand",
+  "restyle/concepts/supply-demand": {
+   "name": "restyle/concepts/supply-demand",
    "id": "con/supply-demand",
-   "path": "assets/kit/restyle/con/supply-demand.png",
+   "path": "assets/kit/restyle/concepts/supply-demand.png",
    "doc": "Dennis Kit - Restyle Concepts.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4812,10 +4812,10 @@
    "h": 1416,
    "alpha": false
   },
-  "restyle/con/sweat-drop": {
-   "name": "restyle/con/sweat-drop",
+  "restyle/concepts/sweat-drop": {
+   "name": "restyle/concepts/sweat-drop",
    "id": "con/sweat-drop",
-   "path": "assets/kit/restyle/con/sweat-drop.png",
+   "path": "assets/kit/restyle/concepts/sweat-drop.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",
@@ -4823,10 +4823,10 @@
    "h": 884,
    "alpha": false
   },
-  "restyle/con/zzz-boring": {
-   "name": "restyle/con/zzz-boring",
+  "restyle/concepts/zzz-boring": {
+   "name": "restyle/concepts/zzz-boring",
    "id": "con/zzz-boring",
-   "path": "assets/kit/restyle/con/zzz-boring.png",
+   "path": "assets/kit/restyle/concepts/zzz-boring.png",
    "doc": "Dennis Kit - Restyle Marks.dc.html",
    "scale": 3.0,
    "sizing": "\u00d73",

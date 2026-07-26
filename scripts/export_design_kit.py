@@ -20,11 +20,14 @@ they should be.  This script:
    webfonts to ``assets/fonts`` — so the export is deterministic and offline,
 4. clones each ``[data-export]`` element into a clean overlay, scales it to the
    size its marker asks for, and screenshots it with a transparent backdrop,
-5. writes ``assets/kit/manifest.json`` (id → path → size → alpha) so a missing
+5. lands each frame under a name that is legal on every platform the pipeline
+   runs on (see :func:`safe_name` — the render box is Windows),
+6. writes ``assets/kit/manifest.json`` (id → path → size → alpha) so a missing
    asset is obvious.
 
 It is a *build* script, not a runtime dependency: nothing under ``pipeline/``
-imports it and the test suite never runs it.
+imports it and the test suite never renders the kit — only the pure naming
+helpers are unit-tested.
 
 Usage
 -----
@@ -39,6 +42,7 @@ import argparse
 import functools
 import http.server
 import json
+import re
 import shutil
 import socketserver
 import sys
@@ -213,6 +217,46 @@ def merge_path(target: str, export_id: str) -> str:
     if len(idp) > 1 and idp[0] in tgt:
         return "/".join(tgt[: tgt.index(idp[0])] + idp)
     return "/".join(tgt + idp)
+
+
+# The render box is Windows, and Windows cannot create these names *at all*:
+# the DOS device names (bare, or as a bare stem like ``con.png``, in any case),
+# anything ending in a dot or a space, and anything containing ``< > : " | ? *``.
+# A checkout that contains one fails for every file under it — which is exactly
+# what ``restyle/con/`` did, taking eighteen frames down with it — so the ids
+# coming out of the design documents are made portable here rather than trusted.
+DOS_DEVICES = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+ILLEGAL_CHARS = re.compile(r'[<>:"|?*\\\x00-\x1f]')
+
+# The documents abbreviate their families in the ``data-export`` ids. Most
+# abbreviations are harmless; ``con/`` is not, so it is spelled out the way the
+# documents' own section labels write it ("… · restyled/concepts/"). Prefer a
+# real word here over the mechanical escape below — the folder is what a person
+# reads when they go looking for the artwork.
+SEGMENT_ALIASES = {"con": "concepts"}
+
+
+def safe_segment(seg: str) -> str:
+    """One path component, made legal on Windows."""
+    alias = SEGMENT_ALIASES.get(seg.lower())
+    if alias is not None:
+        return alias
+    out = ILLEGAL_CHARS.sub("-", seg).rstrip(". ").lstrip(" ")
+    # ``.png`` is appended later, so a reserved *stem* is reserved: escape the
+    # stem itself and let the rest of the name stand.
+    stem, dot, rest = out.partition(".")
+    if stem.upper() in DOS_DEVICES:
+        out = f"{stem}_{dot}{rest}"
+    return out or "unnamed"
+
+
+def safe_name(name: str) -> str:
+    """A kit-relative asset name that survives ``git checkout`` on Windows."""
+    return "/".join(safe_segment(p) for p in name.split("/") if p)
 
 
 def pick_scale(css_w: float, css_h: float, route: Route) -> tuple[float, str]:
@@ -470,6 +514,18 @@ def export_doc(page, base_url: str, spec: DocSpec, doc_path: Path,
         route = spec.route_for(eid)
         k, how = pick_scale(el["w"], el["h"], route)
         rel = merge_path(route.target, eid)
+        safe = safe_name(rel)
+        if safe != rel:
+            # An aliased segment is a deliberate rename and stays quiet; an
+            # ad-hoc escape means a new id needs a name a human chose.
+            escaped = [p for p in rel.split("/")
+                       if safe_segment(p) != p and p.lower() not in SEGMENT_ALIASES]
+            if escaped:
+                res.warnings.append(
+                    f"{eid}: {', '.join(repr(e) for e in escaped)} cannot exist on "
+                    f"Windows — exported as {safe!r}; add a SEGMENT_ALIASES entry "
+                    f"to pick a better name")
+            rel = safe
         entries.append((eid, rel, k, how, el["w"], el["h"], el))
 
     if plan_only:

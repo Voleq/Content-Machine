@@ -21,6 +21,16 @@ def test_the_exported_kit_is_indexed():
     assert "type/callouts/term-roic" in k
 
 
+def test_every_indexed_name_still_points_at_a_real_file():
+    """`Kit.path()` returns None for a file that is not there, so a manifest
+    that has drifted from disk degrades silently — every beat using the moved
+    artwork quietly falls back. Renaming a family (`restyle/con/` →
+    `restyle/concepts/`, which Windows cannot check out) has to move both."""
+    k = kit()
+    missing = [name for name in k._assets if k.path(name) is None]
+    assert not missing, f"{len(missing)} manifest names have no file: {missing[:10]}"
+
+
 def test_a_missing_name_is_none_not_an_error():
     k = kit()
     assert k.path("type/callouts/does-not-exist") is None
