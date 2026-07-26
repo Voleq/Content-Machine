@@ -8,6 +8,7 @@ from a Linux dev box.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -125,3 +126,101 @@ def test_no_posix_only_separators_in_runtime_paths():
     real = [o for o in offenders if o.rsplit(".", 1)[-1] in
             ("png", "jpg", "json", "wav", "mp4", "mov", "ttf", "txt", "xlsx")]
     assert not real, "filesystem paths must be built with pathlib:\n" + "\n".join(real)
+
+
+# --------------------------------------------------------------------------
+# Path portability — the repo has to CHECK OUT on Windows at all
+# --------------------------------------------------------------------------
+# These are not style preferences. Windows cannot create such a name, so
+# `git checkout` fails on it and every file under it goes missing — while the
+# Linux dev box shows a clean tree. `assets/kit/restyle/con/` (a DOS device
+# name, straight out of the design kit's `con/` abbreviation) is how this was
+# found: eighteen frames that only ever existed on one machine.
+DOS_DEVICES = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{i}" for i in range(1, 10)}
+    | {f"LPT{i}" for i in range(1, 10)}
+)
+WINDOWS_ILLEGAL_CHARS = re.compile(r'[<>:"|?*\\\x00-\x1f]')
+
+
+def _windows_objection(segment: str) -> str | None:
+    """Why Windows would refuse to create this path component, or None."""
+    # The device name is matched on the stem, so `con.png` is as fatal as `con`.
+    if segment.split(".")[0].upper() in DOS_DEVICES:
+        return "reserved DOS device name"
+    if segment != segment.rstrip(". "):
+        return "trailing dot or space — Windows strips it, then names collide"
+    if segment.startswith(" "):
+        return "leading space"
+    bad = "".join(sorted(set(WINDOWS_ILLEGAL_CHARS.findall(segment))))
+    if bad:
+        return f"illegal character(s) {bad!r}"
+    return None
+
+
+def _checked_out_paths() -> list[str]:
+    """Every path a checkout materialises, '/'-separated.
+
+    Tracked *and* not-yet-committed-but-not-ignored, so a bad name trips this
+    guard before it is pushed — and the runtime dirs (workspace/, cache/,
+    state/) stay out of it.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files", "--cached", "--others",
+             "--exclude-standard", "-z"],
+            capture_output=True, text=True, check=True).stdout
+        return [p for p in out.split("\0") if p]
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    # No git (an exported tarball, say). The guard must not go quiet just
+    # because it cannot ask git what is tracked.
+    skip = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+            ".venv", "venv", "build", "dist", "workspace", "cache", "state", "tmp"}
+    found = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [d for d in dirnames if d not in skip]
+        rel = Path(dirpath).relative_to(ROOT)
+        found += [(rel / f).as_posix() for f in filenames]
+    return found
+
+
+def test_no_path_in_the_repo_is_illegal_on_windows():
+    """Permanent guard: this is a cross-platform project now."""
+    paths = _checked_out_paths()
+    assert len(paths) > 100, "the file listing looks wrong — the guard would pass emptily"
+
+    offenders = [
+        f"{path}  ({segment!r}: {why})"
+        for path in paths
+        for segment in path.split("/")
+        if (why := _windows_objection(segment))
+    ]
+    shown = sorted(set(offenders))
+    assert not offenders, (
+        f"{len(offenders)} path(s) cannot be checked out on Windows:\n  "
+        + "\n  ".join(shown[:20])
+        + (f"\n  … and {len(shown) - 20} more" if len(shown) > 20 else ""))
+
+
+def test_the_kit_export_cannot_recreate_an_illegal_name():
+    """Renaming the folder is not enough — the export script made it, and
+    would make it again on the next run."""
+    from scripts.export_design_kit import merge_path, safe_name, safe_segment
+
+    # The abbreviation that produced `con/`: spelled out the way the design
+    # document's own section label writes it, not mechanically mangled — in
+    # whatever case the id happens to use.
+    assert safe_name(merge_path("restyle", "con/alert")) == "restyle/concepts/alert"
+    assert safe_segment("CON") == safe_segment("Con") == "concepts"
+
+    # Everything else Windows refuses is escaped rather than shipped.
+    for bad in ("nul", "NUL", "Aux", "prn", "com1", "lpt9", "nul.png",
+                "trailing.", "trailing ", " leading", 'quote"pipe|star*', "a:b"):
+        assert _windows_objection(safe_segment(bad)) is None, \
+            f"{bad!r} survived sanitisation as {safe_segment(bad)!r}"
+
+    # …and a name that is already fine is left exactly alone.
+    for good in ("restyle", "concepts", "hype-vs-reality", "f01", "obj-laptop_b"):
+        assert safe_segment(good) == good
