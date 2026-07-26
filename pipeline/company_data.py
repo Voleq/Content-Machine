@@ -21,7 +21,10 @@ cache) are ignored:
   * `Valuation` — bear/base/bull scenarios + inputs, plus the auto WACC
     (CAPM) and reverse-DCF block (long-form).
   * `Peers`     — the auto-pulled peer table, plus a self-scoring percentile
-    block beneath it (two distinct blocks; long-form).
+    block beneath it (two distinct blocks; long-form). Its metric columns are
+    matched BY HEADER TEXT too: the table has grown revenue columns and a
+    computed 3Y-CAGR since v3, and fixed offsets mislabelled everything to
+    their right.
   * `News`      — recent headlines (Date/Headline/Source/URL), spilled by the
     add-in (optional; a news outlet as Source is fine — never a data-terminal
     brand).
@@ -357,26 +360,60 @@ def _read_valuation(ws) -> dict:
     return val
 
 
-_PEER_COLS = ["price", "market_cap", "pe", "ev_ebitda", "ps", "rev_growth",
-              "gross_margin", "net_margin", "fcf_yield", "net_debt_ebitda"]
+# Peer-table fields -> the header texts that carry them, in sheet order.
+# Located BY HEADER TEXT like every other reader here, never by position: the
+# table grew `Rev LTM (now)` / `Rev LTM (-3Y)` feed columns and moved revenue
+# growth to a COMPUTED 3Y CAGR at the far right, which shifted everything from
+# the margins rightward by one column. Read off fixed offsets that silently
+# mislabelled five fields — margins landing in `rev_growth`, and a raw revenue
+# figure landing in `net_debt_ebitda` — numbers that were plausible enough to
+# reach a script. Aliases cover older revisions (a raw `Rev Growth %` column,
+# spelled-out margin titles); `_col_of` matches exact first and only then by
+# prefix, so the `cln …` helper columns to the right are never picked up.
+_PEER_COLS: dict[str, tuple[str, ...]] = {
+    "price": ("price",),
+    "market_cap": ("market cap",),
+    "pe": ("p/e",),
+    "ev_ebitda": ("ev/ebitda",),
+    "ps": ("p/s",),
+    "gross_margin": ("gross mgn %", "gross margin %"),
+    "net_margin": ("net mgn %", "net margin %"),
+    "fcf_yield": ("fcf yield %",),
+    "net_debt_ebitda": ("netdebt/ebitda", "net debt/ebitda", "net debt / ebitda"),
+    # the COMPUTED 3Y CAGR — never the raw `Rev LTM …` columns that feed it
+    "rev_growth": ("rev growth % (3y cagr)", "rev growth %", "revenue growth %"),
+}
 
 
 def _read_peers(ws) -> list[dict]:
+    """The auto peer table — the FIRST block on the Peers sheet (the
+    self-scoring percentile block beneath it is `_read_peer_percentiles`).
+    Anchor on the header row carrying `Peer (auto)` and take every metric
+    column from that header by text; a column the template doesn't carry
+    reads None rather than dragging its neighbour in."""
     rows = _rows(ws)
     hr = _header_row(rows, "peer (auto)")
     if hr is None:
         return []
+    header = rows[hr]
+    name_c = _col_of(header, "peer (auto)", "peer")
+    if name_c is None:
+        name_c = 0
+    cols = {field: _col_of(header, *names) for field, names in _PEER_COLS.items()}
+    absent = [f for f, c in cols.items() if c is None]
+    if absent:
+        log.warning("peers sheet has no column for %s — left empty", ", ".join(absent))
     peers: list[dict] = []
     for row in rows[hr + 1:]:
-        name = _cell_text(row[0]) if row else ""
+        name = _cell_text(row[name_c]) if name_c < len(row) else ""
         if not name:
             # the PEERS() spill is contiguous; the first blank name ends the
             # auto table — stop here so we never wander into the self-scoring
             # percentile block that lives beneath it.
             break
         entry: dict = {"name": name}
-        for k, j in zip(_PEER_COLS, range(1, 1 + len(_PEER_COLS))):
-            entry[k] = _num(row[j]) if j < len(row) else None
+        for field, c in cols.items():
+            entry[field] = _num(row[c]) if c is not None and c < len(row) else None
         peers.append(entry)
     return peers
 
