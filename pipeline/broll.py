@@ -392,7 +392,7 @@ class MockImageClient:
         """On-brand imagery stand-in: a full-frame COLOURED card (subject
         seeds a distinct deep-tone gradient) with the subject labelled in
         Space Grotesk — so a MOCK long previews the real composition
-        (full-frame media + Ken Burns), not text on black."""
+        (full-frame media, held still), not text on black."""
         self.download_calls.append(url)
         import colorsys
 
@@ -462,7 +462,7 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     background). Real photos cover the frame edge-to-edge; logos and tall
     grabs are contained sharp over a blurred, brand-tinted cover of
     themselves — a designed full-frame shot, never a letterboxed black
-    frame. Ken Burns then rides over the whole WxH still in the renderer."""
+    frame. The renderer then holds that WxH still — nothing drifts."""
     from pipeline.rasters import cover_fill_frame
 
     W, H = settings.long_resolution

@@ -8,6 +8,9 @@ Structure:
   * the whole video is ONE ffmpeg filter_complex: per-segment trim ->
     concat -> bug/disclaimer/glitch overlays -> libass captions, plus
     VO + music bed + SFX in a single amix — one final encode
+
+NOTHING PANS OR ZOOMS. Motion is the host (mouth flap, boil pairs), the cuts,
+and real video clips. Every still is scale + pad, held.
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
 
@@ -21,7 +24,7 @@ including over the host.
 Segment kinds:
   host    Dennis talking — the default frame, one held beat per untagged gap
   clip    ironic stock footage (content engine, palette-first), real motion
-  img     real operations/product imagery, full-frame + Ken Burns
+  img     real operations/product imagery, full-frame and held still
   meme    freeze-frame from the owned library, composed full-frame + boom
           (first one gets the record-scratch rewind)
   chart   auto-generated channel-style chart — a TWO-SHOT beside the host
@@ -91,11 +94,6 @@ from pipeline.timeline import (
 
 log = logging.getLogger(__name__)
 
-# Ken Burns move vocabulary — every still gets one (randomized per segment)
-# so nothing is a static hold. Pans ride a 1.14x upscale; zooms animate the
-# crop window then rescale. All keep the WxH aspect exactly.
-_KB_MODES = ("in", "out", "left", "right", "up", "down")
-
 # chapter stinger titles (the LONG's designed section dividers) — rotated
 # across the runtime at act boundaries
 _CHAPTERS = [
@@ -108,14 +106,15 @@ _CHAPTERS = [
 ]
 
 
-# Segment kinds a viewer READS. The old engine moved every still because
-# nothing else on screen moved; now Dennis carries the motion, and drifting
-# a table or a chart under someone's eyes is just harder to read. These hold
-# dead still — which also removes zoompan, far and away the most expensive
-# filter in the graph, from the majority of segments.
-_STILL_KINDS = frozenset({
-    "chart", "filing", "screengrab", "asset", "table", "term", "bignum",
-})
+# NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
+# pairs, the cuts and real video footage. Everything else holds dead still.
+#
+# The old engine drifted every still because nothing else on screen moved;
+# once the host arrived that stopped being true, and a drifting frame is both
+# harder to read and, via `zoompan`, by far the most expensive operation in
+# the filter graph. Removing it outright makes every still segment a plain
+# scale + pad — which is also what lets a segment be content-hashed and
+# cached, since the output no longer depends on its position in the timeline.
 
 
 def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
@@ -125,35 +124,6 @@ def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
         f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
         f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF{tail}"
     )
-
-
-def _ken_burns_chain(i: int, seg_len: float, W: int, H: int, mode: str,
-                     tail: str, fps: int) -> str:
-    """A single still -> a moving WxH stream: input `[i:v]` upscaled 1.14x
-    then panned (time-varying crop x/y) or zoomed (`zoompan`) over `seg_len`,
-    ending in `tail` ([s{i}]). ffmpeg's `crop` only re-evaluates x/y per
-    frame, so zoom rides zoompan rather than an animated crop window."""
-    dur = max(seg_len, 0.1)
-    zw = int(W * 1.14) // 2 * 2
-    head = (f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={zw}:-2,")
-    if mode in ("in", "out"):
-        n = max(int(round(dur * fps)), 2)
-        if mode == "in":       # 1.00 -> 1.14
-            z = f"min(1.0+0.14*on/{n},1.14)"
-        else:                  # 1.14 -> 1.00
-            z = f"max(1.14-0.14*on/{n},1.0)"
-        body = (f"zoompan=z='{z}':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
-                f":s={W}x{H}:fps={fps}")
-        return f"{head}{body}{tail}"
-    if mode == "right":
-        xy = f"x='(iw-ow)*t/{dur:.4f}':y='(ih-oh)/2'"
-    elif mode == "left":
-        xy = f"x='(iw-ow)*(1-t/{dur:.4f})':y='(ih-oh)/2'"
-    elif mode == "down":
-        xy = f"x='(iw-ow)/2':y='(ih-oh)*t/{dur:.4f}'"
-    else:  # "up"
-        xy = f"x='(iw-ow)/2':y='(ih-oh)*(1-t/{dur:.4f})'"
-    return f"{head}crop={W}:{H}:{xy}{tail}"
 
 
 def render_long(
@@ -228,21 +198,10 @@ def render_long(
             backdrop_cache[slot] = bp
         return backdrop_cache[slot]
 
-    # deterministic per-render Ken Burns phase so the move sequence differs
-    # per ticker but adjacent stills never share a direction
-    kb_off = int(json.dumps(script.ticker).encode().hex()[:6], 16) if script.ticker else 0
-
-    def _kb_mode(idx: int) -> str:
-        return _KB_MODES[(idx + kb_off) % len(_KB_MODES)]
-
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
                      tail: str) -> str:
-        """Motion for a still segment: held dead still when the viewer has
-        to read it, a gentle Ken Burns drift when it is only atmosphere."""
-        if seg.kind in _STILL_KINDS:
-            return _hold_still_chain(input_i, seg_len, W, H, tail)
-        return _ken_burns_chain(input_i, seg_len, W, H, _kb_mode(seg_i), tail,
-                                fps)
+        """Every still is held. There is no drift on anything."""
+        return _hold_still_chain(input_i, seg_len, W, H, tail)
 
     # ------------------------------------------------------- the host rig
     # Dennis is composited per segment, lip-synced to that segment's slice of
@@ -330,8 +289,9 @@ def render_long(
                                "-t", f"{seg_len + 0.2:.4f}", "-i", str(path)])
 
         def _clip_motion(idx: int) -> str:
-            # real footage motion, cover-scaled, with a gentle drift so even a
-            # short clone-padded clip keeps moving
+            # Real footage carries its own motion, so it is simply cover-scaled
+            # and clone-padded if the clip is shorter than the beat. No drift is
+            # added — nothing in this pipeline pans or zooms.
             return (
                 f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
@@ -408,7 +368,7 @@ def render_long(
                 visual = content.resolve_asset(value)
                 still = visual.path
             else:  # meme — compose the freeze-frame full-frame so it never
-                   # sits letterboxed on black, then Ken Burns over it
+                   # sits letterboxed on black; it is then held still
                 visual = content.resolve_meme(value)
                 if visual.key not in meme_frame_cache:
                     dest = rdir / f"meme_frame_{len(meme_frame_cache)}.png"

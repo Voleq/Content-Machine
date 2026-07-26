@@ -331,7 +331,7 @@ def chapter_stinger(settings: Settings, number: str, title: str, *,
 # --------------------------------------------------------------------------
 # Full-frame media treatment + designed backdrops (the LONG "media IS the
 # background" kit). Every LONG still is composed to fill the frame — never a
-# bare black frame, never letterbox bars — before Ken Burns rides over it.
+# bare black frame, never letterbox bars. The renderer holds it still.
 # --------------------------------------------------------------------------
 
 

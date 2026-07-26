@@ -130,41 +130,39 @@ def test_sources_and_attributions_carried(rendered):
 # ---- the overhaul: media-is-the-background, motion, design system --------
 
 
-def test_readable_stills_hold_dead_still(rendered):
-    """Atmosphere drifts; anything the viewer has to READ does not.
+def test_nothing_pans_or_zooms(rendered):
+    """No drift on anything — photos, backdrops and b-roll included.
 
-    The old engine moved every still because nothing else on screen did.
-    Dennis now carries the motion, so drifting a chart or a filing under
-    someone's eyes is pure cost — and zoompan is the most expensive filter
-    in the graph.
+    Motion is the host (mouth flap, boil pairs), the cuts, and real video
+    clips. Every still is scale + pad, held. This is also what makes a
+    segment cacheable: its output no longer depends on where it sits in the
+    timeline.
     """
-    from pipeline.render_long import _STILL_KINDS
-
     settings, script, tts, out, manifest = rendered
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     W, H = manifest["resolution"]
     segs = manifest["segments"]
 
-    readable = [s for s in segs if s["kind"] in _STILL_KINDS]
-    assert readable, "the fixture exercises at least one readable still"
-    # a two-shot composites its panel onto a plate and is held by
-    # construction; the rest go through the contain-fit hold
-    held = [s for s in readable if s.get("layout") != "two-shot"]
-    assert held, "the fixture exercises at least one full-frame readable still"
-    assert f"pad={W}:{H}" in filter_text, "readable stills are held, contain-fit"
+    assert "zoompan" not in filter_text, "zoompan is gone for good"
+    # a pan is a crop with a time-varying x/y expression
+    assert "(iw-ow)*t/" not in filter_text and "(ih-oh)*t/" not in filter_text, \
+        "no time-varying crop anywhere"
+    assert "1.14" not in filter_text, "the Ken Burns upscale is gone"
 
-    # atmosphere still moves — a photo or a designed backdrop drifts
-    moving = [s for s in segs if s["kind"] in ("img", "meme", "host")]
-    if moving:
-        assert ("zoompan=" in filter_text
-                or f"crop={W}:{H}:x='(iw-ow)" in filter_text), \
-            "non-readable stills keep a gentle Ken Burns drift"
+    # every still segment is the plain contain-fit hold
+    still_kinds = {"chart", "filing", "screengrab", "asset", "img", "meme",
+                   "table", "term", "bignum", "prop", "host"}
+    stills = [s for s in segs if s["kind"] in still_kinds]
+    assert stills
+    assert f"pad={W}:{H}" in filter_text
 
-    # one held chain per full-frame readable segment
-    assert filter_text.count(f"pad={W}:{H}") >= len(held)
-    # and a two-shot never zooms either
-    for seg in (s for s in readable if s.get("layout") == "two-shot"):
-        assert f"trim=0:{seg['end'] - seg['start']:.4f}" in filter_text
+
+def test_the_ken_burns_vocabulary_is_deleted():
+    """Removed outright, not left behind a flag."""
+    import pipeline.render_long as rl
+
+    for gone in ("_KB_MODES", "_ken_burns_chain", "_STILL_KINDS"):
+        assert not hasattr(rl, gone), f"{gone} should no longer exist"
 
 
 def test_long_captions_are_a_fitted_box(rendered):
