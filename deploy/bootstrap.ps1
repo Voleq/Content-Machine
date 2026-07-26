@@ -55,7 +55,7 @@ if (-not (Test-Path '.venv')) {
 }
 $vpy = Join-Path $repo '.venv\Scripts\python.exe'
 & $vpy -m pip install --upgrade pip --quiet
-& $vpy -m pip install -e '.[dev,filings]' --quiet
+& $vpy -m pip install -e '.[dev,filings,excel]' --quiet
 if ($LASTEXITCODE -ne 0) { throw "dependency install failed" }
 
 # ---------------------------------------------------------------- ffmpeg
@@ -89,6 +89,37 @@ if (-not $SkipBrowser) {
         Warn "Chromium install failed — 10-K auto-shots degrade to none; the"
         Warn "design-kit exporter will not run until this succeeds."
     }
+}
+
+# ----------------------------------------------------------------- excel
+Step "Excel + data add-in (the bot refreshes its own numbers)"
+# Without this the bot still works — it falls back to asking for the workbook
+# by hand, exactly as it did before. Worth knowing now rather than at 2am.
+$excelOk = $false
+try {
+    $xl = New-Object -ComObject Excel.Application
+    $excelOk = $true
+    Write-Host "    Excel $($xl.Version) responds to automation"
+    $addins = @()
+    foreach ($a in $xl.AddIns) { if ($a.Installed) { $addins += $a.Name } }
+    foreach ($a in $xl.COMAddIns) { if ($a.Connect) { $addins += $a.Description } }
+    $data = $addins | Where-Object {
+        $_ -match 'Eikon|Refinitiv|LSEG|Thomson|Capital ?IQ|CIQ|PowerLink'
+    }
+    if ($data) {
+        Write-Host "    data add-in loaded: $($data -join ', ')"
+    } else {
+        Warn "no LSEG/Refinitiv/Capital IQ add-in appears loaded. /refresh will"
+        Warn "report the fields as unresolved until it is signed in."
+    }
+    $xl.Quit()
+    [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($xl)
+} catch {
+    Warn "Excel did not respond to COM ($($_.Exception.Message))."
+    Warn "The bot will ask you to upload dennis_data.xlsx by hand instead."
+}
+if ($excelOk) {
+    Write-Host "    tip: pin a vendor symbol once with  /refresh PLTR PLTR.O"
 }
 
 # ------------------------------------------------------------------ .env

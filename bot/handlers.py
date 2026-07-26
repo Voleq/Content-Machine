@@ -33,6 +33,15 @@ from pipeline.cost import (
     build_short_report,
 )
 from pipeline.delivery import deliver
+from pipeline.excel_refresh import (
+    ExcelUnavailable,
+    RefreshError,
+    RefreshTimeout,
+    excel_available,
+    refresh_age_days,
+    refresh_for_ticker,
+    set_symbol_override,
+)
 from pipeline.gates import run_gates
 from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
 from pipeline.models import JobKind, TagType
@@ -51,7 +60,8 @@ log = logging.getLogger(__name__)
 
 HELP_TEXT = """Dennis — operator commands
 
-/new TICKER — open today's workspace, get the data template
+/new TICKER — open today's workspace (refreshes the numbers itself on the render box)
+/refresh TICKER [SYMBOL] — re-pull the numbers in Excel; pass a vendor symbol to pin it
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
 /prompts — re-send the pre-filled master prompts
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
@@ -64,7 +74,8 @@ HELP_TEXT = """Dennis — operator commands
 /cost — month-to-date spend vs cap
 /help — this text
 
-Flow: /new → upload dennis_data.xlsx → run the prompts in Claude/GPT →
+Flow: /new (the numbers refresh themselves; upload dennis_data.xlsx if Excel
+isn't available) → run the prompts in Claude/GPT →
 (LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
 here → review the validation & cost report → Approve ✅ → /render. Nothing
 paid happens before Approve. If a LONG uses [ASSET] tags, paste the appended
@@ -165,6 +176,17 @@ class BotCore:
             return Reply("Usage: /new TICKER")
         ws = Workspace(self.settings, ticker, today_str()).create()
         self.context.set(chat_id, ticker, ws.workdate)
+        # On the Windows box with Excel + the add-in the bot refreshes the
+        # numbers itself; the template only goes out when it can't (P3.1b).
+        can_refresh, _why = excel_available(self.settings)
+        if can_refresh:
+            return Reply(
+                f"📁 Workspace ready: {ticker} / {ws.workdate}\n\n"
+                f"Refreshing {ticker} in Excel now — this takes a minute while "
+                f"the add-in resolves. I'll send the prompts when the numbers "
+                f"are in. (Upload a workbook yourself any time to override, or "
+                f"/refresh {ticker} to try again.)"
+            )
         template = self.settings.templates_dir / "dennis_data_template.xlsx"
         return Reply(
             f"📁 Workspace ready: {ticker} / {ws.workdate}\n\n"
@@ -178,6 +200,82 @@ class BotCore:
             f"unnamed).",
             files=[template] if template.exists() else [],
         )
+
+    # ------------------------------------------------------------ /refresh
+    def refresh_data(self, chat_id: int, args: list[str]) -> Reply:
+        """Refresh this ticker's workbook in Excel and hand back the prompts.
+
+        Blocking — the add-in takes tens of seconds — so callers run it off
+        the event loop. A failure here is loud and changes nothing: whatever
+        workbook the workspace already had is still the workbook it has, and
+        the manual upload is still open.
+        """
+        ticker = args[0].strip().upper() if args else ""
+        symbol = args[1].strip() if len(args) > 1 else None
+
+        if ticker:
+            ws = Workspace(self.settings, ticker, today_str()).create()
+            self.context.set(chat_id, ticker, ws.workdate)
+        else:
+            ws = self._active_ws(chat_id)
+            if ws is None:
+                return Reply("Usage: /refresh TICKER [VENDOR_SYMBOL] "
+                             "— or /new TICKER first.")
+            ticker = ws.ticker
+
+        ok, why = excel_available(self.settings)
+        if not ok:
+            template = self.settings.templates_dir / "dennis_data_template.xlsx"
+            return Reply(
+                f"⛔ Can't drive Excel here: {why}\n"
+                f"Refresh the attached template for {ticker} by hand and upload "
+                f"it — that path is unchanged.",
+                files=[template] if template.exists() else [],
+            )
+
+        if symbol:
+            # An explicit vendor symbol is worth remembering: the ticker→RIC
+            # mapping is an entitlement question the bot can't answer itself.
+            set_symbol_override(self.settings, ticker, symbol)
+
+        try:
+            result = refresh_for_ticker(self.settings, ticker, ws.path,
+                                        symbol=symbol)
+        except ExcelUnavailable as e:
+            return Reply(f"⛔ Excel is not usable: {e}\n"
+                         f"The manual upload still works.")
+        except RefreshTimeout as e:
+            return Reply(
+                f"⛔ {ticker}: {e}\n"
+                f"Nothing was saved — a half-refreshed workbook is worse than "
+                f"none. Check the add-in is signed in, then /refresh {ticker} "
+                f"again. If the symbol is wrong for the add-in, pin it: "
+                f"/refresh {ticker} {ticker}.O")
+        except RefreshError as e:
+            return Reply(f"⛔ {ticker}: refresh failed — {e}\n"
+                         f"Nothing was saved; upload a workbook to proceed.")
+        except Exception as e:  # noqa: BLE001 - COM raises anything
+            log.exception("excel refresh blew up")
+            return Reply(f"💥 {ticker}: Excel refresh error — {e}\n"
+                         f"The manual upload still works.")
+
+        # New numbers invalidate an approval. The approval pins the script's
+        # hash, which does not change when the data underneath it does — so
+        # without this, approve → refresh → render would ship figures the
+        # operator never saw in the cost + fact-check report.
+        withdrawn = [fmt for fmt in ("short", "long") if ws.is_approved(fmt)]
+        for fmt in withdrawn:
+            ws._invalidate_approval(fmt)
+
+        reply = self.prompts_reply(chat_id)
+        reply.text = f"{result.summary()}\n\n{reply.text}"
+        if withdrawn:
+            reply.text += (
+                f"\n\n⚠️ the {'/'.join(withdrawn)} approval was withdrawn — "
+                f"these are different numbers than the report you approved. "
+                f"Re-read the report and Approve again.")
+        reply.files = list(reply.files) + [result.archive]
+        return reply
 
     # ------------------------------------------------------------ /prompts
     def prompts_reply(self, chat_id: int) -> Reply:
@@ -212,6 +310,13 @@ class BotCore:
                      "have nothing to show; re-export with both sheets")
         if data.warning_missing:
             warn += f"\n⚠️ optional fields missing: {', '.join(data.warning_missing[:6])}"
+        # When the bot refreshed the numbers itself, say how old they really
+        # are — the sheet's =TODAY() only records the last recalculation.
+        age = refresh_age_days(ws.path)
+        if age is not None:
+            warn += (f"\n🕒 numbers refreshed "
+                     + ("just now" if age < 0.02 else
+                        f"{age * 24:.0f}h ago" if age < 1 else f"{age:.1f} days ago"))
         return Reply(
             f"📋 Prompts for {ws.ticker} (as of {data.get('as_of_date')}).\n"
             f"• SHORT: run prompt_short.md, paste the output back.\n"
@@ -538,7 +643,8 @@ class BotCore:
         # and only speak up on failure. A fabricated figure is the one error
         # nobody downstream can catch.
         gates = run_gates(script, self.settings, data=data,
-                          as_of=str((data.get("as_of_date") if data else "") or ""))
+                          as_of=str((data.get("as_of_date") if data else "") or ""),
+                          workspace=ws.path)
         for f in gates.findings:
             (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
@@ -954,10 +1060,32 @@ def build_application(settings: Settings, core: BotCore):
     async def cmd_start(update, ctx):
         await _send(update, Reply(HELP_TEXT))
 
+    async def _run_refresh(update, args: list[str]) -> None:
+        """The Excel refresh blocks for tens of seconds — off the loop it goes,
+        or the bot stops answering while the add-in thinks."""
+        import asyncio
+        reply = await asyncio.to_thread(
+            core.refresh_data, update.effective_chat.id, args)
+        await _send(update, reply)
+
     @guard
     async def cmd_new(update, ctx):
         ticker = ctx.args[0] if ctx.args else ""
         await _send(update, core.new_ticker(update.effective_chat.id, ticker))
+        # When Excel is drivable, /new goes straight on to the refresh — the
+        # manual data step is what P3.1b removes.
+        if ticker and excel_available(core.settings)[0]:
+            await _run_refresh(update, [ticker])
+
+    @guard
+    async def cmd_refresh(update, ctx):
+        if not (ctx.args or core.context.get(update.effective_chat.id)):
+            await _send(update, Reply("Usage: /refresh TICKER [VENDOR_SYMBOL]"))
+            return
+        if excel_available(core.settings)[0]:
+            await _send(update, Reply(
+                "🔄 Refreshing in Excel — waiting for the add-in to resolve…"))
+        await _run_refresh(update, list(ctx.args or []))
 
     @guard
     async def cmd_headline(update, ctx):
@@ -1115,6 +1243,7 @@ def build_application(settings: Settings, core: BotCore):
 
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
     app.add_handler(CommandHandler("new", cmd_new))
+    app.add_handler(CommandHandler("refresh", cmd_refresh))
     app.add_handler(CommandHandler("headline", cmd_headline))
     app.add_handler(CommandHandler("prompts", cmd_prompts))
     app.add_handler(CommandHandler("render", cmd_render))

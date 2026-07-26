@@ -50,6 +50,12 @@ filings = [
     "playwright==1.61.0",
     "beautifulsoup4==4.15.0",
 ]
+# Driving Excel for the data refresh (P3.1b). Windows-only by nature — the
+# COM bridge does not exist elsewhere — and optional: without it the bot
+# reports Excel as unavailable and the manual upload path carries on.
+excel = [
+    "pywin32==313; sys_platform == 'win32'",
+]
 
 [project.scripts]
 dennis = "main:main"

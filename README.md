@@ -25,10 +25,13 @@ machine does 100% of voice, asset fetching, composition and rendering.
 no hardcoded scene timings anywhere in the render code.
 
 ```
-/new TICKER → upload dennis_data.xlsx → run the pre-filled master prompt
-in Claude/GPT → paste the output back → validation + cost report →
-Approve ✅ → /render TICKER → shareable Drive link
+/new TICKER → the bot refreshes the numbers in Excel itself → run the
+pre-filled master prompt in Claude/GPT → paste the output back →
+validation + cost report → Approve ✅ → /render TICKER → shareable link
 ```
+
+(Off the Windows render box, or with no data add-in loaded, step two is the
+manual upload it always was — `dennis_data.xlsx` into the chat.)
 
 ---
 
@@ -85,6 +88,7 @@ pipeline/
   memes.py               owned meme library (meme_index.json) + providers
   doodles.py             owned doodle library (doodles_index.json) + boil
   company_data.py        two-sheet Excel export reader + filing screenshots
+  excel_refresh.py       drives Excel over COM to refresh the data itself
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
   delivery.py            gdrive (default) / s3 / telegram / local
@@ -193,10 +197,15 @@ with the desktop acting as a render worker later.
 1. `/screen` (or the pre-market digest) → tap a candidate, or `/new TICKER`.
    Trending lane → SHORT; beaten-down value lane → LONG. The screener's
    move context is baked into the SHORT prompt automatically.
-2. Refresh `templates/dennis_data_template.xlsx` for the ticker in Excel
-   (both sheets: `Latest` snapshot + 5-year `History`), upload it here.
-   Optionally upload raw screenshot PNGs for `[SHOW FILING: file.png]`
-   moments — they get a generic "FROM THE 10-K" label on screen.
+2. The numbers arrive on their own: `/new` copies
+   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!B2`,
+   fires the add-in's refresh, waits for it to genuinely finish, and files a
+   dated copy in the workspace. `/refresh TICKER` re-pulls; a second argument
+   pins the vendor symbol for good (`/refresh PLTR PLTR.O`). Anywhere without
+   Excel and a loaded add-in the bot says so and takes the manual upload
+   instead — that path is unchanged. Optionally upload raw screenshot PNGs
+   for `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
+   label on screen.
 3. The bot replies with both **pre-filled master prompts** — run one in
    Claude/GPT, paste the model's output back (message or .txt).
 4. Read the **validation + cost report** (chars, $ estimate, cache hits,
@@ -233,6 +242,35 @@ the snapshot only. Nothing in scripts, tags, overlays or captions may
 name the data vendor — the parsers reject it, and on screen the data is
 "from the 10-K".
 
+#### Refreshing it without touching Excel yourself
+
+`pipeline/excel_refresh.py` drives Excel over COM on the render box. The step
+that matters is the wait: the add-in resolves **asynchronously**, so the
+refresh call returns instantly while cells still read `#N/A` or
+`Requesting Data...`. Reading at that moment produces a workbook full of
+blanks that looks like a successful refresh — a video built on nothing. So the
+refresh only counts as done when every required field has resolved *and* the
+sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive reads.
+
+Consequences, by design:
+
+- A timeout, or a required field still unresolved, is a **hard failure** with
+  the fields named. Nothing is written to `dennis_data.xlsx`; a workbook
+  already in the workspace is left exactly as it was.
+- Excel or the add-in missing is **reported**, not crashed on, and the manual
+  upload takes over.
+- The scratch copy is deleted and Excel is quit — and killed by PID if a
+  modal dialog swallowed the quit — on every path, including failure.
+- Freshness is measured from `data_refresh.json`'s recorded refresh time, not
+  from the sheet's `=TODAY()` (which only says when it was last recalculated)
+  and not from the file's mtime (which re-saving resets without changing a
+  single number).
+
+The add-in's refresh macro is named differently in every vintage, so
+`EXCEL_REFRESH_MACROS` is a list of candidates tried in order, falling back to
+a full recalculation — most add-in formulas are volatile, so that works too,
+just less directly. Set the var once you know which macro your box has.
+
 ---
 
 ## Configuration reference (env / .env)
@@ -250,6 +288,10 @@ name the data vendor — the parsers reject it, and on screen the data is
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
+| `EXCEL_REFRESH_ENABLED` | true | let the bot refresh its own numbers (Windows + add-in) |
+| `EXCEL_SYMBOL_SUFFIX` | — | `.O` builds `PLTR.O`; per-ticker pins beat it |
+| `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
+| `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned) |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |

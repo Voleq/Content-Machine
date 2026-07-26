@@ -30,7 +30,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, time as dt_time, timezone
 from pathlib import Path
 
 from config import Settings
@@ -365,8 +365,32 @@ def voice_lint(narration: str) -> list[Finding]:
 
 
 def check_freshness(as_of: str, settings: Settings,
-                    today: date | None = None) -> list[Finding]:
-    """A render built on a stale snapshot states old numbers as current."""
+                    today: date | None = None,
+                    workspace: Path | None = None) -> list[Finding]:
+    """A render built on a stale snapshot states old numbers as current.
+
+    When the bot refreshed the workbook itself (P3.1b) the recorded refresh
+    timestamp is the authority, not the sheet's `as_of_date` and not the
+    file's mtime: `=TODAY()` only tells you which day the file was last
+    recalculated, and re-saving a workbook resets its mtime without touching
+    a single number.
+    """
+    if workspace is not None:
+        from pipeline.excel_refresh import refresh_age_days
+
+        now = None
+        if today is not None:
+            now = datetime.combine(today, dt_time(), tzinfo=timezone.utc)
+        age_days = refresh_age_days(workspace, now=now)
+        if age_days is not None:
+            if age_days > settings.data_max_age_days:
+                severity = "block" if settings.data_stale_blocks else "warn"
+                return [Finding(
+                    gate="freshness", severity=severity,
+                    message=(f"the data was last refreshed {age_days:.1f} days "
+                             f"ago (limit {settings.data_max_age_days}) — "
+                             f"run /refresh"))]
+            return []
     if not as_of:
         return [Finding(gate="freshness", severity="warn",
                         message="the data export carries no as-of date")]
@@ -466,13 +490,13 @@ def skeptic_notes(narration: str, settings: Settings,
 
 
 def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
-              skeptic: bool = True) -> GateReport:
+              skeptic: bool = True, workspace: Path | None = None) -> GateReport:
     """Every gate, in cost order. Silence means proceed."""
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
     report.findings += fact_check(narration, data)
     report.findings += voice_lint(narration)
-    report.findings += check_freshness(as_of, settings)
+    report.findings += check_freshness(as_of, settings, workspace=workspace)
     kit_findings, kit_stats = kit_doctor(script, settings)
     report.findings += kit_findings
     if skeptic:

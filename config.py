@@ -152,6 +152,32 @@ class Settings(BaseSettings):
     # A render built on a stale snapshot states old numbers as current.
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
     data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
+
+    # ------------------------------------------------- Excel refresh (COM)
+    # The render box runs Windows with Excel and the LSEG/CIQ add-in loaded,
+    # so the bot refreshes the data template itself instead of asking for an
+    # upload. Off-Windows (and with the switch off) the manual upload is the
+    # only path — which is exactly what it was before this existed.
+    excel_refresh_enabled: bool = Field(default=True, alias="EXCEL_REFRESH_ENABLED")
+    excel_template_path: str = Field(default="", alias="EXCEL_TEMPLATE_PATH")
+    # The shipped template drives every formula off Snapshot!B2 (its own
+    # Instructions sheet says so). Override only if the template moves it.
+    excel_ticker_cell: str = Field(default="B2", alias="EXCEL_TICKER_CELL")
+    # The add-in wants its own instrument code. A blank suffix passes the
+    # ticker through; ".O" turns PLTR into PLTR.O. Per-ticker pins in
+    # state/excel_symbols.json beat this.
+    excel_symbol_suffix: str = Field(default="", alias="EXCEL_SYMBOL_SUFFIX")
+    # Which add-in macro fires the refresh differs by vintage; comma-separated
+    # candidates, tried in order, falling back to a full recalculation.
+    excel_refresh_macros: str = Field(default="", alias="EXCEL_REFRESH_MACROS")
+    # CIQ/LSEG refreshes are asynchronous. Finishing early yields a workbook
+    # full of blanks that looks like success, so the poll is generous and a
+    # timeout is a hard failure.
+    excel_refresh_timeout_s: float = Field(default=240.0, alias="EXCEL_REFRESH_TIMEOUT_S")
+    excel_poll_interval_s: float = Field(default=2.0, alias="EXCEL_POLL_INTERVAL_S")
+    # Consecutive unchanged polls before the snapshot is called settled.
+    excel_settle_polls: int = Field(default=3, alias="EXCEL_SETTLE_POLLS")
+    excel_visible: bool = Field(default=False, alias="EXCEL_VISIBLE")
     ollama_base_url: str = Field(default="http://127.0.0.1:11434",
                                  alias="OLLAMA_BASE_URL")
     ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
