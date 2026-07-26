@@ -153,6 +153,40 @@ class Settings(BaseSettings):
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
     data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
 
+    # ------------------------------------- by-products + status page (P3.6)
+    # Every finished render emits the kit's thumbnail layouts, social cards
+    # and end screens — free, since the artwork and the data already exist.
+    byproducts_enabled: bool = Field(default=True, alias="BYPRODUCTS_ENABLED")
+    # Where golden reference frames live. Blank = fixtures/golden. Overridden
+    # in tests so a run can never bless frames into the repo's own fixtures.
+    golden_dir: str = Field(default="", alias="GOLDEN_DIR")
+    # A read-only localhost view of queue/backlog/renders. Loopback only: it
+    # shows the render box's internals and has no authentication.
+    status_page_enabled: bool = Field(default=False, alias="STATUS_PAGE_ENABLED")
+    status_page_port: int = Field(default=8787, alias="STATUS_PAGE_PORT")
+    status_refresh_s: int = Field(default=20, alias="STATUS_REFRESH_S")
+
+    # -------------------------------------- YouTube publishing (P3.5 + 5b)
+    # Uploads are ALWAYS private or scheduled — never public straight out of a
+    # machine. Long-form gets made in batches, so a publish datetime can be
+    # set per video and the cadence runs itself.
+    youtube_enabled: bool = Field(default=False, alias="YOUTUBE_ENABLED")
+    youtube_credentials: str = Field(default="", alias="YOUTUBE_CREDENTIALS")
+    youtube_category_id: str = Field(default="25", alias="YOUTUBE_CATEGORY_ID")  # News & Politics
+    # How far back the Analytics query looks when pulling retention.
+    retention_window_days: int = Field(default=28, alias="RETENTION_WINDOW_DAYS")
+
+    # ------------------------------------------------ free sources (P3.4)
+    # 8-K/EX-99.1, Form 4 and 13F reuse the EDGAR client above (SEC_USER_AGENT
+    # and the fair-access interval apply). FRED needs its own free key. Every
+    # source degrades to "unavailable" rather than failing a run.
+    fred_api_key: str = Field(default="", alias="FRED_API_KEY")
+    fred_base_url: str = "https://api.stlouisfed.org"
+    # Optional webcast transcription. Slow and GPU-hungry; nothing waits on it.
+    whisper_enabled: bool = Field(default=False, alias="WHISPER_ENABLED")
+    whisper_model: str = Field(default="base.en", alias="WHISPER_MODEL")
+    whisper_cuda: bool = Field(default=True, alias="WHISPER_CUDA")
+
     # ---------------------------------------------- intraday alerting (3b)
     # Short-form is time-sensitive, and one pre-market digest doesn't cover
     # it. These watch covered names during market hours. Every knob here

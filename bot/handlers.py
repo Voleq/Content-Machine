@@ -77,6 +77,9 @@ HELP_TEXT = """Dennis — operator commands
 /ideas — the ranked backlog; /idea TICKER <why> adds, /unidea TICKER drops
 /thesis [TICKER] — what we said, and whether the numbers still back it
 /batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
+/upload TICKER [YYYY-MM-DD HH:MM] — YouTube, private or scheduled (never public)
+/scheduled — what's queued to publish and when
+/retention [TICKER] — per-chapter drop-off; no ticker = the evidence across all
 /watch [TICKER | drop TICKER] — intraday watch (published names join automatically)
 /earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
 /render TICKER — render the approved script for this ticker's lane
@@ -450,6 +453,11 @@ class BotCore:
         self.context.set(chat_id, ws_ticker, ws.workdate)
         ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
         display_headline, summary = self._enrich_headline(headline)
+        # Free primary sources (P3.4): the 8-K's EX-99.1 for an earnings
+        # print, the FRED series for a macro one. Best-effort — an
+        # unavailable source leaves the operator's own headline as the
+        # grounding, which is exactly how it worked before.
+        summary = self._ground_headline(mode, ws_ticker, summary)
         ws.set_headline({"mode": mode, "symbol": ws_ticker,
                          "headline": display_headline, "summary": summary})
 
@@ -485,6 +493,36 @@ class BotCore:
             f"here, review the cost report, Approve ✅, then /render {ws.ticker}.",
             files=[f],
         )
+
+    def _ground_headline(self, mode: str, ticker: str, summary: str) -> str:
+        """Add the primary source behind the headline, when there is one.
+
+        An earnings headline is a claim; the EX-99.1 is the receipt. A macro
+        headline is a claim; the FRED series is the number. Both are free, and
+        both are strictly additive — a source that is unavailable leaves the
+        summary exactly as it was.
+        """
+        try:
+            from pipeline.sources import fred_series, latest_8k, summarise
+
+            if mode == "earnings":
+                got = latest_8k(ticker, self.settings)
+                if got.get("status") == "ok" and got.get("exhibit_text"):
+                    head = got["exhibit_text"][:1500]
+                    return (f"{summary}\n\nFROM THE PRESS RELEASE "
+                            f"({got.get('filed', '')}):\n{head}").strip()
+            elif mode == "macro":
+                lines = []
+                for name in ("cpi", "unemployment", "fed_funds"):
+                    payload = fred_series(name, self.settings)
+                    if payload.get("status") == "ok":
+                        lines.append(f"  {name}: {summarise(payload)}")
+                if lines:
+                    return (f"{summary}\n\nTHE ACTUAL SERIES:\n"
+                            + "\n".join(lines)).strip()
+        except Exception as e:  # noqa: BLE001 - grounding is never required
+            log.warning("could not ground the headline (%s)", e)
+        return summary
 
     def _enrich_headline(self, headline: str) -> tuple[str, str]:
         """If the headline is a URL, best-effort fetch + summarize ONCE so the
@@ -1115,6 +1153,20 @@ class BotCore:
                 extra.append(pkg_path)
             except Exception:  # noqa: BLE001
                 log.exception("publishing by-products failed — delivering anyway")
+            # The rest of the kit's by-products (P3.6): eight thumbnail
+            # layouts, the social cards, the end screens. All free — same data,
+            # artwork already drawn — and the alternative is making them by
+            # hand at midnight.
+            if self.settings.byproducts_enabled:
+                try:
+                    from pipeline.byproducts import build_byproducts
+
+                    made = build_byproducts(ws.path, self.settings,
+                                            ticker=job.ticker, script=script,
+                                            data=data)
+                    checkpoint(f"by-products: {made.total()} assets")
+                except Exception:  # noqa: BLE001 - never lose a finished render
+                    log.exception("by-products failed — delivering anyway")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=attributions, extra_files=extra)
             self._finish(job, result)
@@ -1363,6 +1415,141 @@ class BotCore:
 
         BatchQueue(self.settings).mark_done(ticker, fmt, error)
 
+    # --------------------------------- YouTube publishing (P3.5 + 5b)
+    def upload_command(self, args: list[str]) -> Reply:
+        """`/upload TICKER [YYYY-MM-DD HH:MM]` — private, or scheduled.
+
+        Never public: the most this does unattended is schedule, and a human
+        still decides whether that schedule was right.
+        """
+        from pipeline.youtube import (
+            UploadError, YouTubeUnavailable, available, resolve_publish_at,
+            upload_video,
+        )
+
+        if not args:
+            return Reply("Usage: /upload TICKER [YYYY-MM-DD HH:MM]\n"
+                         "No time = private. A time = scheduled publish.")
+        ticker = args[0].upper()
+        when_raw = " ".join(args[1:]).strip()
+        try:
+            when = resolve_publish_at(when_raw or None)
+        except ValueError as e:
+            return Reply(f"⛔ {e}")
+
+        ws = Workspace.latest_for(self.settings, ticker)
+        if ws is None:
+            return Reply(f"No workspace for {ticker}.")
+        fmt = ws.current_format() or "long"
+        video = ws.path / ("long_final.mp4" if fmt == "long" else "short_final.mp4")
+        if not video.exists():
+            return Reply(f"No finished {fmt.upper()} render for {ticker} yet.")
+
+        pkg_path = ws.path / "upload_package.txt"
+        package = self._upload_package(ws, fmt)
+        if package is None:
+            return Reply("⛔ no upload package on file — re-render to build one.")
+
+        ok, why = available(self.settings)
+        if not ok:
+            return Reply(
+                f"⛔ can't upload from here: {why}\n"
+                f"The package is attached — post it by hand.",
+                files=[pkg_path] if pkg_path.exists() else [])
+        try:
+            record = upload_video(
+                video, package, self.settings, publish_at=when,
+                workdate=ws.workdate,
+                chapters=self._chapter_pairs(ws, fmt),
+                duration_s=self._render_duration(ws, fmt))
+        except (UploadError, YouTubeUnavailable) as e:
+            return Reply(f"⛔ upload failed: {e}\nThe package is still yours "
+                         f"to post by hand.",
+                         files=[pkg_path] if pkg_path.exists() else [])
+        except Exception as e:  # noqa: BLE001
+            log.exception("youtube upload blew up")
+            return Reply(f"💥 upload error: {e}")
+
+        if record.privacy == "scheduled":
+            tail = f"scheduled to publish {record.publish_at}"
+        else:
+            tail = "uploaded PRIVATE — publish it when you're ready"
+        return Reply(f"📺 {ticker}: {tail}\n{record.url()}")
+
+    def scheduled_text(self) -> Reply:
+        from pipeline.youtube import VideoLog
+
+        rows = VideoLog(self.settings).scheduled()
+        if not rows:
+            return Reply("📺 nothing scheduled.\n"
+                         "/upload TICKER 2026-08-07 18:00 schedules one.")
+        lines = ["📺 Scheduled"]
+        for v in rows:
+            lines.append(f"  {v.publish_at[:16].replace('T', ' ')} — "
+                         f"{v.ticker}: {v.title[:50]}")
+        return Reply("\n".join(lines))
+
+    def retention_text(self, args: list[str]) -> Reply:
+        """Per-chapter retention for one video, or the evidence across all."""
+        from pipeline.youtube import (
+            VideoLog, chapter_type_evidence, pull_retention, retention_report,
+        )
+
+        log_ = VideoLog(self.settings)
+        if not args:
+            evidence = chapter_type_evidence(self.settings)
+            if not evidence:
+                return Reply("No retention data yet. /retention TICKER pulls it "
+                             "for a published video (YouTube needs a day or two "
+                             "of views first).")
+            lines = ["📊 Which chapter types hold attention (all videos)"]
+            for row in evidence[:12]:
+                lines.append(f"  {row['avg_watch_ratio'] * 100:5.1f}%  "
+                             f"{row['chapter'][:40]}  (n={row['videos']})")
+            lines.append("\nWorst first. One video is an anecdote; the same "
+                         "chapter type dropping across several is evidence.")
+            return Reply("\n".join(lines))
+
+        ticker = args[0].upper()
+        videos = log_.for_ticker(ticker)
+        if not videos:
+            return Reply(f"Nothing published for {ticker} yet.")
+        video = videos[-1]
+        payload = pull_retention(video.video_id, self.settings)
+        if payload.get("status") != "ok":
+            stored = (video.retention or {}).get("chapters")
+            if stored:
+                return Reply(f"({payload.get('reason', 'live pull unavailable')})"
+                             f"\n\n{retention_report(stored)}")
+            return Reply(f"📊 {ticker}: {payload.get('reason', payload['status'])}")
+        return Reply(f"📊 {ticker} — {video.title[:60]}\n"
+                     + retention_report(payload["chapters"]))
+
+    def _upload_package(self, ws: Workspace, fmt: str):
+        from pipeline.cost import build_long_report  # noqa: F401  (import guard)
+        from pipeline.publish import build_package
+
+        script = ws.load_long() if fmt == "long" else ws.load_short()
+        if script is None:
+            return None
+        return build_package(script, self.settings, ticker=ws.ticker,
+                             runtime_min=self._render_duration(ws, fmt) / 60.0)
+
+    def _chapter_pairs(self, ws: Workspace, fmt: str) -> list:
+        from pipeline.publish import normalise_chapters
+
+        script = ws.load_long() if fmt == "long" else None
+        return normalise_chapters(getattr(script, "chapters", "") or "")
+
+    def _render_duration(self, ws: Workspace, fmt: str) -> float:
+        name = ("render_long_manifest.json" if fmt == "long"
+                else "render_short_manifest.json")
+        try:
+            import json as _json
+            return float(_json.loads((ws.path / name).read_text()).get("duration", 0))
+        except (FileNotFoundError, ValueError, KeyError, OSError):
+            return 0.0
+
     # ------------------------------------------ intraday alerting (3b)
     def watch_command(self, args: list[str]) -> Reply:
         """What gets watched intraday, and when the watched names report."""
@@ -1419,11 +1606,14 @@ class BotCore:
 
     def poll_alerts(self) -> list:
         """One alert pass. Sync, so the scheduler and tests share a path."""
-        from pipeline.alerts import Watchlist, fetch_quotes, poll_once
+        from pipeline.alerts import (
+            Watchlist, fetch_filings, fetch_quotes, poll_once,
+        )
 
         tickers = Watchlist(self.settings).all()
         quotes = fetch_quotes(self.settings, tickers)
-        return poll_once(self.settings, quotes=quotes)
+        filings = fetch_filings(self.settings, tickers)
+        return poll_once(self.settings, quotes=quotes, filings=filings)
 
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
@@ -1623,6 +1813,22 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.undo_edit(update.effective_chat.id))
 
     @guard
+    async def cmd_upload(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.upload_command, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_scheduled(update, ctx):
+        await _send(update, core.scheduled_text())
+
+    @guard
+    async def cmd_retention(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.retention_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
     async def cmd_watch(update, ctx):
         await _send(update, core.watch_command(list(ctx.args or [])))
 
@@ -1764,6 +1970,9 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
+    app.add_handler(CommandHandler("upload", cmd_upload))
+    app.add_handler(CommandHandler("scheduled", cmd_scheduled))
+    app.add_handler(CommandHandler("retention", cmd_retention))
     app.add_handler(CommandHandler("watch", cmd_watch))
     app.add_handler(CommandHandler("earnings", cmd_earnings))
     app.add_handler(CommandHandler("ideas", cmd_ideas))

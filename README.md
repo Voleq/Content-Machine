@@ -54,6 +54,9 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
+| Uploads are private or scheduled — never public from a machine | `pipeline/youtube.py` `build_body` |
+| Every free source degrades to "unavailable"; none can fail a run | `pipeline/sources.py` |
+| The status page binds loopback only (no auth, shows internals) | `pipeline/status_page.py` `serve` |
 
 ---
 
@@ -96,6 +99,13 @@ pipeline/
   standing.py            thesis book, ranked idea queue, overnight batch
   alerts.py              intraday watch: moves, volume, earnings, filings —
                          de-duplicated, quiet-hours aware, one-tap /short
+  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS,
+                         optional Whisper — cached, rate-limited, degrading
+  youtube.py             upload (private/scheduled, never public) + retention
+                         mapped onto chapters
+  byproducts.py          golden-frame regression + the kit's thumbnails,
+                         social cards and end screens
+  status_page.py         read-only localhost view (loopback, no auth)
   script_edit.py         in-chat revision: line/range edits, find-replace, undo
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
@@ -354,6 +364,11 @@ just less directly. Set the var once you know which macro your box has.
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
 | `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
+| `FRED_API_KEY` | — | free macro series for `/headline macro`; absent = unavailable |
+| `WHISPER_ENABLED` | false | optional webcast transcription; never blocks |
+| `YOUTUBE_ENABLED` / `YOUTUBE_CREDENTIALS` | false / — | upload as private or scheduled; never public |
+| `BYPRODUCTS_ENABLED` | true | thumbnails, social cards, end screens per render |
+| `STATUS_PAGE_ENABLED` / `STATUS_PAGE_PORT` | false / 8787 | read-only localhost view |
 | `DISCLAIMER_TEXT` | Opinion / entertainment… | burned into every frame |
 
 Full list with encode/voice/pacing knobs: `config.py` (every field is an
