@@ -774,6 +774,21 @@ class BotCore:
                     extra.append(thumb)
             except ImportError:
                 pass
+            # Free by-products of a finished render: subtitles straight off
+            # the master clock (so they match the burned-in captions exactly)
+            # and the upload package. Best-effort — neither is worth losing a
+            # completed render over.
+            try:
+                from pipeline.publish import build_package, write_srt
+
+                extra.append(write_srt(tts.words, ws.path / f"{job.ticker}.srt"))
+                pkg = build_package(script, self.settings, ticker=job.ticker,
+                                    runtime_min=tts.duration_s / 60.0)
+                pkg_path = ws.path / "upload_package.txt"
+                pkg_path.write_text(pkg.render_text(), encoding="utf-8")
+                extra.append(pkg_path)
+            except Exception:  # noqa: BLE001
+                log.exception("publishing by-products failed — delivering anyway")
             result = deliver(out, job.ticker, job.workdate, self.settings,
                              attributions=attributions, extra_files=extra)
             self._finish(job, result)

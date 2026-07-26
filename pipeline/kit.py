@@ -96,17 +96,34 @@ class Kit:
             if n.startswith(head) and "/" not in n[len(head):] and not n.endswith("_b")
         ))
 
-    def pick(self, prefix: str, seed: str) -> Path | None:
+    def pick(self, prefix: str, seed: str, *, ledger: "VariantLedger | None" = None,
+             record: bool = True) -> Path | None:
         """One asset from a family, chosen deterministically from `seed`.
 
         The same seed always picks the same frame, so a render is
         reproducible, while different scripts spread across the family.
+
+        A seed alone prevents repeats *within* a video but not *across*
+        uploads — two consecutive shorts can easily land on the same reaction
+        or hook layout, which is exactly what makes a daily channel look
+        stale. When a `ledger` is supplied, recently-used options are moved to
+        the back of the queue before the seed picks, so the choice stays
+        deterministic for a given (seed, history) but drifts across uploads.
         """
-        options = self.family(prefix)
+        options = list(self.family(prefix))
         if not options:
             return None
+        if ledger is not None:
+            # Restrict to what has NOT been used recently, so the seed cannot
+            # land back on a variant the last upload already showed. Merely
+            # reordering was not enough: the seed indexes modulo the whole
+            # list, so a recent option stays reachable.
+            options = ledger.unused(prefix, options)
         digest = hashlib.sha256(f"{prefix}|{seed}".encode()).hexdigest()
-        return self.path(options[int(digest[:8], 16) % len(options)])
+        chosen = options[int(digest[:8], 16) % len(options)]
+        if ledger is not None and record:
+            ledger.record(prefix, chosen)
+        return self.path(chosen)
 
     def resolve(self, prefix: str, key: str) -> Path | None:
         """An asset by family + key, tolerating the family's naming prefix.
@@ -156,6 +173,61 @@ class Kit:
         names = {n[len(head):].split("/")[0] for n in self._assets if n.startswith(head)}
         return tuple(sorted(n for n in names
                             if self.sequence(f"{head}{n}")))
+
+
+class VariantLedger:
+    """Which kit variants recent videos already used.
+
+    Deterministic selection keeps a single video from repeating itself, but
+    the channel publishes daily and nothing stopped two consecutive uploads
+    from opening on the same hook layout. This biases selection away from
+    what was used recently — the cheapest thing available that actually keeps
+    the channel looking fresh.
+
+    Stored as plain JSON in the state dir; a corrupt or missing file simply
+    means no history, never an error.
+    """
+
+    def __init__(self, path: Path, keep: int = 6):
+        self.path = Path(path)
+        self.keep = keep
+        self._recent: dict[str, list[str]] = {}
+        try:
+            data = json.loads(self.path.read_text())
+            if isinstance(data, dict):
+                self._recent = {k: list(v) for k, v in data.items()
+                                if isinstance(v, list)}
+        except (OSError, ValueError):
+            pass
+
+    def recent(self, prefix: str) -> list[str]:
+        return list(self._recent.get(prefix, []))
+
+    def unused(self, prefix: str, options: list[str]) -> list[str]:
+        """The options this family has not shown recently.
+
+        Falls back to the full list once everything has been used — a family
+        smaller than the history window must still return something.
+        """
+        recent = set(self._recent.get(prefix, []))
+        fresh = [n for n in options if n not in recent]
+        return fresh or list(options)
+
+    def record(self, prefix: str, name: str) -> None:
+        seen = [n for n in self._recent.get(prefix, []) if n != name]
+        seen.append(name)
+        self._recent[prefix] = seen[-self.keep:]
+
+    def save(self) -> None:
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps(self._recent, indent=1, sort_keys=True))
+        except OSError as e:
+            log.warning("could not persist the variant ledger (%s)", e)
+
+
+def load_variant_ledger(settings) -> VariantLedger:
+    return VariantLedger(Path(settings.state_dir) / "kit_variants.json")
 
 
 @functools.lru_cache(maxsize=8)

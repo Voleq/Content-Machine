@@ -46,6 +46,15 @@ Chartable metrics — [CHART: metric] ("price" charts the stock). A featured num
 Uploaded filing screenshots — [SHOW FILING: file] by EXACT filename:
 {{available_screenshots}}
 
+## SEARCH FOR THE PRIMARY SOURCES (you have the web; the bot does not)
+You are running in a web-search-capable model, so do the reading the pipeline cannot. Before writing:
+1. Find {{ticker}}'s **most recent earnings-call transcript** (or the IR press release / 8-K exhibit if no transcript is public) and pull 1–3 SHORT verbatim quotes from management — the ones where they explain, deflect, or commit to something measurable.
+2. Find the latest **investor-relations release** for anything the spreadsheet cannot know: a refinancing, a guidance change, a segment reorganisation, a departure.
+3. Prefer the company's own words over any commentary about them. Quote exactly, attribute plainly ("on the last call", "in the release"), and never name a data terminal.
+4. If a search turns up nothing usable, say so in one line and write from the data — do NOT invent a quote. A fabricated management quote is the one error that ends the channel.
+
+Management quotes pair with the [SHOW FILING] walk and the said-then-did beat: what they said, then what the numbers did.
+
 ## DATA-AWARE NUMBER SELECTION (you pick, not the bot)
 From the data above, SELECT the 3–5 numbers that most decide this story — the spine of the numbers/gut-check beat. Constraints: each featured metric MUST exist in the chartable list (so it has a multi-year series the renderer can draw as trend bars). The Dashboard is a smart-default hint, not a mandate — override it when the angle calls for it. Direction over snapshots: multi-year, oldest → newest.
 

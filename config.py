@@ -217,7 +217,10 @@ class Settings(BaseSettings):
     render_below_normal_priority: bool = True
 
     # --------------------------------------------------------------- delivery
-    delivery_backend: str = Field(default="gdrive", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
+    # The renderer is now the operator's own machine, so a Drive round-trip
+    # is pure latency: write to a watched folder and post the path. gdrive
+    # stays available for when the bot moves to a separate always-on host.
+    delivery_backend: str = Field(default="local", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
     gdrive_root_folder_id: str = Field(default="", alias="GDRIVE_ROOT_FOLDER_ID")
     gdrive_folder_name: str = "Dennis"

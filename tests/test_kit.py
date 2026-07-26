@@ -92,3 +92,59 @@ def test_sizes_come_from_the_manifest():
     assert k.size("thumbs/crash") == (1280, 720)
     assert k.has_alpha("mascot/host/look-left-talk-open")
     assert not k.has_alpha("type/callouts/term-roic")
+
+
+# ------------------------------------------- cross-video variant memory
+
+
+def test_the_ledger_spreads_picks_across_consecutive_uploads(tmp_path):
+    """A seed alone stops repeats WITHIN a video. Nothing stopped two
+    consecutive uploads opening on the same layout — which is what makes a
+    daily channel look stale."""
+    from pipeline.kit import VariantLedger
+
+    k = kit()
+    family_size = len(k.family("mascot/reactions"))
+    ledger = VariantLedger(tmp_path / "v.json", keep=family_size)
+    picks = [k.pick("mascot/reactions", "identical-seed", ledger=ledger).stem
+             for _ in range(family_size)]
+    assert len(set(picks)) == family_size, "every option before any repeat"
+
+
+def test_without_a_ledger_the_pick_is_still_stable(tmp_path):
+    k = kit()
+    a = k.pick("mascot/reactions", "seed-x")
+    b = k.pick("mascot/reactions", "seed-x")
+    assert a == b
+
+
+def test_the_ledger_round_trips_through_disk(tmp_path):
+    from pipeline.kit import VariantLedger
+
+    k = kit()
+    path = tmp_path / "v.json"
+    first = VariantLedger(path)
+    used = k.pick("mascot/reactions", "s", ledger=first)
+    first.save()
+
+    reloaded = VariantLedger(path)
+    assert any(r.endswith(used.stem) for r in reloaded.recent("mascot/reactions"))
+    # the freshly-loaded ledger keeps steering away from it
+    assert k.pick("mascot/reactions", "s", ledger=reloaded) != used
+
+
+def test_a_corrupt_ledger_is_treated_as_no_history(tmp_path):
+    from pipeline.kit import VariantLedger
+
+    bad = tmp_path / "v.json"
+    bad.write_text("{not json")
+    assert VariantLedger(bad).recent("anything") == []
+
+
+def test_a_family_smaller_than_the_window_still_returns_something(tmp_path):
+    from pipeline.kit import VariantLedger
+
+    k = kit()
+    ledger = VariantLedger(tmp_path / "v.json", keep=50)
+    for _ in range(30):
+        assert k.pick("mascot/reactions", "s", ledger=ledger) is not None
