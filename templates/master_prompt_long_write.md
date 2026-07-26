@@ -46,6 +46,13 @@ Chartable metrics — [CHART: metric] ("price" charts the stock). A featured num
 Uploaded filing screenshots — [SHOW FILING: file] by EXACT filename:
 {{available_screenshots}}
 
+Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
+Pick from these; anything else must be an [ASSET] with a design prompt:
+{{kit_catalog}}
+
+## CRAFT — expressivity and pacing
+{{craft_rules}}
+
 ## SEARCH FOR THE PRIMARY SOURCES (you have the web; the bot does not)
 You are running in a web-search-capable model, so do the reading the pipeline cannot. Before writing:
 1. Find {{ticker}}'s **most recent earnings-call transcript** (or the IR press release / 8-K exhibit if no transcript is public) and pull 1–3 SHORT verbatim quotes from management — the ones where they explain, deflect, or commit to something measurable.

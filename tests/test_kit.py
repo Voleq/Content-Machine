@@ -52,6 +52,29 @@ def test_resolve_normalises_the_key():
     assert k.resolve("props/objects", "obj_laptop") == k.resolve("props/objects", "laptop")
 
 
+def test_resolve_strips_a_multi_segment_naming_prefix():
+    """`[BIGNUM: buyback]` has to reach `big-number-buyback`.
+
+    Stripping only the first hyphen segment left `number-buyback`, so the key
+    resolved to nothing and the beat quietly degraded to a plain backdrop —
+    while the kit had the artwork all along.
+    """
+    k = kit()
+    assert k.resolve("type/callouts", "buyback") is not None
+    assert k.resolve("type/callouts", "big-number-buyback") == \
+        k.resolve("type/callouts", "buyback")
+    assert k.resolve("type/callouts", "share-count") is not None
+    # single-segment prefixes still work
+    assert k.resolve("type/callouts", "roic") is not None
+
+
+def test_resolve_still_refuses_a_key_that_is_not_there():
+    """Looser prefix matching must not start inventing matches."""
+    k = kit()
+    assert k.resolve("type/callouts", "not-a-real-card") is None
+    assert k.resolve("props/objects", "spaceship") is None
+
+
 def test_families_exclude_boil_twins():
     k = kit()
     objects = k.family("props/objects")

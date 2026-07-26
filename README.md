@@ -25,9 +25,10 @@ machine does 100% of voice, asset fetching, composition and rendering.
 no hardcoded scene timings anywhere in the render code.
 
 ```
-/new TICKER → the bot refreshes the numbers in Excel itself → run the
-pre-filled master prompt in Claude/GPT → paste the output back →
-validation + cost report → Approve ✅ → /render TICKER → shareable link
+/short TICKER  (or /long TICKER) → the bot refreshes the numbers in Excel
+itself → run the pre-filled master prompt in Claude/GPT → paste the output
+back → validation + cost report → tweak in chat if needed → Approve ✅ →
+/render TICKER → shareable link
 ```
 
 (Off the Windows render box, or with no data add-in loaded, step two is the
@@ -100,7 +101,8 @@ pipeline/
   workspace.py           per-ticker/date dirs, approvals, chat context
 bot/
   handlers.py            BotCore (all logic, Telegram-free) + PTB glue
-  prompts.py             master-prompt placeholder filling
+  prompts.py             master-prompt placeholder filling + the kit catalog
+                         generated from the manifest (never a hand-kept list)
   keyboards.py           Approve / Swap clip / Cancel, candidate buttons
 assets/                  fonts, backgrounds, overlays, sfx, music,
                          hook_bank.json, meme_library/ (16 owned memes +
@@ -195,9 +197,14 @@ with the desktop acting as a render worker later.
 
 ## Operator flow (one video, start to finish)
 
-1. `/screen` (or the pre-market digest) → tap a candidate, or `/new TICKER`.
-   Trending lane → SHORT; beaten-down value lane → LONG. The screener's
-   move context is baked into the SHORT prompt automatically.
+1. `/screen` (or the pre-market digest) → tap a candidate, or name the lane
+   yourself: **`/short TICKER`** or **`/long TICKER`**. One command prepares
+   one prompt, and `/render` follows from the lane rather than being a second
+   choice. Trending lane → SHORT; beaten-down value lane → LONG, and picking
+   a trending name for a LONG gets a warning, not a refusal — the screener is
+   a suggestion engine. The screener's move context is baked into the SHORT
+   prompt automatically. (`/new` still works for one release, preparing both
+   prompts as before.)
 2. The numbers arrive on their own: `/new` copies
    `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!C3`,
    fires the add-in's refresh, waits for it to genuinely finish, and files a
@@ -208,8 +215,15 @@ with the desktop acting as a render worker later.
    path is unchanged. Optionally upload raw screenshot PNGs for
    `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
    label on screen.
-3. The bot replies with both **pre-filled master prompts** — run one in
-   Claude/GPT, paste the model's output back (message or .txt).
+3. The bot replies with the lane's **pre-filled master prompt** — run it in
+   Claude/GPT, paste the model's output back (message or .txt). The prompt
+   carries a **kit catalog generated from the manifest at fill time**: exactly
+   which `[TERM]`, `[BIGNUM]`, `[TABLE]`, `[PROP]` and `[ALERT]` keys have
+   artwork, the concept illustrations with a one-line "use when", the chapter
+   kits, the host's poses and reactions — plus the expressivity tags and the
+   pacing rules. Validation already rejects unknown keys; this stops them
+   being invented, and because it is read off disk it cannot drift from what
+   is shipped.
 4. Read the **validation + cost report** (chars, $ estimate, cache hits,
    visual sources + contact sheet, meme count, blockers, month-to-date
    spend). If the LONG used `[ASSET: slug]` tags, the bot attaches each

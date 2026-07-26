@@ -49,6 +49,13 @@ Owned memes — [MEME: key] (optional, at most one):
 Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
 {{broll_palette}}
 
+Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
+Pick from these; anything else must be an [ASSET] with a design prompt:
+{{kit_catalog}}
+
+## CRAFT — expressivity and pacing
+{{craft_rules}}
+
 ## THE FORMAT — fixed beats (the render kit is fixed — you only supply the rotating content)
 **Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence.
 

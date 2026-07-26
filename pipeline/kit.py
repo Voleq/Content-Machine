@@ -131,6 +131,13 @@ class Kit:
         `[PROP: laptop]` should find `props/objects/obj-laptop`, and
         `[TERM: roic]` should find `type/callouts/term-roic`, without the
         script author having to know the kit's internal naming.
+
+        The prefix can be more than one segment: `[BIGNUM: buyback]` has to
+        reach `big-number-buyback`. Stripping only the first segment left
+        `number-buyback`, so that key resolved to nothing and the beat quietly
+        degraded to a plain backdrop — with the validation warning suggesting
+        the operator write out `big-number-buyback` in full. So every
+        hyphen-boundary suffix is tried, longest match first.
         """
         key = key.strip().lower().replace(" ", "-").replace("_", "-")
         head = prefix.rstrip("/") + "/"
@@ -139,7 +146,12 @@ class Kit:
             return direct
         for name in self.family(prefix):
             leaf = name[len(head):]
-            if leaf == key or leaf.split("-", 1)[-1] == key:
+            if leaf == key:
+                return self.path(name)
+            # leaf "big-number-buyback" offers suffixes "number-buyback" and
+            # "buyback"; a bare "-" split would only ever try the first.
+            parts = leaf.split("-")
+            if any("-".join(parts[i:]) == key for i in range(1, len(parts))):
                 return self.path(name)
         return None
 

@@ -70,6 +70,170 @@ def broll_catalog() -> str:
     return "\n".join(f"  - {k} — {PALETTE[k]}" for k in palette_keys())
 
 
+# --------------------------------------------------------------------------
+# The kit catalog (addendum 1e).
+# --------------------------------------------------------------------------
+
+# What each concept illustration is FOR. Concepts are the one family where the
+# key alone doesn't say when to reach for it, so they get a line each; the rest
+# are self-describing keys and stay terse. Anything not listed here still gets
+# offered, just without a gloss — so adding artwork never needs a code change.
+_CONCEPT_USE = {
+    "actions-vs-words": "management said one thing and did another",
+    "dont-swing": "no edge here — the right move is not to play",
+    "prayer-session": "the bull case now depends on hope, not numbers",
+    "risk-filing": "the risk was disclosed all along, in the filing",
+    "risk-iceberg": "the disclosed risk is the small visible part",
+    "value-trap-hope": "cheap for a reason, and the reason hasn't changed",
+    "value-trap-trap": "the discount is the trap, not the opportunity",
+}
+
+# Prefixes stripped from a key when the tag payload doesn't need them:
+# `[PROP: laptop]` resolves `obj-laptop`, `[TERM: roic]` resolves `term-roic`.
+_STRIP_PREFIXES = ("obj-", "term-", "big-number-", "compare-", "react-", "beat-")
+
+
+def _leaves(kit, prefix: str, *, keep: str = "", strip: bool = True,
+            drop_blanks: bool = False) -> list[str]:
+    """Family leaf keys, optionally filtered to one naming prefix.
+
+    `drop_blanks` removes the empty layouts (`term-card-blank`,
+    `big-number-blank`). They are real and useful — they take arbitrary text —
+    but in a list headed "frameworks that exist" they read as one more named
+    framework, which is exactly the confusion this catalog is meant to remove.
+    They get their own line instead.
+    """
+    head = prefix.rstrip("/") + "/"
+    out: list[str] = []
+    for name in kit.family(prefix):
+        leaf = name[len(head):]
+        if keep and not leaf.startswith(keep):
+            continue
+        if strip:
+            for p in _STRIP_PREFIXES:
+                if leaf.startswith(p):
+                    leaf = leaf[len(p):]
+                    break
+        if drop_blanks and (leaf == "blank" or leaf.endswith("-blank")):
+            continue
+        out.append(leaf)
+    return sorted(set(out))
+
+
+def _chapter_kits(kit) -> list[str]:
+    """Chapter kit names, descending into the nested long-form ones.
+
+    `chapters/long-form/` is a container for four sub-kits (bvb, rc, tn, val),
+    so listing "long-form" as a chapter would name something that isn't one.
+    """
+    out: set[str] = set()
+    for name in kit._assets:
+        if not name.startswith("chapters/"):
+            continue
+        parts = name.split("/")
+        if len(parts) >= 4:          # chapters/long-form/tn/<asset>
+            out.add(f"{parts[1]}/{parts[2]}")
+        elif len(parts) == 3:
+            out.add(parts[1])
+    return sorted(out)
+
+
+def _group(title: str, keys: list[str], *, note: str = "") -> list[str]:
+    if not keys:
+        return []
+    lines = [f"{title}:" + (f"  ({note})" if note else "")]
+    # Wrapped rather than one-per-line: this is a menu, and a 762-line menu
+    # would swamp the prompt it is meant to inform.
+    row: list[str] = []
+    for k in keys:
+        row.append(k)
+        if sum(len(x) + 2 for x in row) > 88:
+            lines.append("  " + ", ".join(row))
+            row = []
+    if row:
+        lines.append("  " + ", ".join(row))
+    return lines
+
+
+def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
+    """Every kit key the writer may reference, generated from the manifest.
+
+    Read off disk at prompt-fill time on purpose: a hand-maintained list drifts
+    the moment artwork is added or an export changes, and the failure mode of
+    drift is a script full of keys that validate-then-fail. Validation already
+    rejects unknown keys — this stops them being invented.
+
+    Terse by design. Grouped keys with a `use when` only for the concepts,
+    because those are the ones whose names don't say what they're for.
+    """
+    from pipeline.kit import load_kit
+
+    kit = load_kit(settings.assets_dir)
+    if not len(kit):
+        return ("(design kit not exported — run scripts/export_design_kit.py. "
+                "Until then use [ASSET] for anything the kit would have covered.)")
+
+    out: list[str] = []
+    out += _group("[TERM: key] — explainer cards that EXIST (only these)",
+                  _leaves(kit, "type/callouts", keep="term-", drop_blanks=True))
+    out += _group("[BIGNUM: key] — one-number cards",
+                  _leaves(kit, "type/callouts", keep="big-number-",
+                          drop_blanks=True))
+    out.append("  A blank layout exists for both, so an unlisted term or number "
+               "still gets a card — the named ones just come with their own art.")
+    out += _group("[TABLE: kind]", _leaves(kit, "type/tables"))
+    out += _group("[ALERT: kind]", _leaves(kit, "type/alerts"))
+    out += _group("[PROP: key] — object cutaways",
+                  _leaves(kit, "props/objects"))
+
+    concepts = _leaves(kit, "props/concepts")
+    if concepts:
+        out.append("Concept illustrations — use when:")
+        for c in concepts:
+            use = _CONCEPT_USE.get(c, "")
+            out.append(f"  - {c}" + (f" — {use}" if use else ""))
+
+    if fmt == "short":
+        out += _group("Short beat variants (the renderer rotates these itself)",
+                      _leaves(kit, "short/variants"),
+                      note="you don't pick these; they vary across uploads")
+    else:
+        out += _group("Chapter kits with dedicated artwork", _chapter_kits(kit),
+                      note="name a chapter close to one of these and it gets its own visuals")
+
+    out += _group("Host poses", _leaves(kit, "mascot/host"),
+                  note="the renderer places these; listed so you know what he can do")
+    out += _group("Host reactions", _leaves(kit, "mascot/reactions"))
+    out.append(
+        "\nAnything genuinely NOT in the lists above: use [ASSET: slug] and append "
+        "a Claude Design prompt for it. That is the escape hatch for a diagram the "
+        "kit doesn't have — not a shortcut past a key that does exist, and it BLOCKS "
+        "the render until the file is delivered.")
+    return "\n".join(out)
+
+
+# The craft rules that were implicit in the templates. Stated once, injected
+# into every writing prompt, so they cannot drift between the four of them.
+EXPRESSIVITY_AND_PACING = """\
+Expressivity tags — inline, sparing, and never on every sentence:
+  [BEAT]  a held pause before a punchline or a number lands
+  [SIGH]  weary resignation; at most once or twice in a whole script
+  [FLAT]  deadpan delivery of something that should sound dramatic
+  [DRY]   the joke that is not signposted as a joke
+  Four or five across a short, a dozen or so across a long. Tagging every
+  sentence flattens the effect and reads as a tic.
+
+Pacing:
+  - Every chapter OPENS and CLOSES on the host's face. He introduces the
+    evidence and he reacts to it; cutting straight from one chart to the next
+    loses the person the viewer is actually watching.
+  - A readable asset — a table, a filing quote, a chart worth studying —
+    holds 6-8 seconds. Long enough to read it twice. Do not stack two
+    readable things back to back.
+  - The rhythm is: he says it, you show it, he reacts. Not: montage.
+"""
+
+
 def chart_metrics_line(data: CompanyData) -> str:
     """Only metrics with a real multi-year series in THIS data (+ price)."""
     return ", ".join(data.available_chart_metrics())
@@ -217,6 +381,8 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{kit_catalog}}"] = kit_catalog(settings, fmt="short")
+        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
     elif fmt == "long_angle":
         r["{{available_screenshots}}"] = screenshots_line(workspace)
@@ -229,6 +395,8 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{kit_catalog}}"] = kit_catalog(settings, fmt="long")
+        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
@@ -243,6 +411,8 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{kit_catalog}}"] = kit_catalog(settings, fmt="short")
+        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{peer_percentiles}}"] = (
             peer_percentiles_block(data) if data is not None else "(n/a in macro mode)"
         )
