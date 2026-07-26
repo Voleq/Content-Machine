@@ -33,6 +33,7 @@ from pipeline.cost import (
     build_short_report,
 )
 from pipeline.delivery import deliver
+from pipeline.gates import run_gates
 from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
 from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
@@ -533,6 +534,13 @@ class BotCore:
         v_warnings, v_blocking = validate_long_script(
             script, palette_keys(), ws.path, self.settings, data_metrics=data_metrics
         )
+        # The automated gates run here — before approval, before any spend —
+        # and only speak up on failure. A fabricated figure is the one error
+        # nobody downstream can catch.
+        gates = run_gates(script, self.settings, data=data,
+                          as_of=str((data.get("as_of_date") if data else "") or ""))
+        for f in gates.findings:
+            (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
         prompt_files = self._save_asset_prompts(ws, script)

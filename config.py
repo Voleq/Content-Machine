@@ -144,6 +144,18 @@ class Settings(BaseSettings):
         default="https://models.inference.ai.azure.com", alias="GITHUB_MODELS_ENDPOINT")
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     openai_base_url: str = "https://api.openai.com"
+    # --- LLM routing ------------------------------------------------------
+    # The cheap passes run local-first: a 7-8B model on the render box's GPU
+    # has no rate limit and no quota, and is still $0. Hosted tiers are the
+    # fallback. Comma-separated; empty means ollama,github,openai.
+    llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
+    # A render built on a stale snapshot states old numbers as current.
+    data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
+    data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
+    ollama_base_url: str = Field(default="http://127.0.0.1:11434",
+                                 alias="OLLAMA_BASE_URL")
+    ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
+    ollama_timeout_s: float = 120.0
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")
