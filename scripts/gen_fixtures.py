@@ -144,15 +144,32 @@ EXMPL_VAL_SCENARIOS = [
 ]
 
 # --- Peers: EXMPL's logistics-software comps ----------------------------------
+# Column order mirrors the shipped template EXACTLY (A Peer … M Rev Growth %),
+# including the two revenue feeds and the COMPUTED 3Y CAGR that replaced the
+# old raw `Rev Growth %` column, plus the `cln …` helper columns the percentile
+# block scores against. Readers must find these by header text, not position.
 EXMPL_PEERS_HEADER = ["Peer (auto)", "Price", "Market Cap", "P/E", "EV/EBITDA",
-                      "P/S", "Rev Growth %", "Gross Mgn %", "Net Mgn %",
-                      "FCF Yield %", "NetDebt/EBITDA"]
+                      "P/S", "Gross Mgn %", "Net Mgn %", "FCF Yield %",
+                      "NetDebt/EBITDA", "Rev LTM (now)", "Rev LTM (-3Y)",
+                      "Rev Growth % (3Y CAGR)"]
+EXMPL_PEERS_CLN_HEADER = ["cln P/E", "cln EV/EBITDA", "cln P/S", "cln GrossM",
+                          "cln NetM", "cln FCFY", "cln ND/EBITDA", "cln RevGrw3Y"]
+# name, price, mcap, P/E, EV/EBITDA, P/S, gross %, net %, FCF yield %,
+# ND/EBITDA, rev LTM now, rev LTM -3Y  (the 3Y CAGR is computed below, as the
+# template computes it: ((now / -3Y) ^ 1/3 - 1) * 100)
 EXMPL_PEERS = [
-    ("Freightwave Systems Inc", 142.0, 12_400_000_000, 34.0, 22.0, 9.1, 18.0, 71.0, 6.0, 2.1, 0.4),
-    ("DepotOps Corp", 63.0, 4_100_000_000, NA, 41.0, 5.4, 9.0, 62.0, -4.0, 0.6, 1.8),
-    ("RouteLogic Holdings", 208.0, 28_900_000_000, 41.0, 26.0, 11.2, 22.0, 76.0, 12.0, 3.0, 0.1),
-    ("CargoCloud Inc", 19.0, 1_800_000_000, NA, NA, 3.2, 6.0, 58.0, -22.0, NA, 2.6),
+    ("Freightwave Systems Inc", 142.0, 12_400_000_000, 34.0, 22.0, 9.1, 71.0, 6.0, 2.1, 0.4, 2037.36, 1240.0),
+    ("DepotOps Corp", 63.0, 4_100_000_000, NA, 41.0, 5.4, 62.0, -4.0, 0.6, 1.8, 1269.13, 980.0),
+    ("RouteLogic Holdings", 208.0, 28_900_000_000, 41.0, 26.0, 11.2, 76.0, 12.0, 3.0, 0.1, 3813.28, 2100.0),
+    ("CargoCloud Inc", 19.0, 1_800_000_000, NA, NA, 3.2, 58.0, -22.0, NA, 2.6, 726.52, 610.0),
 ]
+
+
+def _peer_rev_cagr_3y(now: float, ago: float) -> float:
+    """The template's col-M formula, cached as a value here (the add-in leaves
+    a resolved number, never the formula string)."""
+    return ((now / ago) ** (1 / 3) - 1) * 100
+
 
 # --- Peers · self-scoring percentile block (BELOW the auto table) -------------
 # A DISTINCT second block: the subject's percentile within each cleaned peer
@@ -295,11 +312,20 @@ def build_workbook() -> Workbook:
     # ---- Peers
     ps = wb.create_sheet("Peers")
     ps["A1"] = "DENNIS — peers (auto via PEERS(); optional / long-form)"
-    for j, h in enumerate(EXMPL_PEERS_HEADER, 1):
+    for j, h in enumerate(EXMPL_PEERS_HEADER + EXMPL_PEERS_CLN_HEADER, 1):
         ps.cell(row=4, column=j, value=h).font = header_font
     for i, peer in enumerate(EXMPL_PEERS):
         for j, v in enumerate(peer):
             ps.cell(row=5 + i, column=1 + j, value=v)
+        # col M — computed 3Y CAGR from the two revenue feeds (cols K/L)
+        growth = _peer_rev_cagr_3y(peer[-2], peer[-1])
+        ps.cell(row=5 + i, column=len(EXMPL_PEERS_HEADER), value=growth)
+        # the cleaned columns the percentile block scores against: the same
+        # numbers again, blanked where the source didn't resolve. A reader that
+        # matched headers loosely could grab THESE instead of the real columns.
+        cleaned = [peer[3], peer[4], peer[5], peer[6], peer[7], peer[8], peer[9], growth]
+        for j, v in enumerate(cleaned, len(EXMPL_PEERS_HEADER) + 1):
+            ps.cell(row=5 + i, column=j, value="" if v == NA else v)
     # self-scoring percentile block — a DISTINCT block beneath the auto table,
     # separated by one blank row so _read_peers stops before it.
     pp_title = 5 + len(EXMPL_PEERS) + 1

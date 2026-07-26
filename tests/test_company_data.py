@@ -89,6 +89,113 @@ def test_peer_percentiles_parsing_and_block_separation(workspace):
     assert {p["name"] for p in data.peers}.isdisjoint(by_metric)
 
 
+def test_peer_columns_are_mapped_by_header_not_position(workspace):
+    """Pin the peer mapping to the sheet the template actually ships:
+
+        B Price · C Market Cap · D P/E · E EV/EBITDA · F P/S · G Gross Mgn % ·
+        H Net Mgn % · I FCF Yield % · J NetDebt/EBITDA · K Rev LTM (now) ·
+        L Rev LTM (-3Y) · M Rev Growth % (3Y CAGR)
+
+    The table grew the two revenue feeds and the computed CAGR, pushing
+    everything from the margins one column right. Reading fixed offsets B–K
+    mislabelled five fields at once — gross margin arriving as `rev_growth`,
+    net margin as `gross_margin`, FCF yield as `net_margin`, net debt/EBITDA
+    as `fcf_yield`, and a raw revenue figure as `net_debt_ebitda` — each one
+    plausible enough on its own to reach a script.
+    """
+    data = load_company_data(workspace)
+    top = data.peers[0]
+    assert set(top) == {
+        "name", "price", "market_cap", "pe", "ev_ebitda", "ps", "gross_margin",
+        "net_margin", "fcf_yield", "net_debt_ebitda", "rev_growth",
+    }
+    assert top["name"] == "Freightwave Systems Inc"
+    assert top["price"] == 142.0
+    assert top["market_cap"] == 12_400_000_000
+    assert top["pe"] == 34.0
+    assert top["ev_ebitda"] == 22.0
+    assert top["ps"] == 9.1
+    assert top["gross_margin"] == 71.0
+    assert top["net_margin"] == 6.0
+    assert top["fcf_yield"] == 2.1
+    assert top["net_debt_ebitda"] == 0.4
+    # rev_growth is the COMPUTED 3Y CAGR (col M) — ((K/L)^(1/3)-1)*100
+    assert top["rev_growth"] == pytest.approx(18.0, abs=1e-3)
+
+    # the exact off-by-one the fixed offsets produced, field by field
+    assert top["rev_growth"] != 71.0, "gross margin read as revenue growth"
+    assert top["gross_margin"] != 6.0, "net margin read as gross margin"
+    assert top["net_margin"] != 2.1, "FCF yield read as net margin"
+    assert top["fcf_yield"] != 0.4, "net debt/EBITDA read as FCF yield"
+    # …and the raw revenue feeds (cols K/L) reach no field at all
+    feeds = {2037.36, 1240.0, 1269.13, 980.0, 3813.28, 2100.0, 726.52, 610.0}
+    read = {v for p in data.peers for k, v in p.items() if k != "name"}
+    assert not (feeds & read), "a raw `Rev LTM` figure landed in a metric field"
+
+    # NA cells still coerce to None, and negative margins survive
+    depot = data.peers[1]
+    assert depot["name"] == "DepotOps Corp"
+    assert depot["pe"] is None                # '#N/A' in the fixture
+    assert depot["ev_ebitda"] == 41.0
+    assert depot["gross_margin"] == 62.0 and depot["net_margin"] == -4.0
+    assert depot["net_debt_ebitda"] == 1.8
+    assert depot["rev_growth"] == pytest.approx(9.0, abs=1e-3)
+    assert data.peers[3]["fcf_yield"] is None  # '#N/A' — not the neighbour's
+
+
+def test_peer_columns_are_found_however_the_template_orders_them():
+    """Column ORDER is not the contract, the header text is.
+
+    The pre-CAGR revision carried a raw `Rev Growth %` sixth, straight after
+    `P/S`; the current one computes a 3Y CAGR at the far right, past two
+    revenue feeds. Both must read to the same fields — as must a sheet whose
+    columns simply sit in another order, or whose margins are spelled out.
+    """
+    from openpyxl import Workbook
+
+    from pipeline.company_data import _read_peers
+
+    expected = {
+        "name": "Freightwave Systems Inc", "price": 142.0,
+        "market_cap": 12_400_000_000, "pe": 34.0, "ev_ebitda": 22.0, "ps": 9.1,
+        "gross_margin": 71.0, "net_margin": 6.0, "fcf_yield": 2.1,
+        "net_debt_ebitda": 0.4, "rev_growth": 18.0,
+    }
+    # whatever a revision titles a column, this is what belongs under it
+    by_header = {
+        "Peer (auto)": expected["name"], "Price": 142.0,
+        "Market Cap": 12_400_000_000, "P/E": 34.0, "EV/EBITDA": 22.0,
+        "P/S": 9.1, "Gross Mgn %": 71.0, "Gross margin %": 71.0,
+        "Net Mgn %": 6.0, "Net margin %": 6.0, "FCF Yield %": 2.1,
+        "NetDebt/EBITDA": 0.4, "Net debt / EBITDA": 0.4,
+        "Rev Growth %": 18.0, "Rev Growth % (3Y CAGR)": 18.0,
+        # the feeds behind the CAGR — read by nothing
+        "Rev LTM (now)": 2037.36, "Rev LTM (-3Y)": 1240.0,
+    }
+    layouts = [
+        # the pre-CAGR revision — raw growth sixth
+        ["Peer (auto)", "Price", "Market Cap", "P/E", "EV/EBITDA", "P/S",
+         "Rev Growth %", "Gross Mgn %", "Net Mgn %", "FCF Yield %",
+         "NetDebt/EBITDA"],
+        # what ships today — feeds, then the computed CAGR, at the far right
+        ["Peer (auto)", "Price", "Market Cap", "P/E", "EV/EBITDA", "P/S",
+         "Gross Mgn %", "Net Mgn %", "FCF Yield %", "NetDebt/EBITDA",
+         "Rev LTM (now)", "Rev LTM (-3Y)", "Rev Growth % (3Y CAGR)"],
+        # reordered, margins spelled out, the name column no longer first
+        ["Rev Growth % (3Y CAGR)", "Net debt / EBITDA", "Peer (auto)",
+         "Net margin %", "Gross margin %", "FCF Yield %", "P/S", "EV/EBITDA",
+         "P/E", "Market Cap", "Price"],
+    ]
+    for layout in layouts:
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Peers"
+        for j, title in enumerate(layout, 1):
+            ws.cell(row=4, column=j, value=title)
+            ws.cell(row=5, column=j, value=by_header[title])
+        assert _read_peers(ws) == [expected], layout
+
+
 def test_valuation_wacc_and_reverse_dcf_keys(workspace):
     data = load_company_data(workspace)
     val = data.valuation
@@ -215,6 +322,56 @@ def test_the_shipped_template_parses_structurally(tmp_path):
     data = load_company_data(d)
     assert data.has_history
     assert data.history_years == ["FY-4", "FY-3", "FY-2", "FY-1", "FY-0", "LTM"]
+
+
+def test_the_shipped_template_peer_table_maps_every_field():
+    """The peer half of the same contract, against the REAL workbook: whatever
+    revision ships, every field must find its OWN column, `rev_growth` must be
+    the computed 3Y CAGR, and no raw `Rev LTM` figure may reach a metric."""
+    from pathlib import Path
+
+    from openpyxl import load_workbook
+
+    from pipeline.company_data import (
+        _PEER_COLS,
+        _cell_text,
+        _col_of,
+        _header_row,
+        _num,
+        _read_peers,
+        _rows,
+    )
+
+    template = Path(__file__).resolve().parents[1] / "templates" / "dennis_data_template.xlsx"
+    wb = load_workbook(template, data_only=True)
+    ws = wb["Peers"]
+    rows = _rows(ws)
+    hr = _header_row(rows, "peer (auto)")
+    assert hr is not None, "the auto peer table lost its `Peer (auto)` header"
+    header = rows[hr]
+
+    cols = {f: _col_of(header, *names) for f, names in _PEER_COLS.items()}
+    assert all(c is not None for c in cols.values()), \
+        f"no column found for {[f for f, c in cols.items() if c is None]}"
+    # one column each: never two fields on one, never a `cln …` scoring twin
+    assert len(set(cols.values())) == len(cols)
+    titles = {f: _cell_text(header[c]).lower() for f, c in cols.items()}
+    assert not any(t.startswith("cln") for t in titles.values()), titles
+    assert "cagr" in titles["rev_growth"] and "ltm" not in titles["rev_growth"]
+
+    peers = _read_peers(ws)
+    assert len(peers) > 1 and all(p["name"] for p in peers)
+    # per row, the two revenue feeds must not appear in any metric — that is
+    # exactly what the fixed-offset read did (`Rev LTM (now)` ≈ 1e5 arriving
+    # as a net-debt/EBITDA ratio).
+    feed_cols = [c for c in (_col_of(header, "rev ltm (now)"),
+                             _col_of(header, "rev ltm (-3y)")) if c is not None]
+    assert feed_cols, "the template dropped the revenue feeds"
+    for row, peer in zip(rows[hr + 1:], peers):
+        fed = {_num(row[c]) for c in feed_cols if c < len(row)} - {None}
+        metrics = {v for k, v in peer.items() if k != "name" and v is not None}
+        assert not (fed & metrics), peer["name"]
+    wb.close()
 
 
 def test_screenshot_gets_generic_filing_label(workspace, settings, tmp_path):
