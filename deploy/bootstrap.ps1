@@ -119,7 +119,8 @@ try {
     Warn "The bot will ask you to upload dennis_data.xlsx by hand instead."
 }
 if ($excelOk) {
-    Write-Host "    tip: pin a vendor symbol once with  /refresh PLTR PLTR.O"
+    Write-Host "    tip: force a RIC once with  /refresh PLTR PLTR.O  (normally"
+    Write-Host "         unnecessary — the template derives it from the exchange)"
 }
 
 # ------------------------------------------------------------------ .env

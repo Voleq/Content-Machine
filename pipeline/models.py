@@ -414,9 +414,12 @@ class Cue(BaseModel):
 DATA_FIELDS: dict[str, list[str]] = {
     "identity": ["company_name", "ticker", "exchange", "sector", "industry",
                  "country", "currency", "as_of_date"],
+    # `shares_dill_out` (diluted) arrived with the v3.1 template; the basic
+    # count stays the required one, and the dilution gap between them is the
+    # interesting number.
     "size": ["price", "market_cap", "enterprise_value", "shares_out",
-             "avg_volume_3m", "beta", "week52_high", "week52_low",
-             "pct_from_52w_high"],
+             "shares_dill_out", "avg_volume_3m", "beta", "week52_high",
+             "week52_low", "pct_from_52w_high"],
     "valuation": ["pe_ttm", "forward_pe", "ps_ttm", "ev_ebitda", "ev_sales",
                   "ev_fcf", "pb", "p_fcf", "peg", "earnings_yield",
                   "fcf_yield", "dividend_yield", "buyback_yield",

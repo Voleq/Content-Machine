@@ -198,13 +198,14 @@ with the desktop acting as a render worker later.
    Trending lane → SHORT; beaten-down value lane → LONG. The screener's
    move context is baked into the SHORT prompt automatically.
 2. The numbers arrive on their own: `/new` copies
-   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!B2`,
+   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!C3`,
    fires the add-in's refresh, waits for it to genuinely finish, and files a
    dated copy in the workspace. `/refresh TICKER` re-pulls; a second argument
-   pins the vendor symbol for good (`/refresh PLTR PLTR.O`). Anywhere without
-   Excel and a loaded add-in the bot says so and takes the manual upload
-   instead — that path is unchanged. Optionally upload raw screenshot PNGs
-   for `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
+   pins a **RIC override** for good (`/refresh PLTR PLTR.O`) for the cases the
+   template's own exchange lookup can't get right. Anywhere without Excel and
+   a loaded add-in the bot says so and takes the manual upload instead — that
+   path is unchanged. Optionally upload raw screenshot PNGs for
+   `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
    label on screen.
 3. The bot replies with both **pre-filled master prompts** — run one in
    Claude/GPT, paste the model's output back (message or .txt).
@@ -244,19 +245,38 @@ name the data vendor — the parsers reject it, and on screen the data is
 
 #### Refreshing it without touching Excel yourself
 
-`pipeline/excel_refresh.py` drives Excel over COM on the render box. The step
-that matters is the wait: the add-in resolves **asynchronously**, so the
-refresh call returns instantly while cells still read `#N/A` or
+`pipeline/excel_refresh.py` drives Excel over COM on the render box.
+
+Two input cells, and they mean different things. **`Snapshot!C3`** takes the
+plain ticker and every `CIQ(...)` formula reads it. **`Snapshot!B3` derives**
+the Refinitiv RIC from C3, looking the suffix up from the exchange via the
+hidden `_RICMap` table — it is a formula and writing to it would silently
+detach every green cell from the ticker. **`Snapshot!E2`** forces a RIC for
+the cases the lookup can't know (a dual listing, a share class); leave it
+empty and the template does the work, which is right more often than a guess.
+`/refresh PLTR PLTR.O` pins E2 for that ticker permanently.
+
+The step that matters is the wait: the add-in resolves **asynchronously**, so
+the refresh call returns instantly while cells still read `#N/A` or
 `Requesting Data...`. Reading at that moment produces a workbook full of
 blanks that looks like a successful refresh — a video built on nothing. So the
-refresh only counts as done when every required field has resolved *and* the
-sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive reads.
+refresh only counts as done when every field worth waiting for has resolved
+*and* the sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive
+reads.
+
+"Worth waiting for" is two tiers, because the template grades its own fields
+in the `Priority` column and grades twelve as Required where `DATA_REQUIRED`
+names six. The poll waits for all twelve — a stronger completion signal, so it
+cannot stop while the valuation block is still filling in — but only the six
+are hard: a thinly-covered small-cap missing `ev_ebitda` gets a warning and a
+usable workbook, not a failed refresh.
 
 Consequences, by design:
 
-- A timeout, or a required field still unresolved, is a **hard failure** with
-  the fields named. Nothing is written to `dennis_data.xlsx`; a workbook
-  already in the workspace is left exactly as it was.
+- A timeout, or a `DATA_REQUIRED` field still unresolved, is a **hard failure**
+  with the fields and the symbol named. Nothing is written to
+  `dennis_data.xlsx`; a workbook already in the workspace is left exactly as
+  it was.
 - Excel or the add-in missing is **reported**, not crashed on, and the manual
   upload takes over.
 - The scratch copy is deleted and Excel is quit — and killed by PID if a

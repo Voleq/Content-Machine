@@ -160,12 +160,16 @@ class Settings(BaseSettings):
     # only path — which is exactly what it was before this existed.
     excel_refresh_enabled: bool = Field(default=True, alias="EXCEL_REFRESH_ENABLED")
     excel_template_path: str = Field(default="", alias="EXCEL_TEMPLATE_PATH")
-    # The shipped template drives every formula off Snapshot!B2 (its own
-    # Instructions sheet says so). Override only if the template moves it.
-    excel_ticker_cell: str = Field(default="B2", alias="EXCEL_TICKER_CELL")
-    # The add-in wants its own instrument code. A blank suffix passes the
-    # ticker through; ".O" turns PLTR into PLTR.O. Per-ticker pins in
-    # state/excel_symbols.json beat this.
+    # v3.1 template: the plain Capital IQ ticker goes in Snapshot!C3 and every
+    # CIQ formula reads it; B3 DERIVES the Refinitiv RIC from it and must not
+    # be written. Override only if the template moves them.
+    excel_ticker_cell: str = Field(default="C3", alias="EXCEL_TICKER_CELL")
+    excel_ric_cell: str = Field(default="E2", alias="EXCEL_RIC_CELL")
+    # Normally blank: the template looks the RIC suffix up from the exchange
+    # itself (the hidden _RICMap table), which beats guessing. Set this to
+    # force one — ".O" makes PLTR into PLTR.O. Per-ticker pins in
+    # state/excel_symbols.json beat this, and both land in the RIC override
+    # cell, never in the ticker cell.
     excel_symbol_suffix: str = Field(default="", alias="EXCEL_SYMBOL_SUFFIX")
     # Which add-in macro fires the refresh differs by vintage; comma-separated
     # candidates, tried in order, falling back to a full recalculation.

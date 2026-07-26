@@ -154,6 +154,69 @@ def test_na_values_and_unknown_fields(workspace):
     assert "pe_ttm" in data.warning_missing
 
 
+def test_the_value_column_is_found_however_the_template_titles_it(tmp_path):
+    """The v3.1 template renamed `Value (auto)` to `Value (Capital IQ) MM`.
+
+    An exact-match column lookup read ZERO snapshot fields off it — a workbook
+    that was present, opened cleanly, and parsed to nothing, which then looks
+    identical to "the operator never refreshed it". Match on the prefix.
+    """
+    from openpyxl import Workbook
+
+    for title in ("Value (auto)", "Value", "Value (Capital IQ) MM",
+                  "Value (Refinitiv)"):
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Snapshot"
+        ws.cell(row=6, column=2, value="field_key")
+        ws.cell(row=6, column=3, value="Label")
+        ws.cell(row=6, column=4, value=title)
+        for i, (k, v) in enumerate([("company_name", "Example Inc"),
+                                    ("ticker", "EXMPL"),
+                                    ("as_of_date", "2026-07-01"),
+                                    ("price", 12.5),
+                                    ("market_cap", 1.0e9),
+                                    ("shares_out", 8.0e7)]):
+            ws.cell(row=7 + i, column=2, value=k)
+            ws.cell(row=7 + i, column=4, value=v)
+        d = tmp_path / title.replace(" ", "_").replace("(", "").replace(")", "")
+        d.mkdir(parents=True)
+        wb.save(d / "dennis_data.xlsx")
+
+        data = load_company_data(d)
+        assert data.get("company_name") == "Example Inc", f"{title!r} read nothing"
+        assert data.blocking_missing == [], title
+
+
+def test_the_shipped_template_parses_structurally(tmp_path):
+    """Guard the whole contract: whatever revision of the template ships, its
+    Snapshot sheet must still be readable by field_key."""
+    import shutil
+    from pathlib import Path
+
+    template = Path(__file__).resolve().parents[1] / "templates" / "dennis_data_template.xlsx"
+    d = tmp_path / "ws"
+    d.mkdir(parents=True)
+    shutil.copy(template, d / "dennis_data.xlsx")
+
+    # The shipped template holds formulas with no cached values, so every value
+    # reads None — but the KEYS must all be found, which is what broke.
+    from pipeline.company_data import _read_snapshot
+    from openpyxl import load_workbook
+    from pipeline.models import ALL_DATA_FIELDS
+
+    wb = load_workbook(d / "dennis_data.xlsx", data_only=True)
+    pairs = _read_snapshot(wb["Snapshot"])
+    wb.close()
+    assert len(pairs) >= 40, f"only {len(pairs)} field_keys found in the template"
+    unknown = [k for k in pairs if k not in ALL_DATA_FIELDS]
+    assert not unknown, f"template has field_keys the model doesn't know: {unknown}"
+
+    data = load_company_data(d)
+    assert data.has_history
+    assert data.history_years == ["FY-4", "FY-3", "FY-2", "FY-1", "FY-0", "LTM"]
+
+
 def test_screenshot_gets_generic_filing_label(workspace, settings, tmp_path):
     src = tmp_path / "raw.png"
     Image.new("RGB", (1400, 800), (30, 34, 40)).save(src)

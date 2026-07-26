@@ -26,6 +26,8 @@ from pipeline.company_data import find_export, load_company_data
 from pipeline.excel_refresh import (
     FIRST_DATA_ROW,
     KEY_COL,
+    PRIORITY_COL,
+    RIC_OVERRIDE_CELL,
     TICKER_CELL,
     VALUE_COL,
     ExcelUnavailable,
@@ -37,6 +39,7 @@ from pipeline.excel_refresh import (
     refresh_age_days,
     refresh_for_ticker,
     refresh_stamp,
+    resolve_ric_override,
     resolve_symbol,
     set_symbol_override,
     template_path,
@@ -62,8 +65,15 @@ class FakeExcel:
 
     def __init__(self, *, fields: dict[str, object] | None = None,
                  resolve_after: int = 2, macros: tuple[str, ...] = ("EikonRefreshWorksheet",),
-                 stuck: tuple[str, ...] = (), errors: tuple[str, ...] = ()):
+                 stuck: tuple[str, ...] = (), errors: tuple[str, ...] = (),
+                 priority: dict[str, str] | None = None):
         self.fields = dict(fields or _default_fields())
+        # mirrors the v3.1 template: DATA_REQUIRED plus a few the sheet grades
+        # Required without them blocking a render
+        self.priority = dict(priority if priority is not None else {
+            **{k: "Required" for k in DATA_REQUIRED},
+            "pe_ttm": "Required",
+        })
         self.resolve_after = resolve_after
         self.macros = macros
         self.stuck = set(stuck)
@@ -112,6 +122,10 @@ class FakeExcel:
             row = [None] * (last_col - first_col + 1)
             row[0] = key
             row[VALUE_COL - KEY_COL] = shown
+            # the template's own Required/Recommended/Optional grading (col F)
+            pri_i = PRIORITY_COL - KEY_COL
+            if pri_i < len(row):
+                row[pri_i] = self.priority.get(key, "Optional")
             rows.append(row)
         return rows
 
@@ -140,20 +154,29 @@ def _default_fields() -> dict[str, object]:
 
 
 def _write_workbook(path: Path, fields: dict[str, object]) -> None:
-    """A minimal Snapshot sheet in the layout the reader expects."""
+    """A minimal Snapshot sheet in the v3.1 layout the reader expects.
+
+    Note the value column header: the real template calls it
+    `Value (Capital IQ) MM`, and an exact-match column lookup read ZERO fields
+    off it. Mirroring the real title keeps that regression caught here.
+    """
     from openpyxl import Workbook
 
+    header = FIRST_DATA_ROW - 1
     wb = Workbook()
     ws = wb.active
     ws.title = "Snapshot"
-    ws.cell(row=5, column=1, value="Section")
-    ws.cell(row=5, column=KEY_COL, value="field_key")
-    ws.cell(row=5, column=3, value="Label")
-    ws.cell(row=5, column=VALUE_COL, value="Value (auto)")
+    ws.cell(row=header, column=1, value="Section")
+    ws.cell(row=header, column=KEY_COL, value="field_key")
+    ws.cell(row=header, column=3, value="Label")
+    ws.cell(row=header, column=VALUE_COL, value="Value (Capital IQ) MM")
+    ws.cell(row=header, column=PRIORITY_COL, value="Priority")
     for i, (key, value) in enumerate(fields.items()):
         r = FIRST_DATA_ROW + i
         ws.cell(row=r, column=KEY_COL, value=key)
         ws.cell(row=r, column=VALUE_COL, value=value)
+        ws.cell(row=r, column=PRIORITY_COL,
+                value="Required" if key in DATA_REQUIRED else "Optional")
     path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(path)
 
@@ -296,6 +319,46 @@ def test_optional_fields_that_never_resolve_do_not_fail_the_refresh(
     assert all(f not in result.pending for f in DATA_REQUIRED)
 
 
+def test_the_poll_waits_for_the_templates_required_set_not_just_the_hard_one(
+        settings, no_sleep, tmp_path):
+    """`pe_ttm` does not block a render, but the poll should still wait for it:
+    stopping earlier risks saving while the valuation block fills in.
+
+    Isolated with a field that NEVER lands — one that eventually lands is
+    already covered by the settle condition, so it cannot tell the two grades
+    apart. Graded Required, the poll holds out to the deadline; graded
+    Optional, it settles and leaves.
+    """
+    sleep, clock = no_sleep
+    counts = {}
+    for grade in ("Required", "Optional"):
+        fake = FakeExcel(priority={**{k: "Required" for k in DATA_REQUIRED},
+                                   "pe_ttm": grade},
+                         stuck=("pe_ttm",))
+        refresh_for_ticker(settings, "PLTR", tmp_path / f"ws{grade}",
+                           session_factory=lambda f=fake: f,
+                           sleep=sleep, clock=clock, timeout_s=30)
+        counts[grade] = fake.polls
+    assert counts["Optional"] == 5, counts     # resolves at 2, settles by 5
+    assert counts["Required"] > counts["Optional"], counts
+
+
+def test_a_template_required_field_that_never_lands_warns_but_still_saves(
+        settings, no_sleep, tmp_path):
+    """The soft tier is a warning, not a failure: a thin small-cap missing
+    ev_ebitda should still be able to get a video."""
+    sleep, clock = no_sleep
+    fake = FakeExcel(priority={**{k: "Required" for k in DATA_REQUIRED},
+                               "pe_ttm": "Required"},
+                     stuck=("pe_ttm",))
+    result = refresh_for_ticker(settings, "PLTR", tmp_path / "ws",
+                                session_factory=lambda: fake,
+                                sleep=sleep, clock=clock, timeout_s=30)
+    assert result.path.exists(), "a soft-tier gap must not fail the refresh"
+    assert "pe_ttm" in result.pending
+    assert "pe_ttm" in result.summary()
+
+
 # --------------------------------------------------------------------------
 # Triggering the refresh.
 # --------------------------------------------------------------------------
@@ -335,54 +398,102 @@ def test_the_macro_list_is_configurable(settings, no_sleep, tmp_path):
 
 
 # --------------------------------------------------------------------------
-# The symbol, and the cell it goes in.
+# The two input cells. The v3.1 template takes the plain ticker in C3 and
+# derives the Refinitiv RIC itself in B3; E2 forces a RIC when the derivation
+# cannot know better. Writing the RIC into C3 would break every CIQ formula.
 # --------------------------------------------------------------------------
 
 
-def test_the_ticker_lands_in_the_cell_the_template_actually_uses(
-        settings, no_sleep, tmp_path):
-    """The shipped template drives every formula off Snapshot!B2 — its own
-    Instructions sheet says so. (The brief says C3; the template wins.)"""
+def test_the_plain_ticker_lands_in_the_ticker_cell(settings, no_sleep, tmp_path):
     sleep, clock = no_sleep
     fake = FakeExcel()
-    refresh_for_ticker(settings, "PLTR", tmp_path / "ws", session_factory=lambda: fake,
-                       sleep=sleep, clock=clock)
+    refresh_for_ticker(settings, "pltr", tmp_path / "ws",
+                       session_factory=lambda: fake, sleep=sleep, clock=clock)
+    assert TICKER_CELL == "C3"
     assert fake.cells[("Snapshot", TICKER_CELL)] == "PLTR"
-    assert TICKER_CELL == "B2"
+    # nothing forced, so the template derives the RIC from the exchange
+    assert ("Snapshot", RIC_OVERRIDE_CELL) not in fake.cells
 
 
-def test_the_template_really_does_read_that_cell():
-    """Guard against the template moving under us."""
+def test_the_template_really_does_read_those_cells():
+    """Guard against the template moving under us.
+
+    Both halves matter: C3 is what the CIQ formulas consume, and B3 must stay
+    a formula — writing a RIC into it would silently detach every green cell
+    from the ticker.
+    """
     wb = load_workbook(TEMPLATE)
     ws = wb["Snapshot"]
-    assert "RIC" in str(ws["A2"].value) or "Ticker" in str(ws["A2"].value)
     formulas = [str(c.value) for row in ws.iter_rows() for c in row
                 if isinstance(c.value, str) and c.value.startswith("=")]
-    assert any(f"${TICKER_CELL[0]}${TICKER_CELL[1]}" in f for f in formulas)
+    assert any(f"CIQ({TICKER_CELL}" in f.replace(" ", "") for f in formulas), \
+        "no CIQ formula reads the ticker cell"
+    derived = str(ws["B3"].value)
+    assert derived.startswith("="), "B3 should be the derived RIC, not an input"
+    assert RIC_OVERRIDE_CELL in derived.replace("$", ""), \
+        "B3 no longer honours the RIC override cell"
     wb.close()
 
 
-def test_a_pinned_vendor_symbol_beats_the_plain_ticker(settings):
-    assert resolve_symbol(settings, "pltr") == "PLTR"
-    set_symbol_override(settings, "PLTR", "PLTR.O")
-    assert resolve_symbol(settings, "PLTR") == "PLTR.O"
+def test_the_template_grades_its_own_required_fields():
+    """The Priority column is what the poll waits for."""
+    wb = load_workbook(TEMPLATE)
+    ws = wb["Snapshot"]
+    graded = {str(r[KEY_COL - 1].value).strip(): str(r[PRIORITY_COL - 1].value).strip()
+              for r in ws.iter_rows(min_row=FIRST_DATA_ROW, max_col=PRIORITY_COL)
+              if r[KEY_COL - 1].value}
+    required = {k for k, p in graded.items() if p == "Required"}
+    assert set(DATA_REQUIRED) <= required, \
+        "the template no longer grades every blocking field as Required"
+    assert len(required) > len(DATA_REQUIRED), \
+        "the two tiers have collapsed — the soft tier buys nothing"
+    wb.close()
 
 
-def test_a_configured_suffix_builds_the_vendor_symbol(settings):
-    s = settings.model_copy(update={"excel_symbol_suffix": "O"})
-    assert resolve_symbol(s, "PLTR") == "PLTR.O"
-    # a symbol that already carries a vendor suffix is left alone
-    assert resolve_symbol(s, "BRK.B") == "BRK.B"
-
-
-def test_an_explicit_symbol_overrides_everything(settings, no_sleep, tmp_path):
+def test_a_pinned_ric_goes_to_the_override_cell_not_the_ticker_cell(
+        settings, no_sleep, tmp_path):
+    """The pin is a RIC. Typing it into C3 would break every CIQ formula."""
+    set_symbol_override(settings, "PLTR", "PLTR.OQ")
     sleep, clock = no_sleep
     fake = FakeExcel()
     result = refresh_for_ticker(settings, "PLTR", tmp_path / "ws",
-                               symbol="PLTR.OQ", session_factory=lambda: fake,
-                               sleep=sleep, clock=clock)
-    assert result.symbol == "PLTR.OQ"
-    assert fake.cells[("Snapshot", TICKER_CELL)] == "PLTR.OQ"
+                                session_factory=lambda: fake,
+                                sleep=sleep, clock=clock)
+    assert fake.cells[("Snapshot", TICKER_CELL)] == "PLTR"
+    assert fake.cells[("Snapshot", RIC_OVERRIDE_CELL)] == "PLTR.OQ"
+    assert result.symbol == "PLTR" and result.ric == "PLTR.OQ"
+
+
+def test_the_ticker_cell_never_receives_a_ric(settings):
+    assert resolve_symbol(settings, "pltr") == "PLTR"
+    set_symbol_override(settings, "PLTR", "PLTR.O")
+    assert resolve_symbol(settings, "PLTR") == "PLTR", "a RIC leaked into C3"
+    assert resolve_ric_override(settings, "PLTR") == "PLTR.O"
+
+
+def test_no_override_by_default_so_the_template_derives_the_ric(settings):
+    """_RICMap gets the common exchanges right; don't second-guess it."""
+    assert resolve_ric_override(settings, "PLTR") == ""
+
+
+def test_a_configured_suffix_forces_a_ric(settings):
+    s = settings.model_copy(update={"excel_symbol_suffix": "O"})
+    assert resolve_ric_override(s, "PLTR") == "PLTR.O"
+    # a ticker that already carries a suffix is left to the template
+    assert resolve_ric_override(s, "BRK.B") == ""
+
+
+def test_an_explicit_symbol_forces_the_ric(settings, no_sleep, tmp_path):
+    sleep, clock = no_sleep
+    fake = FakeExcel()
+    result = refresh_for_ticker(settings, "PLTR", tmp_path / "ws",
+                                symbol="PLTR.OQ", session_factory=lambda: fake,
+                                sleep=sleep, clock=clock)
+    assert result.symbol == "PLTR"
+    assert result.ric == "PLTR.OQ"
+    assert fake.cells[("Snapshot", TICKER_CELL)] == "PLTR"
+    assert fake.cells[("Snapshot", RIC_OVERRIDE_CELL)] == "PLTR.OQ"
+    assert "PLTR.OQ" in result.summary()
 
 
 # --------------------------------------------------------------------------
@@ -731,7 +842,8 @@ def _fake_refresh(s, ticker, workspace, **kw):
 
 
 def test_an_explicit_symbol_on_the_command_is_remembered(settings, monkeypatch):
-    """Typing the RIC once should be enough."""
+    """Typing the RIC once should be enough — and it is remembered as a RIC
+    override, not as a replacement ticker."""
     from bot import handlers
 
     core = handlers.BotCore(settings)
@@ -739,4 +851,5 @@ def test_an_explicit_symbol_on_the_command_is_remembered(settings, monkeypatch):
     monkeypatch.setattr(handlers, "refresh_for_ticker",
                         lambda *a, **k: (_ for _ in ()).throw(RefreshError("stop")))
     core.refresh_data(15, ["PLTR", "PLTR.OQ"])
-    assert resolve_symbol(settings, "PLTR") == "PLTR.OQ"
+    assert resolve_ric_override(settings, "PLTR") == "PLTR.OQ"
+    assert resolve_symbol(settings, "PLTR") == "PLTR"

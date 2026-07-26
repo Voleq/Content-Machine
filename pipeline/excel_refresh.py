@@ -11,9 +11,10 @@ The whole thing is one flow, and each step has a way of going quietly wrong:
 1. **Copy the template.** Never open the shipped template in place; a
    half-finished refresh must not leave the template carrying one ticker's
    numbers.
-2. **Write the symbol** into the ticker cell. The shipped template drives
-   every formula off a single cell (see `TICKER_CELL` — and the note there
-   about the brief).
+2. **Write the ticker** into `Snapshot!C3`, which every CIQ formula reads.
+   The Refinitiv RIC is *derived* from it in B3 — never written — with the
+   suffix looked up from the exchange; `E2` forces a RIC when that lookup
+   cannot know better (a dual listing, a share class).
 3. **Trigger the add-in's refresh.** There is no one function for this: each
    add-in exposes its own macro, and the name differs by vintage. We try a
    configurable list, then fall back to a full rebuild.
@@ -72,20 +73,26 @@ log = logging.getLogger(__name__)
 # Where things live in the shipped template.
 # --------------------------------------------------------------------------
 
-# NOTE — the phase-3 brief says to set `Snapshot!C3`. The template actually in
-# the repo (`templates/dennis_data_template.xlsx`) drives everything off
-# `Snapshot!B2`: its own Instructions sheet says "Set the RIC in Snapshot!B2",
-# the header row sits at row 5, and every green formula reads `$B$2`. Writing
-# C3 would land in a comment row and refresh nothing. The code follows the
-# template; `EXCEL_TICKER_CELL` overrides it if the template ever moves.
-TICKER_CELL = "B2"
+# The v3.1 template's input cells. `C3` takes the plain Capital IQ ticker and
+# every `CIQ(...)` formula reads it; `B3` DERIVES the Refinitiv RIC from it
+# (`=IF($E$2<>"",$E$2,C3&_RICMap!$E$1)`, suffix looked up from the exchange),
+# so B3 is computed and must never be written. `E2` is the documented RIC
+# override — set it to force a specific RIC.
+#
+# The template's own Instructions sheet still carries the older v3 line "Set
+# the RIC in Snapshot!B2". That is stale: B2 is now the column label
+# "Refinitiv". Follow the formulas, not the prose.
+TICKER_CELL = "C3"
+RIC_OVERRIDE_CELL = "E2"
 SNAPSHOT_SHEET = "Snapshot"
 
-# The Snapshot layout: `field_key` in column B, the resolved value in D.
+# The Snapshot layout: `field_key` in column B, the resolved value in D, and
+# the template's own Required/Recommended/Optional grading in F.
 KEY_COL = 2
 VALUE_COL = 4
-FIRST_DATA_ROW = 6
-LAST_DATA_ROW = 200          # generous; the template ends around row 49
+PRIORITY_COL = 6
+FIRST_DATA_ROW = 7           # header is row 6
+LAST_DATA_ROW = 200          # generous; the template ends around row 51
 
 # Cell contents that mean "the add-in has not answered yet". Distinct from a
 # permanent error: `#NAME?` means the add-in isn't loaded at all, and the
@@ -169,6 +176,7 @@ class SnapshotState:
 
     values: dict[str, Any] = field(default_factory=dict)
     status: dict[str, str] = field(default_factory=dict)
+    priority: dict[str, str] = field(default_factory=dict)
 
     @property
     def pending(self) -> list[str]:
@@ -178,9 +186,30 @@ class SnapshotState:
     def errors(self) -> list[str]:
         return sorted(k for k, v in self.status.items() if v == "error")
 
+    def graded_required(self) -> list[str]:
+        """Fields the template itself grades `Required`, in sheet order.
+
+        The v3.1 template marks twelve — six more than `DATA_REQUIRED`. That
+        makes it a better *completion* signal (wait for all twelve, so we
+        cannot stop while the valuation block is still filling in) without
+        making it the *blocking* contract, which stays `DATA_REQUIRED`: a
+        thinly-covered small-cap missing `ev_ebitda` should not be unable to
+        get a video.
+        """
+        return [k for k, p in self.priority.items() if p.lower() == "required"]
+
     def unresolved_required(self, required: Sequence[str] = ()) -> list[str]:
         req = list(required or DATA_REQUIRED)
         return [k for k in req if self.status.get(k, "missing") != "ok"]
+
+    def unresolved_wanted(self, required: Sequence[str] = ()) -> list[str]:
+        """Everything worth waiting for: the hard set plus the template's."""
+        wanted = list(required or DATA_REQUIRED) + self.graded_required()
+        seen: list[str] = []
+        for k in wanted:
+            if k not in seen and self.status.get(k, "missing") != "ok":
+                seen.append(k)
+        return seen
 
     def fingerprint(self) -> str:
         """Cheap equality across polls — "has anything changed since?"."""
@@ -195,13 +224,15 @@ class SnapshotState:
 
 
 def read_snapshot_state(rows: Sequence[Sequence[Any]]) -> SnapshotState:
-    """Turn a raw `B:D` block from the Snapshot sheet into a state.
+    """Turn a raw `B:F` block from the Snapshot sheet into a state.
 
     Takes rows rather than a sheet so the poll loop can be exercised without
     Excel: one COM round-trip fetches the whole block, and everything after
     that is arithmetic.
     """
     st = SnapshotState()
+    val_i = VALUE_COL - KEY_COL
+    pri_i = PRIORITY_COL - KEY_COL
     for row in rows:
         if not row:
             continue
@@ -209,9 +240,11 @@ def read_snapshot_state(rows: Sequence[Sequence[Any]]) -> SnapshotState:
         if key is None or not str(key).strip():
             continue
         name = str(key).strip()
-        value = row[VALUE_COL - KEY_COL] if len(row) > VALUE_COL - KEY_COL else None
+        value = row[val_i] if len(row) > val_i else None
         st.values[name] = value
         st.status[name] = classify_cell(value)
+        if len(row) > pri_i and row[pri_i] is not None:
+            st.priority[name] = str(row[pri_i]).strip()
     return st
 
 
@@ -532,13 +565,25 @@ def set_symbol_override(settings: Settings, ticker: str, symbol: str) -> None:
 
 
 def resolve_symbol(settings: Settings, ticker: str) -> str:
-    """What to type into the ticker cell.
+    """What goes in the ticker cell (`Snapshot!C3`).
 
-    The add-in wants its own instrument code (`PLTR.O`), not always the plain
-    ticker, and the mapping is an entitlement question we cannot answer from
-    here. Precedence: an explicit per-ticker pin, then the configured suffix,
-    then the ticker as typed. A wrong guess surfaces as unresolved required
-    fields — a hard failure with the symbol named — not as empty data.
+    The v3.1 template wants the plain Capital IQ ticker here and derives the
+    Refinitiv RIC itself in B3, looking the suffix up from the exchange via
+    the hidden `_RICMap` table. So this stays a ticker: a pinned RIC belongs
+    in the override cell, not here (see `resolve_ric_override`).
+    """
+    return ticker.strip().upper()
+
+
+def resolve_ric_override(settings: Settings, ticker: str) -> str:
+    """What goes in the RIC override cell (`Snapshot!E2`), or "" for none.
+
+    `_RICMap` gets the common exchanges right on its own, so normally this is
+    empty and the template does the work. It earns its keep on the cases the
+    lookup cannot know — a dual listing, a share class, an exchange missing
+    from the map. Precedence: an explicit per-ticker pin, then the configured
+    suffix. A wrong value surfaces as unresolved required fields — a hard
+    failure naming the symbol — not as empty data.
     """
     t = ticker.strip().upper()
     pinned = _symbol_overrides(settings).get(t)
@@ -547,7 +592,7 @@ def resolve_symbol(settings: Settings, ticker: str) -> str:
     suffix = settings.excel_symbol_suffix.strip()
     if suffix and "." not in t:
         return t + (suffix if suffix.startswith(".") else "." + suffix)
-    return t
+    return ""
 
 
 # --------------------------------------------------------------------------
@@ -595,7 +640,7 @@ def refresh_age_days(workspace: Path, now: datetime | None = None) -> float | No
 class RefreshResult:
     path: Path                       # what the reader will load
     archive: Path                    # the dated copy kept alongside it
-    symbol: str
+    symbol: str                      # the ticker written into C3
     started_at: datetime
     finished_at: datetime
     polls: int
@@ -603,6 +648,7 @@ class RefreshResult:
     resolved: int
     pending: list[str] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    ric: str = ""                    # forced RIC, "" = derived by the template
 
     @property
     def elapsed_s(self) -> float:
@@ -611,6 +657,7 @@ class RefreshResult:
     def stamp(self) -> dict:
         return {
             "symbol": self.symbol,
+            "ric_override": self.ric,
             "started_at": self.started_at.isoformat(),
             "finished_at": self.finished_at.isoformat(),
             "elapsed_s": round(self.elapsed_s, 2),
@@ -637,7 +684,8 @@ class RefreshResult:
         if self.pending:
             note += (f"\n⚠️ {len(self.pending)} optional field(s) never "
                      f"resolved: {', '.join(self.pending[:6])}")
-        return (f"🔄 Refreshed {self.symbol} in Excel via {trigger} — "
+        forced = f" (RIC forced to {self.ric})" if self.ric else ""
+        return (f"🔄 Refreshed {self.symbol}{forced} in Excel via {trigger} — "
                 f"{self.resolved} fields in {self.elapsed_s:.0f}s "
                 f"({self.polls} polls).{note}")
 
@@ -674,13 +722,17 @@ def _poll_until_resolved(
 
     "Finished" is deliberately two conditions, because either alone lies:
 
-    * every required field has resolved — otherwise we would happily accept a
-      workbook where the price never arrived; and
+    * every field worth waiting for has resolved — `DATA_REQUIRED` plus
+      whatever the template's own Priority column grades `Required`;
+      otherwise we would happily accept a workbook where the price never
+      arrived; and
     * nothing has changed for `settle_polls` consecutive reads — otherwise we
       would stop the instant the last required field lands and save while the
-      history sheet is still filling in.
+      valuation block is still filling in.
 
-    Raises RefreshTimeout with the specific unresolved fields named.
+    At the deadline the two tiers part company: a missing `DATA_REQUIRED`
+    field is a RefreshTimeout naming it, while a merely template-Required one
+    is reported as a warning on an otherwise usable refresh.
     """
     deadline = clock() + max(1.0, timeout_s)
     last_print = clock()
@@ -692,34 +744,42 @@ def _poll_until_resolved(
     while True:
         polls += 1
         rows = session.read_block(SNAPSHOT_SHEET, FIRST_DATA_ROW,
-                                  LAST_DATA_ROW, KEY_COL, VALUE_COL)
+                                  LAST_DATA_ROW, KEY_COL, PRIORITY_COL)
         state = read_snapshot_state(rows)
         fp = state.fingerprint()
         stable = stable + 1 if fp == previous else 0
         previous = fp
 
         calc_done = session.calculation_done()
-        unresolved = state.unresolved_required(required)
-        if calc_done and not unresolved and stable >= settle_polls:
+        must_have = state.unresolved_required(required)      # hard: or we fail
+        wanted = state.unresolved_wanted(required)           # soft: or we wait
+        if calc_done and not wanted and stable >= settle_polls:
             log.info("excel: refresh settled after %d poll(s), %d fields",
                      polls, state.resolved)
             return state, polls
 
         now = clock()
         if now >= deadline:
-            if unresolved:
+            if must_have:
                 raise RefreshTimeout(
                     f"the add-in did not resolve after {timeout_s:.0f}s — "
-                    f"required field(s) still empty: {', '.join(unresolved)}. "
+                    f"required field(s) still empty: {', '.join(must_have)}. "
                     f"{state.resolved} of {len(state.status)} fields came back"
                     + (f"; {len(state.errors)} errored "
                        f"({', '.join(state.errors[:4])})" if state.errors else "")
                 )
-            # Required fields are in but something optional keeps churning:
-            # take what we have rather than fail a usable refresh.
-            log.warning("excel: still settling at the %.0fs timeout — "
-                        "required fields are resolved, taking the snapshot",
-                        timeout_s)
+            # The fields a render cannot do without are in. Something the
+            # template merely grades Required, or something optional, is still
+            # churning — report it and take the snapshot rather than fail a
+            # refresh that is genuinely usable.
+            if wanted:
+                log.warning("excel: at the %.0fs timeout, %d template-required "
+                            "field(s) never resolved: %s", timeout_s,
+                            len(wanted), ", ".join(wanted[:8]))
+            else:
+                log.warning("excel: still settling at the %.0fs timeout — the "
+                            "required fields are in, taking the snapshot",
+                            timeout_s)
             return state, polls
 
         if now - last_print >= 15:
@@ -757,9 +817,12 @@ def refresh_for_ticker(
     The tests pass a fake add-in through it, which means the teardown
     guarantee is exercised rather than asserted in a comment.
     """
-    sym = (symbol or resolve_symbol(settings, ticker)).strip()
+    sym = resolve_symbol(settings, ticker)
     if not sym:
-        raise RefreshError("no symbol to refresh — pass one explicitly.")
+        raise RefreshError("no ticker to refresh — pass one explicitly.")
+    # An explicit `symbol` argument is a RIC to force, not a replacement for
+    # the ticker: the template needs both cells to mean what they say.
+    ric = (symbol or "").strip() or resolve_ric_override(settings, ticker)
 
     if session_factory is None:
         ok, why = excel_available(settings)
@@ -799,6 +862,14 @@ def refresh_for_ticker(
             session.open_workbook(working)
             session.set_cell(SNAPSHOT_SHEET,
                              settings.excel_ticker_cell or TICKER_CELL, sym)
+            # Only written when there is something to force: left empty, the
+            # template derives the RIC from the exchange itself, which is
+            # right far more often than any guess we could make here.
+            if ric:
+                session.set_cell(SNAPSHOT_SHEET,
+                                 settings.excel_ric_cell or RIC_OVERRIDE_CELL,
+                                 ric)
+                log.info("excel: forcing the RIC to %s", ric)
             macro = _trigger_refresh(session, macros)
             state, polls = _poll_until_resolved(
                 session,
@@ -839,6 +910,7 @@ def refresh_for_ticker(
         path=ws_dir / "dennis_data.xlsx",
         archive=archive,
         symbol=sym,
+        ric=ric,
         started_at=started,
         finished_at=finished,
         polls=polls,
