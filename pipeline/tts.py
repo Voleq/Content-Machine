@@ -257,24 +257,65 @@ class TTSEngine:
         self._client = client  # injectable for tests (httpx.MockTransport)
 
     # ------------------------------------------------------------------ API
-    def is_cached(self, text: str, fmt: str, *, events=None) -> bool:
+    def tier_for(self, draft: bool) -> str:
+        """Which of mock | local | paid a request resolves to (P3.2).
+
+        MOCK_MODE still wins outright — the hard guarantee is that mock mode
+        is offline and $0, and a local voice, free as it is, is a subprocess
+        and a model file that a test run must not depend on.
+        """
+        if self.settings.mock_mode:
+            return "mock"
+        if not draft:
+            return "paid"
+        from pipeline.local_tts import available
+
+        ok, why = available(self.settings)
+        if ok:
+            return "local"
+        # A draft must never silently escalate to a paid generation.
+        log.info("local TTS unavailable (%s) — draft falls back to mock", why)
+        return "mock"
+
+    def is_cached(self, text: str, fmt: str, *, events=None,
+                  draft: bool = False) -> bool:
         """Would synthesize() be free? (drives the §9.3 cost report)"""
+        return self._cache_dir(text, fmt, events, draft)[0].exists()
+
+    def _cache_dir(self, text: str, fmt: str, events, draft: bool):
+        """(audio_path's dir marker, cdir, request text, ids) for one request.
+
+        The tier is part of the key. Without it a draft's local audio would
+        satisfy the final's cache lookup and the paid voice would never be
+        called — the failure mode being a "final" that shipped draft audio.
+        """
         voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
         model_id = self.settings.active_eleven_model
         vsettings = dict(self.settings.voice_settings(fmt))
-        text, overrides = expand_delivery(text, events, model_id)
+        req_text, overrides = expand_delivery(text, events, model_id)
         vsettings.update(overrides)
-        key = cache_key(voice_id, model_id, vsettings, text)
+        tier = self.tier_for(draft)
+        keyed = dict(vsettings)
+        if tier != "paid":
+            keyed["_tier"] = tier
+        key = cache_key(voice_id, model_id, keyed, req_text)
         cdir = self.settings.cache_dir / "tts" / key
-        return (cdir / "audio.m4a").exists() and (cdir / "words.json").exists()
+        marker = cdir / "audio.m4a"
+        return (marker if (cdir / "words.json").exists() else cdir / "__absent__",
+                cdir, req_text, voice_id, model_id, vsettings, tier)
 
-    def synthesize(self, text: str, fmt: str, *, events=None) -> TTSResult:
+    def synthesize(self, text: str, fmt: str, *, events=None,
+                   draft: bool = False) -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long.
 
         `events` carries the script's delivery direction ([BEAT], [SIGH],
         [FLAT], [DRY]). Those change the request text and the voice settings,
         and therefore the cache key — which is exactly why they have to be
         authored BEFORE the paid generation rather than added afterwards.
+
+        `draft=True` asks for the free tier: the local neural voice when the
+        box has one, the mock hum otherwise. It never reaches ElevenLabs, and
+        what it returns is marked `draft` so a final render can refuse it.
         """
         if fmt not in ("short", "long"):
             raise ValueError(f"fmt must be short|long, got {fmt!r}")
@@ -285,14 +326,9 @@ class TTSEngine:
                 f"No TTS was called."
             )
 
-        voice_id = self.settings.voice_id(fmt) or f"mock-voice-{fmt}"
-        model_id = self.settings.active_eleven_model
-        vsettings = dict(self.settings.voice_settings(fmt))
         clean_text = text
-        text, overrides = expand_delivery(clean_text, events, model_id)
-        vsettings.update(overrides)
-        key = cache_key(voice_id, model_id, vsettings, text)
-        cdir = self.settings.cache_dir / "tts" / key
+        _, cdir, text, voice_id, model_id, vsettings, tier = self._cache_dir(
+            clean_text, fmt, events, draft)
         audio_path = cdir / "audio.m4a"
         words_path = cdir / "words.json"
 
@@ -305,15 +341,20 @@ class TTSEngine:
                 chars=len(text),
                 cached=True,
                 cost_usd=0.0,
+                tier=tier,
+                draft=tier == "local",
             )
 
         cdir.mkdir(parents=True, exist_ok=True)
         chunks = chunk_text(text, self.settings.tts_chunk_chars)
-        log.info("TTS generate: %s chars in %d chunk(s), mock=%s",
-                 len(text), len(chunks), self.settings.mock_mode)
+        log.info("TTS generate: %s chars in %d chunk(s), tier=%s",
+                 len(text), len(chunks), tier)
 
         cost_usd = 0.0
-        if self.settings.mock_mode:
+        if tier == "local":
+            chunk_files, chunk_words = self._generate_local(text, cdir)
+            chunks = [text]          # the local tier splits by sentence itself
+        elif tier == "mock":
             chunk_files, chunk_words = self._generate_mock(chunks, fmt, cdir)
         else:
             # code-level spend gate (the operator Approve is the human gate)
@@ -362,6 +403,7 @@ class TTSEngine:
             "voice_settings": vsettings,
             "chars": len(text),
             "chunks": len(chunks),
+            "tier": tier,
             "mock": self.settings.mock_mode,
             "cost_usd": cost_usd,
         }, indent=2))
@@ -373,7 +415,28 @@ class TTSEngine:
             chars=len(text),
             cached=False,
             cost_usd=cost_usd,
+            tier=tier,
+            draft=tier == "local",
         )
+
+    # ----------------------------------------------------------------- local
+    def _generate_local(
+        self, text: str, cdir: Path
+    ) -> tuple[list[Path], list[list[WordTimestamp]]]:
+        """The free draft voice. One "chunk" — it splits by sentence itself.
+
+        Its words are already absolute across the whole text, so they come
+        back as a single chunk and the caller's per-chunk offsetting adds
+        nothing to them.
+        """
+        from pipeline.local_tts import synthesize_local
+
+        speech = synthesize_local(text, cdir, self.settings)
+        joined = cdir / "local_joined.m4a"
+        concat_audio(speech.chunk_files, joined, self.settings)
+        for f in speech.chunk_files:
+            f.unlink(missing_ok=True)
+        return [joined], [speech.words]
 
     # ------------------------------------------------------------------ mock
     def _generate_mock(

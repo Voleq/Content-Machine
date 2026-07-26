@@ -354,6 +354,18 @@ class TTSResult(BaseModel):
     chars: int
     cached: bool
     cost_usd: float  # 0.0 when served from cache or mock
+    # Which tier produced it: mock | local | paid.
+    #
+    # `draft` means specifically "the word timings are INTERPOLATED and are
+    # being passed off as real" — which is true of the local voice and of
+    # nothing else. Mock audio has synthetic timings too, but MOCK_MODE is the
+    # established offline contract: the suite and the whole dev loop render
+    # finals from it, and everyone involved knows the video is a test artifact.
+    # The local tier is the one that produces something that SOUNDS finished
+    # while being a fraction of a second out, which is why it alone is fenced
+    # off from final renders (P3.2).
+    tier: str = "paid"
+    draft: bool = False
 
 
 class CueKind(str, Enum):

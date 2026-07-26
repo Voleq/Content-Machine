@@ -189,6 +189,17 @@ def render_long(
     on_progress: Callable[[int, int], None] | None = None,
 ) -> tuple[Path, Path]:
     """Render the LONG (or its low-res draft). Returns (mp4, manifest)."""
+    # Draft audio (the free local voice) has word timings that are exact per
+    # sentence and interpolated within one. Good enough to judge pacing, not
+    # good enough to be the master clock of something published — and the
+    # whole pipeline trusts that clock. Enforced here rather than left to
+    # discipline, because the failure is invisible: it renders fine, it is
+    # just subtly out of sync.
+    if not draft and getattr(tts, "draft", False):
+        raise RenderError(
+            f"refusing to make a FINAL render from {tts.tier} draft audio — "
+            f"its word timings are interpolated inside each sentence. Approve "
+            f"the script so the paid voice runs, then render.")
     content = content or ContentManager(settings)
     duration = tts.duration_s
     cues = build_long_timeline(script, tts.words, duration)

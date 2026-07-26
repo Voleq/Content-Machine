@@ -125,6 +125,14 @@ def render_short(
     out_name: str = "short_final.mp4",
 ) -> tuple[Path, Path]:
     """Render the SHORT. Returns (mp4_path, manifest_path)."""
+    # A SHORT has no draft mode — it is a minute of video — so draft audio has
+    # no business here at all. Same reason as the LONG: interpolated word
+    # timings must never be the master clock of a published cut (P3.2).
+    if getattr(tts, "draft", False):
+        raise RenderError(
+            f"refusing to render a SHORT from {tts.tier} draft audio — its "
+            f"word timings are interpolated. Approve the script so the paid "
+            f"voice runs first.")
     content = content or ContentManager(settings)
     prices = prices or get_price_history(script.ticker, settings)
 
