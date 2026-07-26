@@ -9,6 +9,7 @@ APIs — the bot itself talks to Telegram normally).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from config import detect_ffmpeg, get_settings
@@ -53,6 +54,19 @@ def main() -> None:
             for chat_id in settings.operator_chat_ids:
                 await application.bot.send_message(chat_id, text)
 
+        loop = asyncio.get_running_loop()
+
+        def push_file(path, caption: str = "") -> None:
+            """Called from the render worker thread — hop back to the bot's
+            loop to actually send."""
+            async def _send() -> None:
+                for chat_id in settings.operator_chat_ids:
+                    with open(path, "rb") as fh:
+                        await application.bot.send_photo(chat_id, fh,
+                                                         caption=caption[:1024])
+            asyncio.run_coroutine_threadsafe(_send(), loop)
+
+        core.file_pusher = push_file
         core.queue = RenderJobQueue(settings, core.execute_job, notify)
         core.queue.start()
 

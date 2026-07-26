@@ -130,17 +130,41 @@ def test_sources_and_attributions_carried(rendered):
 # ---- the overhaul: media-is-the-background, motion, design system --------
 
 
-def test_every_still_gets_ken_burns_motion(rendered):
-    """No still is a static hold — pans ride a time-varying crop, zooms ride
-    zoompan; over the timeline both kinds of move appear."""
+def test_readable_stills_hold_dead_still(rendered):
+    """Atmosphere drifts; anything the viewer has to READ does not.
+
+    The old engine moved every still because nothing else on screen did.
+    Dennis now carries the motion, so drifting a chart or a filing under
+    someone's eyes is pure cost — and zoompan is the most expensive filter
+    in the graph.
+    """
+    from pipeline.render_long import _STILL_KINDS
+
     settings, script, tts, out, manifest = rendered
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     W, H = manifest["resolution"]
-    assert "zoompan=" in filter_text, "at least one still zooms (Ken Burns)"
-    # a pan is a crop with a time-varying x/y expression
-    assert f"crop={W}:{H}:x='(iw-ow)" in filter_text, "stills pan (Ken Burns)"
-    # the old static pad-fit hold is gone
-    assert f"pad={W}:{H}" not in filter_text, "no more static letterbox hold"
+    segs = manifest["segments"]
+
+    readable = [s for s in segs if s["kind"] in _STILL_KINDS]
+    assert readable, "the fixture exercises at least one readable still"
+    # a two-shot composites its panel onto a plate and is held by
+    # construction; the rest go through the contain-fit hold
+    held = [s for s in readable if s.get("layout") != "two-shot"]
+    assert held, "the fixture exercises at least one full-frame readable still"
+    assert f"pad={W}:{H}" in filter_text, "readable stills are held, contain-fit"
+
+    # atmosphere still moves — a photo or a designed backdrop drifts
+    moving = [s for s in segs if s["kind"] in ("img", "meme", "host")]
+    if moving:
+        assert ("zoompan=" in filter_text
+                or f"crop={W}:{H}:x='(iw-ow)" in filter_text), \
+            "non-readable stills keep a gentle Ken Burns drift"
+
+    # one held chain per full-frame readable segment
+    assert filter_text.count(f"pad={W}:{H}") >= len(held)
+    # and a two-shot never zooms either
+    for seg in (s for s in readable if s.get("layout") == "two-shot"):
+        assert f"trim=0:{seg['end'] - seg['start']:.4f}" in filter_text
 
 
 def test_long_captions_are_a_fitted_box(rendered):

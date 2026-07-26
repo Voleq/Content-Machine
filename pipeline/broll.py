@@ -682,10 +682,12 @@ class ContentManager:
         if not path.exists():
             W, H = self.settings.long_resolution
             path.parent.mkdir(parents=True, exist_ok=True)
-            img = Image.new("RGB", (W, H), (14, 17, 23))
+            from pipeline.rasters import BG, BORDER, MUTED
+
+            img = Image.new("RGB", (W, H), BG)
             d = ImageDraw.Draw(img)
-            d.rectangle([16, 16, W - 17, H - 17], outline=(90, 96, 108), width=3)
-            d.text((W // 8, H // 2), "( imagery unavailable )", fill=(170, 176, 188))
+            d.rectangle([16, 16, W - 17, H - 17], outline=BORDER, width=3)
+            d.text((W // 8, H // 2), "( imagery unavailable )", fill=MUTED)
             img.save(path)
         return Visual(key=query, kind=kind, path=path, is_video=False, source="filler")
 

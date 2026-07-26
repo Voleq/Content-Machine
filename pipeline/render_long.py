@@ -108,6 +108,25 @@ _CHAPTERS = [
 ]
 
 
+# Segment kinds a viewer READS. The old engine moved every still because
+# nothing else on screen moved; now Dennis carries the motion, and drifting
+# a table or a chart under someone's eyes is just harder to read. These hold
+# dead still — which also removes zoompan, far and away the most expensive
+# filter in the graph, from the majority of segments.
+_STILL_KINDS = frozenset({
+    "chart", "filing", "screengrab", "asset", "table", "term", "bignum",
+})
+
+
+def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
+    """A still, held: contain-fit onto the paper, no movement at all."""
+    return (
+        f"[{i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+        f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
+        f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF{tail}"
+    )
+
+
 def _ken_burns_chain(i: int, seg_len: float, W: int, H: int, mode: str,
                      tail: str, fps: int) -> str:
     """A single still -> a moving WxH stream: input `[i:v]` upscaled 1.14x
@@ -145,6 +164,7 @@ def render_long(
     content: ContentManager | None = None,
     *,
     draft: bool = False,
+    preview: bool = False,
     broll_overrides: dict[str, int] | None = None,
     as_of: str = "",
     company_data=None,
@@ -164,14 +184,18 @@ def render_long(
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
 
+    # Three tiers. PREVIEW is for judging the edit — 480p at half the frame
+    # rate, where the filter graph (not the encode) is the cost. DRAFT is the
+    # half-res review copy. Neither ever re-calls TTS.
     FW, FH = settings.long_resolution          # full spec
-    if draft:
-        W = int(FW * settings.draft_scale) // 2 * 2
-        H = int(FH * settings.draft_scale) // 2 * 2
-    else:
-        W, H = FW, FH
+    scale = (settings.preview_scale if preview
+             else settings.draft_scale if draft else 1.0)
+    W = int(FW * scale) // 2 * 2
+    H = int(FH * scale) // 2 * 2
+    fps = settings.preview_fps if preview else settings.fps
 
-    rdir = workspace / ("render_long_draft" if draft else "render_long")
+    rdir = workspace / ("render_long_preview" if preview
+                        else "render_long_draft" if draft else "render_long")
     rdir.mkdir(parents=True, exist_ok=True)
 
     website = str(company_data.get("website") or "") if company_data is not None else ""
@@ -211,6 +235,15 @@ def render_long(
     def _kb_mode(idx: int) -> str:
         return _KB_MODES[(idx + kb_off) % len(_KB_MODES)]
 
+    def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
+                     tail: str) -> str:
+        """Motion for a still segment: held dead still when the viewer has
+        to read it, a gentle Ken Burns drift when it is only atmosphere."""
+        if seg.kind in _STILL_KINDS:
+            return _hold_still_chain(input_i, seg_len, W, H, tail)
+        return _ken_burns_chain(input_i, seg_len, W, H, _kb_mode(seg_i), tail,
+                                fps)
+
     # ------------------------------------------------------- the host rig
     # Dennis is composited per segment, lip-synced to that segment's slice of
     # the voice-over. `HOST_POSES` rotate with the beat index so a long cut
@@ -230,7 +263,7 @@ def render_long(
             expression = "talk"
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
-            display_h=host_h, fps=settings.fps,
+            display_h=host_h, fps=fps,
             expression=expression, facing=facing, root=settings.assets_dir.parent,
         )
         if built is None:
@@ -293,7 +326,7 @@ def render_long(
         value = seg.payload.get("value", "")
 
         def _still_input(path: Path) -> int:
-            return _add_input(["-loop", "1", "-framerate", str(settings.fps),
+            return _add_input(["-loop", "1", "-framerate", str(fps),
                                "-t", f"{seg_len + 0.2:.4f}", "-i", str(path)])
 
         def _clip_motion(idx: int) -> str:
@@ -313,8 +346,7 @@ def render_long(
             bg_i = _still_input(_backdrop_path(variant))
             host = _host_input(i, seg, seg_len)
             if host is None:
-                chain = _ken_burns_chain(bg_i, seg_len, W, H, _kb_mode(i), tail,
-                                         settings.fps)
+                chain = _still_chain(bg_i, seg, seg_len, i, tail)
             else:
                 host_i, hx, hy = host
                 chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
@@ -329,7 +361,7 @@ def render_long(
                 )
             visual = None
             still_i = _still_input(shot_cache[value])
-            chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail, settings.fps)
+            chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind == "screengrab":
             # operator-supplied capture — image (full-frame) or short clip
             visual = content.resolve_screengrab(value)
@@ -338,8 +370,7 @@ def render_long(
                 chain = _clip_motion(clip_i)
             else:
                 still_i = _still_input(visual.path)
-                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
-                                         settings.fps)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("term", "bignum", "table", "prop"):
             # owned design-kit artwork, addressed by name through the registry
             visual = None
@@ -353,8 +384,7 @@ def render_long(
                     if seg.payload.get("layout") == "two-shot" else None)
             if host is None:
                 still_i = _still_input(still)
-                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
-                                         settings.fps)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
             else:
                 panel = _panel_frame(still, seg.payload.get("host_side", "left"),
                                      rdir / f"panel_{i}.png", variant=i)
@@ -392,8 +422,7 @@ def render_long(
                     if seg.payload.get("layout") == "two-shot" else None)
             if host is None:
                 still_i = _still_input(still)
-                chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
-                                         settings.fps)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
             else:
                 panel = _panel_frame(still, seg.payload.get("host_side", "left"),
                                      rdir / f"panel_{i}.png", variant=i)
@@ -404,8 +433,7 @@ def render_long(
             visual = None
             variant = seg.payload.get("variant", 0)
             still_i = _still_input(_backdrop_path(variant))
-            chain = _ken_burns_chain(still_i, seg_len, W, H, _kb_mode(i), tail,
-                                     settings.fps)
+            chain = _still_chain(still_i, seg, seg_len, i, tail)
         meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
         if value:
             meta["value"] = value
@@ -423,7 +451,7 @@ def render_long(
 
     concat_in = "".join(f"[s{i}]" for i in range(len(segments)))
     lines.append(f"{concat_in}concat=n={len(segments)}:v=1:a=0[vcat]")
-    lines.append(f"[vcat]fps={settings.fps}[v0]")
+    lines.append(f"[vcat]fps={fps}[v0]")
 
     # ------------------------------------------------------------ layers
     layers: list[OverlayLayer] = []
@@ -498,7 +526,7 @@ def render_long(
         hold = float(c.payload.get("hold", 2.0))
         clip, (cw, ch) = doodle_clip(
             visual.path, rdir / f"doodle_{k}.mov",
-            display_w=px(520), duration_s=hold + 0.2, fps=settings.fps,
+            display_w=px(520), duration_s=hold + 0.2, fps=fps,
             seed=f"{script.ticker}|doodle|{k}",
         )
         sx, sy = doodle_slots[k % len(doodle_slots)]
@@ -516,9 +544,9 @@ def render_long(
         sw, sh = px(700), px(460)
         frames = scribble_callout_frames(
             settings, sw, sh, style=style.value, target=target,
-            fps=settings.fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
+            fps=fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
         )
-        clip = frames_to_alpha_clip(frames, settings.fps, rdir / f"scribble_{k}.mov")
+        clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_{k}.mov")
         layers.append(OverlayLayer(
             path=clip, x=int((W - sw) / 2), y=int((H - sh) / 2),
             t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
@@ -601,10 +629,10 @@ def render_long(
         ass_path=ass_path,
         fonts_dir=settings.fonts_dir,
         duration=duration,
-        fps=settings.fps,
+        fps=fps,
     )
     out_path = workspace / ("long_draft.mp4" if draft else "long_final.mp4")
-    profile = encode_profile(settings, "long", draft=draft)
+    profile = encode_profile(settings, "long", draft=draft, preview=preview)
     composite_video(spec, profile, settings.audio_bitrate, out_path)
 
     rendered = ffprobe_duration(out_path)

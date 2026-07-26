@@ -173,12 +173,18 @@ def detect_hardware_encoder() -> str | None:
     return None
 
 
-def encode_profile(settings: Settings, fmt: str, draft: bool = False) -> EncodeProfile:
+def encode_profile(settings: Settings, fmt: str, draft: bool = False,
+                   preview: bool = False) -> EncodeProfile:
     vcodec = "libx264"
-    if settings.use_hardware_encoder and not draft:
+    if settings.use_hardware_encoder and not (draft or preview):
         hw = detect_hardware_encoder()
         if hw:
             vcodec = hw
+    if preview:
+        # x264 ultrafast beats the GPU here: the preview is filter-bound and
+        # NVENC's setup cost is not worth paying for a throwaway pass.
+        return EncodeProfile(vcodec="libx264", preset="ultrafast",
+                             crf=settings.preview_crf)
     if draft:
         return EncodeProfile(vcodec="libx264", preset=settings.draft_preset, crf=settings.draft_crf)
     crf = settings.short_crf if fmt == "short" else settings.long_crf

@@ -177,6 +177,13 @@ class Settings(BaseSettings):
     long_crf: int = 22
     draft_crf: int = 32
     draft_scale: float = 0.5               # draft renders at half resolution
+    # PREVIEW is a third, cheaper tier below draft: 480p at 15fps, for
+    # judging edit and pacing when neither resolution nor smoothness
+    # matters. Halving the frame rate roughly halves the filter-graph work,
+    # which is where the time actually goes.
+    preview_scale: float = 0.25
+    preview_fps: int = 15
+    preview_crf: int = 34
     audio_bitrate: str = "192k"
     music_gain_db: float = -22.0           # music bed under the VO
     sfx_gain_db: float = -6.0

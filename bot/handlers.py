@@ -16,6 +16,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from PIL import Image, ImageDraw
 
@@ -138,6 +139,9 @@ class BotCore:
         self.tts = TTSEngine(settings, ledger=self.ledger)
         self.content = ContentManager(settings, ledger=self.ledger)
         self.context = ActiveContext(settings)
+        # Set by main.py: a thread-safe way for the worker to hand a file
+        # (storyboard, thumbnail) to the operator mid-job.
+        self.file_pusher: Callable[[Path, str], None] | None = None
         self.queue: RenderJobQueue | None = None  # attached in main.py
 
     # ------------------------------------------------------------- helpers
@@ -733,9 +737,14 @@ class BotCore:
                 raise RuntimeError("approval vanished before render")
             checkpoint("tts")
             tts = self.tts.synthesize(script.narration, "long")
-            checkpoint("render")
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
+            # The storyboard costs seconds and lands before the encode, so a
+            # dead b-roll key or a missing screenshot is caught now rather
+            # than forty minutes from now.
+            checkpoint("storyboard")
+            self._send_storyboard(job, script, tts, ws, data)
+            checkpoint("render")
             out, manifest = render_long(
                 script, tts, ws.path, self.settings, content=self.content,
                 draft=draft, broll_overrides=ws.broll_overrides(),
@@ -784,6 +793,54 @@ class BotCore:
             return str(out)
 
         raise RuntimeError(f"unknown job kind {job.kind}")
+
+    def _send_storyboard(self, job: JobRecord, script, tts, ws, data) -> None:
+        """Contact sheet of the planned cut, pushed before the encode starts.
+
+        Best-effort by design: a storyboard that fails to build must never
+        stop a render the operator has already approved.
+        """
+        try:
+            from pipeline.storyboard import build_storyboard
+            from pipeline.timeline import (
+                build_long_timeline, chapter_start_times, plan_long_segments,
+            )
+
+            cues = build_long_timeline(script, tts.words, tts.duration_s)
+            segments, _ = plan_long_segments(
+                cues, tts.duration_s,
+                chapter_starts=chapter_start_times(script.chapters, tts.duration_s),
+                min_readable_s=self.settings.long_min_readable_s,
+                chapter_host_s=self.settings.long_chapter_host_s,
+            )
+            sheet, problems = build_storyboard(
+                segments, tts.words, ws.path / "storyboard.png", self.settings,
+                content=self.content, ticker=job.ticker, company_data=data,
+                workspace=ws.path, title=f"{job.ticker} — LONG",
+            )
+        except Exception as e:  # noqa: BLE001
+            log.warning("storyboard failed for %s (%s) — rendering anyway",
+                        job.ticker, e)
+            return
+        caption = f"{job.ticker} — storyboard, {len(segments)} beats"
+        if problems:
+            caption += "\n⚠ " + "\n⚠ ".join(problems[:6])
+        self.push_file(sheet, caption)
+
+    def push_file(self, path: Path, caption: str = "") -> None:
+        """Send a file to the operator from a worker thread.
+
+        `file_pusher` is wired by main.py against the bot's event loop; when
+        it is absent (tests, CLI) the path is logged instead, which is all a
+        local run needs.
+        """
+        if self.file_pusher is None:
+            log.info("%s%s", caption + "\n" if caption else "", path)
+            return
+        try:
+            self.file_pusher(path, caption)
+        except Exception:  # noqa: BLE001
+            log.exception("could not push %s to the operator", path)
 
     def _finish(self, job: JobRecord, result) -> None:
         job.delivered_link = result.link
