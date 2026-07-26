@@ -49,6 +49,13 @@ from pipeline.parser_long import LongScriptError, parse_long_script, validate_lo
 from pipeline.parser_short import ScriptParseError, parse_short_script
 from pipeline.rasters import load_font
 from pipeline.render_long import render_long
+from pipeline.script_edit import (
+    EditError,
+    diff_lines,
+    edit_lines,
+    numbered,
+    replace_text,
+)
 from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 from pipeline.workspace import ActiveContext, Workspace, today_str
@@ -67,6 +74,10 @@ HELP_TEXT = """Dennis — operator commands
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
 /render TICKER — render the approved SHORT
 /render_long TICKER — render the approved LONG
+/script — the stored script, numbered, ready to edit
+/edit N <text> — replace line N (N-M for a range; no text deletes it)
+/replace old => new — fix a figure or a phrase in place (all: for every hit)
+/undo — step back one revision
 /draft TICKER — cheap low-res LONG timing check (no TTS spend)
 /repurpose TICKER — free 9:16 SHORT from the finished LONG
 /status — job queue
@@ -77,8 +88,10 @@ HELP_TEXT = """Dennis — operator commands
 Flow: /new (the numbers refresh themselves; upload dennis_data.xlsx if Excel
 isn't available) → run the prompts in Claude/GPT →
 (LONG: pick an angle; I auto-pull the 10-K shots) → paste the output back
-here → review the validation & cost report → Approve ✅ → /render. Nothing
-paid happens before Approve. If a LONG uses [ASSET] tags, paste the appended
+here → review the validation & cost report → tweak it in chat if you want
+(/script, /edit, /replace — every revision re-runs the gates and re-prices)
+→ Approve ✅ → /render. Nothing paid happens before Approve, and the approval
+is pinned to the exact version you approved. If a LONG uses [ASSET] tags, paste the appended
 prompt into Claude Design and upload the exported PNG here — the render
 stays blocked until every asset file exists."""
 
@@ -519,6 +532,105 @@ class BotCore:
             return self._intake_long(ws, text)
         except LongScriptError as e:
             return Reply(f"⛔ LONG script rejected:\n{e}")
+
+    # ------------------------------------------- in-chat revision (P3.1c)
+    def script_listing(self, chat_id: int) -> Reply:
+        """The stored script, numbered, so `/edit N` and `/script` agree."""
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /new TICKER first.")
+        fmt = ws.current_format()
+        raw = ws.raw_script(fmt) if fmt else None
+        if not raw:
+            return Reply("No script on file yet — paste one first.")
+        listing = numbered(raw)
+        f = ws.path / f"script_{fmt}.numbered.txt"
+        f.write_text(listing)
+        state = "approved ✅" if ws.is_approved(fmt) else "not approved"
+        revs = ws.revision_count(fmt)
+        head = (f"📄 {ws.ticker} {fmt.upper()} — {len(raw.splitlines())} lines, "
+                f"{state}"
+                + (f", {revs} revision{'s' if revs != 1 else ''} behind" if revs else "")
+                + ".\n`/edit N text` · `/edit N-M text` · `/edit N` deletes · "
+                  "`/replace old => new` · `/undo`")
+        # Short scripts fit in a message; a forty-minute LONG does not.
+        if len(listing) <= 3500:
+            return Reply(f"{head}\n\n```\n{listing}\n```")
+        return Reply(head, files=[f])
+
+    def edit_script(self, chat_id: int, args: list[str], *,
+                    mode: str = "lines") -> Reply:
+        """Apply a targeted edit, then re-run the whole intake on the result.
+
+        The revision is only stored if it parses, so an edit can never leave
+        the workspace holding a script the renderer would choke on. Because it
+        goes back through the ordinary intake, the gates re-run and a fresh
+        cost report comes back — and saving invalidates the approval, so the
+        approval stays pinned to the version actually read.
+        """
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /new TICKER first.")
+        fmt = ws.current_format()
+        raw = ws.raw_script(fmt) if fmt else None
+        if not raw:
+            return Reply("No script on file to edit — paste one first.")
+
+        try:
+            if mode == "replace":
+                result = replace_text(raw, " ".join(args))
+            else:
+                if not args:
+                    raise EditError(
+                        "Usage: `/edit N new text` · `/edit N-M new text` · "
+                        "`/edit N` to delete. `/script` shows the numbers.")
+                result = edit_lines(raw, args[0], " ".join(args[1:]))
+        except EditError as e:
+            return Reply(f"⛔ {e}")
+
+        return self._revise(ws, fmt, raw, result.text,
+                            note=f"✏️ {result.summary}",
+                            diff=diff_lines(raw, result.text))
+
+    def undo_edit(self, chat_id: int) -> Reply:
+        """Step back one revision. The stack survives a restart."""
+        ws = self._active_ws(chat_id)
+        if ws is None:
+            return Reply("No active workspace — /new TICKER first.")
+        fmt = ws.current_format()
+        if fmt is None:
+            return Reply("No script on file.")
+        current = ws.raw_script(fmt) or ""
+        previous = ws.pop_revision(fmt)
+        if previous is None:
+            return Reply("Nothing to undo — this is the script as pasted.")
+        reply = self._revise(ws, fmt, current, previous,
+                             note="↩️ reverted to the previous revision",
+                             diff=diff_lines(current, previous))
+        # `_revise` saved, which pushed `current` onto the stack; drop it so a
+        # second /undo goes further back rather than toggling between two.
+        ws.pop_revision(fmt)
+        return reply
+
+    def _revise(self, ws: Workspace, fmt: str, before: str, after: str,
+                *, note: str, diff: str = "") -> Reply:
+        """Validate a candidate script and, only if it holds up, store it.
+
+        On rejection the workspace keeps `before` untouched: the operator gets
+        the parser's complaint and can try again, with nothing lost.
+        """
+        try:
+            reply = (self._intake_short(ws, after) if fmt == "short"
+                     else self._intake_long(ws, after))
+        except (ScriptParseError, LongScriptError) as e:
+            return Reply(
+                f"⛔ that edit doesn't parse, so I've left the script alone:\n{e}"
+                f"\n\nThe script is unchanged — /script to see it.")
+        head = note
+        if diff:
+            head += f"\n```\n{diff}\n```"
+        reply.text = f"{head}\n\n{reply.text}"
+        return reply
 
     def _intake_angle(self, ws: Workspace, text: str) -> Reply:
         """The operator picked a LONG angle — store it, run the thesis-aware
@@ -1156,6 +1268,25 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, Reply(text))
 
     @guard
+    async def cmd_script(update, ctx):
+        await _send(update, core.script_listing(update.effective_chat.id))
+
+    @guard
+    async def cmd_edit(update, ctx):
+        await _send(update, core.edit_script(update.effective_chat.id,
+                                            list(ctx.args or [])))
+
+    @guard
+    async def cmd_replace(update, ctx):
+        await _send(update, core.edit_script(update.effective_chat.id,
+                                            list(ctx.args or []),
+                                            mode="replace"))
+
+    @guard
+    async def cmd_undo(update, ctx):
+        await _send(update, core.undo_edit(update.effective_chat.id))
+
+    @guard
     async def cmd_status(update, ctx):
         await _send(update, Reply(core.queue.status_text()))
 
@@ -1250,6 +1381,10 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
+    app.add_handler(CommandHandler("script", cmd_script))
+    app.add_handler(CommandHandler("edit", cmd_edit))
+    app.add_handler(CommandHandler("replace", cmd_replace))
+    app.add_handler(CommandHandler("undo", cmd_undo))
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("cost", cmd_cost))

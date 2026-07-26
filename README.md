@@ -89,6 +89,7 @@ pipeline/
   doodles.py             owned doodle library (doodles_index.json) + boil
   company_data.py        two-sheet Excel export reader + filing screenshots
   excel_refresh.py       drives Excel over COM to refresh the data itself
+  script_edit.py         in-chat revision: line/range edits, find-replace, undo
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
   delivery.py            gdrive (default) / s3 / telegram / local
@@ -216,14 +217,22 @@ with the desktop acting as a render worker later.
    render until you paste it into Claude Design, export, and upload the
    PNG (bespoke visuals never come from an image-generation API).
    `Swap clip 🔄` rotates any `[CLIP]` pick. Approve ✅ arms the render.
-5. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
+5. Tweak it in chat, without going back to the model. `/script` prints the
+   script numbered; `/edit 12 <new text>` replaces line 12 (`12-14` for a
+   range, no text to delete it); `/replace four point seven => four point six`
+   fixes a figure by its own words (`all:` for every occurrence); `/undo`
+   steps back. **An edit that doesn't parse never lands** — the workspace
+   keeps the script it had and you get the parser's complaint. Every revision
+   that does land re-runs the gates, re-prices, and drops the approval, so
+   nothing renders from a version nobody read. A full re-paste still works too.
+6. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
    `/draft TICKER` first gives a half-res timing check that reuses the
    same audio. Progress and failures arrive as messages.
-6. Delivery: Google Drive link (default) posted in chat with attribution
+7. Delivery: Google Drive link (default) posted in chat with attribution
    (Pexels + Wikimedia credits written beside the file);
    `/repurpose TICKER` afterwards cuts the best ~58s of the LONG into a
    free vertical SHORT.
-7. `/status`, `/cancel TICKER`, `/cost` any time.
+8. `/status`, `/cancel TICKER`, `/cost` any time.
 
 ### The data contract (private, no API)
 
