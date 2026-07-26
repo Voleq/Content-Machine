@@ -335,6 +335,15 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
         result["value"] = cands[: settings.screen_top_n]
 
     _save_last_screen(settings, result)
+    # Every screen feeds the standing backlog (P3.3), so a session opens with
+    # a list instead of a blank page. Best-effort — bookkeeping must never
+    # break a screen.
+    try:
+        from pipeline.standing import ideas_from_screen
+
+        ideas_from_screen(settings, result)
+    except Exception as e:  # noqa: BLE001
+        log.warning("could not feed the idea queue: %s", e)
     return result
 
 

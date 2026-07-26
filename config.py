@@ -153,6 +153,31 @@ class Settings(BaseSettings):
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
     data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
 
+    # ------------------------------------------------ standing state (P3.3)
+    # What the bot remembers between sessions: each covered ticker's thesis
+    # and the numbers behind it, a ranked idea backlog, and renders queued to
+    # run unattended overnight.
+    thesis_tracking: bool = Field(default=True, alias="THESIS_TRACKING")
+    idea_queue_max_age_days: int = Field(default=30, alias="IDEA_QUEUE_MAX_AGE_DAYS")
+    repurpose_clips: int = Field(default=3, alias="REPURPOSE_CLIPS")
+    # The unattended window, local time. The render box is a desktop that
+    # sleeps, so a batch that does not run is a non-event — the work waits.
+    batch_start_hour: int = Field(default=1, alias="BATCH_START_HOUR")
+    batch_end_hour: int = Field(default=7, alias="BATCH_END_HOUR")
+    batch_enabled: bool = Field(default=True, alias="BATCH_ENABLED")
+
+    # -------------------------------------------------- local TTS (drafts)
+    # A third audio tier between the mock hum and the paid voice: a local
+    # neural voice on the render box's GPU, free, listenable, and marked
+    # draft. Purpose is to iterate on pacing and edit points without spending;
+    # the final still buys one ElevenLabs generation. Absent Piper, a draft
+    # falls back to mock — never to paid.
+    local_tts_enabled: bool = Field(default=True, alias="LOCAL_TTS_ENABLED")
+    local_tts_binary: str = Field(default="piper", alias="LOCAL_TTS_BINARY")
+    local_tts_model: str = Field(default="", alias="LOCAL_TTS_MODEL")  # .onnx voice
+    local_tts_speaker: int = Field(default=-1, alias="LOCAL_TTS_SPEAKER")  # -1 = default
+    local_tts_cuda: bool = Field(default=True, alias="LOCAL_TTS_CUDA")
+
     # ------------------------------------------------- Excel refresh (COM)
     # The render box runs Windows with Excel and the LSEG/CIQ add-in loaded,
     # so the bot refreshes the data template itself instead of asking for an

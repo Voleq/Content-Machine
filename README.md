@@ -45,7 +45,9 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | Character budgets (`SHORT_MAX_CHARS=800`, `LONG_MAX_CHARS=22000`) rejected **before** any spend | parsers + `TTSEngine` |
 | Nothing paid before the operator taps **Approve** on the cost report | `bot/handlers.py` approval gate; approvals pin the script sha |
 | Monthly cap (`MONTHLY_SPEND_CAP=50`) blocks paid calls in code | `pipeline/cost.py` SpendLedger, checked inside `TTSEngine` |
-| One final render per approved ticker; draft = same cached audio, low-res | job queue + `/draft`; no variant generation exists |
+| One final render per approved ticker | job queue + `/draft`; no variant generation exists |
+| A `/draft` never spends: free local voice, else the mock hum — never ElevenLabs | `TTSEngine.tier_for`; the tier is part of the cache key |
+| Draft audio can never become a final render (its word timings are interpolated) | `render_long` / `render_short` refuse `tts.draft` |
 | Visuals: owned library → cache → fetch → filler; a missing item **never** aborts a render | `pipeline/broll.py` content engine, `pipeline/memes.py` |
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[ASSET]` tags **block** the render until the designed file exists | `validate_long_script` + `assets/custom/` |
@@ -90,6 +92,8 @@ pipeline/
   doodles.py             owned doodle library (doodles_index.json) + boil
   company_data.py        two-sheet Excel export reader + filing screenshots
   excel_refresh.py       drives Excel over COM to refresh the data itself
+  local_tts.py           the free draft voice (Piper) + sentence-anchored timings
+  standing.py            thesis book, ranked idea queue, overnight batch
   script_edit.py         in-chat revision: line/range edits, find-replace, undo
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
@@ -240,13 +244,20 @@ with the desktop acting as a render worker later.
    that does land re-runs the gates, re-prices, and drops the approval, so
    nothing renders from a version nobody read. A full re-paste still works too.
 6. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
-   `/draft TICKER` first gives a half-res timing check that reuses the
-   same audio. Progress and failures arrive as messages.
+   `/draft TICKER` first gives a half-res check for **free**: it uses the
+   local neural voice (Piper) when the box has one, the mock hum otherwise,
+   and never ElevenLabs. Draft audio is listenable but its word timings are
+   exact per sentence and interpolated within one, so judge pacing and edit
+   points, not lip-sync — and the renderer refuses to build a final from it.
+   Progress and failures arrive as messages.
 7. Delivery: Google Drive link (default) posted in chat with attribution
    (Pexels + Wikimedia credits written beside the file);
-   `/repurpose TICKER` afterwards cuts the best ~58s of the LONG into a
-   free vertical SHORT.
-8. `/status`, `/cancel TICKER`, `/cost` any time.
+   `/repurpose TICKER` afterwards cuts the best two or three ~58s windows
+   of the LONG into free vertical SHORTs (non-overlapping, best first).
+8. `/status`, `/cancel TICKER`, `/cost` any time. `/ideas` is the ranked
+   backlog (fed by every screen and by any thesis that moves), `/thesis
+   TICKER` re-checks what you said against today's numbers, and `/batch`
+   queues renders to run unattended overnight.
 
 ### The data contract (private, no API)
 
@@ -335,6 +346,7 @@ just less directly. Set the var once you know which macro your box has.
 | `EXCEL_SYMBOL_SUFFIX` | — | `.O` builds `PLTR.O`; per-ticker pins beat it |
 | `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
 | `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
+| `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned) |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |

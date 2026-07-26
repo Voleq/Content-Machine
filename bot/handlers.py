@@ -73,6 +73,9 @@ HELP_TEXT = """Dennis — operator commands
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
 /prompts — re-send this lane's pre-filled master prompt
 /screen [trending|value|all] — ranked candidates (trending → SHORT, value → LONG)
+/ideas — the ranked backlog; /idea TICKER <why> adds, /unidea TICKER drops
+/thesis [TICKER] — what we said, and whether the numbers still back it
+/batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
 /render TICKER — render the approved script for this ticker's lane
 /render_long TICKER — force the LONG (only needed if a ticker has both)
 /script — the stored script, numbered, ready to edit
@@ -978,19 +981,20 @@ class BotCore:
         if script is None:
             return None, f"No {fmt.upper()} script for {ticker} — paste it first.", None
         if draft and fmt == "long":
-            # a draft's FIRST run triggers the one paid TTS generation, so it
-            # sits behind the same approval gate in live mode; in MOCK_MODE
-            # (or once audio is cached) it is free
-            if (not self.settings.mock_mode
-                    and not self.tts.is_cached(script.narration, "long",
-                                               events=script.events)
-                    and not ws.is_approved("long")):
-                return None, (
-                    f"⛔ draft for {ticker} would trigger the paid TTS call — "
-                    f"approve the LONG report first (the draft then generates "
-                    f"the audio once; the final render reuses it)."
-                ), None
-            return JobKind.RENDER_DRAFT_LONG, f"🎬 queued LOW-RES DRAFT for {ticker}", ws
+            # Since P3.2 a draft never buys audio: it uses the free local
+            # voice, or the mock hum where there isn't one. So the old
+            # "a draft would trigger the paid call" gate is gone — there is
+            # nothing left for it to gate.
+            tier = self.tts.tier_for(True)
+            note = {
+                "local": "free local voice — listenable, timings interpolated "
+                         "within each sentence",
+                "mock": "mock hum — the local voice isn't installed, so this "
+                        "checks timing only",
+            }.get(tier, tier)
+            return JobKind.RENDER_DRAFT_LONG, (
+                f"🎬 queued LOW-RES DRAFT for {ticker}\n🎧 {note}. $0 either "
+                f"way; the final still needs the paid voice."), ws
         if not ws.is_approved(fmt):
             return None, (
                 f"⛔ {ticker} {fmt.upper()} is not approved (or the script changed "
@@ -1051,7 +1055,13 @@ class BotCore:
             if not draft and not ws.is_approved("long"):
                 raise RuntimeError("approval vanished before render")
             checkpoint("tts")
-            tts = self.tts.synthesize(script.narration, "long", events=script.events)
+            # A draft asks for the free tier (P3.2): the local neural voice if
+            # the box has one, the mock hum otherwise. Never ElevenLabs — the
+            # whole point of a draft is to iterate on pacing without spending.
+            tts = self.tts.synthesize(script.narration, "long",
+                                      events=script.events, draft=draft)
+            if tts.draft:
+                checkpoint(f"draft audio ({tts.tier}) — not the real voice")
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
             # The storyboard costs seconds and lands before the encode, so a
@@ -1108,7 +1118,7 @@ class BotCore:
             return str(out)
 
         if job.kind is JobKind.REPURPOSE:
-            from pipeline.repurpose import repurpose_short_from_long
+            from pipeline.repurpose import repurpose_clips_from_long
 
             long_mp4 = ws.path / "long_final.mp4"
             manifest = ws.path / "render_long_manifest.json"
@@ -1121,16 +1131,23 @@ class BotCore:
                 words = self.tts.synthesize(script.narration, "long",
                                             events=script.events).words  # cache hit
             checkpoint("repurpose")
-            out, info = repurpose_short_from_long(
-                long_mp4, manifest, self.settings, words=words
+            # A forty-minute cut has more than one good minute in it (P3.3).
+            clips = repurpose_clips_from_long(
+                long_mp4, manifest, self.settings,
+                n=self.settings.repurpose_clips, words=words,
             )
+            if not clips:
+                raise RuntimeError("no usable window in the finished LONG")
             checkpoint("delivery")
             import json as _json
             attributions = _json.loads(manifest.read_text()).get("attributions", [])
-            result = deliver(out, job.ticker, job.workdate, self.settings,
-                             attributions=attributions)
+            result = ""
+            for i, (path, _info) in enumerate(clips, 1):
+                checkpoint(f"delivery {i}/{len(clips)}")
+                result = deliver(path, job.ticker, job.workdate, self.settings,
+                                 attributions=attributions)
             self._finish(job, result)
-            return str(out)
+            return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")
 
@@ -1190,6 +1207,158 @@ class BotCore:
                 fresh.delivered_link = result.link
                 fresh.detail = f"delivered via {result.backend}"
                 self.queue.store.save(fresh)
+        self._record_thesis(job)
+
+    def _record_thesis(self, job: JobRecord) -> None:
+        """Pin the thesis and its numbers when a video ships (P3.3).
+
+        At ship time, because that is the moment the claim becomes public —
+        and best-effort, because a bookkeeping failure must never turn a
+        delivered video into a failed job.
+        """
+        if not self.settings.thesis_tracking:
+            return
+        if job.kind not in (JobKind.RENDER_LONG, JobKind.RENDER_SHORT):
+            return
+        try:
+            from pipeline.standing import ThesisBook
+
+            ws = Workspace(self.settings, job.ticker, job.workdate)
+            data = self._company_data(ws)
+            if data is None:
+                return
+            summary = ws.chosen_angle() or ""
+            if not summary:
+                script = ws.load_long() or ws.load_short()
+                summary = (getattr(script, "title", "")
+                           or getattr(script, "hook_text", "") or "")
+            ThesisBook(self.settings).record(job.ticker, summary, data,
+                                             workdate=job.workdate)
+        except Exception as e:  # noqa: BLE001 - never fail a shipped video
+            log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
+
+    # --------------------------------------------- standing state (P3.3)
+    def queue_text(self, limit: int = 10) -> Reply:
+        """The ranked backlog, so a session never starts from a blank page."""
+        from pipeline.standing import IdeaQueue
+
+        q = IdeaQueue(self.settings)
+        q.prune(self.settings.idea_queue_max_age_days)
+        return Reply(q.render(limit) + "\n\n/short TICKER or /long TICKER to start one.")
+
+    def queue_add(self, args: list[str]) -> Reply:
+        from pipeline.standing import IdeaQueue
+
+        if not args:
+            return Reply("Usage: /idea TICKER <why it's worth covering>")
+        ticker = args[0].upper()
+        reason = " ".join(args[1:]).strip() or "operator pick"
+        IdeaQueue(self.settings).add(ticker, reason, source="operator", score=2.0)
+        return Reply(f"🗂 queued {ticker} — {reason}")
+
+    def queue_drop(self, args: list[str]) -> Reply:
+        from pipeline.standing import IdeaQueue
+
+        if not args:
+            return Reply("Usage: /unidea TICKER")
+        ticker = args[0].upper()
+        dropped = IdeaQueue(self.settings).drop(ticker)
+        return Reply(f"🗂 {'dropped' if dropped else 'not in the queue'}: {ticker}")
+
+    def thesis_text(self, args: list[str]) -> Reply:
+        """What we said about a ticker, and whether it still holds.
+
+        Re-reads the pinned numbers against the current export, so this is a
+        live check rather than a recital of what was stored.
+        """
+        from pipeline.standing import ThesisBook, ideas_from_thesis_moves, update_warranted
+
+        book = ThesisBook(self.settings)
+        if not args:
+            covered = book.tickers()
+            if not covered:
+                return Reply("No theses on file yet — one is pinned each time a "
+                             "video ships.")
+            rows = []
+            for t in covered:
+                th = book.get(t)
+                icon = {"intact": "🟢", "cracking": "🟡", "broken": "🔴"}.get(
+                    th.status, "⚪")
+                rows.append(f"{icon} {t} — {th.summary[:60] or '(no summary)'}")
+            return Reply("📌 Theses on file\n" + "\n".join(rows)
+                         + "\n\n/thesis TICKER re-checks one against today's numbers.")
+
+        ticker = args[0].upper()
+        th = book.get(ticker)
+        if th is None:
+            return Reply(f"No thesis on file for {ticker}.")
+        ws = Workspace.latest_for(self.settings, ticker)
+        data = self._company_data(ws) if ws else None
+        if data is None:
+            return Reply(f"📌 {ticker}: {th.summary}\n"
+                         f"(no current data to check it against — /refresh {ticker})")
+        th, moves = book.check(ticker, data)
+        icon = {"intact": "🟢", "cracking": "🟡", "broken": "🔴"}.get(th.status, "⚪")
+        body = f"{icon} {ticker} — THESIS: {th.status.upper()}\n{th.summary}"
+        note = update_warranted(moves)
+        if note:
+            ideas_from_thesis_moves(self.settings, ticker, moves)
+            body += f"\n\n{note}\n(added to the idea queue)"
+        else:
+            body += "\n\nNothing behind it has moved materially."
+        return Reply(body)
+
+    def batch_text(self, args: list[str]) -> Reply:
+        """Queue renders to run unattended overnight."""
+        from pipeline.standing import BatchQueue
+
+        b = BatchQueue(self.settings)
+        if not args:
+            return Reply(b.render())
+        head = args[0].lower()
+        if head == "clear":
+            return Reply(f"🌙 cleared {b.clear()} batch entr(ies).")
+        ticker = head.upper()
+        fmt = (args[1].lower() if len(args) > 1 else "")
+        if fmt not in ("short", "long"):
+            ws = Workspace.latest_for(self.settings, ticker)
+            fmt = (ws.current_format() if ws else None) or "long"
+        b.add(ticker, fmt)
+        return Reply(f"🌙 {ticker} {fmt.upper()} queued for the overnight batch.\n"
+                     + b.render())
+
+    def batch_plan(self) -> tuple[list[tuple], list[str], str]:
+        """(submittable, skipped reasons, note). Pure — submitting is async.
+
+        Everything that can't run is reported rather than dropped: a batch
+        that silently skipped the one render you cared about is worse than no
+        batch. Nothing expires either — if the machine was asleep, the work is
+        still here the next time the window opens.
+        """
+        from pipeline.standing import BatchQueue, in_batch_window
+
+        b = BatchQueue(self.settings)
+        pending = b.pending()
+        if not self.settings.batch_enabled:
+            return [], [], "🌙 the overnight batch is switched off (BATCH_ENABLED)."
+        if not pending:
+            return [], [], "🌙 nothing queued."
+        submittable: list[tuple] = []
+        skipped: list[str] = []
+        for item in pending:
+            kind, text, ws = self.render_request(item.ticker, item.fmt)
+            if kind is None or ws is None:
+                skipped.append(f"{item.ticker} {item.fmt.upper()}: {text}")
+                continue
+            submittable.append((kind, ws, item))
+        note = "" if in_batch_window(self.settings) else (
+            "(outside the overnight window — running anyway because you asked)")
+        return submittable, skipped, note
+
+    def batch_done(self, ticker: str, fmt: str, error: str = "") -> None:
+        from pipeline.standing import BatchQueue
+
+        BatchQueue(self.settings).mark_done(ticker, fmt, error)
 
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
@@ -1389,6 +1558,43 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.undo_edit(update.effective_chat.id))
 
     @guard
+    async def cmd_ideas(update, ctx):
+        await _send(update, core.queue_text())
+
+    @guard
+    async def cmd_idea(update, ctx):
+        await _send(update, core.queue_add(list(ctx.args or [])))
+
+    @guard
+    async def cmd_unidea(update, ctx):
+        await _send(update, core.queue_drop(list(ctx.args or [])))
+
+    @guard
+    async def cmd_thesis(update, ctx):
+        await _send(update, core.thesis_text(list(ctx.args or [])))
+
+    @guard
+    async def cmd_batch(update, ctx):
+        args = list(ctx.args or [])
+        if args and args[0].lower() == "run":
+            submittable, skipped, note = core.batch_plan()
+            queued = 0
+            for kind, ws, item in submittable:
+                try:
+                    await core.queue.submit(kind, ws.ticker, ws.workdate)
+                    core.batch_done(item.ticker, item.fmt)
+                    queued += 1
+                except ValueError as e:
+                    skipped.append(f"{item.ticker} {item.fmt.upper()}: {e}")
+            lines = [f"🌙 batch: {queued} queued, {len(skipped)} skipped"]
+            lines += [f"  ⛔ {s}" for s in skipped[:6]]
+            if note:
+                lines.append(f"  {note}")
+            await _send(update, Reply("\n".join(lines)))
+            return
+        await _send(update, core.batch_text(args))
+
+    @guard
     async def cmd_status(update, ctx):
         await _send(update, Reply(core.queue.status_text()))
 
@@ -1485,6 +1691,11 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
+    app.add_handler(CommandHandler("ideas", cmd_ideas))
+    app.add_handler(CommandHandler("idea", cmd_idea))
+    app.add_handler(CommandHandler("unidea", cmd_unidea))
+    app.add_handler(CommandHandler("thesis", cmd_thesis))
+    app.add_handler(CommandHandler("batch", cmd_batch))
     app.add_handler(CommandHandler("script", cmd_script))
     app.add_handler(CommandHandler("edit", cmd_edit))
     app.add_handler(CommandHandler("replace", cmd_replace))
