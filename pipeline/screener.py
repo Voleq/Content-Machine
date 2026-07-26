@@ -567,12 +567,16 @@ def schedule_alerts(application, core) -> None:
     async def alert_job(ctx) -> None:
         import asyncio
 
-        from pipeline.alerts import Watchlist, digest, fetch_quotes, poll_once
+        from pipeline.alerts import (
+            Watchlist, digest, fetch_filings, fetch_quotes, poll_once,
+        )
 
         try:
             tickers = Watchlist(settings).all()
             quotes = await asyncio.to_thread(fetch_quotes, settings, tickers)
-            alerts = await asyncio.to_thread(poll_once, settings, quotes=quotes)
+            filings = await asyncio.to_thread(fetch_filings, settings, tickers)
+            alerts = await asyncio.to_thread(poll_once, settings, quotes=quotes,
+                                             filings=filings)
         except Exception as e:  # noqa: BLE001 - a watch that dies is silent
             log.warning("alert poll failed (%s) — skipping this pass", e)
             return

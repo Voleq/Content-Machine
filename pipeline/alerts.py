@@ -405,6 +405,46 @@ def poll_once(settings: Settings, *, quotes: Iterable[dict] | None = None,
     return out
 
 
+def fetch_filings(settings: Settings, tickers: Sequence[str]) -> list[Alert]:
+    """Form 4s and 8-Ks landing on watched names (P3.4 feeding 3b).
+
+    Cached and rate-limited by `sources`, and silent on anything unavailable —
+    a filing feed that is down produces no alerts, not an error. Only the
+    filing DATE is compared, so a name that filed today alerts once and the
+    AlertLog handles the rest.
+    """
+    if not tickers:
+        return []
+    out: list[Alert] = []
+    today = datetime.now(timezone.utc).date().isoformat()
+    try:
+        from pipeline.sources import insider_transactions, latest_8k
+    except ImportError:  # pragma: no cover
+        return []
+    for ticker in tickers:
+        try:
+            eightk = latest_8k(ticker, settings)
+            if eightk.get("status") == "ok" and eightk.get("filed") == today:
+                tail = " with a press release" if eightk.get("exhibit_url") else ""
+                out.append(Alert(ticker=ticker, kind="filing",
+                                 headline=f"filed an 8-K{tail}",
+                                 detail="something they had to disclose",
+                                 magnitude=2.0))
+            form4 = insider_transactions(ticker, settings)
+            if form4.get("status") == "ok":
+                fresh = [f for f in form4.get("filings", [])
+                         if f.get("filed") == today]
+                if fresh:
+                    out.append(Alert(
+                        ticker=ticker, kind="filing",
+                        headline=f"{len(fresh)} insider transaction(s) filed today",
+                        detail="Form 4 — worth reading which way",
+                        magnitude=1.5))
+        except Exception as e:  # noqa: BLE001 - one bad ticker, not the pass
+            log.debug("filing watch for %s failed: %s", ticker, e)
+    return out
+
+
 def fetch_quotes(settings: Settings, tickers: Sequence[str]) -> list[dict]:
     """Quotes for the watchlist. Degrades to [] — never raises.
 

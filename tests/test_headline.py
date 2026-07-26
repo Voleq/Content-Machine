@@ -131,7 +131,26 @@ def test_url_headline_is_offline_and_used_verbatim(core):
     reply = core.headline_command(CHAT, ["SPY", "https://example.com/news/cpi-hot"])
     prompt = reply.files[0].read_text()
     assert "https://example.com/news/cpi-hot" in prompt
-    assert "no article summary" in prompt  # nothing fetched in MOCK
+    # The URL itself is still never fetched. Since P3.4 a MACRO headline is
+    # grounded in the actual FRED series instead of an empty summary — read
+    # from a fixture offline, like every other MOCK_MODE source.
+    assert "THE ACTUAL SERIES" in prompt
+    assert "CPIAUCSL" in prompt
+
+
+def test_a_company_url_headline_still_has_no_summary_offline(core):
+    """Only macro gets grounded from a free series; a company URL has nothing
+    to ground it with while offline."""
+    import shutil
+
+    core.headline_command(CHAT, ["EXMPL", "https://example.com/news/x"])
+    ws = core.context.get(CHAT)
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    reply = core.headline_command(CHAT, ["EXMPL", "https://example.com/news/x"])
+    prompt = next(f for f in reply.files if f.suffix == ".md").read_text()
+    assert "no article summary" in prompt
+    assert "THE ACTUAL SERIES" not in prompt
 
 
 # ------------------------------------- the three framings → valid short JSON
