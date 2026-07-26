@@ -56,6 +56,12 @@ filings = [
 excel = [
     "pywin32==313; sys_platform == 'win32'",
 ]
+# YouTube upload + retention feedback (P3.5). Optional: without it the bot
+# hands you the upload package to post by hand, exactly as before.
+youtube = [
+    "google-api-python-client==2.190.0",
+    "google-auth-oauthlib==1.2.2",
+]
 
 [project.scripts]
 dennis = "main:main"
