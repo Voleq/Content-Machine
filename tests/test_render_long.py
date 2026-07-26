@@ -101,8 +101,16 @@ def test_cue_times_reached_the_filtergraph(rendered):
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     refin = next(s for s in manifest["segments"] if s["kind"] == "filing")
     assert f"between(t,{refin['start']:.4f}" in filter_text  # the glitch flash
-    assert "concat=n=%d" % len(manifest["segments"]) in filter_text
     assert "subtitles=filename=" in filter_text
+    # In segmented mode the beats are separate encodes concatenated with
+    # -c copy, so the final graph carries only the overlays; in single-graph
+    # mode the concat filter is in there.
+    if manifest["segmented"]:
+        assert (out.parent / "render_long" / "base.mp4").exists()
+        assert len(manifest["segments"]) == len(
+            [s for s in manifest["segments"] if s.get("filter")])
+    else:
+        assert "concat=n=%d" % len(manifest["segments"]) in filter_text
     # sounds mixed at their cue times
     cues = build_long_timeline(script, tts.words, tts.duration_s)
     for c in cues:
@@ -139,22 +147,25 @@ def test_nothing_pans_or_zooms(rendered):
     timeline.
     """
     settings, script, tts, out, manifest = rendered
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
     W, H = manifest["resolution"]
     segs = manifest["segments"]
+    # every filter this render used: the overlay graph plus each beat's own
+    graphs = [(out.parent / (out.stem + ".filter.txt")).read_text()]
+    graphs += [s.get("filter", "") for s in segs]
+    all_filters = "\n".join(graphs)
 
-    assert "zoompan" not in filter_text, "zoompan is gone for good"
+    assert "zoompan" not in all_filters, "zoompan is gone for good"
     # a pan is a crop with a time-varying x/y expression
-    assert "(iw-ow)*t/" not in filter_text and "(ih-oh)*t/" not in filter_text, \
+    assert "(iw-ow)*t/" not in all_filters and "(ih-oh)*t/" not in all_filters, \
         "no time-varying crop anywhere"
-    assert "1.14" not in filter_text, "the Ken Burns upscale is gone"
+    assert "1.14" not in all_filters, "the Ken Burns upscale is gone"
 
     # every still segment is the plain contain-fit hold
     still_kinds = {"chart", "filing", "screengrab", "asset", "img", "meme",
                    "table", "term", "bignum", "prop", "host"}
     stills = [s for s in segs if s["kind"] in still_kinds]
     assert stills
-    assert f"pad={W}:{H}" in filter_text
+    assert f"pad={W}:{H}" in all_filters
 
 
 def test_the_ken_burns_vocabulary_is_deleted():

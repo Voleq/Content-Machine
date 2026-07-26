@@ -755,10 +755,18 @@ class BotCore:
             checkpoint("storyboard")
             self._send_storyboard(job, script, tts, ws, data)
             checkpoint("render")
+
+            def seg_progress(done: int, total: int) -> None:
+                # Real progress, not a spinner: the operator can see a
+                # forty-minute cut advancing beat by beat.
+                if done == total or done % 5 == 0:
+                    checkpoint(f"render {done}/{total} segments")
+
             out, manifest = render_long(
                 script, tts, ws.path, self.settings, content=self.content,
                 draft=draft, broll_overrides=ws.broll_overrides(),
                 as_of=as_of, company_data=data,
+                on_progress=seg_progress,
             )
             if draft:
                 job.delivered_link = f"file://{out}"

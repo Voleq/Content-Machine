@@ -42,15 +42,25 @@ def set_render_politeness(settings) -> None:
              _POLITENESS["threads"], _POLITENESS["below_normal"])
 
 
-def _politeness_args() -> list[str]:
+def _politeness_args(threads: int | None = None) -> list[str]:
     """ffmpeg flags that cap CPU use. The filter graph — not the encode — is
-    the bottleneck here, so the filter thread pools are capped too."""
-    n = _POLITENESS["threads"]
+    the bottleneck here, so the filter thread pools are capped too.
+
+    `threads` overrides the process-wide cap, which is how the parallel
+    segment encoder stays polite: several workers each take a slice of the
+    budget rather than each taking the whole thing.
+    """
+    n = threads if threads else _POLITENESS["threads"]
     if not n:
         return []
     return ["-threads", str(n),
             "-filter_threads", str(n),
             "-filter_complex_threads", str(n)]
+
+
+def render_thread_budget() -> int:
+    """The aggregate ffmpeg thread cap currently in force."""
+    return _POLITENESS["threads"] or (os.cpu_count() or 4)
 
 
 def _deprioritise(proc: subprocess.Popen) -> None:
@@ -91,12 +101,13 @@ def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
     return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
 
 
-def run_ffmpeg(args: list[str], timeout: int = 3600) -> None:
+def run_ffmpeg(args: list[str], timeout: int = 3600,
+               threads: int | None = None) -> None:
     """Run ffmpeg with -y and sane logging; raise RenderError with the
     stderr tail on failure."""
     ffmpeg, _ = detect_ffmpeg()
     cmd = [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
-           *_politeness_args(), *args]
+           *_politeness_args(threads), *args]
     log.debug("ffmpeg %s", " ".join(args[:12]))
     proc = _run_polite(cmd, timeout)
     if proc.returncode != 0:

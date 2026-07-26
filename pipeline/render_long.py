@@ -47,7 +47,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
+from typing import Callable
 
 from config import Settings
 from pipeline.broll import ContentManager
@@ -83,7 +85,15 @@ from pipeline.render_common import (
     composite_video,
     encode_profile,
     ffprobe_duration,
+    render_thread_budget,
     run_ffmpeg,
+)
+from pipeline.segments import (
+    CACHE_DIRNAME as SEG_CACHE_DIRNAME,
+    SegmentRun,
+    SegmentSpec,
+    concat_clips,
+    encode_segments,
 )
 from pipeline.timeline import (
     LONG_FILLER_LOOKS,
@@ -117,6 +127,44 @@ _CHAPTERS = [
 # cached, since the output no longer depends on its position in the timeline.
 
 
+_INPUT_LABEL_RE = re.compile(r"\[(\d+):v\]")
+
+
+def _globalise(chain: str, offset: int, index: int) -> str:
+    """A locally-indexed segment chain, re-numbered for the single graph.
+
+    Segment chains are authored against local input indices and end in
+    [out]; the monolithic path needs absolute indices and an [s{i}] label.
+    Only `[N:v]` matches — the internal labels are named ([hbg], [hfg]), so
+    they are never caught.
+    """
+    shifted = _INPUT_LABEL_RE.sub(lambda m: f"[{int(m.group(1)) + offset}:v]", chain)
+    return shifted.replace("[hbg]", f"[hbg{index}]").replace("[hfg]", f"[hfg{index}]") \
+                  .replace("[out]", f"[s{index}]")
+
+
+def _segment_fallback(spec: SegmentSpec, backdrop_for, W: int, H: int,
+                      fps: int) -> SegmentSpec | None:
+    """What a failed segment becomes: the designed backdrop, held.
+
+    One unresolvable asset should cost one beat, not the whole cut.
+    """
+    try:
+        bg = backdrop_for(spec.index)
+    except Exception:  # noqa: BLE001
+        return None
+    return SegmentSpec(
+        index=spec.index, kind="host", duration=spec.duration,
+        width=W, height=H, fps=fps,
+        inputs=(("-loop", "1", "-framerate", str(fps),
+                 "-t", f"{spec.duration + 0.2:.4f}", "-i", str(bg)),),
+        filter_chain=_hold_still_chain(0, spec.duration, W, H,
+                                       ",setsar=1,format=yuv420p[out]"),
+        layout="host-full",
+        extra_identity=("fallback",),
+    )
+
+
 def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
     """A still, held: contain-fit onto the paper, no movement at all."""
     return (
@@ -138,6 +186,7 @@ def render_long(
     broll_overrides: dict[str, int] | None = None,
     as_of: str = "",
     company_data=None,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> tuple[Path, Path]:
     """Render the LONG (or its low-res draft). Returns (mp4, manifest)."""
     content = content or ContentManager(settings)
@@ -173,6 +222,11 @@ def render_long(
     kit = load_kit(settings.assets_dir)
 
     px = lambda v: int(round(v * W / 1920))  # noqa: E731  (1920-wide design)
+
+    def progress(done: int, total: int) -> None:
+        log.info("segments %d/%d", done, total)
+        if on_progress is not None:
+            on_progress(done, total)
 
     # ------------------------------------------------ per-segment inputs
     inputs: list[str] = []
@@ -239,11 +293,11 @@ def render_long(
         """Backdrop + alpha host clip -> one concat-ready segment stream."""
         return (
             f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-            f"scale={W}:{H}[hbg{seg_i}];"
+            f"scale={W}:{H}[hbg];"
             f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
             f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-            f"trim=0:{seg_len:.4f}[hfg{seg_i}];"
-            f"[hbg{seg_i}][hfg{seg_i}]overlay={x}:{y}:eof_action=repeat"
+            f"trim=0:{seg_len:.4f}[hfg];"
+            f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat"
             f"{tail}"
         )
 
@@ -265,23 +319,27 @@ def render_long(
 
     shot_cache: dict[str, Path] = {}
     meme_frame_cache: dict[str, Path] = {}
-    # A host beat needs two inputs (the room, then Dennis over it), so input
-    # indices are tracked explicitly rather than assumed equal to the segment
-    # index.
+
+    # Every segment's chain is built against LOCAL input indices (0, 1, …) and
+    # ends in [out]. That is what a standalone per-segment encode needs, and
+    # the single-graph fallback just re-numbers them (see `_globalise`).
+    seg_specs: list[SegmentSpec] = []
+    seg_inputs: list[list[str]] = []
     n_inputs = 0
 
     def _add_input(args: list[str]) -> int:
         nonlocal n_inputs
-        inputs.extend(args)
+        seg_inputs.append(list(args))
         n_inputs += 1
         return n_inputs - 1
 
     for i, seg in enumerate(segments):
         seg_len = seg.length
-        # every chain ends with setsar=1 AFTER the move — a crop/scale look
-        # would otherwise re-derive a non-1:1 SAR and make the concat filter
-        # reject the stream
-        tail = f",setsar=1,format=yuv420p[s{i}]"
+        seg_inputs = []
+        n_inputs = 0
+        # setsar=1 AFTER the scale — a crop/scale would otherwise re-derive a
+        # non-1:1 SAR and make the concat reject the stream
+        tail = ",setsar=1,format=yuv420p[out]"
         value = seg.payload.get("value", "")
 
         def _still_input(path: Path) -> int:
@@ -406,12 +464,49 @@ def render_long(
             meta["variant"] = seg.payload.get("variant", 0)
         if seg.payload.get("layout"):
             meta["layout"] = seg.payload["layout"]
+        meta["filter"] = chain
         seg_meta.append(meta)
-        lines.append(chain)
+        seg_specs.append(SegmentSpec(
+            index=i, kind=seg.kind, duration=seg_len,
+            width=W, height=H, fps=fps,
+            inputs=tuple(tuple(g) for g in seg_inputs),
+            filter_chain=chain,
+            layout=str(seg.payload.get("layout", "")),
+        ))
 
-    concat_in = "".join(f"[s{i}]" for i in range(len(segments)))
-    lines.append(f"{concat_in}concat=n={len(segments)}:v=1:a=0[vcat]")
-    lines.append(f"[vcat]fps={fps}[v0]")
+    # ------------------------------------------------- assemble the base
+    # SEGMENTED (default): each beat encodes on its own, keyed by a content
+    # hash, in parallel, resumably — then the clips are concatenated with
+    # -c copy. SINGLE-GRAPH is the original monolithic filter_complex, kept
+    # for correctness comparison.
+    #
+    # Either way the result is one base video that the global overlays — the
+    # corner bug, disclaimer, captions, chapter stingers, doodles — composite
+    # over. Those span segment boundaries, so they cannot be baked in per
+    # segment.
+    profile = encode_profile(settings, "long", draft=draft, preview=preview)
+    seg_run: SegmentRun | None = None
+    base_video: Path | None = None
+    if settings.render_segmented:
+        seg_run = encode_segments(
+            seg_specs, settings.cache_dir / SEG_CACHE_DIRNAME, profile,
+            total_threads=render_thread_budget(),
+            fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps),
+            on_progress=progress,
+        )
+        base_video = concat_clips(seg_run.clips(), rdir / "base.mp4")
+        inputs = ["-i", str(base_video)]
+        lines = [f"[0:v]fps={fps},setsar=1[v0]"]
+    else:
+        offset = 0
+        for spec in seg_specs:
+            for group in spec.inputs:
+                inputs.extend(group)
+            lines.append(_globalise(spec.filter_chain, offset, spec.index))
+            offset += len(spec.inputs)
+        concat_in = "".join(f"[s{i}]" for i in range(len(segments)))
+        lines.append(f"{concat_in}concat=n={len(segments)}:v=1:a=0[vcat]")
+        lines.append(f"[vcat]fps={fps}[v0]")
 
     # ------------------------------------------------------------ layers
     layers: list[OverlayLayer] = []
@@ -592,7 +687,6 @@ def render_long(
         fps=fps,
     )
     out_path = workspace / ("long_draft.mp4" if draft else "long_final.mp4")
-    profile = encode_profile(settings, "long", draft=draft, preview=preview)
     composite_video(spec, profile, settings.audio_bitrate, out_path)
 
     rendered = ffprobe_duration(out_path)
@@ -613,6 +707,12 @@ def render_long(
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],
         "segments": seg_meta,
+        "segmented": bool(settings.render_segmented),
+        "segment_cache_hits": (seg_run.cached if seg_run else 0),
+        "segment_failures": [
+            {"index": r.index, "detail": r.detail}
+            for r in (seg_run.failures if seg_run else [])
+        ],
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end,
              "x": l.x, "y": l.y}

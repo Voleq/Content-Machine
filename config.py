@@ -215,6 +215,13 @@ class Settings(BaseSettings):
     # Below-normal priority on Windows, +10 nice on POSIX. Off means the
     # render competes with the desktop on equal terms.
     render_below_normal_priority: bool = True
+    # Encode each beat as its own clip — content-hash cached, encoded in
+    # parallel, resumable across a reboot — then concatenate. False falls back
+    # to the original monolithic filter_complex, kept for comparison.
+    render_segmented: bool = Field(default=True, alias="RENDER_SEGMENTED")
+    # Bound the segment cache; it lives outside the workspace on purpose so it
+    # survives cleanup and reboots.
+    segment_cache_max_files: int = 4000
 
     # --------------------------------------------------------------- delivery
     # The renderer is now the operator's own machine, so a Drive round-trip
