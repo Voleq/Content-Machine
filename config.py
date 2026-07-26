@@ -153,6 +153,26 @@ class Settings(BaseSettings):
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
     data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
 
+    # ---------------------------------------------- intraday alerting (3b)
+    # Short-form is time-sensitive, and one pre-market digest doesn't cover
+    # it. These watch covered names during market hours. Every knob here
+    # exists to stop the bot being chatty: a muted alerter is worse than none.
+    alerts_enabled: bool = Field(default=True, alias="ALERTS_ENABLED")
+    alert_poll_minutes: int = Field(default=15, alias="ALERT_POLL_MINUTES")
+    alert_move_pct: float = Field(default=6.0, alias="ALERT_MOVE_PCT")
+    alert_volume_multiple: float = Field(default=3.0, alias="ALERT_VOLUME_MULTIPLE")
+    # A mover we've never covered has to be much bigger to be worth saying —
+    # otherwise this just duplicates the screener, loudly.
+    alert_unwatched_pct: float = Field(default=12.0, alias="ALERT_UNWATCHED_PCT")
+    alert_cooldown_minutes: int = Field(default=180, alias="ALERT_COOLDOWN_MINUTES")
+    # Inside the cooldown, a repeat needs to be this much bigger to speak.
+    alert_escalation_factor: float = Field(default=1.75, alias="ALERT_ESCALATION_FACTOR")
+    alert_max_per_poll: int = Field(default=4, alias="ALERT_MAX_PER_POLL")
+    # The hours alerts ARE allowed, local time (may cross midnight).
+    alert_start_hour: int = Field(default=9, alias="ALERT_START_HOUR")
+    alert_end_hour: int = Field(default=17, alias="ALERT_END_HOUR")
+    alert_weekends: bool = Field(default=False, alias="ALERT_WEEKENDS")
+
     # ------------------------------------------------ standing state (P3.3)
     # What the bot remembers between sessions: each covered ticker's thesis
     # and the numbers behind it, a ranked idea backlog, and renders queued to

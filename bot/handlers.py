@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
 from typing import Callable
 
@@ -76,6 +77,8 @@ HELP_TEXT = """Dennis — operator commands
 /ideas — the ranked backlog; /idea TICKER <why> adds, /unidea TICKER drops
 /thesis [TICKER] — what we said, and whether the numbers still back it
 /batch [TICKER [fmt] | run | clear] — queue renders to run unattended overnight
+/watch [TICKER | drop TICKER] — intraday watch (published names join automatically)
+/earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
 /render TICKER — render the approved script for this ticker's lane
 /render_long TICKER — force the LONG (only needed if a ticker has both)
 /script — the stored script, numbered, ready to edit
@@ -1360,6 +1363,68 @@ class BotCore:
 
         BatchQueue(self.settings).mark_done(ticker, fmt, error)
 
+    # ------------------------------------------ intraday alerting (3b)
+    def watch_command(self, args: list[str]) -> Reply:
+        """What gets watched intraday, and when the watched names report."""
+        from pipeline.alerts import EarningsCalendar, Watchlist, in_quiet_hours
+
+        wl = Watchlist(self.settings)
+        if args:
+            head = args[0].lower()
+            if head in ("drop", "remove", "off") and len(args) > 1:
+                ticker = args[1].upper()
+                gone = wl.remove(ticker)
+                return Reply(f"👁 {'unpinned' if gone else 'was not pinned'}: {ticker}"
+                             f"\n(names with a thesis on file are always watched.)")
+            ticker = head.upper()
+            wl.add(ticker)
+            return Reply(f"👁 watching {ticker} intraday.")
+
+        watched = wl.all()
+        if not watched:
+            return Reply("👁 nothing on the intraday watch yet.\n"
+                         "/watch TICKER pins one; every ticker you publish is "
+                         "watched automatically.")
+        lines = ["👁 Intraday watch", "  " + ", ".join(watched)]
+        soon = EarningsCalendar(self.settings).upcoming()
+        if soon:
+            lines.append("\n📊 Reporting soon")
+            for e in soon:
+                slot = {"bmo": "before the open", "amc": "after the close"}.get(
+                    e.when, "")
+                lines.append(f"  {e.ticker} — {e.date}{' ' + slot if slot else ''}")
+        if in_quiet_hours(self.settings):
+            lines.append("\n(quiet hours right now — nothing will be pushed)")
+        return Reply("\n".join(lines))
+
+    def earnings_command(self, args: list[str]) -> Reply:
+        """Tell the bot when a name reports, so it can flag both sides."""
+        from pipeline.alerts import EarningsCalendar
+
+        if len(args) < 2:
+            return Reply("Usage: /earnings TICKER YYYY-MM-DD [bmo|amc]")
+        ticker = args[0].upper()
+        when_date = args[1]
+        try:
+            date.fromisoformat(when_date)
+        except ValueError:
+            return Reply(f"⛔ {when_date!r} isn't a date — use YYYY-MM-DD.")
+        slot = args[2].lower() if len(args) > 2 else ""
+        if slot and slot not in ("bmo", "amc"):
+            return Reply("⛔ the third argument is bmo (before open) or amc "
+                         "(after close).")
+        EarningsCalendar(self.settings).set(ticker, when_date, slot)
+        return Reply(f"📊 {ticker} reports {when_date}"
+                     f"{' ' + slot if slot else ''}. I'll flag it before and after.")
+
+    def poll_alerts(self) -> list:
+        """One alert pass. Sync, so the scheduler and tests share a path."""
+        from pipeline.alerts import Watchlist, fetch_quotes, poll_once
+
+        tickers = Watchlist(self.settings).all()
+        quotes = fetch_quotes(self.settings, tickers)
+        return poll_once(self.settings, quotes=quotes)
+
     # ----------------------------------------------------------- utilities
     def cost_text(self) -> str:
         return (
@@ -1558,6 +1623,14 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, core.undo_edit(update.effective_chat.id))
 
     @guard
+    async def cmd_watch(update, ctx):
+        await _send(update, core.watch_command(list(ctx.args or [])))
+
+    @guard
+    async def cmd_earnings(update, ctx):
+        await _send(update, core.earnings_command(list(ctx.args or [])))
+
+    @guard
     async def cmd_ideas(update, ctx):
         await _send(update, core.queue_text())
 
@@ -1691,6 +1764,8 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
+    app.add_handler(CommandHandler("watch", cmd_watch))
+    app.add_handler(CommandHandler("earnings", cmd_earnings))
     app.add_handler(CommandHandler("ideas", cmd_ideas))
     app.add_handler(CommandHandler("idea", cmd_idea))
     app.add_handler(CommandHandler("unidea", cmd_unidea))

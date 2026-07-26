@@ -71,8 +71,11 @@ def main() -> None:
         core.queue.start()
 
         try:  # scheduled screener digest (§14) — degrades silently if absent
-            from pipeline.screener import schedule_digest
+            from pipeline.screener import schedule_alerts, schedule_digest
             schedule_digest(application, core)
+            # Intraday watch (3b): the digest covers the value lane, this
+            # covers short-form, which goes stale in hours.
+            schedule_alerts(application, core)
         except ImportError:
             log.info("screener module not present; digest not scheduled")
 

@@ -82,6 +82,38 @@ class YahooMarketSource:
                     seen[sym] = q
         return list(seen.values())
 
+    def quotes(self, tickers: list[str]) -> list[dict]:
+        """Live quotes for named tickers — what intraday alerting watches.
+
+        One batched request rather than one per ticker: the watchlist is
+        small, but hammering an unofficial endpoint per name every few minutes
+        is exactly how a polite client gets blocked. Degrades to [].
+        """
+        if not tickers:
+            return []
+        try:
+            import yfinance as yf
+
+            data = yf.Tickers(" ".join(tickers))
+            out: list[dict] = []
+            for sym in tickers:
+                try:
+                    info = data.tickers[sym].fast_info
+                    out.append({
+                        "symbol": sym,
+                        "regularMarketPrice": getattr(info, "last_price", None),
+                        "regularMarketVolume": getattr(info, "last_volume", None),
+                        "averageDailyVolume3Month": getattr(
+                            info, "three_month_average_volume", None),
+                        "regularMarketChangePercent": _pct_change(info),
+                    })
+                except Exception as e:  # noqa: BLE001 - one bad symbol, not all
+                    log.debug("quote for %s failed (%s)", sym, e)
+            return out
+        except Exception as e:  # noqa: BLE001
+            log.warning("batch quote fetch failed (%s)", e)
+            return []
+
     def value_candidates(self) -> list[dict]:
         try:
             import yfinance as yf
@@ -472,6 +504,18 @@ def parse_cron(expr: str) -> tuple[int, int, tuple[int, ...]]:
     return minute, hour, days
 
 
+def _pct_change(info) -> float | None:
+    """Percent change from the previous close, when both numbers are there."""
+    last = getattr(info, "last_price", None)
+    prev = getattr(info, "previous_close", None)
+    try:
+        if last and prev and float(prev) != 0:
+            return (float(last) - float(prev)) / float(prev) * 100.0
+    except (TypeError, ValueError):
+        pass
+    return None
+
+
 def schedule_digest(application, core) -> None:
     """Morning digest via PTB's JobQueue (APScheduler under the hood)."""
     from datetime import time as dtime
@@ -505,3 +549,42 @@ def schedule_digest(application, core) -> None:
     )
     log.info("screen digest scheduled: %02d:%02d %s days=%s",
              hour, minute, settings.screen_timezone, days)
+
+
+def schedule_alerts(application, core) -> None:
+    """Intraday watch (3b), on the same JobQueue as the digest.
+
+    A repeating job rather than a cron: what matters is "every N minutes
+    while the market is open", and the quiet-hours check inside the poll is
+    what decides whether a given firing says anything. Keeping that decision
+    in one place means the tests exercise the real gate.
+    """
+    settings = core.settings
+    if not settings.alerts_enabled:
+        log.info("intraday alerts disabled")
+        return
+
+    async def alert_job(ctx) -> None:
+        import asyncio
+
+        from pipeline.alerts import Watchlist, digest, fetch_quotes, poll_once
+
+        try:
+            tickers = Watchlist(settings).all()
+            quotes = await asyncio.to_thread(fetch_quotes, settings, tickers)
+            alerts = await asyncio.to_thread(poll_once, settings, quotes=quotes)
+        except Exception as e:  # noqa: BLE001 - a watch that dies is silent
+            log.warning("alert poll failed (%s) — skipping this pass", e)
+            return
+        if not alerts:
+            return
+        text = digest(alerts)
+        for chat_id in settings.operator_chat_ids:
+            await ctx.bot.send_message(chat_id, text)
+
+    interval = max(1, settings.alert_poll_minutes) * 60
+    application.job_queue.run_repeating(
+        alert_job, interval=interval, first=interval, name="intraday_alerts")
+    log.info("intraday alerts scheduled every %d min (%02d:00-%02d:00 %s)",
+             settings.alert_poll_minutes, settings.alert_start_hour,
+             settings.alert_end_hour, settings.screen_timezone)

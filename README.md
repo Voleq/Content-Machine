@@ -94,6 +94,8 @@ pipeline/
   excel_refresh.py       drives Excel over COM to refresh the data itself
   local_tts.py           the free draft voice (Piper) + sentence-anchored timings
   standing.py            thesis book, ranked idea queue, overnight batch
+  alerts.py              intraday watch: moves, volume, earnings, filings —
+                         de-duplicated, quiet-hours aware, one-tap /short
   script_edit.py         in-chat revision: line/range edits, find-replace, undo
   cost.py                spend ledger, gates, report builders
   jobs.py                persisted async job queue (one render at a time)
@@ -350,6 +352,8 @@ just less directly. Set the var once you know which macro your box has.
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned) |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
+| `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
+| `ALERT_MOVE_PCT` / `ALERT_COOLDOWN_MINUTES` | 6.0 / 180 | when it speaks, and how rarely it repeats |
 | `DISCLAIMER_TEXT` | Opinion / entertainment… | burned into every frame |
 
 Full list with encode/voice/pacing knobs: `config.py` (every field is an
