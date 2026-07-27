@@ -300,8 +300,25 @@ def check_export(
     check = ExportCheck(path=src)
 
     if src.suffix.lower() == ".csv":
-        # The CSV route carries the snapshot only and has no sheets to check.
-        # It is a fallback, not the expected input, so it is left alone here.
+        # The CSV route carries the snapshot only, so there are no sheets to
+        # check and no formulas to have failed to paste. Everything that is
+        # about the *contents* still applies though: a CSV for the wrong
+        # company overwrites the right one just as thoroughly.
+        try:
+            pairs = _read_csv_pairs(src)
+        except OSError as e:
+            check.problems.append(ExportProblem(
+                kind="unreadable",
+                message=f"{src.name} could not be read ({e})."))
+            return check
+        if not pairs:
+            check.problems.append(ExportProblem(
+                kind="no_fields",
+                message=(f"{src.name} has no `field_key,value` rows. A CSV "
+                         f"export carries the snapshot only, one field per "
+                         f"line.")))
+            return check
+        _check_contents(check, pairs, expect_ticker, max_age_days, today)
         return check
 
     try:
@@ -357,78 +374,97 @@ def check_export(
                              f"wait for the cells to settle, and re-export.")))
             return check
 
-        check.ticker = str(_coerce("ticker", pairs.get("ticker")) or "")
-        check.as_of = str(_coerce("as_of_date", pairs.get("as_of_date")) or "")
-
-        # --- unresolved cells ------------------------------------------
-        unresolved = {k: m for k in pairs
-                      if (m := unresolved_marker(pairs.get(k))) is not None}
-        required_unresolved = [k for k in DATA_REQUIRED if k in unresolved]
-        other_unresolved = [k for k in sorted(unresolved) if k not in DATA_REQUIRED]
-
-        if required_unresolved:
-            shown = ", ".join(f"{k} ({unresolved[k]})"
-                              for k in required_unresolved[:MAX_REPORTED_FIELDS])
-            check.problems.append(ExportProblem(
-                kind="unresolved",
-                message=(f"required field(s) never resolved in {src.name}: "
-                         f"{shown}. That is the add-in reporting a problem, not "
-                         f"a company with no data — check the terminal is "
-                         f"signed in, refresh, and re-export."),
-                fields=tuple(required_unresolved)))
-        if other_unresolved:
-            shown = ", ".join(other_unresolved[:MAX_REPORTED_FIELDS])
-            more = (f" …and {len(other_unresolved) - MAX_REPORTED_FIELDS} more"
-                    if len(other_unresolved) > MAX_REPORTED_FIELDS else "")
-            check.problems.append(ExportProblem(
-                kind="unresolved", blocking=False,
-                message=(f"{len(other_unresolved)} optional field(s) did not "
-                         f"resolve: {shown}{more}. They are treated as missing."),
-                fields=tuple(other_unresolved)))
-
-        # --- wrong company ---------------------------------------------
-        want = expect_ticker.strip().upper()
-        got = check.ticker.strip().upper()
-        if want and got and got != want:
-            check.problems.append(ExportProblem(
-                kind="wrong_ticker",
-                message=(f"{src.name} is {got}, but this workspace is {want}. "
-                         f"Nothing was overwritten. Export {want} and upload "
-                         f"that, or start a workspace for {got} with "
-                         f"/short {got} or /long {got}."),
-                fields=(got,)))
-        elif want and not got and "ticker" not in unresolved:
-            check.problems.append(ExportProblem(
-                kind="wrong_ticker", blocking=False,
-                message=(f"{src.name} carries no ticker, so it cannot be "
-                         f"confirmed as {want}.")))
-
-        # --- staleness --------------------------------------------------
-        # Keyed off the workbook's own as-of date. This is the authority now:
-        # the numbers are refreshed outside the bot, so nothing else here knows
-        # when they were pulled, and a file's mtime only records the last save.
-        if max_age_days is not None:
-            age = _as_of_age_days(check.as_of, today)
-            if age is None and not check.as_of:
-                check.problems.append(ExportProblem(
-                    kind="stale", blocking=False,
-                    message=(f"{src.name} carries no as-of date, so its age "
-                             f"cannot be checked.")))
-            elif age is None:
-                check.problems.append(ExportProblem(
-                    kind="stale", blocking=False,
-                    message=(f"could not read the as-of date "
-                             f"{check.as_of!r} in {src.name}.")))
-            elif age > max_age_days:
-                check.problems.append(ExportProblem(
-                    kind="stale", blocking=False,
-                    message=(f"{src.name} is {age} days old (as of "
-                             f"{check.as_of}; limit {max_age_days}). Refresh "
-                             f"it before rendering — a video states these as "
-                             f"current numbers.")))
+        _check_contents(check, pairs, expect_ticker, max_age_days, today)
         return check
     finally:
         wb.close()
+
+
+def _read_csv_pairs(src: Path) -> dict[str, object]:
+    """`field_key,value` rows from a CSV export. utf-8-sig: Excel writes a BOM."""
+    pairs: dict[str, object] = {}
+    with open(src, newline="", encoding="utf-8-sig") as f:
+        for row in csv.reader(f):
+            if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
+                pairs[row[0].strip()] = row[1]
+    return pairs
+
+
+def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
+                    max_age_days: int | None, today: _dt.date | None) -> None:
+    """The checks that are about what the export SAYS, not how it is shaped.
+
+    Shared by the workbook and CSV routes: a CSV for the wrong company
+    overwrites the right one exactly as thoroughly as a workbook does.
+    """
+    name = check.path.name
+    check.ticker = str(_coerce("ticker", pairs.get("ticker")) or "")
+    check.as_of = str(_coerce("as_of_date", pairs.get("as_of_date")) or "")
+
+    # --- unresolved cells ---------------------------------------------
+    unresolved = {k: m for k in pairs
+                  if (m := unresolved_marker(pairs.get(k))) is not None}
+    required_unresolved = [k for k in DATA_REQUIRED if k in unresolved]
+    other_unresolved = [k for k in sorted(unresolved) if k not in DATA_REQUIRED]
+
+    if required_unresolved:
+        shown = ", ".join(f"{k} ({unresolved[k]})"
+                          for k in required_unresolved[:MAX_REPORTED_FIELDS])
+        check.problems.append(ExportProblem(
+            kind="unresolved",
+            message=(f"required field(s) never resolved in {name}: "
+                     f"{shown}. That is the add-in reporting a problem, not "
+                     f"a company with no data — check the terminal is "
+                     f"signed in, refresh, and re-export."),
+            fields=tuple(required_unresolved)))
+    if other_unresolved:
+        shown = ", ".join(other_unresolved[:MAX_REPORTED_FIELDS])
+        more = (f" …and {len(other_unresolved) - MAX_REPORTED_FIELDS} more"
+                if len(other_unresolved) > MAX_REPORTED_FIELDS else "")
+        check.problems.append(ExportProblem(
+            kind="unresolved", blocking=False,
+            message=(f"{len(other_unresolved)} optional field(s) did not "
+                     f"resolve: {shown}{more}. They are treated as missing."),
+            fields=tuple(other_unresolved)))
+
+    # --- wrong company -------------------------------------------------
+    want = expect_ticker.strip().upper()
+    got = check.ticker.strip().upper()
+    if want and got and got != want:
+        check.problems.append(ExportProblem(
+            kind="wrong_ticker",
+            message=(f"{name} is {got}, but this workspace is {want}. "
+                     f"Nothing was overwritten. Export {want} and upload "
+                     f"that, or start a workspace for {got} with "
+                     f"/short {got} or /long {got}."),
+            fields=(got,)))
+    elif want and not got and "ticker" not in unresolved:
+        check.problems.append(ExportProblem(
+            kind="wrong_ticker", blocking=False,
+            message=(f"{name} carries no ticker, so it cannot be "
+                     f"confirmed as {want}.")))
+
+    # --- staleness ------------------------------------------------------
+    # Keyed off the export's own as-of date. This is the authority now: the
+    # numbers are refreshed outside the bot, so nothing else here knows when
+    # they were pulled, and a file's mtime only records the last save.
+    if max_age_days is None:
+        return
+    age = _as_of_age_days(check.as_of, today)
+    if age is None and not check.as_of:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=f"{name} carries no as-of date, so its age cannot be checked."))
+    elif age is None:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=f"could not read the as-of date {check.as_of!r} in {name}."))
+    elif age > max_age_days:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=(f"{name} is {age} days old (as of {check.as_of}; limit "
+                     f"{max_age_days}). Refresh it before rendering — a video "
+                     f"states these as current numbers.")))
 
 
 def _as_of_age_days(as_of: str, today: _dt.date | None = None) -> int | None:
@@ -824,10 +860,7 @@ def load_company_data(workspace: Path) -> CompanyData:
             log.warning("export has no News sheet — recent-headlines flow unavailable")
         wb.close()
     else:
-        with open(src, newline="", encoding="utf-8-sig") as f:
-            for row in csv.reader(f):
-                if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
-                    pairs[row[0].strip()] = row[1]
+        pairs = _read_csv_pairs(src)
         log.warning("CSV export carries the snapshot only — no history/dashboard")
 
     unknown = [k for k in pairs if k not in ALL_DATA_FIELDS]

@@ -392,6 +392,53 @@ def test_the_rejection_message_names_the_operators_filename(settings, tmp_path):
     assert "dennis_data.xlsx" in reply.text
 
 
+def test_a_csv_export_is_checked_for_contents_too(tmp_path):
+    """A CSV carries the snapshot only — no sheets, no formulas — but a CSV
+    for the wrong company overwrites the right one just as thoroughly."""
+    src = tmp_path / "dennis_data.csv"
+    src.write_text(
+        "field_key,value\n"
+        "company_name,#CIQINACTIVE\n"
+        "ticker,PLTR\n"
+        "as_of_date,2026-07-20\n",
+        encoding="utf-8")
+
+    check = check_export(src, expect_ticker="EXMPL", max_age_days=10,
+                         today=dt.date(2026, 7, 22))
+    kinds = {p.kind for p in check.blocking}
+    assert kinds == {"unresolved", "wrong_ticker"}, check.render()
+
+
+def test_a_clean_csv_passes(tmp_path):
+    src = tmp_path / "dennis_data.csv"
+    src.write_text("field_key,value\ncompany_name,Example Industries\n"
+                   "ticker,EXMPL\nas_of_date,2026-07-20\n", encoding="utf-8")
+    assert check_export(src, expect_ticker="EXMPL", max_age_days=10,
+                        today=dt.date(2026, 7, 22)).ok
+
+
+def test_a_csv_with_no_rows_says_so(tmp_path):
+    src = tmp_path / "dennis_data.csv"
+    src.write_text("field_key,value\n", encoding="utf-8")
+    check = check_export(src)
+    assert not check.ok and check.blocking[0].kind == "no_fields"
+
+
+def test_a_wrong_ticker_csv_does_not_overwrite_either(settings, tmp_path):
+    core = _core(settings)
+    core.start_lane(7, "short", "EXMPL")
+    ws = core.context.get(7)
+    core.handle_upload(7, "dennis_data.xlsx", FIXTURE.read_bytes())
+    good = (ws.path / "dennis_data.xlsx").read_bytes()
+
+    reply = core.handle_upload(
+        7, "dennis_data.csv",
+        b"field_key,value\ncompany_name,Palantir\nticker,PLTR\n")
+    assert "NOT updated" in reply.text
+    assert not (ws.path / "dennis_data.csv").exists()
+    assert (ws.path / "dennis_data.xlsx").read_bytes() == good
+
+
 def test_a_stale_upload_still_lands_but_says_so(settings, tmp_path):
     """Stale is a warning: the operator may be deliberately covering an old
     print, and refusing the file would be the tool overruling them."""
