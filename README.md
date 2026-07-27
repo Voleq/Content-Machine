@@ -149,52 +149,87 @@ python3.11 -m venv .venv
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
 
-### Windows 11 (the render desktop)
+### WSL2 on the Windows desktop (the render box)
 
-Runs **natively on Windows, not under WSL** — Playwright, FFmpeg and NVENC
-all behave better outside the WSL boundary, and the GPU is directly
-available.
-
-```powershell
-winget install Gyan.FFmpeg Python.Python.3.12   # then reopen the terminal
-powershell -ExecutionPolicy Bypass -File deploy\bootstrap.ps1
-notepad .env                                     # token + operator chat id
-.venv\Scripts\python.exe main.py
-```
-
-`bootstrap.ps1` is the counterpart to `bootstrap.sh`: venv, pinned deps,
-FFmpeg check, an NVENC heads-up, headless Chromium, `.env` scaffold,
-generated assets, design-kit check, offline suite. It is idempotent.
-
-To leave the bot up across reboots, register the logon task:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File deploy\install-task.ps1
-```
-
-Task Scheduler rather than a service, deliberately: the task runs as the
-logged-in user, so it inherits the normal PATH, environment and GPU.
-Manual `python main.py` stays the default way to run it.
-
-**Encode politeness.** This is somebody's daily-driver desktop and renders
-are unattended, so FFmpeg is capped to about half the cores and its
-processes run below normal priority — slower, but the machine stays usable.
-Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
-`RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
-
-### VPS (production)
+**The target platform is Linux.** `deploy/bootstrap.sh` is the installer for
+both WSL2 and a bare VPS — it is the same install, and the differences are
+detected rather than configured.
 
 ```bash
+# inside WSL (Ubuntu), from a clone on the LINUX filesystem
 sudo bash deploy/bootstrap.sh /opt/dennis
 sudo nano /opt/dennis/.env                  # token + operator chat id
 sudo systemctl enable --now dennis
 ```
 
-The bootstrap installs apt deps, builds the venv from the **pinned**
-`pyproject.toml`, generates assets, runs the offline suite, and installs
-the service + daily cleanup timer. No display server, no ImageMagick.
-The Linux path stays supported — a weaker always-on box can host the bot
-with the desktop acting as a render worker later.
+Two WSL prerequisites, both of which the script detects rather than assumes:
+
+**systemd is off by default.** Without it the service and timer cannot be
+enabled. Add to `/etc/wsl.conf`:
+
+```ini
+[boot]
+systemd=true
+```
+
+then `wsl --shutdown` from Windows and reopen. The bootstrap copies the unit
+files either way and tells you exactly this if PID 1 is not systemd; re-run it
+afterwards and they enable. Until then, run it in the foreground with
+`.venv/bin/python main.py`.
+
+**Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
+live on the Linux filesystem. `cache/segments` is thousands of small clips
+that get stat'd on every render to decide what to reuse, and every one of
+those crosses the 9p/drvfs translation layer — the cost lands precisely on
+the operation that is supposed to make a re-render cheap. The bootstrap
+refuses a destination under `/mnt`, warns if the checkout itself is there,
+and the bot warns at startup if `WORKSPACE_DIR`, `CACHE_DIR` or `STATE_DIR`
+resolve there (symlinks included).
+
+**GPU.** NVENC is detected with a real smoke encode, not by asking ffmpeg
+what it supports — `h264_nvenc` is listed on machines with no NVIDIA driver
+at all and fails at `Cannot load libcuda.so.1` the moment a render starts,
+which is the normal case under WSL2 without the GPU passed through. Every
+failure, including a wedged driver that never returns, falls back to libx264
+silently. If the GPU runs out of encode sessions partway through a parallel
+render, the remaining segments finish on the CPU rather than losing the job.
+
+### VPS (production)
+
+Identical:
+
+```bash
+sudo bash deploy/bootstrap.sh /opt/dennis
+sudo nano /opt/dennis/.env
+sudo systemctl enable --now dennis
+```
+
+The bootstrap checks everything up front — root, apt, a Python ≥ 3.11,
+FFmpeg 6+, the destination filesystem — and aborts with one readable message
+naming the fix rather than half-installing. Then: apt deps, the venv from the
+**pinned** `pyproject.toml`, headless Chromium *and its system libraries*,
+generated assets, the offline suite, and the service + daily cleanup timer.
+It is idempotent — safe to re-run after a pull. No display server, no
+ImageMagick.
+
+Note it does not pin `python3.11` by name: Ubuntu 24.04, which is what WSL
+installs by default, ships 3.12 and has no `python3.11` package at all.
+
+**Encode politeness.** The render box is somebody's daily-driver desktop and
+renders are unattended, so FFmpeg is capped to about half the cores and its
+processes run at `nice 10` — slower, but the machine stays usable. The cap is
+an **aggregate**: the parallel segment encoder divides it among its workers
+(`workers × threads ≤ budget`) rather than each worker taking the whole
+thing. Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
+`RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
+
+### Native Windows
+
+Not supported. `deploy/bootstrap.ps1` and `deploy/install-task.ps1` are kept
+so a future native deployment has a starting point, but they are
+**unmaintained**, nothing tests them, and Excel COM automation — the one
+feature that needed native Windows — is replaced by the external refresh plus
+upload described above.
 
 ### Going live (spending real money)
 
@@ -289,9 +324,54 @@ the snapshot only. Nothing in scripts, tags, overlays or captions may
 name the data vendor — the parsers reject it, and on screen the data is
 "from the 10-K".
 
-#### Refreshing it without touching Excel yourself
+#### Getting the numbers in (the primary route)
 
-`pipeline/excel_refresh.py` drives Excel over COM on the render box.
+The bot runs on Linux, so it does not drive Excel. The refresh happens
+**outside** the bot — on the Windows side, by hand or by an external
+workflow — and the result is pasted into a clean workbook as **values**
+and dropped into the chat as `dennis_data.xlsx`.
+
+Values-only is the expected shape, and it is the shape the reader is built
+for: it opens with `data_only=True`, so it reads saved values and never
+formula text. Add-in formulas do not travel — they only resolve on a machine
+with the add-in signed in — so a workbook that still contains them arrives
+looking empty.
+
+The upload is validated **before** it replaces anything. A rejected upload
+never overwrites the workbook already in the workspace, and each failure is
+named in terms of what to go and fix:
+
+| What is wrong | What you get told |
+|---|---|
+| No `Snapshot` sheet | which sheets *are* there, and to re-export |
+| Formulas, no saved values | how many, and to Paste Special ▸ Values |
+| Every field blank | that it was probably saved before the add-in settled |
+| `#CIQINACTIVE` / `Not Signed In` / `#NAME?` in a **required** field | the field, the marker in the cell, and to sign the terminal in — **refused** |
+| the same in an optional field | a warning; treated as missing |
+| A different company's workbook | both tickers, and the command to open a workspace for the other one — **refused** |
+| Older than `DATA_MAX_AGE_DAYS` | its age and its as-of date; a warning, not a refusal |
+
+An unresolved marker is **not** the same as an empty cell, and conflating
+them is how a video ends up titled `#CIQINACTIVE`: a text field accepts the
+marker, so the required-field check passes and it reaches the screen. Every
+such marker now coerces to missing. Plain `#N/A` is deliberately *not* on
+that list — on a values-only export it is the ordinary way a mnemonic says
+"no figure for this company", and treating it as a failure would reject
+perfectly good workbooks for thinly-covered small-caps.
+
+**Freshness comes from the workbook's own as-of date.** That is the only
+thing that knows when the numbers were actually pulled, and it is the date
+the operator can see in the file they exported. Not the file's mtime —
+re-saving or copying a workbook resets that without changing a single
+number, which is exactly the case the gate exists to catch.
+
+#### The parked COM path
+
+`pipeline/excel_refresh.py` drives Excel over COM. It is **parked**: it
+needs native Windows, `excel_available()` reports it as unavailable on
+Linux, and nothing on the supported path calls it. It is kept so a future
+native-Windows deployment stays possible. What follows describes it as it
+was written.
 
 Two input cells, and they mean different things. **`Snapshot!C3`** takes the
 plain ticker and every `CIQ(...)` formula reads it. **`Snapshot!B3` derives**
@@ -327,10 +407,9 @@ Consequences, by design:
   upload takes over.
 - The scratch copy is deleted and Excel is quit — and killed by PID if a
   modal dialog swallowed the quit — on every path, including failure.
-- Freshness is measured from `data_refresh.json`'s recorded refresh time, not
-  from the sheet's `=TODAY()` (which only says when it was last recalculated)
-  and not from the file's mtime (which re-saving resets without changing a
-  single number).
+- A workspace it populated carries `data_refresh.json`. The freshness gate
+  still reads that, but only as a fallback for a workbook whose sheet carries
+  no as-of date of its own; the sheet is the authority.
 
 The add-in's refresh macro is named differently in every vintage, so
 `EXCEL_REFRESH_MACROS` is a list of candidates tried in order, falling back to
