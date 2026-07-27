@@ -1,16 +1,25 @@
-<#
+﻿<#
 .SYNOPSIS
-  Register (or remove) the Dennis bot as a Windows scheduled task that
-  starts at logon.
+  Register (or remove) the Dennis bot as a Windows scheduled task.
+  UNMAINTAINED: see the notice below.
 
 .DESCRIPTION
-  Task Scheduler is the lighter option on a personal desktop: the task runs
-  as the logged-in user, so it inherits the normal environment, the GPU and
-  the user's PATH — none of which a LocalSystem service gets cleanly.
+  UNMAINTAINED / NOT THE SUPPORTED PATH.
 
-  Manual `python main.py` remains the default way to run the bot; this is
-  only for leaving it up between reboots. The machine is not always-on, so
-  the task is deliberately "at logon" rather than "at startup".
+  The target platform is Linux: WSL2 now, a Linux VPS later. The supported
+  way to keep the bot up is the systemd unit installed by
+  deploy/bootstrap.sh (deploy/dennis.service). This script is kept - not
+  deleted - so a future native-Windows deployment has a starting point.
+
+  Like deploy/bootstrap.ps1 it is ASCII-only and saved as UTF-8 with a BOM,
+  so Windows PowerShell 5.1 can at least parse it; tests/test_platform.py
+  enforces that much and nothing more.
+
+  What it does, when it works: Task Scheduler is the lighter option on a
+  personal desktop - the task runs as the logged-in user, so it inherits
+  the normal environment, the GPU and the user's PATH, none of which a
+  LocalSystem service gets cleanly. The machine is not always-on, so the
+  task is deliberately "at logon" rather than "at startup".
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File deploy\install-task.ps1
@@ -29,6 +38,9 @@ $repo = Split-Path -Parent $PSScriptRoot
 $vpy = Join-Path $repo '.venv\Scripts\pythonw.exe'   # pythonw: no console window
 $main = Join-Path $repo 'main.py'
 
+Write-Host "! deploy/install-task.ps1 is UNMAINTAINED. On the supported" -ForegroundColor Yellow
+Write-Host "! Linux/WSL2 target, use the systemd unit from bootstrap.sh." -ForegroundColor Yellow
+
 if ($Remove) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
     Write-Host "removed scheduled task '$TaskName'" -ForegroundColor Green
@@ -36,7 +48,7 @@ if ($Remove) {
 }
 
 if (-not (Test-Path $vpy)) {
-    throw "venv not found at $vpy — run deploy\bootstrap.ps1 first"
+    throw "venv not found at $vpy - run deploy\bootstrap.ps1 first"
 }
 
 $action = New-ScheduledTaskAction -Execute $vpy -Argument "`"$main`"" -WorkingDirectory $repo
@@ -53,7 +65,7 @@ $settings = New-ScheduledTaskSettingsSet `
     -Priority 7
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
-    -Settings $settings -Description 'Dennis — Telegram-controlled video pipeline' `
+    -Settings $settings -Description 'Dennis - Telegram-controlled video pipeline' `
     -Force | Out-Null
 
 Write-Host "registered '$TaskName' (starts at logon)" -ForegroundColor Green

@@ -13,7 +13,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
@@ -66,30 +65,27 @@ def render_thread_budget() -> int:
 def _deprioritise(proc: subprocess.Popen) -> None:
     """Drop an already-spawned child below the desktop's priority.
 
-    Done from the parent rather than via `preexec_fn`, which is documented as
-    unsafe in a threaded process — and the bot is threaded.
+    POSIX renices after the spawn rather than before it: `preexec_fn` is
+    documented as unsafe in a threaded process, and the bot is threaded.
+
+    This is the whole of the politeness story now. The Windows path used to
+    spawn at BELOW_NORMAL_PRIORITY_CLASS via `creationflags`, which meant a
+    Windows-only keyword argument on every ffmpeg spawn in the hot path; the
+    target is Linux (WSL2, then a VPS), so that branch is gone and `nice` is
+    the one mechanism. A native-Windows port would add it back here.
     """
     if not _POLITENESS["below_normal"]:
         return
     try:
-        if hasattr(os, "setpriority"):          # POSIX
-            os.setpriority(os.PRIO_PROCESS, proc.pid, 10)
+        os.setpriority(os.PRIO_PROCESS, proc.pid, 10)
     except (OSError, AttributeError, ValueError) as e:
         log.debug("could not de-prioritise pid %s: %s", proc.pid, e)
-
-
-def _creationflags() -> int:
-    """Windows spawns at below-normal directly; POSIX renices after spawn."""
-    if _POLITENESS["below_normal"] and sys.platform == "win32":
-        return getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
-    return 0
 
 
 def _run_polite(cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
     """subprocess.run, but nice to the machine it is running on."""
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-        creationflags=_creationflags(),
     )
     _deprioritise(proc)
     try:

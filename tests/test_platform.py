@@ -1,8 +1,17 @@
-"""Native-Windows support: politeness knobs and portability guards.
+"""Portability guards, encode politeness, and the parked Windows scripts.
 
-The render box is a Windows 11 desktop used daily, running the pipeline
-natively (not WSL). These tests cover the parts that are easy to regress
-from a Linux dev box.
+The target is Linux — WSL2 on the operator's desktop now, a Linux VPS later.
+Nothing here needs Windows to run; that is the point. These guards are cheap
+on Linux and they protect a move to a different filesystem later:
+
+* the politeness knobs, which are what keep an unattended render from taking
+  the desktop with it;
+* the path guards, because a name Windows cannot create is a name `git
+  checkout` fails on — silently, since the Linux tree still looks clean;
+* the encoding guard, because an implicit text `open()` picks up whatever
+  locale the host happens to have;
+* the PowerShell scripts under `deploy/`, which are unmaintained but must
+  still parse if anyone ever runs them.
 """
 
 from __future__ import annotations
@@ -16,7 +25,7 @@ import pytest
 
 from config import Settings
 from pipeline.render_common import (
-    _creationflags,
+    _deprioritise,
     _politeness_args,
     _POLITENESS,
     set_render_politeness,
@@ -66,20 +75,129 @@ def test_no_flags_when_politeness_is_unset():
     assert _politeness_args() == []
 
 
-def test_below_normal_priority_is_platform_appropriate():
+def test_below_normal_priority_renices_the_spawned_child():
+    """POSIX politeness is `nice`, applied to the child after it spawns.
+
+    The Windows BELOW_NORMAL_PRIORITY_CLASS branch is gone — the target is
+    Linux, and it put a Windows-only keyword argument on every ffmpeg spawn.
+    """
     set_render_politeness(Settings(render_below_normal_priority=True, _env_file=None))
-    flags = _creationflags()
-    if os.name == "nt":
-        assert flags == subprocess.BELOW_NORMAL_PRIORITY_CLASS
-    else:
-        # POSIX renices after spawn instead — creationflags is a no-op there
-        assert flags == 0
-        assert hasattr(os, "setpriority")
+    assert hasattr(os, "setpriority")
+
+    proc = subprocess.Popen(["sleep", "5"])
+    try:
+        _deprioritise(proc)
+        assert os.getpriority(os.PRIO_PROCESS, proc.pid) == 10
+    finally:
+        proc.kill()
+        proc.wait()
 
 
 def test_priority_can_be_turned_off():
     set_render_politeness(Settings(render_below_normal_priority=False, _env_file=None))
-    assert _creationflags() == 0
+    proc = subprocess.Popen(["sleep", "5"])
+    try:
+        before = os.getpriority(os.PRIO_PROCESS, proc.pid)
+        _deprioritise(proc)
+        assert os.getpriority(os.PRIO_PROCESS, proc.pid) == before
+    finally:
+        proc.kill()
+        proc.wait()
+
+
+def test_no_windows_only_branches_survive_in_the_runtime_path():
+    """The runtime is POSIX now; a `sys.platform == "win32"` fork in the hot
+    path is exactly the kind of thing that rots untested.
+
+    `excel_refresh.py` is the deliberate exception — it is parked behind
+    `excel_available()`, which the Linux flow only ever reads as False.
+    """
+    import io
+    import tokenize
+
+    pattern = re.compile(r"win32|BELOW_NORMAL|creationflags|os\.name")
+    offenders = []
+    for py in sorted((ROOT / "pipeline").glob("*.py")):
+        if py.name == "excel_refresh.py":
+            continue
+        src = py.read_text(encoding="utf-8")
+        # Only real code counts: docstrings and comments explaining why the
+        # branch was removed are the whole reason this stays removed.
+        for tok in tokenize.generate_tokens(io.StringIO(src).readline):
+            if tok.type in (tokenize.COMMENT, tokenize.STRING):
+                continue
+            if pattern.search(tok.string):
+                offenders.append(f"{py.name}:{tok.start[0]}: {tok.line.strip()}")
+    assert not offenders, "Windows-only branch(es) back in the runtime path:\n  " \
+        + "\n  ".join(offenders)
+
+
+# --------------------------------------------------------------------------
+# The parked PowerShell scripts — unmaintained, but they must still PARSE
+# --------------------------------------------------------------------------
+# deploy/bootstrap.ps1 and deploy/install-task.ps1 are not the supported
+# install path (that is deploy/bootstrap.sh under WSL2) and no test runs
+# them. They are kept so a future native-Windows deployment has a starting
+# point — and a script that cannot be parsed is worse than no script, because
+# the failure surfaces as a syntax error on some line that looks fine.
+#
+# Windows PowerShell 5.1 does not assume UTF-8. A BOM-less file is decoded as
+# the system ANSI codepage, so any multi-byte character — an em-dash in a
+# comment is enough — arrives as mojibake and can break tokenisation. Two
+# properties together avoid that: a UTF-8 BOM, and ASCII-only content so the
+# encoding barely matters either way. `.gitattributes` marks *.ps1 `-text` so
+# a checkout cannot strip the BOM.
+
+PS1_SCRIPTS = ("deploy/bootstrap.ps1", "deploy/install-task.ps1")
+UTF8_BOM = b"\xef\xbb\xbf"
+
+
+@pytest.mark.parametrize("rel", PS1_SCRIPTS)
+def test_powershell_scripts_are_ascii_with_a_bom(rel):
+    raw = (ROOT / rel).read_bytes()
+    assert raw.startswith(UTF8_BOM), (
+        f"{rel} has no UTF-8 BOM — Windows PowerShell 5.1 would read it as the "
+        f"system ANSI codepage")
+    body = raw[len(UTF8_BOM):]
+    assert body.isascii(), (
+        f"{rel} contains non-ASCII bytes. Offending line(s): "
+        + "; ".join(
+            f"L{n}: {line!r}"
+            for n, line in enumerate(body.decode("utf-8").splitlines(), 1)
+            if not line.isascii()
+        )[:400])
+
+
+@pytest.mark.parametrize("rel", PS1_SCRIPTS)
+def test_powershell_scripts_say_they_are_unmaintained(rel):
+    """Nobody should reach for these expecting a supported path."""
+    text = (ROOT / rel).read_text(encoding="utf-8-sig")
+    assert "UNMAINTAINED" in text
+    assert "bootstrap.sh" in text, "point the reader at the installer that is real"
+
+
+@pytest.mark.parametrize("rel", PS1_SCRIPTS)
+def test_powershell_scripts_have_balanced_delimiters(rel):
+    """A cheap structural check — there is no PowerShell here to parse with.
+
+    Counts braces, parens and here-strings outside of comments and strings.
+    It will not catch every syntax error, but it does catch the edit that
+    drops a closing brace, which is the realistic way one of these breaks
+    while nobody is running it.
+    """
+    text = (ROOT / rel).read_text(encoding="utf-8-sig")
+    # Here-strings (@"..."@) carry unbalanced braces as literal text.
+    stripped = re.sub(r'@"\n.*?\n"@', '""', text, flags=re.DOTALL)
+    stripped = re.sub(r"<#.*?#>", "", stripped, flags=re.DOTALL)   # block comments
+    depth = {"{": 0, "(": 0}
+    for line in stripped.splitlines():
+        code = re.sub(r"'[^']*'", "''", line)
+        code = re.sub(r'"[^"]*"', '""', code)
+        code = code.split("#", 1)[0]
+        depth["{"] += code.count("{") - code.count("}")
+        depth["("] += code.count("(") - code.count(")")
+    assert depth["{"] == 0, f"{rel}: unbalanced braces ({depth['{']:+d})"
+    assert depth["("] == 0, f"{rel}: unbalanced parens ({depth['(']:+d})"
 
 
 def test_ffmpeg_runs_polite_and_still_works(tmp_path):

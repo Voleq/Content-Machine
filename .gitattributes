@@ -1,0 +1,8 @@
+# PowerShell must reach Windows byte-for-byte. Windows PowerShell 5.1 reads a
+# BOM-less file as the system ANSI codepage, so a UTF-8 BOM is load-bearing —
+# without it a stray multi-byte sequence becomes mojibake mid-token and the
+# script fails to parse. `-text` disables line-ending normalisation so the BOM
+# and the CRLFs survive a checkout on any platform.
+# The scripts themselves are unmaintained (the target is Linux/WSL2); this only
+# guarantees that what is in the repo still parses. See tests/test_platform.py.
+*.ps1 -text
