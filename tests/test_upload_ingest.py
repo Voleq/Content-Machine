@@ -439,6 +439,18 @@ def test_a_wrong_ticker_csv_does_not_overwrite_either(settings, tmp_path):
     assert (ws.path / "dennis_data.xlsx").read_bytes() == good
 
 
+def test_a_csv_alongside_a_workbook_says_which_one_wins(settings, tmp_path):
+    """`find_export` prefers .xlsx, so the CSV would be read by nothing."""
+    core = _core(settings)
+    core.start_lane(8, "short", "EXMPL")
+    core.handle_upload(8, "dennis_data.xlsx", FIXTURE.read_bytes())
+
+    reply = core.handle_upload(
+        8, "dennis_data.csv",
+        b"field_key,value\ncompany_name,Example Industries\nticker,EXMPL\n")
+    assert "takes precedence" in reply.text
+
+
 def test_a_stale_upload_still_lands_but_says_so(settings, tmp_path):
     """Stale is a warning: the operator may be deliberately covering an old
     print, and refusing the file would be the tool overruling them."""

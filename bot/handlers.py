@@ -621,6 +621,14 @@ class BotCore:
         if check.warnings:
             note = "\n" + check.render().replace(staging.name, dest.name)
 
+        # `find_export` prefers .xlsx, so a CSV uploaded alongside one is read
+        # by nothing. Saying so beats letting the operator wonder why their
+        # new numbers had no effect.
+        if suffix == ".csv" and (ws.path / "dennis_data.xlsx").exists():
+            note += ("\n⚠️ dennis_data.xlsx is also in this workspace and takes "
+                     "precedence — this CSV will not be read until it is "
+                     "replaced or removed.")
+
         # a /headline that was waiting on the numbers → hand back the
         # headline prompt now, not the usual short/long_angle pair
         hstate = ws.headline()

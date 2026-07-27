@@ -274,6 +274,12 @@ def encode_segments(
         _encode_one(spec, dest, software_profile, threads)
 
     def work(spec: SegmentSpec) -> SegmentResult:
+        # Keyed on the profile that was ASKED for, not the one that ran. A
+        # segment that fell back to libx264 is stored under the hardware
+        # profile's hash, so a later run with a working GPU reuses it instead
+        # of re-encoding. Deliberate: both are H.264 yuv420p at the same
+        # quality target, the concat is `-c copy` either way, and re-encoding
+        # a clip that is already correct buys nothing.
         dest = cache_dir / f"{spec.content_hash(profile)}.mp4"
         if dest.exists() and dest.stat().st_size > 0:
             try:
