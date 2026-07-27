@@ -334,14 +334,14 @@ class VideoLog:
 
     def _all(self) -> list[dict]:
         try:
-            rows = json.loads(self.path.read_text())
+            rows = json.loads(self.path.read_text(encoding="utf-8"))
             return rows if isinstance(rows, list) else []
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return []
 
     def _save(self, rows: list[dict]) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(rows, indent=2, default=str))
+        self.path.write_text(json.dumps(rows, indent=2, default=str), encoding="utf-8")
 
     def record(self, video: VideoRecord) -> None:
         rows = [r for r in self._all() if r.get("video_id") != video.video_id]

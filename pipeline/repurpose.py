@@ -124,7 +124,7 @@ def repurpose_short_from_long(
     words: list[WordTimestamp] | None = None,
 ) -> tuple[Path, dict]:
     """Cut + center-crop the best window to 9:16. Returns (mp4, info)."""
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     duration = float(manifest["duration"])
     start, end = pick_best_window(manifest.get("cues", []), duration, words=words)
     length = end - start
@@ -149,7 +149,7 @@ def repurpose_short_from_long(
         "duration": rendered,
         "note": "repurposed from LONG — zero new TTS/fetch spend",
     }
-    out_path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2))
+    out_path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
     return out_path, info
 
 
@@ -168,7 +168,7 @@ def repurpose_clips_from_long(
     render. A short LONG yields fewer than `n`; that is the honest answer
     rather than padding the list with overlapping near-duplicates.
     """
-    manifest = json.loads(manifest_path.read_text())
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     duration = float(manifest["duration"])
     windows = pick_best_windows(manifest.get("cues", []), duration, n=n,
                                 words=words)
@@ -179,7 +179,7 @@ def repurpose_clips_from_long(
         path, info = _cut_window(long_mp4, start, end, dest, settings)
         info["rank"] = i
         info["of"] = len(windows)
-        path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2))
+        path.with_suffix(".repurpose.json").write_text(json.dumps(info, indent=2), encoding="utf-8")
         results.append((path, info))
     log.info("repurpose: %d clip(s) from a %.0fs LONG", len(results), duration)
     return results

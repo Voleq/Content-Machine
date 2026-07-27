@@ -550,7 +550,7 @@ def _symbol_overrides(settings: Settings) -> dict[str, str]:
     f = settings.state_dir / "excel_symbols.json"
     try:
         return {str(k).upper(): str(v) for k, v in
-                json.loads(f.read_text()).items()}
+                json.loads(f.read_text(encoding="utf-8")).items()}
     except (FileNotFoundError, json.JSONDecodeError, AttributeError):
         return {}
 
@@ -561,7 +561,7 @@ def set_symbol_override(settings: Settings, ticker: str, symbol: str) -> None:
     data = _symbol_overrides(settings)
     data[ticker.strip().upper()] = symbol.strip()
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(json.dumps(data, indent=2, sort_keys=True))
+    f.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
 
 
 def resolve_symbol(settings: Settings, ticker: str) -> str:
@@ -603,14 +603,14 @@ def resolve_ric_override(settings: Settings, ticker: str) -> str:
 def write_refresh_stamp(workspace: Path, payload: dict) -> Path:
     p = Path(workspace) / REFRESH_STAMP_NAME
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(payload, indent=2, sort_keys=True))
+    p.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return p
 
 
 def refresh_stamp(workspace: Path) -> dict:
     """The recorded refresh, or `{}` for a manually uploaded workbook."""
     try:
-        data = json.loads((Path(workspace) / REFRESH_STAMP_NAME).read_text())
+        data = json.loads((Path(workspace) / REFRESH_STAMP_NAME).read_text(encoding="utf-8"))
         return data if isinstance(data, dict) else {}
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {}

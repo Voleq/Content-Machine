@@ -60,7 +60,7 @@ class MemeLibrary:
         if not f.exists():
             return {}
         try:
-            return json.loads(f.read_text())
+            return json.loads(f.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             log.warning("meme_index.json is invalid JSON — library disabled")
             return {}
@@ -116,14 +116,14 @@ class _PoliteHttp:
 
     def _respect_interval(self) -> None:
         try:
-            last = float(self._stamp.read_text())
+            last = float(self._stamp.read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError):
             last = 0.0
         wait = self.settings.image_min_interval_s - (time.time() - last)
         if wait > 0:
             time.sleep(wait)
         self._stamp.parent.mkdir(parents=True, exist_ok=True)
-        self._stamp.write_text(str(time.time()))
+        self._stamp.write_text(str(time.time()), encoding="utf-8")
 
     def download(self, url: str, dest: Path) -> Path:
         self._respect_interval()
@@ -296,7 +296,7 @@ class MemeManager:
                 attribution = ""
                 source = "cache"
                 if meta.exists():
-                    m = json.loads(meta.read_text())
+                    m = json.loads(meta.read_text(encoding="utf-8"))
                     attribution = m.get("attribution", "")
                 return MemeAsset(key=key, path=norm, source=source,
                                  attribution=attribution)
@@ -319,7 +319,7 @@ class MemeManager:
                 meta.write_text(json.dumps({
                     "key": key, "provider": provider.name, "url": url,
                     "attribution": attribution,
-                }, indent=2))
+                }, indent=2), encoding="utf-8")
                 return MemeAsset(key=key, path=norm, source=provider.name,
                                  attribution=attribution)
         except Exception as e:  # the filler floor — mirror broll's guarantee

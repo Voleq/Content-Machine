@@ -48,7 +48,7 @@ def test_pexels_counter_and_cap(settings):
 def test_corrupt_state_file_recovers(settings):
     ledger = SpendLedger(settings)
     ledger.path.parent.mkdir(parents=True, exist_ok=True)
-    ledger.path.write_text("{corrupt")
+    ledger.path.write_text("{corrupt", encoding="utf-8")
     assert ledger.mtd_spend_usd() == 0.0
     ledger.record_tts(1.0)
     assert ledger.mtd_spend_usd() == 1.0

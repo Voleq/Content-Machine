@@ -172,7 +172,7 @@ def test_offsets_point_into_clean_narration(long_valid_text, settings):
 
 
 def test_unknown_tag_types_stripped_and_warned(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text(encoding="utf-8")
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     assert "[" not in script.narration, "unknown tags must never be spoken"
     assert any("unknown tag [CAMERA" in w for w in warnings)
@@ -184,7 +184,7 @@ def test_unknown_tag_types_stripped_and_warned(fixtures_dir, settings):
 
 
 def test_asset_trailer_split_and_stored(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text(encoding="utf-8")
     script, _ = parse_long_script(raw, "EXMPL", settings)
     assert script.asset_slugs() == ["revenue-flywheel"]
     assert "revenue-flywheel" in script.asset_prompts
@@ -203,7 +203,7 @@ def test_orphan_asset_prompt_warns(settings):
 
 
 def test_validation_rules(fixtures_dir, settings, tmp_path):
-    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text(encoding="utf-8")
     script, _ = parse_long_script(raw, "EXMPL", settings)
     warnings, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
 

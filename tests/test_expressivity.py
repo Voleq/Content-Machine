@@ -113,7 +113,7 @@ def test_the_mix_is_loudness_normalised(tmp_path, settings):
         ),
         encode_profile(settings, "long", draft=True), "96k", out,
     )
-    graph = out.with_suffix(".filter.txt").read_text()
+    graph = out.with_suffix(".filter.txt").read_text(encoding="utf-8")
     assert "loudnorm=I=-14.0" in graph, "the programme is normalised to -14 LUFS"
     assert "alimiter=" in graph, "and true-peak limited"
     assert "acompressor=" in graph, "the VO gets light compression before the mix"

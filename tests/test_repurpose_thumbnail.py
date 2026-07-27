@@ -61,7 +61,7 @@ def test_repurpose_crops_to_9_16(settings, tmp_path):
     manifest.write_text(json.dumps({
         "duration": 30.0,
         "cues": [_cue(5, "clip"), _cue(12, "filing"), _cue(20, "meme")],
-    }))
+    }), encoding="utf-8")
     out, info = repurpose_short_from_long(src, manifest, small)
     assert out.exists()
     v = next(s for s in ffprobe_json(out)["streams"] if s["codec_type"] == "video")

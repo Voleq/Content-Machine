@@ -171,9 +171,9 @@ def test_the_stored_tolerance_is_used(settings, tmp_path):
     frames = [_frame(tmp_path / "t0.png", box=(10, 10, 60, 60))]
     bless(frames, settings, "long")
     manifest = golden_dir(settings, "long") / "golden.json"
-    payload = json.loads(manifest.read_text())
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
     payload["tolerance"] = 200.0        # absurdly permissive
-    manifest.write_text(json.dumps(payload))
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
     moved = [_frame(tmp_path / "t0.png", box=(300, 200, 350, 250))]
     assert compare_against_golden(moved, settings, "long")[0].ok
 
@@ -244,7 +244,7 @@ def test_one_broken_layout_does_not_cost_the_others(settings, tmp_path,
 
 def test_a_manifest_records_what_was_made(settings, tmp_path):
     build_byproducts(tmp_path, settings, ticker="EXMPL")
-    payload = json.loads((tmp_path / "byproducts" / "byproducts.json").read_text())
+    payload = json.loads((tmp_path / "byproducts" / "byproducts.json").read_text(encoding="utf-8"))
     assert set(payload) == {"thumbnails", "social", "end_screens"}
 
 

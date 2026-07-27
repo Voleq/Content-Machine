@@ -42,27 +42,27 @@ def fixtures_dir() -> Path:
 
 @pytest.fixture()
 def short_valid_json() -> str:
-    return (FIXTURES / "scripts" / "short_valid.json").read_text()
+    return (FIXTURES / "scripts" / "short_valid.json").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def long_valid_text() -> str:
-    return (FIXTURES / "scripts" / "long_valid.txt").read_text()
+    return (FIXTURES / "scripts" / "long_valid.txt").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def short_doodles_json() -> str:
-    return (FIXTURES / "scripts" / "short_doodles.json").read_text()
+    return (FIXTURES / "scripts" / "short_doodles.json").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def long_doodles_text() -> str:
-    return (FIXTURES / "scripts" / "long_doodles.txt").read_text()
+    return (FIXTURES / "scripts" / "long_doodles.txt").read_text(encoding="utf-8")
 
 
 @pytest.fixture()
 def alignment_sample() -> dict:
-    return json.loads((FIXTURES / "tts" / "alignment_sample.json").read_text())
+    return json.loads((FIXTURES / "tts" / "alignment_sample.json").read_text(encoding="utf-8"))
 
 
 @pytest.fixture()

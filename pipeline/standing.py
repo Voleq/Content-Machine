@@ -72,7 +72,7 @@ def _now() -> datetime:
 
 def _read(path: Path, default):
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return default
 
@@ -80,7 +80,7 @@ def _read(path: Path, default):
 def _write(path: Path, payload) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str))
+    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str), encoding="utf-8")
     tmp.replace(path)          # atomic: a crash never leaves half a backlog
 
 

@@ -67,7 +67,7 @@ def _cache_path(settings: Settings, kind: str, key: str) -> Path:
 def cached(settings: Settings, kind: str, key: str) -> Any | None:
     p = _cache_path(settings, kind, key)
     try:
-        payload = json.loads(p.read_text())
+        payload = json.loads(p.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return None
     ttl = TTL_SECONDS.get(kind, 3600)
@@ -80,7 +80,7 @@ def store(settings: Settings, kind: str, key: str, data: Any) -> Any:
     p = _cache_path(settings, kind, key)
     p.parent.mkdir(parents=True, exist_ok=True)
     try:
-        p.write_text(json.dumps({"_at": time.time(), "data": data}, default=str))
+        p.write_text(json.dumps({"_at": time.time(), "data": data}, default=str), encoding="utf-8")
     except OSError as e:
         log.warning("could not cache %s/%s: %s", kind, key, e)
     return data
@@ -493,7 +493,7 @@ def transcribe(audio_url: str, settings: Settings, *,
                "language": getattr(info, "language", "")}
     if out_dir:
         out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "webcast_transcript.json").write_text(json.dumps(payload, indent=2))
+        (out_dir / "webcast_transcript.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return payload
 
 
@@ -505,7 +505,7 @@ def transcribe(audio_url: str, settings: Settings, *,
 def _fixture(settings: Settings, name: str, fallback: dict) -> dict:
     """MOCK_MODE reads a fixture when one exists, so the path runs offline."""
     try:
-        return json.loads((settings.fixtures_dir / "sources" / name).read_text())
+        return json.loads((settings.fixtures_dir / "sources" / name).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return fallback
 

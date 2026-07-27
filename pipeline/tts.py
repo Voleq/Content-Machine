@@ -333,7 +333,7 @@ class TTSEngine:
         words_path = cdir / "words.json"
 
         if audio_path.exists() and words_path.exists():
-            words = [WordTimestamp(**w) for w in json.loads(words_path.read_text())]
+            words = [WordTimestamp(**w) for w in json.loads(words_path.read_text(encoding="utf-8"))]
             return TTSResult(
                 audio_path=audio_path,
                 words=words,
@@ -396,7 +396,7 @@ class TTSEngine:
             words = remap_to_clean(words, clean_text)
 
         duration = ffprobe_duration(audio_path)
-        words_path.write_text(json.dumps([w.model_dump() for w in words]))
+        words_path.write_text(json.dumps([w.model_dump() for w in words]), encoding="utf-8")
         (cdir / "meta.json").write_text(json.dumps({
             "voice_id": voice_id,
             "model_id": model_id,
@@ -406,7 +406,7 @@ class TTSEngine:
             "tier": tier,
             "mock": self.settings.mock_mode,
             "cost_usd": cost_usd,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
 
         return TTSResult(
             audio_path=audio_path,

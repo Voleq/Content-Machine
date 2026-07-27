@@ -43,8 +43,8 @@ def test_upload_xlsx_yields_short_and_long_angle_prompts(core, xlsx_bytes):
     assert "saved dennis_data.xlsx" in reply.text
     # SHORT is one paste; LONG is now Step 1 (the angle prompt)
     assert len(reply.files) == 2
-    short_prompt = next(f for f in reply.files if f.name == "prompt_short.md").read_text()
-    angle_prompt = next(f for f in reply.files if "long_angle" in f.name).read_text()
+    short_prompt = next(f for f in reply.files if f.name == "prompt_short.md").read_text(encoding="utf-8")
+    angle_prompt = next(f for f in reply.files if "long_angle" in f.name).read_text(encoding="utf-8")
     # no real placeholder braces survive in either (the header's literal
     # "{{placeholder}}" doc token is not a real field)
     import re as _re
@@ -80,7 +80,7 @@ def test_long_two_step_angle_then_write(core, xlsx_bytes, long_valid_text):
     # a plain-text reply is the angle pick -> Step 2 writing prompt appears
     reply = core.intake_script(CHAT, "1, but lean on the debt")
     assert "Angle locked" in reply.text
-    write = next(f for f in reply.files if "long_write" in f.name).read_text()
+    write = next(f for f in reply.files if "long_write" in f.name).read_text(encoding="utf-8")
     assert "WRITE THE SCRIPT" in write
     assert "1, but lean on the debt" in write, "chosen angle injected"
     assert "## VOICE BIBLE" in write and "dumpster_fire" in write
@@ -108,10 +108,10 @@ def test_prompts_carry_screener_move_context(core, xlsx_bytes):
         "tickers": {"EXMPL": {"lane": "trending",
                               "reasons": ["+29.0% today", "vol 5.0× avg"],
                               "price": 19.67, "pct_change": 29.0}},
-    }))
+    }), encoding="utf-8")
     core.new_ticker(CHAT, "EXMPL")
     reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
-    short_prompt = next(f for f in reply.files if "short" in f.name).read_text()
+    short_prompt = next(f for f in reply.files if "short" in f.name).read_text(encoding="utf-8")
     assert "+29.0% today" in short_prompt
     assert "trending lane" in short_prompt
 
@@ -186,7 +186,7 @@ def test_long_intake_blocks_on_missing_screenshot(core, xlsx_bytes, long_valid_t
 def test_asset_flow_blocks_saves_prompt_and_accepts_upload(core, xlsx_bytes, fixtures_dir):
     """The [ASSET] loop: block → paste-ready Claude Design prompt file →
     operator uploads the export → unblocked."""
-    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text(encoding="utf-8")
     core.new_ticker(CHAT, "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     from PIL import Image
@@ -200,7 +200,7 @@ def test_asset_flow_blocks_saves_prompt_and_accepts_upload(core, xlsx_bytes, fix
     assert "revenue-flywheel" in reply.text and "Claude Design" in reply.text
     prompt_files = [f for f in reply.files if "claude-design" in f.name]
     assert prompt_files, "the appended prompt must come back as a paste-ready file"
-    assert "flywheel" in prompt_files[0].read_text()
+    assert "flywheel" in prompt_files[0].read_text(encoding="utf-8")
 
     custom = core.settings.assets_dir / "custom"
     try:

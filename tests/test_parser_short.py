@@ -99,7 +99,7 @@ def test_non_overlay_inline_tag_stripped(settings):
 
 
 def test_parse_code_fenced_with_prose(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "short_fenced.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "short_fenced.txt").read_text(encoding="utf-8")
     script, _ = parse_short_script(raw, settings)
     assert script.ticker == "BORV"
     assert "signal" in script.conclusion.lower()  # the gritted-teeth positive path
@@ -107,7 +107,7 @@ def test_parse_code_fenced_with_prose(fixtures_dir, settings):
 
 
 def test_parse_smart_quotes(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "short_smart_quotes.txt").read_text()
+    raw = (fixtures_dir / "scripts" / "short_smart_quotes.txt").read_text(encoding="utf-8")
     script, _ = parse_short_script(raw, settings)
     assert script.ticker == "DEDM"
     assert "transformation" in script.hook_text
@@ -121,13 +121,13 @@ def test_parse_trailing_commas(short_valid_json, settings):
 
 
 def test_reject_four_headlines(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "short_bad_headlines.json").read_text()
+    raw = (fixtures_dir / "scripts" / "short_bad_headlines.json").read_text(encoding="utf-8")
     with pytest.raises(ScriptParseError, match="headlines"):
         parse_short_script(raw, settings)
 
 
 def test_reject_bad_row_index(fixtures_dir, settings):
-    raw = (fixtures_dir / "scripts" / "short_bad_index.json").read_text()
+    raw = (fixtures_dir / "scripts" / "short_bad_index.json").read_text(encoding="utf-8")
     with pytest.raises(ScriptParseError, match="row_index"):
         parse_short_script(raw, settings)
 

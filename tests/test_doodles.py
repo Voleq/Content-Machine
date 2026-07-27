@@ -26,7 +26,7 @@ def test_committed_index_shape(settings):
 
 def test_index_json_committed_and_valid():
     f = Path(__file__).resolve().parents[1] / "assets" / "doodles" / "doodles_index.json"
-    assert len(json.loads(f.read_text())) == ROOT_INDEX_KEYS
+    assert len(json.loads(f.read_text(encoding="utf-8"))) == ROOT_INDEX_KEYS
 
 
 def test_match_exact_stem(settings):

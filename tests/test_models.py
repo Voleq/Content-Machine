@@ -27,13 +27,13 @@ def test_short_script_valid(short_valid_json: str):
 
 
 def test_short_script_rejects_bad_row_index(fixtures_dir):
-    raw = json.loads((fixtures_dir / "scripts" / "short_bad_index.json").read_text())
+    raw = json.loads((fixtures_dir / "scripts" / "short_bad_index.json").read_text(encoding="utf-8"))
     with pytest.raises(ValidationError, match="row_index"):
         ShortScript.model_validate(raw)
 
 
 def test_short_script_rejects_four_headlines(fixtures_dir):
-    raw = json.loads((fixtures_dir / "scripts" / "short_bad_headlines.json").read_text())
+    raw = json.loads((fixtures_dir / "scripts" / "short_bad_headlines.json").read_text(encoding="utf-8"))
     with pytest.raises(ValidationError, match="headlines"):
         ShortScript.model_validate(raw)
 

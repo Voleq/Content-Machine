@@ -37,7 +37,7 @@ def render_short_sample() -> Path:
     from pipeline.render_short import render_short
 
     settings = _settings()
-    raw = (ROOT / "fixtures" / "scripts" / "short_valid.json").read_text()
+    raw = (ROOT / "fixtures" / "scripts" / "short_valid.json").read_text(encoding="utf-8")
     script, warnings = parse_short_script(raw, settings)
     for w in warnings:
         print(f"  warning: {w}")
@@ -64,7 +64,7 @@ def render_long_sample() -> Path:
     settings = _settings()
     # a denser, purpose-built deep-dive that showcases the kit (charts,
     # doodles, scribbles, memes); long_valid.txt stays the parser fixture
-    raw = (ROOT / "fixtures" / "scripts" / "long_sample.txt").read_text()
+    raw = (ROOT / "fixtures" / "scripts" / "long_sample.txt").read_text(encoding="utf-8")
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     for w in warnings:
         print(f"  warning: {w}")

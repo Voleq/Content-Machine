@@ -186,7 +186,7 @@ def bless(frames: Sequence[Path], settings: Settings, name: str) -> int:
         shutil.copy2(f, dest / f.name)
     (dest / MANIFEST_NAME).write_text(json.dumps(
         {"frames": sorted(f.name for f in frames),
-         "tolerance": DEFAULT_TOLERANCE}, indent=2))
+         "tolerance": DEFAULT_TOLERANCE}, indent=2), encoding="utf-8")
     log.info("golden: blessed %d frame(s) for %s", len(frames), name)
     return len(frames)
 
@@ -203,7 +203,7 @@ def compare_against_golden(frames: Sequence[Path], settings: Settings,
     if not ref_dir.is_dir():
         return []
     try:
-        manifest = json.loads((ref_dir / MANIFEST_NAME).read_text())
+        manifest = json.loads((ref_dir / MANIFEST_NAME).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         manifest = {}
     tol = tolerance if tolerance is not None else float(
@@ -294,7 +294,7 @@ def build_byproducts(workspace: Path, settings: Settings, *,
                 log.warning("by-product %s failed: %s", asset, e)
         setattr(result, label, made)
 
-    (out_dir / "byproducts.json").write_text(json.dumps(result.to_json(), indent=2))
+    (out_dir / "byproducts.json").write_text(json.dumps(result.to_json(), indent=2), encoding="utf-8")
     log.info("by-products: %d asset(s) for %s", result.total(), ticker or "?")
     return result
 

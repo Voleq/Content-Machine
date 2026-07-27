@@ -152,14 +152,14 @@ class RealPexelsClient:
 
     def _respect_rate_limit(self) -> None:
         try:
-            last = float(self._stamp.read_text())
+            last = float(self._stamp.read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError):
             last = 0.0
         wait = self.settings.pexels_min_interval_s - (time.time() - last)
         if wait > 0:
             time.sleep(wait)
         self._stamp.parent.mkdir(parents=True, exist_ok=True)
-        self._stamp.write_text(str(time.time()))
+        self._stamp.write_text(str(time.time()), encoding="utf-8")
 
     def search(self, query: str, per_page: int = 5) -> dict:
         if not self.settings.pexels_api_key:
@@ -212,7 +212,7 @@ class MockPexelsClient:
 
     def search(self, query: str, per_page: int = 5) -> dict:
         self.search_calls.append(query)
-        data = json.loads(self._fixture_for(query).read_text())
+        data = json.loads(self._fixture_for(query).read_text(encoding="utf-8"))
         # thread the query into the mock links so download can label the tile
         for v in data.get("videos", []):
             for f in v.get("video_files", []):
@@ -269,14 +269,14 @@ class WikimediaImageClient:
 
     def _respect_interval(self) -> None:
         try:
-            last = float(self._stamp.read_text())
+            last = float(self._stamp.read_text(encoding="utf-8"))
         except (FileNotFoundError, ValueError):
             last = 0.0
         wait = self.settings.image_min_interval_s - (time.time() - last)
         if wait > 0:
             time.sleep(wait)
         self._stamp.parent.mkdir(parents=True, exist_ok=True)
-        self._stamp.write_text(str(time.time()))
+        self._stamp.write_text(str(time.time()), encoding="utf-8")
 
     def search(self, query: str, limit: int = 5) -> list[dict]:
         """Returns [{url, attribution}] — free files with credit strings."""
@@ -381,7 +381,7 @@ class MockImageClient:
     def search(self, query: str, limit: int = 5) -> list[dict]:
         self.search_calls.append(query)
         fixture = self.settings.fixtures_dir / "wikimedia" / "search_generic.json"
-        results = json.loads(fixture.read_text())["results"][:limit]
+        results = json.loads(fixture.read_text(encoding="utf-8"))["results"][:limit]
         # thread the real query into the mock urls so each distinct [IMG]
         # renders a distinct colored, labelled card (not one generic image)
         for i, r in enumerate(results):
@@ -572,7 +572,7 @@ class ContentManager:
         if norm.exists():
             attribution = ""
             if meta.exists():
-                attribution = json.loads(meta.read_text()).get("attribution", "")
+                attribution = json.loads(meta.read_text(encoding="utf-8")).get("attribution", "")
             return Visual(key=key, kind="clip", path=norm, is_video=True,
                           source="cache", attribution=attribution)
         return None
@@ -602,7 +602,7 @@ class ContentManager:
         (cdir / f"meta_{choice}.json").write_text(json.dumps({
             "key": key, "query": query, "provider": "pexels",
             "video_id": video.get("id"), "attribution": attribution,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
         return Visual(key=key, kind="clip", path=norm, is_video=True,
                       source="pexels", attribution=attribution)
 
@@ -646,7 +646,7 @@ class ContentManager:
             if norm.exists():
                 attribution = ""
                 if meta.exists():
-                    attribution = json.loads(meta.read_text()).get("attribution", "")
+                    attribution = json.loads(meta.read_text(encoding="utf-8")).get("attribution", "")
                 return Visual(key=query, kind=kind, path=norm, is_video=False,
                               source="cache", attribution=attribution)
 
@@ -668,7 +668,7 @@ class ContentManager:
             meta.write_text(json.dumps({
                 "query": query, "provider": source, "url": pick["url"],
                 "attribution": pick.get("attribution", ""),
-            }, indent=2))
+            }, indent=2), encoding="utf-8")
             return Visual(key=query, kind=kind, path=norm, is_video=False,
                           source=source, attribution=pick.get("attribution", ""))
         except (httpx.HTTPError, OSError, KeyError, json.JSONDecodeError) as e:

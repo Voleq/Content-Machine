@@ -389,7 +389,7 @@ def gen_alignment_fixture(path: Path) -> None:
             "character_end_times_seconds": ends,
         },
     }
-    path.write_text(json.dumps(payload, indent=2))
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def main() -> None:
@@ -404,12 +404,12 @@ def main() -> None:
     csv_lines = ["field_key,value"]
     for _section, key, _label, value, _mnem in EXMPL_SNAPSHOT:
         csv_lines.append(f"{key},{value}")
-    (cdir / "dennis_data.csv").write_text("\n".join(csv_lines) + "\n")
+    (cdir / "dennis_data.csv").write_text("\n".join(csv_lines) + "\n", encoding="utf-8")
 
     gen_alignment_fixture(adir / "alignment_sample.json")
 
     from pipeline.prices import synthetic_series
-    (pdir / "EXMPL.json").write_text(synthetic_series("EXMPL", 120).to_json())
+    (pdir / "EXMPL.json").write_text(synthetic_series("EXMPL", 120).to_json(), encoding="utf-8")
     print("fixtures written")
 
 

@@ -43,19 +43,19 @@ class JobStore:
 
     def save(self, job: JobRecord) -> None:
         job.touch()
-        self.path(job.id).write_text(job.model_dump_json(indent=2))
+        self.path(job.id).write_text(job.model_dump_json(indent=2), encoding="utf-8")
 
     def load(self, job_id: str) -> JobRecord | None:
         p = self.path(job_id)
         if not p.exists():
             return None
-        return JobRecord.model_validate_json(p.read_text())
+        return JobRecord.model_validate_json(p.read_text(encoding="utf-8"))
 
     def all(self) -> list[JobRecord]:
         jobs = []
         for p in sorted(self.dir.glob("*.json")):
             try:
-                jobs.append(JobRecord.model_validate_json(p.read_text()))
+                jobs.append(JobRecord.model_validate_json(p.read_text(encoding="utf-8")))
             except Exception:  # never let one corrupt file kill /status
                 log.warning("unreadable job file %s", p)
         return jobs

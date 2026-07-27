@@ -69,7 +69,7 @@ def rendered(tmp_path_factory):
     ws = settings.workspace_dir / "EXMPL" / "test"
     ws.mkdir(parents=True)
     out, manifest = render_short(script, tts, ws, settings)
-    return settings, script, tts, out, json.loads(manifest.read_text())
+    return settings, script, tts, out, json.loads(manifest.read_text(encoding="utf-8"))
 
 
 def test_smoke_output_streams(rendered):
@@ -88,7 +88,7 @@ def test_cue_times_reached_the_filtergraph(rendered):
     """No hardcoded scene timings: the enable windows in the actual
     filtergraph must equal the timeline's resolved cue times."""
     settings, script, tts, out, manifest = rendered
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
 
     cues = build_short_timeline(script, tts.words, tts.duration_s)
     conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
@@ -151,7 +151,7 @@ def test_marker_chart_and_hand_drawn_overlays(rendered):
     assert any(n.startswith("doodle_") for n in names), "inline doodle composited"
     assert any(n.startswith("scribble_inline_") for n in names), "inline scribble composited"
     # the inline doodle/scribble cue times reached the filtergraph
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
     for kind in ("doodle", "scribble"):
         cue = next(c for c in manifest["cues"] if c["kind"] == kind)
         assert f"between(t,{cue['t']:.4f}" in filter_text
@@ -162,5 +162,5 @@ def test_hook_opener_sampling(settings):
     b = sample_hook_opener("sha-one", settings)
     c = sample_hook_opener("sha-two-different", settings)
     assert a == b, "same script sha -> same opener (idempotent re-renders)"
-    bank = json.loads((settings.assets_dir / "hook_bank.json").read_text())["openers"]
+    bank = json.loads((settings.assets_dir / "hook_bank.json").read_text(encoding="utf-8"))["openers"]
     assert a in bank and c in bank

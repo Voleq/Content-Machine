@@ -255,7 +255,7 @@ def gen_meme_placeholders() -> None:
     if not index_file.exists():
         print("meme placeholders: no meme_index.json — skipped")
         return
-    index = json.loads(index_file.read_text())
+    index = json.loads(index_file.read_text(encoding="utf-8"))
     written = 0
     for stem, entry in index.items():
         existing = [p for p in lib.glob(f"{stem}.*") if p.suffix != ".json"]
@@ -470,7 +470,7 @@ def gen_doodle_placeholders() -> None:
     if not index_file.exists():
         print("doodle placeholders: no doodles_index.json — skipped")
         return
-    index = json.loads(index_file.read_text())
+    index = json.loads(index_file.read_text(encoding="utf-8"))
     written = 0
     for stem in index:
         existing = [p for p in lib.glob(f"{stem}.*") if p.suffix != ".json"]
