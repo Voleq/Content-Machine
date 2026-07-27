@@ -504,6 +504,10 @@ def render_long(
             total_threads=render_thread_budget(),
             fallback=lambda spec: _segment_fallback(spec, _backdrop_path, W, H, fps),
             on_progress=progress,
+            # Detection proves the GPU can open one encode session, not
+            # `workers` of them at once. If it runs out partway through, the
+            # run finishes on the CPU instead of dying.
+            software_profile=profile.software_equivalent(settings),
         )
         base_video = concat_clips(seg_run.clips(), rdir / "base.mp4")
         inputs = ["-i", str(base_video)]
@@ -660,7 +664,7 @@ def render_long(
     ass_path.write_text(build_karaoke_ass(
         tts.words, play_res=(W, H), font_size=px(50), margin_v=px(150),
         max_words=4, max_chars=24, duration=duration, box=True,
-    ))
+    ), encoding="utf-8")
 
     # ------------------------------------------------------------- audio
     audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True)]
@@ -733,5 +737,5 @@ def render_long(
         "attributions": attributions,
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
     return out_path, manifest_path

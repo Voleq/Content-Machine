@@ -45,6 +45,44 @@ def test_workers_never_exceed_the_work():
     assert workers <= 2
 
 
+def test_render_thread_fraction_reaches_the_parallel_encoder_in_aggregate():
+    """RENDER_THREAD_FRACTION is a promise about the whole render, not about
+    one ffmpeg. The segment encoder runs several at once, so the fraction has
+    to survive the whole chain: setting -> resolved_render_threads ->
+    render_thread_budget -> plan_workers -> per-worker `-threads`.
+
+    Checked end to end rather than at `plan_workers` alone, because every
+    earlier link is somewhere the cap could quietly stop applying.
+    """
+    import os
+
+    from pipeline.render_common import render_thread_budget
+
+    cores = os.cpu_count() or 4
+    for fraction in (0.25, 0.5, 1.0):
+        s = Settings(render_thread_fraction=fraction, _env_file=None)
+        set_render_politeness(s)
+
+        expected = max(1, min(cores, round(cores * fraction)))
+        assert s.resolved_render_threads() == expected
+        assert render_thread_budget() == expected
+
+        workers, per = plan_workers(render_thread_budget(), n_segments=64)
+        assert workers * per <= expected, (
+            f"fraction {fraction}: {workers}x{per} threads exceeds the "
+            f"{expected}-thread budget")
+
+
+def test_an_explicit_thread_pin_also_reaches_the_parallel_encoder():
+    s = Settings(render_threads=4, _env_file=None)
+    set_render_politeness(s)
+    from pipeline.render_common import render_thread_budget
+
+    assert render_thread_budget() == 4
+    workers, per = plan_workers(render_thread_budget(), n_segments=64)
+    assert workers * per <= 4
+
+
 # ------------------------------------------------------- spec + hashing
 
 
@@ -216,6 +254,63 @@ def test_without_a_fallback_a_bad_segment_raises(tmp_path, settings):
         encode_segments([bad], tmp_path / "c", profile, total_threads=2)
 
 
+# ------------------------------------------- hardware encoder, mid-run
+# Detection proves the GPU can open ONE encode session. It cannot prove it can
+# open `workers` of them at once, and consumer cards cap concurrent NVENC
+# sessions — so the realistic failure is some arbitrary segment, minutes into a
+# forty-minute render. That has to cost a slower clip, not the job.
+
+
+def test_a_gpu_that_dies_mid_run_finishes_on_the_cpu(tmp_path, settings):
+    """h264_nvenc is genuinely unavailable here, which is the point: the
+    render still completes, on libx264, without raising."""
+    set_render_politeness(settings)
+    from pipeline.render_common import EncodeProfile
+
+    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    cpu = gpu.software_equivalent(settings)
+    specs = [_spec(tmp_path, index=i, colour=c)
+             for i, c in enumerate(("red", "green", "blue"))]
+
+    run = encode_segments(specs, tmp_path / "c", gpu, total_threads=4,
+                          software_profile=cpu)
+
+    assert len(run.results) == 3
+    assert all(p.exists() and p.stat().st_size > 0 for p in run.clips())
+    # Degrading is not "the segment failed" — the pixels are what was asked for.
+    assert run.failures == []
+
+
+def test_the_cpu_retry_is_announced_once_not_per_segment(tmp_path, settings, caplog):
+    """Six segments failing over to the CPU is one fact, not six warnings."""
+    import logging
+
+    set_render_politeness(settings)
+    from pipeline.render_common import EncodeProfile
+
+    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    specs = [_spec(tmp_path, index=i, duration=0.3) for i in range(6)]
+
+    with caplog.at_level(logging.WARNING, logger="pipeline.segments"):
+        encode_segments(specs, tmp_path / "c", gpu, total_threads=2,
+                        software_profile=gpu.software_equivalent(settings))
+
+    fallback_lines = [r for r in caplog.records
+                      if "falling back to libx264" in r.getMessage()]
+    assert len(fallback_lines) == 1, [r.getMessage() for r in fallback_lines]
+
+
+def test_without_a_software_profile_a_dead_gpu_still_raises(tmp_path, settings):
+    """The degrade is opt-in. A caller that did not ask for it gets the error,
+    rather than silently different encoder settings."""
+    set_render_politeness(settings)
+    from pipeline.render_common import EncodeProfile
+
+    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    with pytest.raises(RenderError):
+        encode_segments([_spec(tmp_path)], tmp_path / "c", gpu, total_threads=2)
+
+
 # ------------------------------------------------------------------ concat
 
 
@@ -272,7 +367,7 @@ def rendered_both(settings, workspace, long_valid_text):
         Image.new("RGB", (1200, 700), (242, 242, 239)).save(
             ws / "income_statement.png")
         mp4, manifest = render_long(script, tts, ws, s, draft=True)
-        out[mode] = (mp4, json.loads(Path(manifest).read_text()))
+        out[mode] = (mp4, json.loads(Path(manifest).read_text(encoding="utf-8")))
     return out
 
 
@@ -311,13 +406,13 @@ def test_a_segmented_render_resumes_after_a_wipe(settings, workspace,
     tts = TTSEngine(settings).synthesize(script.narration, "long")
 
     mp4, man1 = render_long(script, tts, workspace, settings, draft=True)
-    first = json.loads(Path(man1).read_text())
+    first = json.loads(Path(man1).read_text(encoding="utf-8"))
     assert first["segment_cache_hits"] == 0
 
     # simulate a reboot: the render dir is gone, the cache is not
     _sh.rmtree(workspace / "render_long_draft", ignore_errors=True)
     mp4, man2 = render_long(script, tts, workspace, settings, draft=True)
-    second = json.loads(Path(man2).read_text())
+    second = json.loads(Path(man2).read_text(encoding="utf-8"))
     assert second["segment_cache_hits"] == len(second["segments"]), \
         "every completed beat survived"
     assert mp4.exists()

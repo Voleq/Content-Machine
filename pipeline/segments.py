@@ -40,6 +40,7 @@ import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import Lock
 from typing import Callable, Sequence
 
 from pipeline.render_common import (
@@ -218,8 +219,19 @@ def encode_segments(
     total_threads: int,
     fallback: Callable[[SegmentSpec], SegmentSpec | None] | None = None,
     on_progress: Callable[[int, int], None] | None = None,
+    software_profile: EncodeProfile | None = None,
 ) -> SegmentRun:
-    """Encode every segment, reusing the cache, in parallel, resumably."""
+    """Encode every segment, reusing the cache, in parallel, resumably.
+
+    `software_profile` is the libx264 profile to retry a segment with when the
+    hardware encoder fails partway through a run. Detection proves NVENC can
+    open *one* session; it cannot prove it can open `workers` of them at once,
+    and consumer cards cap concurrent encode sessions — so the failure shows
+    up here, on some arbitrary segment, rather than at startup. NVENC through
+    WSL2 is the flakier case again. Retrying that segment on the CPU keeps the
+    render going at the cost of one slower clip; the alternative is losing the
+    whole job to a driver limit.
+    """
     cache_dir.mkdir(parents=True, exist_ok=True)
     workers, threads = plan_workers(total_threads, len(specs))
     log.info("segments: %d to encode, %d worker(s) × %d thread(s)",
@@ -228,6 +240,38 @@ def encode_segments(
     run = SegmentRun()
     done = 0
     total = len(specs)
+    # Set by whichever worker first sees the GPU fail, so the ones that have
+    # not started yet go straight to the CPU instead of each paying for their
+    # own failed attempt. Guards the *announcement* too: six segments failing
+    # over is one fact, not six warnings.
+    hardware_dead = False
+    hardware_lock = Lock()
+
+    def _encode_with_retry(spec: SegmentSpec, dest: Path) -> None:
+        """Encode `spec`, degrading to the CPU if the GPU will not have it."""
+        nonlocal hardware_dead
+        use = profile
+        if software_profile is not None and hardware_dead:
+            use = software_profile
+        try:
+            _encode_one(spec, dest, use, threads)
+            return
+        except Exception:
+            # Retry on the CPU whenever the attempt that failed was a hardware
+            # one. Deliberately NOT conditioned on `hardware_dead`: workers
+            # already in flight when another set the flag must still fall back
+            # rather than surface the GPU's error as a dead segment.
+            if not (use.is_hardware and software_profile is not None):
+                raise
+
+        with hardware_lock:
+            announce = not hardware_dead
+            hardware_dead = True
+        if announce:
+            log.warning("segments: %s failed on segment %d — falling back to "
+                        "libx264 for the rest of this render",
+                        use.vcodec, spec.index)
+        _encode_one(spec, dest, software_profile, threads)
 
     def work(spec: SegmentSpec) -> SegmentResult:
         dest = cache_dir / f"{spec.content_hash(profile)}.mp4"
@@ -240,7 +284,7 @@ def encode_segments(
                             dest.name)
                 dest.unlink(missing_ok=True)
         try:
-            _encode_one(spec, dest, profile, threads)
+            _encode_with_retry(spec, dest)
             return SegmentResult(spec.index, dest, cached=False)
         except Exception as e:  # noqa: BLE001
             log.warning("segment %d (%s) failed: %s", spec.index, spec.kind, e)
@@ -251,7 +295,7 @@ def encode_segments(
                     try:
                         alt_dest = cache_dir / f"{alt.content_hash(profile)}.mp4"
                         if not (alt_dest.exists() and alt_dest.stat().st_size > 0):
-                            _encode_one(alt, alt_dest, profile, threads)
+                            _encode_with_retry(alt, alt_dest)
                         return SegmentResult(spec.index, alt_dest, cached=False,
                                              failed=True,
                                              detail=f"{spec.kind}: {e}")

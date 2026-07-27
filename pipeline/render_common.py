@@ -135,6 +135,9 @@ def ffprobe_duration(path: Path | str) -> float:
     return float(dur)
 
 
+HARDWARE_ENCODER = "h264_nvenc"
+
+
 @dataclass(frozen=True)
 class EncodeProfile:
     vcodec: str
@@ -142,41 +145,91 @@ class EncodeProfile:
     crf: int
     pix_fmt: str = "yuv420p"
 
+    @property
+    def is_hardware(self) -> bool:
+        return self.vcodec != "libx264"
+
     def video_args(self) -> list[str]:
         args = ["-c:v", self.vcodec, "-pix_fmt", self.pix_fmt]
         if self.vcodec == "libx264":
             args += ["-preset", self.preset, "-crf", str(self.crf)]
-        elif self.vcodec == "h264_nvenc":
+        elif self.vcodec == HARDWARE_ENCODER:
+            # NVENC has its own preset ladder (p1 fastest … p7 slowest) and
+            # rate control; -crf means nothing to it, -cq is the equivalent.
             args += ["-preset", "p4", "-cq", str(self.crf)]
-        elif self.vcodec == "h264_vaapi":
-            args += ["-qp", str(self.crf)]
         return args
+
+    def software_equivalent(self, settings: Settings) -> "EncodeProfile":
+        """The libx264 profile to retry with when the GPU lets us down."""
+        return EncodeProfile(vcodec="libx264", preset=settings.final_preset,
+                             crf=self.crf, pix_fmt=self.pix_fmt)
 
 
 @lru_cache(maxsize=1)
 def detect_hardware_encoder() -> str | None:
-    """Return h264_nvenc / h264_vaapi if genuinely usable, else None.
+    """Return `h264_nvenc` if it genuinely works here, else None.
 
-    Listing in `-encoders` is not enough — we do a 0.1s smoke encode.
+    Listing in `-encoders` is not enough: ffmpeg ships NVENC support compiled
+    in, so `h264_nvenc` is listed on machines with no NVIDIA driver at all and
+    fails at `Cannot load libcuda.so.1` the moment a real encode starts. That
+    is the normal case under WSL2 without the GPU passed through. So we do a
+    real 0.1s encode, at the pixel format the actual profiles use, and believe
+    the exit code rather than the feature list.
+
+    Never raises. A GPU that is present but wedged makes ffmpeg hang rather
+    than exit, and this runs on the path to every final render — a detection
+    probe that can throw would take the render with it. Every failure mode,
+    including the timeout, resolves to None and therefore to libx264.
+
+    Only NVENC is probed. VAAPI used to be in this list and could never have
+    been selected: encoding software frames through `h264_vaapi` needs
+    `-vaapi_device` plus a `format=nv12,hwupload` filter, and neither the
+    probe nor `video_args()` ever emitted them — so the probe failed with a
+    format error on working hardware, and had it somehow passed, every real
+    render would have died on the same thing. Dead code with a trap in it.
     """
     ffmpeg, _ = detect_ffmpeg()
     try:
-        out = subprocess.run(
+        listed = subprocess.run(
             [ffmpeg, "-hide_banner", "-encoders"],
             capture_output=True, text=True, timeout=30,
         ).stdout
-    except Exception:
+    except (OSError, subprocess.SubprocessError) as e:
+        log.debug("hardware encoder: could not list encoders (%s)", e)
         return None
-    for enc in ("h264_nvenc", "h264_vaapi"):
-        if enc not in out:
-            continue
+
+    if HARDWARE_ENCODER not in listed:
+        log.info("hardware encoder: %s not built into ffmpeg — using libx264",
+                 HARDWARE_ENCODER)
+        return None
+
+    try:
         probe = subprocess.run(
             [ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi",
-             "-i", "color=c=black:s=128x128:d=0.1", "-c:v", enc, "-f", "null", "-"],
+             "-i", "color=c=black:s=128x128:d=0.1",
+             "-c:v", HARDWARE_ENCODER, "-pix_fmt", "yuv420p",
+             "-preset", "p4", "-f", "null", "-"],
             capture_output=True, text=True, timeout=60,
         )
-        if probe.returncode == 0:
-            return enc
+    except subprocess.TimeoutExpired:
+        log.info("hardware encoder: %s probe timed out — using libx264",
+                 HARDWARE_ENCODER)
+        return None
+    except (OSError, subprocess.SubprocessError) as e:
+        log.info("hardware encoder: %s probe failed (%s) — using libx264",
+                 HARDWARE_ENCODER, e)
+        return None
+
+    if probe.returncode == 0:
+        log.info("hardware encoder: %s works — finals will use the GPU",
+                 HARDWARE_ENCODER)
+        return HARDWARE_ENCODER
+
+    # Expected on any box without the driver; the reason is worth one line at
+    # debug, but this is a normal outcome and not a warning.
+    log.info("hardware encoder: %s is listed but a smoke encode failed — "
+             "using libx264", HARDWARE_ENCODER)
+    log.debug("hardware encoder: probe said %s", (probe.stderr or "").strip()[:300])
     return None
 
 
@@ -339,7 +392,7 @@ def composite_video(
     )
 
     script = out_path.with_suffix(".filter.txt")
-    script.write_text(";\n".join(lines) + "\n")
+    script.write_text(";\n".join(lines) + "\n", encoding="utf-8")
 
     run_ffmpeg([
         *inputs,
@@ -361,7 +414,7 @@ def concat_audio(chunks: list[Path], out_path: Path, settings: Settings) -> Path
         run_ffmpeg(["-i", str(chunks[0]), "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path)])
         return out_path
     list_file = out_path.with_suffix(".concat.txt")
-    list_file.write_text("".join(f"file '{c.as_posix()}'\n" for c in chunks))
+    list_file.write_text("".join(f"file '{c.as_posix()}'\n" for c in chunks), encoding="utf-8")
     run_ffmpeg([
         "-f", "concat", "-safe", "0", "-i", str(list_file),
         "-c:a", "aac", "-b:a", settings.audio_bitrate, str(out_path),

@@ -13,10 +13,12 @@ Hard rules encoded here:
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 from functools import lru_cache
 from pathlib import Path
+from typing import ClassVar
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -438,6 +440,55 @@ class Settings(BaseSettings):
     def ensure_runtime_dirs(self) -> None:
         for d in (self.workspace_dir, self.cache_dir, self.state_dir):
             d.mkdir(parents=True, exist_ok=True)
+
+    # ------------------------------------------------- WSL filesystem check
+    # Under WSL2 a path beginning /mnt/ is a Windows drive reached through the
+    # 9p/drvfs translation layer. It works, but per-file overhead is an order
+    # of magnitude worse than the Linux filesystem, and the render cache is
+    # the worst possible shape for it: `cache/segments` holds thousands of
+    # small clips that are stat'd on every render to decide what to reuse.
+    # The cost lands exactly on the operation that is supposed to make a
+    # re-render fast.
+    #
+    # These are the three that matter. `assets_dir`, `templates_dir` and
+    # `fixtures_dir` sit next to the code and are read a handful of times per
+    # run; workspace/cache/state are written continuously.
+    RUNTIME_DIR_ATTRS: ClassVar[tuple[str, ...]] = (
+        "workspace_dir", "cache_dir", "state_dir")
+
+    def windows_drive_dirs(self) -> list[tuple[str, Path]]:
+        """Runtime dirs that resolve onto a Windows drive under WSL.
+
+        Resolved, not just prefix-matched, so a symlink into /mnt/c is caught
+        as well — that is the realistic way this happens by accident.
+        """
+        found: list[tuple[str, Path]] = []
+        for attr in self.RUNTIME_DIR_ATTRS:
+            path = Path(getattr(self, attr))
+            try:
+                resolved = path.resolve()
+            except OSError:
+                resolved = path.absolute()
+            if resolved == Path("/mnt") or Path("/mnt") in resolved.parents:
+                found.append((attr, resolved))
+        return found
+
+    def warn_about_windows_drives(self, logger: logging.Logger) -> list[str]:
+        """Log a warning for each runtime dir on a Windows drive.
+
+        Returns the offending setting names so a caller can surface them
+        somewhere more visible than the log if it wants to.
+        """
+        offenders = self.windows_drive_dirs()
+        for attr, resolved in offenders:
+            env_name = attr.upper()
+            logger.warning(
+                "%s resolves to %s, which is a Windows drive. The render "
+                "cache writes thousands of small files and every one crosses "
+                "the WSL translation layer — expect renders to crawl. Move it "
+                "onto the Linux filesystem and set %s (e.g. ~/dennis/%s).",
+                attr, resolved, env_name, attr.removesuffix("_dir"))
+        return [attr for attr, _ in offenders]
 
     def resolved_render_threads(self) -> int:
         """How many threads ffmpeg may use, leaving the desktop responsive."""
