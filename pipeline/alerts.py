@@ -134,7 +134,7 @@ class Watchlist:
 
     def _pinned(self) -> list[str]:
         try:
-            rows = json.loads(self.path.read_text())
+            rows = json.loads(self.path.read_text(encoding="utf-8"))
             return [str(t).upper() for t in rows] if isinstance(rows, list) else []
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return []
@@ -145,7 +145,7 @@ class Watchlist:
         if t and t not in rows:
             rows.append(t)
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(json.dumps(sorted(rows), indent=2))
+            self.path.write_text(json.dumps(sorted(rows), indent=2), encoding="utf-8")
         return rows
 
     def remove(self, ticker: str) -> bool:
@@ -154,7 +154,7 @@ class Watchlist:
         if t not in rows:
             return False
         rows.remove(t)
-        self.path.write_text(json.dumps(sorted(rows), indent=2))
+        self.path.write_text(json.dumps(sorted(rows), indent=2), encoding="utf-8")
         return True
 
     def all(self) -> list[str]:
@@ -183,14 +183,14 @@ class AlertLog:
 
     def _all(self) -> dict[str, dict]:
         try:
-            data = json.loads(self.path.read_text())
+            data = json.loads(self.path.read_text(encoding="utf-8"))
             return data if isinstance(data, dict) else {}
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {}
 
     def _save(self, rows: dict) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(rows, indent=2, sort_keys=True))
+        self.path.write_text(json.dumps(rows, indent=2, sort_keys=True), encoding="utf-8")
 
     def should_send(self, alert: Alert, now: datetime | None = None) -> bool:
         """Is this worth interrupting for, given what we already said?
@@ -274,7 +274,7 @@ class EarningsCalendar:
 
     def _all(self) -> dict[str, dict]:
         try:
-            data = json.loads(self.path.read_text())
+            data = json.loads(self.path.read_text(encoding="utf-8"))
             return data.get("entries", {}) if isinstance(data, dict) else {}
         except (FileNotFoundError, json.JSONDecodeError, OSError):
             return {}
@@ -283,7 +283,7 @@ class EarningsCalendar:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(
             {"updated": datetime.now(timezone.utc).isoformat(),
-             "entries": entries}, indent=2, sort_keys=True))
+             "entries": entries}, indent=2, sort_keys=True), encoding="utf-8")
 
     def set(self, ticker: str, when_date: str, when: str = "") -> EarningsEntry:
         entries = self._all()
@@ -456,7 +456,7 @@ def fetch_quotes(settings: Settings, tickers: Sequence[str]) -> list[dict]:
     if settings.mock_mode:
         try:
             raw = json.loads(
-                (settings.fixtures_dir / "screener" / "yahoo_trending.json").read_text())
+                (settings.fixtures_dir / "screener" / "yahoo_trending.json").read_text(encoding="utf-8"))
             wanted = {t.upper() for t in tickers}
             return [q for q in raw.get("quotes", [])
                     if str(q.get("symbol", "")).upper() in wanted]

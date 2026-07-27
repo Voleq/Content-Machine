@@ -262,7 +262,7 @@ def test_a_malformed_calendar_row_is_skipped_not_fatal(settings):
     cal = EarningsCalendar(settings)
     cal.set("EXMPL", "2026-07-29")
     cal.path.write_text(json.dumps({"entries": {
-        "EXMPL": {"ticker": "EXMPL", "date": "not-a-date", "when": ""}}}))
+        "EXMPL": {"ticker": "EXMPL", "date": "not-a-date", "when": ""}}}), encoding="utf-8")
     assert cal.due_alerts(today=date(2026, 7, 30)) == []
     assert cal.upcoming(today=date(2026, 7, 30)) == []
 
@@ -303,7 +303,7 @@ def test_mock_mode_reads_the_fixture_so_the_path_runs_offline(settings):
     from pipeline.alerts import fetch_quotes
 
     raw = json.loads((settings.fixtures_dir / "screener" /
-                      "yahoo_trending.json").read_text())
+                      "yahoo_trending.json").read_text(encoding="utf-8"))
     symbols = [q["symbol"] for q in raw["quotes"][:2]]
     got = fetch_quotes(settings, symbols)
     assert {q["symbol"] for q in got} == set(symbols)

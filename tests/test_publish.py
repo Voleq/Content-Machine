@@ -49,14 +49,14 @@ def test_srt_is_written_and_well_formed(tmp_path):
     words = [w("Revenue", 0.0, 0.4), w("fell.", 0.4, 0.8),
              w("Then", 1.2, 1.5), w("stopped.", 1.5, 2.0)]
     out = write_srt(words, tmp_path / "sub.srt")
-    body = out.read_text()
+    body = out.read_text(encoding="utf-8")
     assert body.startswith("1\n00:00:00,000 --> ")
     assert "-->" in body and body.count("-->") == 2
     assert "\n2\n" in body
 
 
 def test_empty_words_make_an_empty_srt(tmp_path):
-    assert write_srt([], tmp_path / "s.srt").read_text() == ""
+    assert write_srt([], tmp_path / "s.srt").read_text(encoding="utf-8") == ""
 
 
 def test_chapters_are_normalised_for_youtube():

@@ -31,6 +31,11 @@ def main() -> None:
 
     ffmpeg, _ = detect_ffmpeg()
     log.info("ffmpeg: %s | mock_mode=%s", ffmpeg, settings.mock_mode)
+    # Under WSL2, workspace/cache/state on a Windows drive (/mnt/c/...) makes
+    # the render cache pathologically slow — it is thousands of small files
+    # and every access crosses the translation layer. Warned about here rather
+    # than left to be discovered as "renders got slow".
+    settings.warn_about_windows_drives(log)
     # Renders are unattended on what is also somebody's desktop: cap the
     # ffmpeg thread pools and drop the child processes below normal priority.
     set_render_politeness(settings)

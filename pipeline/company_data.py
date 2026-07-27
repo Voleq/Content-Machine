@@ -41,6 +41,8 @@ from __future__ import annotations
 import csv
 import datetime as _dt
 import logging
+from dataclasses import dataclass
+from dataclasses import field as dc_field
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -49,6 +51,7 @@ from PIL import Image, ImageDraw, ImageFont
 from config import Settings
 from pipeline.models import (
     ALL_DATA_FIELDS,
+    DATA_REQUIRED,
     HISTORY_FIELDS,
     CompanyData,
     _STRING_FIELDS,
@@ -60,6 +63,57 @@ _NA_VALUES = {"", "#N/A", "#N/A N/A", "N/A", "NA", "#VALUE!", "#REF!", "#NAME?",
               "NULL", "-", "#DIV/0!"}
 # the add-in leaves this literal in cells whose mnemonic didn't resolve
 _FORMULA_ERR = "the formula must contain at least one field or function."
+
+# --------------------------------------------------------------------------
+# Cells the add-in did not resolve.
+# --------------------------------------------------------------------------
+# These are NOT the same thing as an empty cell, and the difference decides
+# what the operator has to do about it. An empty cell means the vendor has no
+# figure for this company — a real gap, and the run carries on with a warning.
+# One of these means the refresh did not finish or the terminal was not signed
+# in: the number exists, we just did not get it, and re-exporting is the fix.
+#
+# Left untreated they are considerably worse than a gap, because a text field
+# accepts them. `company_name` reading `#CIQINACTIVE` is not missing, so it
+# passes the required-field check and reaches the script — a video titled
+# `#CIQINACTIVE`, built on numbers nobody looked at.
+UNRESOLVED_MARKERS = (
+    "#ciqinactive",          # CIQ: the add-in is loaded but not entitled/active
+    "not signed in",         # CIQ/LSEG: no session
+    "#name?",                # the add-in is not loaded at all
+    "requesting data",       # still in flight when the sheet was saved
+    "retrieving",
+    "#getting_data",
+    "#n/a n/a",              # LSEG's "no answer" shape
+    "#n/a requesting data",
+    "#value!",
+    "#ref!",
+    "#num!",
+    "#null!",
+    "#div/0!",
+)
+# `#N/A` alone is deliberately absent: on a values-only export it is the
+# ordinary way a mnemonic says "no figure for this company", and treating it
+# as a failure would reject perfectly good workbooks for thinly-covered
+# small-caps. It is still NA (so it coerces to None), just not an alarm.
+
+
+def unresolved_marker(raw) -> str | None:
+    """The add-in failure this cell carries, or None.
+
+    Returns the marker as written so the operator sees the thing that is
+    actually in their sheet.
+    """
+    if raw is None or isinstance(raw, (int, float, _dt.date, _dt.datetime)):
+        return None
+    text = str(raw).strip()
+    low = text.lower()
+    for marker in UNRESOLVED_MARKERS:
+        if low.startswith(marker) or marker in low:
+            return text[:60]
+    if low == _FORMULA_ERR:
+        return text[:60]
+    return None
 
 # accepted upload names (the bot saves uploads under the first)
 EXPORT_NAMES = ("dennis_data.xlsx", "data.xlsx", "dennis_data.csv")
@@ -103,6 +157,13 @@ def _coerce(field: str, raw) -> str | float | None:
     if isinstance(raw, (_dt.datetime, _dt.date)):
         # as_of_date etc. arrive as real dates — keep a clean ISO day
         return raw.date().isoformat() if isinstance(raw, _dt.datetime) else raw.isoformat()
+    # An unresolved add-in cell is missing data, not data. Without this a text
+    # field happily carries `#CIQINACTIVE` all the way onto the screen.
+    marker = unresolved_marker(raw)
+    if marker is not None:
+        log.warning("company data field %s did not resolve (%s) — treating as "
+                    "missing", field, marker)
+        return None
     text = str(raw).strip()
     if _is_na(text):
         return None
@@ -133,6 +194,289 @@ def find_export(workspace: Path) -> Path | None:
         p = workspace / name
         if p.exists():
             return p
+    return None
+
+
+# --------------------------------------------------------------------------
+# Upload validation — the primary data route.
+# --------------------------------------------------------------------------
+# The numbers arrive as a workbook the operator drops into the workspace:
+# Excel is refreshed outside the bot and the result pasted into a clean sheet
+# as VALUES. That makes this the front door, and a front door needs to say
+# what is wrong in terms of the thing the operator can go and fix — not
+# "missing required fields (company_name, ticker, …)", which is the same
+# message whether they uploaded a stale file, the wrong company, or a
+# workbook whose add-in never signed in.
+#
+# Five failures are worth naming separately, because each has a different fix:
+#
+#   missing sheet   -> re-export, the template lost a tab
+#   formulas only   -> paste as values; the add-in's formulas do not travel
+#   unresolved      -> sign the terminal in and refresh, then re-export
+#   wrong ticker    -> you exported a different company
+#   stale           -> refresh it; these numbers are from last month
+
+MAX_REPORTED_FIELDS = 8
+
+
+@dataclass(frozen=True)
+class ExportProblem:
+    """One specific, actionable thing wrong with an uploaded workbook."""
+
+    kind: str            # missing_sheet | formulas_only | unresolved |
+                         # wrong_ticker | stale | unreadable | no_fields
+    message: str         # operator-facing; names the fix
+    blocking: bool = True
+    fields: tuple[str, ...] = ()
+
+
+@dataclass
+class ExportCheck:
+    """What an uploaded workbook turned out to be."""
+
+    path: Path
+    ticker: str = ""
+    as_of: str = ""
+    sheets: tuple[str, ...] = ()
+    problems: list[ExportProblem] = dc_field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.blocking
+
+    @property
+    def blocking(self) -> list[ExportProblem]:
+        return [p for p in self.problems if p.blocking]
+
+    @property
+    def warnings(self) -> list[ExportProblem]:
+        return [p for p in self.problems if not p.blocking]
+
+    def render(self) -> str:
+        """The whole verdict, worst first, as chat text."""
+        lines = [f"⛔ {p.message}" for p in self.blocking]
+        lines += [f"⚠️ {p.message}" for p in self.warnings]
+        return "\n".join(lines)
+
+
+def _formula_cells(src: Path, sheet: str) -> int:
+    """How many cells on `sheet` still hold a formula.
+
+    A values-only paste has none. The reader loads with `data_only=True`, so
+    a workbook that still carries live add-in formulas reads as *empty* unless
+    Excel happened to cache results before saving — the difference between
+    "no data" and "the data is there but not in a form we can read", which are
+    very different things to be told.
+    """
+    try:
+        wb = load_workbook(src, data_only=False, read_only=True)
+    except Exception:  # noqa: BLE001 - unreadable is reported by the caller
+        return 0
+    try:
+        if sheet not in wb.sheetnames:
+            return 0
+        return sum(
+            1
+            for row in wb[sheet].iter_rows()
+            for c in row
+            if isinstance(c.value, str) and c.value.startswith("=")
+        )
+    finally:
+        wb.close()
+
+
+def check_export(
+    src: Path,
+    *,
+    expect_ticker: str = "",
+    max_age_days: int | None = None,
+    today: _dt.date | None = None,
+) -> ExportCheck:
+    """Validate an uploaded workbook and say precisely what is wrong with it.
+
+    Never raises: an unreadable file is itself one of the answers.
+    """
+    src = Path(src)
+    check = ExportCheck(path=src)
+
+    if src.suffix.lower() == ".csv":
+        # The CSV route carries the snapshot only, so there are no sheets to
+        # check and no formulas to have failed to paste. Everything that is
+        # about the *contents* still applies though: a CSV for the wrong
+        # company overwrites the right one just as thoroughly.
+        try:
+            pairs = _read_csv_pairs(src)
+        except OSError as e:
+            check.problems.append(ExportProblem(
+                kind="unreadable",
+                message=f"{src.name} could not be read ({e})."))
+            return check
+        if not pairs:
+            check.problems.append(ExportProblem(
+                kind="no_fields",
+                message=(f"{src.name} has no `field_key,value` rows. A CSV "
+                         f"export carries the snapshot only, one field per "
+                         f"line.")))
+            return check
+        _check_contents(check, pairs, expect_ticker, max_age_days, today)
+        return check
+
+    try:
+        wb = load_workbook(src, data_only=True)
+    except Exception as e:  # noqa: BLE001 - openpyxl raises a zoo of these
+        check.problems.append(ExportProblem(
+            kind="unreadable",
+            message=(f"{src.name} could not be opened as a workbook ({e}). "
+                     f"Re-save it as .xlsx and upload it again.")))
+        return check
+
+    try:
+        check.sheets = tuple(wb.sheetnames)
+        if SNAPSHOT_SHEET not in wb.sheetnames:
+            visible = ", ".join(n for n in wb.sheetnames if not n.startswith("_")) or "none"
+            check.problems.append(ExportProblem(
+                kind="missing_sheet",
+                message=(f"no '{SNAPSHOT_SHEET}' sheet in {src.name} — that is "
+                         f"where every field is read from. Sheets present: "
+                         f"{visible}. Re-export from the data template."),
+                fields=(SNAPSHOT_SHEET,)))
+            return check
+
+        pairs = _read_snapshot(wb[SNAPSHOT_SHEET])
+        # A formula cell with no cached result reads as None under
+        # `data_only=True`, so an unpasted workbook yields keys with nothing
+        # behind them — not an empty dict. Both are "nothing was read".
+        has_values = any(v is not None and str(v).strip() for v in pairs.values())
+
+        if not has_values:
+            formulas = _formula_cells(src, SNAPSHOT_SHEET)
+            if formulas:
+                check.problems.append(ExportProblem(
+                    kind="formulas_only",
+                    message=(f"{src.name} still contains {formulas} add-in "
+                             f"formula(s) and no saved values. The formulas do "
+                             f"not travel — they only resolve on a machine with "
+                             f"the add-in signed in. Copy the sheet and Paste "
+                             f"Special ▸ Values into a clean workbook, then "
+                             f"upload that.")))
+            elif not pairs:
+                check.problems.append(ExportProblem(
+                    kind="no_fields",
+                    message=(f"the '{SNAPSHOT_SHEET}' sheet in {src.name} has no "
+                             f"'field_key' column, so nothing could be read. "
+                             f"Re-export from the data template.")))
+            else:
+                check.problems.append(ExportProblem(
+                    kind="no_fields",
+                    message=(f"every field in {src.name} is empty. If the "
+                             f"workbook looks right on screen, it was probably "
+                             f"saved before the add-in finished — refresh it, "
+                             f"wait for the cells to settle, and re-export.")))
+            return check
+
+        _check_contents(check, pairs, expect_ticker, max_age_days, today)
+        return check
+    finally:
+        wb.close()
+
+
+def _read_csv_pairs(src: Path) -> dict[str, object]:
+    """`field_key,value` rows from a CSV export. utf-8-sig: Excel writes a BOM."""
+    pairs: dict[str, object] = {}
+    with open(src, newline="", encoding="utf-8-sig") as f:
+        for row in csv.reader(f):
+            if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
+                pairs[row[0].strip()] = row[1]
+    return pairs
+
+
+def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
+                    max_age_days: int | None, today: _dt.date | None) -> None:
+    """The checks that are about what the export SAYS, not how it is shaped.
+
+    Shared by the workbook and CSV routes: a CSV for the wrong company
+    overwrites the right one exactly as thoroughly as a workbook does.
+    """
+    name = check.path.name
+    check.ticker = str(_coerce("ticker", pairs.get("ticker")) or "")
+    check.as_of = str(_coerce("as_of_date", pairs.get("as_of_date")) or "")
+
+    # --- unresolved cells ---------------------------------------------
+    unresolved = {k: m for k in pairs
+                  if (m := unresolved_marker(pairs.get(k))) is not None}
+    required_unresolved = [k for k in DATA_REQUIRED if k in unresolved]
+    other_unresolved = [k for k in sorted(unresolved) if k not in DATA_REQUIRED]
+
+    if required_unresolved:
+        shown = ", ".join(f"{k} ({unresolved[k]})"
+                          for k in required_unresolved[:MAX_REPORTED_FIELDS])
+        check.problems.append(ExportProblem(
+            kind="unresolved",
+            message=(f"required field(s) never resolved in {name}: "
+                     f"{shown}. That is the add-in reporting a problem, not "
+                     f"a company with no data — check the terminal is "
+                     f"signed in, refresh, and re-export."),
+            fields=tuple(required_unresolved)))
+    if other_unresolved:
+        shown = ", ".join(other_unresolved[:MAX_REPORTED_FIELDS])
+        more = (f" …and {len(other_unresolved) - MAX_REPORTED_FIELDS} more"
+                if len(other_unresolved) > MAX_REPORTED_FIELDS else "")
+        check.problems.append(ExportProblem(
+            kind="unresolved", blocking=False,
+            message=(f"{len(other_unresolved)} optional field(s) did not "
+                     f"resolve: {shown}{more}. They are treated as missing."),
+            fields=tuple(other_unresolved)))
+
+    # --- wrong company -------------------------------------------------
+    want = expect_ticker.strip().upper()
+    got = check.ticker.strip().upper()
+    if want and got and got != want:
+        check.problems.append(ExportProblem(
+            kind="wrong_ticker",
+            message=(f"{name} is {got}, but this workspace is {want}. "
+                     f"Nothing was overwritten. Export {want} and upload "
+                     f"that, or start a workspace for {got} with "
+                     f"/short {got} or /long {got}."),
+            fields=(got,)))
+    elif want and not got and "ticker" not in unresolved:
+        check.problems.append(ExportProblem(
+            kind="wrong_ticker", blocking=False,
+            message=(f"{name} carries no ticker, so it cannot be "
+                     f"confirmed as {want}.")))
+
+    # --- staleness ------------------------------------------------------
+    # Keyed off the export's own as-of date. This is the authority now: the
+    # numbers are refreshed outside the bot, so nothing else here knows when
+    # they were pulled, and a file's mtime only records the last save.
+    if max_age_days is None:
+        return
+    age = _as_of_age_days(check.as_of, today)
+    if age is None and not check.as_of:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=f"{name} carries no as-of date, so its age cannot be checked."))
+    elif age is None:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=f"could not read the as-of date {check.as_of!r} in {name}."))
+    elif age > max_age_days:
+        check.problems.append(ExportProblem(
+            kind="stale", blocking=False,
+            message=(f"{name} is {age} days old (as of {check.as_of}; limit "
+                     f"{max_age_days}). Refresh it before rendering — a video "
+                     f"states these as current numbers.")))
+
+
+def _as_of_age_days(as_of: str, today: _dt.date | None = None) -> int | None:
+    """Age in days of an as-of date string, or None if it cannot be read."""
+    if not as_of:
+        return None
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
+        try:
+            parsed = _dt.datetime.strptime(as_of.strip()[:10], fmt).date()
+        except ValueError:
+            continue
+        return ((today or _dt.date.today()) - parsed).days
     return None
 
 
@@ -516,10 +860,7 @@ def load_company_data(workspace: Path) -> CompanyData:
             log.warning("export has no News sheet — recent-headlines flow unavailable")
         wb.close()
     else:
-        with open(src, newline="", encoding="utf-8-sig") as f:
-            for row in csv.reader(f):
-                if len(row) >= 2 and row[0].strip() and row[0].strip() not in ("field", "field_key"):
-                    pairs[row[0].strip()] = row[1]
+        pairs = _read_csv_pairs(src)
         log.warning("CSV export carries the snapshot only — no history/dashboard")
 
     unknown = [k for k in pairs if k not in ALL_DATA_FIELDS]

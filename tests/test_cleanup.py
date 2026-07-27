@@ -8,7 +8,7 @@ def _fill(ws: Workspace):
     (ws.path / "short_final.mp4").write_bytes(b"x" * 1000)
     (ws.path / "render_short").mkdir()
     (ws.path / "render_short" / "row_0.mov").write_bytes(b"y" * 500)
-    (ws.path / "script_short.json").write_text("{}")
+    (ws.path / "script_short.json").write_text("{}", encoding="utf-8")
     (ws.path / "dennis_data.xlsx").write_bytes(b"z")
 
 

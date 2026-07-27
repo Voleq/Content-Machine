@@ -543,7 +543,7 @@ def test_an_older_csv_export_cannot_outlive_the_refresh(settings, no_sleep, tmp_
     sleep, clock = no_sleep
     ws_dir = tmp_path / "ws"
     ws_dir.mkdir(parents=True)
-    (ws_dir / "dennis_data.csv").write_text("field_key,value\nprice,1.0\n")
+    (ws_dir / "dennis_data.csv").write_text("field_key,value\nprice,1.0\n", encoding="utf-8")
     refresh_for_ticker(settings, "PLTR", ws_dir, session_factory=FakeExcel,
                        sleep=sleep, clock=clock)
     assert not (ws_dir / "dennis_data.csv").exists()
@@ -646,8 +646,13 @@ def test_the_manual_upload_path_is_unchanged(settings, tmp_path):
 
 
 # --------------------------------------------------------------------------
-# Freshness from the refresh timestamp, not the file.
+# Freshness: the workbook's own as-of date is the authority.
 # --------------------------------------------------------------------------
+# The numbers are refreshed outside the bot now and uploaded, so the sheet is
+# the only thing that knows when they were pulled. The COM refresh stamp is
+# still read when one exists — a workspace populated that way keeps working —
+# but it is the fallback, not the authority, and nothing on the Linux target
+# writes it.
 
 
 def test_the_refresh_is_stamped_with_when_it_finished(settings, no_sleep, tmp_path):
@@ -663,34 +668,53 @@ def test_the_refresh_is_stamped_with_when_it_finished(settings, no_sleep, tmp_pa
     assert refresh_age_days(ws_dir) < 1
 
 
-def test_freshness_uses_the_refresh_timestamp_over_the_sheets_as_of_date(
-        settings, tmp_path):
-    """A workbook re-saved today whose numbers are three weeks old is stale;
-    `=TODAY()` would call it fresh."""
+def test_the_sheets_as_of_date_wins_over_a_refresh_stamp(settings, tmp_path):
+    """The workbook is the thing that was uploaded, so its date is the truth.
+
+    A stale COM stamp left over from an earlier run must not condemn a
+    workbook the operator has just refreshed by hand — which is now the
+    normal way the numbers arrive.
+    """
     ws_dir = tmp_path / "ws"
     ws_dir.mkdir(parents=True)
     old = datetime.now(timezone.utc) - timedelta(days=30)
     (ws_dir / "data_refresh.json").write_text(json.dumps(
-        {"finished_at": old.isoformat(), "symbol": "PLTR"}))
+        {"finished_at": old.isoformat(), "symbol": "PLTR"}), encoding="utf-8")
 
     today = datetime.now(timezone.utc).date().isoformat()
-    assert check_freshness(today, settings) == []          # sheet says today
-    findings = check_freshness(today, settings, workspace=ws_dir)
-    assert len(findings) == 1
-    assert "refreshed 30" in findings[0].message
-    assert "/refresh" in findings[0].message
+    assert check_freshness(today, settings, workspace=ws_dir) == []
 
 
-def test_a_recent_refresh_is_silent(settings, tmp_path):
+def test_a_stale_sheet_is_flagged_even_with_a_fresh_stamp(settings, tmp_path):
     ws_dir = tmp_path / "ws"
     ws_dir.mkdir(parents=True)
     (ws_dir / "data_refresh.json").write_text(json.dumps(
-        {"finished_at": datetime.now(timezone.utc).isoformat()}))
+        {"finished_at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
+
+    stale = (datetime.now(timezone.utc) - timedelta(days=40)).date().isoformat()
+    findings = check_freshness(stale, settings, workspace=ws_dir)
+    assert len(findings) == 1
+    assert "days old" in findings[0].message
+    assert stale in findings[0].message, "name the date so it can be checked"
+
+
+def test_a_refresh_stamp_still_covers_a_sheet_with_no_date(settings, tmp_path):
+    """The COM path is parked, not deleted — a workspace it populated works."""
+    ws_dir = tmp_path / "ws"
+    ws_dir.mkdir(parents=True)
+    (ws_dir / "data_refresh.json").write_text(json.dumps(
+        {"finished_at": datetime.now(timezone.utc).isoformat()}), encoding="utf-8")
     assert check_freshness("", settings, workspace=ws_dir) == []
 
+    old = datetime.now(timezone.utc) - timedelta(days=30)
+    (ws_dir / "data_refresh.json").write_text(json.dumps(
+        {"finished_at": old.isoformat()}), encoding="utf-8")
+    findings = check_freshness("", settings, workspace=ws_dir)
+    assert len(findings) == 1 and "refreshed 30" in findings[0].message
 
-def test_without_a_stamp_freshness_falls_back_to_the_as_of_date(settings, tmp_path):
-    """Manually uploaded workbooks have no stamp — the old check still runs."""
+
+def test_freshness_falls_back_to_the_as_of_date(settings, tmp_path):
+    """An uploaded workbook has no stamp — the sheet's date carries it."""
     ws_dir = tmp_path / "ws"
     ws_dir.mkdir(parents=True)
     stale = (datetime.now(timezone.utc) - timedelta(days=40)).date().isoformat()
@@ -702,11 +726,9 @@ def test_without_a_stamp_freshness_falls_back_to_the_as_of_date(settings, tmp_pa
 def test_stale_data_can_be_made_blocking(settings, tmp_path):
     ws_dir = tmp_path / "ws"
     ws_dir.mkdir(parents=True)
-    old = datetime.now(timezone.utc) - timedelta(days=30)
-    (ws_dir / "data_refresh.json").write_text(json.dumps(
-        {"finished_at": old.isoformat()}))
+    stale = (datetime.now(timezone.utc) - timedelta(days=30)).date().isoformat()
     s = settings.model_copy(update={"data_stale_blocks": True})
-    assert check_freshness("", s, workspace=ws_dir)[0].severity == "block"
+    assert check_freshness(stale, s, workspace=ws_dir)[0].severity == "block"
 
 
 # --------------------------------------------------------------------------
@@ -798,7 +820,7 @@ def test_the_prompts_reply_says_how_old_the_numbers_really_are(settings, tmp_pat
     _write_workbook(day / "dennis_data.xlsx", _default_fields())
     old = datetime.now(timezone.utc) - timedelta(days=4)
     (day / "data_refresh.json").write_text(json.dumps(
-        {"finished_at": old.isoformat()}))
+        {"finished_at": old.isoformat()}), encoding="utf-8")
 
     reply = core.prompts_reply(16)
     assert "refreshed 4.0 days ago" in reply.text

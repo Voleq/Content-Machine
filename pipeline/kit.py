@@ -54,7 +54,7 @@ class Kit:
                         "return nothing (run scripts/export_design_kit.py)", manifest)
             return
         try:
-            self._assets = json.loads(manifest.read_text()).get("assets", {})
+            self._assets = json.loads(manifest.read_text(encoding="utf-8")).get("assets", {})
         except (OSError, ValueError) as exc:
             log.warning("design kit manifest unreadable (%s) — kit lookups disabled", exc)
 
@@ -205,7 +205,7 @@ class VariantLedger:
         self.keep = keep
         self._recent: dict[str, list[str]] = {}
         try:
-            data = json.loads(self.path.read_text())
+            data = json.loads(self.path.read_text(encoding="utf-8"))
             if isinstance(data, dict):
                 self._recent = {k: list(v) for k, v in data.items()
                                 if isinstance(v, list)}
@@ -233,7 +233,7 @@ class VariantLedger:
     def save(self) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(json.dumps(self._recent, indent=1, sort_keys=True))
+            self.path.write_text(json.dumps(self._recent, indent=1, sort_keys=True), encoding="utf-8")
         except OSError as e:
             log.warning("could not persist the variant ledger (%s)", e)
 

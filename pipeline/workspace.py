@@ -54,19 +54,19 @@ class Workspace:
     # -------------------------------------------------------------- scripts
     def save_short(self, script: ShortScript, raw: str) -> None:
         self._push_revision("short")
-        (self.path / "script_short.raw.txt").write_text(raw)
-        (self.path / "script_short.json").write_text(script.model_dump_json(indent=2))
+        (self.path / "script_short.raw.txt").write_text(raw, encoding="utf-8")
+        (self.path / "script_short.json").write_text(script.model_dump_json(indent=2), encoding="utf-8")
         self._invalidate_approval("short")
 
     def save_long(self, script: LongScript, raw: str) -> None:
         self._push_revision("long")
-        (self.path / "script_long.raw.txt").write_text(raw)
-        (self.path / "script_long.json").write_text(script.model_dump_json(indent=2))
+        (self.path / "script_long.raw.txt").write_text(raw, encoding="utf-8")
+        (self.path / "script_long.json").write_text(script.model_dump_json(indent=2), encoding="utf-8")
         self._invalidate_approval("long")
 
     def raw_script(self, fmt: str) -> str | None:
         f = self.path / f"script_{fmt}.raw.txt"
-        return f.read_text() if f.exists() else None
+        return f.read_text(encoding="utf-8") if f.exists() else None
 
     # ------------------------------------------------------------ lane (1d)
     # `/short` and `/long` declare the format up front instead of preparing
@@ -77,11 +77,11 @@ class Workspace:
 
     def set_lane(self, lane: str) -> None:
         self.path.mkdir(parents=True, exist_ok=True)
-        self._lane_file().write_text(json.dumps({"lane": lane}))
+        self._lane_file().write_text(json.dumps({"lane": lane}), encoding="utf-8")
 
     def lane(self) -> str:
         try:
-            return str(json.loads(self._lane_file().read_text()).get("lane") or "")
+            return str(json.loads(self._lane_file().read_text(encoding="utf-8")).get("lane") or "")
         except (FileNotFoundError, json.JSONDecodeError):
             return ""
 
@@ -113,7 +113,7 @@ class Workspace:
         d = self._revision_dir(fmt)
         d.mkdir(parents=True, exist_ok=True)
         n = len(list(d.glob("*.txt")))
-        (d / f"{n:03d}.txt").write_text(current.read_text())
+        (d / f"{n:03d}.txt").write_text(current.read_text(encoding="utf-8"), encoding="utf-8")
 
     def revision_count(self, fmt: str) -> int:
         d = self._revision_dir(fmt)
@@ -128,17 +128,17 @@ class Workspace:
         if not files:
             return None
         last = files[-1]
-        text = last.read_text()
+        text = last.read_text(encoding="utf-8")
         last.unlink()
         return text
 
     def load_short(self) -> ShortScript | None:
         f = self.path / "script_short.json"
-        return ShortScript.model_validate_json(f.read_text()) if f.exists() else None
+        return ShortScript.model_validate_json(f.read_text(encoding="utf-8")) if f.exists() else None
 
     def load_long(self) -> LongScript | None:
         f = self.path / "script_long.json"
-        return LongScript.model_validate_json(f.read_text()) if f.exists() else None
+        return LongScript.model_validate_json(f.read_text(encoding="utf-8")) if f.exists() else None
 
     # ------------------------------------------------- LONG two-step angle
     # The human decision moved to the ANGLE: after the data upload the bot
@@ -149,16 +149,16 @@ class Workspace:
         return self.path / "long_angle.json"
 
     def set_awaiting_angle(self) -> None:
-        self._angle_file().write_text(json.dumps({"awaiting": True, "chosen": ""}))
+        self._angle_file().write_text(json.dumps({"awaiting": True, "chosen": ""}), encoding="utf-8")
 
     def set_chosen_angle(self, text: str) -> None:
         self._angle_file().write_text(json.dumps(
-            {"awaiting": False, "chosen": text.strip()}, indent=2))
+            {"awaiting": False, "chosen": text.strip()}, indent=2), encoding="utf-8")
 
     def _angle_state(self) -> dict:
         f = self._angle_file()
         try:
-            return json.loads(f.read_text()) if f.exists() else {}
+            return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
         except json.JSONDecodeError:
             return {}
 
@@ -169,7 +169,7 @@ class Workspace:
         st = self._angle_state()
         if st.get("awaiting"):
             st["awaiting"] = False
-            self._angle_file().write_text(json.dumps(st, indent=2))
+            self._angle_file().write_text(json.dumps(st, indent=2), encoding="utf-8")
 
     def chosen_angle(self) -> str:
         return self._angle_state().get("chosen", "")
@@ -182,12 +182,12 @@ class Workspace:
         return self.path / "headline.json"
 
     def set_headline(self, payload: dict) -> None:
-        self._headline_file().write_text(json.dumps(payload, indent=2))
+        self._headline_file().write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
     def headline(self) -> dict:
         f = self._headline_file()
         try:
-            return json.loads(f.read_text()) if f.exists() else {}
+            return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
         except json.JSONDecodeError:
             return {}
 
@@ -200,13 +200,13 @@ class Workspace:
             "script_sha": script_sha,
             "approved_at": datetime.now(timezone.utc).isoformat(),
             "report": report_text,
-        }, indent=2))
+        }, indent=2), encoding="utf-8")
 
     def approved_sha(self, fmt: str) -> str | None:
         f = self._approval_file(fmt)
         if not f.exists():
             return None
-        return json.loads(f.read_text()).get("script_sha")
+        return json.loads(f.read_text(encoding="utf-8")).get("script_sha")
 
     def is_approved(self, fmt: str) -> bool:
         """True only if the CURRENT script content matches the approval."""
@@ -222,12 +222,12 @@ class Workspace:
     # ------------------------------------------------------ b-roll overrides
     def broll_overrides(self) -> dict[str, int]:
         f = self.path / "broll_overrides.json"
-        return json.loads(f.read_text()) if f.exists() else {}
+        return json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
 
     def set_broll_override(self, key: str, choice: int) -> dict[str, int]:
         overrides = self.broll_overrides()
         overrides[key] = choice
-        (self.path / "broll_overrides.json").write_text(json.dumps(overrides, indent=2))
+        (self.path / "broll_overrides.json").write_text(json.dumps(overrides, indent=2), encoding="utf-8")
         self._invalidate_approval("long")  # picks changed => re-approve
         return overrides
 
@@ -246,7 +246,7 @@ class ActiveContext:
 
     def _load(self) -> dict:
         try:
-            return json.loads(self.path.read_text())
+            return json.loads(self.path.read_text(encoding="utf-8"))
         except (FileNotFoundError, json.JSONDecodeError):
             return {}
 
@@ -254,7 +254,7 @@ class ActiveContext:
         data = self._load()
         data[str(chat_id)] = {"ticker": ticker.upper(), "workdate": workdate}
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(data, indent=2))
+        self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
     def get(self, chat_id: int) -> Workspace | None:
         entry = self._load().get(str(chat_id))

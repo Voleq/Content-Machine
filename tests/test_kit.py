@@ -170,7 +170,7 @@ def test_a_corrupt_ledger_is_treated_as_no_history(tmp_path):
     from pipeline.kit import VariantLedger
 
     bad = tmp_path / "v.json"
-    bad.write_text("{not json")
+    bad.write_text("{not json", encoding="utf-8")
     assert VariantLedger(bad).recent("anything") == []
 
 

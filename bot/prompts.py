@@ -29,7 +29,7 @@ from pipeline.models import CompanyData
 def voice_bible(settings: Settings) -> str:
     """The tone anchor (assets/voice_bible.md), injected verbatim."""
     f = settings.assets_dir / "voice_bible.md"
-    return f.read_text().strip() if f.exists() else "(voice bible missing)"
+    return f.read_text(encoding="utf-8").strip() if f.exists() else "(voice bible missing)"
 
 
 def doodle_catalog(settings: Settings) -> str:
@@ -354,7 +354,7 @@ def fill_prompt(
     may be None for the macro headline mode (no single-company financials).
     """
     template_file = settings.templates_dir / f"master_prompt_{fmt}.md"
-    text = template_file.read_text()
+    text = template_file.read_text(encoding="utf-8")
 
     as_of = (data.get("as_of_date") if data is not None else None) or date.today().isoformat()
     r: dict[str, str] = {

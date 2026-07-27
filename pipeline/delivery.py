@@ -49,7 +49,7 @@ def _write_attribution(artifact: Path, attributions: list[str]) -> Path | None:
     f = artifact.with_suffix(".attribution.txt")
     f.write_text(
         "B-roll / stock footage credits:\n" + "\n".join(f"- {a}" for a in attributions) + "\n"
-    )
+    , encoding="utf-8")
     return f
 
 
@@ -127,7 +127,7 @@ class GDriveBackend:
         import google.auth.transport.requests  # deferred: optional heavy dep
 
         creds_path = Path(self.settings.gdrive_credentials).expanduser()
-        info = json.loads(creds_path.read_text())
+        info = json.loads(creds_path.read_text(encoding="utf-8"))
         if info.get("type") == "service_account":
             from google.oauth2 import service_account
 

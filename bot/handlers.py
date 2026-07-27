@@ -13,7 +13,9 @@ whose content hash still matches that approval.
 from __future__ import annotations
 
 import logging
+import os
 import re
+import uuid
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -25,6 +27,7 @@ from config import Settings
 from pipeline.broll import ContentManager, palette_keys
 from pipeline.company_data import (
     CompanyDataError,
+    check_export,
     list_screenshots,
     load_company_data,
 )
@@ -390,7 +393,7 @@ class BotCore:
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
                                move_context=move_context)
             f = ws.path / f"prompt_{fmt}.md"
-            f.write_text(text)
+            f.write_text(text, encoding="utf-8")
             files.append(f)
         # LONG is two manual steps in Claude — Step 1 (angle) here, Step 2
         # (write) after the operator replies with a pick.
@@ -483,7 +486,7 @@ class BotCore:
                              article_summary=hstate.get("summary", ""),
                              headline_mode=mode)
         f = ws.path / "prompt_headline.md"
-        f.write_text(prompt)
+        f.write_text(prompt, encoding="utf-8")
         label = {"company": "company-news", "earnings": "earnings",
                  "macro": "macro / market"}.get(mode, mode)
         anchor = "an index chart" if mode == "macro" else "the ticker's multi-year numbers"
@@ -547,21 +550,7 @@ class BotCore:
         suffix = Path(name).suffix.lower()
 
         if suffix in (".xlsx", ".csv"):
-            dest = ws.path / f"dennis_data{suffix}"
-            dest.write_bytes(data)
-            # a /headline that was waiting on the numbers → hand back the
-            # headline prompt now, not the usual short/long_angle pair
-            hstate = ws.headline()
-            if (hstate.get("mode") in ("company", "earnings")
-                    and ws.load_short() is None):
-                cdata = self._company_data(ws)
-                if cdata is not None:
-                    reply = self._headline_prompt_reply(ws, cdata)
-                    reply.text = f"💾 saved {dest.name}.\n\n" + reply.text
-                    return reply
-            reply = self.prompts_reply(chat_id)
-            reply.text = f"💾 saved {dest.name} for {ws.ticker}.\n\n" + reply.text
-            return reply
+            return self._ingest_export(chat_id, ws, suffix, data)
 
         stem = Path(name).stem.lower().replace(" ", "-").replace("_", "-")
 
@@ -594,6 +583,66 @@ class BotCore:
             return self.intake_script(chat_id, data.decode("utf-8", errors="replace"))
 
         return Reply(f"Unsupported file type: {name}")
+
+    def _ingest_export(self, chat_id: int, ws: Workspace, suffix: str,
+                       data: bytes) -> Reply:
+        """Take in an uploaded workbook — the primary data route.
+
+        The numbers are refreshed outside the bot and pasted into a clean
+        workbook as values, so this is the front door and it validates like
+        one. The upload lands in a scratch file first and only becomes
+        `dennis_data.xlsx` once it passes: a wrong-company or half-refreshed
+        workbook must not overwrite the good one already in the workspace.
+        That is the same rule the COM refresh followed, for the same reason —
+        a failed load looking like data is the worst outcome available.
+        """
+        dest = ws.path / f"dennis_data{suffix}"
+        staging = ws.path / f".upload_{uuid.uuid4().hex[:8]}{suffix}"
+        ws.path.mkdir(parents=True, exist_ok=True)
+        staging.write_bytes(data)
+
+        try:
+            check = check_export(
+                staging,
+                expect_ticker=ws.ticker,
+                max_age_days=self.settings.data_max_age_days,
+            )
+            if check.blocking:
+                had = "  (the workbook already in the workspace is untouched)" \
+                    if dest.exists() else ""
+                return Reply(
+                    f"⛔ {dest.name} was NOT updated.{had}\n\n"
+                    + check.render().replace(staging.name, dest.name))
+            os.replace(staging, dest)
+        finally:
+            staging.unlink(missing_ok=True)
+
+        note = ""
+        if check.warnings:
+            note = "\n" + check.render().replace(staging.name, dest.name)
+
+        # `find_export` prefers .xlsx, so a CSV uploaded alongside one is read
+        # by nothing. Saying so beats letting the operator wonder why their
+        # new numbers had no effect.
+        if suffix == ".csv" and (ws.path / "dennis_data.xlsx").exists():
+            note += ("\n⚠️ dennis_data.xlsx is also in this workspace and takes "
+                     "precedence — this CSV will not be read until it is "
+                     "replaced or removed.")
+
+        # a /headline that was waiting on the numbers → hand back the
+        # headline prompt now, not the usual short/long_angle pair
+        hstate = ws.headline()
+        if (hstate.get("mode") in ("company", "earnings")
+                and ws.load_short() is None):
+            cdata = self._company_data(ws)
+            if cdata is not None:
+                reply = self._headline_prompt_reply(ws, cdata)
+                reply.text = f"💾 saved {dest.name}.{note}\n\n" + reply.text
+                return reply
+
+        reply = self.prompts_reply(chat_id)
+        reply.text = f"💾 saved {dest.name} for {ws.ticker}.{note}\n\n" + reply.text
+        return reply
 
     def _pending_custom_slugs(self, ws: Workspace) -> dict[str, str]:
         """slug -> kind ("asset"|"screengrab") for the saved LONG script's
@@ -662,7 +711,7 @@ class BotCore:
             return Reply("No script on file yet — paste one first.")
         listing = numbered(raw)
         f = ws.path / f"script_{fmt}.numbered.txt"
-        f.write_text(listing)
+        f.write_text(listing, encoding="utf-8")
         state = "approved ✅" if ws.is_approved(fmt) else "not approved"
         revs = ws.revision_count(fmt)
         head = (f"📄 {ws.ticker} {fmt.upper()} — {len(raw.splitlines())} lines, "
@@ -785,7 +834,7 @@ class BotCore:
         prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
                              chosen_angle=ws.chosen_angle())
         f = ws.path / "prompt_long_write.md"
-        f.write_text(prompt)
+        f.write_text(prompt, encoding="utf-8")
         note = (
             f"{header}\n"
             f"Here's Step 2 — the writing prompt. Run it in the SAME Claude "
@@ -854,7 +903,7 @@ class BotCore:
                         f"using the workspace ticker's folder"] + warnings
         ws.save_short(script, raw)
         report = build_short_report(script, warnings, self.settings, self.ledger, self.tts)
-        (ws.path / "report_short.txt").write_text(report.render_text())
+        (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
         return Reply(
             report.render_text(),
             keyboard=approval_keyboard("short", ws.ticker, ws.workdate,
@@ -886,7 +935,7 @@ class BotCore:
             script, warnings, v_warnings, v_blocking,
             self.settings, self.ledger, self.tts, plan, filing_count,
         )
-        (ws.path / "report_long.txt").write_text(report.render_text())
+        (ws.path / "report_long.txt").write_text(report.render_text(), encoding="utf-8")
         sheet = self._contact_sheet(ws, plan)
         return Reply(
             report.render_text(),
@@ -906,7 +955,7 @@ class BotCore:
         pdir.mkdir(exist_ok=True)
         for slug, prompt in script.asset_prompts.items():
             f = pdir / f"{slug}.claude-design.txt"
-            f.write_text(prompt + "\n")
+            f.write_text(prompt + "\n", encoding="utf-8")
             out.append(f)
         return out
 
@@ -957,7 +1006,7 @@ class BotCore:
             return Reply("⛔ The script changed since this report — paste/review again.")
         report_file = ws.path / f"report_{fmt}.txt"
         ws.approve(fmt, script.content_sha(),
-                   report_file.read_text() if report_file.exists() else "")
+                   report_file.read_text(encoding="utf-8") if report_file.exists() else "")
         cmd = "/render" if fmt == "short" else "/render_long"
         return Reply(
             f"✅ {ticker} {fmt.upper()} approved (script {sha8}).\n"
@@ -993,7 +1042,7 @@ class BotCore:
         current = ws.broll_overrides().get(key, 0)
         n = self.content.alternates_count(key)
         ws.set_broll_override(key, (current + 1) % max(n, 1))
-        raw = (ws.path / "script_long.raw.txt").read_text()
+        raw = (ws.path / "script_long.raw.txt").read_text(encoding="utf-8")
         self.context.set(chat_id, ticker, workdate)
         reply = self.intake_script(chat_id, raw)  # rebuild report + sheet
         reply.text = f"🔄 {key}: take {(current + 1) % max(n, 1) + 1}/{max(n, 1)}\n\n" + reply.text
@@ -1129,7 +1178,7 @@ class BotCore:
                 return str(out)
             checkpoint("delivery")
             import json as _json
-            attributions = _json.loads(Path(manifest).read_text()).get("attributions", [])
+            attributions = _json.loads(Path(manifest).read_text(encoding="utf-8")).get("attributions", [])
             extra: list[Path] = []
             try:  # LONG gets an auto thumbnail
                 from pipeline.thumbnail import make_thumbnail
@@ -1195,7 +1244,7 @@ class BotCore:
                 raise RuntimeError("no usable window in the finished LONG")
             checkpoint("delivery")
             import json as _json
-            attributions = _json.loads(manifest.read_text()).get("attributions", [])
+            attributions = _json.loads(manifest.read_text(encoding="utf-8")).get("attributions", [])
             result = ""
             for i, (path, _info) in enumerate(clips, 1):
                 checkpoint(f"delivery {i}/{len(clips)}")
@@ -1546,7 +1595,7 @@ class BotCore:
                 else "render_short_manifest.json")
         try:
             import json as _json
-            return float(_json.loads((ws.path / name).read_text()).get("duration", 0))
+            return float(_json.loads((ws.path / name).read_text(encoding="utf-8")).get("duration", 0))
         except (FileNotFoundError, ValueError, KeyError, OSError):
             return 0.0
 
@@ -1942,7 +1991,7 @@ def build_application(settings: Settings, core: BotCore):
         elif op == "w!" and len(parts) == 3:
             core.context.set(chat_id, parts[1], parts[2])
             raw_file = Workspace(core.settings, parts[1], parts[2]).path / "script_long.raw.txt"
-            reply = (core.intake_script(chat_id, raw_file.read_text())
+            reply = (core.intake_script(chat_id, raw_file.read_text(encoding="utf-8"))
                      if raw_file.exists() else Reply("No LONG script on file."))
         elif op == "s" and len(parts) == 4:
             reply = core.swap_key(chat_id, parts[1], parts[2], parts[3])

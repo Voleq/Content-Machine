@@ -86,5 +86,5 @@ def test_index_json_is_committed_and_valid():
     from pathlib import Path
 
     f = Path(__file__).resolve().parents[1] / "assets" / "meme_library" / "meme_index.json"
-    index = json.loads(f.read_text())
+    index = json.loads(f.read_text(encoding="utf-8"))
     assert len(index) == ROOT_INDEX_KEYS

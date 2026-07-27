@@ -41,7 +41,7 @@ class DoodleLibrary:
         if not f.exists():
             return {}
         try:
-            return json.loads(f.read_text())
+            return json.loads(f.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             log.warning("doodles_index.json is invalid JSON — doodles disabled")
             return {}

@@ -53,7 +53,7 @@ def rendered(tmp_path_factory):
     out, manifest = render_long(script, tts, ws, settings,
                                 content=ContentManager(settings),
                                 as_of="2026-07-01", company_data=data)
-    return settings, script, tts, out, json.loads(manifest.read_text())
+    return settings, script, tts, out, json.loads(manifest.read_text(encoding="utf-8"))
 
 
 def test_streams_and_duration(rendered):
@@ -98,7 +98,7 @@ def test_host_anchored_structure_with_all_kinds(rendered):
 
 def test_cue_times_reached_the_filtergraph(rendered):
     settings, script, tts, out, manifest = rendered
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
     refin = next(s for s in manifest["segments"] if s["kind"] == "filing")
     assert f"between(t,{refin['start']:.4f}" in filter_text  # the glitch flash
     assert "subtitles=filename=" in filter_text
@@ -150,7 +150,7 @@ def test_nothing_pans_or_zooms(rendered):
     W, H = manifest["resolution"]
     segs = manifest["segments"]
     # every filter this render used: the overlay graph plus each beat's own
-    graphs = [(out.parent / (out.stem + ".filter.txt")).read_text()]
+    graphs = [(out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")]
     graphs += [s.get("filter", "") for s in segs]
     all_filters = "\n".join(graphs)
 
@@ -180,7 +180,7 @@ def test_long_captions_are_a_fitted_box(rendered):
     """The LONG caption is an opaque, text-fitted box (BorderStyle=3) so a
     line can never clip off-frame or stack into the furniture."""
     settings, script, tts, out, manifest = rendered
-    ass = (out.parent / "render_long" / "captions.ass").read_text()
+    ass = (out.parent / "render_long" / "captions.ass").read_text(encoding="utf-8")
     assert ",3,12,0,2," in ass, "captions use the fitted-box style"
     assert ",1,4,2,2," not in ass, "not the SHORT outline style"
 
@@ -225,7 +225,7 @@ def test_draft_reuses_cached_tts_and_is_smaller(rendered):
     info = ffprobe_json(draft_out)
     v = next(s for s in info["streams"] if s["codec_type"] == "video")
     assert v["width"] == int(640 * settings.draft_scale) // 2 * 2
-    assert json.loads(draft_manifest.read_text())["draft"] is True
+    assert json.loads(draft_manifest.read_text(encoding="utf-8"))["draft"] is True
 
 
 # ---- the reference look: doodles, scribbles, screengrab, marker chart ----
@@ -247,7 +247,7 @@ def rendered_doodles(tmp_path_factory):
     )
     settings.ensure_runtime_dirs()
     fixtures = Path(__file__).resolve().parents[1] / "fixtures"
-    raw = (fixtures / "scripts" / "long_doodles.txt").read_text()
+    raw = (fixtures / "scripts" / "long_doodles.txt").read_text(encoding="utf-8")
     script, _ = parse_long_script(raw, "EXMPL", settings)
     ws = settings.workspace_dir / "EXMPL" / "test"
     ws.mkdir(parents=True)
@@ -264,7 +264,7 @@ def rendered_doodles(tmp_path_factory):
         out, manifest = render_long(script, tts, ws, settings,
                                     content=ContentManager(settings),
                                     as_of="2026-07-01", company_data=data)
-        yield settings, script, tts, out, json.loads(manifest.read_text())
+        yield settings, script, tts, out, json.loads(manifest.read_text(encoding="utf-8"))
     finally:
         grab.unlink(missing_ok=True)
 
@@ -302,7 +302,7 @@ def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
     tts = TTSEngine(settings).synthesize(script.narration, "long")
     _, manifest = render_long(script, tts, ws, settings,
                               content=ContentManager(settings))
-    layers = json.loads(manifest.read_text())["layers"]
+    layers = json.loads(manifest.read_text(encoding="utf-8"))["layers"]
     shrug_layers = [l for l in layers if l["name"].startswith("doodle_")
                     and "shrug" in l["name"]]
     assert len(shrug_layers) == 1, "the back-to-back duplicate doodle was dropped"
@@ -310,7 +310,7 @@ def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
 
 def test_doodle_and_scribble_overlays_present(rendered_doodles):
     settings, script, tts, out, manifest = rendered_doodles
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text()
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
     cues = build_long_timeline(script, tts.words, tts.duration_s)
     doodles = [c for c in cues if c.kind is CueKind.DOODLE]
     scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]

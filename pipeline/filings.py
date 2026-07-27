@@ -124,11 +124,10 @@ def _sec_get(url: str, settings: Settings) -> "object | None":
 
 
 # Images that ship a browser at a known path (the container build does).
-# A normal Windows or Linux install has none of these and lets Playwright
-# resolve its own download instead.
+# An ordinary install has none of these and lets Playwright resolve its own
+# download instead.
 _PREPROVISIONED_CHROMIUM = (
     Path("/opt/pw-browsers/chromium"),
-    Path(r"C:\pw-browsers\chromium\chrome.exe"),
 )
 
 
@@ -138,7 +137,7 @@ def _chromium_executable(settings: Settings) -> str | None:
 
     Returning None is the normal case on a machine where
     `playwright install chromium` has run — Playwright then finds its own
-    browser, on Windows and Linux alike.
+    browser.
     """
     if settings.playwright_chromium_path:
         return settings.playwright_chromium_path
@@ -157,7 +156,7 @@ def _load_company_tickers(settings: Settings) -> dict | None:
     if settings.mock_mode:
         f = settings.fixtures_dir / "filings" / "company_tickers.json"
         try:
-            return json.loads(f.read_text())
+            return json.loads(f.read_text(encoding="utf-8"))
         except Exception as e:
             log.warning("filings: no company_tickers fixture (%s)", e)
             return None
@@ -185,7 +184,7 @@ def _load_submissions(cik: str, settings: Settings) -> dict | None:
     if settings.mock_mode:
         f = settings.fixtures_dir / "filings" / f"submissions_CIK{cik}.json"
         try:
-            return json.loads(f.read_text())
+            return json.loads(f.read_text(encoding="utf-8"))
         except Exception as e:
             log.warning("filings: no submissions fixture for CIK%s (%s)", cik, e)
             return None
@@ -338,7 +337,7 @@ _FLAG_SYSTEM = (
 def _mock_flagged(settings: Settings) -> list[FlaggedQuote]:
     f = settings.fixtures_dir / "filings" / "flagged_quotes.json"
     try:
-        rows = json.loads(f.read_text())
+        rows = json.loads(f.read_text(encoding="utf-8"))
     except Exception as e:
         log.warning("filings: no flagged_quotes fixture (%s)", e)
         return []
@@ -611,7 +610,7 @@ def _manifest_path(workspace: Path) -> Path:
 
 def load_manifest(workspace: Path) -> dict:
     try:
-        return json.loads(_manifest_path(workspace).read_text())
+        return json.loads(_manifest_path(workspace).read_text(encoding="utf-8"))
     except Exception:
         return {}
 
@@ -626,7 +625,7 @@ def _write_manifest(workspace: Path, ref: FilingRef | None,
         "url": ref.url if ref else "",
         "shots": [asdict(s) for s in shots],
     }
-    _manifest_path(workspace).write_text(json.dumps(payload, indent=2))
+    _manifest_path(workspace).write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def auto_filings(ticker: str, angle: str, workspace: Path, settings: Settings,
@@ -647,7 +646,7 @@ def auto_filings(ticker: str, angle: str, workspace: Path, settings: Settings,
         if html_path is None:
             _write_manifest(workspace, ref, [])
             return []
-        html = html_path.read_text(errors="replace")
+        html = html_path.read_text(errors="replace", encoding="utf-8")
         sections = segment_filing(html)
         flagged = flag_quotes(sections, angle, settings, ledger=ledger)[:cap]
 
@@ -700,5 +699,5 @@ def veto_shot(workspace: Path, name: str) -> bool:
         return False
     (workspace / name).unlink(missing_ok=True)
     manifest["shots"] = remaining
-    _manifest_path(workspace).write_text(json.dumps(manifest, indent=2))
+    _manifest_path(workspace).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return True

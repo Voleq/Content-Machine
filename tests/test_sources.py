@@ -252,9 +252,9 @@ def test_a_value_round_trips_through_the_cache(settings):
 def test_a_stale_entry_is_a_miss(settings):
     store(settings, "8k", "EXMPL", {"v": 1})
     p = next((settings.cache_dir / "sources" / "8k").glob("*.json"))
-    payload = json.loads(p.read_text())
+    payload = json.loads(p.read_text(encoding="utf-8"))
     payload["_at"] = 0        # 1970
-    p.write_text(json.dumps(payload))
+    p.write_text(json.dumps(payload), encoding="utf-8")
     assert cached(settings, "8k", "EXMPL") is None
 
 
@@ -265,7 +265,7 @@ def test_ttls_reflect_how_often_each_source_actually_changes():
 
 def test_a_corrupt_cache_file_is_a_miss_not_a_crash(settings):
     store(settings, "fred", "X", {"v": 1})
-    next((settings.cache_dir / "sources" / "fred").glob("*.json")).write_text("{{{")
+    next((settings.cache_dir / "sources" / "fred").glob("*.json")).write_text("{{{", encoding="utf-8")
     assert cached(settings, "fred", "X") is None
 
 

@@ -107,7 +107,7 @@ class MockPriceSource:
     def history(self, ticker: str, days: int) -> PriceSeries:
         fixture = self.settings.fixtures_dir / "prices" / f"{ticker.upper()}.json"
         if fixture.exists():
-            series = PriceSeries.from_json(fixture.read_text())
+            series = PriceSeries.from_json(fixture.read_text(encoding="utf-8"))
             series.source = "fixture"
             return series
         return synthetic_series(ticker, days)
@@ -155,7 +155,7 @@ def get_price_history(ticker: str, settings: Settings,
     cfile = cdir / f"{ticker}_{days}.json"
     try:
         if cfile.exists() and time.time() - cfile.stat().st_mtime < settings.prices_cache_ttl_s:
-            series = PriceSeries.from_json(cfile.read_text())
+            series = PriceSeries.from_json(cfile.read_text(encoding="utf-8"))
             return series
     except (json.JSONDecodeError, KeyError, ValueError):
         pass
@@ -173,5 +173,5 @@ def get_price_history(ticker: str, settings: Settings,
         series.degraded = True
 
     cdir.mkdir(parents=True, exist_ok=True)
-    cfile.write_text(series.to_json())
+    cfile.write_text(series.to_json(), encoding="utf-8")
     return series

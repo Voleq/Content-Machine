@@ -46,7 +46,7 @@ def _seed_screen(settings, ticker: str, lane: str) -> None:
     (settings.state_dir / "last_screen.json").write_text(json.dumps({
         "ts": time.time(),
         "tickers": {ticker.upper(): {"lane": lane, "reasons": ["seeded"]}},
-    }))
+    }), encoding="utf-8")
 
 
 # --------------------------------------------------------------------------
@@ -146,7 +146,7 @@ def test_a_stale_screen_stops_being_used_as_evidence(core, settings):
     (settings.state_dir / "last_screen.json").write_text(json.dumps({
         "ts": time.time() - 90000,          # >24h
         "tickers": {"EXMPL": {"lane": "trending", "reasons": []}},
-    }))
+    }), encoding="utf-8")
     assert last_screen_lane(settings, "EXMPL") == ""
     assert "⚠️" not in core.start_lane(CHAT, "long", "EXMPL").text
 

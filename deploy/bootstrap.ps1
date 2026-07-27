@@ -1,15 +1,32 @@
-<#
+﻿<#
 .SYNOPSIS
-  Dennis — native Windows setup (the counterpart to deploy/bootstrap.sh).
+  Dennis - native Windows setup. UNMAINTAINED: see the notice below.
 
 .DESCRIPTION
-  Runs natively on Windows 11, NOT under WSL: the render box is a normal
-  desktop, and Playwright/ffmpeg/NVENC all work better outside the WSL
-  boundary. Creates the venv, installs pinned dependencies, checks FFmpeg,
-  installs headless Chromium, generates the brand assets and fixtures, and
-  runs the offline test suite.
+  UNMAINTAINED / NOT THE SUPPORTED PATH.
 
-  Idempotent — safe to re-run after a pull.
+  The target platform is Linux: WSL2 on the operator's Windows desktop now,
+  a Linux VPS later. deploy/bootstrap.sh is the primary installer and the
+  only one that is exercised. This script is kept - not deleted - so a
+  future native-Windows deployment has a starting point, but nothing here
+  is verified by the test suite and the one feature that needed native
+  Windows (Excel COM automation) is now handled by an external workflow:
+  Excel is refreshed outside the bot and the values-only workbook is
+  uploaded, which works identically on Linux.
+
+  If you revive this, expect to re-check every step against the current
+  pyproject.toml before trusting it.
+
+  Two constraints this file DOES honour, so that it at least parses:
+    * ASCII only - no em-dashes, no smart quotes. Windows PowerShell 5.1
+      reads a BOM-less file as the system ANSI codepage, and a stray UTF-8
+      multi-byte sequence becomes mojibake mid-token.
+    * Saved as UTF-8 with BOM, for the same reason. tests/test_platform.py
+      enforces both.
+
+  What it does, when it works: creates the venv, installs pinned
+  dependencies, checks FFmpeg, installs headless Chromium, generates the
+  brand assets and fixtures, and runs the offline test suite. Idempotent.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File deploy\bootstrap.ps1
@@ -30,6 +47,9 @@ Set-Location $repo
 
 function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 function Warn($msg) { Write-Host "    ! $msg" -ForegroundColor Yellow }
+
+Warn "deploy/bootstrap.ps1 is UNMAINTAINED. The supported installer is"
+Warn "deploy/bootstrap.sh, run inside WSL2 or on a Linux VPS."
 
 # --------------------------------------------------------------- python
 Step "Python 3.11+"
@@ -76,7 +96,7 @@ Step "hardware encoder (NVENC)"
 # heads-up so a missing driver is obvious now rather than mid-render.
 $encoders = & ffmpeg -hide_banner -encoders 2>$null
 if ($encoders -match 'h264_nvenc') {
-    Write-Host "    h264_nvenc present — finals will use the GPU"
+    Write-Host "    h264_nvenc present - finals will use the GPU"
 } else {
     Warn "h264_nvenc not listed; renders fall back to libx264 (fine, just slower)"
 }
@@ -86,15 +106,16 @@ if (-not $SkipBrowser) {
     Step "headless Chromium (10-K screenshots + the design-kit exporter)"
     & $vpy -m playwright install chromium
     if ($LASTEXITCODE -ne 0) {
-        Warn "Chromium install failed — 10-K auto-shots degrade to none; the"
+        Warn "Chromium install failed - 10-K auto-shots degrade to none; the"
         Warn "design-kit exporter will not run until this succeeds."
     }
 }
 
 # ----------------------------------------------------------------- excel
-Step "Excel + data add-in (the bot refreshes its own numbers)"
-# Without this the bot still works — it falls back to asking for the workbook
-# by hand, exactly as it did before. Worth knowing now rather than at 2am.
+Step "Excel + data add-in (legacy COM path)"
+# The bot no longer depends on this: the operator refreshes Excel externally
+# and uploads a values-only workbook. Reported here only because a revived
+# native-Windows deployment might want the COM route back.
 $excelOk = $false
 try {
     $xl = New-Object -ComObject Excel.Application
@@ -109,30 +130,30 @@ try {
     if ($data) {
         Write-Host "    data add-in loaded: $($data -join ', ')"
     } else {
-        Warn "no LSEG/Refinitiv/Capital IQ add-in appears loaded. /refresh will"
-        Warn "report the fields as unresolved until it is signed in."
+        Warn "no LSEG/Refinitiv/Capital IQ add-in appears loaded. The COM"
+        Warn "refresh would report the fields as unresolved until it signs in."
     }
     $xl.Quit()
     [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($xl)
 } catch {
     Warn "Excel did not respond to COM ($($_.Exception.Message))."
-    Warn "The bot will ask you to upload dennis_data.xlsx by hand instead."
+    Warn "This is expected and harmless - upload dennis_data.xlsx instead."
 }
 if ($excelOk) {
-    Write-Host "    tip: force a RIC once with  /refresh PLTR PLTR.O  (normally"
-    Write-Host "         unnecessary — the template derives it from the exchange)"
+    Write-Host "    note: the supported route is an external refresh plus an"
+    Write-Host "          upload of the values-only workbook."
 }
 
 # ------------------------------------------------------------------ .env
 Step ".env"
 if (-not (Test-Path '.env')) {
     Copy-Item '.env.example' '.env'
-    Write-Host "    wrote .env from .env.example — EDIT IT before starting:"
+    Write-Host "    wrote .env from .env.example - EDIT IT before starting:"
     Write-Host "      TELEGRAM_BOT_TOKEN, OPERATOR_CHAT_IDS"
     Write-Host "      (going live) MOCK_MODE=false, ELEVENLABS_API_KEY + voice ids,"
     Write-Host "      PEXELS_API_KEY, SEC_USER_AGENT, GITHUB_MODELS_TOKEN"
 } else {
-    Write-Host "    .env already exists — left alone"
+    Write-Host "    .env already exists - left alone"
 }
 
 # ---------------------------------------------------------------- assets
@@ -163,4 +184,7 @@ Start the bot:
 
 To run it in the background at logon, register the scheduled task:
     powershell -ExecutionPolicy Bypass -File deploy\install-task.ps1
+
+Reminder: this path is unmaintained. deploy/bootstrap.sh under WSL2 is
+the supported installer.
 "@ -ForegroundColor Green

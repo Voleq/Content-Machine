@@ -50,7 +50,7 @@ def test_foreign_filer_degrades_to_none(settings):
 # --------------------------------------------------------------- segment / flag
 
 def _sample_html(settings) -> str:
-    return (settings.fixtures_dir / "filings" / "sample_10k.html").read_text()
+    return (settings.fixtures_dir / "filings" / "sample_10k.html").read_text(encoding="utf-8")
 
 
 def test_segment_filing_labels_sections(settings):

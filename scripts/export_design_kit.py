@@ -756,7 +756,7 @@ def verify_and_manifest(out_root: Path, results: list[DocResult], started: float
             for r in results
         ],
         "assets": {row["name"]: row for row in sorted(MANIFEST_ROWS, key=lambda r: r["name"])},
-    }, indent=1, sort_keys=False) + "\n")
+    }, indent=1, sort_keys=False) + "\n", encoding="utf-8")
     return {"transparent": transparent, "opaque": opaque}
 
 

@@ -105,7 +105,7 @@ def sample_hook_opener(script_sha: str, settings: Settings) -> str:
     re-renders are idempotent, different scripts get fresh openers)."""
     bank_file = settings.assets_dir / "hook_bank.json"
     try:
-        openers = json.loads(bank_file.read_text()).get("openers") or []
+        openers = json.loads(bank_file.read_text(encoding="utf-8")).get("openers") or []
     except (FileNotFoundError, json.JSONDecodeError):
         openers = []
     if not openers:
@@ -467,7 +467,7 @@ def render_short(
     ass_path.write_text(build_karaoke_ass(
         tts.words, play_res=(W, H), font_size=px(62), margin_v=px(120),
         duration=duration,
-    ))
+    ), encoding="utf-8")
 
     # ------------------------------------------------------------- audio
     audio = [AudioTrack(path=tts.audio_path, start_s=0.0, gain_db=0.0, voice=True)]
@@ -550,5 +550,5 @@ def render_short(
         ],
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),
-    }, indent=2))
+    }, indent=2), encoding="utf-8")
     return out_path, manifest_path

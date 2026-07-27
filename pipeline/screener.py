@@ -136,10 +136,10 @@ class MockMarketSource:
         self.dir = settings.fixtures_dir / "screener"
 
     def trending_movers(self) -> list[dict]:
-        return json.loads((self.dir / "yahoo_trending.json").read_text())["quotes"]
+        return json.loads((self.dir / "yahoo_trending.json").read_text(encoding="utf-8"))["quotes"]
 
     def value_candidates(self) -> list[dict]:
-        return json.loads((self.dir / "yahoo_value.json").read_text())["quotes"]
+        return json.loads((self.dir / "yahoo_value.json").read_text(encoding="utf-8"))["quotes"]
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +156,7 @@ class StockTwitsSentimentSource:
     def trending(self) -> list[dict] | None:
         # short-TTL cache (§14): the endpoint is rate-limited and may change
         try:
-            cached = json.loads(self.cache_file.read_text())
+            cached = json.loads(self.cache_file.read_text(encoding="utf-8"))
             if time.time() - cached["ts"] < self.settings.screener_cache_ttl_s:
                 return cached["symbols"]
         except (FileNotFoundError, json.JSONDecodeError, KeyError):
@@ -186,7 +186,7 @@ class StockTwitsSentimentSource:
 
     def _save_cache(self, symbols: list[dict]) -> None:
         self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-        self.cache_file.write_text(json.dumps({"ts": time.time(), "symbols": symbols}))
+        self.cache_file.write_text(json.dumps({"ts": time.time(), "symbols": symbols}), encoding="utf-8")
 
 
 class MockSentimentSource:
@@ -194,7 +194,7 @@ class MockSentimentSource:
         self.dir = settings.fixtures_dir / "screener"
 
     def trending(self) -> list[dict] | None:
-        return json.loads((self.dir / "stocktwits_trending.json").read_text())["symbols"]
+        return json.loads((self.dir / "stocktwits_trending.json").read_text(encoding="utf-8"))["symbols"]
 
 
 # ---------------------------------------------------------------------------
@@ -392,7 +392,7 @@ def _save_last_screen(settings: Settings, result: dict) -> None:
     try:
         path = settings.state_dir / "last_screen.json"
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"ts": time.time(), "tickers": entries}))
+        path.write_text(json.dumps({"ts": time.time(), "tickers": entries}), encoding="utf-8")
     except OSError as e:  # advisory only — never let it break a screen
         log.warning("could not persist last screen: %s", e)
 
@@ -402,7 +402,7 @@ def last_screen_context(settings: Settings, ticker: str) -> str:
     when unknown/stale (older than one trading day)."""
     path = settings.state_dir / "last_screen.json"
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return ""
     if time.time() - float(data.get("ts", 0)) > 86400:
@@ -426,7 +426,7 @@ def last_screen_lane(settings: Settings, ticker: str) -> str:
     """
     path = settings.state_dir / "last_screen.json"
     try:
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return ""
     if time.time() - float(data.get("ts", 0)) > 86400:

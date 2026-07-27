@@ -168,9 +168,9 @@ def test_stale_ideas_are_pruned(settings):
     """A three-week-old "it moved 9% today" is not an idea."""
     q = IdeaQueue(settings)
     q.add("OLD", "moved 9% today", "screener")
-    rows = json.loads(q.path.read_text())
+    rows = json.loads(q.path.read_text(encoding="utf-8"))
     rows[0]["added_at"] = (datetime.now(timezone.utc) - timedelta(days=60)).isoformat()
-    q.path.write_text(json.dumps(rows))
+    q.path.write_text(json.dumps(rows), encoding="utf-8")
     q.add("NEW", "fresh", "screener")
 
     assert q.prune(30) == 1

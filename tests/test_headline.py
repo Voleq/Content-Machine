@@ -35,7 +35,7 @@ def xlsx_bytes() -> bytes:
 
 
 def _headlines() -> dict:
-    return json.loads((FIXTURES / "headlines" / "headlines.json").read_text())
+    return json.loads((FIXTURES / "headlines" / "headlines.json").read_text(encoding="utf-8"))
 
 
 # ------------------------------------------------------------ mode detection
@@ -73,7 +73,7 @@ def test_macro_produces_prompt_without_company_data(core):
     reply = core.headline_command(CHAT, [h["symbol"], *h["headline"].split()])
     assert reply.files and reply.files[0].name == "prompt_headline.md"
     assert "macro" in reply.text.lower() and "SPY" in reply.text
-    prompt = reply.files[0].read_text()
+    prompt = reply.files[0].read_text(encoding="utf-8")
     assert _unfilled(prompt) == [], "every placeholder filled"
     assert "## ACTIVE MODE — macro" in prompt
     assert "no single-company" in prompt and "index" in prompt.lower()
@@ -89,7 +89,7 @@ def test_macro_produces_prompt_without_company_data(core):
 def test_macro_intake_is_approvable_without_company_data(core):
     h = _headlines()["macro"]
     core.headline_command(CHAT, [h["symbol"], *h["headline"].split()])
-    macro_json = (FIXTURES / "scripts" / "headline_macro.json").read_text()
+    macro_json = (FIXTURES / "scripts" / "headline_macro.json").read_text(encoding="utf-8")
     reply = core.intake_script(CHAT, macro_json)
     assert "SPY — SHORT — ready to render" in reply.text  # approvable, no company data
     assert reply.keyboard is not None
@@ -107,7 +107,7 @@ def test_company_asks_for_data_then_hands_prompt(core, xlsx_bytes):
     # uploading the data now yields the headline prompt (not the short/long pair)
     reply2 = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     assert any(f.name == "prompt_headline.md" for f in reply2.files)
-    prompt = next(f for f in reply2.files if f.name == "prompt_headline.md").read_text()
+    prompt = next(f for f in reply2.files if f.name == "prompt_headline.md").read_text(encoding="utf-8")
     assert _unfilled(prompt) == []
     assert "## ACTIVE MODE — company" in prompt
     assert "ps_ttm" in prompt, "the ticker's numbers are injected"
@@ -121,7 +121,7 @@ def test_earnings_framing_with_data(core, xlsx_bytes):
     h = _headlines()["earnings"]
     reply = core.headline_command(CHAT, [h["symbol"], *h["headline"].split()])
     assert any(f.name == "prompt_headline.md" for f in reply.files)
-    prompt = next(f for f in reply.files if f.name == "prompt_headline.md").read_text()
+    prompt = next(f for f in reply.files if f.name == "prompt_headline.md").read_text(encoding="utf-8")
     assert "## ACTIVE MODE — earnings" in prompt
     assert "beat" in prompt.lower() and "guidance" in prompt.lower()
 
@@ -129,7 +129,7 @@ def test_earnings_framing_with_data(core, xlsx_bytes):
 def test_url_headline_is_offline_and_used_verbatim(core):
     # a URL in MOCK_MODE is never fetched (offline) — it's used as the headline
     reply = core.headline_command(CHAT, ["SPY", "https://example.com/news/cpi-hot"])
-    prompt = reply.files[0].read_text()
+    prompt = reply.files[0].read_text(encoding="utf-8")
     assert "https://example.com/news/cpi-hot" in prompt
     # The URL itself is still never fetched. Since P3.4 a MACRO headline is
     # grounded in the actual FRED series instead of an empty summary — read
@@ -148,7 +148,7 @@ def test_a_company_url_headline_still_has_no_summary_offline(core):
     shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
                 ws.path / "dennis_data.xlsx")
     reply = core.headline_command(CHAT, ["EXMPL", "https://example.com/news/x"])
-    prompt = next(f for f in reply.files if f.suffix == ".md").read_text()
+    prompt = next(f for f in reply.files if f.suffix == ".md").read_text(encoding="utf-8")
     assert "no article summary" in prompt
     assert "THE ACTUAL SERIES" not in prompt
 
@@ -159,7 +159,7 @@ def test_a_company_url_headline_still_has_no_summary_offline(core):
     ("company", "EXMPL"), ("earnings", "EXMPL"), ("macro", "SPY"),
 ])
 def test_framing_produces_valid_short_json(settings, mode, ticker):
-    raw = (FIXTURES / "scripts" / f"headline_{mode}.json").read_text()
+    raw = (FIXTURES / "scripts" / f"headline_{mode}.json").read_text(encoding="utf-8")
     script, warnings = parse_short_script(raw, settings)
     assert script.ticker == ticker
     assert script.format == "short"
@@ -177,7 +177,7 @@ def test_macro_renders_without_company_data(settings, tmp_path):
 
     s = settings.model_copy(update={"short_width": 540, "short_height": 960})
     s.ensure_runtime_dirs()
-    raw = (FIXTURES / "scripts" / "headline_macro.json").read_text()
+    raw = (FIXTURES / "scripts" / "headline_macro.json").read_text(encoding="utf-8")
     script, _ = parse_short_script(raw, s)
     assert script.ticker == "SPY"
     tts = TTSEngine(s).synthesize(script.audio_script, "short")
@@ -186,4 +186,4 @@ def test_macro_renders_without_company_data(settings, tmp_path):
     # deliberately NO dennis_data.xlsx — macro anchors on the index chart
     out, manifest = render_short(script, tts, ws, s)
     assert out.exists() and out.stat().st_size > 0
-    assert json.loads(Path(manifest).read_text())["ticker"] == "SPY"
+    assert json.loads(Path(manifest).read_text(encoding="utf-8"))["ticker"] == "SPY"

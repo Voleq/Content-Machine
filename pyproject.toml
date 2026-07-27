@@ -51,10 +51,17 @@ filings = [
     "beautifulsoup4==4.15.0",
 ]
 # Driving Excel for the data refresh (P3.1b). Windows-only by nature — the
-# COM bridge does not exist elsewhere — and optional: without it the bot
-# reports Excel as unavailable and the manual upload path carries on.
+# COM bridge does not exist elsewhere — and optional: on the Linux/WSL2
+# target it never installs, `excel_available()` reports it as unavailable,
+# and the manual upload path (now the primary route) carries on.
+#
+# NOT pinned exactly, unlike every other dependency here. `pywin32==313` was
+# pinned to a version that does not exist — PyPI tops out at 312 — so the
+# extra could never install at all. A floor is honest about what this is: an
+# optional bridge for a platform the suite does not run on, where pinning a
+# build number we cannot test buys nothing.
 excel = [
-    "pywin32==313; sys_platform == 'win32'",
+    "pywin32>=306; sys_platform == 'win32'",
 ]
 # YouTube upload + retention feedback (P3.5). Optional: without it the bot
 # hands you the upload package to post by hand, exactly as before.

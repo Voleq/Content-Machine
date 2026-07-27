@@ -148,7 +148,7 @@ def test_metric_chart_no_data(settings, tmp_path):
 
 
 def test_fixture_matches_series_schema(fixtures_dir):
-    data = json.loads((fixtures_dir / "prices" / "EXMPL.json").read_text())
+    data = json.loads((fixtures_dir / "prices" / "EXMPL.json").read_text(encoding="utf-8"))
     assert len(data["dates"]) == len(data["closes"])
     series = PriceSeries.from_json(json.dumps(data))
     assert series.ticker == "EXMPL"
