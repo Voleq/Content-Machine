@@ -369,12 +369,34 @@ def check_freshness(as_of: str, settings: Settings,
                     workspace: Path | None = None) -> list[Finding]:
     """A render built on a stale snapshot states old numbers as current.
 
-    When the bot refreshed the workbook itself (P3.1b) the recorded refresh
-    timestamp is the authority, not the sheet's `as_of_date` and not the
-    file's mtime: `=TODAY()` only tells you which day the file was last
-    recalculated, and re-saving a workbook resets its mtime without touching
-    a single number.
+    The workbook's own as-of date is the authority. The numbers are refreshed
+    outside the bot now and uploaded, so the sheet is the only thing that
+    knows when they were actually pulled — and it is the same date the
+    operator can see in the file they exported.
+
+    Deliberately NOT the file's mtime: re-saving a workbook, or copying it
+    between machines, resets that without touching a single number, which is
+    exactly the case this gate exists to catch.
+
+    The COM refresh stamp is still honoured when one is present, but only as a
+    fallback for a workspace populated that way, and only when the sheet
+    carries no date of its own. On the Linux target nothing writes it.
     """
+    parsed = _parse_as_of(as_of)
+
+    if parsed is not None:
+        age = ((today or date.today()) - parsed).days
+        if age > settings.data_max_age_days:
+            severity = "block" if settings.data_stale_blocks else "warn"
+            return [Finding(
+                gate="freshness", severity=severity,
+                message=(f"the data export is {age} days old (as of {as_of}; "
+                         f"limit {settings.data_max_age_days}) — refresh it "
+                         f"and upload dennis_data.xlsx again"))]
+        return []
+
+    # No usable date on the sheet. Fall back to a recorded COM refresh if this
+    # workspace has one.
     if workspace is not None:
         from pipeline.excel_refresh import refresh_age_days
 
@@ -389,28 +411,26 @@ def check_freshness(as_of: str, settings: Settings,
                     gate="freshness", severity=severity,
                     message=(f"the data was last refreshed {age_days:.1f} days "
                              f"ago (limit {settings.data_max_age_days}) — "
-                             f"run /refresh"))]
+                             f"refresh it and upload it again"))]
             return []
+
     if not as_of:
         return [Finding(gate="freshness", severity="warn",
                         message="the data export carries no as-of date")]
+    return [Finding(gate="freshness", severity="warn",
+                    message=f"could not read the as-of date {as_of!r}")]
+
+
+def _parse_as_of(as_of: str) -> date | None:
+    """The sheet's as-of date, or None when it is absent or unreadable."""
+    if not as_of:
+        return None
     for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
         try:
-            parsed = datetime.strptime(as_of.strip()[:10], fmt).date()
-            break
+            return datetime.strptime(as_of.strip()[:10], fmt).date()
         except ValueError:
             continue
-    else:
-        return [Finding(gate="freshness", severity="warn",
-                        message=f"could not read the as-of date {as_of!r}")]
-    age = ((today or date.today()) - parsed).days
-    if age > settings.data_max_age_days:
-        severity = "block" if settings.data_stale_blocks else "warn"
-        return [Finding(
-            gate="freshness", severity=severity,
-            message=(f"the data export is {age} days old (limit "
-                     f"{settings.data_max_age_days}) — refresh dennis_data.xlsx"))]
-    return []
+    return None
 
 
 # --------------------------------------------------------------------------
