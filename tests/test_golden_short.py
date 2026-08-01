@@ -43,9 +43,14 @@ from pipeline.tts import TTSEngine
 GOLDEN_NAME = "short_hosted"
 ROOT = Path(__file__).resolve().parents[1]
 
-# A hosted short exercising the whole grammar: bookends, a two-shot return,
-# card tags that resolve and one that falls through to a blank layout, a
-# played animation with slots, delivery direction, and the light payoff card.
+# A hosted short exercising the whole grammar: bookends, two-shot returns,
+# card tags that fall through to the blank layouts, played animations with
+# slots, delivery direction, and the light payoff card.
+#
+# Deliberately loaded to sit INSIDE the 18-22-events-per-75s band. The first
+# version of this fixture was thin enough to trip the "reads as a slideshow"
+# warning, which meant the pacing contract had only ever been exercised from
+# below — through the one path that renders it.
 HOSTED_RAW = json.dumps({
     "ticker": "EXMPL",
     "format": "short",
@@ -54,14 +59,21 @@ HOSTED_RAW = json.dumps({
     "audio_script": (
         "EXMPL is up twenty nine percent today on five times average volume. "
         "[BEAT] The news is a partnership, which is a press release, [DRY] not "
-        "a purchase order. [PROP: crushed-flat] But here is the part nobody "
-        "screenshots. Revenue went four hundred million to four ninety six in "
-        "five years. That is a plateau in a costume. [TERM: owner earnings] "
-        "Losses got [SCRIBBLE: circle -> Net income] wider every year. "
-        "[PROP: numbers-raining] I know a value trap; my own account went from "
-        "twenty five k to zero. [SIGH] In fairness there is enough cash to "
-        "survive being wrong for a while. [DOODLE: crash] The chart went "
-        "vertical. The business went sideways. "
+        "a purchase order. [PROP: crushed-flat] No revenue attached to it "
+        "anywhere. Plus a squeeze, because eleven percent of the float was "
+        "short. [PROP: chart-ride-up] But here is the part nobody screenshots. "
+        "[BEAT] Revenue went four hundred million to four ninety six in five "
+        "years. That is a plateau in a costume. [TERM: owner earnings] Losses "
+        "got [SCRIBBLE: circle -> Net income] wider every year. "
+        "[PROP: numbers-raining] Free cash flow went negative and stayed "
+        "there, which means you pay them to own it. [PROP: push-boulder] "
+        "The share count grows six percent a year, so your slice shrinks while "
+        "you wait. [BIGNUM: dilution] I know a value trap; my own account went "
+        "from twenty five k to zero. [SIGH] In fairness there is enough cash on "
+        "the balance sheet to survive being wrong for a while. "
+        "[PROP: umbrella-red-rain] Which is the nicest thing I can say, and I "
+        "am reaching. [DOODLE: crash] The chart went vertical. The business "
+        "went sideways. "
         "Noise. A press release and a squeeze, stapled to five years of drift."
     ),
     "move_summary": "+29% today · 5× average volume",
@@ -303,6 +315,35 @@ def test_frames_match_the_golden_set(hosted):
     assert all(d.ok for d in diffs), check_report(diffs)
 
 
+def test_the_cut_is_paced_inside_the_band(hosted):
+    """A properly loaded short produces no pacing complaint at all.
+
+    The band is a target, not a direction. Asserting the clean case is what
+    keeps the rule honest — a contract only ever checked against a cut that
+    violates it has never been shown to pass.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    assert manifest["pacing_warnings"] == [], manifest["pacing_warnings"]
+
+
+def test_data_beats_hold_and_punctuation_does_not(hosted):
+    """The two classes, measured on the cues that actually reached the cut."""
+    from pipeline.timeline import SHORT_DATA_HOLD_S, SHORT_PUNCT_HOLD_S
+
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    seen = {"data": 0, "punct": 0}
+    for cue in manifest["cues"]:
+        klass = cue["payload"].get("class")
+        if klass not in seen:
+            continue
+        seen[klass] += 1
+        hold = float(cue["payload"]["hold"])
+        lo, hi = SHORT_DATA_HOLD_S if klass == "data" else SHORT_PUNCT_HOLD_S
+        assert lo <= hold <= hi, f"{cue['payload'].get('tag')} held {hold}s"
+    assert seen["data"] and seen["punct"], \
+        f"the fixture must exercise both classes: {seen}"
+
+
 def test_the_tag_grammar_reached_the_frame(hosted):
     """The short can address the library now — asserted on what it used."""
     settings, script, tts, out, manifest, frames, warnings = hosted
@@ -311,7 +352,9 @@ def test_the_tag_grammar_reached_the_frame(hosted):
         "a slotted, animated shorts asset should have played"
     assert "blanks/term-card-blank" in used, \
         "[TERM] with no named artwork should fall through to the blank layout"
-    assert len(used) >= 8, f"only reached {len(used)} kit assets: {sorted(used)}"
+    assert "blanks/big-number-blank" in used, \
+        "[BIGNUM] should fall through to its blank layout the same way"
+    assert len(used) >= 10, f"only reached {len(used)} kit assets: {sorted(used)}"
 
     # delivery direction reaches the voice, never the screen
     from pipeline.models import DELIVERY_TAG_TYPES

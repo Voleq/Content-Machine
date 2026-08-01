@@ -430,12 +430,17 @@ def plan_short_pacing(
         t = max(cue.t, prev_end)
 
         # Rule 3 — two data beats in a row need something between them.
-        if is_data and prev_was_data:
+        #
+        # Only a crowded pair is a problem: two things to read with a real gap
+        # between them is a normal edit. The warning has to be true, because it
+        # is what the operator reads — saying "moved" when nothing moved is how
+        # a warning stops being worth reading.
+        if is_data and prev_was_data and t < prev_end + SHORT_PUNCT_HOLD_S[0]:
+            t = prev_end + SHORT_PUNCT_HOLD_S[0]
             warnings.append(
-                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] follows "
-                f"another data beat with no punctuation between them — moved "
-                f"back so the first one can be read")
-            t = max(t, prev_end + SHORT_PUNCT_HOLD_S[0])
+                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] "
+                f"landed straight on top of another data beat — pushed to "
+                f"{t:.1f}s so the first one can be read")
 
         if is_data and t + lo > payoff:
             warnings.append(

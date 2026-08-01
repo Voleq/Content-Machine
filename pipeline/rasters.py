@@ -658,10 +658,28 @@ def parse_row_values(values: list[str]) -> list[float] | None:
     return out
 
 
+# The sheet's metrics are authored against a 1000px-wide card — the width the
+# SHORT's design layout asks for at full resolution.
+SHEET_DESIGN_W = 1000
+
+
 def sheet_layout(settings: Settings, n_rows: int, *, width: int,
-                 row_h: int = 118, title_h: int = 96, years_h: int = 64,
-                 pad: int = 28) -> dict:
-    """Pixel geometry shared by the base card, row clips and zoom pops."""
+                 row_h: int | None = None, title_h: int | None = None,
+                 years_h: int | None = None, pad: int | None = None) -> dict:
+    """Pixel geometry shared by the base card, row clips and zoom pops.
+
+    Every metric scales with the card's width. They used to be fixed pixel
+    counts, so a card rendered at half size kept full-size rows and a
+    full-size title — the same sheet, but proportioned differently. That makes
+    a reduced-resolution render stop being a miniature of the real one, which
+    matters most for the golden frames, whose whole job is to be evidence
+    about what ships.
+    """
+    s = max(width, 1) / SHEET_DESIGN_W
+    row_h = row_h if row_h is not None else max(int(118 * s), 24)
+    title_h = title_h if title_h is not None else max(int(96 * s), 20)
+    years_h = years_h if years_h is not None else max(int(64 * s), 14)
+    pad = pad if pad is not None else max(int(28 * s), 6)
     return {
         "width": width,
         "pad": pad,
@@ -693,11 +711,20 @@ def numbers_sheet_base(settings: Settings, n_rows: int, years: list[str], *,
            "from the filing · direction, not a snapshot", font=sub_font,
            fill=(*MUTED, 255))
 
-    # year headers over the value columns
+    # Year headers over the value columns, fitted to the column they sit in.
+    # The row VALUES have always shrunk to fit; the headers did not, so a
+    # narrow card printed "2021 2022 2023" on top of itself while the numbers
+    # under them stayed legible.
     if years:
-        yr_font = load_font(settings, MONO_BOLD, int(ly["years_h"] * 0.44))
         x0 = ly["label_w"]
         cols_w = W - x0 - ly["bars_w"] - ly["pad"]
+        cell_w = cols_w / len(years)
+        ysize = max(int(ly["years_h"] * 0.44), 1)
+        yr_font = load_font(settings, MONO_BOLD, ysize)
+        widest = max((str(y) for y in years), key=len)
+        while ysize > 7 and d.textlength(widest, font=yr_font) > cell_w - 4:
+            ysize -= 1
+            yr_font = load_font(settings, MONO_BOLD, ysize)
         for j, y in enumerate(years):
             cx = x0 + cols_w * (j + 0.5) / len(years)
             d.text((cx - d.textlength(str(y), font=yr_font) / 2,
