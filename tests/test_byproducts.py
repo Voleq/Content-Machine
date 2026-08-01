@@ -207,7 +207,7 @@ def test_the_ticker_reaches_the_artwork(settings, tmp_path):
     from pipeline.kit import load_kit
 
     kit = load_kit(settings.assets_dir)
-    first = kit.family("thumbs")[0]
+    first = kit.family(BYPRODUCT_FAMILIES["thumbnails"][0][0])[0]
     src_kit = kit.path(first)
     made = tmp_path / "byproducts" / f"thumbnails_{first.rsplit('/', 1)[-1]}.png"
     assert made.exists()
@@ -218,10 +218,11 @@ def test_the_families_cover_what_the_kit_ships(settings):
     from pipeline.kit import load_kit
 
     kit = load_kit(settings.assets_dir)
-    for _label, (family, cap) in BYPRODUCT_FAMILIES.items():
-        assert kit.family(family), f"{family} is empty"
-        assert cap >= len(kit.family(family)), \
-            f"{family} ships more than the cap of {cap}"
+    for label, (families, cap) in BYPRODUCT_FAMILIES.items():
+        shipped = [a for fam in families for a in kit.family(fam)]
+        assert shipped, f"{label} draws from {families}, all of them empty"
+        assert cap >= len(shipped), \
+            f"{label} ships {len(shipped)} but the cap silently trims to {cap}"
 
 
 def test_one_broken_layout_does_not_cost_the_others(settings, tmp_path,

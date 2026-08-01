@@ -112,13 +112,6 @@ CLOSE_KEY = "shorts/open-close/e-close"
 # is the shape the channel ends on.
 PAYOFF_CARDS = {"noise": "short/card-noise", "signal": "short/card-signal"}
 
-# The desk set. `screen` takes whatever the beat needs.
-DESK_KEYS = (
-    "shorts/the-world/d-desk-wide",
-    "shorts/the-world/d-desk-over-shoulder",
-    "shorts/the-world/d-desk-side",
-)
-
 # --------------------------------------------------------------------------
 # The vertical layout, in 1080-wide design coordinates on a 1080x1920 frame.
 #
@@ -139,7 +132,7 @@ STAGE_H = 760
 LEDGER_Y = 1150
 HOST_Y = 430          # the 16:9 shots are full-width; this centres them
 INSET_Y = 1120        # the two-shot inset, clear of the ledger
-CAPTION_MARGIN_V = 150
+CAPTION_MARGIN_V = 150  # the caption band's distance from the bottom edge
 
 # Per-beat layout variants from the design kit's Short Variants sheet. The
 # timeline picks one per beat from the script hash, so two shorts cut on the
@@ -306,6 +299,30 @@ def render_short(
     # Everything used to be placed with t_end=duration, so a sixty-second short
     # accumulated every card it had ever shown and finished with all of them on
     # screen at once.
+    # When a data tag beat takes the stage it REPLACES what was there, so the
+    # marks belonging to the old beat have to go with it. A scribble anchored
+    # to a numbers row otherwise carries on being drawn over the card that
+    # replaced the sheet, which is what it did.
+    stage_claims = sorted(
+        (float(c.t), float(c.t) + float(c.payload.get("hold", 0.0)))
+        for c in cues
+        if c.payload.get("class") == "data")
+
+    def clip_to_stage(t0: float, default: float) -> tuple[float, float]:
+        """A mark's window, with any stage claim taken out of it.
+
+        Two ways a mark and a claim collide, and both were visible in a real
+        render: the mark is up when a card lands (so it draws over the card),
+        and the mark fires while a card is already up (so it appears on
+        something it has nothing to do with). The first shortens it; the
+        second defers it until the sheet is back.
+        """
+        for a, b in stage_claims:
+            if a <= t0 < b:
+                t0 = b
+        nxt = next((a for a, _ in stage_claims if a > t0 + 0.05), None)
+        return t0, (min(default, nxt) if nxt is not None else default)
+
     gut_t = float(numbers.t)
     trap_cue = next((c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP), None)
     trap_t = float(trap_cue.t) if trap_cue is not None else None
@@ -431,13 +448,13 @@ def render_short(
             y = chart_pos[1] + int(ly) - sh // 2
             # a mark on the chart leaves with the chart; a mark on a row
             # leaves with the sheet. Neither outlives what it points at.
-            t_end = gut_t
+            t_start, t_end = clip_to_stage(c.t, gut_t)
         else:
             i = int(c.payload["row_index"] or 0)
             rx, ry = row_geo.get(i, (sheet_pos[0], sheet_pos[1]))
             sw, sh = px(1000), layout["row_h"]
             x, y = rx, ry
-            t_end = sheet_end
+            t_start, t_end = clip_to_stage(c.t, sheet_end)
         x = min(max(x, px(6)), W - sw - px(6))
         y = min(max(y, px(6)), H - sh - px(6))
         clip = frames_to_alpha_clip(
@@ -446,7 +463,7 @@ def render_short(
             fps, rdir / f"scribble_{k}.mov",
         )
         layers.append(OverlayLayer(
-            path=clip, x=x, y=y, t_start=c.t, t_end=t_end,
+            path=clip, x=x, y=y, t_start=t_start, t_end=t_end,
             is_video=True, hold=True, name=f"scribble_{k}_{target}",
         ))
         note = (c.payload.get("note") or "").strip()
@@ -464,7 +481,7 @@ def render_short(
                 ny = y - note_img.height + px(10)
             layers.append(OverlayLayer(
                 path=note_path, x=max(nx, px(10)), y=max(ny, px(10)),
-                t_start=c.t, t_end=t_end, fade_in=0.15, name=f"note_{k}",
+                t_start=t_start, t_end=t_end, fade_in=0.15, name=f"note_{k}",
             ))
 
     # ------------------------------- count-up on the key number(s)
@@ -481,9 +498,10 @@ def render_short(
         frames = count_up_frames(settings, value, width=cw, height=ch,
                                  fps=fps, seconds=0.7, align="center")
         clip = frames_to_alpha_clip(frames, fps, rdir / f"countup_{k}.mov")
+        cu_start, cu_end = clip_to_stage(c.t, min(c.t + 1.4, sheet_end))
         layers.append(OverlayLayer(
             path=clip, x=int(rx + px(1000) - layout["bars_w"] - cw),
-            y=ry, t_start=c.t, t_end=min(c.t + 1.4, sheet_end),
+            y=ry, t_start=cu_start, t_end=cu_end,
             is_video=True, hold=True, name=f"countup_{k}",
         ))
 
@@ -551,9 +569,13 @@ def render_short(
             seed=f"{script.ticker}|doodle|{k}",
         )
         sx, sy = doodle_slots[k % len(doodle_slots)]
+        # An inline mark rides on top of the frame — but not on top of a card
+        # it has nothing to do with. Deferred past an active data beat, the
+        # same way a numbers-row annotation is.
+        d_start, _ = clip_to_stage(c.t, duration)
         layers.append(OverlayLayer(
             path=clip, x=min(sx, W - cw), y=min(sy, H - ch),
-            t_start=c.t, t_end=min(c.t + hold, duration),
+            t_start=d_start, t_end=min(d_start + hold, duration),
             is_video=True, name=f"doodle_{k}_{visual.key[:16]}",
         ))
 
@@ -570,9 +592,13 @@ def render_short(
             fps=fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
         )
         clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_inline_{k}.mov")
+        # A callout naming a number belongs on the frame that shows it, so it
+        # waits out a card that has claimed the stage rather than drawing
+        # "Net income" across an unrelated term definition.
+        s_start, _ = clip_to_stage(c.t, duration)
         layers.append(OverlayLayer(
-            path=clip, x=int((W - sw) / 2), y=px(560),
-            t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
+            path=clip, x=int((W - sw) / 2), y=px(STAGE_Y + 300),
+            t_start=s_start, t_end=min(s_start + hold + 0.5, duration),
             is_video=True, hold=True, name=f"scribble_inline_{k}",
         ))
 
@@ -633,9 +659,13 @@ def render_short(
         card_clip = frames_to_alpha_clip(
             stamp_slam_frames(card_img, fps=fps, seconds=0.45),
             fps, rdir / "payoff_card.mov")
+        # The close can start before the payoff on a script whose conclusion
+        # lands late: the timeline gives the host bookend a floor of three
+        # seconds regardless. Clamp rather than emit a backwards window.
+        card_end = max(min(payoff_t + 2.4, close_t), payoff_t + 0.6)
         layers.append(OverlayLayer(
             path=card_clip, x=int((W - card_img.width) / 2), y=px(STAGE_Y + 140),
-            t_start=payoff_t, t_end=min(payoff_t + 2.4, close_t),
+            t_start=payoff_t, t_end=min(card_end, duration),
             is_video=True, hold=True, name="payoff_card",
         ))
     else:
@@ -647,9 +677,14 @@ def render_short(
                           accent=payoff_layout["accent"], bg=(250, 249, 246, 246))
     conc_path = rdir / "conclusion.png"
     conc_img.save(conc_path)
+    # The signature close is the channel's tail card and owns the frame for
+    # its last beat — the payoff line and the host both end when it lands,
+    # rather than showing through it three deep.
+    e_close_t = max(duration - max(playback_seconds(kit.get(CLOSE_KEY)), 1.6), 0.0)
     layers.append(OverlayLayer(
         path=conc_path, x=int((W - conc_img.width) / 2), y=px(payoff_layout["y"]),
-        t_start=payoff_t, t_end=duration, fade_in=0.25, name="conclusion",
+        t_start=payoff_t, t_end=max(e_close_t, payoff_t + 0.6),
+        fade_in=0.25, name="conclusion",
     ))
 
     # ------------------------------------------------------- the host rig
@@ -697,6 +732,8 @@ def render_short(
             "the SHORT has no host: no usable talk pair in the kit's cold-open "
             "bank. Dennis opens and closes every short on camera — a render "
             "without him is the bug, not a degraded mode. Run `/kit doctor`.")
+    host_close.payload["until"] = min(
+        float(host_close.payload.get("until", duration)), e_close_t)
     add_host(host_close, "close", "close")
     for i, c in enumerate(host_beats):
         add_host(c, "panel", f"beat{i}", inset=True)
@@ -718,8 +755,7 @@ def render_short(
     ))
 
     close_asset = kit.get(CLOSE_KEY)
-    close_hold = max(playback_seconds(close_asset), 1.6)
-    e_close_t = max(duration - close_hold, 0.0)
+    close_hold = duration - e_close_t
     close_clip, _ = render_clip(
         close_asset, rdir / "e_close.mov", duration_s=close_hold, fps=fps,
         settings=settings, display_w=W,
@@ -747,8 +783,8 @@ def render_short(
     # that had been split wherever the page happened to fill up.
     ass_path = rdir / "captions.ass"
     ass_path.write_text(build_phrase_ass(
-        tts.words, play_res=(W, H), font_size=px(58), margin_v=px(150),
-        duration=duration,
+        tts.words, play_res=(W, H), font_size=px(58),
+        margin_v=px(CAPTION_MARGIN_V), duration=duration,
     ), encoding="utf-8")
 
     # ------------------------------------------------------------- audio
@@ -788,6 +824,17 @@ def render_short(
     # The backdrop holds dead still. NOTHING in this pipeline pans or zooms:
     # 84 of the kit's assets carry their own motion, and drift on top of a
     # registered frame sequence makes the registration itself look broken.
+    # A backwards or zero-length window is a filtergraph error, not a
+    # no-op: ffmpeg rejects a negative tpad `stop_duration` and the whole
+    # render dies. Beat boundaries are derived from the audio, so a short
+    # script can legitimately produce one; drop it here rather than let one
+    # degenerate layer cost the cut.
+    degenerate = [l.name for l in layers if l.t_end <= l.t_start]
+    if degenerate:
+        log.warning("dropping %d zero-length layer(s): %s",
+                    len(degenerate), ", ".join(degenerate))
+        layers = [l for l in layers if l.t_end > l.t_start]
+
     base_filter = (
         f"scale={W}:{H}:force_original_aspect_ratio=increase,"
         f"crop={W}:{H},setsar=1,format=yuv420p"

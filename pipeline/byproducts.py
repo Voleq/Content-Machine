@@ -242,12 +242,17 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 
 # The kit families each by-product comes from, and how many of each to emit.
 # Re-pointed at the rebuilt kit. `thumbs`/`social`/`type/end-screens` were
-# families of the old ad-hoc export and no longer exist; these are the
-# equivalents the registry actually carries.
-BYPRODUCT_FAMILIES = {
-    "thumbnails": ("thumbnails", 8),
-    "social": ("restyled/channel", 9),
-    "end_screens": ("chapters/resigned-close", 5),
+# families of the old ad-hoc export and no longer exist.
+#
+# Several families per label, because the rebuilt kit spreads them: the
+# channel marks and the brand scenes are both social cards, and the caps are
+# set above what each ships so nothing is silently dropped — a cap is there to
+# stop a future family of two hundred swamping the folder, not to trim this
+# one.
+BYPRODUCT_FAMILIES: dict[str, tuple[tuple[str, ...], int]] = {
+    "thumbnails": (("thumbnails", "scenes"), 8),
+    "social": (("restyled/channel", "restyled/brand-scenes"), 20),
+    "end_screens": (("chapters/resigned-close",), 12),
 }
 
 
@@ -282,9 +287,10 @@ def build_byproducts(workspace: Path, settings: Settings, *,
     out_dir.mkdir(parents=True, exist_ok=True)
     result = ByProducts()
 
-    for label, (family, cap) in BYPRODUCT_FAMILIES.items():
+    for label, (families, cap) in BYPRODUCT_FAMILIES.items():
         made: list[str] = []
-        for asset in kit.family(family)[:cap]:
+        assets = [a for fam in families for a in kit.family(fam)][:cap]
+        for asset in assets:
             src = kit.path(asset)
             if src is None:
                 continue
