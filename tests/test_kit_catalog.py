@@ -39,50 +39,64 @@ def kit(settings):
 # --------------------------------------------------------------------------
 
 
-def test_every_offered_term_resolves_to_real_artwork(settings, kit):
+def test_every_offered_key_resolves_to_real_artwork(settings, kit):
     """The whole point: nothing is offered that the renderer can't find."""
     catalog = kit_catalog(settings)
-    section = _section(catalog, "[TERM: key]")
-    assert section, "no TERM section in the catalog"
-    for key in section:
-        assert kit.resolve(KIT_TAG_FAMILIES[TagType.TERM], key) is not None, key
-
-
-def test_every_offered_prop_table_and_alert_resolves_too(settings, kit):
-    for header, tag in (("[PROP: key]", TagType.PROP),
+    checked = 0
+    for header, tag in (("[TERM: key]", TagType.TERM),
+                        ("[BIGNUM: key]", TagType.BIGNUM),
+                        ("[PROP: key]", TagType.PROP),
                         ("[TABLE: kind]", TagType.TABLE),
-                        ("[ALERT: kind]", TagType.ALERT),
-                        ("[BIGNUM: key]", TagType.BIGNUM)):
-        keys = _section(catalog := kit_catalog(settings), header)
-        assert keys, f"no {header} section"
-        for key in keys:
+                        ("[ALERT: kind]", TagType.ALERT)):
+        for key in _section(catalog, header):
             assert kit.resolve(KIT_TAG_FAMILIES[tag], key) is not None, \
                 f"{header} offers {key!r}, which resolves to nothing"
-        assert catalog  # silence the walrus lint
+            checked += 1
+    assert checked > 40, f"only {checked} keys offered — the catalog is empty"
 
 
-def test_it_offers_every_term_card_that_exists(settings, kit):
+def test_the_families_with_named_artwork_are_all_offered(settings, kit):
     """Drift in the other direction: shipped artwork the model is never told
-    about is artwork that goes unused, which is how the library ends up feeling
-    incomplete while being full."""
-    offered = set(_section(kit_catalog(settings), "[TERM: key]"))
-    on_disk = {n.split("/")[-1][len("term-"):]
-               for n in kit.family("type/callouts")
-               if n.split("/")[-1].startswith("term-")}
-    on_disk.discard("card-blank")        # the empty layout, offered separately
-    assert on_disk <= offered, f"not offered: {sorted(on_disk - offered)}"
+    about is artwork that goes unused, which is how the library ends up
+    feeling incomplete while being full."""
+    catalog = kit_catalog(settings)
+    for header, tag in (("[TABLE: kind]", TagType.TABLE),
+                        ("[ALERT: kind]", TagType.ALERT)):
+        offered = set(_section(catalog, header))
+        on_disk = {n.rsplit("/", 1)[-1]
+                   for fam in KIT_TAG_FAMILIES[tag] for n in kit.family(fam)}
+        assert on_disk <= offered, \
+            f"{header} does not offer: {sorted(on_disk - offered)}"
+
+
+def test_the_short_catalog_carries_the_whole_beat_library(settings, kit):
+    """51 assets, 74 slots, 27 animated — and the SHORT writer had never been
+    shown any of it, so every script reached for the same four beats."""
+    catalog = kit_catalog(settings, fmt="short")
+    assert "SHORT BEAT LIBRARY" in catalog
+    for family in ("dennis-vs-numbers", "vertical-scenes", "transformations",
+                   "the-world", "open-close"):
+        assert f"  {family}:" in catalog, family
+    # slot names are what the writer supplies, so they have to be named
+    assert "7 slots: rain-1" in catalog
+    assert "6f loop" in catalog and "8f one-shot" in catalog
 
 
 def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):
     """Generated at fill time, so adding artwork is enough."""
     before = kit_catalog(settings)
-    assert "term-brand-new-idea" not in before
+    assert "brand-new-idea" not in before
 
     real = load_kit
 
     def patched(assets_dir):
+        from dataclasses import replace
+
         k = real(assets_dir)
-        k._assets["type/callouts/term-brand-new-idea"] = {"w": 10, "h": 10}
+        template = k.get("blanks/term-card-blank")
+        k._assets["blanks/term-brand-new-idea"] = replace(
+            template, key="blanks/term-brand-new-idea",
+            name="term-brand-new-idea")
         k.family.cache_clear()
         return k
 
@@ -104,13 +118,14 @@ def test_the_blank_layouts_are_explained_rather_than_listed_as_frameworks(settin
     assert "A blank layout exists" in catalog
 
 
-def test_the_nested_long_form_chapter_kits_are_named_individually(settings, kit):
-    """`chapters/long-form/` is a container for four sub-kits, so listing
-    'long-form' would name something that isn't a chapter."""
+def test_the_chapter_kits_are_named_from_the_registry(settings, kit):
+    """Named from the families that ship artwork, so a new chapter kit is
+    offered without a code change and a container is never named as one."""
     kits = _chapter_kits(kit)
-    assert "long-form" not in kits
-    assert any(k.startswith("long-form/") for k in kits), kits
-    assert "moat" in kits and "guidance" in kits
+    assert "chapters" not in kits
+    for chapter in ("moat", "valuation", "the-numbers", "resigned-close",
+                    "guidance-estimates"):
+        assert chapter in kits, kits
 
 
 def test_concepts_carry_a_use_when_because_their_names_do_not_say(settings):
@@ -125,18 +140,27 @@ def test_concepts_carry_a_use_when_because_their_names_do_not_say(settings):
 # --------------------------------------------------------------------------
 
 
-def test_it_stays_a_menu_not_a_dump_of_762_frames(settings, kit):
-    catalog = kit_catalog(settings)
-    assert len(kit) > 700, "sanity: the kit really is that big"
-    assert len(catalog) < 6000, f"catalog is {len(catalog)} chars — too long"
-    assert len(catalog.splitlines()) < 70
+def test_it_stays_a_menu_not_a_dump_of_every_frame(settings, kit):
+    """A 594-frame dump would swamp the prompt it is meant to inform.
+
+    The SHORT gets a larger budget on purpose: its beat library is the half of
+    the kit the writer has to be able to name, and each entry earns its line by
+    carrying the slots it takes.
+    """
+    assert len(kit) >= 384, "sanity: the kit really is that big"
+    long_catalog = kit_catalog(settings, fmt="long")
+    assert len(long_catalog) < 5000, f"long catalog is {len(long_catalog)} chars"
+    assert len(long_catalog.splitlines()) < 70
+    short_catalog = kit_catalog(settings, fmt="short")
+    assert len(short_catalog) < 9000, f"short catalog is {len(short_catalog)} chars"
+    assert len(short_catalog.splitlines()) < 130
 
 
 def test_the_short_and_long_catalogs_differ_where_they_should(settings):
     short = kit_catalog(settings, fmt="short")
     long = kit_catalog(settings, fmt="long")
-    # beat variants are a SHORT concern; chapter kits are a LONG one
-    assert "beat variants" in short and "beat variants" not in long
+    # the beat library is a SHORT concern; chapter kits are a LONG one
+    assert "SHORT BEAT LIBRARY" in short and "SHORT BEAT LIBRARY" not in long
     assert "Chapter kits" in long and "Chapter kits" not in short
     # the tag families are the same in both
     for header in ("[TERM: key]", "[PROP: key]", "[ALERT: kind]"):
@@ -148,7 +172,7 @@ def test_a_missing_kit_says_so_and_points_at_the_escape_hatch(settings, tmp_path
     an empty library is the whole library."""
     s = settings.model_copy(update={"assets_dir": tmp_path / "nothing"})
     catalog = kit_catalog(s)
-    assert "not exported" in catalog
+    assert "not ingested" in catalog
     assert "[ASSET]" in catalog
 
 
@@ -183,7 +207,7 @@ def test_every_writing_prompt_carries_the_catalog_and_the_rules(
                        headline_mode="company")
     assert "{{kit_catalog}}" not in text, "placeholder left unfilled"
     assert "{{craft_rules}}" not in text
-    assert "[TERM: key]" in text
+    assert "[PROP: key]" in text
     assert "[BEAT]" in text
     assert "6-8 seconds" in text
 
@@ -195,7 +219,7 @@ def test_the_angle_prompt_does_not_carry_it(settings, workspace):
     text = fill_prompt("long_angle", "EXMPL", load_company_data(workspace),
                        workspace, settings)
     assert "{{kit_catalog}}" not in text
-    assert "[TERM: key]" not in text
+    assert "[PROP: key]" not in text
 
 
 def test_no_placeholder_is_left_unfilled_in_any_template(settings, workspace):

@@ -377,6 +377,16 @@ class Kit:
     def aliases(self) -> dict[str, str]:
         return dict(self._aliases)
 
+    def dead_mouth_flaps(self) -> tuple[str, ...]:
+        """`-talk` twins identical to the frame they should differ from.
+
+        Read off the raw entries rather than through :meth:`get`, which
+        follows the alias to the base and would report nothing — the flag is
+        on the twin, and the twin is the alias.
+        """
+        return tuple(sorted(k for k, a in self._assets.items()
+                            if a.dead_mouth_flap))
+
     def pick(self, prefix: str, seed: str, *, ledger: "VariantLedger | None" = None,
              record: bool = True) -> Path | None:
         """One asset from a family, chosen deterministically from `seed`.

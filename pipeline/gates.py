@@ -513,8 +513,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "never_used_count": len(never_used),
         "unregistered_pngs": unregistered,
         "aliases": len(kit.aliases()),
-        "dead_mouth_flaps": sorted(
-            k for k in kit.keys() if (a := kit.get(k)) and a.dead_mouth_flap),
+        "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
         "kit_size": len(kit),
     }
 

@@ -270,25 +270,23 @@ def render_long(
 
     # ------------------------------------------------------- the host rig
     # Dennis is composited per segment, lip-synced to that segment's slice of
-    # the voice-over. `HOST_POSES` rotate with the beat index so a long cut
-    # never returns to an identical shot; a missing rig degrades to the
-    # designed backdrop rather than failing the render.
+    # the voice-over. The shot steps through a bank with the beat index so a
+    # long cut never returns to an identical frame; a kit that cannot supply
+    # one degrades to the designed backdrop rather than failing the render.
+    #
+    # The rig moved with the kit: what used to be a pose assembled from mouth
+    # frames is now a composed shot and its `-talk` twin, so `role` replaces
+    # the old expression/facing pair. A two-shot asks for the `panel` bank —
+    # the shots drawn with him beside something.
     host_h = int(H * 0.82)
 
     def _host_input(seg_i: int, seg, seg_len: float, *, panel: bool = False):
         """Add the host clip as an input. Returns (index, x, y) or None."""
         side = seg.payload.get("host_side", "left")
-        if panel:
-            # in a two-shot he faces the panel on the other side
-            facing = "right" if side == "left" else "left"
-            expression = "point"
-        else:
-            facing = "right" if seg_i % 2 == 0 else "left"
-            expression = "talk"
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
-            display_h=host_h, fps=fps,
-            expression=expression, facing=facing, root=settings.assets_dir.parent,
+            kit=kit, settings=settings, display_h=host_h, fps=fps,
+            role="panel" if panel else "beat", shot_index=seg_i,
         )
         if built is None:
             return None
