@@ -74,8 +74,12 @@ def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
 
     try:
         if kind == "host":
-            facing = "right" if idx % 2 == 0 else "left"
-            p = kit.path(f"mascot/host/look-{facing}-talk-open")
+            from pipeline.host import pick_shot
+
+            shot = pick_shot(kit, "beat", idx)
+            # the open-mouth twin: a storyboard of closed mouths reads as a
+            # video with no host in it, which is the thing being checked
+            p = shot.open_.path if shot else None
             return (Image.open(p).convert("RGBA") if p else None), "Dennis (talking)"
 
         if kind in _KIT_KINDS:

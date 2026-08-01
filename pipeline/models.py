@@ -53,6 +53,7 @@ class TagType(str, Enum):
     BROLL = "BROLL"              # alias of CLIP (legacy spelling)
     CHART = "CHART"              # auto-generated chart in the channel style
     SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
+    SHOW_ARTICLE = "SHOW ARTICLE"  # a screenshot of the real article's headline
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
     ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
@@ -76,12 +77,12 @@ class TagType(str, Enum):
 # on screen, so they never claim a segment of their own.
 VISUAL_TAG_TYPES = frozenset({
     TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
-    TagType.CHART, TagType.SHOW_FILING, TagType.SCREENGRAB, TagType.ASSET,
+    TagType.CHART, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.SCREENGRAB, TagType.ASSET,
     TagType.TERM, TagType.BIGNUM, TagType.TABLE, TagType.PROP,
 })
 
 # overlay tag types — composited over the current frame, not a segment.
-# These are the only tags allowed inline in a SHORT audio_script.
 OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
 
 # Delivery direction. These never reach the screen — they are stripped from
@@ -90,14 +91,52 @@ OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
 DELIVERY_TAG_TYPES = frozenset({TagType.BEAT, TagType.SIGH, TagType.FLAT,
                                 TagType.DRY})
 
-# Kit families the design-kit tags resolve against, and how long each needs
-# on screen. A term card and a table are read, not glanced at.
-KIT_TAG_FAMILIES = {
-    TagType.TERM: "type/callouts",
-    TagType.BIGNUM: "type/callouts",
-    TagType.TABLE: "type/tables",
-    TagType.PROP: "props/objects",
-    TagType.ALERT: "type/alerts",
+# What a SHORT's `audio_script` may carry inline.
+#
+# It used to be three tags. The prompt documented [BEAT]/[FLAT]/[SIGH]/[DRY]
+# and the parser dropped them on the floor, so TTS got unpaused text and the
+# delivery was flat by omission — the one failure here you cannot see in a
+# frame. And the whole evidence grammar the LONG has was simply unavailable,
+# which is why a short reached six assets out of 384.
+SHORT_TAG_TYPES = frozenset(
+    OVERLAY_TAG_TYPES | DELIVERY_TAG_TYPES | {
+        TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
+        TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.PROP,
+        TagType.BIGNUM, TagType.TERM, TagType.MEME, TagType.CLIP,
+        TagType.BROLL,
+    })
+
+# Tags that claim the SHORT's frame for a beat (as opposed to riding on top of
+# whatever is showing). Delivery tags claim nothing — they are audio.
+SHORT_SEGMENT_TAG_TYPES = frozenset({
+    TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.SCREENGRAB, TagType.PROP, TagType.BIGNUM, TagType.TERM,
+    TagType.MEME, TagType.CLIP, TagType.BROLL,
+})
+
+# Kit families each design-kit tag resolves against, in search order.
+#
+# A tuple, not a string: the rebuilt kit spreads one tag's artwork across
+# several folders — an ALERT is a press lower-third, a PROP may be a prop, a
+# concept illustration or an in-joke — and a tag pinned to a single hardcoded
+# folder is how most of the library stayed unreachable.
+KIT_TAG_FAMILIES: dict[TagType, tuple[str, ...]] = {
+    TagType.TERM: ("blanks", "type"),
+    TagType.BIGNUM: ("blanks", "type"),
+    TagType.TABLE: ("chapters/sector-comps", "charts-style"),
+    TagType.PROP: ("props", "concepts", "restyled/concepts", "restyled/injokes",
+                   "shorts/dennis-vs-numbers", "shorts/dennis-vs-numbers-2",
+                   "shorts/transformations", "shorts/transformations-2",
+                   "shorts/vertical-scenes", "shorts/vertical-scenes-2"),
+    TagType.ALERT: ("press",),
+}
+
+# The parameterised layout each card tag falls back to when no named artwork
+# exists for the key. These are the blank layouts the previous kit shipped and
+# nothing ever filled: the slot names are the fields the renderer composites.
+KIT_TAG_BLANKS: dict[TagType, str] = {
+    TagType.TERM: "blanks/term-card-blank",
+    TagType.BIGNUM: "blanks/big-number-blank",
 }
 
 

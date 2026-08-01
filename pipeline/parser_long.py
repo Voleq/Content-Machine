@@ -282,11 +282,13 @@ def validate_long_script(
             # design-kit families ([TERM]/[BIGNUM]/[TABLE]/[PROP]/[ALERT]) are
             # owned artwork: an unknown key degrades to a host beat rather
             # than blocking, but the operator should hear about it.
-            family = KIT_TAG_FAMILIES[e.type]
-            if kit.resolve(family, e.payload) is None:
-                options = ", ".join(n.rsplit("/", 1)[-1] for n in kit.family(family)[:8])
+            families = KIT_TAG_FAMILIES[e.type]
+            if kit.resolve(families, e.payload) is None:
+                options = ", ".join(
+                    n.rsplit("/", 1)[-1]
+                    for fam in families for n in kit.family(fam)[:6])
                 warnings.append(
-                    f'[{e.type.value}: {e.payload}] is not in the {family} kit '
+                    f'[{e.type.value}: {e.payload}] is not in {" / ".join(families)} '
                     f"— skipped at render. Available: {options}…"
                 )
         elif e.type is TagType.SCREENGRAB:

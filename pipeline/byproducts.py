@@ -241,10 +241,13 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 
 
 # The kit families each by-product comes from, and how many of each to emit.
+# Re-pointed at the rebuilt kit. `thumbs`/`social`/`type/end-screens` were
+# families of the old ad-hoc export and no longer exist; these are the
+# equivalents the registry actually carries.
 BYPRODUCT_FAMILIES = {
-    "thumbnails": ("thumbs", 8),
-    "social": ("social", 9),
-    "end_screens": ("type/end-screens", 5),
+    "thumbnails": ("thumbnails", 8),
+    "social": ("restyled/channel", 9),
+    "end_screens": ("chapters/resigned-close", 5),
 }
 
 
