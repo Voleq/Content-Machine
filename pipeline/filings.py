@@ -787,7 +787,7 @@ def screenshot_article(url: str, dest: Path, settings: Settings,
     if not url.lower().startswith(("http://", "https://")):
         log.warning("article shot: %r is not an http(s) url", url)
         return None
-    if getattr(settings, "mock_screener", False) or settings.mock_mode:
+    if settings.mocking_screener:
         log.info("MOCK: not fetching %s — the headline card will be drawn", url)
         return None
     with ThreadPoolExecutor(max_workers=1) as ex:

@@ -13,15 +13,16 @@ Hard rules encoded here:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import shutil
 from functools import lru_cache
 from pathlib import Path
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, ValidationError, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -36,7 +37,22 @@ class Settings(BaseSettings):
     )
 
     # ------------------------------------------------------------------ modes
+    # MOCK_MODE is the master switch and the hard cost rule: on by default, and
+    # with it on no paid API can be called at all.
     mock_mode: bool = Field(default=True, alias="MOCK_MODE")
+
+    # Per-subsystem overrides. Unset (None) means "follow MOCK_MODE".
+    #
+    # These exist because "mock" was one undifferentiated flag and nothing on
+    # screen said which parts of a run were fake. /screen returned fixture
+    # tickers and the chart drew synthetic prices, neither labelled, and the
+    # result was a bug report about data that was never real. Splitting them
+    # lets a run be honest about exactly which half is invented — and lets an
+    # operator mock only the expensive one.
+    mock_tts: bool | None = Field(default=None, alias="MOCK_TTS")
+    mock_prices: bool | None = Field(default=None, alias="MOCK_PRICES")
+    mock_screener: bool | None = Field(default=None, alias="MOCK_SCREENER")
+
     log_level: str = "INFO"
 
     # ------------------------------------------------------------------ paths
@@ -50,8 +66,10 @@ class Settings(BaseSettings):
 
     # --------------------------------------------------------------- telegram
     telegram_bot_token: str = ""
-    # Only these chat ids may drive the bot. Comma separated in env.
-    operator_chat_ids: list[int] = Field(default_factory=list, alias="OPERATOR_CHAT_IDS")
+    # Only these chat ids may drive the bot. A JSON array or a bare
+    # comma-separated list; see `_split_csv`.
+    operator_chat_ids: Annotated[list[int], NoDecode] = Field(
+        default_factory=list, alias="OPERATOR_CHAT_IDS")
     # Cloud Bot API upload cap (self-hosted Bot API server raises this).
     telegram_upload_limit_mb: int = 50
     telegram_api_base_url: str = ""  # set when using a self-hosted Bot API server
@@ -363,8 +381,8 @@ class Settings(BaseSettings):
     screen_value_drawdown_pct: float = 40.0  # >= 40% off the 52w high
     stocktwits_base_url: str = "https://api.stocktwits.com"
     screener_cache_ttl_s: int = 900
-    screen_allow_list: list[str] = Field(default_factory=list)
-    screen_deny_list: list[str] = Field(default_factory=list)
+    screen_allow_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
+    screen_deny_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
     # -------------------------------------------------------------- editorial
     disclaimer_text: str = Field(
@@ -387,8 +405,23 @@ class Settings(BaseSettings):
     @field_validator("operator_chat_ids", "screen_allow_list", "screen_deny_list", mode="before")
     @classmethod
     def _split_csv(cls, v):
+        """Accept a JSON array OR a plain comma-separated list.
+
+        `NoDecode` above turns off pydantic-settings' automatic JSON parsing
+        for these three, so this validator sees the raw environment string.
+        That matters: with JSON parsing on, `OPERATOR_CHAT_IDS=1569716319`
+        decoded to an int and blew up with "Input should be a valid list" —
+        a pydantic traceback in answer to the single most obvious thing to
+        type. Both forms work now, and .env.example documents the JSON one.
+        """
         if isinstance(v, str):
-            v = [item.strip() for item in v.split(",") if item.strip()]
+            s = v.strip()
+            if s.startswith("[") or s.startswith("{"):
+                try:
+                    return json.loads(s)
+                except ValueError:
+                    pass  # fall through to CSV; the field error will be clearer
+            v = [item.strip().strip("\"'") for item in s.split(",") if item.strip()]
         return v
 
     @field_validator("delivery_backend")
@@ -399,6 +432,41 @@ class Settings(BaseSettings):
         if v not in allowed:
             raise ValueError(f"DELIVERY_BACKEND must be one of {sorted(allowed)}")
         return v
+
+    # ------------------------------------------------------------------ mocks
+    @property
+    def mocking_tts(self) -> bool:
+        return self.mock_mode if self.mock_tts is None else self.mock_tts
+
+    @property
+    def mocking_prices(self) -> bool:
+        return self.mock_mode if self.mock_prices is None else self.mock_prices
+
+    @property
+    def mocking_screener(self) -> bool:
+        return self.mock_mode if self.mock_screener is None else self.mock_screener
+
+    def active_mocks(self) -> list[str]:
+        """Which subsystems are producing invented data, right now.
+
+        Everything that shows a result to the operator reads this: startup,
+        `/status`, the digest and the validation report. A number nobody
+        labelled as fake is a number somebody will act on.
+        """
+        return [name for name, on in (
+            ("TTS", self.mocking_tts),
+            ("PRICES", self.mocking_prices),
+            ("SCREENER", self.mocking_screener),
+        ) if on]
+
+    def mock_banner(self, *, prefix: str = "") -> str:
+        """One loud line naming the fake subsystems, or "" when all are live."""
+        active = self.active_mocks()
+        if not active:
+            return ""
+        return (f"{prefix}⚠️ MOCK DATA — {' + '.join(active)} "
+                f"{'are' if len(active) > 1 else 'is'} invented, not real. "
+                f"Nothing here is a market observation.")
 
     # ------------------------------------------------------------ conveniences
     @property
@@ -514,6 +582,67 @@ def detect_ffmpeg() -> tuple[str, str]:
     return ffmpeg, ffprobe
 
 
+# One correct example per setting that is easy to get wrong. Keyed by the env
+# var name, because that is what the operator typed.
+_SETTING_EXAMPLES: dict[str, str] = {
+    "OPERATOR_CHAT_IDS": 'OPERATOR_CHAT_IDS=["123456789"]   (or: 123456789)',
+    "SCREEN_ALLOW_LIST": 'SCREEN_ALLOW_LIST=["AAPL","MSFT"]   (or: AAPL,MSFT)',
+    "SCREEN_DENY_LIST": 'SCREEN_DENY_LIST=["GME"]   (or: GME)',
+    "MOCK_MODE": "MOCK_MODE=true      (true | false)",
+    "MOCK_TTS": "MOCK_TTS=true       (true | false; unset follows MOCK_MODE)",
+    "MOCK_PRICES": "MOCK_PRICES=false   (true | false; unset follows MOCK_MODE)",
+    "MOCK_SCREENER": "MOCK_SCREENER=false (true | false; unset follows MOCK_MODE)",
+    "DELIVERY_BACKEND": "DELIVERY_BACKEND=gdrive   (gdrive | s3 | telegram | local)",
+    "MONTHLY_SPEND_CAP": "MONTHLY_SPEND_CAP=50.0",
+    "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1400",
+    "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
+    "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
+}
+
+
+class ConfigError(SystemExit):
+    """A settings problem, stated the way the operator can act on it."""
+
+
+def _env_key(loc: tuple) -> str:
+    """The environment variable name behind a pydantic error location."""
+    return str(loc[0]).upper() if loc else "(unknown)"
+
+
+def describe_config_error(err: ValidationError, env_file: Path) -> str:
+    """Turn a pydantic ValidationError into a message naming file, key,
+    problem and a correct example.
+
+    The default is a stack trace ending in "Input should be a valid list",
+    printed at startup with no indication of which file it came from, which
+    key was wrong, or what the right shape looks like. Every one of those four
+    facts is available here; none of them were being shown.
+    """
+    lines = [
+        "Configuration error — the bot did not start.",
+        f"  file: {env_file if env_file.exists() else str(env_file) + ' (not found)'}",
+        "",
+    ]
+    for e in err.errors():
+        key = _env_key(e.get("loc", ()))
+        given = e.get("input")
+        lines.append(f"  key: {key}")
+        lines.append(f"  problem: {e.get('msg', 'invalid value')}")
+        if given is not None and not isinstance(given, dict):
+            lines.append(f"  you set: {given!r}")
+        example = _SETTING_EXAMPLES.get(key)
+        if example:
+            lines.append(f"  correct: {example}")
+        lines.append("")
+    lines.append("Edit the file above and start again. .env.example carries a "
+                 "correct value for every key.")
+    return "\n".join(lines)
+
+
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    return Settings()
+    try:
+        return Settings()
+    except ValidationError as err:
+        raise ConfigError(
+            describe_config_error(err, BASE_DIR / ".env")) from err

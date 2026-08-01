@@ -44,8 +44,8 @@ from pathlib import Path
 from config import Settings
 from pipeline.broll import ContentManager
 from pipeline.chart import render_marker_price_chart, render_price_chart
-from pipeline.host import build_host_clip
-from pipeline.kit import Kit, KitError, load_kit
+from pipeline.host import build_host_clip, pick_shot
+from pipeline.kit import Kit, KitError, load_kit, load_variant_ledger
 from pipeline.kit_frames import (
     fit_into,
     playback_seconds,
@@ -297,6 +297,10 @@ def render_short(
 
     layers: list[OverlayLayer] = []
     unresolved: list[str] = []
+    # Every kit key this render actually put on screen. Written to the variant
+    # ledger at the end, which is what makes "never used across recent
+    # renders" a real measurement rather than a guess.
+    used_keys: set[str] = set()
 
     # The stage is exclusive: a beat ENDS when the next one claims the frame.
     # Everything used to be placed with t_end=duration, so a sixty-second short
@@ -498,6 +502,7 @@ def render_short(
             settings=settings, content=content, workspace=workspace,
             rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
             duration=duration, hold=hold, is_data=is_data, name=name,
+            used_keys=used_keys,
         )
         if not placed:
             unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
@@ -674,6 +679,9 @@ def render_short(
         if built is None:
             return False
         clip, (hw, hh) = built
+        shot = pick_shot(kit, role, host_shot_i - 1)
+        if shot is not None:
+            used_keys.update({shot.closed.key, shot.open_.key})
         if inset:
             x, y = W - hw - px(30), px(INSET_Y)
         else:
@@ -796,6 +804,9 @@ def render_short(
         fonts_dir=settings.fonts_dir,
         duration=duration,
         fps=fps,
+        # Mock audio is a placeholder tone, not a programme: normalising it
+        # is what made a render come out silent.
+        normalise_audio=not (settings.mocking_tts or getattr(tts, "draft", False)),
     )
     out_path = workspace / out_name
     composite_video(spec, encode_profile(settings, "short"), settings.audio_bitrate,
@@ -807,6 +818,18 @@ def render_short(
             f"rendered duration {rendered:.2f}s deviates from the audio master "
             f"clock {duration:.2f}s"
         )
+
+    used_keys.update({BACKDROP_KEY, OPEN_KEY, CLOSE_KEY})
+    if card_asset is not None:
+        used_keys.add(card_asset.key)
+    # The doctor diffs the library against this. A render that reached forty
+    # assets and one that reached six look identical without it.
+    ledger = load_variant_ledger(settings)
+    for key in sorted(used_keys):
+        asset = kit.get(key)
+        if asset is not None:
+            ledger.record(asset.family, asset.key)
+    ledger.save()
 
     if unresolved:
         log.warning("short: %d tag key(s) did not resolve: %s",
@@ -825,7 +848,8 @@ def render_short(
         "cues": [c.model_dump() for c in cues],
         "pacing_warnings": pacing_warnings,
         "unresolved_keys": unresolved,
-        "kit_assets_used": sorted({l.name for l in layers}),
+        "kit_assets_used": sorted(used_keys),
+        "layer_names": sorted({l.name for l in layers}),
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}
             for l in layers
@@ -840,7 +864,7 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                     settings: Settings, content: ContentManager, workspace: Path,
                     rdir: Path, layers: list[OverlayLayer], W: int, H: int,
                     px, fps: int, duration: float, hold: float, is_data: bool,
-                    name: str) -> bool:
+                    name: str, used_keys: set[str] | None = None) -> bool:
     """Composite one tag beat. Returns False when the key did not resolve.
 
     Data beats take the frame — fitted large and centred. Punctuation rides
@@ -870,6 +894,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
         asset, is_blank = _kit_asset_for(kit, tag, value)
         if asset is None:
             return False
+        if used_keys is not None:
+            used_keys.add(asset.key)
         values = _blank_values(tag, value, script) if is_blank else None
         if asset.animated:
             # A one-shot must run its whole strip: a six-frame transformation

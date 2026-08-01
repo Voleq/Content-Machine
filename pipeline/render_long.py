@@ -700,6 +700,7 @@ def render_long(
         fonts_dir=settings.fonts_dir,
         duration=duration,
         fps=fps,
+        normalise_audio=not (settings.mocking_tts or draft or preview),
     )
     out_path = workspace / ("long_draft.mp4" if draft else "long_final.mp4")
     composite_video(spec, profile, settings.audio_bitrate, out_path)

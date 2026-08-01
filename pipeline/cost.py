@@ -162,6 +162,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
     return CostReport(
+        mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
         fmt="short",
         words=script.word_count,
@@ -207,6 +208,7 @@ def build_long_report(
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
     return CostReport(
+        mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
         fmt="long",
         words=script.word_count,

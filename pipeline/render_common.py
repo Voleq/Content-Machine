@@ -304,6 +304,17 @@ class CompositeSpec:
     true_peak_db: float = -1.5
     loudness_range: float = 11.0
     limiter_ceiling: float = 0.95
+    # Normalise the programme to the streaming target — ON for anything that
+    # could be published, OFF for mock and draft audio.
+    #
+    # `loudnorm` measures a programme and moves it to a target. That is right
+    # for a voice and catastrophic for a placeholder tone: a mock render
+    # measured near-silent, got raised about thirty decibels, and the gain
+    # went into the limiter as inaudible sub-bass — 0.0 LUFS integrated, a
+    # -0.9 dB peak, and a video that played as silence. Nothing about that
+    # correction tells you anything about the real mix, so it is skipped.
+    # The limiter stays either way; it only ever prevents clipping.
+    normalise_audio: bool = True
 
     def input_count(self) -> int:
         return sum(1 for a in self.base_input_args if a == "-i")
@@ -385,11 +396,14 @@ def composite_video(
     # peak, so uploads are not quietly turned down (or up) after the fact.
     # Single-pass loudnorm — a two-pass measurement would double the audio
     # work for a correction well under the threshold of audibility here.
-    lines.append(
-        f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
-        f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
-        f"[aout]"
-    )
+    if spec.normalise_audio:
+        lines.append(
+            f"[amixed]loudnorm=I={spec.loudness_lufs}:TP={spec.true_peak_db}"
+            f":LRA={spec.loudness_range},alimiter=limit={spec.limiter_ceiling}"
+            f"[aout]"
+        )
+    else:
+        lines.append(f"[amixed]alimiter=limit={spec.limiter_ceiling}[aout]")
 
     script = out_path.with_suffix(".filter.txt")
     script.write_text(";\n".join(lines) + "\n", encoding="utf-8")

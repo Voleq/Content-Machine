@@ -160,6 +160,13 @@ _SHORT_TAG_TO_KIND = {
 # The fixed beats that are themselves data — they count for adjacency.
 _FIXED_DATA_KINDS = (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP)
 
+# Every fixed beat that claims the frame, for the host-cadence count.
+_HOST_CADENCE_KINDS = (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
+                       CueKind.CHEAP_OR_TRAP)
+
+# A host return shorter than this is a flicker, not a beat.
+MIN_HOST_RETURN_S = 1.6
+
 
 def pick_beat_variant(beat: str, script_sha: str) -> str:
     """Deterministically choose this short's layout for one beat."""
@@ -449,21 +456,38 @@ def plan_short_pacing(
         prev_end = t + hold
         prev_was_data = is_data
 
-    # Rule 4 — Dennis comes back.
+    # Rule 4 — Dennis comes back every four to five beats.
+    #
+    # Counted over EVERY beat that claims the frame, not just the tagged ones.
+    # A short whose evidence is the fixed cards still spends forty seconds away
+    # from his face, and counting only tag beats meant a script with three of
+    # them never brought him back at all.
+    fixed_beats = [c for c in cues if c.kind in _HOST_CADENCE_KINDS]
+    beats = sorted(fixed_beats + kept, key=lambda c: c.t)
     host_cues: list[Cue] = []
     run = 0
-    for i, cue in enumerate(kept):
+    for i, cue in enumerate(beats):
         run += 1
         if run < host_every:
             continue
-        run = 0
-        gap_start = cue.t + float(cue.payload["hold"])
-        gap_end = kept[i + 1].t if i + 1 < len(kept) else payoff
-        if gap_end - gap_start < 1.2 or gap_start >= payoff:
+        gap_start = cue.t + float(cue.payload.get("hold", 0.0) or 0.0)
+        gap_end = beats[i + 1].t if i + 1 < len(beats) else payoff
+        if gap_end - gap_start < MIN_HOST_RETURN_S or gap_start >= payoff:
             continue
+        run = 0
         host_cues.append(Cue(
             t=round(gap_start, 3), kind=CueKind.HOST_BEAT,
             payload={"until": round(min(gap_end, payoff), 3), "variant": "beat"}))
+    if not host_cues and payoff - (beats[0].t if beats else 0.0) > 12.0:
+        # Nothing found a gap. Rather than let a minute go by without him,
+        # take the longest gap there is.
+        spans = [(beats[i + 1].t - beats[i].t, i) for i in range(len(beats) - 1)]
+        if spans:
+            span, i = max(spans)
+            if span >= MIN_HOST_RETURN_S:
+                host_cues.append(Cue(
+                    t=round(beats[i].t + span * 0.35, 3), kind=CueKind.HOST_BEAT,
+                    payload={"until": round(beats[i + 1].t, 3), "variant": "beat"}))
 
     others = [c for c in cues if c.payload.get("class") not in ("data", "punct")]
     out = sorted(others + kept + host_cues, key=lambda c: c.t)

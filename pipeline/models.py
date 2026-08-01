@@ -768,6 +768,10 @@ class CostReport(BaseModel):
     warnings: list[str] = Field(default_factory=list)
     blocking: list[str] = Field(default_factory=list)
     script_sha: str = ""
+    # Which subsystems produced invented data for this run. The report is the
+    # artifact an operator reads before spending money and approving a render;
+    # it has to say when the numbers in it are fixtures.
+    mock_subsystems: list[str] = Field(default_factory=list)
 
     @property
     def approvable(self) -> bool:
@@ -790,6 +794,13 @@ class CostReport(BaseModel):
     def render_text(self) -> str:
         """The human report shown in Telegram above the Approve button."""
         lines: list[str] = []
+        if self.mock_subsystems:
+            joined = " + ".join(self.mock_subsystems)
+            lines.append(
+                f"⚠️ MOCK DATA — {joined} "
+                f"{'are' if len(self.mock_subsystems) > 1 else 'is'} invented, "
+                f"not real. Nothing below is a market observation.")
+            lines.append("")
         head = f"{self.ticker} — {self.fmt.upper()} — "
         head += "ready to render" if self.approvable else "BLOCKED"
         lines.append(head)

@@ -59,6 +59,27 @@ def is_meta(rel: Path) -> bool:
     return rel.name in META_NAMES or any(p in META_DIRS for p in rel.parts)
 
 
+def unportable(rel: str) -> str | None:
+    """Why a registry frame path could not be checked out everywhere, or None.
+
+    The ingest is the thing that writes ``assets/kit/`` now, so this is where
+    the check belongs. A path Windows cannot create fails `git checkout` for
+    every file under it while the Linux tree still looks clean — which is what
+    ``restyle/con/`` did, taking eighteen frames with it. A delivery is
+    somebody else's export, so it is checked rather than trusted.
+    """
+    from scripts.export_design_kit import DOS_DEVICES, ILLEGAL_CHARS
+
+    for part in Path(rel).parts:
+        if ILLEGAL_CHARS.search(part):
+            return f"{part!r} contains a character Windows forbids"
+        if part != part.rstrip(". ") or part != part.lstrip(" "):
+            return f"{part!r} ends in a dot or space"
+        if part.partition(".")[0].upper() in DOS_DEVICES:
+            return f"{part!r} is a reserved DOS device name"
+    return None
+
+
 # --------------------------------------------------------------------------
 # The blank layouts carried forward from the previous kit.
 #
@@ -312,6 +333,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # ---- reconcile before touching anything --------------------------
     declared: dict[str, set[str]] = {"kit-v1": set(), "shorts": set()}
+    unportable_paths: list[str] = []
     for key, entry in assets.items():
         for frame in entry["frames"]:
             declared[entry["source"]].add(frame)
@@ -319,6 +341,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"registry lists a frame that is not in the archive: "
                       f"{key} -> {frame}", file=sys.stderr)
                 return 2
+            why = unportable(frame)
+            if why is not None:
+                unportable_paths.append(f"{key} -> {frame}: {why}")
+    if unportable_paths:
+        print("refusing to ingest — these paths would break `git checkout` on "
+              "Windows, and every file under them with it:", file=sys.stderr)
+        for line in unportable_paths:
+            print(f"  {line}", file=sys.stderr)
+        print("Rename them in the delivery and re-export.", file=sys.stderr)
+        return 2
 
     skipped: list[str] = []
     for source, root in src_root.items():
