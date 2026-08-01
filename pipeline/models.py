@@ -307,6 +307,20 @@ class ShortScript(BaseModel):
     def scribble_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
 
+    def alert_events(self) -> list[TagEvent]:
+        return [e for e in self.inline_events if e.type is TagType.ALERT]
+
+    def evidence_events(self) -> list[TagEvent]:
+        """Inline tags that claim the frame — the short's own tag grammar.
+
+        Ordered by position in the spoken text, which is the order they fire.
+        """
+        return [e for e in self.inline_events
+                if e.type in SHORT_SEGMENT_TAG_TYPES]
+
+    def delivery_events(self) -> list[TagEvent]:
+        return [e for e in self.inline_events if e.type in DELIVERY_TAG_TYPES]
+
     def content_sha(self) -> str:
         return hashlib.sha256(
             self.model_dump_json().encode("utf-8")
@@ -420,6 +434,7 @@ class CueKind(str, Enum):
     CHEAP_OR_TRAP = "cheap_or_trap"  # the value-trap beat, held to be read
     CONCLUSION = "conclusion"
     HOST_CLOSE = "host_close"    # Dennis talking, after the payoff
+    HOST_BEAT = "host_beat"      # Dennis returning mid-video, every 4-5 beats
     CUTAWAY = "cutaway"          # ironic broll cutaway (SHORT)
     # LONG visuals (MEME + SOUND are shared by both formats)
     MEME = "meme"
@@ -427,6 +442,7 @@ class CueKind(str, Enum):
     IMG = "img"
     CHART = "chart"
     FILING = "filing"
+    ARTICLE = "article"          # a screenshot of the real article's headline
     SCREENGRAB = "screengrab"
     ASSET = "asset"
     TERM = "term"                # the framework/definition card

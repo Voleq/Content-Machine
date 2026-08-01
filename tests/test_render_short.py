@@ -121,10 +121,15 @@ def test_manifest_reflects_cues_and_kit(rendered):
     names = {layer["name"] for layer in manifest["layers"]}
     assert {"chart", "brand_bug", "hook", "numbers_sheet", "conclusion",
             "disclaimer", "meme_0"} <= names
+    # Dennis opens and closes the short, on camera, lip-synced. The engine
+    # this replaced emitted the cues and never read them.
+    assert {"host_open", "host_close", "e_open", "e_close"} <= names
+    assert manifest["host"]["bookends"] is True
+    assert manifest["theme"] == "light"
     assert {f"number_row_{i}" for i in range(2)} <= names
     assert any(n.startswith("headline_") for n in names)
     assert any(n.startswith("scribble_") for n in names)
-    assert any(n.startswith("zoom_") for n in names)
+    assert any(n.startswith("countup_") for n in names)
     assert any(n.startswith("flash_") for n in names)
     conc_layer = next(l for l in manifest["layers"] if l["name"] == "conclusion")
     conc_cue = next(c for c in manifest["cues"] if c["kind"] == "conclusion")

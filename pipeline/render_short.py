@@ -1,22 +1,37 @@
-"""SHORT scene engine — 9:16, ~55–60s "Noise or signal?" (§4).
+"""SHORT scene engine — 9:16, ~60-75s "Noise or signal?" (§4).
 
-A TEMPLATE FILLER over the fixed reusable asset kit: every video reuses
-the same branded chart component, headline-overlay treatment, numbers
-sheet, caption style, hand-drawn annotations, transition stingers,
-intro/outro bug and music bed — only the rotating content changes
-(ticker, price data, headlines, numbers, hook, memes).
+DENNIS IS IN THIS VIDEO. That is the difference between this engine and the one
+it replaces. The short never migrated when long-form did: it opened on a chart,
+ran four fixed cards, and closed on a chart, reaching about six assets out of
+three hundred and eighty-four. The timeline had been emitting `HOST_OPEN` and
+`HOST_CLOSE` cues the whole time and nothing read them.
 
-Fixed beats, each with its own on-screen element:
-  Hook      — the branded chart (rendered HERE from our own price data —
-              never a screenshot) + the mute-safe hook card
-  Why       — driver headline(s) overlaid ON the chart
-  Gut check — the multi-year numbers sheet, rows typing on, trend bars
-  Payoff    — the deadpan conclusion card (no verdict, no stamp)
+The frame, top to bottom:
 
-Every visual event's time comes from `build_short_timeline` (the master
-clock); this module only turns cues into rasters, alpha clips and one
-FFmpeg filtergraph. There are NO hardcoded scene timings here — grep for
-`between(t` lands only on cue-derived values.
+  * the **light** kit, everywhere. The cards were inverted when the palette
+    flipped; the backdrop, the napkin chart and the captions were not, so a
+    short opened on paper, cut to a black chart and captioned it in red.
+  * **host bookends** — Dennis on camera for the first and last few seconds,
+    mouth-flapped to the voice-over, and back every four to five beats.
+  * **two-shots** for evidence: him beside the thing being discussed, so the
+    cut never leaves the person the viewer is watching.
+  * the **full tag grammar** — `[IMG]`, `[PRODUCT]`, `[SHOW FILING]`,
+    `[SHOW ARTICLE]`, `[SCREENGRAB]`, `[PROP]`, `[BIGNUM]`, `[TERM]`,
+    `[MEME]`, `[CLIP]` claim the frame; `[DOODLE]`, `[SCRIBBLE]` and `[ALERT]`
+    ride on top; `[BEAT]`, `[FLAT]`, `[SIGH]` and `[DRY]` never reach the
+    screen at all and go to the voice instead.
+  * a **motion layer** on arrival only: figures count up to the spoken word,
+    charts and bars draw on, table rows type on, cards slide in, the payoff
+    slams, captions punch.
+
+NOTHING PANS OR ZOOMS. The motion is in the frames now — 84 of the kit's assets
+are real sequences — and drift on top of a registered strip makes the
+registration itself look broken.
+
+Every visual event's time comes from `build_short_timeline` and
+`plan_short_pacing` (the master clock and the pacing contract); this module
+turns cues into rasters, alpha clips and one FFmpeg filtergraph. There are NO
+hardcoded scene timings here.
 """
 
 from __future__ import annotations
@@ -29,30 +44,46 @@ from pathlib import Path
 from config import Settings
 from pipeline.broll import ContentManager
 from pipeline.chart import render_marker_price_chart, render_price_chart
-from pipeline.models import ChartStyle, CueKind, ScribbleStyle, ShortScript, TTSResult, parse_scribble_payload
+from pipeline.host import build_host_clip
+from pipeline.kit import Kit, KitError, load_kit
+from pipeline.kit_frames import (
+    fit_into,
+    playback_seconds,
+    render_clip,
+    render_still,
+)
+from pipeline.models import (
+    KIT_TAG_BLANKS,
+    KIT_TAG_FAMILIES,
+    ChartStyle,
+    CueKind,
+    ShortScript,
+    TTSResult,
+    TagType,
+    parse_scribble_payload,
+)
 from pipeline.prices import PriceSeries, get_price_history
 from pipeline.rasters import (
-    GREEN,
     INK,
     RED,
     SHANTELL,
-    brand_bug,
-    build_karaoke_ass,
+    build_phrase_ass,
+    count_up_frames,
     doodle_clip,
+    draw_on_frames,
     flash_frames,
     frames_to_alpha_clip,
     headline_card,
     lower_third,
-    nos_header,
     number_row_frames,
-    number_row_image,
     numbers_sheet_base,
     scribble_callout_frames,
     scribble_frames,
     simple_text,
+    slide_in_frames,
+    stamp_slam_frames,
     text_panel,
     ticker_pill,
-    zoom_pop_frames,
 )
 from pipeline.render_common import (
     AudioTrack,
@@ -63,35 +94,76 @@ from pipeline.render_common import (
     encode_profile,
     ffprobe_duration,
 )
-from pipeline.timeline import build_short_timeline
+from pipeline.timeline import build_short_timeline, plan_short_pacing
 
 log = logging.getLogger(__name__)
 
 
+# The 9:16 plate the whole video sits on. Light, and never moving.
+BACKDROP_KEY = "backgrounds/room-tall"
+
+# The signature open and close: full-frame 9:16, four frames at 8fps, two
+# slots each. Every short opens and closes on these — that is the point of
+# them, and it is why they are addressed by key rather than picked.
+OPEN_KEY = "shorts/open-close/e-open"
+CLOSE_KEY = "shorts/open-close/e-close"
+
+# The payoff card. Not a verdict stamp — the words carry the conclusion; this
+# is the shape the channel ends on.
+PAYOFF_CARDS = {"noise": "short/card-noise", "signal": "short/card-signal"}
+
+# The desk set. `screen` takes whatever the beat needs.
+DESK_KEYS = (
+    "shorts/the-world/d-desk-wide",
+    "shorts/the-world/d-desk-over-shoulder",
+    "shorts/the-world/d-desk-side",
+)
+
+# --------------------------------------------------------------------------
+# The vertical layout, in 1080-wide design coordinates on a 1080x1920 frame.
+#
+# A 9:16 frame is three bands, and the engine this replaces had no idea: every
+# layer was placed independently and left up for the whole video, so the chart
+# sat over the host, the sheet sat over the chart, and the payoff card sat
+# under both. Naming the bands is what makes a beat able to REPLACE the one
+# before it instead of piling on top of it.
+#
+#   FURNITURE   0 ..  200   the bug and the ticker pill. Always up.
+#   STAGE     360 .. 1120   whatever the beat is. Exactly one thing at a time:
+#                           the host, the chart, the sheet, or a tag beat.
+#   LEDGER   1150 .. 1500   the mute-safe line — hook, then trap, then payoff.
+#   CAPTIONS 1560 .. 1800   the spoken word. Nothing else goes here.
+# --------------------------------------------------------------------------
+STAGE_Y = 360
+STAGE_H = 760
+LEDGER_Y = 1150
+HOST_Y = 430          # the 16:9 shots are full-width; this centres them
+INSET_Y = 1120        # the two-shot inset, clear of the ledger
+CAPTION_MARGIN_V = 150
+
 # Per-beat layout variants from the design kit's Short Variants sheet. The
-# timeline picks one per beat from the script hash (see `pick_beat_variant`),
-# so two shorts cut on the same day do not share a layout while any single
-# script always renders identically. Coordinates are in the 1080-wide design
-# space and scaled to the output resolution.
+# timeline picks one per beat from the script hash, so two shorts cut on the
+# same day do not share a layout while any single script always renders
+# identically.
 HOOK_LAYOUTS: dict[str, dict] = {
-    "a": {"y": 1040, "size": 60, "width": 960, "accent": GREEN},   # the original
-    "b": {"y": 300, "size": 76, "width": 920, "accent": RED},      # hook up top
-    "c": {"y": 1180, "size": 54, "width": 980, "accent": INK},     # low and wide
-    "d": {"y": 240, "size": 66, "width": 880, "accent": RED},      # narrow, high
-    "e": {"y": 980, "size": 68, "width": 940, "accent": GREEN},    # centre-low
+    "a": {"y": LEDGER_Y, "size": 60, "width": 960, "accent": RED},
+    "b": {"y": LEDGER_Y + 40, "size": 68, "width": 920, "accent": RED},
+    "c": {"y": LEDGER_Y + 80, "size": 54, "width": 980, "accent": INK},
+    "d": {"y": LEDGER_Y - 20, "size": 64, "width": 880, "accent": RED},
+    "e": {"y": LEDGER_Y + 20, "size": 62, "width": 940, "accent": INK},
 }
 NUMBERS_LAYOUTS: dict[str, dict] = {
-    "a": {"y": 990, "width": 1000},
-    "b": {"y": 900, "width": 1000},
-    "c": {"y": 1050, "width": 960},
-    "d": {"y": 940, "width": 980},
+    "a": {"y": STAGE_Y + 40, "width": 1000},
+    "b": {"y": STAGE_Y, "width": 1000},
+    "c": {"y": STAGE_Y + 80, "width": 960},
+    "d": {"y": STAGE_Y + 20, "width": 980},
 }
 PAYOFF_LAYOUTS: dict[str, dict] = {
-    "a": {"y": 430, "size": 48, "accent": GREEN},
-    "b": {"y": 620, "size": 52, "accent": RED},
-    "c": {"y": 360, "size": 46, "accent": INK},
-    "d": {"y": 540, "size": 50, "accent": GREEN},
-    "e": {"y": 700, "size": 44, "accent": RED},
+    "a": {"y": LEDGER_Y, "size": 48, "accent": INK},
+    "b": {"y": LEDGER_Y + 30, "size": 52, "accent": RED},
+    "c": {"y": LEDGER_Y - 20, "size": 46, "accent": INK},
+    "d": {"y": LEDGER_Y + 10, "size": 50, "accent": RED},
+    "e": {"y": LEDGER_Y + 50, "size": 44, "accent": INK},
 }
 
 
@@ -112,6 +184,47 @@ def sample_hook_opener(script_sha: str, settings: Settings) -> str:
         return settings.brand_tagline
     idx = int(hashlib.sha256(f"hook|{script_sha}".encode()).hexdigest()[:8], 16)
     return openers[idx % len(openers)]
+
+
+def payoff_card_key(conclusion: str) -> str:
+    """Which closing card the payoff lands on.
+
+    Read off the conclusion's own opening words, which the format requires to
+    be the call muttered plainly. No taxonomy, no enum — if the text does not
+    say "signal", it is the noise card, which is also the honest default.
+    """
+    head = conclusion.strip().lower()[:40]
+    return PAYOFF_CARDS["signal" if "signal" in head and "noise" not in head
+                        else "noise"]
+
+
+def _kit_asset_for(kit: Kit, tag: TagType, key: str):
+    """(asset, is_blank) for a card tag, or (None, False).
+
+    Named artwork first, then the parameterised blank layout — which is how
+    `[TERM: owner earnings]` gets a card at all when nobody has drawn one.
+    """
+    families = KIT_TAG_FAMILIES.get(tag)
+    if families:
+        asset = kit.resolve_asset(families, key)
+        if asset is not None:
+            return asset, False
+    blank = KIT_TAG_BLANKS.get(tag)
+    if blank:
+        asset = kit.get(blank)
+        if asset is not None:
+            return asset, True
+    return None, False
+
+
+def _blank_values(tag: TagType, key: str, script: ShortScript) -> dict[str, str]:
+    """What goes in a blank layout's slots for a tag the kit has no art for."""
+    label = key.replace("-", " ").strip()
+    if tag is TagType.BIGNUM:
+        return {"kicker": label, "figure": key.split("=")[-1].strip() or label,
+                "headline": label, "context": script.move_summary}
+    return {"kicker": "the word of the day", "term": label.title(),
+            "definition": script.numbers_comment}
 
 
 def render_short(
@@ -138,6 +251,9 @@ def render_short(
 
     duration = tts.duration_s
     cues = build_short_timeline(script, tts.words, duration)
+    cues, pacing_warnings = plan_short_pacing(cues, duration)
+    for w in pacing_warnings:
+        log.warning("short pacing: %s", w)
     for c in cues:
         if c.fallback:
             log.warning("cue %s used a fallback position (t=%.2fs)", c.kind.value, c.t)
@@ -150,10 +266,22 @@ def render_short(
 
     rdir = workspace / "render_short"
     rdir.mkdir(parents=True, exist_ok=True)
+    fps = settings.fps
+
+    kit = load_kit(settings.assets_dir)
+    # The structural assets are required, not hoped for. A short that silently
+    # loses its host or its backdrop is exactly the failure this rebuild is
+    # for, and it passed every test it had.
+    backdrop = kit.require(BACKDROP_KEY, why="the short's 9:16 plate")
+    kit.require(OPEN_KEY, why="the signature open")
+    kit.require(CLOSE_KEY, why="the signature close")
 
     hook = next(c for c in cues if c.kind is CueKind.HOOK)
     numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
     conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
+    host_open = next(c for c in cues if c.kind is CueKind.HOST_OPEN)
+    host_close = next(c for c in cues if c.kind is CueKind.HOST_CLOSE)
+    host_beats = [c for c in cues if c.kind is CueKind.HOST_BEAT]
     transitions = [c for c in cues if c.kind is CueKind.TRANSITION]
     headline_cues = [c for c in cues if c.kind is CueKind.HEADLINE]
     row_cues = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
@@ -163,60 +291,79 @@ def render_short(
     cutaway_cues = [c for c in cues if c.kind is CueKind.CUTAWAY]
     doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
+    alert_cues = [c for c in cues if c.kind is CueKind.ALERT]
+    evidence_cues = [c for c in cues
+                     if c.payload.get("class") in ("data", "punct")]
 
     layers: list[OverlayLayer] = []
+    unresolved: list[str] = []
+
+    # The stage is exclusive: a beat ENDS when the next one claims the frame.
+    # Everything used to be placed with t_end=duration, so a sixty-second short
+    # accumulated every card it had ever shown and finished with all of them on
+    # screen at once.
+    gut_t = float(numbers.t)
+    trap_cue = next((c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP), None)
+    trap_t = float(trap_cue.t) if trap_cue is not None else None
+    payoff_t = float(conclusion.t)
+    stage_open_end = float(host_open.payload.get("until", 0.0))
+    close_t = float(host_close.t)
+
+    # ---------------------------------------------------------- furniture
+    opener = sample_hook_opener(script.content_sha(), settings)
+    pill = ticker_pill(settings, script.ticker, font_size=px(38))
+    pill_path = rdir / "ticker_pill.png"
+    pill.save(pill_path)
+    layers.append(OverlayLayer(
+        path=pill_path, x=px(40), y=px(56), t_start=0.0, t_end=duration,
+        name="ticker_pill",
+    ))
+    bug = simple_text(settings, opener, font_size=px(28),
+                      fill=(143, 140, 131, 240), stroke_width=0)
+    bug_path = rdir / "bug.png"
+    bug.save(bug_path)
+    layers.append(OverlayLayer(
+        path=bug_path, x=W - bug.width - px(40), y=px(70),
+        t_start=0.0, t_end=duration, name="brand_bug",
+    ))
 
     # ------------------------------------------- the branded chart (hero)
-    # open on the clean branded card or the crude marker/napkin chart
-    chart_px = (px(1000), px(760))
-    chart_pos = (px(40), px(170))
+    # Opens on the clean branded card or the crude marker/napkin chart — both
+    # on paper now. It draws on rather than cutting in, and it LEAVES when the
+    # gut check claims the stage.
+    chart_px = (px(1000), px(STAGE_H))
+    chart_pos = (px(40), px(STAGE_Y))
     render_chart = (render_marker_price_chart
                     if script.chart_style is ChartStyle.MARKER else render_price_chart)
     chart_path, chart_meta = render_chart(
         prices, rdir / "chart.png", settings,
         size=chart_px, move_text=script.move_summary,
     )
-    layers.append(OverlayLayer(
-        path=chart_path, x=chart_pos[0], y=chart_pos[1],
-        t_start=0.0, t_end=duration, name="chart",
-    ))
+    from PIL import Image
 
-    # ------------------------------------------------------ intro/outro bug
-    opener = sample_hook_opener(script.content_sha(), settings)
-    bug = brand_bug(settings, opener, width=px(900), font_size=px(40))
-    bug_path = rdir / "bug.png"
-    bug.save(bug_path)
+    chart_img = Image.open(chart_path).convert("RGBA")
+    chart_draw = frames_to_alpha_clip(
+        draw_on_frames(chart_img, fps=fps, seconds=0.9), fps, rdir / "chart_on.mov")
     layers.append(OverlayLayer(
-        path=bug_path, x=int((W - bug.width) / 2), y=px(48),
-        t_start=0.0, t_end=duration, name="brand_bug",
+        path=chart_draw, x=chart_pos[0], y=chart_pos[1],
+        t_start=stage_open_end, t_end=gut_t, is_video=True, hold=True,
+        name="chart",
     ))
 
     # ------------------------------------------------------------ hook card
+    # The mute-safe line, in the ledger band under the stage — it reads over
+    # the host open and stays through the WHY beat.
     hook_layout = _layout(HOOK_LAYOUTS, hook.payload.get("variant"))
     hook_img = text_panel(settings, hook.payload["text"], width=px(hook_layout["width"]),
                           font_name=SHANTELL, font_size=px(hook_layout["size"]),
                           accent=hook_layout["accent"])
-    hook_path = rdir / "hook.png"
-    hook_img.save(hook_path)
+    hook_clip = frames_to_alpha_clip(
+        slide_in_frames(hook_img, fps=fps, seconds=0.4, direction="up"),
+        fps, rdir / "hook.mov")
     layers.append(OverlayLayer(
-        path=hook_path, x=int((W - hook_img.width) / 2), y=px(hook_layout["y"]),
-        t_start=0.0, t_end=float(hook.payload["until"]), name="hook",
-    ))
-
-    # -------------------------------- $TICKER pill + "noise or signal?" header
-    pill = ticker_pill(settings, script.ticker, font_size=px(40))
-    pill_path = rdir / "ticker_pill.png"
-    pill.save(pill_path)
-    layers.append(OverlayLayer(
-        path=pill_path, x=px(40), y=px(150), t_start=0.0, t_end=duration,
-        name="ticker_pill",
-    ))
-    nos = nos_header(settings, font_size=px(30))
-    nos_path = rdir / "nos_header.png"
-    nos.save(nos_path)
-    layers.append(OverlayLayer(
-        path=nos_path, x=W - nos.width - px(40), y=px(156),
-        t_start=0.0, t_end=duration, name="nos_header",
+        path=hook_clip, x=int((W - hook_img.width) / 2), y=px(hook_layout["y"]),
+        t_start=0.0, t_end=float(hook.payload["until"]), is_video=True, hold=True,
+        name="hook",
     ))
 
     # ------------------------------------- headlines overlaid ON the chart
@@ -225,15 +372,16 @@ def render_short(
         i = int(c.payload["index"])
         meaning = script.headlines[i].meaning if i < len(script.headlines) else ""
         card = headline_card(settings, c.payload["text"], meaning=meaning,
-                             width=px(880), font_size=px(34))
-        card_path = rdir / f"headline_{i}.png"
-        card.save(card_path)
+                             width=px(880), font_size=px(32))
+        card_clip = frames_to_alpha_clip(
+            slide_in_frames(card, fps=fps, seconds=0.35, direction="left"),
+            fps, rdir / f"headline_{i}.mov")
         sx, sy = slots[min(i, len(slots) - 1)]
         layers.append(OverlayLayer(
-            path=card_path,
+            path=card_clip,
             x=chart_pos[0] + int(sx), y=chart_pos[1] + int(sy),
             t_start=c.t, t_end=float(c.payload["until"]),
-            fade_in=0.18, name=f"headline_{i}",
+            is_video=True, hold=True, name=f"headline_{i}",
         ))
 
     # -------------------------------------------------- the numbers sheet
@@ -244,9 +392,12 @@ def render_short(
     sheet_path = rdir / "sheet.png"
     sheet_img.save(sheet_path)
     sheet_pos = (px(40), px(sheet_layout["y"]))
+    # The sheet owns the stage until the value-trap card (or the payoff) takes
+    # it. Leaving it up to the end is how the payoff card ended up behind it.
+    sheet_end = trap_t if trap_t is not None else payoff_t
     layers.append(OverlayLayer(
         path=sheet_path, x=sheet_pos[0], y=sheet_pos[1],
-        t_start=numbers.t, t_end=duration, fade_in=0.2, name="numbers_sheet",
+        t_start=numbers.t, t_end=sheet_end, fade_in=0.2, name="numbers_sheet",
     ))
 
     row_geo: dict[int, tuple[int, int]] = {}
@@ -254,15 +405,15 @@ def render_short(
         i = int(c.payload["index"])
         clip = frames_to_alpha_clip(
             number_row_frames(settings, c.payload["label"], c.payload["values"],
-                              layout, fps=settings.fps,
+                              layout, fps=fps,
                               type_seconds=float(c.payload["type_seconds"])),
-            settings.fps, rdir / f"row_{i}.mov",
+            fps, rdir / f"row_{i}.mov",
         )
         ry = sheet_pos[1] + layout["rows_y0"] + i * layout["row_h"]
         row_geo[i] = (sheet_pos[0], ry)
         layers.append(OverlayLayer(
             path=clip, x=sheet_pos[0], y=ry,
-            t_start=c.t, t_end=duration, is_video=True, hold=True,
+            t_start=c.t, t_end=sheet_end, is_video=True, hold=True,
             name=f"number_row_{i}",
         ))
 
@@ -274,41 +425,37 @@ def render_short(
             sw, sh = px(240), px(190)
             x = chart_pos[0] + int(lx) - sw // 2
             y = chart_pos[1] + int(ly) - sh // 2
-            t_end = numbers.t if c.t < numbers.t else duration
+            # a mark on the chart leaves with the chart; a mark on a row
+            # leaves with the sheet. Neither outlives what it points at.
+            t_end = gut_t
         else:
             i = int(c.payload["row_index"] or 0)
             rx, ry = row_geo.get(i, (sheet_pos[0], sheet_pos[1]))
             sw, sh = px(1000), layout["row_h"]
             x, y = rx, ry
-            t_end = duration
-        # keep the scribble fully on-canvas (the chart's last point sits
-        # near the right edge)
+            t_end = sheet_end
         x = min(max(x, px(6)), W - sw - px(6))
         y = min(max(y, px(6)), H - sh - px(6))
         clip = frames_to_alpha_clip(
-            scribble_frames(sw, sh, style="circle", fps=settings.fps,
+            scribble_frames(sw, sh, style="circle", fps=fps,
                             seed=f"{script.ticker}|{k}"),
-            settings.fps, rdir / f"scribble_{k}.mov",
+            fps, rdir / f"scribble_{k}.mov",
         )
         layers.append(OverlayLayer(
-            path=clip, x=x, y=y,
-            t_start=c.t, t_end=t_end, is_video=True, hold=True,
-            name=f"scribble_{k}_{target}",
+            path=clip, x=x, y=y, t_start=c.t, t_end=t_end,
+            is_video=True, hold=True, name=f"scribble_{k}_{target}",
         ))
         note = (c.payload.get("note") or "").strip()
         if note:
-            note_img = simple_text(settings, note, font_size=px(34),
+            note_img = simple_text(settings, note, font_size=px(32),
                                    fill=(*RED, 255), stroke_width=2)
             note_path = rdir / f"note_{k}.png"
             note_img.save(note_path)
             if target == "chart":
-                # under the circled point, hugging the chart's right edge
                 nx = min(x + sw // 2 - note_img.width // 2,
                          W - note_img.width - px(16))
                 ny = min(y + sh + px(4), H - note_img.height - px(10))
             else:
-                # in the bars zone above the row's right end — clear of the
-                # neighbouring row's label
                 nx = W - note_img.width - px(56)
                 ny = y - note_img.height + px(10)
             layers.append(OverlayLayer(
@@ -316,37 +463,62 @@ def render_short(
                 t_start=c.t, t_end=t_end, fade_in=0.15, name=f"note_{k}",
             ))
 
-    # ------------------------------------- zoom-punch on the key number(s)
+    # ------------------------------- count-up on the key number(s)
+    # The figure rolls to the value as it is spoken, then holds. This is the
+    # zoom-punch's replacement: a number that arrives by counting is read;
+    # a number that arrives by scaling is a transition.
     for k, c in enumerate(zoom_cues):
         i = int(c.payload["row_index"])
-        row_img = number_row_image(settings, script.numbers[i].label,
-                                   script.numbers[i].values, layout)
-        pop = zoom_pop_frames(row_img, fps=settings.fps)
-        clip = frames_to_alpha_clip(pop, settings.fps, rdir / f"zoom_{k}.mov")
+        if i >= len(script.numbers):
+            continue
+        value = script.numbers[i].values[-1]
         rx, ry = row_geo.get(i, sheet_pos)
-        cw, ch = pop[0].size
+        cw, ch = px(340), layout["row_h"]
+        frames = count_up_frames(settings, value, width=cw, height=ch,
+                                 fps=fps, seconds=0.7, align="center")
+        clip = frames_to_alpha_clip(frames, fps, rdir / f"countup_{k}.mov")
         layers.append(OverlayLayer(
-            path=clip, x=int(rx - (cw - px(1000)) / 2),
-            y=int(ry - (ch - layout["row_h"]) / 2),
-            t_start=c.t, t_end=min(c.t + 0.6, duration), is_video=True,
-            name=f"zoom_{k}",
+            path=clip, x=int(rx + px(1000) - layout["bars_w"] - cw),
+            y=ry, t_start=c.t, t_end=min(c.t + 1.4, sheet_end),
+            is_video=True, hold=True, name=f"countup_{k}",
         ))
+
+    # ---------------------------------------------- the tag grammar beats
+    # Everything the script asked for by name. A card tag gets its named
+    # artwork or the blank layout filled with the script's own text; a shorts
+    # asset plays its strip; a filing, article or screengrab is a real image.
+    for k, c in enumerate(evidence_cues):
+        tag = TagType(c.payload["tag"]) if c.payload.get("tag") else None
+        value = str(c.payload.get("value", ""))
+        hold = float(c.payload.get("hold", 1.6))
+        is_data = c.payload.get("class") == "data"
+        name = f"tag_{k}_{c.kind.value}"
+        placed = _place_evidence(
+            kit=kit, tag=tag, value=value, cue=c, script=script,
+            settings=settings, content=content, workspace=workspace,
+            rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
+            duration=duration, hold=hold, is_data=is_data, name=name,
+        )
+        if not placed:
+            unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
 
     # ----------------------------------------------- meme freeze / cutaway
     for k, c in enumerate(meme_cues):
+        if c.payload.get("tag"):
+            continue  # already placed by the tag grammar above
         meme = content.resolve_meme(c.payload["key"])
         from PIL import Image, ImageOps
 
         m = Image.open(meme.path).convert("RGB")
         m.thumbnail((px(880), px(700)), Image.LANCZOS)
-        framed = ImageOps.expand(m, border=px(14), fill=(245, 245, 245))
+        framed = ImageOps.expand(m, border=px(14), fill=(250, 249, 246))
         meme_path = rdir / f"meme_{k}.png"
         framed.save(meme_path)
         hold = float(c.payload["duration"])
         layers.append(OverlayLayer(
             path=meme_path, x=int((W - framed.width) / 2),
-            y=px(480) - framed.height // 2 + px(200),
-            t_start=c.t, t_end=min(c.t + hold, duration), name=f"meme_{k}",
+            y=int(H * 0.34), t_start=c.t, t_end=min(c.t + hold, duration),
+            name=f"meme_{k}",
         ))
 
     for k, c in enumerate(cutaway_cues):
@@ -359,18 +531,18 @@ def render_short(
         ))
 
     # ------------------------------ inline hand-drawn doodles (TOP layer)
-    # rotate through a few slots so consecutive doodles don't stack
     doodle_slots = [(px(560), px(560)), (px(120), px(600)), (px(540), px(1180)),
                     (px(120), px(1180))]
     for k, c in enumerate(doodle_cues):
         visual = content.resolve_doodle(c.payload["value"])
         if visual is None:
             log.warning("doodle %r not resolved — skipped", c.payload["value"])
+            unresolved.append(f"[DOODLE: {c.payload['value']}]")
             continue
         hold = float(c.payload.get("hold", 1.6))
         clip, (cw, ch) = doodle_clip(
             visual.path, rdir / f"doodle_{k}.mov",
-            display_w=px(380), duration_s=hold + 0.2, fps=settings.fps,
+            display_w=px(380), duration_s=hold + 0.2, fps=fps,
             seed=f"{script.ticker}|doodle|{k}",
         )
         sx, sy = doodle_slots[k % len(doodle_slots)]
@@ -390,18 +562,36 @@ def render_short(
         sw, sh = px(520), px(360)
         frames = scribble_callout_frames(
             settings, sw, sh, style=style.value, target=target,
-            fps=settings.fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
+            fps=fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
         )
-        clip = frames_to_alpha_clip(frames, settings.fps, rdir / f"scribble_inline_{k}.mov")
+        clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_inline_{k}.mov")
         layers.append(OverlayLayer(
             path=clip, x=int((W - sw) / 2), y=px(560),
             t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
             is_video=True, hold=True, name=f"scribble_inline_{k}",
         ))
 
+    # --------------------------------------- [ALERT] lower-third overlays
+    for k, c in enumerate(alert_cues):
+        asset = kit.resolve_asset(KIT_TAG_FAMILIES[TagType.ALERT],
+                                  str(c.payload.get("value", "")))
+        hold = float(c.payload.get("hold", 2.4))
+        if asset is None:
+            unresolved.append(f"[ALERT: {c.payload.get('value')}]")
+            continue
+        img = fit_into(render_still(asset, None, settings), px(940), px(300))
+        clip = frames_to_alpha_clip(
+            slide_in_frames(img, fps=fps, seconds=0.3, direction="right"),
+            fps, rdir / f"alert_{k}.mov")
+        layers.append(OverlayLayer(
+            path=clip, x=int((W - img.width) / 2), y=int(H * 0.68),
+            t_start=c.t, t_end=min(c.t + hold, duration),
+            is_video=True, hold=True, name=f"alert_{k}",
+        ))
+
     # ------------------------------------------- beat-transition stingers
     flash = frames_to_alpha_clip(
-        flash_frames(W, H, fps=settings.fps), settings.fps, rdir / "flash.mov",
+        flash_frames(W, H, fps=fps), fps, rdir / "flash.mov",
     )
     for c in transitions:
         if c.t <= 0.05:
@@ -413,21 +603,39 @@ def render_short(
         ))
 
     # ------------------------------- cheap or trap: the value-trap beat
-    # Held for SHORT_MIN_READABLE_S by the timeline — this is the one card in
-    # a short the viewer is expected to read rather than glance at.
     for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
         trap_img = text_panel(settings, c.payload["text"], width=px(980),
                               font_name=SHANTELL, font_size=px(46), accent=RED,
                               bg=(250, 249, 246, 242))
-        trap_path = rdir / "cheap_or_trap.png"
-        trap_img.save(trap_path)
+        trap_clip = frames_to_alpha_clip(
+            slide_in_frames(trap_img, fps=fps, seconds=0.4, direction="up"),
+            fps, rdir / "cheap_or_trap.mov")
         layers.append(OverlayLayer(
-            path=trap_path, x=int((W - trap_img.width) / 2), y=px(560),
-            t_start=c.t, t_end=float(c.payload["until"]), fade_in=0.25,
-            name="cheap_or_trap",
+            path=trap_clip, x=int((W - trap_img.width) / 2), y=px(STAGE_Y + 120),
+            t_start=c.t, t_end=min(float(c.payload["until"]), payoff_t),
+            is_video=True, hold=True, name="cheap_or_trap",
         ))
 
-    # ------------------------------------------------- the payoff card
+    # ------------------------------------------------- the payoff
+    # The card slams onto the stage; the deadpan line lands in the ledger under
+    # it and stays to the end. Not a verdict stamp — the card is the shape the
+    # channel closes on and the words are what it actually said.
+    card_key = payoff_card_key(conclusion.payload["text"])
+    card_asset = kit.get(card_key)
+    if card_asset is not None:
+        card_img = fit_into(render_still(card_asset, None, settings),
+                            px(940), px(400))
+        card_clip = frames_to_alpha_clip(
+            stamp_slam_frames(card_img, fps=fps, seconds=0.45),
+            fps, rdir / "payoff_card.mov")
+        layers.append(OverlayLayer(
+            path=card_clip, x=int((W - card_img.width) / 2), y=px(STAGE_Y + 140),
+            t_start=payoff_t, t_end=min(payoff_t + 2.4, close_t),
+            is_video=True, hold=True, name="payoff_card",
+        ))
+    else:
+        unresolved.append(card_key)
+
     payoff_layout = _layout(PAYOFF_LAYOUTS, conclusion.payload.get("variant"))
     conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
                           font_name=SHANTELL, font_size=px(payoff_layout["size"]),
@@ -436,36 +644,102 @@ def render_short(
     conc_img.save(conc_path)
     layers.append(OverlayLayer(
         path=conc_path, x=int((W - conc_img.width) / 2), y=px(payoff_layout["y"]),
-        t_start=conclusion.t, t_end=duration, fade_in=0.25, name="conclusion",
+        t_start=payoff_t, t_end=duration, fade_in=0.25, name="conclusion",
     ))
 
-    # a deadpan mascot rides the payoff — the reaction-head stickman
-    mascot = content.resolve_doodle("reactions/deadpan")
-    if mascot is not None:
-        mclip, (mcw, mch) = doodle_clip(
-            mascot.path, rdir / "mascot.mov",
-            display_w=px(220), duration_s=max(duration - conclusion.t, 0.5),
-            fps=settings.fps, seed=f"{script.ticker}|mascot",
+    # ------------------------------------------------------- the host rig
+    # Dennis goes on LAST so he is on top of the stage, not under it. He was
+    # the first thing composited before, which put the chart, the sheet and
+    # every card over his face — a host you cannot see is a host you do not
+    # have.
+    #
+    # Bookends are full-width on the stage. A mid-video return is the two-shot:
+    # a smaller inset beside the evidence, which stays up, so the cut never
+    # leaves him and never hides what he is talking about.
+    host_shot_i = 0
+
+    def add_host(cue, role: str, name: str, *, inset: bool = False) -> bool:
+        nonlocal host_shot_i
+        t0, t1 = float(cue.t), float(cue.payload.get("until", cue.t))
+        t1 = min(t1, duration)
+        if t1 <= t0:
+            return False
+        width = px(560) if inset else W
+        built = build_host_clip(
+            tts.words, t0, t1, rdir / f"host_{name}.mov",
+            kit=kit, settings=settings, display_w=width, fps=fps,
+            role=role, shot_index=host_shot_i,
         )
+        host_shot_i += 1
+        if built is None:
+            return False
+        clip, (hw, hh) = built
+        if inset:
+            x, y = W - hw - px(30), px(INSET_Y)
+        else:
+            x, y = int((W - hw) / 2), px(HOST_Y)
         layers.append(OverlayLayer(
-            path=mclip, x=W - mcw - px(70), y=px(800),
-            t_start=conclusion.t, t_end=duration, is_video=True, name="mascot",
+            path=clip, x=x, y=min(y, H - hh), t_start=t0, t_end=t1,
+            is_video=True, hold=True, name=f"host_{name}",
         ))
+        return True
+
+    if not add_host(host_open, "open", "open"):
+        raise KitError(
+            "the SHORT has no host: no usable talk pair in the kit's cold-open "
+            "bank. Dennis opens and closes every short on camera — a render "
+            "without him is the bug, not a degraded mode. Run `/kit doctor`.")
+    add_host(host_close, "close", "close")
+    for i, c in enumerate(host_beats):
+        add_host(c, "panel", f"beat{i}", inset=True)
+
+    # ------------------------------------------- the signature open/close
+    # Full-frame, over everything including the host: they are the channel's
+    # top and tail, not a layer in the composition.
+    open_asset = kit.get(OPEN_KEY)
+    open_hold = max(playback_seconds(open_asset), 1.4)
+    open_clip, _ = render_clip(
+        open_asset, rdir / "e_open.mov", duration_s=open_hold, fps=fps,
+        settings=settings, display_w=W,
+        values={"title": f"${script.ticker}",
+                "strapline": settings.brand_tagline.lower()},
+    )
+    layers.append(OverlayLayer(
+        path=open_clip, x=0, y=0, t_start=0.0,
+        t_end=min(open_hold, duration), is_video=True, name="e_open",
+    ))
+
+    close_asset = kit.get(CLOSE_KEY)
+    close_hold = max(playback_seconds(close_asset), 1.6)
+    e_close_t = max(duration - close_hold, 0.0)
+    close_clip, _ = render_clip(
+        close_asset, rdir / "e_close.mov", duration_s=close_hold, fps=fps,
+        settings=settings, display_w=W,
+        values={"line": settings.brand_tagline.lower(),
+                "handle": settings.brand_handle},
+    )
+    layers.append(OverlayLayer(
+        path=close_clip, x=0, y=0, t_start=e_close_t, t_end=duration,
+        is_video=True, hold=True, name="e_close",
+    ))
 
     # -------------------------------------------------------- disclaimer
-    disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(30),
+    disc_img = simple_text(settings, settings.disclaimer_text, font_size=px(28),
                            fill=(143, 140, 131, 235), stroke_width=0)
     disc_path = rdir / "disclaimer.png"
     disc_img.save(disc_path)
     layers.append(OverlayLayer(
-        path=disc_path, x=int((W - disc_img.width) / 2), y=H - px(70),
+        path=disc_path, x=int((W - disc_img.width) / 2), y=H - px(66),
         t_start=0.0, t_end=duration, name="disclaimer",
     ))
 
     # ---------------------------------------------------------- captions
+    # Dark ink on a paper chip, phrase by phrase. The red karaoke fill was
+    # colouring text the same red the kit reserves for a down-move, on lines
+    # that had been split wherever the page happened to fill up.
     ass_path = rdir / "captions.ass"
-    ass_path.write_text(build_karaoke_ass(
-        tts.words, play_res=(W, H), font_size=px(62), margin_v=px(120),
+    ass_path.write_text(build_phrase_ass(
+        tts.words, play_res=(W, H), font_size=px(58), margin_v=px(150),
         duration=duration,
     ), encoding="utf-8")
 
@@ -503,19 +777,17 @@ def render_short(
                                     gain_db=settings.sfx_gain_db))
 
     # ------------------------------------------------------------ encode
-    # The backdrop holds dead still. Nothing in this pipeline pans or zooms —
-    # the motion is Dennis, the beat cuts and the row type-ons composited over
-    # this plate, and a drifting backdrop under a numbers sheet only made the
-    # sheet harder to read.
-    bg = settings.assets_dir / "backgrounds" / "dennis_bg_tall.png"
+    # The backdrop holds dead still. NOTHING in this pipeline pans or zooms:
+    # 84 of the kit's assets carry their own motion, and drift on top of a
+    # registered frame sequence makes the registration itself look broken.
     base_filter = (
         f"scale={W}:{H}:force_original_aspect_ratio=increase,"
         f"crop={W}:{H},setsar=1,format=yuv420p"
     )
     spec = CompositeSpec(
         base_input_args=[
-            "-loop", "1", "-framerate", str(settings.fps),
-            "-t", f"{duration:.3f}", "-i", str(bg),
+            "-loop", "1", "-framerate", str(fps),
+            "-t", f"{duration:.3f}", "-i", str(backdrop.path),
         ],
         base_filter=base_filter,
         layers=layers,
@@ -523,10 +795,11 @@ def render_short(
         ass_path=ass_path,
         fonts_dir=settings.fonts_dir,
         duration=duration,
-        fps=settings.fps,
+        fps=fps,
     )
     out_path = workspace / out_name
-    composite_video(spec, encode_profile(settings, "short"), settings.audio_bitrate, out_path)
+    composite_video(spec, encode_profile(settings, "short"), settings.audio_bitrate,
+                    out_path)
 
     rendered = ffprobe_duration(out_path)
     if abs(rendered - duration) > 0.5:
@@ -535,15 +808,24 @@ def render_short(
             f"clock {duration:.2f}s"
         )
 
+    if unresolved:
+        log.warning("short: %d tag key(s) did not resolve: %s",
+                    len(unresolved), ", ".join(unresolved))
+
     manifest_path = workspace / "render_short_manifest.json"
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "duration": duration,
         "opener": opener,
+        "theme": "light",
+        "host": {"shots": host_shot_i, "bookends": True},
         "chart": {"source": prices.source, "degraded": prices.degraded,
                   "direction": chart_meta["direction"],
                   "style": script.chart_style.value},
         "cues": [c.model_dump() for c in cues],
+        "pacing_warnings": pacing_warnings,
+        "unresolved_keys": unresolved,
+        "kit_assets_used": sorted({l.name for l in layers}),
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}
             for l in layers
@@ -552,3 +834,104 @@ def render_short(
         "output": str(out_path),
     }, indent=2), encoding="utf-8")
     return out_path, manifest_path
+
+
+def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
+                    settings: Settings, content: ContentManager, workspace: Path,
+                    rdir: Path, layers: list[OverlayLayer], W: int, H: int,
+                    px, fps: int, duration: float, hold: float, is_data: bool,
+                    name: str) -> bool:
+    """Composite one tag beat. Returns False when the key did not resolve.
+
+    Data beats take the frame — fitted large and centred. Punctuation rides
+    smaller and off to one side, over whatever is already up, which is what
+    keeps a reaction from erasing the thing it is reacting to.
+    """
+    from PIL import Image
+
+    from pipeline.company_data import prepare_screenshot
+    from pipeline.filings import screenshot_article
+
+    box = (px(1000), px(900)) if is_data else (px(560), px(560))
+    y = int(H * 0.26) if is_data else int(H * 0.58)
+    t_end = min(cue.t + hold, duration)
+
+    def place_still(img) -> bool:
+        img = fit_into(img, *box)
+        frames = (stamp_slam_frames(img, fps=fps, seconds=0.35) if is_data
+                  else slide_in_frames(img, fps=fps, seconds=0.3, direction="up"))
+        clip = frames_to_alpha_clip(frames, fps, rdir / f"{name}.mov")
+        layers.append(OverlayLayer(
+            path=clip, x=int((W - img.width) / 2), y=y,
+            t_start=cue.t, t_end=t_end, is_video=True, hold=True, name=name))
+        return True
+
+    if tag in (TagType.TERM, TagType.BIGNUM, TagType.PROP):
+        asset, is_blank = _kit_asset_for(kit, tag, value)
+        if asset is None:
+            return False
+        values = _blank_values(tag, value, script) if is_blank else None
+        if asset.animated:
+            # A one-shot must run its whole strip: a six-frame transformation
+            # cut at three frames is a drawing of nothing having happened.
+            span = max(hold, playback_seconds(asset))
+            t_end2 = min(cue.t + span, duration)
+            clip, (cw, ch) = render_clip(
+                asset, rdir / f"{name}.mov", duration_s=t_end2 - cue.t, fps=fps,
+                settings=settings, values=values, display_w=box[0])
+            layers.append(OverlayLayer(
+                path=clip, x=int((W - cw) / 2), y=y, t_start=cue.t,
+                t_end=t_end2, is_video=True, hold=True, name=name))
+            return True
+        return place_still(render_still(asset, values, settings))
+
+    if tag is TagType.SHOW_ARTICLE:
+        shot = screenshot_article(value, rdir / f"{name}.png", settings)
+        if shot is None:
+            return False
+        return place_still(Image.open(shot).convert("RGBA"))
+
+    if tag is TagType.SHOW_FILING:
+        src = workspace / value
+        if not src.exists():
+            return False
+        prepared = prepare_screenshot(src, rdir / f"{name}.png", settings)
+        return place_still(Image.open(prepared).convert("RGBA"))
+
+    if tag is TagType.SCREENGRAB:
+        try:
+            visual = content.resolve_screengrab(value)
+        except Exception:  # noqa: BLE001 — a missing capture is a tag miss
+            return False
+        if visual.is_video:
+            layers.append(OverlayLayer(
+                path=visual.path, x=0, y=0, t_start=cue.t, t_end=t_end,
+                is_video=True, hold=True, name=name))
+            return True
+        return place_still(Image.open(visual.path).convert("RGBA"))
+
+    if tag in (TagType.IMG, TagType.PRODUCT):
+        try:
+            visual = content.resolve_image(value, kind="img")
+        except Exception:  # noqa: BLE001
+            return False
+        return place_still(Image.open(visual.path).convert("RGBA"))
+
+    if tag is TagType.MEME:
+        try:
+            visual = content.resolve_meme(value)
+        except Exception:  # noqa: BLE001
+            return False
+        return place_still(Image.open(visual.path).convert("RGBA"))
+
+    if tag in (TagType.CLIP, TagType.BROLL):
+        try:
+            visual = content.resolve_clip(value, portrait=True)
+        except Exception:  # noqa: BLE001
+            return False
+        layers.append(OverlayLayer(
+            path=visual.path, x=0, y=0, t_start=cue.t, t_end=t_end,
+            is_video=True, hold=True, name=name))
+        return True
+
+    return False

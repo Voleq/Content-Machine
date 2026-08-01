@@ -5,7 +5,7 @@ Products:
   * `render_price_chart`        — the clean SHORT hero: price line + area
     fill on a dark card, ticker + move badge, last-point marker.
   * `render_marker_price_chart` — the crude "napkin chart": the same price
-    data drawn as a rough hand-drawn marker scribble on black. Same meta
+    data drawn as a rough hand-drawn marker scribble on paper. Same meta
     contract, so a SHORT can open on either (chart_style / [CHART: … style=marker]).
   * `render_metric_chart`       — the [CHART: metric] auto-chart for LONG:
     multi-year bars from the company-data history sheet.
@@ -16,7 +16,7 @@ slots) so annotations and headline overlays anchor to real pixels.
 Chart-craft rules applied: one axis, single series (the title names it —
 no legend), thin marks, recessive grid, direction stated in TEXT (+/-%)
 so color is never the only channel. Up/down colors never co-occur on one
-chart; all inks pass ≥3:1 contrast on the dark surface.
+chart; all inks pass ≥3:1 contrast on the paper surface.
 """
 
 from __future__ import annotations
@@ -221,9 +221,12 @@ def render_marker_price_chart(
     line_rgb = UP if up else DOWN
     rng = random.Random(f"marker|{series.ticker}|{closes[-1]}|{len(closes)}")
 
-    BLACK = (8, 9, 11)
-    CHALK = (232, 232, 226)
-    img = Image.new("RGBA", (W, H), (*BLACK, 255))
+    # The napkin chart is marker on PAPER, not chalk on black. It used to be
+    # the one dark surface left in a light kit, and it sat behind the hook —
+    # so a short opened by inverting its own theme.
+    PAPER = FRAME
+    CHALK = INK
+    img = Image.new("RGBA", (W, H), (*PAPER, 255))
     d = ImageDraw.Draw(img)
     nib = max(int(W * 0.006), 3)
 

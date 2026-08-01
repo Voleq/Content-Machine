@@ -374,6 +374,8 @@ class Settings(BaseSettings):
     # brand copy burned into the intro/outro bug — never the data vendor
     brand_name: str = "DENNIS"
     brand_tagline: str = "NOISE OR SIGNAL?"
+    # the handle the signature close card signs off with
+    brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")
 
     # ------------------------------------------------------------ mock timing
     # Deterministic mock TTS pacing (words per second) so rendered fixtures

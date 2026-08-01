@@ -701,3 +701,95 @@ def veto_shot(workspace: Path, name: str) -> bool:
     manifest["shots"] = remaining
     _manifest_path(workspace).write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return True
+
+
+# --------------------------------------------------------------------------
+# [SHOW ARTICLE: url] — the real headline, screenshotted.
+# --------------------------------------------------------------------------
+# The same browser this module already vendors for filing quotes, pointed at
+# a live article instead of a downloaded 10-K. A short's WHY beat is about a
+# headline, and paraphrasing it into a card loses the one thing that makes it
+# evidence: that somebody actually published it.
+#
+# Best-effort by construction. No network, a paywall, a cookie wall or a slow
+# page returns None and the caller falls back to the designed headline card —
+# a render is never blocked on somebody else's site being up.
+
+_ARTICLE_HEAD_SELECTORS = (
+    "article h1", "main h1", "h1",
+    "[itemprop='headline']", "header h1", ".headline", ".article-title",
+)
+
+
+def _shoot_article(url: str, dest: Path, settings: Settings,
+                   *, width: int, timeout_ms: int) -> Path | None:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        log.warning("article shot: playwright not installed")
+        return None
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    exe = _chromium_executable(settings)
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, executable_path=exe)
+            try:
+                page = browser.new_page(device_scale_factor=2,
+                                        viewport={"width": width, "height": 1400})
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout_ms)
+                # Consent and paywall overlays sit on top of exactly the
+                # region we want, so they are removed rather than clicked —
+                # clicking is a different button on every site.
+                page.evaluate(
+                    """() => {
+                        for (const el of document.querySelectorAll('body *')) {
+                            const s = getComputedStyle(el);
+                            if ((s.position === 'fixed' || s.position === 'sticky')
+                                && el.getBoundingClientRect().height > 120) {
+                                el.style.display = 'none';
+                            }
+                        }
+                    }""")
+                target = None
+                for sel in _ARTICLE_HEAD_SELECTORS:
+                    loc = page.locator(sel).first
+                    if loc.count():
+                        target = loc
+                        break
+                if target is None:
+                    log.warning("article shot: no headline element at %s", url)
+                    return None
+                # The headline region, not the headline alone: the standfirst
+                # and byline under it are what make it read as a page.
+                block = target.locator(
+                    "xpath=ancestor-or-self::*[self::header or self::article "
+                    "or self::main or self::div][1]")
+                shot_at = block.first if block.count() else target
+                shot_at.scroll_into_view_if_needed(timeout=4000)
+                shot_at.screenshot(path=str(dest), timeout=8000)
+            finally:
+                browser.close()
+    except Exception as e:  # noqa: BLE001 — somebody else's website
+        log.warning("article shot failed for %s (%s)", url, e)
+        return None
+    return dest if dest.exists() else None
+
+
+def screenshot_article(url: str, dest: Path, settings: Settings,
+                       *, width: int = 1100, timeout_ms: int = 20000) -> Path | None:
+    """Screenshot the headline region of a live article. None on any failure.
+
+    Runs in a worker thread for the same reason the filing shots do:
+    Playwright's sync API cannot run inside a running asyncio loop, and the
+    bot handler always has one.
+    """
+    url = (url or "").strip()
+    if not url.lower().startswith(("http://", "https://")):
+        log.warning("article shot: %r is not an http(s) url", url)
+        return None
+    if getattr(settings, "mock_screener", False) or settings.mock_mode:
+        log.info("MOCK: not fetching %s — the headline card will be drawn", url)
+        return None
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        return ex.submit(_shoot_article, url, dest, settings,
+                         width=width, timeout_ms=timeout_ms).result()

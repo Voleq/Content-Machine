@@ -107,6 +107,59 @@ SHORT_BEAT_VARIANTS: dict[str, tuple[str, ...]] = {
 SHORT_MIN_READABLE_S = 4.5   # numbers sheet and the cheap-or-trap card
 HOST_BOOKEND_S = (3.0, 5.0)  # Dennis opens and closes on camera
 
+# --------------------------------------------------------------------------
+# SHORT pacing (§4 pace, enforced rather than hoped for)
+#
+# Two classes of beat, and the whole rhythm is the difference between them:
+#
+# * DATA is something the viewer reads — a figure, a filing line, a term card,
+#   the numbers sheet. It gets 3 to 8 seconds and is never cut short; a later
+#   tag is deferred rather than allowed to truncate it.
+# * PUNCTUATION is something they register — a reaction, a transformation, a
+#   meme, a doodle. It runs 0.6 to 2 seconds, layered over the frame.
+#
+# Two data beats back to back is the failure this exists to stop: two things
+# to read with nothing between them reads as a slideshow, and the second one
+# is not read at all.
+# --------------------------------------------------------------------------
+SHORT_DATA_HOLD_S = (3.0, 8.0)
+SHORT_PUNCT_HOLD_S = (0.6, 2.0)
+
+# Dennis comes back every four to five beats. Longer and the video stops being
+# a person talking; shorter and the evidence never gets a run.
+SHORT_HOST_EVERY = 4
+
+# Roughly one visual event every three and a half seconds. Outside this band
+# the cut is either frantic or a slideshow — a warning, not a failure, because
+# the script is the operator's call.
+SHORT_EVENTS_PER_75S = (18, 22)
+
+# Which tag kinds are read and which are registered.
+SHORT_DATA_TAGS = frozenset({
+    TagType.BIGNUM, TagType.TERM, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT,
+})
+SHORT_PUNCT_TAGS = frozenset({
+    TagType.PROP, TagType.MEME, TagType.CLIP, TagType.BROLL,
+})
+
+_SHORT_TAG_TO_KIND = {
+    TagType.BIGNUM: CueKind.BIGNUM,
+    TagType.TERM: CueKind.TERM,
+    TagType.PROP: CueKind.PROP,
+    TagType.SHOW_FILING: CueKind.FILING,
+    TagType.SHOW_ARTICLE: CueKind.ARTICLE,
+    TagType.SCREENGRAB: CueKind.SCREENGRAB,
+    TagType.IMG: CueKind.IMG,
+    TagType.PRODUCT: CueKind.IMG,
+    TagType.MEME: CueKind.MEME,
+    TagType.CLIP: CueKind.CLIP,
+    TagType.BROLL: CueKind.CLIP,
+}
+
+# The fixed beats that are themselves data — they count for adjacency.
+_FIXED_DATA_KINDS = (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP)
+
 
 def pick_beat_variant(beat: str, script_sha: str) -> str:
     """Deterministically choose this short's layout for one beat."""
@@ -288,13 +341,151 @@ def build_short_timeline(
 
     # ---- 6. host bookend: Dennis closes on camera over the last words
     host_close_len = min(max(duration - payoff_t, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1])
-    cues.append(Cue(t=clamp(duration - host_close_len, duration),
-                    kind=CueKind.HOST_CLOSE,
+    host_close_t = clamp(duration - host_close_len, duration)
+    cues.append(Cue(t=host_close_t, kind=CueKind.HOST_CLOSE,
                     payload={"until": duration, "text": script.conclusion,
                              "variant": "close"}))
 
+    # ---- 7. the tag grammar: evidence the script asked for by name.
+    #      Anchored to the word it was written against, exactly like the LONG.
+    #      These are what turn a short from four fixed cards into something
+    #      that can reach the library.
+    for e in script.evidence_events():
+        kind = _SHORT_TAG_TO_KIND.get(e.type)
+        if kind is None:
+            continue
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        is_data = e.type in SHORT_DATA_TAGS
+        lo, hi = SHORT_DATA_HOLD_S if is_data else SHORT_PUNCT_HOLD_S
+        cues.append(Cue(
+            t=t, kind=kind,
+            payload={"value": e.payload, "tag": e.type.value,
+                     "style": e.style, "class": "data" if is_data else "punct",
+                     "hold": lo, "min_hold": lo, "max_hold": hi},
+        ))
+
+    # ---- 8. [ALERT] lower-thirds ride over whatever is on screen
+    for e in script.alert_events():
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        cues.append(Cue(t=t, kind=CueKind.ALERT,
+                        payload={"value": e.payload, "hold": 2.4}))
+
     cues.sort(key=lambda c: c.t)
     return cues
+
+
+# --------------------------------------------------------------------------
+# SHORT pacing pass.
+# --------------------------------------------------------------------------
+def plan_short_pacing(
+    cues: list[Cue],
+    duration: float,
+    *,
+    host_every: int = SHORT_HOST_EVERY,
+) -> tuple[list[Cue], list[str]]:
+    """Apply the pacing contract to a short's evidence cues.
+
+    Returns the cues with `hold` resolved and any host returns inserted, plus
+    warnings the operator should read. The rules, in the order they are
+    applied:
+
+    1. **A data beat is never cut short.** Each one gets at least its minimum
+       hold; a beat that would truncate it is pushed out instead of shortening
+       it. If the push runs past the payoff, the beat is dropped and said so —
+       an unreadable beat is worse than a missing one.
+    2. **Punctuation stays punctuation.** Held between 0.6 and 2 seconds,
+       layered over whatever frame is up rather than replacing it.
+    3. **Never two data beats adjacent.** With nothing between them the second
+       one is not read. The later one moves after the punctuation that follows
+       it, or is dropped.
+    4. **Dennis every four to five beats.** A host return is inserted in the
+       gap after the fourth consecutive evidence beat.
+    5. The event count is checked against the 18-22-per-75s band and warned
+       about, never enforced — the script is the operator's call.
+    """
+    warnings: list[str] = []
+    evidence = sorted(
+        (c for c in cues if c.payload.get("class") in ("data", "punct")),
+        key=lambda c: c.t)
+    if not evidence:
+        return list(cues), warnings
+
+    payoff = next((c.t for c in cues if c.kind is CueKind.CONCLUSION), duration)
+    fixed_data = sorted(c.t for c in cues if c.kind in _FIXED_DATA_KINDS)
+
+    kept: list[Cue] = []
+    prev_end = 0.0
+    prev_was_data = False
+    for cue in evidence:
+        is_data = cue.payload.get("class") == "data"
+        lo = float(cue.payload.get("min_hold", 0.6))
+        hi = float(cue.payload.get("max_hold", 2.0))
+        t = max(cue.t, prev_end)
+
+        # Rule 3 — two data beats in a row need something between them.
+        if is_data and prev_was_data:
+            warnings.append(
+                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] follows "
+                f"another data beat with no punctuation between them — moved "
+                f"back so the first one can be read")
+            t = max(t, prev_end + SHORT_PUNCT_HOLD_S[0])
+
+        if is_data and t + lo > payoff:
+            warnings.append(
+                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] cannot "
+                f"hold {lo:.1f}s before the payoff at {payoff:.1f}s — dropped "
+                f"rather than flashed")
+            continue
+
+        # Rule 1 — the hold runs until the next beat wants the frame, inside
+        # the class's band.
+        nxt = next((c.t for c in evidence if c.t > cue.t), duration)
+        nxt = min(nxt, *(f for f in fixed_data if f > t), duration) \
+            if any(f > t for f in fixed_data) else min(nxt, duration)
+        hold = min(max(nxt - t, lo), hi)
+        cue.payload["hold"] = round(hold, 3)
+        cue.t = round(t, 3)
+        kept.append(cue)
+        prev_end = t + hold
+        prev_was_data = is_data
+
+    # Rule 4 — Dennis comes back.
+    host_cues: list[Cue] = []
+    run = 0
+    for i, cue in enumerate(kept):
+        run += 1
+        if run < host_every:
+            continue
+        run = 0
+        gap_start = cue.t + float(cue.payload["hold"])
+        gap_end = kept[i + 1].t if i + 1 < len(kept) else payoff
+        if gap_end - gap_start < 1.2 or gap_start >= payoff:
+            continue
+        host_cues.append(Cue(
+            t=round(gap_start, 3), kind=CueKind.HOST_BEAT,
+            payload={"until": round(min(gap_end, payoff), 3), "variant": "beat"}))
+
+    others = [c for c in cues if c.payload.get("class") not in ("data", "punct")]
+    out = sorted(others + kept + host_cues, key=lambda c: c.t)
+
+    n_events = len(kept) + sum(
+        1 for c in others
+        if c.kind in (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
+                      CueKind.CHEAP_OR_TRAP, CueKind.CONCLUSION,
+                      CueKind.HOST_OPEN, CueKind.HOST_CLOSE))
+    n_events += len(host_cues)
+    lo_n, hi_n = SHORT_EVENTS_PER_75S
+    scaled = (lo_n * duration / 75.0, hi_n * duration / 75.0)
+    if n_events < scaled[0]:
+        warnings.append(
+            f"{n_events} visual events in {duration:.0f}s — below the "
+            f"{scaled[0]:.0f}-{scaled[1]:.0f} band for this runtime; the cut "
+            f"will read as a slideshow")
+    elif n_events > scaled[1]:
+        warnings.append(
+            f"{n_events} visual events in {duration:.0f}s — above the "
+            f"{scaled[0]:.0f}-{scaled[1]:.0f} band; something will flash past")
+    return out, warnings
 
 
 # --------------------------------------------------------------------------
