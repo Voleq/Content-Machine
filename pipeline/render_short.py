@@ -923,8 +923,11 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
     from pipeline.company_data import prepare_screenshot
     from pipeline.filings import screenshot_article
 
-    box = (px(1000), px(900)) if is_data else (px(560), px(560))
-    y = int(H * 0.26) if is_data else int(H * 0.58)
+    # A data beat TAKES the stage; punctuation is LAYERED over whatever is
+    # already there, smaller and lower, so a reaction never erases the thing
+    # it is reacting to.
+    box = (px(1000), px(STAGE_H)) if is_data else (px(520), px(520))
+    y = px(STAGE_Y) if is_data else px(STAGE_Y + 260)
     t_end = min(cue.t + hold, duration)
 
     def place_still(img) -> bool:
