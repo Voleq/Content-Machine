@@ -23,6 +23,12 @@ The frame, top to bottom:
   * a **motion layer** on arrival only: figures count up to the spoken word,
     charts and bars draw on, table rows type on, cards slide in, the payoff
     slams, captions punch.
+  * artwork SIZED FOR THIS FRAME. A square or portrait drawing takes the
+    frame's full width — 134 of the kit's assets are 1:1 and every one of them
+    was being contain-fitted into a 1000x760 landscape box, so it covered 28%
+    of a 1080x1920 screen and the whole video read as cards floating in paper.
+    `render_short_manifest.json` records what fraction of the frame each beat
+    actually occupies, so this stays a measurement rather than an opinion.
 
 NOTHING PANS OR ZOOMS. The motion is in the frames now — 84 of the kit's assets
 are real sequences — and drift on top of a registered strip makes the
@@ -64,6 +70,7 @@ from pipeline.kit_frames import (
     transition_transform,
 )
 from pipeline.number_beats import beat_for_row
+from pipeline.vertical_beats import beat_for_row as vertical_beat_for_row
 from pipeline.models import (
     KIT_TAG_BLANKS,
     KIT_TAG_FAMILIES,
@@ -131,6 +138,26 @@ DESK_OPEN_KEY = "shorts/the-world/d-desk-wide"
 DESK_CHART_KEY = "shorts/the-world/d-desk-over-shoulder"
 DESK_PAYOFF_KEY = "shorts/the-world/d-desk-side"
 
+# The room, for the stretch between the acts. The three keys above covered the
+# open, the chart and the payoff; everything in between — the gut check, which
+# is the longest section of the video — played on blank `room-tall`. A room
+# with a desk in it reads as a place; blank paper reads as a missing asset.
+#
+# `d-desk-over-shoulder` is deliberately NOT here. It is a SHOT — the back of
+# his head fills the lower third, framing the monitor — which is right when
+# the beat is "he is looking at the chart" and oppressive as a backdrop held
+# behind four other beats.
+DESK_SET: tuple[str, ...] = (
+    "shorts/the-world/d-desk-wide",
+    "shorts/the-world/d-desk-side",
+    "shorts/the-world/d-desk-empty",
+)
+
+# How long one backdrop holds before the room changes angle. Long enough that
+# it is a place rather than a cut, short enough that a forty-second gut check
+# is not one still.
+DESK_ROTATE_S = 11.0
+
 # --------------------------------------------------------------------------
 # The vertical layout, in 1080-wide design coordinates on a 1080x1920 frame.
 #
@@ -140,15 +167,24 @@ DESK_PAYOFF_KEY = "shorts/the-world/d-desk-side"
 # under both. Naming the bands is what makes a beat able to REPLACE the one
 # before it instead of piling on top of it.
 #
-#   FURNITURE   0 ..  200   the bug and the ticker pill. Always up.
-#   STAGE     360 .. 1120   whatever the beat is. Exactly one thing at a time:
+#   FURNITURE   0 ..  140   the bug and the ticker pill. Always up.
+#   HOOK      170 ..  330   the mute-safe opening line, ABOVE the artwork.
+#   STAGE     230 .. 1310   whatever the beat is. Exactly one thing at a time:
 #                           the host, the chart, the sheet, or a tag beat.
-#   LEDGER   1150 .. 1500   the mute-safe line — hook, then trap, then payoff.
+#   LEDGER   1340 .. 1560   the trap and the payoff line.
 #   CAPTIONS 1560 .. 1800   the spoken word. Nothing else goes here.
+#
+# Vertical video reads text-top, action-centre, captions-bottom. This used to
+# read text-bottom, action-middle, text-bottom: the stage started at 360 and
+# ran 760 tall, so the top nineteen per cent of every frame was blank paper
+# while the hook, the ledger and the captions all competed in the bottom
+# third. The stage is taller and starts higher, and the hook has its own band
+# above it.
 # --------------------------------------------------------------------------
-STAGE_Y = 360
-STAGE_H = 760
-LEDGER_Y = 1150
+STAGE_Y = 230
+STAGE_H = 1080        # tall enough that a 1:1 drawing gets the FULL frame width
+HOOK_Y = 170          # the hook band, above the stage
+LEDGER_Y = 1340
 HOST_Y = 430          # the 16:9 shots are full-width; this centres them
 INSET_Y = 1120        # the two-shot inset, clear of the ledger
 INSET_W = 480         # ... and the column it reserves on the right
@@ -156,22 +192,37 @@ INSET_GAP = 28        # clear air between the inset and whatever sits beside it
 INSET_MARGIN = 30     # the inset's own distance from the right edge
 CAPTION_MARGIN_V = 150  # the caption band's distance from the bottom edge
 
+# A data beat's box. A SQUARE or PORTRAIT drawing fits the frame's full width
+# and takes whatever height it needs; only a landscape one is contain-fitted
+# into a landscape box.
+#
+# The box was a flat 1000x760 for everything, so a 1:1 asset — 134 of them —
+# contain-fitted to 760x760 and covered 28% of a 1080x1920 frame. Fitting the
+# same drawing to width puts it at 1080x1080, 56%, and doubles its presence
+# for nothing.
+STAGE_MAX_W = 1080
+PUNCT_BOX = 760       # was 520, which put a 1:1 reaction at 13% of frame —
+                      # small enough to read as a sticker rather than a beat
+
 # Per-beat layout variants from the design kit's Short Variants sheet. The
 # timeline picks one per beat from the script hash, so two shorts cut on the
 # same day do not share a layout while any single script always renders
 # identically.
+# The hook sits ABOVE the artwork. It used to render in the ledger band at
+# 1150, under the stage, so the hook, the trap line and the captions all
+# competed in the bottom third of the frame while the top fifth was blank.
 HOOK_LAYOUTS: dict[str, dict] = {
-    "a": {"y": LEDGER_Y, "size": 60, "width": 960, "accent": RED},
-    "b": {"y": LEDGER_Y + 40, "size": 68, "width": 920, "accent": RED},
-    "c": {"y": LEDGER_Y + 80, "size": 54, "width": 980, "accent": INK},
-    "d": {"y": LEDGER_Y - 20, "size": 64, "width": 880, "accent": RED},
-    "e": {"y": LEDGER_Y + 20, "size": 62, "width": 940, "accent": INK},
+    "a": {"y": HOOK_Y, "size": 60, "width": 960, "accent": RED},
+    "b": {"y": HOOK_Y + 14, "size": 68, "width": 920, "accent": RED},
+    "c": {"y": HOOK_Y + 26, "size": 54, "width": 980, "accent": INK},
+    "d": {"y": HOOK_Y - 10, "size": 64, "width": 880, "accent": RED},
+    "e": {"y": HOOK_Y + 6, "size": 62, "width": 940, "accent": INK},
 }
 NUMBERS_LAYOUTS: dict[str, dict] = {
-    "a": {"y": STAGE_Y + 40, "width": 1000},
-    "b": {"y": STAGE_Y, "width": 1000},
-    "c": {"y": STAGE_Y + 80, "width": 960},
-    "d": {"y": STAGE_Y + 20, "width": 980},
+    "a": {"y": STAGE_Y + 40, "width": 1060},
+    "b": {"y": STAGE_Y, "width": 1080},
+    "c": {"y": STAGE_Y + 80, "width": 1040},
+    "d": {"y": STAGE_Y + 20, "width": 1060},
 }
 PAYOFF_LAYOUTS: dict[str, dict] = {
     "a": {"y": LEDGER_Y, "size": 48, "accent": INK},
@@ -378,6 +429,46 @@ def render_short(
     # composites over them exactly as it did over the bare backdrop.
     from PIL import Image
 
+    # ------------------------------------------------- how big it all is
+    # The number this whole layout exists to move. Every visual beat records
+    # the fraction of the frame it actually occupies, so "the frame reads
+    # empty" stops being an opinion: a 1:1 drawing contain-fitted into a
+    # 1000x760 landscape box covers 28% of a 1080x1920 frame, and fitted to
+    # the frame's width it covers 56%. Both are measurable and neither needed
+    # anybody to watch the video.
+    beat_coverage: list[dict] = []
+
+    def note_beat(name: str, w: int, h: int, *, is_data: bool,
+                  plate_of: tuple[int, int] | None = None) -> None:
+        """Record one beat's size.
+
+        `w, h` is the ARTWORK — what the brief asks for and the only number
+        that cannot be inflated by the layout. `plate_of` is the drawing's own
+        size when the beat has been composed onto a full-frame plate, so a
+        card that owns the frame does not get to report itself as 100% of the
+        frame when its typesetting still covers a third of it.
+        """
+        if w <= 0 or h <= 0:
+            return
+        art_w, art_h = plate_of if plate_of else (w, h)
+        entry = {
+            "name": name, "w": int(art_w), "h": int(art_h),
+            "class": "data" if is_data else "punct",
+            "frac": round(min(art_w * art_h / float(W * H), 1.0), 4),
+        }
+        if plate_of:
+            entry["plated"] = True
+            entry["beat_frac"] = round(min(w * h / float(W * H), 1.0), 4)
+        if art_w >= W * 0.99 and art_h < H * 0.99:
+            # As wide as the frame and no taller than its own aspect allows.
+            # Nothing in the layout can grow this beat: a 16:9 asset on a 9:16
+            # frame is 1080x607 — 32% — and the only lever left is redrawing
+            # it. Marked so the median says WHICH assets are the constraint
+            # rather than just that the number is short.
+            entry["capped"] = "aspect"
+            entry["source_aspect"] = round(art_w / max(art_h, 1), 3)
+        beat_coverage.append(entry)
+
     def act_plate(key: str, name: str, t0: float, t1: float, *,
                   screen=None, y_frac: float = 0.36) -> None:
         asset = kit.get(key)
@@ -389,6 +480,29 @@ def render_short(
             "RGBA").save(dest)
         layers.append(OverlayLayer(path=dest, x=0, y=0, t_start=t0, t_end=t1,
                                    name=name))
+
+    def rotate_desk(t0: float, t1: float, name: str, *, screen=None,
+                    y_frac: float = 0.36) -> None:
+        """The room, changing angle across a long stretch.
+
+        The gut check is the longest section of the short and it played on
+        blank `room-tall` from start to finish, because only the open, the
+        chart and the payoff had a desk plate. The set ships four scenes.
+        """
+        span = t1 - t0
+        if span < 0.4:
+            return
+        n = max(int(span // DESK_ROTATE_S), 1)
+        step = span / n
+        # Seeded off the script so two shorts cut on the same day do not open
+        # the same section on the same angle, deterministic within one.
+        offset = int(hashlib.sha256(
+            f"desk|{script.content_sha()}".encode()).hexdigest()[:8], 16)
+        for i in range(n):
+            key = DESK_SET[(offset + i) % len(DESK_SET)]
+            act_plate(key, f"{name}_{i}", t0 + i * step,
+                      t1 if i == n - 1 else t0 + (i + 1) * step,
+                      screen=screen, y_frac=y_frac)
 
     act_plate(DESK_OPEN_KEY, "act_open", 0.0, stage_open_end)
 
@@ -445,15 +559,24 @@ def render_short(
             name="chart",
         ))
 
+    # The room through the middle — the gut check and the trap, which is most
+    # of the runtime and had no backdrop beyond the flat plate. This goes in
+    # HERE, with the other act plates, because z-order is list order: called
+    # at the end it composited over the numbers sheet and the sheet vanished.
+    rotate_desk(gut_t, payoff_t, "act_mid", y_frac=0.34)
+
     # ------------------------------------------------------------ hook card
-    # The mute-safe line, in the ledger band under the stage — it reads over
-    # the host open and stays through the WHY beat.
+    # The mute-safe line, ABOVE the stage — it reads over the host open and
+    # stays through the WHY beat. Vertical video reads text-top,
+    # action-centre, captions-bottom; this used to sit in the ledger band
+    # under the artwork, so the top of the frame was empty and the bottom
+    # third carried three competing blocks of type.
     hook_layout = _layout(HOOK_LAYOUTS, hook.payload.get("variant"))
     hook_img = text_panel(settings, hook.payload["text"], width=px(hook_layout["width"]),
                           font_name=SHANTELL, font_size=px(hook_layout["size"]),
                           accent=hook_layout["accent"])
     hook_clip = frames_to_alpha_clip(
-        slide_in_frames(hook_img, fps=fps, seconds=0.4, direction="up"),
+        slide_in_frames(hook_img, fps=fps, seconds=0.4, direction="down"),
         fps, rdir / "hook.mov")
     layers.append(OverlayLayer(
         path=hook_clip, x=int((W - hook_img.width) / 2), y=px(hook_layout["y"]),
@@ -495,13 +618,26 @@ def render_short(
         ))
 
     # -------------------------------------------------- the numbers sheet
+    # Drawn as wide as the stage band allows, then narrowed only if the rows
+    # would run past it. A six-row sheet at full width is taller than the
+    # band; shrinking the width shrinks the rows with it, because every metric
+    # scales off the width.
     sheet_layout = _layout(NUMBERS_LAYOUTS, numbers.payload.get("variant"))
-    sheet_img, layout = numbers_sheet_base(
-        settings, len(script.numbers), script.years, width=px(sheet_layout["width"]),
-    )
+    sheet_top = px(sheet_layout["y"])
+    band_h = max(px(STAGE_Y + STAGE_H) - sheet_top, px(200))
+    sheet_w = px(sheet_layout["width"])
+    while sheet_w > px(560):
+        sheet_img, layout = numbers_sheet_base(
+            settings, len(script.numbers), script.years, width=sheet_w)
+        if sheet_img.height <= band_h:
+            break
+        sheet_w = int(sheet_w * 0.92)
+    else:
+        sheet_img, layout = numbers_sheet_base(
+            settings, len(script.numbers), script.years, width=sheet_w)
     sheet_path = rdir / "sheet.png"
     sheet_img.save(sheet_path)
-    sheet_pos = (px(40), px(sheet_layout["y"]))
+    sheet_pos = (int((W - sheet_img.width) / 2), sheet_top)
     # The sheet owns the stage until the value-trap card (or the payoff) takes
     # it. Leaving it up to the end is how the payoff card ended up behind it.
     sheet_end = trap_t if trap_t is not None else payoff_t
@@ -509,6 +645,7 @@ def render_short(
         path=sheet_path, x=sheet_pos[0], y=sheet_pos[1],
         t_start=numbers.t, t_end=sheet_end, fade_in=0.2, name="numbers_sheet",
     ))
+    note_beat("numbers_sheet", sheet_img.width, sheet_img.height, is_data=True)
 
     row_geo: dict[int, tuple[int, int]] = {}
     for c in row_cues:
@@ -606,11 +743,46 @@ def render_short(
     # every-video.
     tagged_props = {str(c.payload.get("value", "")).lower()
                     for c in evidence_cues}
+
+    # ONE of them goes full-bleed. Eleven of the kit's drawings are 1080x1920
+    # compositions — the only assets built to BE this frame — and
+    # `is_full_frame` has always routed them correctly. They just never fired,
+    # because they only appeared when a writer named one by key, so the assets
+    # drawn to fill the frame were the assets a short never used. One per
+    # video: a short that cuts to full-bleed six times is emphasising nothing.
+    vertical_done = False
     for k, c in enumerate(zoom_cues):
         i = int(c.payload["row_index"])
         if i >= len(script.numbers):
             continue
         row = script.numbers[i]
+
+        if not vertical_done:
+            picked = vertical_beat_for_row(
+                kit, row.label, row.values, seed=script.content_sha(),
+                ledger=beat_ledger, exclude=tagged_props)
+            if picked is not None:
+                vkey, vvalues = picked
+                scene = kit.get(vkey)
+                if scene is not None:
+                    vspan = max(playback_seconds(scene), 2.2)
+                    vstart, _ = clip_to_stage(c.t, duration)
+                    vend = min(vstart + vspan, sheet_end)
+                    if vend - vstart >= 1.2:
+                        vertical_done = True
+                        used_keys.add(scene.key)
+                        vimg = cover_on_paper(
+                            render_still(scene, vvalues, settings), W, H)
+                        vdest = rdir / f"verticalbeat_{k}.png"
+                        vimg.convert("RGBA").save(vdest)
+                        layers.append(OverlayLayer(
+                            path=vdest, x=0, y=0, t_start=vstart, t_end=vend,
+                            fade_in=0.12,
+                            name=f"vertical_{vkey.rsplit('/', 1)[-1][:18]}",
+                        ))
+                        note_beat(f"vertical_{scene.name}", vimg.width,
+                                  vimg.height, is_data=True)
+                        continue    # the frame is taken; no corner drawing
         # The writer's own props are excluded from the bank BEFORE the draw,
         # not filtered out after it: picking then discarding lost the beat
         # entirely whenever the dice landed on a drawing already named in the
@@ -645,6 +817,8 @@ def render_short(
             is_video=True, hold=True,
             name=f"numberbeat_{k}_{key.rsplit('/', 1)[-1][:18]}",
         ))
+        note_beat(f"numberbeat_{asset.name}", img.width, img.height,
+                  is_data=False)
 
     # ---------------------------------------------- the tag grammar beats
     # Everything the script asked for by name. A card tag gets its named
@@ -667,6 +841,7 @@ def render_short(
             rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
             duration=duration, hold=hold, is_data=is_data, name=name,
             used_keys=used_keys, punch_cycle=punch_cycle,
+            note=note_beat,
         )
         if not placed:
             unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
@@ -817,8 +992,11 @@ def render_short(
     card_key = payoff_card_key(conclusion.payload["text"])
     card_asset = kit.get(card_key)
     if card_asset is not None:
+        # Full width. At 940 design px this closed the video on a card
+        # covering 18% of the frame — the smallest beat in the short was the
+        # one it ends on.
         card_img = fit_into(render_still(card_asset, None, settings),
-                            px(940), px(400))
+                            min(px(1080), W), px(560))
         card_clip = frames_to_alpha_clip(
             stamp_slam_frames(card_img, fps=fps, seconds=0.45),
             fps, rdir / "payoff_card.mov")
@@ -831,6 +1009,7 @@ def render_short(
             t_start=payoff_t, t_end=min(card_end, duration),
             is_video=True, hold=True, name="payoff_card",
         ))
+        note_beat("payoff_card", card_img.width, card_img.height, is_data=True)
     else:
         unresolved.append(card_key)
 
@@ -1079,6 +1258,22 @@ def render_short(
         "cues": [c.model_dump() for c in cues],
         "pacing_warnings": pacing_warnings,
         "unresolved_keys": unresolved,
+        # How much of the frame each beat actually takes, and the median of
+        # the ones the viewer is meant to READ. This is the number the layout
+        # exists to move and it is checkable without anybody's opinion: a 1:1
+        # drawing contain-fitted into a landscape box was 28% of frame, and
+        # the whole video read as cards floating in paper.
+        "beat_coverage": beat_coverage,
+        "median_data_coverage": _median_coverage(beat_coverage, "data"),
+        "median_punct_coverage": _median_coverage(beat_coverage, "punct"),
+        # What the layout cannot fix. A beat is aspect-capped when it is
+        # already the frame's full width and its own aspect sets its height,
+        # so the only lever left is redrawing the asset.
+        "aspect_capped_beats": [
+            {"name": b["name"], "frac": b["frac"],
+             "source_aspect": b.get("source_aspect")}
+            for b in beat_coverage if b.get("capped") == "aspect"
+        ],
         "kit_assets_used": sorted(used_keys),
         "layer_names": sorted({l.name for l in layers}),
         "layers": [
@@ -1096,7 +1291,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                     rdir: Path, layers: list[OverlayLayer], W: int, H: int,
                     px, fps: int, duration: float, hold: float, is_data: bool,
                     name: str, used_keys: set[str] | None = None,
-                    punch_cycle: list[int] | None = None) -> bool:
+                    punch_cycle: list[int] | None = None,
+                    note=None) -> bool:
     """Composite one tag beat. Returns False when the key did not resolve.
 
     Data beats take the frame — fitted large and centred. Punctuation rides
@@ -1111,12 +1307,27 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
     # A data beat TAKES the stage; punctuation is LAYERED over whatever is
     # already there, smaller and lower, so a reaction never erases the thing
     # it is reacting to.
-    box = (px(1000), px(STAGE_H)) if is_data else (px(520), px(520))
-    y = px(STAGE_Y) if is_data else px(STAGE_Y + 260)
+    box = stage_box(W, H, px, is_data=is_data)
+    y = px(STAGE_Y) if is_data else px(STAGE_Y + 380)
     t_end = min(cue.t + hold, duration)
 
     def place_still(img, *, register: str = STAGE, asset=None) -> bool:
-        placed, x, top = _frame_for(img, register, box, y, W, H, px, asset)
+        placed, x, top = _frame_for(img, register, box, y, W, H, px, asset,
+                                    punct=not is_data)
+        art = placed.size
+        if register == STAGE and is_data and _is_typeset(asset):
+            # A pure typography read OWNS the frame. The blank layouts are
+            # 1920x1080, so on a 9:16 frame the card is 1080x607 whatever we
+            # do — but a word and its definition hovering over a drawing of a
+            # desk is two things competing, and stage exclusivity says a data
+            # beat replaces the frame rather than floating on it. On paper, so
+            # the card's own paper and the plate's are the same sheet.
+            plated = Image.new("RGBA", (W, H), (242, 242, 239, 255))
+            plated.alpha_composite(placed, (x, max(int((H - placed.height) / 2), 0)))
+            placed, x, top = plated, 0, 0
+        if note is not None:
+            note(name, placed.width, placed.height, is_data=is_data,
+                 plate_of=art if art != placed.size else None)
         frames = (stamp_slam_frames(placed, fps=fps, seconds=0.35) if is_data
                   else slide_in_frames(placed, fps=fps, seconds=0.3, direction="up"))
         if register == FULL_BLEED:
@@ -1160,7 +1371,9 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
             clip, (cw, ch) = render_clip(
                 asset, rdir / f"{name}.mov", duration_s=t_end2 - cue.t, fps=fps,
                 settings=settings, values=values, transform=transform)
-            x, top = _origin_for(register, cw, ch, y, W)
+            x, top = _origin_for(register, cw, ch, y, W, punct=not is_data)
+            if note is not None:
+                note(name, cw, ch, is_data=is_data)
             layers.append(OverlayLayer(
                 path=clip, x=x, y=top, t_start=cue.t,
                 t_end=t_end2, is_video=True, hold=True, name=name))
@@ -1260,6 +1473,16 @@ def _register_for(asset, is_data: bool, punch_cycle: list[int],
     return PUNCH if punch_cycle[0] % PUNCH_EVERY == 0 else STAGE
 
 
+def _is_typeset(asset) -> bool:
+    """A card that is text on paper rather than a drawing.
+
+    The blank layouts declare `clear` on their boxes because their placeholder
+    copy is baked into the PNG — which is also exactly what marks them as
+    typesetting rather than artwork.
+    """
+    return asset is not None and any(s.clear for s in asset.slots)
+
+
 def _is_croppable(asset) -> bool:
     """Whether tightening the frame on this asset keeps it readable.
 
@@ -1273,6 +1496,55 @@ def _is_croppable(asset) -> bool:
     return asset.aspect == "1:1"
 
 
+def _median_coverage(beats: list[dict], klass: str) -> float:
+    """Median frame fraction for one class of beat, or 0.0 when there are none."""
+    fracs = sorted(b["frac"] for b in beats if b.get("class") == klass)
+    if not fracs:
+        return 0.0
+    mid = len(fracs) // 2
+    if len(fracs) % 2:
+        return round(fracs[mid], 4)
+    return round((fracs[mid - 1] + fracs[mid]) / 2, 4)
+
+
+def stage_box(W: int, H: int, px, *, is_data: bool) -> tuple[int, int]:
+    """The box a beat is fitted into, before its aspect is known.
+
+    The width is the frame's, not a landscape card's. `fit_to_frame` then
+    decides per asset whether that width is usable.
+    """
+    if not is_data:
+        return px(PUNCT_BOX), px(PUNCT_BOX)
+    return min(px(STAGE_MAX_W), W), px(STAGE_H)
+
+
+def fit_to_frame(img, box: tuple[int, int], W: int, H: int, px):
+    """Fit a drawing to the FRAME's width when its shape allows it.
+
+    A square or portrait drawing takes the full frame width and whatever
+    height that needs, clamped to the stage band. A landscape one is
+    contain-fitted as before, because widening it only adds empty margin.
+
+    This is the single biggest change available to the short and it costs
+    nothing: 134 of the kit's assets are 1:1, and every one of them was being
+    contain-fitted into a 1000x760 landscape box — 760x760 on a 1080x1920
+    frame, 28% of the screen, a card floating in paper.
+    """
+    if not img.width or not img.height:
+        return img
+    portraitish = img.height >= img.width * 0.98
+    if not portraitish:
+        return fit_into(img, *box)
+    width = min(px(STAGE_MAX_W), W)
+    height = int(img.height * width / img.width)
+    limit = box[1]
+    if height > limit:
+        # Taller than the band: fall back to fitting the band's height, which
+        # is still wider than the old landscape box for anything square.
+        return fit_into(img, width, limit)
+    return fit_into(img, width, height)
+
+
 def _transform_for(register: str, asset, box, W: int, H: int, px):
     """The per-frame transform an animated beat needs for its register."""
     def framed(img):
@@ -1283,12 +1555,13 @@ def _transform_for(register: str, asset, box, W: int, H: int, px):
             return cover_on_paper(img, W, H)
         if register == PUNCH:
             return fit_into(punch_crop(img, asset), px(1040), px(STAGE_H + 200))
-        return fit_into(img, *box)
+        return fit_to_frame(img, box, W, H, px)
 
     return framed
 
 
-def _frame_for(img, register: str, box, y: int, W: int, H: int, px, asset=None):
+def _frame_for(img, register: str, box, y: int, W: int, H: int, px, asset=None,
+               punct: bool = False):
     """(image, x, y) for a still in its register."""
     if register == FULL_BLEED:
         return cover_on_paper(img, W, H), 0, 0
@@ -1297,16 +1570,29 @@ def _frame_for(img, register: str, box, y: int, W: int, H: int, px, asset=None):
         # clip path does it — a fixed y here dragged a punctuation beat up
         # into the stage and left the two paths disagreeing.
         punched = fit_into(punch_crop(img, asset), px(1040), px(STAGE_H + 200))
-        x, top = _origin_for(PUNCH, punched.width, punched.height, y, W)
+        x, top = _origin_for(PUNCH, punched.width, punched.height, y, W,
+                             punct=punct)
         return punched, x, min(top, max(H - punched.height, 0))
-    fitted = fit_into(img, *box)
-    return fitted, int((W - fitted.width) / 2), y
+    fitted = fit_to_frame(img, box, W, H, px)
+    x, top = _origin_for(STAGE, fitted.width, fitted.height, y, W, punct=punct)
+    return fitted, x, min(top, max(H - fitted.height, 0))
 
 
-def _origin_for(register: str, w: int, h: int, y: int, W: int) -> tuple[int, int]:
+# How far a punctuation beat sits off the frame's centre line, as a fraction
+# of the slack it has. A reaction is LAYERED over what is already up, so it
+# reads as a comment on the frame rather than a replacement for it — and now
+# that it is 760 rather than 520, centring it blanketed the gut check it was
+# reacting to.
+PUNCT_OFFSET = 0.62
+
+
+def _origin_for(register: str, w: int, h: int, y: int, W: int,
+                punct: bool = False) -> tuple[int, int]:
     """Where a rendered clip of width `w` sits, for its register."""
     if register == FULL_BLEED:
         return 0, 0
+    slack = max(W - w, 0)
+    x = int(slack * PUNCT_OFFSET) if punct else int(slack / 2)
     if register == PUNCH:
-        return int((W - w) / 2), max(y - int(h * 0.12), 0)
-    return int((W - w) / 2), y
+        return x, max(y - int(h * 0.12), 0)
+    return x, y

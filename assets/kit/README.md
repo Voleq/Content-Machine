@@ -137,6 +137,37 @@ disk is the lossy version, and every ingest of it prints `fidelity : LOSSY`.
 The `stings/` batch is the counter-example — it shipped full RGBA and passes
 the check without the flag.
 
+### A 16:9 card can only ever be 32% of a short's frame
+
+`render_short_manifest.json` records, per beat, the fraction of the frame the
+artwork occupies, plus `median_data_coverage`. It also records
+`aspect_capped_beats` — beats already at the frame's full width, where the
+asset's own aspect sets the height and nothing in the layout can grow them.
+
+On a 1080x1920 frame:
+
+| source aspect | on the stage | frame coverage |
+|---|---|---|
+| 9:16 (vertical scenes) | *bypasses the stage — `is_full_frame` gives it the whole frame* | 100% |
+| 1:1 (134 assets) | 1080x1080 | 56% |
+| 4:5 | 864x1080, capped by the band | 45% |
+| 16:9 (the blank layouts) | 1080x607 | **32%** |
+| 2.35:1 (the payoff cards) | 1080x460 | **24%** |
+
+**The three blank layouts and the two payoff cards are 16:9 or wider.** Their
+text spans 0.08–0.81 of the card's width, so a centre crop to 9:16 cuts it —
+they cannot be made taller without being redrawn. That is what holds the
+median data coverage at 32% on a script that uses them, and it is an artwork
+ask, not a layout one: **4:5 or squarer versions of `big-number-blank`,
+`term-card-blank`, `quote-pull-blank`, `card-noise` and `card-signal`** would
+put the same beats at 45–56%.
+
+Everything the layout can do has been done: square and portrait drawings fit
+the frame's full width, the stage runs 230..1310 instead of 360..1120, the
+hook sits above the artwork rather than under it, punctuation is 760 rather
+than 520 and anchored off-centre, and the gut-check sheet — the one data beat
+that is generated rather than drawn — went from 27% to 44%.
+
 ### Transitions ship in both orientations
 
 `stings/` is 11 six-frame one-shots: 8 at 16:9 and `paper-slide-tall`,

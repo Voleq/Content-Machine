@@ -703,11 +703,16 @@ def sheet_layout(settings: Settings, n_rows: int, *, width: int,
     matters most for the golden frames, whose whole job is to be evidence
     about what ships.
     """
+    # The rows are generous because this is a PHONE. The gut check is the most
+    # read thing in the short and it rendered as a thin landscape strip —
+    # 1000x570 on a 1080x1920 frame, 27% of it — with figures small enough to
+    # squint at. The sheet is a generated raster, so unlike the 16:9 card
+    # artwork its proportions are a choice rather than arithmetic.
     s = max(width, 1) / SHEET_DESIGN_W
-    row_h = row_h if row_h is not None else max(int(118 * s), 24)
-    title_h = title_h if title_h is not None else max(int(96 * s), 20)
-    years_h = years_h if years_h is not None else max(int(64 * s), 14)
-    pad = pad if pad is not None else max(int(28 * s), 6)
+    row_h = row_h if row_h is not None else max(int(176 * s), 24)
+    title_h = title_h if title_h is not None else max(int(116 * s), 20)
+    years_h = years_h if years_h is not None else max(int(72 * s), 14)
+    pad = pad if pad is not None else max(int(30 * s), 6)
     return {
         "width": width,
         "pad": pad,

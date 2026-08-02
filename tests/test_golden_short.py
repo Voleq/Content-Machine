@@ -370,17 +370,80 @@ def test_the_tag_grammar_reached_the_frame(hosted):
     assert len(used) >= 15, f"only reached {len(used)} kit assets: {sorted(used)}"
 
 
-def test_the_untagged_number_rows_reach_the_numbers_batch(hosted):
-    """Twenty-three drawings whose whole job is making a figure land, and they
-    only ever appeared if the writer named one. A row the script did not tag
-    picks one off the number itself."""
+def test_every_beat_reports_how_much_of_the_frame_it_takes(hosted):
+    """The number the layout exists to move, in the artefact that ships.
+
+    "The frame reads empty" was an opinion until this was measured: the stage
+    box was a 1000x760 landscape rectangle on a 1080x1920 frame, so a 1:1
+    drawing covered 28% of the screen.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    beats = manifest["beat_coverage"]
+    assert beats, "no beat recorded its size"
+    for b in beats:
+        assert b["class"] in ("data", "punct")
+        assert 0.0 < b["frac"] <= 1.0
+        assert b["w"] > 0 and b["h"] > 0
+    assert "median_data_coverage" in manifest
+    assert "median_punct_coverage" in manifest
+
+
+def test_a_plated_beat_reports_the_artwork_not_the_plate(hosted):
+    """A card composed onto a full-frame plate owns the frame, but its
+    typesetting still covers what it covers. Reporting the plate would make
+    the measurement unfalsifiable."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    for b in manifest["beat_coverage"]:
+        if b.get("plated"):
+            assert b["beat_frac"] > b["frac"], b
+            assert b["frac"] < 1.0
+
+
+def test_the_short_fills_the_frame_at_least_once(hosted):
+    """Eleven drawings are 1080x1920 compositions — the only assets built to
+    BE this frame — and they only fired when a writer named one by key."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    assert any(b["frac"] >= 0.99 for b in manifest["beat_coverage"]), \
+        "nothing filled the frame"
+
+
+def test_square_artwork_is_no_longer_a_sticker(hosted):
+    """Fitting a 1:1 drawing to the frame's width instead of into a landscape
+    box takes it from 28% of frame to 56%."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    square = [b for b in manifest["beat_coverage"] if abs(b["w"] - b["h"]) <= 2]
+    if not square:
+        pytest.skip("this script used no square artwork")
+    assert min(b["frac"] for b in square) > 0.2, square
+
+
+def test_the_room_carries_the_middle_of_the_video(hosted):
+    """The gut check is the longest section and it played on blank paper —
+    only the open, the chart and the payoff had a desk under them."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    names = {l["name"] for l in manifest["layers"]}
+    assert any(n.startswith("act_mid") for n in names), \
+        "nothing was behind the evidence section"
+
+
+def test_the_untagged_number_rows_reach_artwork_off_the_number(hosted):
+    """Thirty-four drawings whose whole job is making a figure land, and they
+    only ever appeared if the writer named one.
+
+    A row the script did not tag picks one off the number itself — from the
+    small `dennis-vs-numbers` batch, or from the full-frame vertical scenes,
+    which are the same mechanism choosing the bigger register.
+    """
     settings, script, tts, out, manifest, frames, warnings = hosted
     from pipeline.number_beats import NUMBER_BEATS
+    from pipeline.vertical_beats import VERTICAL_BEATS
 
     banks = {k for keys in NUMBER_BEATS.values() for k in keys}
-    tagged = {"shorts/dennis-vs-numbers/crushed-flat"}   # named in the script
-    reached = (set(manifest["kit_assets_used"]) & banks) - tagged
-    assert reached, "no number beat was reached for any untagged row"
+    banks |= {k for keys in VERTICAL_BEATS.values() for k in keys}
+    tagged = {str(e.payload).lower() for e in script.inline_events}
+    reached = {k for k in set(manifest["kit_assets_used"]) & banks
+               if k.rsplit("/", 1)[-1].lower() not in tagged}
+    assert reached, "no beat was reached for any untagged number row"
 
 
 def test_the_hosts_own_card_does_not_bring_a_second_ticker(hosted):
