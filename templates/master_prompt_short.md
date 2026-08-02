@@ -76,7 +76,7 @@ Place a tag immediately before the word it should hit. The parser strips every t
   - `[PROP: numbers-raining = -8%, -12%, -3%]` — a bare list fills the slots in order.
 - `[BIGNUM: key = value]` / `[TERM: key]` — a one-number card or an explainer card. If nothing is drawn for your key, the blank layout gets filled with your text — so an unlisted term still gets a proper card.
 - `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
-- `[SHOW ARTICLE: https://…]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. If the page can't be reached the designed card carries the beat, so it is always safe to ask for.
+- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
 - `[IMG: query]` / `[PRODUCT: query]` — real imagery.
 - `[MEME: key]` / `[CLIP: key]` — from the catalogs above, sparingly.

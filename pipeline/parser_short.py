@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from config import Settings
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
+    SELF_RESOLVING_TAG_TYPES,
     SHORT_TAG_TYPES,
     ShortScript,
     TagEvent,
@@ -232,7 +233,9 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                 # artwork renders with every box empty — Dennis crushed under
                 # a blank rectangle — and 74 slots stay unreachable.
                 payload, values = parse_slot_values(payload)
-            if rt.type not in DELIVERY_TAG_TYPES and not payload:
+            if (rt.type not in DELIVERY_TAG_TYPES
+                    and rt.type not in SELF_RESOLVING_TAG_TYPES
+                    and not payload):
                 inline_warnings.append(
                     f"[{rt.type.value}] at char {rt.char_offset} carries no "
                     f"key — skipped")

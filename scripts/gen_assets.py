@@ -226,6 +226,29 @@ def gen_dennis_sfx() -> None:
     print("dennis sfx: 2 written")
 
 
+def gen_room_tone() -> None:
+    """The room he is sitting in.
+
+    A desk at three in the morning, and the audio between words was digital
+    silence — the clearest tell that a cut was assembled rather than recorded.
+    Brown noise rolled off hard, a mains hum, and a slow breath in the level.
+    It plays at -40dB, so it is felt rather than heard.
+    """
+    out = ASSETS / "sfx"
+    out.mkdir(parents=True, exist_ok=True)
+    _lavfi(out / "room_tone.wav",
+           "-f", "lavfi", "-i", "anoisesrc=d=30:color=brown:seed=7",
+           "-f", "lavfi", "-i", "sine=f=50:d=30",
+           "-filter_complex",
+           "[0]lowpass=f=420,highpass=f=40,volume=0.5[a];"
+           "[1]volume=0.05[b];"
+           "[a][b]amix=inputs=2:normalize=0,"
+           "tremolo=f=0.12:d=0.22,"
+           "afade=t=in:st=0:d=1.5,afade=t=out:st=28.5:d=1.5",
+           "-c:a", "pcm_s16le", "-ar", "44100")
+    print("room tone: 1 written")
+
+
 def gen_dennis_music() -> None:
     """Lo-fi-ish placeholder bed for both formats (replace with the
     Claude Design / licensed bed in production)."""
@@ -486,6 +509,7 @@ if __name__ == "__main__":
     gen_overlays()
     gen_dennis_backgrounds()
     gen_dennis_sfx()
+    gen_room_tone()
     gen_dennis_music()
     gen_meme_placeholders()
     gen_doodle_placeholders()

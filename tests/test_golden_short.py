@@ -47,10 +47,16 @@ ROOT = Path(__file__).resolve().parents[1]
 # card tags that fall through to the blank layouts, played animations with
 # slots, delivery direction, and the light payoff card.
 #
-# Deliberately loaded to sit INSIDE the 18-22-events-per-75s band. The first
-# version of this fixture was thin enough to trip the "reads as a slideshow"
-# warning, which meant the pacing contract had only ever been exercised from
-# below — through the one path that renders it.
+# Deliberately loaded to sit INSIDE the events-per-75s band, and inside the
+# punctuation band underneath it. The first version of this fixture was thin
+# enough to trip the "reads as a slideshow" warning, which meant the pacing
+# contract had only ever been exercised from below — through the one path that
+# renders it.
+#
+# It was reloaded when the punctuation target went up: five reactions across
+# 66 seconds sat inside the old combined band while the layer that carries the
+# pulse ran at half the density the format wants. A reference script has to
+# meet the contract it is the reference for.
 HOSTED_RAW = json.dumps({
     "ticker": "EXMPL",
     "format": "short",
@@ -58,21 +64,25 @@ HOSTED_RAW = json.dumps({
     "chart_style": "clean",
     "audio_script": (
         "EXMPL is up twenty nine percent today on five times average volume. "
-        "[BEAT] The news is a partnership, which is a press release, [DRY] not "
+        "[BEAT] The news is a partnership, [SHOW ARTICLE] which is a press "
+        "release, [DRY] not "
         "a purchase order. [PROP: crushed-flat = -41%] No revenue attached to "
         "it anywhere. Plus a squeeze, because eleven percent of the float was "
         "short. [PROP: b-towering-chart = $1.1T] But here is the part nobody "
-        "screenshots. [BEAT] Revenue went four hundred million to four ninety "
+        "screenshots. [PROP: stonks-up-only] [BEAT] Revenue went four hundred "
+        "million to four ninety "
         "six in five years. That is a plateau in a costume. "
         "[TERM: owner earnings] Losses got "
         "[SCRIBBLE: circle -> Net income] wider every year. "
         "[PROP: numbers-raining = -8%, -12%, -3%, -21%, -6%, -15%, -9%] "
         "Free cash flow went negative and stayed "
         "there, which means you pay them to own it. "
+        "[PROP: holding-the-bag] "
         "[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M] "
         "The share count grows six percent a year, so your slice shrinks while "
         "you wait. [BIGNUM: dilution = 6% a year] I know a value trap; my own "
-        "account went from twenty five k to zero. [SIGH] In fairness there is "
+        "account went from twenty five k to zero. [PROP: value-trap-trap] "
+        "[SIGH] In fairness there is "
         "enough cash on the balance sheet to survive being wrong for a while. "
         "[PROP: umbrella-red-rain = -8%, -12%, -3%, $2.4B] Which is the nicest "
         "thing I can say, and I am reaching. [DOODLE: crash] The chart went "
@@ -81,7 +91,7 @@ HOSTED_RAW = json.dumps({
     ),
     "move_summary": "+29% today · 5× average volume",
     "headlines": [
-        {"text": "EXMPL announces AI partnership",
+        {"text": "EXMPL shares jump 29% on AI partnership",
          "meaning": "A press release, not a purchase order."},
         {"text": "Squeeze chatter on retail forums",
          "meaning": "11% of the float is short."},
@@ -473,3 +483,126 @@ def test_the_hosts_own_card_does_not_bring_a_second_ticker(hosted):
     assert len(delivery) >= 3, "delivery tags were dropped by the parser again"
     for tag in ("[BEAT]", "[SIGH]", "[DRY]"):
         assert tag not in script.audio_script
+
+
+# --------------------------------------------------------------------------
+# Audio identity, the open, and where the numbers land.
+# --------------------------------------------------------------------------
+
+
+def test_the_short_opens_on_its_own_hook_not_on_branding(hosted):
+    """The signature card used to run full-frame from t=0.
+
+    The first second is the only one every viewer sees. Spending it on a logo
+    is spending the whole retention budget on the thing they did not come for
+    — the tail is where branding belongs, and `e_close` still has it.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    layers = {l["name"]: l for l in manifest["layers"]}
+    assert "e_close" in layers, "the tail card is the one that stays"
+    open_l = layers.get("e_open")
+    if open_l is None:
+        return  # `tail` style — the card plays at the end only
+    W, H = settings.short_resolution
+    hook = layers["hook"]
+    assert open_l["t_end"] - open_l["t_start"] <= 2.0, \
+        "a corner bug is a beat, not a segment"
+    assert open_l["x"] > 0 or open_l["y"] > 0, \
+        "an open at 0,0 the width of the frame is the full-bleed card again"
+    assert hook["t_start"] <= open_l["t_start"] + 0.1, \
+        "the hook has to be up while the bug plays, or the open is not cold"
+
+
+def test_room_tone_runs_under_the_whole_cut(hosted):
+    """Silence between words is what makes a cut sound assembled."""
+    from pipeline.audio_assets import ROOM_TONE_GAIN_DB, ROOM_TONE_NAME
+
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    tone = settings.assets_dir / "sfx" / ROOM_TONE_NAME
+    assert tone.exists(), f"{tone} is missing — the bed cannot be mixed"
+    assert ROOM_TONE_GAIN_DB <= -30, \
+        "a room bed you can pick out is a hum, not a room"
+
+
+def test_generated_audio_is_labelled_like_mock_data_is(hosted):
+    """A render playing oscillators must say so, once."""
+    from pipeline.audio_assets import audio_banner
+
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    banner = audio_banner(settings)
+    # The suite ships placeholders, so this run IS playing generated audio.
+    assert banner and "PLACEHOLDER AUDIO" in banner
+    assert "fetch_sfx" in banner, "the banner has to say what to run"
+
+
+def test_the_headline_figure_arrives_by_counting(hosted):
+    """A driver headline is nearly always a number, and it arrived counted."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    names = {l["name"] for l in manifest["layers"]}
+    assert "headline_0" in names
+    rdir = settings.workspace_dir / "EXMPL" / "golden" / "render_short"
+    clip = rdir / "headline_0.mov"
+    assert clip.exists(), "the headline card is a clip, not a still"
+    # A slide-in alone is ~0.35s; the roll adds another ~0.6s of frames.
+    dur = _probe_duration(clip)
+    assert dur > 0.6, f"headline_0 is {dur:.2f}s — too short to have rolled"
+
+
+def test_a_bare_show_article_beat_is_not_a_dead_beat(hosted):
+    """`[SHOW ARTICLE]` with no URL used to resolve to nothing, always.
+
+    The golden workspace has no data export, so nothing resolves and the beat
+    falls back silently — the contract is that the render completes and says
+    so in the manifest rather than raising or drawing a broken frame.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    assert "articles" in manifest, "the manifest has to record what resolved"
+    assert manifest["articles"] == [], \
+        "no export in this workspace — nothing should have resolved"
+    assert out.exists() and out.stat().st_size > 0
+
+
+def _probe_duration(path) -> float:
+    import json as _json
+    import subprocess
+
+    r = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "json", str(path)], capture_output=True, text=True)
+    return float(_json.loads(r.stdout)["format"]["duration"])
+
+
+def test_the_hook_is_composited_over_the_host_not_under_him(hosted):
+    """The most-read text in the video cannot be the one that gets buried.
+
+    The host bookend is composited last on purpose — a host behind the chart
+    is a host you do not have. But the hook band is 60px tall and a hook is
+    two or three lines, so it always reaches into the stage, and the bookend
+    sliced the last line off it. "The business is" is not the hook.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    order = [l["name"] for l in manifest["layers"]]
+    assert order.index("hook") > order.index("host_open"), \
+        "the hook is underneath the host — its last line will be cut off"
+
+
+FURNITURE = ("ticker_pill", "brand_bug", "disclaimer")
+
+
+def test_nothing_but_furniture_is_composited_over_the_hook(hosted):
+    """Every layer sharing the hook's window has to be under it.
+
+    Asserting only "hook after host" would pass the day something else — a
+    plate, a transition, a full-bleed beat — is appended later and covers it
+    instead. The contract is about the whole window, not one neighbour.
+    """
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    layers = manifest["layers"]
+    hook_i = next(i for i, l in enumerate(layers) if l["name"] == "hook")
+    hook = layers[hook_i]
+    above = [
+        l["name"] for l in layers[hook_i + 1:]
+        if l["t_start"] < hook["t_end"] and l["t_end"] > hook["t_start"]
+        and l["name"] not in FURNITURE
+    ]
+    assert above == [], f"composited over the hook: {above}"

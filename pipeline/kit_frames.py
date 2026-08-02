@@ -285,6 +285,37 @@ def render_still(asset: Asset, values: dict[str, str] | None, settings: Settings
     return render_frame(asset, idx, values, settings)
 
 
+def roll_still_frames(asset: Asset, values: dict[str, str] | None,
+                      settings: Settings, *, fps: int = 30,
+                      seconds: float = 0.7, transform=None):
+    """A still whose numeric slots ROLL to their values on arrival.
+
+    Returns None when nothing in `values` is a number, so the caller holds the
+    still and no frames are wasted. The count-up only ever fired on the
+    numbers-sheet cue, so every other figure in a short — a drawing's
+    `number`, a big-number card's `figure` — appeared fully formed while the
+    one on the sheet counted.
+    """
+    from pipeline.rasters import roll_steps
+
+    values = values or {}
+    n = max(int(seconds * fps), 2)
+    rolled = {k: steps for k, v in values.items()
+              if (steps := roll_steps(str(v), n)) is not None}
+    if not rolled:
+        return None
+
+    idx = asset.frame_count - 1 if asset.playback == "one-shot" else 0
+    frames = []
+    for k in range(n + 1):
+        step = dict(values)
+        for name, steps in rolled.items():
+            step[name] = steps[k]
+        img = render_frame(asset, idx, step, settings)
+        frames.append(transform(img) if transform is not None else img)
+    return frames
+
+
 def render_clip(
     asset: Asset,
     out_path: Path,

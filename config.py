@@ -395,6 +395,33 @@ class Settings(BaseSettings):
     # the handle the signature close card signs off with
     brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")
 
+    # ------------------------------------------------------- the cold open
+    # Where the signature card goes in a SHORT. It used to play FULL-FRAME
+    # from t=0, so the first second and a half of every video — the only part
+    # that decides whether anyone watches the rest — was a channel bumper
+    # rather than the hook.
+    #
+    #   "bug"   a small corner mark. The brand is present, the hook is not
+    #           covered. The default.
+    #   "tail"  no open at all; the signature card plays only at the end,
+    #           where `e_close` already is.
+    #   "full"  the original full-frame open, kept so the change is reversible
+    #           against retention data rather than by editing code.
+    short_open_style: str = Field(default="bug", alias="SHORT_OPEN_STYLE")
+    # How long the corner bug holds. Long enough to register, short enough
+    # that it is never what the viewer is looking at.
+    short_open_bug_s: float = Field(default=1.6, alias="SHORT_OPEN_BUG_S")
+
+    @field_validator("short_open_style")
+    @classmethod
+    def _known_open_style(cls, v: str) -> str:
+        allowed = {"bug", "tail", "full"}
+        got = str(v).strip().lower()
+        if got not in allowed:
+            raise ValueError(
+                f"SHORT_OPEN_STYLE={v!r} is not one of {sorted(allowed)}")
+        return got
+
     # ------------------------------------------------------------ mock timing
     # Deterministic mock TTS pacing (words per second) so rendered fixtures
     # have realistic durations without any paid call.

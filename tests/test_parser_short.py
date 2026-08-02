@@ -258,3 +258,35 @@ def test_show_your_work_preamble_before_json(settings, short_valid_json):
 def test_unclosed_json_still_rejected(settings):
     with pytest.raises(ScriptParseError):
         parse_short_script('prose then {"ticker": "EXMPL", "format": "short"', settings)
+
+
+def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
+    """`[SHOW ARTICLE]` means something with no payload at all.
+
+    Every other tag needs a key, so the parser dropped any tag without one —
+    which meant the writer had to paste a URL for the highest-credibility
+    visual the format has, and so it was never used. The renderer resolves the
+    link off the export's own news rows; the tag only has to reach it.
+    """
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = "The news is a partnership. [SHOW ARTICLE] " + \
+        data["audio_script"]
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    articles = [e for e in script.inline_events
+                if e.type is TagType.SHOW_ARTICLE]
+    assert len(articles) == 1
+    assert articles[0].payload == ""
+    assert not any("carries no key" in w for w in warnings)
+
+
+def test_other_tags_still_need_a_key(settings, short_valid_json):
+    """The exemption is one tag, not the end of the rule."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = "[PROP] " + data["audio_script"]
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    assert not [e for e in script.inline_events if e.type is TagType.PROP]
+    assert any("carries no key" in w for w in warnings)

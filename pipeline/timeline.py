@@ -130,10 +130,20 @@ SHORT_PUNCT_HOLD_S = (0.6, 2.0)
 # a person talking; shorter and the evidence never gets a run.
 SHORT_HOST_EVERY = 4
 
-# Roughly one visual event every three and a half seconds. Outside this band
-# the cut is either frantic or a slideshow — a warning, not a failure, because
-# the script is the operator's call.
-SHORT_EVENTS_PER_75S = (18, 22)
+# Outside this band the cut is either frantic or a slideshow — a warning, not
+# a failure, because the script is the operator's call.
+#
+# The two layers are counted SEPARATELY because they have nothing to do with
+# each other. A data beat is READ: it holds 3-8 seconds and the density of
+# those is what readability actually depends on. Punctuation is REGISTERED —
+# a reaction, a transformation, a doodle riding over the frame for under two
+# seconds — and it is what gives short-form its pulse. Holding the two to one
+# combined budget meant every extra reaction competed with a figure the viewer
+# needed to read, so the punctuation layer stayed at about half the density
+# the format wants.
+SHORT_DATA_PER_75S = (4, 8)
+SHORT_PUNCT_PER_75S = (8, 14)
+SHORT_EVENTS_PER_75S = (22, 30)
 
 # Which tag kinds are read and which are registered.
 SHORT_DATA_TAGS = frozenset({
@@ -416,8 +426,10 @@ def plan_short_pacing(
     evidence = sorted(
         (c for c in cues if c.payload.get("class") in ("data", "punct")),
         key=lambda c: c.t)
-    if not evidence:
-        return list(cues), warnings
+    # No early return on an empty evidence list. A script that tagged nothing
+    # at all is the WORST case for the density check, not an exempt one — it
+    # is four fixed cards and a face for a minute — and returning here meant
+    # the one contract that would have said so never ran.
 
     payoff = next((c.t for c in cues if c.kind is CueKind.CONCLUSION), duration)
     fixed_data = sorted(c.t for c in cues if c.kind in _FIXED_DATA_KINDS)
@@ -516,6 +528,31 @@ def plan_short_pacing(
         warnings.append(
             f"{n_events} visual events in {duration:.0f}s — above the "
             f"{scaled[0]:.0f}-{scaled[1]:.0f} band; something will flash past")
+
+    # The two layers, separately. A thin punctuation layer is the specific
+    # failure that reads as "flat" while every data beat is perfectly legible,
+    # and a combined count cannot see it: a script can sit inside the total
+    # band with nothing but things to read.
+    n_data = sum(1 for c in kept if c.payload.get("class") == "data")
+    n_punct = sum(1 for c in kept if c.payload.get("class") == "punct")
+    p_lo, p_hi = (v * duration / 75.0 for v in SHORT_PUNCT_PER_75S)
+    if n_punct < p_lo:
+        warnings.append(
+            f"{n_punct} punctuation beats in {duration:.0f}s — below the "
+            f"{p_lo:.0f}-{p_hi:.0f} band. Data beats hold 3-8s and are read; "
+            f"the reactions riding over them are what give the cut its pulse, "
+            f"and they cost nothing to add")
+    elif n_punct > p_hi:
+        warnings.append(
+            f"{n_punct} punctuation beats in {duration:.0f}s — above the "
+            f"{p_lo:.0f}-{p_hi:.0f} band; the layer stops punctuating and "
+            f"becomes the frame")
+    d_lo, d_hi = (v * duration / 75.0 for v in SHORT_DATA_PER_75S)
+    if n_data > d_hi:
+        warnings.append(
+            f"{n_data} data beats in {duration:.0f}s — above the "
+            f"{d_lo:.0f}-{d_hi:.0f} band. Each one has to hold 3-8s to be "
+            f"read, so they cannot all fit without something being cut short")
     return out, warnings
 
 

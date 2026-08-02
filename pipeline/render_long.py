@@ -64,6 +64,11 @@ from pathlib import Path
 from typing import Callable
 
 from config import Settings
+from pipeline.audio_assets import (
+    ROOM_TONE_GAIN_DB,
+    ROOM_TONE_NAME,
+    audio_banner,
+)
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip
@@ -990,6 +995,14 @@ def render_long(
     music = settings.assets_dir / "music" / "dennis_bed.m4a"
     if music.exists():
         audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
+    # The room, under everything. A forty-minute cut with digital silence
+    # between words is the clearest tell that it was assembled.
+    room = settings.assets_dir / "sfx" / ROOM_TONE_NAME
+    if room.exists():
+        audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB, loop=True))
+    banner = audio_banner(settings)
+    if banner:
+        log.warning("%s", banner)
     for c in cues:
         if c.kind is CueKind.SOUND and c.payload.get("value") in SFX_KEYS:
             sfx = settings.assets_dir / "sfx" / f"{c.payload['value']}.wav"

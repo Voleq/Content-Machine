@@ -446,6 +446,8 @@ just less directly. Set the var once you know which macro your box has.
 | `TELEGRAM_BOT_TOKEN` | — | from @BotFather (free; required even in mock) |
 | `OPERATOR_CHAT_IDS` | — | allow-list; empty denies all. `["123456789"]`, `123456789` and `123,456` all parse |
 | `BRAND_HANDLE` | `@dennisreads` | signed on the SHORT's closing card |
+| `SHORT_OPEN_STYLE` | `bug` | where the signature card goes in a SHORT: `bug` (a corner mark, so the video opens cold on the hook), `tail` (no open at all — `e_close` still runs), `full` (the original full-frame bumper). Tunable against retention data rather than by editing code |
+| `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
 | `USD_PER_1K_CHARS` | 0.15 | TTS cost estimate for reports |
@@ -519,6 +521,15 @@ env var, case-insensitive).
   the backgrounds, and the meme + doodle placeholders with the
   Claude-Design / licensed kit for production polish; everything is
   normalized on ingest.
+- **Placeholder AUDIO says so.** Every wav in `assets/sfx` is an ffmpeg
+  oscillator until `scripts/fetch_sfx.py` replaces it — that script pulls
+  licence-clean effects for all 14 cue keys plus the room bed, normalises
+  each to one peak, and records source/licence/author per file in
+  `assets/sfx/SOURCES.json`. A file with no provenance entry counts as
+  generated, and both renderers log a one-line `PLACEHOLDER AUDIO` banner
+  when they are about to play one — the same treatment mock data gets, so a
+  video that sounds like a synthesiser is obvious from the log rather than
+  from listening to it after upload.
 - **Draft renders sit behind the same approval gate in live mode** — the
   first LONG render (draft or final) is what triggers the single paid TTS
   call; after that, drafts and re-renders are free from cache.

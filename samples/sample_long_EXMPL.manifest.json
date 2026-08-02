@@ -13,7 +13,8 @@
       "payload": {
         "order": 0,
         "value": "tumbleweed",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -24,6 +25,7 @@
         "order": 1,
         "value": "shrug",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -34,7 +36,8 @@
       "payload": {
         "order": 2,
         "value": "EXMPL data center server racks",
-        "tag": "IMG"
+        "tag": "IMG",
+        "values": {}
       },
       "fallback": false
     },
@@ -44,7 +47,8 @@
       "payload": {
         "order": 3,
         "value": "EXMPL dispatch dashboard",
-        "tag": "PRODUCT"
+        "tag": "PRODUCT",
+        "values": {}
       },
       "fallback": false
     },
@@ -54,7 +58,8 @@
       "payload": {
         "order": 4,
         "value": "logistics warehouse interior",
-        "tag": "IMG"
+        "tag": "IMG",
+        "values": {}
       },
       "fallback": false
     },
@@ -64,7 +69,8 @@
       "payload": {
         "order": 5,
         "value": "delivery trucks fleet depot",
-        "tag": "IMG"
+        "tag": "IMG",
+        "values": {}
       },
       "fallback": false
     },
@@ -75,6 +81,7 @@
         "order": 6,
         "value": "idea",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -85,7 +92,8 @@
       "payload": {
         "order": 7,
         "value": "revenue",
-        "tag": "CHART"
+        "tag": "CHART",
+        "values": {}
       },
       "fallback": false
     },
@@ -96,6 +104,7 @@
         "order": 8,
         "value": "circle -> the plateau",
         "tag": "SCRIBBLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -107,6 +116,7 @@
         "order": 9,
         "value": "hype-vs-reality",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -117,7 +127,8 @@
       "payload": {
         "order": 10,
         "value": "hamster_wheel",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -127,7 +138,8 @@
       "payload": {
         "order": 11,
         "value": "income_statement.png",
-        "tag": "SHOW FILING"
+        "tag": "SHOW FILING",
+        "values": {}
       },
       "fallback": false
     },
@@ -138,6 +150,7 @@
         "order": 12,
         "value": "underline -> minus eighty nine",
         "tag": "SCRIBBLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -148,7 +161,8 @@
       "payload": {
         "order": 13,
         "value": "windows_error",
-        "tag": "SOUND"
+        "tag": "SOUND",
+        "values": {}
       },
       "fallback": false
     },
@@ -158,7 +172,8 @@
       "payload": {
         "order": 14,
         "value": "net_income",
-        "tag": "CHART"
+        "tag": "CHART",
+        "values": {}
       },
       "fallback": false
     },
@@ -169,6 +184,7 @@
         "order": 15,
         "value": "money-printer",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -179,7 +195,8 @@
       "payload": {
         "order": 16,
         "value": "fcf",
-        "tag": "CHART"
+        "tag": "CHART",
+        "values": {}
       },
       "fallback": false
     },
@@ -189,7 +206,8 @@
       "payload": {
         "order": 17,
         "value": "printing_money",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -200,6 +218,7 @@
         "order": 18,
         "value": "flames",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -210,7 +229,8 @@
       "payload": {
         "order": 19,
         "value": "boardroom_suits",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -220,7 +240,8 @@
       "payload": {
         "order": 20,
         "value": "corporate office building",
-        "tag": "IMG"
+        "tag": "IMG",
+        "values": {}
       },
       "fallback": false
     },
@@ -230,7 +251,8 @@
       "payload": {
         "order": 21,
         "value": "sad_trombone",
-        "tag": "SOUND"
+        "tag": "SOUND",
+        "values": {}
       },
       "fallback": false
     },
@@ -240,7 +262,8 @@
       "payload": {
         "order": 22,
         "value": "paper_shredder",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -251,6 +274,7 @@
         "order": 23,
         "value": "sweat",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -261,7 +285,8 @@
       "payload": {
         "order": 24,
         "value": "income_statement.png",
-        "tag": "SHOW FILING"
+        "tag": "SHOW FILING",
+        "values": {}
       },
       "fallback": false
     },
@@ -272,6 +297,7 @@
         "order": 25,
         "value": "arrow -> the debt",
         "tag": "SCRIBBLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -282,7 +308,8 @@
       "payload": {
         "order": 26,
         "value": "treadmill_running",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -292,7 +319,8 @@
       "payload": {
         "order": 27,
         "value": "harold-quick-flip-became-bagholder",
-        "tag": "MEME"
+        "tag": "MEME",
+        "values": {}
       },
       "fallback": false
     },
@@ -302,7 +330,8 @@
       "payload": {
         "order": 28,
         "value": "cash_register",
-        "tag": "SOUND"
+        "tag": "SOUND",
+        "values": {}
       },
       "fallback": false
     },
@@ -313,6 +342,7 @@
         "order": 29,
         "value": "price",
         "tag": "CHART",
+        "values": {},
         "style": "marker"
       },
       "fallback": false
@@ -323,7 +353,8 @@
       "payload": {
         "order": 30,
         "value": "casino_roulette",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -334,6 +365,7 @@
         "order": 31,
         "value": "face-down",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -344,7 +376,8 @@
       "payload": {
         "order": 32,
         "value": "growing_plant",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -354,7 +387,8 @@
       "payload": {
         "order": 33,
         "value": "EXMPL data center servers",
-        "tag": "IMG"
+        "tag": "IMG",
+        "values": {}
       },
       "fallback": false
     },
@@ -365,6 +399,7 @@
         "order": 34,
         "value": "risk-reward",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -375,7 +410,8 @@
       "payload": {
         "order": 35,
         "value": "dumpster_fire",
-        "tag": "CLIP"
+        "tag": "CLIP",
+        "values": {}
       },
       "fallback": false
     },
@@ -385,7 +421,8 @@
       "payload": {
         "order": 36,
         "value": "portfolio-down-99-percent-20-left",
-        "tag": "MEME"
+        "tag": "MEME",
+        "values": {}
       },
       "fallback": false
     },
@@ -396,6 +433,7 @@
         "order": 37,
         "value": "bagholder",
         "tag": "DOODLE",
+        "values": {},
         "hold": 2.0
       },
       "fallback": false
@@ -403,552 +441,345 @@
   ],
   "segments": [
     {
-      "kind": "filler",
+      "kind": "host",
       "start": 0.0,
-      "end": 2.9331,
-      "attribution": "",
-      "variant": 0
-    },
-    {
-      "kind": "filler",
-      "start": 2.9331,
-      "end": 5.8662,
-      "attribution": "",
-      "variant": 1
-    },
-    {
-      "kind": "filler",
-      "start": 5.8662,
       "end": 8.7993,
       "attribution": "",
-      "variant": 2
+      "variant": 0,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.7993,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.7993,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.7993,trim=0:8.7993[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
       "start": 8.7993,
-      "end": 11.7993,
+      "end": 13.7993,
       "value": "tumbleweed",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 11.7993,
-      "end": 14.6715,
+      "kind": "host",
+      "start": 13.7993,
+      "end": 21.4159,
       "attribution": "",
-      "variant": 3
+      "variant": 1,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:7.6166,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.6166,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.6166,trim=0:7.6166[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 14.6715,
-      "end": 17.5437,
-      "attribution": "",
-      "variant": 4
-    },
-    {
-      "kind": "filler",
-      "start": 17.5437,
-      "end": 20.4159,
-      "attribution": "",
-      "variant": 5
-    },
-    {
-      "kind": "filler",
-      "start": 20.4159,
-      "end": 23.2881,
-      "attribution": "",
-      "variant": 6
-    },
-    {
-      "kind": "filler",
-      "start": 23.2881,
-      "end": 26.1603,
-      "attribution": "",
-      "variant": 7
-    },
-    {
-      "kind": "filler",
-      "start": 26.1603,
+      "kind": "host",
+      "start": 21.4159,
       "end": 29.0325,
       "attribution": "",
-      "variant": 8
+      "variant": 2,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:7.6166,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.6166,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.6166,trim=0:7.6166[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
       "start": 29.0325,
-      "end": 31.8325,
+      "end": 34.24166666666666,
       "value": "EXMPL data center server racks",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
-    },
-    {
-      "kind": "filler",
-      "start": 31.8325,
-      "end": 33.5889,
-      "attribution": "",
-      "variant": 9
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.2092,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 33.5889,
-      "end": 36.3889,
-      "value": "EXMPL dispatch dashboard",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
-    },
-    {
-      "kind": "filler",
-      "start": 36.3889,
-      "end": 37.9621,
-      "attribution": "",
-      "variant": 10
-    },
-    {
-      "kind": "filler",
-      "start": 37.9621,
+      "start": 34.24166666666666,
       "end": 39.5353,
-      "attribution": "",
-      "variant": 11
+      "value": "EXMPL dispatch dashboard",
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.2936,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
       "start": 39.5353,
-      "end": 42.3353,
-      "value": "logistics warehouse interior",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
-    },
-    {
-      "kind": "filler",
-      "start": 42.3353,
-      "end": 44.02435,
-      "attribution": "",
-      "variant": 12
-    },
-    {
-      "kind": "filler",
-      "start": 44.02435,
       "end": 45.7134,
-      "attribution": "",
-      "variant": 13
+      "value": "logistics warehouse interior",
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
       "start": 45.7134,
-      "end": 48.5134,
+      "end": 50.7134,
       "value": "delivery trucks fleet depot",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 48.5134,
-      "end": 50.62715,
-      "attribution": "",
-      "variant": 14
-    },
-    {
-      "kind": "filler",
-      "start": 50.62715,
+      "kind": "host",
+      "start": 50.7134,
       "end": 52.7409,
       "attribution": "",
-      "variant": 15
+      "variant": 3,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:2.0275,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0275,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0275,trim=0:2.0275[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
       "start": 52.7409,
-      "end": 55.7409,
+      "end": 59.7409,
       "value": "revenue",
       "source": "generated",
-      "attribution": ""
-    },
-    {
-      "kind": "filler",
-      "start": 55.7409,
-      "end": 58.485400000000006,
       "attribution": "",
-      "variant": 16
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 58.485400000000006,
-      "end": 61.2299,
-      "attribution": "",
-      "variant": 17
-    },
-    {
-      "kind": "filler",
-      "start": 61.2299,
-      "end": 63.9744,
-      "attribution": "",
-      "variant": 18
-    },
-    {
-      "kind": "filler",
-      "start": 63.9744,
+      "kind": "host",
+      "start": 59.7409,
       "end": 66.7189,
       "attribution": "",
-      "variant": 19
+      "variant": 4,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.9780,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.9780,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.9780,trim=0:6.9780[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
       "start": 66.7189,
-      "end": 69.7189,
-      "value": "hamster_wheel",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
-      "kind": "filler",
-      "start": 69.7189,
       "end": 72.2019,
-      "attribution": "",
-      "variant": 20
+      "value": "hamster_wheel",
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.4830,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.4830,trim=0:5.4830,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
       "start": 72.2019,
-      "end": 75.00189999999999,
+      "end": 78.2019,
       "value": "income_statement.png",
-      "attribution": ""
-    },
-    {
-      "kind": "filler",
-      "start": 75.00189999999999,
-      "end": 77.39094999999999,
       "attribution": "",
-      "variant": 21
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 77.39094999999999,
-      "end": 79.78,
-      "attribution": "",
-      "variant": 22
-    },
-    {
-      "kind": "filler",
-      "start": 79.78,
-      "end": 82.16905,
-      "attribution": "",
-      "variant": 23
-    },
-    {
-      "kind": "filler",
-      "start": 82.16905,
+      "kind": "host",
+      "start": 78.2019,
       "end": 84.5581,
       "attribution": "",
-      "variant": 24
+      "variant": 5,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.3562,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.3562,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.3562,trim=0:6.3562[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
       "start": 84.5581,
-      "end": 87.5581,
+      "end": 92.049,
       "value": "net_income",
       "source": "generated",
-      "attribution": ""
-    },
-    {
-      "kind": "filler",
-      "start": 87.5581,
-      "end": 89.80355,
       "attribution": "",
-      "variant": 25
-    },
-    {
-      "kind": "filler",
-      "start": 89.80355,
-      "end": 92.049,
-      "attribution": "",
-      "variant": 26
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.4909,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
       "start": 92.049,
-      "end": 95.0608,
+      "end": 99.049,
       "value": "fcf",
       "source": "generated",
-      "attribution": ""
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 95.0608,
-      "end": 98.0608,
+      "start": 99.049,
+      "end": 104.049,
       "value": "printing_money",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
-      "kind": "filler",
-      "start": 98.0608,
-      "end": 99.7716,
-      "attribution": "",
-      "variant": 27
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 99.7716,
-      "end": 102.7716,
+      "start": 104.049,
+      "end": 109.049,
       "value": "boardroom_suits",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
-      "kind": "filler",
-      "start": 102.7716,
-      "end": 105.4091,
-      "attribution": "",
-      "variant": 28
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 105.4091,
-      "end": 108.20909999999999,
+      "start": 109.049,
+      "end": 114.049,
       "value": "corporate office building",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
-    },
-    {
-      "kind": "filler",
-      "start": 108.20909999999999,
-      "end": 109.2704,
-      "attribution": "",
-      "variant": 29
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 109.2704,
-      "end": 112.2704,
+      "start": 114.049,
+      "end": 119.049,
       "value": "paper_shredder",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
-      "kind": "filler",
-      "start": 112.2704,
-      "end": 114.0525,
-      "attribution": "",
-      "variant": 30
-    },
-    {
-      "kind": "filler",
-      "start": 114.0525,
-      "end": 115.8346,
-      "attribution": "",
-      "variant": 31
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "filing",
-      "start": 115.8346,
-      "end": 118.63459999999999,
+      "start": 119.049,
+      "end": 125.049,
       "value": "income_statement.png",
-      "attribution": ""
+      "attribution": "",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 118.63459999999999,
-      "end": 121.4596,
+      "kind": "host",
+      "start": 125.049,
+      "end": 129.46666666666664,
       "attribution": "",
-      "variant": 32
-    },
-    {
-      "kind": "filler",
-      "start": 121.4596,
-      "end": 124.2846,
-      "attribution": "",
-      "variant": 33
-    },
-    {
-      "kind": "filler",
-      "start": 124.2846,
-      "end": 127.1096,
-      "attribution": "",
-      "variant": 34
+      "variant": 6,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:4.4177,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.4177,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.4177,trim=0:4.4177[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 127.1096,
-      "end": 130.3531,
+      "start": 129.46666666666664,
+      "end": 134.46666666666664,
       "value": "treadmill_running",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
-      "start": 130.3531,
-      "end": 132.15310000000002,
+      "start": 134.46666666666664,
+      "end": 137.46666666666664,
       "value": "harold-quick-flip-became-bagholder",
       "source": "library",
-      "attribution": "owned meme library (harold-quick-flip-became-bagholder)"
-    },
-    {
-      "kind": "filler",
-      "start": 132.15310000000002,
-      "end": 134.6778,
-      "attribution": "",
-      "variant": 35
+      "attribution": "owned meme library (harold-quick-flip-became-bagholder)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
-      "start": 134.6778,
-      "end": 137.6778,
+      "start": 137.46666666666664,
+      "end": 144.46666666666664,
       "value": "price",
       "source": "generated",
-      "attribution": ""
-    },
-    {
-      "kind": "filler",
-      "start": 137.6778,
-      "end": 139.3886,
       "attribution": "",
-      "variant": 36
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 139.3886,
-      "end": 142.3886,
+      "start": 144.46666666666664,
+      "end": 149.46666666666664,
       "value": "casino_roulette",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
-    },
-    {
-      "kind": "filler",
-      "start": 142.3886,
-      "end": 144.1707,
-      "attribution": "",
-      "variant": 37
-    },
-    {
-      "kind": "filler",
-      "start": 144.1707,
-      "end": 145.9528,
-      "attribution": "",
-      "variant": 38
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 145.9528,
-      "end": 148.9528,
+      "start": 149.46666666666664,
+      "end": 154.46666666666664,
       "value": "growing_plant",
-      "source": "cache",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)"
+      "source": "pexels",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 148.9528,
-      "end": 151.325,
-      "attribution": "",
-      "variant": 39
-    },
-    {
-      "kind": "filler",
-      "start": 151.325,
-      "end": 153.6972,
-      "attribution": "",
-      "variant": 40
-    },
-    {
-      "kind": "filler",
-      "start": 153.6972,
+      "kind": "host",
+      "start": 154.46666666666664,
       "end": 156.0694,
       "attribution": "",
-      "variant": 41
+      "variant": 7,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:1.6027,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.6027,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.6027,trim=0:1.6027[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
       "start": 156.0694,
-      "end": 158.8694,
+      "end": 161.0694,
       "value": "EXMPL data center servers",
-      "source": "cache",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons"
+      "source": "mock",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 158.8694,
-      "end": 161.56570000000002,
-      "attribution": "",
-      "variant": 42
-    },
-    {
-      "kind": "filler",
-      "start": 161.56570000000002,
-      "end": 164.262,
-      "attribution": "",
-      "variant": 43
-    },
-    {
-      "kind": "filler",
-      "start": 164.262,
+      "kind": "host",
+      "start": 161.0694,
       "end": 166.9583,
       "attribution": "",
-      "variant": 44
+      "variant": 8,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:5.8889,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.8889,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.8889,trim=0:5.8889[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
       "start": 166.9583,
-      "end": 169.9583,
+      "end": 171.9583,
       "value": "dumpster_fire",
-      "source": "cache",
-      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)"
+      "source": "pexels",
+      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 169.9583,
-      "end": 172.24235,
-      "attribution": "",
-      "variant": 45
-    },
-    {
-      "kind": "filler",
-      "start": 172.24235,
+      "kind": "host",
+      "start": 171.9583,
       "end": 174.5264,
       "attribution": "",
-      "variant": 46
+      "variant": 9,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:2.5681,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5681,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5681,trim=0:2.5681[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
       "start": 174.5264,
-      "end": 176.3264,
+      "end": 177.5264,
       "value": "portfolio-down-99-percent-20-left",
       "source": "library",
-      "attribution": "owned meme library (portfolio-down-99-percent-20-left)"
+      "attribution": "owned meme library (portfolio-down-99-percent-20-left)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 176.3264,
-      "end": 179.15112,
+      "kind": "host",
+      "start": 177.5264,
+      "end": 183.9882,
       "attribution": "",
-      "variant": 47
+      "variant": 10,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.4618,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.4618,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.4618,trim=0:6.4618[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "filler",
-      "start": 179.15112,
-      "end": 181.97584,
-      "attribution": "",
-      "variant": 48
-    },
-    {
-      "kind": "filler",
-      "start": 181.97584,
-      "end": 184.80056,
-      "attribution": "",
-      "variant": 49
-    },
-    {
-      "kind": "filler",
-      "start": 184.80056,
-      "end": 187.62528,
-      "attribution": "",
-      "variant": 50
-    },
-    {
-      "kind": "filler",
-      "start": 187.62528,
+      "kind": "host",
+      "start": 183.9882,
       "end": 190.45,
       "attribution": "",
-      "variant": 51
+      "variant": 11,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.4618,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.4618,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.4618,trim=0:6.4618[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
+  "segmented": true,
+  "segment_cache_hits": 1,
+  "segment_failures": [],
   "layers": [
     {
       "name": "intro_card",
@@ -959,36 +790,71 @@
     },
     {
       "name": "chapter_1",
-      "t_start": 31.8325,
-      "t_end": 32.7325,
+      "t_start": 34.24166666666666,
+      "t_end": 35.14166666666666,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "transition_1_red-flood",
+      "t_start": 33.99166666666666,
+      "t_end": 34.49166666666666,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_2",
-      "t_start": 63.9744,
-      "t_end": 64.87440000000001,
+      "t_start": 66.7189,
+      "t_end": 67.61890000000001,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "transition_2_torn-edge",
+      "t_start": 66.4689,
+      "t_end": 66.9689,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_3",
-      "t_start": 98.0608,
-      "t_end": 98.9608,
+      "t_start": 99.049,
+      "t_end": 99.94900000000001,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "transition_3_blackout-drop",
+      "t_start": 98.799,
+      "t_end": 99.299,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_4",
-      "t_start": 127.1096,
-      "t_end": 128.0096,
+      "t_start": 129.46666666666664,
+      "t_end": 130.36666666666665,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "transition_4_ink-smear",
+      "t_start": 129.21666666666664,
+      "t_end": 129.71666666666664,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_5",
-      "t_start": 158.8694,
-      "t_end": 159.76940000000002,
+      "t_start": 161.0694,
+      "t_end": 161.9694,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "transition_5_ink-wipe",
+      "t_start": 160.8194,
+      "t_end": 161.3194,
       "x": 0,
       "y": 0
     },
@@ -1000,9 +866,9 @@
       "y": 0
     },
     {
-      "name": "glitch@115.83",
-      "t_start": 115.8346,
-      "t_end": 116.3346,
+      "name": "glitch@119.05",
+      "t_start": 119.049,
+      "t_end": 119.549,
       "x": 0,
       "y": 0
     },
@@ -1094,7 +960,7 @@
       "name": "corner_bug",
       "t_start": 0.0,
       "t_end": 190.45,
-      "x": 1373,
+      "x": 1377,
       "y": 30
     },
     {
@@ -1112,7 +978,105 @@
       "y": 1036
     }
   ],
-  "segment_warnings": [],
+  "segment_warnings": [
+    "visual cue at 95.06s deferred to 99.05s \u2014 the previous visual was still being read",
+    "visual cue at 99.77s deferred to 104.05s \u2014 the previous visual was still being read",
+    "visual cue at 105.41s deferred to 109.05s \u2014 the previous visual was still being read",
+    "visual cue at 109.27s deferred to 114.05s \u2014 the previous visual was still being read",
+    "visual cue at 115.83s deferred to 119.05s \u2014 the previous visual was still being read",
+    "visual cue at 127.11s deferred to 129.47s \u2014 the previous visual was still being read",
+    "visual cue at 130.35s deferred to 134.47s \u2014 the previous visual was still being read",
+    "visual cue at 134.68s deferred to 137.47s \u2014 the previous visual was still being read",
+    "visual cue at 139.39s deferred to 144.47s \u2014 the previous visual was still being read",
+    "visual cue at 145.95s deferred to 149.47s \u2014 the previous visual was still being read",
+    "adjacent img cuts at 29.03s/34.24s \u2014 same visual type back-to-back",
+    "adjacent img cuts at 34.24s/39.54s \u2014 same visual type back-to-back",
+    "adjacent img cuts at 39.54s/45.71s \u2014 same visual type back-to-back",
+    "adjacent chart cuts at 84.56s/92.05s \u2014 same visual type back-to-back",
+    "adjacent clip cuts at 99.05s/104.05s \u2014 same visual type back-to-back",
+    "adjacent clip cuts at 144.47s/149.47s \u2014 same visual type back-to-back"
+  ],
+  "chapter_warnings": [
+    "the script has no usable `=== CHAPTERS ===` trailer \u2014 the stingers fall back to generic section titles, which will not match the cut"
+  ],
+  "chapters": [
+    {
+      "t": 31.74,
+      "title": "what they do"
+    },
+    {
+      "t": 63.48,
+      "title": "the numbers"
+    },
+    {
+      "t": 95.22,
+      "title": "the industry"
+    },
+    {
+      "t": 126.97,
+      "title": "bull vs bear"
+    },
+    {
+      "t": 158.71,
+      "title": "the close"
+    }
+  ],
+  "stingers": [
+    {
+      "n": "02",
+      "title": "what they do",
+      "script_t": 31.74,
+      "t": 34.24
+    },
+    {
+      "n": "03",
+      "title": "the numbers",
+      "script_t": 63.48,
+      "t": 66.72
+    },
+    {
+      "n": "04",
+      "title": "the industry",
+      "script_t": 95.22,
+      "t": 99.05
+    },
+    {
+      "n": "05",
+      "title": "bull vs bear",
+      "script_t": 126.97,
+      "t": 129.47
+    },
+    {
+      "n": "06",
+      "title": "the close",
+      "script_t": 158.71,
+      "t": 161.07
+    }
+  ],
+  "transitions": [
+    {
+      "asset": "stings/red-flood",
+      "t": 34.24
+    },
+    {
+      "asset": "stings/torn-edge",
+      "t": 66.72
+    },
+    {
+      "asset": "stings/blackout-drop",
+      "t": 99.05
+    },
+    {
+      "asset": "stings/ink-smear",
+      "t": 129.47
+    },
+    {
+      "asset": "stings/ink-wipe",
+      "t": 161.07
+    }
+  ],
+  "animated_segments": 0,
+  "longest_host_beat_s": 8.8,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",

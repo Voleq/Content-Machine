@@ -48,6 +48,11 @@ import logging
 from pathlib import Path
 
 from config import Settings
+from pipeline.audio_assets import (
+    ROOM_TONE_GAIN_DB,
+    ROOM_TONE_NAME,
+    audio_banner,
+)
 from pipeline.broll import ContentManager
 from pipeline.chart import render_marker_price_chart, render_price_chart
 from pipeline.host import build_host_clip, pick_shot
@@ -65,6 +70,7 @@ from pipeline.kit_frames import (
     punch_crop,
     render_clip,
     render_still,
+    roll_still_frames,
     strip_baked_furniture,
     transition_asset,
     transition_transform,
@@ -92,7 +98,7 @@ from pipeline.rasters import (
     draw_on_frames,
     flash_frames,
     frames_to_alpha_clip,
-    headline_card,
+    headline_card_frames,
     lower_third,
     number_row_frames,
     numbers_sheet_base,
@@ -102,6 +108,7 @@ from pipeline.rasters import (
     slide_in_frames,
     stamp_slam_frames,
     text_panel,
+    text_panel_frames,
     ticker_pill,
 )
 from pipeline.render_common import (
@@ -578,11 +585,18 @@ def render_short(
     hook_clip = frames_to_alpha_clip(
         slide_in_frames(hook_img, fps=fps, seconds=0.4, direction="down"),
         fps, rdir / "hook.mov")
-    layers.append(OverlayLayer(
+    # Held back and composited with the furniture, ABOVE the host rig.
+    #
+    # The hook band is 60px tall and a hook is two or three lines, so the card
+    # always reaches into the stage — which is fine, it is on screen alone for
+    # four seconds. What is not fine is being underneath: the host bookend is
+    # composited last so he is never buried, and he sliced the third line off
+    # the hook. "The business is" is not the hook. "The business is not" is.
+    hook_layer = OverlayLayer(
         path=hook_clip, x=int((W - hook_img.width) / 2), y=px(hook_layout["y"]),
         t_start=0.0, t_end=float(hook.payload["until"]), is_video=True, hold=True,
         name="hook",
-    ))
+    )
 
     # ------------------------------------- headlines overlaid ON the chart
     # Stacked below the desk when the chart is on the monitor — they are what
@@ -598,13 +612,18 @@ def render_short(
     for c in headline_cues:
         i = int(c.payload["index"])
         meaning = script.headlines[i].meaning if i < len(script.headlines) else ""
-        card = headline_card(
+        # A driver headline is nearly always a figure — "orders fell 41%" —
+        # and it arrived counted while the sheet above it rolled. It slides in
+        # at zero and lands on its number.
+        card, roll = headline_card_frames(
             settings, c.payload["text"], meaning=meaning,
             width=headline_w if desk is not None else px(880),
-            font_size=px(30) if desk is not None else px(32))
+            font_size=px(30) if desk is not None else px(32),
+            fps=fps, seconds=0.6)
+        entry = slide_in_frames(roll[0] if roll else card, fps=fps,
+                                seconds=0.35, direction="left")
         card_clip = frames_to_alpha_clip(
-            slide_in_frames(card, fps=fps, seconds=0.35, direction="left"),
-            fps, rdir / f"headline_{i}.mov")
+            entry + (roll or []), fps, rdir / f"headline_{i}.mov")
         if desk is not None:
             hx = px(40)
             hy = px(1030) + i * (card.height + px(18))
@@ -829,6 +848,7 @@ def render_short(
     # beats that could punch, so the emphasis lands every third DRAWING rather
     # than every third cue.
     punch_cycle = [0]
+    articles: list[dict] = []
     for k, c in enumerate(evidence_cues):
         tag = TagType(c.payload["tag"]) if c.payload.get("tag") else None
         value = str(c.payload.get("value", ""))
@@ -841,7 +861,7 @@ def render_short(
             rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
             duration=duration, hold=hold, is_data=is_data, name=name,
             used_keys=used_keys, punch_cycle=punch_cycle,
-            note=note_beat,
+            note=note_beat, articles=articles,
         )
         if not placed:
             unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
@@ -1016,11 +1036,19 @@ def render_short(
     act_plate(DESK_PAYOFF_KEY, "act_payoff", payoff_t, duration, y_frac=0.30)
 
     payoff_layout = _layout(PAYOFF_LAYOUTS, conclusion.payload.get("variant"))
-    conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
-                          font_name=SHANTELL, font_size=px(payoff_layout["size"]),
-                          accent=payoff_layout["accent"], bg=(250, 249, 246, 246))
-    conc_path = rdir / "conclusion.png"
-    conc_img.save(conc_path)
+    conc_img, conc_roll = text_panel_frames(
+        settings, conclusion.payload["text"], fps=fps, seconds=0.6,
+        width=px(960), font_name=SHANTELL,
+        font_size=px(payoff_layout["size"]),
+        accent=payoff_layout["accent"], bg=(250, 249, 246, 246))
+    # The ledger line is where the short's own number is finally said. It gets
+    # the same arrival as every other figure; a line with no figure in it is
+    # still the still it always was.
+    if conc_roll:
+        conc_path = frames_to_alpha_clip(conc_roll, fps, rdir / "conclusion.mov")
+    else:
+        conc_path = rdir / "conclusion.png"
+        conc_img.save(conc_path)
     # The signature close is the channel's tail card and owns the frame for
     # its last beat — the payoff line and the host both end when it lands,
     # rather than showing through it three deep.
@@ -1028,7 +1056,8 @@ def render_short(
     layers.append(OverlayLayer(
         path=conc_path, x=int((W - conc_img.width) / 2), y=px(payoff_layout["y"]),
         t_start=payoff_t, t_end=max(e_close_t, payoff_t + 0.6),
-        fade_in=0.25, name="conclusion",
+        fade_in=0.25, is_video=bool(conc_roll), hold=bool(conc_roll),
+        name="conclusion",
     ))
 
     # ------------------------------------------------------- the host rig
@@ -1083,20 +1112,33 @@ def render_short(
         add_host(c, "panel", f"beat{i}", inset=True)
 
     # ------------------------------------------- the signature open/close
-    # Full-frame, over everything including the host: they are the channel's
-    # top and tail, not a layer in the composition.
+    # The CLOSE is full-frame over everything: the tail is the right place for
+    # branding, and by then the viewer has decided.
+    #
+    # The OPEN is not. It used to play full-frame from t=0, so the first
+    # second and a half of every short — the only part that decides whether
+    # anyone watches the rest — was a channel bumper covering the hook. The
+    # default is a corner bug; `short_open_style` makes it tunable against
+    # retention data rather than by editing this file.
+    open_style = settings.short_open_style
     open_asset = kit.get(OPEN_KEY)
-    open_hold = max(playback_seconds(open_asset), 1.4)
-    open_clip, _ = render_clip(
-        open_asset, rdir / "e_open.mov", duration_s=open_hold, fps=fps,
-        settings=settings, display_w=W,
-        values={"title": f"${script.ticker}",
-                "strapline": settings.brand_tagline.lower()},
-    )
-    layers.append(OverlayLayer(
-        path=open_clip, x=0, y=0, t_start=0.0,
-        t_end=min(open_hold, duration), is_video=True, name="e_open",
-    ))
+    if open_asset is not None and open_style != "tail":
+        full = open_style == "full"
+        open_hold = (max(playback_seconds(open_asset), 1.4) if full
+                     else max(settings.short_open_bug_s, 0.3))
+        bug_w = W if full else int(W * 0.30)
+        open_clip, (ow, oh) = render_clip(
+            open_asset, rdir / "e_open.mov", duration_s=open_hold, fps=fps,
+            settings=settings, display_w=bug_w,
+            values={"title": f"${script.ticker}",
+                    "strapline": settings.brand_tagline.lower()},
+        )
+        ox, oy = (0, 0) if full else (px(40), H - oh - px(300))
+        layers.append(OverlayLayer(
+            path=open_clip, x=ox, y=oy, t_start=0.0,
+            t_end=min(open_hold, duration), is_video=True, name="e_open",
+        ))
+        used_keys.add(open_asset.key)
 
     close_asset = kit.get(CLOSE_KEY)
     close_hold = duration - e_close_t
@@ -1115,6 +1157,11 @@ def render_short(
     # Last, so it survives a full-bleed beat. The ticker pill and the bug are
     # the only two things besides the captions that are on screen for the whole
     # video; composited first, as they were, a 9:16 scene erased them.
+    #
+    # The hook rides in with them: it is the most-read text in the video and it
+    # is only up for the open, so nothing has a claim to be over it.
+    layers.append(hook_layer)
+
     pill = ticker_pill(settings, script.ticker, font_size=px(38))
     pill_path = rdir / "ticker_pill.png"
     pill.save(pill_path)
@@ -1157,6 +1204,21 @@ def render_short(
     if music.exists():
         audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
     sfx_dir = settings.assets_dir / "sfx"
+
+    # The room he is sitting in. Between words the mix was digital silence,
+    # which is the clearest tell that a cut was assembled rather than
+    # recorded. One more track on a path that already exists, at -40dB, so it
+    # is felt rather than heard.
+    room = sfx_dir / ROOM_TONE_NAME
+    if room.exists():
+        audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB, loop=True))
+
+    # Say it once when the sound is synthesised. The taxonomy and every cue
+    # that fires them were always right; only the files were oscillators, and
+    # nothing distinguished that from the real thing.
+    banner = audio_banner(settings)
+    if banner:
+        log.warning("%s", banner)
     whoosh = sfx_dir / "whoosh.wav"
     if whoosh.exists():
         for c in transitions:
@@ -1230,7 +1292,9 @@ def render_short(
             f"clock {duration:.2f}s"
         )
 
-    used_keys.update({BACKDROP_KEY, OPEN_KEY, CLOSE_KEY})
+    # OPEN_KEY is claimed where it is placed — it is skipped entirely under
+    # `short_open_style="tail"`, and the manifest must not say otherwise.
+    used_keys.update({BACKDROP_KEY, CLOSE_KEY})
     if card_asset is not None:
         used_keys.add(card_asset.key)
     # The doctor diffs the library against this. A render that reached forty
@@ -1274,6 +1338,10 @@ def render_short(
              "source_aspect": b.get("source_aspect")}
             for b in beat_coverage if b.get("capped") == "aspect"
         ],
+        # Which `[SHOW ARTICLE]` beats found a real story and how. `auto`
+        # means nobody pasted a link — the writer's headline was matched to
+        # the export's own news row.
+        "articles": articles,
         "kit_assets_used": sorted(used_keys),
         "layer_names": sorted({l.name for l in layers}),
         "layers": [
@@ -1292,7 +1360,7 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                     px, fps: int, duration: float, hold: float, is_data: bool,
                     name: str, used_keys: set[str] | None = None,
                     punch_cycle: list[int] | None = None,
-                    note=None) -> bool:
+                    note=None, articles: list[dict] | None = None) -> bool:
     """Composite one tag beat. Returns False when the key did not resolve.
 
     Data beats take the frame — fitted large and centred. Punctuation rides
@@ -1301,6 +1369,7 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
     """
     from PIL import Image
 
+    from pipeline.article_lookup import article_url
     from pipeline.company_data import prepare_screenshot
     from pipeline.filings import screenshot_article
 
@@ -1310,6 +1379,27 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
     box = stage_box(W, H, px, is_data=is_data)
     y = px(STAGE_Y) if is_data else px(STAGE_Y + 380)
     t_end = min(cue.t + hold, duration)
+
+    def place_frames(frames, *, register: str = STAGE, asset=None) -> bool:
+        """A rolled beat: each frame framed identically, then held.
+
+        The framing is computed once off the first frame — every frame of a
+        roll is the same drawing with a different figure in it, so re-fitting
+        each one would let the beat breathe by a pixel as the digits change
+        width.
+        """
+        placed0, x, top = _frame_for(frames[0], register, box, y, W, H, px,
+                                     asset, punct=not is_data)
+        size = placed0.size
+        out = [placed0] + [f.resize(size, Image.LANCZOS) if f.size != size
+                           else f for f in frames[1:]]
+        if note is not None:
+            note(name, size[0], size[1], is_data=is_data)
+        clip = frames_to_alpha_clip(out, fps, rdir / f"{name}.mov")
+        layers.append(OverlayLayer(
+            path=clip, x=x, y=top, t_start=cue.t, t_end=t_end,
+            is_video=True, hold=True, name=name))
+        return True
 
     def place_still(img, *, register: str = STAGE, asset=None) -> bool:
         placed, x, top = _frame_for(img, register, box, y, W, H, px, asset,
@@ -1378,12 +1468,34 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                 path=clip, x=x, y=top, t_start=cue.t,
                 t_end=t_end2, is_video=True, hold=True, name=name))
             return True
+        # A figure ARRIVES by counting. Every number in a short lands
+        # somewhere — a drawing's `number`, a big-number card's `figure` — and
+        # only the numbers-sheet cue was ever animated, so one figure counted
+        # up and every other one appeared fully formed.
+        rolled = roll_still_frames(
+            asset, values, settings, fps=fps, seconds=0.7,
+            transform=lambda im: strip_baked_furniture(im, asset))
+        if rolled:
+            return place_frames(rolled, register=register, asset=asset)
         return place_still(
             strip_baked_furniture(render_still(asset, values, settings), asset),
             register=register, asset=asset)
 
     if tag is TagType.SHOW_ARTICLE:
-        shot = screenshot_article(value, rdir / f"{name}.png", settings)
+        # A bare `[SHOW ARTICLE]` used to be a dead beat: the tag carried the
+        # URL and nothing else could supply one, so the highest-credibility
+        # visual in the format needed the writer to go and find a link.
+        # `script.headlines` is a paraphrase of the export's own news rows, so
+        # the link is already in the workspace — matching one to the other is
+        # a token overlap, not a research problem.
+        found = article_url(value, script, workspace)
+        if found is None:
+            return False
+        url, how = found
+        if articles is not None:
+            articles.append({"name": name, "url": url, "resolved": how,
+                             "value": value})
+        shot = screenshot_article(url, rdir / f"{name}.png", settings)
         if shot is None:
             return False
         return place_still(Image.open(shot).convert("RGBA"))

@@ -106,6 +106,16 @@ SHORT_TAG_TYPES = frozenset(
         TagType.BROLL,
     })
 
+# Tags that mean something with no payload at all, because the renderer can
+# work out what they point at.
+#
+# `[SHOW ARTICLE]` is the only one so far: the export already carries the news
+# rows the script was written from, and `script.headlines` is the writer's
+# paraphrase of those same rows, so demanding a pasted URL asked the writer to
+# go and find something the pipeline was already holding. It is why the
+# highest-credibility visual in the format was used approximately never.
+SELF_RESOLVING_TAG_TYPES = frozenset({TagType.SHOW_ARTICLE})
+
 # Tags that claim the SHORT's frame for a beat (as opposed to riding on top of
 # whatever is showing). Delivery tags claim nothing — they are audio.
 SHORT_SEGMENT_TAG_TYPES = frozenset({

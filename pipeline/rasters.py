@@ -100,8 +100,14 @@ def text_panel(
     pad: int = 36,
     align: str = "center",
     radius: int = 26,
+    placed: list | None = None,
 ) -> Image.Image:
-    """Auto-height rounded panel with wrapped text (hook / conclusion cards)."""
+    """Auto-height rounded panel with wrapped text (hook / conclusion cards).
+
+    `placed`, when given, is filled with `(line, x, y)` for every line drawn —
+    what `roll_over_lines` needs to repaint a figure without re-wrapping the
+    sentence around it.
+    """
     font = load_font(settings, font_name, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     inner = width - 2 * pad - (14 if accent else 0)
@@ -123,7 +129,35 @@ def text_panel(
         else:
             x = x0
         d.text((x, pad + i * lh), line, font=font, fill=fg)
+        if placed is not None:
+            placed.append((line, x, pad + i * lh))
     return img
+
+
+def text_panel_frames(
+    settings: Settings,
+    text: str,
+    *,
+    fps: int = 30,
+    seconds: float = 0.7,
+    **panel,
+) -> tuple[Image.Image, list[Image.Image] | None]:
+    """`(panel, roll frames or None)` — the ledger line with its figure landing.
+
+    The payoff line is where the short's own number is finally said, and it
+    arrived fully formed while the sheet above it counted. Every other
+    argument is `text_panel`'s.
+    """
+    placed: list = []
+    img = text_panel(settings, text, placed=placed, **panel)
+    font = load_font(settings, panel.get("font_name", DISPLAY_BOLD),
+                     panel.get("font_size", 64))
+    ascent, descent = font.getmetrics()
+    frames = roll_over_lines(
+        img, placed, font,
+        fill=panel.get("fg", (*INK, 255)), bg=panel.get("bg", (*PANEL, 235)),
+        line_h=int((ascent + descent) * 1.12), fps=fps, seconds=seconds)
+    return img, frames
 
 
 def simple_text(
@@ -629,10 +663,15 @@ def typing_frames(
 
 
 def headline_card(settings: Settings, text: str, *, meaning: str = "",
-                  width: int, font_size: int = 40) -> Image.Image:
+                  width: int, font_size: int = 40,
+                  placed: list | None = None) -> Image.Image:
     """Driver-headline card (the WHY beat): a red left border, the quoted
     headline in Space Grotesk, and the red hand-drawn "gloss" line under it
-    (Shantell Sans) saying what it actually means."""
+    (Shantell Sans) saying what it actually means.
+
+    `placed`, when given, is filled with `(line, x, y)` for the QUOTED lines —
+    the headline's own figure is what rolls, not the gloss under it.
+    """
     font = load_font(settings, GROTESK_BOLD, font_size)
     gloss_font = load_font(settings, SHANTELL, int(font_size * 0.82))
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
@@ -654,12 +693,33 @@ def headline_card(settings: Settings, text: str, *, meaning: str = "",
     y = pad
     for line in lines:
         d.text((bar_w + pad, y), line, font=font, fill=(*INK, 255))
+        if placed is not None:
+            placed.append((line, bar_w + pad, y))
         y += lh
     y += int(pad * 0.6)
     for line in gloss_lines:
         d.text((bar_w + pad, y), line, font=gloss_font, fill=(*RED, 255))
         y += glh
     return img
+
+
+def headline_card_frames(settings: Settings, text: str, *, meaning: str = "",
+                         width: int, font_size: int = 40,
+                         fps: int = 30, seconds: float = 0.7
+                         ) -> tuple[Image.Image, list[Image.Image] | None]:
+    """`(card, roll frames or None)` — the driver's figure landing on arrival.
+
+    A driver headline is almost always a number ("orders fell 41%"), and it
+    was the one place a figure reached the frame already counted.
+    """
+    placed: list = []
+    card = headline_card(settings, text, meaning=meaning, width=width,
+                         font_size=font_size, placed=placed)
+    frames = roll_over_lines(
+        card, placed, load_font(settings, GROTESK_BOLD, font_size),
+        fill=(*INK, 255), bg=(*CARD, 244), line_h=int(font_size * 1.24),
+        fps=fps, seconds=seconds)
+    return card, frames
 
 
 # --------------------------------------------------------------------------
@@ -1251,6 +1311,102 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 def _ease_out(t: float) -> float:
     """Fast, then settling. The house easing for anything that lands."""
     return 1.0 - (1.0 - min(max(t, 0.0), 1.0)) ** 3
+
+
+# The figure inside a display string. Shared by the roller and the locator so
+# what gets found is exactly what gets rolled.
+_ROLL_RE = re.compile(r"-?\d[\d,]*\.?\d*")
+
+
+def roll_steps(value: str, n: int) -> list[str] | None:
+    """`value` rolling from zero to itself over `n+1` display strings.
+
+    None when there is no number in it, so a caller can hold the string
+    instead of animating punctuation. The prefix, suffix and sign do not
+    count — "$4.1B" rolls "0.0" to "4.1" and keeps the dollar and the B,
+    because a currency symbol flickering through the alphabet is noise.
+
+    Split out of `count_up_frames` so the roll is not tied to one raster.
+    Every figure in a short arrives somewhere — a slot on a drawing, a
+    blank layout's `figure` box, a headline card, the ledger line — and only
+    the numbers-sheet cue was ever animated, so every other one appeared
+    fully formed and the motion layer stopped at the sheet.
+    """
+    m = _ROLL_RE.search(value or "")
+    if m is None:
+        return None
+    raw = m.group(0).replace(",", "")
+    try:
+        target = float(raw)
+    except ValueError:
+        return None
+    head, tail = value[:m.start()], value[m.end():]
+    decimals = len(raw.split(".")[1]) if "." in raw else 0
+    grouped = "," in m.group(0)
+    out: list[str] = []
+    for k in range(max(n, 1) + 1):
+        cur = target * _ease_out(k / max(n, 1))
+        body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
+        out.append(f"{head}{body}{tail}")
+    return out
+
+
+def roll_over_lines(
+    base: Image.Image,
+    placed: list[tuple[str, float, float]],
+    font,
+    *,
+    fill,
+    bg,
+    line_h: int,
+    fps: int = 30,
+    seconds: float = 0.7,
+) -> list[Image.Image] | None:
+    """`base` re-drawn with the first figure in `placed` counting up to itself.
+
+    `placed` is `[(line_text, x, y)]` — the wrapped lines exactly as the card
+    drew them. None when no line carries a figure, so this is safe to call on
+    any card.
+
+    The figure is repainted INSIDE the box it already occupies rather than the
+    line being re-rendered around it. Both display faces have PROPORTIONAL
+    figures — a `4` is 33% wider than a `1` in Space Grotesk Bold, and 60% in
+    Shantell — so re-wrapping "fell 0%" into "fell 41%" slides every word
+    after the number back and forth under the digits. That reads as a wobble,
+    not as a counter, and it is worse than the static card it replaced.
+
+    The last frame is `base` itself, so a card that holds after the roll holds
+    exactly the pixels the rest of the render was measured against.
+    """
+    for line, lx, ly in placed:
+        m = _ROLL_RE.search(line)
+        if m is None:
+            continue
+        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+        body = line[m.start():m.end()]
+        steps = roll_steps(body, max(int(seconds * fps), 2))
+        if steps is None:
+            continue
+        bx = lx + probe.textlength(line[:m.start()], font=font)
+        bw = probe.textlength(body, font=font)
+        frames: list[Image.Image] = []
+        for s in steps[:-1]:
+            f = base.copy()
+            d = ImageDraw.Draw(f)
+            # The card's plate is a flat fill, so painting the box back to it
+            # restores exactly what was under the digits.
+            d.rectangle([bx, ly, bx + bw + 1, ly + line_h], fill=bg)
+            # RIGHT-aligned in the box the final value will fill. A narrower
+            # step has to leave its slack somewhere, and the right edge puts it
+            # at the word boundary before the number instead of between the
+            # number and its unit — left-aligned, "12%" mid-roll rendered as
+            # "12 %", which reads as a typo rather than as a count.
+            d.text((bx + bw - probe.textlength(s, font=font), ly), s,
+                   font=font, fill=fill)
+            frames.append(f)
+        frames.append(base)
+        return frames
+    return None
 
 
 def count_up_frames(
