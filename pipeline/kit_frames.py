@@ -166,7 +166,7 @@ def fill_slot(
     from PIL import Image, ImageDraw
 
     text = str(value if value is not None else "").strip()
-    if not text:
+    if not text and not slot.clear:
         return
     if slot.case == "upper":
         text = text.upper()
@@ -185,8 +185,14 @@ def fill_slot(
         # Only the blank layouts need this: their placeholder copy is baked
         # into the PNG, so the box is painted back to paper before the real
         # value goes down. Shorts slots sit on empty drawing and never set it.
+        #
+        # This runs even for an EMPTY value. A card that uses three of its four
+        # boxes has to blank the fourth, or the layout's own dummy copy — "What
+        # the number is" — is what ships.
         draw.rectangle([x0, y0, x0 + bw - 1, y0 + bh - 1],
                        fill=(*_colour(slot.clear), 255))
+    if not text:
+        return
 
     face = font_file(slot)
     fill = (*_colour(slot.colour), 255)
@@ -257,7 +263,11 @@ def render_frame(
                     asset.key, ", ".join(sorted(unknown)))
     for slot in asset.slots:
         value = values.get(slot.name)
-        if value in (None, ""):
+        # A slot that declares `clear` is ALWAYS processed, even with no value:
+        # it is a blank layout's box with dummy copy printed in it, and
+        # skipping it is how "What the number is" ended up shipping under a
+        # real figure.
+        if value in (None, "") and not slot.clear:
             continue
         origin = delta.at(slot, idx) if delta is not None else None
         fill_slot(img, slot, value, settings,
@@ -285,12 +295,17 @@ def render_clip(
     values: dict[str, str] | None = None,
     display_w: int | None = None,
     display_h: int | None = None,
+    transform=None,
 ) -> tuple[Path, tuple[int, int]]:
     """An alpha clip of `asset` playing for `duration_s`.
 
     Returns (path, (w, h)) so the caller can place it. Distinct source frames
     are rendered once and reused across the schedule — a six-frame loop over a
     four-second beat is six images, not a hundred and twenty.
+
+    `transform` is applied to each distinct frame after slot filling — how a
+    full-bleed or punched beat gets its framing without a second code path for
+    animated assets.
     """
     from pipeline.rasters import frames_to_alpha_clip
 
@@ -298,7 +313,9 @@ def render_clip(
     cache: dict[int, "object"] = {}
     for idx in set(plan):
         img = render_frame(asset, idx, values, settings)
-        if display_w or display_h:
+        if transform is not None:
+            img = transform(img)
+        elif display_w or display_h:
             img = _resize(img, display_w, display_h)
         cache[idx] = img
     frames = [cache[i] for i in plan]
@@ -329,3 +346,358 @@ def fit_into(img, box_w: int, box_h: int):
     """
     ratio = min(box_w / img.width, box_h / img.height)
     return _resize(img, max(int(img.width * ratio), 1), max(int(img.height * ratio), 1))
+
+
+# --------------------------------------------------------------------------
+# Binding tag values to an asset's slots.
+# --------------------------------------------------------------------------
+def bind_slot_values(
+    asset: Asset,
+    values: dict[str, str] | None,
+) -> tuple[dict[str, str], list[str]]:
+    """(slot name -> value, warnings) for the values written on a tag.
+
+    Three forms, resolved here because this is the first point that knows what
+    slots the asset has:
+
+    * **named** — ``heavy:$1.1B`` binds the slot called ``heavy``;
+    * **positional** — a bare comma list fills the slots in registry order;
+    * **unnamed** — a single value goes to the asset's only slot, or the one
+      called ``number``, which is what 38 of the 42 slotted assets call it.
+
+    A value that cannot be placed is dropped with a warning rather than
+    guessed at: putting a figure in the wrong box is worse than leaving the
+    box empty, because it looks deliberate.
+    """
+    from pipeline.tagging import DEFAULT_SLOT, POSITIONAL_PREFIX
+
+    if not values:
+        return {}, []
+    slots = list(asset.slots)
+    warnings: list[str] = []
+    if not slots:
+        return {}, [f"{asset.key} has no slots — "
+                    f"{', '.join(sorted(v for v in values.values()))} dropped"]
+
+    names = [s.name for s in slots]
+    out: dict[str, str] = {}
+    for key, value in values.items():
+        if key == DEFAULT_SLOT:
+            target = names[0] if len(names) == 1 else next(
+                (n for n in names if n == "number"), None)
+            if target is None:
+                warnings.append(
+                    f"{asset.key} has {len(names)} slots ({', '.join(names)}) "
+                    f"— name which one {value!r} goes in")
+                continue
+            out[target] = value
+        elif key.startswith(POSITIONAL_PREFIX):
+            idx = int(key[len(POSITIONAL_PREFIX):] or 0)
+            if idx >= len(names):
+                warnings.append(
+                    f"{asset.key} has {len(names)} slots — {value!r} was the "
+                    f"{idx + 1}th value and has nowhere to go")
+                continue
+            out[names[idx]] = value
+        elif key in names:
+            out[key] = value
+        else:
+            warnings.append(
+                f"{asset.key} has no slot called {key!r} "
+                f"(it has: {', '.join(names)}) — {value!r} dropped")
+    return out, warnings
+
+
+# --------------------------------------------------------------------------
+# Baked furniture.
+#
+# The 16:9 chapter cards were drawn for the long-form video, where the frame's
+# own furniture is part of the artwork: a ticker chip top-left and the
+# "Opinion / entertainment. Not financial advice." line bottom-left are
+# PAINTED INTO the PNG. A short composites those cards over a 9:16 frame that
+# already draws both, so the result is a duplicated disclaimer and — much
+# worse — a hard-coded placeholder ticker from the design file sitting on
+# screen: `$EXMPL` in our chip, `GYMX ▼ 34%` in theirs.
+#
+# The real fix is artwork without the furniture (see README, "artwork owed").
+# Until then this erases it, and it is deliberately timid about doing so: the
+# two elements sit at a FIXED position on the 1600x900 canvas, so a card only
+# gets touched when the ink in the band actually matches that signature. A
+# blanket crop of the same bands was measured against the library first and
+# would have damaged 32 cards at the top and 75 at the bottom — legs, chart
+# axes and table rules all cross there — so anything that does not match is
+# left exactly as drawn.
+FURNITURE_BANDS = {
+    # name: (top, bottom, probe right, erase right, air side) as fractions
+    "chip":       (74 / 900, 104 / 900, 0.45, 0.35, +1),
+    "disclaimer": (813 / 900, 845 / 900, 0.55, 0.40, -1),
+}
+FURNITURE_LEFT = 73 / 1600      # both elements share the card's left margin
+_FURNITURE_TOL = 5              # px of slack on the signature, at canvas size
+# The furniture is a lone line with clear paper between it and the artwork:
+# air below the chip, air above the disclaimer. Requiring that gap is what
+# separates it from a bar label or a table row that merely happens to start at
+# the same left margin — without it the erase ate the last row of
+# `sector-comps/comps-table`, a bullet on `bull-vs-bear/split` and a bar
+# label on `capital-allocation/uses-of-cash`.
+_FURNITURE_AIR = 34 / 900
+
+
+def strip_baked_furniture(img, asset: Asset | None = None, paper=None):
+    """Erase a long-form card's painted-in chip and disclaimer.
+
+    Returns the image unchanged unless the ink in a band matches the known
+    furniture geometry, so an unrecognised card is never altered.
+    """
+    try:
+        import numpy as np
+    except ImportError:      # pragma: no cover - numpy ships with Pillow's peers
+        return img
+    from PIL import Image
+
+    if asset is not None and asset.aspect not in ("16:9", ""):
+        return img
+    out = img.convert("RGBA")
+    arr = np.asarray(out).astype(int)
+    h, w = arr.shape[:2]
+    if not h or not w:
+        return img
+    fixed_paper = paper
+    def inked(x0: int, x1: int, y0: int, y1: int):
+        band = arr[max(y0, 0):max(y1, 0), max(x0, 0):max(x1, 0)]
+        if not band.size:
+            return None
+        return (band[..., :3].mean(axis=2) < 205) & (band[..., 3] > 60)
+
+    touched = False
+    for top_f, bot_f, probe_f, erase_f, air in FURNITURE_BANDS.values():
+        y0, y1 = max(int(top_f * h) - 5, 0), int(bot_f * h) + 6
+        ink = inked(0, int(probe_f * w), y0, y1)
+        if ink is None or not ink.any():
+            continue
+        ys, xs = np.nonzero(ink)
+        bx0, by0, bx1 = int(xs.min()), y0 + int(ys.min()), int(xs.max())
+        by1 = y0 + int(ys.max())
+        tol = _FURNITURE_TOL * h / 900.0
+        if (abs(bx0 - FURNITURE_LEFT * w) > tol
+                or abs(by0 - top_f * h) > tol or abs(by1 - bot_f * h) > tol):
+            continue        # not the furniture — leave the card alone
+        # Artwork can extend the measured bbox past the text; the text's own
+        # width is fixed, so cap the erase rather than trusting the bbox.
+        right = min(bx1, int(erase_f * w)) + int(6 * w / 1600)
+        gap = int(_FURNITURE_AIR * h)
+        near = (inked(0, right, by1 + 2, by1 + gap) if air > 0
+                else inked(0, right, by0 - gap, by0 - 2))
+        if near is None or near.any():
+            continue        # something is pressed up against it — not furniture
+        pad = int(4 * h / 900)
+        box = (max(bx0 - pad, 0), max(by0 - pad, 0),
+               min(right, w), min(by1 + pad, h))
+        # The paper is faintly textured and not one flat tone, so the patch is
+        # sampled from the air the gate just proved is clear, right beside the
+        # box. A single colour read from the far edge left a visible rectangle
+        # exactly where the chip had been.
+        if fixed_paper is not None:
+            paper = fixed_paper
+        else:
+            near_y = (box[3] + pad, box[3] + pad + 6) if air > 0 else \
+                     (max(box[1] - pad - 6, 0), max(box[1] - pad, 1))
+            strip = arr[near_y[0]:near_y[1], box[0]:box[2], :3]
+            paper = (tuple(int(v) for v in np.median(strip.reshape(-1, 3), axis=0))
+                     if strip.size else tuple(int(v) for v in arr[h // 2, w - 3][:3]))
+        out.paste(Image.new("RGBA", (box[2] - box[0], box[3] - box[1]),
+                            (*paper[:3], 255)), box[:2])
+        touched = True
+    return out if touched else img
+
+
+# --------------------------------------------------------------------------
+# Framing.
+#
+# Every beat used to land in the same box at the same size, which is the single
+# biggest reason a cut reads as a slideshow rather than an edit. Three
+# registers, chosen per beat and then held — the variation is in WHICH shot,
+# never in movement inside one. Nothing here pans, zooms or drifts.
+# --------------------------------------------------------------------------
+FULL_BLEED = "full-bleed"   # the asset IS the frame
+STAGE = "stage"             # contain-fit into the stage band
+PUNCH = "punch"             # cropped tighter and placed larger, for emphasis
+
+
+def is_full_frame(asset: Asset, frame_aspect: tuple[int, int]) -> bool:
+    """True when the asset was drawn to BE the frame rather than sit in it.
+
+    The eleven `vertical-scenes` assets are 1080x1920 compositions — a person
+    at the base of a towering bar, a number falling from the top of frame.
+    Fitted into a 1000x760 stage box they become a letterboxed thumbnail of a
+    shot, which is the one thing they were built not to be.
+    """
+    if not asset.canvas[0] or not asset.canvas[1]:
+        return False
+    want = frame_aspect[0] / frame_aspect[1]
+    got = asset.canvas[0] / asset.canvas[1]
+    return abs(got - want) / want < 0.06
+
+
+def cover_on_paper(img, width: int, height: int, paper=(242, 242, 239)):
+    """Cover-fit onto an opaque paper plate.
+
+    Full-frame kit assets carry alpha, so composited raw over the stage the
+    chart and the sheet would show through the drawing they are meant to have
+    replaced.
+    """
+    from PIL import Image
+
+    ratio = max(width / img.width, height / img.height)
+    scaled = img.resize((max(int(img.width * ratio), 1),
+                         max(int(img.height * ratio), 1)), Image.LANCZOS)
+    plate = Image.new("RGBA", (width, height), (*paper, 255))
+    plate.alpha_composite(scaled, (int((width - scaled.width) / 2),
+                                   int((height - scaled.height) / 2)))
+    return plate
+
+
+# Air kept around the slots when a punch tightens the frame, as a fraction of
+# the canvas per side.
+PUNCH_MARGIN = 0.06
+
+
+def punch_crop(img, asset: Asset | None, *, keep: float = 0.62):
+    """A tighter crop of the same drawing, centred on what it is about.
+
+    Centred on EVERY declared slot, not just the first. Where a slot is is
+    where the meaning is, and an asset with two of them is a comparison:
+    cropping `see-saw-two-numbers` around its first slot showed `$1.1B` on a
+    tilted plank with the `$40M` it is being weighed against outside the
+    frame. The crop widens to hold them all rather than losing one, so a
+    drawing whose slots span the canvas simply punches less.
+
+    A static crop, chosen once for the beat: the emphasis comes from the
+    framing, not from moving the frame.
+    """
+    keep = min(max(keep, 0.2), 1.0)
+    w, h = img.size
+    cx, cy = w // 2, h // 2
+    if asset is not None and asset.slots:
+        scale = max(asset.export_scale or 1, 1)
+        boxes = [s.scaled(scale) for s in asset.slots]
+        ux0 = min(b[0] for b in boxes)
+        uy0 = min(b[1] for b in boxes)
+        ux1 = max(b[0] + b[2] for b in boxes)
+        uy1 = max(b[1] + b[3] for b in boxes)
+        cx, cy = (ux0 + ux1) // 2, (uy0 + uy1) // 2
+        # One fraction for both axes, so the drawing keeps its aspect.
+        need = max((ux1 - ux0) / max(w, 1), (uy1 - uy0) / max(h, 1))
+        keep = min(max(keep, need + 2 * PUNCH_MARGIN), 1.0)
+    cw, ch = int(w * keep), int(h * keep)
+    x0 = min(max(cx - cw // 2, 0), max(w - cw, 0))
+    y0 = min(max(cy - ch // 2, 0), max(h - ch, 0))
+    return img.crop((x0, y0, x0 + cw, y0 + ch))
+
+
+def paste_into_slot(base, asset: Asset, slot_name: str, image):
+    """Composite an IMAGE into a declared slot, cover-cropped to fill it.
+
+    The four `the-world` desk scenes each declare a `screen` box and nothing
+    ever touched it, so the price chart floated on a blank wall while a monitor
+    drawn to hold it sat unused two hundred pixels away. A chart on his screen
+    is a shot; a chart on a blank wall is a slide.
+
+    Slots are canvas coordinates and the PNG is `exportScale` times that — the
+    same trap the text filler handles, and the reason this lives here rather
+    than at the call site.
+    """
+    from PIL import Image
+
+    slot = asset.slot(slot_name)
+    if slot is None:
+        log.warning("%s has no slot called %r — image not composited",
+                    asset.key, slot_name)
+        return base
+    x, y, w, h = slot.scaled(asset.export_scale)
+    if w <= 0 or h <= 0:
+        return base
+    src = image.convert("RGBA")
+    ratio = max(w / src.width, h / src.height)
+    scaled = src.resize((max(int(src.width * ratio), 1),
+                         max(int(src.height * ratio), 1)), Image.LANCZOS)
+    left = max(int((scaled.width - w) / 2), 0)
+    top = max(int((scaled.height - h) / 2), 0)
+    base.alpha_composite(scaled.crop((left, top, left + w, top + h)), (x, y))
+    return base
+
+
+def plate(asset: Asset, width: int, height: int, settings: Settings, *,
+          values: dict[str, str] | None = None,
+          screen: tuple[str, "object"] | None = None,
+          y_frac: float = 0.42,
+          paper=(242, 242, 239),
+          rects: dict[str, tuple[int, int, int, int]] | None = None):
+    """A full-frame plate built around one asset.
+
+    The desk scenes are 1:1 and the frame is 9:16, so a desk becomes a plate:
+    paper, the scene fitted to the width, sitting at `y_frac` down the frame.
+    `screen` is (slot name, image) — how the chart gets onto the monitor.
+
+    `rects`, if given, is filled in with each slot's box in FRAME coordinates.
+    Callers need it to point at what they composited: the chart annotation
+    circled a spot computed for a chart floating at a known offset, and once
+    the chart moved onto the monitor the circle stayed behind on the header.
+    """
+    from PIL import Image
+
+    img = render_still(asset, values, settings)
+    if screen is not None:
+        img = paste_into_slot(img, asset, screen[0], screen[1])
+    scaled = _resize(img, width, None)
+    out = Image.new("RGBA", (width, height), (*paper, 255))
+    top = int((height - scaled.height) * min(max(y_frac, 0.0), 1.0))
+    left = int((width - scaled.width) / 2)
+    out.alpha_composite(scaled, (left, top))
+    if rects is not None and img.width:
+        ratio = scaled.width / img.width
+        for slot in asset.slots:
+            sx, sy, sw, sh = slot.scaled(asset.export_scale)
+            rects[slot.name] = (left + int(sx * ratio), top + int(sy * ratio),
+                                max(int(sw * ratio), 1), max(int(sh * ratio), 1))
+    return out
+
+
+# --------------------------------------------------------------------------
+# Transitions.
+# --------------------------------------------------------------------------
+# The design docs specify the stings and bumpers as 6-frame ink transitions.
+# They were never exported — there is no `stings/` family in the registry — so
+# every cut in the video fires the same white flash.
+#
+# The MECHANISM is what is missing, not just the artwork: a family-driven
+# picker means the strips drop in as data when they are commissioned, and no
+# code changes. Until then the fallback is still one flash, but it is a
+# fallback rather than the design.
+TRANSITION_FAMILIES: tuple[str, ...] = (
+    "stings",          # the commissioned ink transitions
+    "type/bumpers",    # the bumper strips
+)
+
+
+def transition_asset(kit, seed: str, index: int = 0) -> Asset | None:
+    """One transition strip, or None when none ships.
+
+    Only a real frame SEQUENCE qualifies. A static drawing swept over the
+    whole frame for a fifth of a second is not a transition, it is a flicker
+    of an unrelated picture — so a family full of stills leaves this None and
+    the caller keeps the flash.
+
+    Stepped by `index` rather than hashed, so consecutive cuts in one video are
+    guaranteed to differ instead of merely likely to.
+    """
+    options = [
+        key for fam in TRANSITION_FAMILIES for key in kit.family(fam)
+        if (a := kit.get(key)) is not None and a.frame_count > 1
+    ]
+    if not options:
+        return None
+    import hashlib
+
+    offset = int(hashlib.sha256(f"transition|{seed}".encode()).hexdigest()[:8], 16)
+    return kit.get(options[(offset + index) % len(options)])

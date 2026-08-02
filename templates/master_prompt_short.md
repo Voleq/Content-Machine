@@ -70,8 +70,11 @@ Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws
 Place a tag immediately before the word it should hit. The parser strips every tag out before anything is spoken or counted, and fires it on that word. Three kinds:
 
 **Evidence — takes the frame for a beat.** Dennis cuts away to it and comes back.
-- `[PROP: key]` — anything in the beat library or the prop/concept lists above. This is the main one: the beat library is 51 drawings built for exactly this, many of them animated, most with a slot for a figure. Name the situation, not the picture.
-- `[BIGNUM: key]` / `[TERM: key]` — a one-number card or an explainer card. If nothing is drawn for your key, the blank layout gets filled with your text — so an unlisted term still gets a proper card.
+- `[PROP: key = value]` — anything in the beat library or the prop/concept lists above. This is the main one: the beat library is 51 drawings built for exactly this, many animated, most with a box waiting for a figure. Name the situation, not the picture — and **always give the figure**, or the drawing renders with an empty box in it:
+  - `[PROP: crushed-flat = -41%]` — one slot, one value.
+  - `[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]` — name each slot when the asset has more than one. The catalogue lists the names.
+  - `[PROP: numbers-raining = -8%, -12%, -3%]` — a bare list fills the slots in order.
+- `[BIGNUM: key = value]` / `[TERM: key]` — a one-number card or an explainer card. If nothing is drawn for your key, the blank layout gets filled with your text — so an unlisted term still gets a proper card.
 - `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
 - `[SHOW ARTICLE: https://…]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. If the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).

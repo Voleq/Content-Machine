@@ -367,7 +367,8 @@ def build_short_timeline(
         cues.append(Cue(
             t=t, kind=kind,
             payload={"value": e.payload, "tag": e.type.value,
-                     "style": e.style, "class": "data" if is_data else "punct",
+                     "style": e.style, "values": dict(e.values),
+                     "class": "data" if is_data else "punct",
                      "hold": lo, "min_hold": lo, "max_hold": hi},
         ))
 
@@ -566,7 +567,8 @@ def build_long_timeline(
     for idx, e in enumerate(script.events):
         t = clamp(char_offset_time(words, e.char_offset), duration)
         kind = _TAG_TO_KIND[e.type]
-        payload = {"order": idx, "value": e.payload, "tag": e.type.value}
+        payload = {"order": idx, "value": e.payload, "tag": e.type.value,
+                   "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
         if kind in (CueKind.SCRIBBLE, CueKind.DOODLE):

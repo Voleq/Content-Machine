@@ -77,9 +77,19 @@ def test_the_short_catalog_carries_the_whole_beat_library(settings, kit):
     for family in ("dennis-vs-numbers", "vertical-scenes", "transformations",
                    "the-world", "open-close"):
         assert f"  {family}:" in catalog, family
-    # slot names are what the writer supplies, so they have to be named
-    assert "7 slots: rain-1" in catalog
+    # slot names are what the writer supplies, so they have to be named — and
+    # named the way they are TYPED, after the `=`, not counted.
+    assert "takes rain-1" in catalog
     assert "6f loop" in catalog and "8f one-shot" in catalog
+
+
+def test_the_short_catalog_shows_how_to_write_a_value(settings, kit):
+    """A key on its own renders the drawing with its boxes empty, so the
+    syntax has to be in front of the writer, not just in the prompt."""
+    catalog = kit_catalog(settings, fmt="short")
+    assert "[PROP: crushed-flat = -41%]" in catalog
+    assert "heavy:$1.1B" in catalog, "the named form has to be shown"
+    assert "EMPTY" in catalog, "and what happens without it"
 
 
 def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):

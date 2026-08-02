@@ -59,21 +59,24 @@ HOSTED_RAW = json.dumps({
     "audio_script": (
         "EXMPL is up twenty nine percent today on five times average volume. "
         "[BEAT] The news is a partnership, which is a press release, [DRY] not "
-        "a purchase order. [PROP: crushed-flat] No revenue attached to it "
-        "anywhere. Plus a squeeze, because eleven percent of the float was "
-        "short. [PROP: chart-ride-up] But here is the part nobody screenshots. "
-        "[BEAT] Revenue went four hundred million to four ninety six in five "
-        "years. That is a plateau in a costume. [TERM: owner earnings] Losses "
-        "got [SCRIBBLE: circle -> Net income] wider every year. "
-        "[PROP: numbers-raining] Free cash flow went negative and stayed "
-        "there, which means you pay them to own it. [PROP: push-boulder] "
+        "a purchase order. [PROP: crushed-flat = -41%] No revenue attached to "
+        "it anywhere. Plus a squeeze, because eleven percent of the float was "
+        "short. [PROP: b-towering-chart = $1.1T] But here is the part nobody "
+        "screenshots. [BEAT] Revenue went four hundred million to four ninety "
+        "six in five years. That is a plateau in a costume. "
+        "[TERM: owner earnings] Losses got "
+        "[SCRIBBLE: circle -> Net income] wider every year. "
+        "[PROP: numbers-raining = -8%, -12%, -3%, -21%, -6%, -15%, -9%] "
+        "Free cash flow went negative and stayed "
+        "there, which means you pay them to own it. "
+        "[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M] "
         "The share count grows six percent a year, so your slice shrinks while "
-        "you wait. [BIGNUM: dilution] I know a value trap; my own account went "
-        "from twenty five k to zero. [SIGH] In fairness there is enough cash on "
-        "the balance sheet to survive being wrong for a while. "
-        "[PROP: umbrella-red-rain] Which is the nicest thing I can say, and I "
-        "am reaching. [DOODLE: crash] The chart went vertical. The business "
-        "went sideways. "
+        "you wait. [BIGNUM: dilution = 6% a year] I know a value trap; my own "
+        "account went from twenty five k to zero. [SIGH] In fairness there is "
+        "enough cash on the balance sheet to survive being wrong for a while. "
+        "[PROP: umbrella-red-rain = -8%, -12%, -3%, $2.4B] Which is the nicest "
+        "thing I can say, and I am reaching. [DOODLE: crash] The chart went "
+        "vertical. The business went sideways. "
         "Noise. A press release and a squeeze, stapled to five years of drift."
     ),
     "move_summary": "+29% today · 5× average volume",
@@ -345,7 +348,13 @@ def test_data_beats_hold_and_punctuation_does_not(hosted):
 
 
 def test_the_tag_grammar_reached_the_frame(hosted):
-    """The short can address the library now — asserted on what it used."""
+    """The short can address the library now — asserted on what it used.
+
+    The floor is the acceptance bar for the rebuild: the version this replaced
+    passed every other test in this file while reaching six assets. A short
+    that draws on fewer than fifteen is back to being a slideshow with one
+    drawing in it, whatever the rest of the suite says.
+    """
     settings, script, tts, out, manifest, frames, warnings = hosted
     used = set(manifest["kit_assets_used"])
     assert "shorts/dennis-vs-numbers/numbers-raining" in used, \
@@ -354,7 +363,45 @@ def test_the_tag_grammar_reached_the_frame(hosted):
         "[TERM] with no named artwork should fall through to the blank layout"
     assert "blanks/big-number-blank" in used, \
         "[BIGNUM] should fall through to its blank layout the same way"
-    assert len(used) >= 10, f"only reached {len(used)} kit assets: {sorted(used)}"
+    assert "shorts/vertical-scenes/b-towering-chart" in used, \
+        "a 9:16 scene should have replaced the frame rather than been boxed"
+    assert any(k.startswith("shorts/the-world/") for k in used), \
+        "the desk set should carry the acts"
+    assert len(used) >= 15, f"only reached {len(used)} kit assets: {sorted(used)}"
+
+
+def test_the_untagged_number_rows_reach_the_numbers_batch(hosted):
+    """Twenty-three drawings whose whole job is making a figure land, and they
+    only ever appeared if the writer named one. A row the script did not tag
+    picks one off the number itself."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    from pipeline.number_beats import NUMBER_BEATS
+
+    banks = {k for keys in NUMBER_BEATS.values() for k in keys}
+    tagged = {"shorts/dennis-vs-numbers/crushed-flat"}   # named in the script
+    reached = (set(manifest["kit_assets_used"]) & banks) - tagged
+    assert reached, "no number beat was reached for any untagged row"
+
+
+def test_the_hosts_own_card_does_not_bring_a_second_ticker(hosted):
+    """The host shots are long-form chapter cards with a ticker chip painted
+    into them. Left on, every short opens with a placeholder from the design
+    file on screen next to ours."""
+    settings, script, tts, out, manifest, frames, warnings = hosted
+    from PIL import Image
+
+    from pipeline.kit import load_kit
+    from pipeline.kit_frames import strip_baked_furniture
+
+    kit = load_kit(settings.assets_dir)
+    for role_key in ("chapters/cold-open/at-desk-open",
+                     "chapters/resigned-close/dennis-defeated"):
+        asset = kit.get(role_key)
+        if asset is None:
+            continue
+        src = Image.open(asset.frames[0]).convert("RGBA")
+        assert strip_baked_furniture(src, asset) is not src, (
+            f"{role_key} still carries its long-form furniture into the short")
 
     # delivery direction reaches the voice, never the screen
     from pipeline.models import DELIVERY_TAG_TYPES

@@ -88,3 +88,70 @@ def parse_chart_payload(payload: str) -> tuple[str, str]:
         style = m.group(1).lower()
         payload = _CHART_STYLE_RE.sub("", payload)
     return payload.strip(), style
+
+
+# --------------------------------------------------------------------------
+# Slot values on a tag.
+# --------------------------------------------------------------------------
+
+# `[PROP: crushed-flat = -41%]`                       one figure
+# `[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]`  one per named slot
+# `[PROP: numbers-raining = -8%, -12%, -3%]`          in slot order
+#
+# 74 slots across 51 assets are what turn a fixed drawing into a card that says
+# something different in every video. Without a way to write the value into the
+# tag, named artwork rendered with every slot empty — Dennis crushed under a
+# blank rectangle — and the only filled slots in a build were on the two blank
+# layouts.
+
+# A named part is `slot: value`. The name has to look like a slot name, so a
+# bare value that happens to contain a colon ("3:1", "9:16") is not mistaken
+# for one.
+_SLOT_NAME_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+
+# The key an unnamed value is stored under. Bound to the asset's only slot (or
+# the one called `number`) at render time, when its slots are known.
+DEFAULT_SLOT = ""
+
+# Positional keys, for a comma list with no names: `#0` is the first slot.
+POSITIONAL_PREFIX = "#"
+
+
+def parse_slot_values(payload: str) -> tuple[str, dict[str, str]]:
+    """`key = …` -> (key, {slot: value}).
+
+    Three forms, and the rule between them is "never split a figure in half":
+    every comma-separated part must bind a plausible slot name for the named
+    form to apply, and a tail that does not is kept whole as one value.
+
+    The writer should not have to know that `crushed-flat`'s slot is called
+    `number`, so an unnamed value is bound to the asset at render time.
+    """
+    key, sep, rest = payload.partition("=")
+    key, rest = key.strip(), rest.strip()
+    if not sep or not rest:
+        return key or payload.strip(), {}
+
+    parts = [p.strip() for p in rest.split(",") if p.strip()]
+    if len(parts) == 1 and not _is_binding(parts[0]):
+        return key, {DEFAULT_SLOT: parts[0]}
+
+    if all(_is_binding(p) for p in parts):
+        named: dict[str, str] = {}
+        for part in parts:
+            name, _, value = part.partition(":")
+            named[name.strip().lower()] = value.strip()
+        return key, named
+
+    if not any(_is_binding(p) for p in parts):
+        # A bare list fills the slots in the order the registry declares them.
+        return key, {f"{POSITIONAL_PREFIX}{i}": v for i, v in enumerate(parts)}
+
+    # Half-bound: almost certainly a comma inside one value, so keep it whole
+    # rather than guess. The render-time binder warns if it cannot place it.
+    return key, {DEFAULT_SLOT: rest}
+
+
+def _is_binding(part: str) -> bool:
+    name, colon, value = part.partition(":")
+    return bool(colon and value.strip() and _SLOT_NAME_RE.match(name.strip().lower()))

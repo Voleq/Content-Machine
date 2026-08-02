@@ -41,6 +41,76 @@ python scripts/restyle_dark_cards.py
 The ingest **deletes `assets/kit/` and writes it fresh**. There is no merge
 mode: merging is what left dark-theme leftovers resolvable last time.
 
+### The three blank layouts are NOT in the delivery
+
+`big-number-blank`, `term-card-blank` and `quote-pull-blank` came from the 2024
+kit. `dennis-assets.zip` contains no `type/callouts/`, no `type/quotes/` and no
+file with `blank` in the name — **the copies in `assets/kit/blanks/` are the
+last ones that exist.** They are artwork we are owed; until Design ships them
+in a delivery this repo is the only source.
+
+The ingest reads them out of `assets/kit/blanks/` before it deletes anything
+and writes them back afterwards, so an ordinary re-ingest carries them forward
+with no staging at all. If they are genuinely absent it **refuses** (exit 2)
+rather than proceeding — an earlier version deleted them first and printed one
+line to stderr, which would have destroyed them permanently. To recover:
+
+```
+git checkout HEAD -- assets/kit/blanks/       # from this repo's history
+```
+
+or stage a previous kit export at `assets/_kit_previous/` carrying
+`type/callouts/big-number-blank.png`, `type/callouts/term-card-blank.png` and
+`type/quotes/pull-blank.png`.
+
+### The chapter cards carry long-form furniture
+
+The 138 16:9 `chapters/` cards were drawn to BE the long-form frame, so each
+one has the frame's furniture painted into the PNG: a ticker chip at
+`(73, 78)` and the `Opinion / entertainment. Not financial advice.` line at
+`(73, 818)`, both on the 1600x900 canvas. The chip's copy is the design file's
+placeholder — `GYMX ▼ 34%`.
+
+A short composites those cards over a 9:16 frame that draws both itself, so
+they arrive as a duplicated disclaimer and a **second, wrong ticker**: `$EXMPL`
+in our chip and `GYMX ▼ 34%` in theirs, on screen together in the bookends of
+every video. **What we are owed is the same cards without the furniture** — it
+belongs to the frame, not to the drawing.
+
+Until then `kit_frames.strip_baked_furniture()` erases it, and it is
+deliberately timid: a card is only touched when the ink in the band matches
+the known geometry *and* has the clear paper beside it that the furniture
+always has. A blanket crop of the same bands was measured against the library
+first and would have damaged 32 cards at the top and 75 at the bottom — legs,
+chart axes and table rules all cross there. 64 of 138 cards come out clean;
+the other 74 keep their furniture rather than risk the artwork.
+
+One card is broken as delivered: `chapters/sector-comps/comps-table` prints
+its `Median` row directly on top of the disclaimer, overlapping glyph for
+glyph. Nothing can separate them, so stripping the disclaimer takes `Median`
+with it. It needs redrawing.
+
+`scripts/audit_placement.py` walks every asset through both engines' real
+placement maths and reports coverage, empty slots and clipping. Run it after
+a delivery.
+
+### A card is a whole frame; a two-shot needs a cut-out
+
+Every `chapters/` card is a complete 16:9 composition — Dennis, a headline,
+often its own illustration. They are right when they ARE the frame and wrong
+as an inset: pasting one beside a piece of evidence puts two finished designs
+in one frame, both with their own background and their own headline.
+
+So the two-shot uses the `mascot/` poses instead — 1:1, 98% transparent, no
+background and no copy. **Whole figures only**: `arm-*`, `face-*`, `mouth-*`
+and `layer-*` are components of the old layer rig, and `arm-gesture` in that
+list stood a pair of disembodied arms next to the evidence.
+
+The long two-shot is composed as one still — paper, the evidence, the figure
+standing on the floor line beside it. Never a designed backdrop underneath:
+those carry their own giant ticker and grid, and a third design in the frame
+is what made the cut read as a collage.
+
 It copies only what the registry lists as a frame. Contact sheets, index
 sheets and probes stay in the archive — they are for humans, and they were
 previously sitting in the asset folders with ordinary names where any

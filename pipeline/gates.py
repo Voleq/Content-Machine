@@ -506,6 +506,16 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
             gate="kit", severity="warn",
             message=f"{p} — it is not addressable and never will be"))
 
+    stuck = _cards_stuck_with_furniture(kit)
+    if stuck:
+        findings.append(Finding(
+            gate="kit", severity="warn",
+            message=(f"{len(stuck)} chapter card(s) still carry the long-form "
+                     f"ticker chip and disclaimer into a 9:16 short — the "
+                     f"stripper leaves a card alone when artwork crosses the "
+                     f"band. Artwork owed: the same cards without frame "
+                     f"furniture. e.g. {', '.join(stuck[:3])}")))
+
     return findings, {
         "used": sorted(used),
         "unresolved_keys": unresolved,
@@ -514,8 +524,37 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "unregistered_pngs": unregistered,
         "aliases": len(kit.aliases()),
         "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
+        "furniture_stuck": stuck,
         "kit_size": len(kit),
     }
+
+
+def _cards_stuck_with_furniture(kit) -> list[str]:
+    """16:9 cards whose baked chip/disclaimer cannot be removed safely.
+
+    The stripper fails safe by design, so this is the list Design has to fix
+    at source rather than a list of bugs. Kept cheap: first frame only, and
+    only cards on the long-form canvas.
+    """
+    from PIL import Image
+
+    from pipeline.kit_frames import FURNITURE_BANDS, strip_baked_furniture
+
+    del FURNITURE_BANDS  # imported to fail loudly if the module loses it
+    stuck: list[str] = []
+    for key in sorted(kit.keys()):
+        asset = kit.get(key)
+        if asset is None or asset.aspect != "16:9" or not asset.frames:
+            continue
+        if not asset.family.startswith("chapters/"):
+            continue
+        try:
+            src = Image.open(asset.frames[0]).convert("RGBA")
+        except OSError:
+            continue
+        if strip_baked_furniture(src, asset) is src:
+            stuck.append(key)
+    return stuck
 
 
 def kit_doctor_text(settings: Settings, script=None) -> str:
@@ -565,6 +604,16 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
         lines.append("Artwork owed — a -talk twin identical to its base, so "
                      "the mouth flap animates nothing:")
         lines += [f"  {k}" for k in dead]
+
+    stuck = stats.get("furniture_stuck") or []
+    if stuck:
+        lines.append("")
+        lines.append(f"Artwork owed — {len(stuck)} chapter card(s) carry the "
+                     "long-form ticker chip and disclaimer into a short, and "
+                     "artwork crosses the band so it cannot be erased:")
+        lines += [f"  {k}" for k in stuck[:15]]
+        if len(stuck) > 15:
+            lines.append(f"  ... and {len(stuck) - 15} more")
 
     if findings:
         lines.append("")

@@ -26,7 +26,7 @@ from pipeline.models import (
     TagType,
     parse_scribble_payload,
 )
-from pipeline.tagging import parse_chart_payload
+from pipeline.tagging import parse_chart_payload, parse_slot_values
 from pipeline.tagging import tokenize_tags
 
 log = logging.getLogger(__name__)
@@ -225,16 +225,20 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     f'"circle|arrow|underline -> target") — skipped'
                 )
                 continue
-            payload, style = rt.payload, ""
+            payload, style, values = rt.payload, "", {}
             if rt.type not in DELIVERY_TAG_TYPES:
                 payload, style = parse_chart_payload(rt.payload)
+                # `= value` binds the asset's text slots. Without it, named
+                # artwork renders with every box empty — Dennis crushed under
+                # a blank rectangle — and 74 slots stay unreachable.
+                payload, values = parse_slot_values(payload)
             if rt.type not in DELIVERY_TAG_TYPES and not payload:
                 inline_warnings.append(
                     f"[{rt.type.value}] at char {rt.char_offset} carries no "
                     f"key — skipped")
                 continue
             events.append(TagEvent(
-                type=rt.type, payload=payload, style=style,
+                type=rt.type, payload=payload, style=style, values=values,
                 char_offset=rt.char_offset, raw_offset=rt.raw_offset,
             ).model_dump())
         data["audio_script"] = clean

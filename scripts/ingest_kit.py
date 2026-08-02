@@ -45,6 +45,12 @@ from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# Run as `python scripts/ingest_kit.py`, sys.path[0] is scripts/ — so the
+# sibling import below resolves only under pytest, which is exactly where the
+# portability guard was being exercised and nowhere else.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 KIT_OUT = ROOT / "assets" / "kit"
 REGISTRY_NAME = "kit-registry.json"
 
@@ -95,11 +101,49 @@ def unportable(rel: str) -> str | None:
 # drawn. Nothing in the shorts batch needs this — those boxes are empty
 # regions of the drawing — so it is declared per slot rather than assumed.
 # --------------------------------------------------------------------------
-BLANK_SOURCES = {
-    "blanks/big-number-blank": "type/callouts/big-number-blank.png",
-    "blanks/term-card-blank": "type/callouts/term-card-blank.png",
-    "blanks/quote-pull-blank": "type/quotes/pull-blank.png",
+# Where each blank layout is looked for, in order. The kit's OWN copy comes
+# first, so a re-ingest of a repo that already has them carries them forward
+# without any staging at all — which is the ordinary case and the one that
+# used to destroy them.
+#
+# THE DELIVERY DOES NOT CONTAIN THESE. `dennis-assets.zip` has no
+# `type/callouts/`, no `type/quotes/`, and no file with `blank` in the name;
+# these three are the last surviving copies from the 2024 kit. They are
+# artwork we are owed, not a config problem — until Design ships them in a
+# delivery, this repo is the only place they exist.
+BLANK_SOURCES: dict[str, tuple[str, ...]] = {
+    "blanks/big-number-blank": (
+        "blanks/big-number-blank.png",              # the current kit
+        "type/callouts/big-number-blank.png",       # a staged 2024 kit
+    ),
+    "blanks/term-card-blank": (
+        "blanks/term-card-blank.png",
+        "type/callouts/term-card-blank.png",
+    ),
+    "blanks/quote-pull-blank": (
+        "blanks/quote-pull-blank.png",
+        "type/quotes/pull-blank.png",
+    ),
 }
+
+# Searched in order for the sources above.
+def blank_search_roots(out: Path) -> tuple[Path, ...]:
+    return (out, ROOT / "assets" / "_kit_previous")
+
+
+def find_blank_sources(out: Path) -> tuple[dict[str, Path], list[str]]:
+    """(key -> staged file, missing keys). Runs BEFORE anything is deleted."""
+    found: dict[str, Path] = {}
+    missing: list[str] = []
+    for key, candidates in BLANK_SOURCES.items():
+        for root in blank_search_roots(out):
+            hit = next((root / c for c in candidates if (root / c).is_file()), None)
+            if hit is not None:
+                found[key] = hit
+                break
+        else:
+            missing.append(key)
+    return found, missing
 
 _MONO = {"family": "Space Mono", "weight": 700}
 _DISPLAY = {"family": "Shantell Sans", "weight": 800}
@@ -362,8 +406,12 @@ def main(argv: list[str] | None = None) -> int:
 
     aliases, dead_flaps = compute_aliases(assets, root_for)
     corrections = apply_corrections(assets)
+    _, missing_preview = find_blank_sources(args.out)
 
     print(f"archive     : {archive}")
+    if missing_preview:
+        print(f"blanks      : MISSING — {', '.join(missing_preview)} "
+              f"(the ingest will refuse)")
     for note in corrections:
         print(f"corrected   : {note}")
     print(f"assets      : {len(assets)} registered, "
@@ -381,10 +429,42 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     out: Path = args.out
-    # Delete first. A merge is what left dark-theme leftovers resolvable.
+
+    # ---- find the blank layouts BEFORE deleting anything ---------------
+    # This used to run after the rmtree, reading from a staging directory that
+    # does not exist by default — so an ordinary ingest deleted the only copies
+    # of three irreplaceable PNGs and printed one line to stderr about it.
+    blanks, missing_blanks = find_blank_sources(out)
+    if missing_blanks:
+        print("refusing to ingest — these blank layouts are not on disk and "
+              "are NOT in the delivery:", file=sys.stderr)
+        for key in missing_blanks:
+            print(f"  {key}", file=sys.stderr)
+        print(
+            "\nThey are the only assets in either kit designed to take "
+            "arbitrary text, and the copies in this repo are the last ones "
+            "that exist. Recover them before ingesting:\n"
+            "  git checkout HEAD -- assets/kit/blanks/\n"
+            "or stage a previous kit export at assets/_kit_previous/ with\n"
+            "  type/callouts/big-number-blank.png\n"
+            "  type/callouts/term-card-blank.png\n"
+            "  type/quotes/pull-blank.png\n"
+            "If neither is available they have to be re-drawn — see "
+            "assets/kit/README.md.", file=sys.stderr)
+        return 2
+
+    # Everything is staged; now it is safe to delete. A merge is what left
+    # dark-theme leftovers resolvable, so there is no merge mode.
+    staged = {key: src.read_bytes() for key, src in blanks.items()}
+    # The kit's README documents this script. Deleting it on every run and
+    # making the operator restore it from git is not a contract.
+    readme = out / "README.md"
+    staged_readme = readme.read_bytes() if readme.is_file() else None
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    if staged_readme is not None:
+        readme.write_bytes(staged_readme)
 
     copied = 0
     for key, entry in assets.items():
@@ -397,17 +477,12 @@ def main(argv: list[str] | None = None) -> int:
             copied += 1
 
     # ---- the blank layouts, carried forward --------------------------
-    previous = ROOT / "assets" / "_kit_previous"
-    for key, rel in BLANK_SOURCES.items():
-        src = previous / rel
-        if not src.exists():
-            print(f"blank layout {key} not found at {src} — skipped "
-                  f"(stage the previous kit at assets/_kit_previous to carry "
-                  f"them over)", file=sys.stderr)
-            continue
+    # Read into memory before the rmtree, because the kit's own copy is
+    # usually the source and the rmtree is what would have eaten it.
+    for key, payload in staged.items():
         dst = out / BLANK_ENTRIES[key]["frames"][0]
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dst)
+        dst.write_bytes(payload)
         assets[key] = BLANK_ENTRIES[key]
         copied += 1
 

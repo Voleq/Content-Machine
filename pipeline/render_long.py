@@ -36,11 +36,23 @@ cutaway-full (raw full-frame photography, footage and filings), always
 returning to him. Chapter boundaries reserve a host beat on each side, so a
 chapter opens and closes on his face.
 
+ONE COMPOSITION PER FRAME. The host shots are complete 16:9 scenes — Dennis,
+a headline, often an illustration of their own — so a host beat IS the frame
+and nothing goes behind it. A two-shot is composed as a single still: paper,
+the evidence, and a cut-out `mascot/` figure standing beside it. It used to
+stack three finished designs (a designed backdrop with its own giant ticker,
+an evidence card, and a whole host slide over both), which is what made the
+cut read as a collage.
+
+Kit artwork is addressed through the registry as an ASSET, not a path, so a
+tag's `= value` reaches the drawing's declared boxes and a one-shot shows its
+end state rather than freezing on frame 1.
+
 Chapter stingers divide the acts; the branded strip + corner bug frame the
-top, captions sit in a fitted box band clear of the furniture. Every visual
-lands on its anchor word (or the first moment after it that is free); there
-is no verdict stamp — the video ends on whatever deadpan line the script
-wrote.
+top, captions are the same phrase-by-phrase chips the short uses — dark ink
+on paper, a whole clause at a time. Every visual lands on its anchor word (or
+the first moment after it that is free); there is no verdict stamp — the
+video ends on whatever deadpan line the script wrote.
 """
 
 from __future__ import annotations
@@ -58,6 +70,7 @@ from pipeline.host import build_host_clip
 from pipeline.kit import load_kit
 from pipeline.models import (
     CueKind,
+    KIT_TAG_BLANKS,
     KIT_TAG_FAMILIES,
     LongScript,
     SFX_KEYS,
@@ -66,7 +79,7 @@ from pipeline.models import (
     parse_scribble_payload,
 )
 from pipeline.rasters import (
-    build_karaoke_ass,
+    build_phrase_ass,
     chapter_stinger,
     cover_fill_frame,
     doodle_clip,
@@ -263,6 +276,61 @@ def render_long(
             backdrop_cache[slot] = bp
         return backdrop_cache[slot]
 
+    # ---------------------------------------------- kit artwork, rendered
+    # Addressed by PATH before this, which meant the long cut got the raw
+    # first frame of the PNG: 39 reachable drawings played with their declared
+    # boxes empty, both blank layouts shipped the placeholder copy printed
+    # into them ("What the word means"), and 22 one-shot strips froze on
+    # frame 1 — a drawing of nothing having happened yet.
+    def _kit_still(seg, seg_i: int, value: str) -> Path:
+        from pipeline.kit_frames import (
+            bind_slot_values, render_still, strip_baked_furniture,
+        )
+
+        tag = TagType(seg.kind.upper())
+        family = KIT_TAG_FAMILIES[tag]
+        asset = kit.resolve_asset(family, value)
+        is_blank = False
+        if asset is None:
+            blank = KIT_TAG_BLANKS.get(tag)
+            asset = kit.get(blank) if blank else None
+            is_blank = asset is not None
+        if asset is None:
+            log.warning("kit asset %s/%s missing — designed backdrop instead",
+                        family, value)
+            return _backdrop_path(seg.payload.get("variant", seg_i))
+
+        if is_blank:
+            values = _long_blank_values(tag, value, seg.payload.get("values"))
+        else:
+            values, slot_warnings = bind_slot_values(
+                asset, seg.payload.get("values"))
+            for w in slot_warnings:
+                log.warning("slot: %s", w)
+
+        dest = rdir / f"kit_{seg_i}_{asset.name[:24]}.png"
+        # A one-shot's END state, the same rule the short uses: a six-frame
+        # transformation shown on its first frame has not happened yet.
+        #
+        # The furniture comes off here too. The long frame draws its own bug
+        # and disclaimer, and the card's painted-in chip carries the design
+        # file's placeholder ticker — `GYMX` sitting under our `$EXMPL`.
+        # The stripper no-ops on anything that is not a long-form card.
+        img = strip_baked_furniture(render_still(asset, values, settings), asset)
+        img.convert("RGBA").save(dest)
+        return dest
+
+    def _long_blank_values(tag, key: str, values: dict | None) -> dict[str, str]:
+        """Copy for a blank layout when the kit has no artwork for the key."""
+        values = values or {}
+        given = next((v for v in values.values() if v), "")
+        label = key.replace("-", " ").strip()
+        if tag is TagType.BIGNUM:
+            return {"kicker": label, "figure": given or label,
+                    "headline": "", "context": ""}
+        return {"kicker": "the word of the day", "term": label.title(),
+                "definition": given, "footnote": ""}
+
     def _still_chain(input_i: int, seg, seg_len: float, seg_i: int,
                      tail: str) -> str:
         """Every still is held. There is no drift on anything."""
@@ -278,15 +346,25 @@ def render_long(
     # frames is now a composed shot and its `-talk` twin, so `role` replaces
     # the old expression/facing pair. A two-shot asks for the `panel` bank —
     # the shots drawn with him beside something.
-    host_h = int(H * 0.82)
+    # The host shots are COMPOSED 16:9 cards now, not the cut-out figure the
+    # old rig assembled from mouth frames. Sizing them by height the way a
+    # cut-out was sized made a 16:9 card 82% of the frame WIDTH, so in a
+    # two-shot Dennis covered the panel he was supposed to be standing beside:
+    # `Owner Earnings` rendered with four letters of its title showing.
+    #
+    # So: a host beat IS the frame, and a two-shot host takes the column the
+    # panel leaves — the panel is 56% wide, he gets the rest.
+    HOST_PANEL_W = 0.40
 
     def _host_input(seg_i: int, seg, seg_len: float, *, panel: bool = False):
         """Add the host clip as an input. Returns (index, x, y) or None."""
         side = seg.payload.get("host_side", "left")
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
-            kit=kit, settings=settings, display_h=host_h, fps=fps,
+            kit=kit, settings=settings, fps=fps,
+            display_w=int(W * HOST_PANEL_W) if panel else W,
             role="panel" if panel else "beat", shot_index=seg_i,
+            strip_furniture=True,
         )
         if built is None:
             return None
@@ -295,7 +373,7 @@ def render_long(
             x = px(60) if side == "left" else W - hw - px(60)
         else:
             x = int((W - hw) / 2)
-        return _add_input(["-i", str(clip_path)]), x, H - hh
+        return _add_input(["-i", str(clip_path)]), x, max(H - hh, 0)
 
     def _overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
                        seg_len: float, seg_i: int, tail: str) -> str:
@@ -311,18 +389,56 @@ def render_long(
         )
 
     def _panel_frame(still: Path, host_side: str, dest: Path, *, variant: int) -> Path:
-        """The two-shot plate: the designed panel inset on the side opposite
-        Dennis, over the room backdrop."""
+        """The two-shot, as ONE composition: paper, the evidence, the figure.
+
+        This used to be three finished designs stacked in one frame — a
+        designed filler backdrop with its own giant ticker and grid, the
+        evidence card on top of that, and a whole 16:9 host SLIDE pasted over
+        both, carrying its own headline and often its own illustration. Every
+        edge showed, the backdrop's watermark read through the line art, and
+        two unrelated headlines argued with each other and with the caption.
+
+        One background. One piece of evidence. One cut-out figure standing
+        beside it, on the same sheet of paper.
+        """
         from PIL import Image
 
-        base = Image.open(_backdrop_path(variant)).convert("RGB").resize((W, H))
-        panel = Image.open(still).convert("RGBA")
-        max_w, max_h = int(W * 0.56), int(H * 0.72)
+        from pipeline.host import panel_figure
+        from pipeline.kit_frames import render_still, strip_baked_furniture
+
+        base = Image.new("RGB", (W, H), (242, 242, 239))
+        # Any panel can be a long-form card carrying its own disclaimer — the
+        # mock chart falls back to one — and the frame draws its own, so the
+        # beat came out with the line printed twice. Signature-gated, so a
+        # generated chart or a photograph is never touched.
+        panel = strip_baked_furniture(Image.open(still).convert("RGBA"))
+
+        figure = panel_figure(kit, variant)
+        fig_img = None
+        if figure is not None:
+            fig_img = strip_baked_furniture(
+                render_still(figure, None, settings), figure)
+            fh = int(H * 0.62)
+            fr = fh / max(fig_img.height, 1)
+            fig_img = fig_img.resize((max(int(fig_img.width * fr), 1), fh),
+                                     Image.LANCZOS)
+
+        # The evidence gets the frame minus the figure's column.
+        fig_w = (fig_img.width + px(60)) if fig_img is not None else 0
+        max_w = max(W - fig_w - px(150), px(400))
+        max_h = int(H * 0.80)
         ratio = min(max_w / panel.width, max_h / panel.height)
         panel = panel.resize((max(int(panel.width * ratio), 1),
                               max(int(panel.height * ratio), 1)), Image.LANCZOS)
-        x = W - panel.width - px(70) if host_side == "left" else px(70)
-        base.paste(panel, (x, int((H - panel.height) / 2)), panel)
+
+        if host_side == "left":
+            fx, ex = px(70), W - panel.width - px(70)
+        else:
+            fx, ex = W - (fig_img.width if fig_img else 0) - px(70), px(70)
+        base.paste(panel, (ex, int((H - panel.height) / 2)), panel)
+        if fig_img is not None:
+            # Standing on the floor line, not floating mid-frame.
+            base.paste(fig_img, (fx, H - fig_img.height - px(70)), fig_img)
         base.save(dest)
         return dest
 
@@ -401,23 +517,14 @@ def render_long(
         elif seg.kind in ("term", "bignum", "table", "prop"):
             # owned design-kit artwork, addressed by name through the registry
             visual = None
-            family = KIT_TAG_FAMILIES[TagType(seg.kind.upper())]
-            still = kit.resolve(family, value)
-            if still is None:
-                log.warning("kit asset %s/%s missing — designed backdrop instead",
-                            family, value)
-                still = _backdrop_path(seg.payload.get("variant", i))
-            host = (_host_input(i, seg, seg_len, panel=True)
-                    if seg.payload.get("layout") == "two-shot" else None)
-            if host is None:
-                still_i = _still_input(still)
-                chain = _still_chain(still_i, seg, seg_len, i, tail)
-            else:
-                panel = _panel_frame(still, seg.payload.get("host_side", "left"),
+            still = _kit_still(seg, i, value)
+            # The two-shot is composed as ONE still now — paper, evidence,
+            # cut-out figure — rather than a host slide overlaid on a panel.
+            if seg.payload.get("layout") == "two-shot":
+                still = _panel_frame(still, seg.payload.get("host_side", "left"),
                                      rdir / f"panel_{i}.png", variant=i)
-                bg_i = _still_input(panel)
-                host_i, hx, hy = host
-                chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
+            still_i = _still_input(still)
+            chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -445,17 +552,13 @@ def render_long(
             # A designed panel (chart / bespoke diagram) plays as a TWO-SHOT:
             # Dennis stays in frame beside it, so the cut never leaves the
             # host. Photographs, footage and memes stay raw and full-frame.
-            host = (_host_input(i, seg, seg_len, panel=True)
-                    if seg.payload.get("layout") == "two-shot" else None)
-            if host is None:
-                still_i = _still_input(still)
-                chain = _still_chain(still_i, seg, seg_len, i, tail)
-            else:
-                panel = _panel_frame(still, seg.payload.get("host_side", "left"),
+            # The two-shot is composed as ONE still now — paper, evidence,
+            # cut-out figure — rather than a host slide overlaid on a panel.
+            if seg.payload.get("layout") == "two-shot":
+                still = _panel_frame(still, seg.payload.get("host_side", "left"),
                                      rdir / f"panel_{i}.png", variant=i)
-                bg_i = _still_input(panel)
-                host_i, hx, hy = host
-                chain = _overlay_chain(bg_i, host_i, hx, hy, seg_len, i, tail)
+            still_i = _still_input(still)
+            chain = _still_chain(still_i, seg, seg_len, i, tail)
         else:  # an unrecognised kind still gets a designed backdrop
             visual = None
             variant = seg.payload.get("variant", 0)
@@ -658,10 +761,16 @@ def render_long(
     # so a LONG caption line ("...three a.m., again...") can never clip
     # off-frame or overlap the furniture. Kept narrow so a 9:16 centre crop
     # (repurpose) retains it.
+    #
+    # Phrase captions, the same ones the short uses. The karaoke fill left a
+    # narrow chip with ONE word lit and the rest of the line washed out to
+    # near-invisible — unreadable at a glance, and it coloured the lit word
+    # the same red the kit reserves for a down-move. A 16:9 line also has far
+    # more room than a 9:16 one, so it takes a longer page.
     ass_path = rdir / "captions.ass"
-    ass_path.write_text(build_karaoke_ass(
-        tts.words, play_res=(W, H), font_size=px(50), margin_v=px(150),
-        max_words=4, max_chars=24, duration=duration, box=True,
+    ass_path.write_text(build_phrase_ass(
+        tts.words, play_res=(W, H), font_size=px(52), margin_v=px(120),
+        margin_h=px(180), max_words=8, max_chars=46, duration=duration,
     ), encoding="utf-8")
 
     # ------------------------------------------------------------- audio

@@ -176,13 +176,23 @@ def test_the_ken_burns_vocabulary_is_deleted():
         assert not hasattr(rl, gone), f"{gone} should no longer exist"
 
 
-def test_long_captions_are_a_fitted_box(rendered):
-    """The LONG caption is an opaque, text-fitted box (BorderStyle=3) so a
-    line can never clip off-frame or stack into the furniture."""
+def test_long_captions_are_whole_phrases_in_a_fitted_box(rendered):
+    """An opaque, text-fitted box (BorderStyle=3), carrying a whole clause.
+
+    The karaoke fill lit ONE word and washed the rest of the line out to
+    near-invisible — unreadable at a glance, and it coloured the lit word the
+    same red the kit reserves for a down-move. Same phrase chips as the short
+    now, sized for a 16:9 line.
+    """
     settings, script, tts, out, manifest = rendered
     ass = (out.parent / "render_long" / "captions.ass").read_text(encoding="utf-8")
-    assert ",3,12,0,2," in ass, "captions use the fitted-box style"
-    assert ",1,4,2,2," not in ass, "not the SHORT outline style"
+    assert ",3,14,0,2," in ass, "captions use the fitted-box style"
+    assert "\\k" not in ass, "the per-word karaoke fill is gone"
+    lines = [ln.split(",,0,0,0,,", 1)[1] for ln in ass.splitlines()
+             if ln.startswith("Dialogue:") and ",,0,0,0,," in ln]
+    assert lines, "no caption lines at all"
+    words = [len(ln.split("}")[-1].split()) for ln in lines]
+    assert max(words) >= 5, f"longest caption is {max(words)} words — still chips"
 
 
 def test_host_holds_the_untagged_stretches(rendered):

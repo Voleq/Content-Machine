@@ -87,6 +87,47 @@ HOST_BANKS: dict[str, tuple[str, ...]] = {
     ),
 }
 
+# The two-shot figure: a CUT-OUT, not a card.
+#
+# Every entry in HOST_BANKS is a complete 16:9 scene — Dennis plus a headline
+# plus, often, its own illustration. They are slides, and they are right when
+# they ARE the frame. Insetting one beside a piece of evidence stacks two
+# finished compositions in one frame, which is what made the long cut read as
+# a collage: a designed backdrop, an evidence card, and a second slide
+# carrying "So... which is it?" over the top of it.
+#
+# These are the 1:1 mascot poses: 98% transparent, no background, no copy. A
+# figure standing next to the evidence on the same sheet of paper is a
+# two-shot. A slide pasted onto a slide is not.
+#
+# WHOLE FIGURES ONLY. Half the `mascot/` family is components for the old
+# layer rig — `arm-gesture` is two arm strokes, `layer-body` is a headless
+# torso, `face-*` is a head — and one of them in this list put a pair of
+# disembodied arms next to the evidence. `_FIGURE_PARTS` is the guard.
+PANEL_FIGURES: tuple[str, ...] = (
+    "mascot/pointing",
+    "mascot/deadpan",
+    "mascot/tired-explaining",
+    "mascot/shrug",
+    "mascot/exasperated",
+    "mascot/smug-told-you",
+)
+
+# Name prefixes that are pieces of a figure rather than a figure.
+_FIGURE_PARTS = ("arm-", "face-", "mouth-", "layer-")
+
+
+def panel_figure(kit: Kit, index: int = 0) -> Asset | None:
+    """One cut-out pose for a two-shot, stepped so a cut never repeats."""
+    options = [
+        a for k in PANEL_FIGURES
+        if not k.rsplit("/", 1)[-1].startswith(_FIGURE_PARTS)
+        and (a := kit.get(k)) is not None
+    ]
+    if not options:
+        return None
+    return options[index % len(options)]
+
 
 @dataclass(frozen=True)
 class HostShot:
@@ -180,15 +221,21 @@ def build_host_clip(
     fps: int = 30,
     role: str = "open",
     shot_index: int = 0,
+    strip_furniture: bool = False,
 ) -> tuple[Path, tuple[int, int]] | None:
     """Composite a talking Dennis into an alpha clip for [start, end).
 
     Returns (clip_path, (w, h)) so the caller can place him, or None when the
     kit has no usable shot for the role.
+
+    `strip_furniture` is for the 9:16 shorts: the host shots are long-form
+    chapter cards with a ticker chip and a disclaimer painted into them, and
+    the short draws its own. Left on, every short opens and closes with a
+    placeholder ticker from the design file on screen next to ours.
     """
     from PIL import Image
 
-    from pipeline.kit_frames import _resize
+    from pipeline.kit_frames import _resize, strip_baked_furniture
     from pipeline.rasters import frames_to_alpha_clip
 
     shot = pick_shot(kit, role, shot_index)
@@ -199,6 +246,8 @@ def build_host_clip(
         imgs = []
         for frame in asset.frames:
             img = Image.open(frame).convert("RGBA")
+            if strip_furniture:
+                img = strip_baked_furniture(img, asset)
             if display_w or display_h:
                 img = _resize(img, display_w, display_h)
             imgs.append(img)

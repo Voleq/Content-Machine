@@ -173,6 +173,10 @@ class TagEvent(BaseModel):
     raw_offset: int = Field(ge=0)
     # optional modifier — [CHART: metric style=marker] parses to style.
     style: str = ""
+    # Slot values written on the tag: `[PROP: crushed-flat = -41%]`. Keys are
+    # slot names, `""` for a single unnamed value, `#N` for a positional one;
+    # bound to the asset's real slots at render time.
+    values: dict[str, str] = Field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------

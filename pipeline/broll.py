@@ -620,15 +620,23 @@ class ContentManager:
         return sorted(files, key=rank)[0].get("link")
 
     def filler_clip(self, key: str) -> Visual:
-        """Deterministic generic static filler — the never-fail floor."""
+        """Deterministic generic static filler — the never-fail floor.
+
+        On PAPER. This is production code, not a mock: it fires whenever a
+        real clip cannot be fetched, and it was `#0e1117` — so the fallback
+        for a failed b-roll lookup was a near-black hole in the middle of a
+        light-theme video. The same defect the seven dark cards had.
+        """
         W, H = self.settings.long_resolution
         path = self.settings.cache_dir / "broll" / "filler" / "static_filler.mp4"
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
             run_ffmpeg([
                 "-f", "lavfi",
-                "-i", f"color=c=0x0e1117:size={W}x{H}:rate={self.settings.fps}:duration={self.settings.broll_max_clip_s:.1f}",
-                "-vf", "noise=alls=9:allf=t,vignette=PI/5",
+                "-i", f"color=c=0xF2F2EF:size={W}x{H}:rate={self.settings.fps}:duration={self.settings.broll_max_clip_s:.1f}",
+                # Grain and a whisper of vignette so it reads as paper stock
+                # rather than a dropped frame.
+                "-vf", "noise=alls=6:allf=t,vignette=PI/4.2",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "26",
                 "-an", str(path),
             ])

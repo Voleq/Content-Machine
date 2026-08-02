@@ -155,9 +155,12 @@ def _shorts_families(kit) -> list[tuple[str, list[str]]]:
             if asset.frame_count > 1:
                 bits.append(f"{asset.frame_count}f {asset.playback}")
             if asset.slots:
-                bits.append(f"{len(asset.slots)} slot"
-                            + ("s" if len(asset.slots) > 1 else "")
-                            + ": " + ", ".join(s.name for s in asset.slots))
+                # Slot NAMES, because they are what the writer types after the
+                # `=`, and the first slot's note, because "what goes in it" is
+                # the thing the name does not say.
+                names = ", ".join(s.name for s in asset.slots)
+                note = next((s.note for s in asset.slots if s.note), "")
+                bits.append(f"takes {names}" + (f" ({note})" if note else ""))
             rows.append(f"{leaf}" + (f" — {'; '.join(bits)}" if bits else ""))
         if rows:
             out.append((family.split("/", 1)[1], rows))
@@ -233,9 +236,19 @@ def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
         families = _shorts_families(kit)
         if families:
             out.append("")
-            out.append("SHORT BEAT LIBRARY — name one as [PROP: key] and the "
-                       "renderer plays it, fills its slots and holds it for the "
-                       "beat. Slot names are the fields you supply:")
+            out.append(
+                "SHORT BEAT LIBRARY — name one as [PROP: key = value] and the "
+                "renderer plays it, composites your figure into the drawing, "
+                "and holds it for the beat.")
+            out.append(
+                "  [PROP: crushed-flat = -41%]                         one slot")
+            out.append(
+                "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
+            out.append(
+                "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
+            out.append(
+                "  WITHOUT the `= value` the drawing renders with its boxes "
+                "EMPTY. Always give a figure.")
             for name, rows in families:
                 out.append(f"  {name}:")
                 for row in rows:

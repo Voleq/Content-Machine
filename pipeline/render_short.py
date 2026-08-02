@@ -47,11 +47,22 @@ from pipeline.chart import render_marker_price_chart, render_price_chart
 from pipeline.host import build_host_clip, pick_shot
 from pipeline.kit import Kit, KitError, load_kit, load_variant_ledger
 from pipeline.kit_frames import (
+    FULL_BLEED,
+    plate,
+    PUNCH,
+    STAGE,
+    bind_slot_values,
+    cover_on_paper,
     fit_into,
+    is_full_frame,
     playback_seconds,
+    punch_crop,
     render_clip,
     render_still,
+    strip_baked_furniture,
+    transition_asset,
 )
+from pipeline.number_beats import beat_for_row
 from pipeline.models import (
     KIT_TAG_BLANKS,
     KIT_TAG_FAMILIES,
@@ -112,6 +123,13 @@ CLOSE_KEY = "shorts/open-close/e-close"
 # is the shape the channel ends on.
 PAYOFF_CARDS = {"noise": "short/card-noise", "signal": "short/card-signal"}
 
+# The desk set. Four 1:1 scenes, each declaring a `screen` box, and nothing had
+# ever put anything in one. They give the video three plates instead of one
+# flat backdrop held for its whole runtime — the open, the move, the payoff.
+DESK_OPEN_KEY = "shorts/the-world/d-desk-wide"
+DESK_CHART_KEY = "shorts/the-world/d-desk-over-shoulder"
+DESK_PAYOFF_KEY = "shorts/the-world/d-desk-side"
+
 # --------------------------------------------------------------------------
 # The vertical layout, in 1080-wide design coordinates on a 1080x1920 frame.
 #
@@ -132,6 +150,9 @@ STAGE_H = 760
 LEDGER_Y = 1150
 HOST_Y = 430          # the 16:9 shots are full-width; this centres them
 INSET_Y = 1120        # the two-shot inset, clear of the ledger
+INSET_W = 480         # ... and the column it reserves on the right
+INSET_GAP = 28        # clear air between the inset and whatever sits beside it
+INSET_MARGIN = 30     # the inset's own distance from the right edge
 CAPTION_MARGIN_V = 150  # the caption band's distance from the bottom edge
 
 # Per-beat layout variants from the design kit's Short Variants sheet. The
@@ -210,14 +231,25 @@ def _kit_asset_for(kit: Kit, tag: TagType, key: str):
     return None, False
 
 
-def _blank_values(tag: TagType, key: str, script: ShortScript) -> dict[str, str]:
-    """What goes in a blank layout's slots for a tag the kit has no art for."""
+def _blank_values(tag: TagType, key: str, script: ShortScript,
+                  values: dict[str, str] | None = None) -> dict[str, str]:
+    """What goes in a blank layout's slots for a tag the kit has no art for.
+
+    The tag's own `= value` wins where the writer gave one. Without it a
+    `[BIGNUM: dilution]` had nothing to put in the figure box but the word
+    "dilution", which it then repeated in the headline underneath — a card
+    that says the same word twice and no number at all.
+    """
+    values = values or {}
     label = key.replace("-", " ").strip()
+    given = next((v for k, v in values.items() if v), "")
     if tag is TagType.BIGNUM:
-        return {"kicker": label, "figure": key.split("=")[-1].strip() or label,
-                "headline": label, "context": script.move_summary}
+        return {"kicker": label,
+                "figure": given or label,
+                "headline": "" if given else script.move_summary,
+                "context": script.move_summary if given else ""}
     return {"kicker": "the word of the day", "term": label.title(),
-            "definition": script.numbers_comment}
+            "definition": given or script.numbers_comment}
 
 
 def render_short(
@@ -262,6 +294,10 @@ def render_short(
     fps = settings.fps
 
     kit = load_kit(settings.assets_dir)
+    # One ledger for the whole render: the auto-reached number beats consult it
+    # while choosing, and every key that reaches the frame is recorded into it
+    # at the end.
+    beat_ledger = load_variant_ledger(settings)
     # The structural assets are required, not hoped for. A short that silently
     # loses its host or its backdrop is exactly the failure this rebuild is
     # for, and it passed every test it had.
@@ -330,46 +366,83 @@ def render_short(
     stage_open_end = float(host_open.payload.get("until", 0.0))
     close_t = float(host_close.t)
 
-    # ---------------------------------------------------------- furniture
     opener = sample_hook_opener(script.content_sha(), settings)
-    pill = ticker_pill(settings, script.ticker, font_size=px(38))
-    pill_path = rdir / "ticker_pill.png"
-    pill.save(pill_path)
-    layers.append(OverlayLayer(
-        path=pill_path, x=px(40), y=px(56), t_start=0.0, t_end=duration,
-        name="ticker_pill",
-    ))
-    bug = simple_text(settings, opener, font_size=px(28),
-                      fill=(143, 140, 131, 240), stroke_width=0)
-    bug_path = rdir / "bug.png"
-    bug.save(bug_path)
-    layers.append(OverlayLayer(
-        path=bug_path, x=W - bug.width - px(40), y=px(70),
-        t_start=0.0, t_end=duration, name="brand_bug",
-    ))
+
+    # -------------------------------------------- the acts, as three plates
+    # One flat backdrop held dead still for seventy-five seconds is what made
+    # the whole thing read as a slide deck. Three plates instead, at zero
+    # cost: the desk set shipped four scenes and nothing touched them.
+    #
+    # These go on FIRST, at the bottom of the z-order, so everything else
+    # composites over them exactly as it did over the bare backdrop.
+    from PIL import Image
+
+    def act_plate(key: str, name: str, t0: float, t1: float, *,
+                  screen=None, y_frac: float = 0.36) -> None:
+        asset = kit.get(key)
+        if asset is None or t1 - t0 < 0.4:
+            return
+        used_keys.add(asset.key)
+        dest = rdir / f"{name}.png"
+        plate(asset, W, H, settings, screen=screen, y_frac=y_frac).convert(
+            "RGBA").save(dest)
+        layers.append(OverlayLayer(path=dest, x=0, y=0, t_start=t0, t_end=t1,
+                                   name=name))
+
+    act_plate(DESK_OPEN_KEY, "act_open", 0.0, stage_open_end)
 
     # ------------------------------------------- the branded chart (hero)
-    # Opens on the clean branded card or the crude marker/napkin chart — both
-    # on paper now. It draws on rather than cutting in, and it LEAVES when the
-    # gut check claims the stage.
-    chart_px = (px(1000), px(STAGE_H))
-    chart_pos = (px(40), px(STAGE_Y))
+    # ON THE MONITOR, not floating on a wall. The desk scene declares a
+    # `screen` box and nothing had ever put anything in it, so the chart sat
+    # two hundred pixels from a drawing of the screen it belongs on.
     render_chart = (render_marker_price_chart
                     if script.chart_style is ChartStyle.MARKER else render_price_chart)
+    desk = kit.get(DESK_CHART_KEY)
+    screen_slot = desk.slot("screen") if desk else None
+    if screen_slot is not None:
+        # Drawn at the monitor's own aspect so it fills the glass rather than
+        # being cover-cropped into it.
+        chart_px = (px(880), max(int(px(880) * screen_slot.h / screen_slot.w), 1))
+    else:
+        chart_px = (px(1000), px(STAGE_H))
     chart_path, chart_meta = render_chart(
         prices, rdir / "chart.png", settings,
         size=chart_px, move_text=script.move_summary,
     )
-    from PIL import Image
-
     chart_img = Image.open(chart_path).convert("RGBA")
-    chart_draw = frames_to_alpha_clip(
-        draw_on_frames(chart_img, fps=fps, seconds=0.9), fps, rdir / "chart_on.mov")
-    layers.append(OverlayLayer(
-        path=chart_draw, x=chart_pos[0], y=chart_pos[1],
-        t_start=stage_open_end, t_end=gut_t, is_video=True, hold=True,
-        name="chart",
-    ))
+
+    # Where the chart ended up ON SCREEN, and how big it is relative to the
+    # image the chart metadata is measured against. Marks that point at the
+    # chart are placed through this, so moving the chart moves the marks.
+    chart_scale = 1.0
+    if desk is not None:
+        used_keys.add(desk.key)
+        desk_path = rdir / "desk_chart.png"
+        slot_rects: dict[str, tuple[int, int, int, int]] = {}
+        plate(desk, W, H, settings, screen=("screen", chart_img),
+              y_frac=0.34, rects=slot_rects).convert("RGBA").save(desk_path)
+        sx0, sy0, sw0, sh0 = slot_rects.get("screen", (0, 0, W, H))
+        chart_pos = (sx0, sy0)
+        # The chart is cover-cropped into the glass, so it is scaled by
+        # whichever axis had to fill and re-centred on the other.
+        cover = max(sw0 / max(chart_img.width, 1), sh0 / max(chart_img.height, 1))
+        chart_scale = cover
+        chart_pos = (int(sx0 - (chart_img.width * cover - sw0) / 2),
+                     int(sy0 - (chart_img.height * cover - sh0) / 2))
+        layers.append(OverlayLayer(
+            path=desk_path, x=0, y=0,
+            t_start=stage_open_end, t_end=gut_t, name="chart",
+        ))
+    else:
+        chart_pos = (px(40), px(STAGE_Y))
+        chart_draw = frames_to_alpha_clip(
+            draw_on_frames(chart_img, fps=fps, seconds=0.9),
+            fps, rdir / "chart_on.mov")
+        layers.append(OverlayLayer(
+            path=chart_draw, x=chart_pos[0], y=chart_pos[1],
+            t_start=stage_open_end, t_end=gut_t, is_video=True, hold=True,
+            name="chart",
+        ))
 
     # ------------------------------------------------------------ hook card
     # The mute-safe line, in the ledger band under the stage — it reads over
@@ -388,19 +461,34 @@ def render_short(
     ))
 
     # ------------------------------------- headlines overlaid ON the chart
+    # Stacked below the desk when the chart is on the monitor — they are what
+    # the shot is about, so they read under it rather than on top of the glass.
+    #
+    # They also share that band with the two-shot host inset, and a centred
+    # 880-wide card ran straight under him: the second headline's text was
+    # sliced off mid-word by his panel. The cards take the column to the LEFT
+    # of the inset instead, which is what makes it a two-shot rather than two
+    # things in one place.
     slots = chart_meta["headline_slots"]
+    headline_w = W - px(INSET_W + INSET_MARGIN + INSET_GAP) - px(40)
     for c in headline_cues:
         i = int(c.payload["index"])
         meaning = script.headlines[i].meaning if i < len(script.headlines) else ""
-        card = headline_card(settings, c.payload["text"], meaning=meaning,
-                             width=px(880), font_size=px(32))
+        card = headline_card(
+            settings, c.payload["text"], meaning=meaning,
+            width=headline_w if desk is not None else px(880),
+            font_size=px(30) if desk is not None else px(32))
         card_clip = frames_to_alpha_clip(
             slide_in_frames(card, fps=fps, seconds=0.35, direction="left"),
             fps, rdir / f"headline_{i}.mov")
-        sx, sy = slots[min(i, len(slots) - 1)]
+        if desk is not None:
+            hx = px(40)
+            hy = px(1030) + i * (card.height + px(18))
+        else:
+            sx, sy = slots[min(i, len(slots) - 1)]
+            hx, hy = chart_pos[0] + int(sx), chart_pos[1] + int(sy)
         layers.append(OverlayLayer(
-            path=card_clip,
-            x=chart_pos[0] + int(sx), y=chart_pos[1] + int(sy),
+            path=card_clip, x=hx, y=min(hy, H - card.height - px(200)),
             t_start=c.t, t_end=float(c.payload["until"]),
             is_video=True, hold=True, name=f"headline_{i}",
         ))
@@ -443,9 +531,12 @@ def render_short(
         target = c.payload["target"]
         if target == "chart":
             lx, ly = chart_meta["last_point"]
-            sw, sh = px(240), px(190)
-            x = chart_pos[0] + int(lx) - sw // 2
-            y = chart_pos[1] + int(ly) - sh // 2
+            # `last_point` is in the chart IMAGE's pixels; on the desk the
+            # chart is scaled into the monitor, so the mark scales with it.
+            sw = max(int(px(240) * min(chart_scale, 1.0)), px(90))
+            sh = max(int(px(190) * min(chart_scale, 1.0)), px(70))
+            x = chart_pos[0] + int(lx * chart_scale) - sw // 2
+            y = chart_pos[1] + int(ly * chart_scale) - sh // 2
             # a mark on the chart leaves with the chart; a mark on a row
             # leaves with the sheet. Neither outlives what it points at.
             t_start, t_end = clip_to_stage(c.t, gut_t)
@@ -505,10 +596,64 @@ def render_short(
             is_video=True, hold=True, name=f"countup_{k}",
         ))
 
+    # ------------------------- the numbers batch, reached for automatically
+    # Twenty-three drawings whose whole job is making a figure land, and they
+    # only ever appeared if the writer named one — so most videos used none.
+    # A key-number beat the script did not tag picks one off the number
+    # itself: up gets a drawing about going up, a deepening loss gets the
+    # hole. This is what turns the core batch from occasional into
+    # every-video.
+    tagged_props = {str(c.payload.get("value", "")).lower()
+                    for c in evidence_cues}
+    for k, c in enumerate(zoom_cues):
+        i = int(c.payload["row_index"])
+        if i >= len(script.numbers):
+            continue
+        row = script.numbers[i]
+        # The writer's own props are excluded from the bank BEFORE the draw,
+        # not filtered out after it: picking then discarding lost the beat
+        # entirely whenever the dice landed on a drawing already named in the
+        # script, which is how a render reached for `crushed-flat` twice and
+        # shipped the row with nothing.
+        chosen = beat_for_row(kit, row.label, row.values,
+                              seed=script.content_sha(), ledger=beat_ledger,
+                              exclude=tagged_props)
+        if chosen is None:
+            continue
+        key, slot_values = chosen
+        asset = kit.get(key)
+        if asset is None:
+            continue
+        span = max(playback_seconds(asset), 1.6)
+        start, _ = clip_to_stage(c.t, duration)
+        end = min(start + span, sheet_end)
+        if end - start < 1.0:
+            continue
+        # Claimed only once it is going on screen. Counting it above meant the
+        # manifest listed assets the render had dropped, and the manifest is
+        # the evidence the rebuild landed.
+        used_keys.add(asset.key)
+        img = fit_into(render_still(asset, slot_values, settings),
+                       px(560), px(560))
+        beat_clip = frames_to_alpha_clip(
+            slide_in_frames(img, fps=fps, seconds=0.3, direction="up"),
+            fps, rdir / f"numberbeat_{k}.mov")
+        layers.append(OverlayLayer(
+            path=beat_clip, x=W - img.width - px(40),
+            y=px(STAGE_Y + 300), t_start=start, t_end=end,
+            is_video=True, hold=True,
+            name=f"numberbeat_{k}_{key.rsplit('/', 1)[-1][:18]}",
+        ))
+
     # ---------------------------------------------- the tag grammar beats
     # Everything the script asked for by name. A card tag gets its named
     # artwork or the blank layout filled with the script's own text; a shorts
     # asset plays its strip; a filing, article or screengrab is a real image.
+    #
+    # The punch counter runs across the whole sequence and advances only on
+    # beats that could punch, so the emphasis lands every third DRAWING rather
+    # than every third cue.
+    punch_cycle = [0]
     for k, c in enumerate(evidence_cues):
         tag = TagType(c.payload["tag"]) if c.payload.get("tag") else None
         value = str(c.payload.get("value", ""))
@@ -520,7 +665,7 @@ def render_short(
             settings=settings, content=content, workspace=workspace,
             rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
             duration=duration, hold=hold, is_data=is_data, name=name,
-            used_keys=used_keys,
+            used_keys=used_keys, punch_cycle=punch_cycle,
         )
         if not placed:
             unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
@@ -621,17 +766,33 @@ def render_short(
         ))
 
     # ------------------------------------------- beat-transition stingers
+    # A kit transition when one exists, the flash when none does.
+    #
+    # Every cut fires the same white flash today, because the 6-frame ink
+    # strips the design docs specify were never exported — there is no
+    # `stings/` family in the registry. The picker is wired now so the strips
+    # drop in as data when they are commissioned; until then this is honestly
+    # a fallback rather than the design.
     flash = frames_to_alpha_clip(
         flash_frames(W, H, fps=fps), fps, rdir / "flash.mov",
     )
-    for c in transitions:
-        if c.t <= 0.05:
+    for ti, c in enumerate(t for t in transitions if t.t > 0.05):
+        strip = transition_asset(kit, script.content_sha(), ti)
+        name = f"flash_{c.payload['name']}"
+        if strip is None:
+            layers.append(OverlayLayer(
+                path=flash, x=0, y=0, t_start=c.t,
+                t_end=min(c.t + 0.2, duration), is_video=True, name=name))
             continue
+        used_keys.add(strip.key)
+        span = max(playback_seconds(strip), 0.25)
+        clip, (cw, ch) = render_clip(
+            strip, rdir / f"transition_{ti}.mov", duration_s=span, fps=fps,
+            settings=settings, transform=lambda img: cover_on_paper(img, W, H))
         layers.append(OverlayLayer(
-            path=flash, x=0, y=0, t_start=c.t,
-            t_end=min(c.t + 0.2, duration), is_video=True,
-            name=f"flash_{c.payload['name']}",
-        ))
+            path=clip, x=0, y=0, t_start=c.t,
+            t_end=min(c.t + span, duration), is_video=True,
+            name=f"{name}_{strip.name[:16]}"))
 
     # ------------------------------- cheap or trap: the value-trap beat
     for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
@@ -671,6 +832,8 @@ def render_short(
     else:
         unresolved.append(card_key)
 
+    act_plate(DESK_PAYOFF_KEY, "act_payoff", payoff_t, duration, y_frac=0.30)
+
     payoff_layout = _layout(PAYOFF_LAYOUTS, conclusion.payload.get("variant"))
     conc_img = text_panel(settings, conclusion.payload["text"], width=px(960),
                           font_name=SHANTELL, font_size=px(payoff_layout["size"]),
@@ -704,11 +867,11 @@ def render_short(
         t1 = min(t1, duration)
         if t1 <= t0:
             return False
-        width = px(560) if inset else W
+        width = px(INSET_W) if inset else W
         built = build_host_clip(
             tts.words, t0, t1, rdir / f"host_{name}.mov",
             kit=kit, settings=settings, display_w=width, fps=fps,
-            role=role, shot_index=host_shot_i,
+            role=role, shot_index=host_shot_i, strip_furniture=True,
         )
         host_shot_i += 1
         if built is None:
@@ -718,7 +881,7 @@ def render_short(
         if shot is not None:
             used_keys.update({shot.closed.key, shot.open_.key})
         if inset:
-            x, y = W - hw - px(30), px(INSET_Y)
+            x, y = W - hw - px(INSET_MARGIN), px(INSET_Y)
         else:
             x, y = int((W - hw) / 2), px(HOST_Y)
         layers.append(OverlayLayer(
@@ -765,6 +928,26 @@ def render_short(
     layers.append(OverlayLayer(
         path=close_clip, x=0, y=0, t_start=e_close_t, t_end=duration,
         is_video=True, hold=True, name="e_close",
+    ))
+
+    # ---------------------------------------------------------- furniture
+    # Last, so it survives a full-bleed beat. The ticker pill and the bug are
+    # the only two things besides the captions that are on screen for the whole
+    # video; composited first, as they were, a 9:16 scene erased them.
+    pill = ticker_pill(settings, script.ticker, font_size=px(38))
+    pill_path = rdir / "ticker_pill.png"
+    pill.save(pill_path)
+    layers.append(OverlayLayer(
+        path=pill_path, x=px(40), y=px(56), t_start=0.0, t_end=duration,
+        name="ticker_pill",
+    ))
+    bug = simple_text(settings, opener, font_size=px(28),
+                      fill=(143, 140, 131, 240), stroke_width=0)
+    bug_path = rdir / "bug.png"
+    bug.save(bug_path)
+    layers.append(OverlayLayer(
+        path=bug_path, x=W - bug.width - px(40), y=px(70),
+        t_start=0.0, t_end=duration, name="brand_bug",
     ))
 
     # -------------------------------------------------------- disclaimer
@@ -871,12 +1054,11 @@ def render_short(
         used_keys.add(card_asset.key)
     # The doctor diffs the library against this. A render that reached forty
     # assets and one that reached six look identical without it.
-    ledger = load_variant_ledger(settings)
     for key in sorted(used_keys):
         asset = kit.get(key)
         if asset is not None:
-            ledger.record(asset.family, asset.key)
-    ledger.save()
+            beat_ledger.record(asset.family, asset.key)
+    beat_ledger.save()
 
     if unresolved:
         log.warning("short: %d tag key(s) did not resolve: %s",
@@ -911,7 +1093,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                     settings: Settings, content: ContentManager, workspace: Path,
                     rdir: Path, layers: list[OverlayLayer], W: int, H: int,
                     px, fps: int, duration: float, hold: float, is_data: bool,
-                    name: str, used_keys: set[str] | None = None) -> bool:
+                    name: str, used_keys: set[str] | None = None,
+                    punch_cycle: list[int] | None = None) -> bool:
     """Composite one tag beat. Returns False when the key did not resolve.
 
     Data beats take the frame — fitted large and centred. Punctuation rides
@@ -930,13 +1113,17 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
     y = px(STAGE_Y) if is_data else px(STAGE_Y + 260)
     t_end = min(cue.t + hold, duration)
 
-    def place_still(img) -> bool:
-        img = fit_into(img, *box)
-        frames = (stamp_slam_frames(img, fps=fps, seconds=0.35) if is_data
-                  else slide_in_frames(img, fps=fps, seconds=0.3, direction="up"))
+    def place_still(img, *, register: str = STAGE, asset=None) -> bool:
+        placed, x, top = _frame_for(img, register, box, y, W, H, px, asset)
+        frames = (stamp_slam_frames(placed, fps=fps, seconds=0.35) if is_data
+                  else slide_in_frames(placed, fps=fps, seconds=0.3, direction="up"))
+        if register == FULL_BLEED:
+            # A full-frame scene is a CUT, not an arrival. Slamming a shot
+            # that already fills the frame just shakes the whole video.
+            frames = [placed]
         clip = frames_to_alpha_clip(frames, fps, rdir / f"{name}.mov")
         layers.append(OverlayLayer(
-            path=clip, x=int((W - img.width) / 2), y=y,
+            path=clip, x=x, y=top,
             t_start=cue.t, t_end=t_end, is_video=True, hold=True, name=name))
         return True
 
@@ -946,20 +1133,39 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
             return False
         if used_keys is not None:
             used_keys.add(asset.key)
-        values = _blank_values(tag, value, script) if is_blank else None
+        # THE SLOTS. Named artwork used to take a `None` here, so every one of
+        # the 74 declared boxes rendered empty — `[PROP: crushed-flat]`
+        # resolved, played its six frames, and showed Dennis being crushed
+        # under a blank rectangle. The value is written on the tag now.
+        if is_blank:
+            values = _blank_values(tag, value, script,
+                                   cue.payload.get("values"))
+        else:
+            values, slot_warnings = bind_slot_values(
+                asset, cue.payload.get("values"))
+            for w in slot_warnings:
+                log.warning("slot: %s", w)
+
+        register = _register_for(asset, is_data,
+                                 punch_cycle if punch_cycle is not None
+                                 else [0], (W, H))
         if asset.animated:
             # A one-shot must run its whole strip: a six-frame transformation
             # cut at three frames is a drawing of nothing having happened.
             span = max(hold, playback_seconds(asset))
             t_end2 = min(cue.t + span, duration)
+            transform = _transform_for(register, asset, box, W, H, px)
             clip, (cw, ch) = render_clip(
                 asset, rdir / f"{name}.mov", duration_s=t_end2 - cue.t, fps=fps,
-                settings=settings, values=values, display_w=box[0])
+                settings=settings, values=values, transform=transform)
+            x, top = _origin_for(register, cw, ch, y, W)
             layers.append(OverlayLayer(
-                path=clip, x=int((W - cw) / 2), y=y, t_start=cue.t,
+                path=clip, x=x, y=top, t_start=cue.t,
                 t_end=t_end2, is_video=True, hold=True, name=name))
             return True
-        return place_still(render_still(asset, values, settings))
+        return place_still(
+            strip_baked_furniture(render_still(asset, values, settings), asset),
+            register=register, asset=asset)
 
     if tag is TagType.SHOW_ARTICLE:
         shot = screenshot_article(value, rdir / f"{name}.png", settings)
@@ -1011,3 +1217,94 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
         return True
 
     return False
+
+
+# --------------------------------------------------------------------------
+# Framing: which register a beat gets, and where it lands.
+# --------------------------------------------------------------------------
+# Every beat used to land in the same box at the same size — one register for
+# thirty-eight assets — which is why a well-populated cut still read as a
+# slideshow. Three registers, chosen per beat and then HELD: the variety is in
+# which shot, never in movement inside one.
+
+# Every third eligible beat punches in. Often enough to break the rhythm, rare
+# enough that it stays an emphasis rather than a tic.
+PUNCH_EVERY = 3
+
+
+def _register_for(asset, is_data: bool, punch_cycle: list[int],
+                  frame: tuple[int, int]) -> str:
+    """full-bleed / stage / punch, for one beat.
+
+    Eligibility is about the ARTWORK, not the beat's class. Gating the punch
+    on `is_data` made it unreachable: the assets a tighter crop suits are the
+    1:1 drawings, and every one of those arrives as a punctuation beat, so
+    three registers shipped as two and the punch was dead code.
+
+    `punch_cycle` is a single-element counter that advances only on beats that
+    COULD punch. Counting every beat instead left the cycle permanently out of
+    phase with eligibility — a script whose croppable beats happened to land
+    on indices 0, 3, 4 and 6 never punched once.
+    """
+    del is_data     # the drawing decides, not the beat's class
+    if is_full_frame(asset, (frame[0], frame[1])):
+        # It was drawn to BE the frame. Fitted into the stage box it becomes a
+        # letterboxed thumbnail of a shot — the one thing it was built not to
+        # be, and the reason eleven assets were unusable.
+        return FULL_BLEED
+    if not _is_croppable(asset):
+        return STAGE
+    punch_cycle[0] += 1
+    return PUNCH if punch_cycle[0] % PUNCH_EVERY == 0 else STAGE
+
+
+def _is_croppable(asset) -> bool:
+    """Whether tightening the frame on this asset keeps it readable.
+
+    A punch is for a DRAWING: crop in on the figure and the beat gains
+    emphasis. On a typeset card it destroys the layout — cropping a term card
+    to 62% takes the definition off the bottom of the frame, which is exactly
+    what it did to "Owner Earnings" and the dilution card.
+    """
+    if any(s.clear for s in asset.slots):
+        return False          # the blank layouts are typeset, not drawn
+    return asset.aspect == "1:1"
+
+
+def _transform_for(register: str, asset, box, W: int, H: int, px):
+    """The per-frame transform an animated beat needs for its register."""
+    def framed(img):
+        # The long-form cards carry their own chip and disclaimer; the short
+        # draws both itself, so they come off before anything else happens.
+        img = strip_baked_furniture(img, asset)
+        if register == FULL_BLEED:
+            return cover_on_paper(img, W, H)
+        if register == PUNCH:
+            return fit_into(punch_crop(img, asset), px(1040), px(STAGE_H + 200))
+        return fit_into(img, *box)
+
+    return framed
+
+
+def _frame_for(img, register: str, box, y: int, W: int, H: int, px, asset=None):
+    """(image, x, y) for a still in its register."""
+    if register == FULL_BLEED:
+        return cover_on_paper(img, W, H), 0, 0
+    if register == PUNCH:
+        # Placed relative to the band the beat belongs to, the same way the
+        # clip path does it — a fixed y here dragged a punctuation beat up
+        # into the stage and left the two paths disagreeing.
+        punched = fit_into(punch_crop(img, asset), px(1040), px(STAGE_H + 200))
+        x, top = _origin_for(PUNCH, punched.width, punched.height, y, W)
+        return punched, x, min(top, max(H - punched.height, 0))
+    fitted = fit_into(img, *box)
+    return fitted, int((W - fitted.width) / 2), y
+
+
+def _origin_for(register: str, w: int, h: int, y: int, W: int) -> tuple[int, int]:
+    """Where a rendered clip of width `w` sits, for its register."""
+    if register == FULL_BLEED:
+        return 0, 0
+    if register == PUNCH:
+        return int((W - w) / 2), max(y - int(h * 0.12), 0)
+    return int((W - w) / 2), y
