@@ -103,9 +103,9 @@ def mean_luminance(path: Path) -> float:
     return total / count if count else 255.0
 
 
-def _paths(registry: dict, key: str) -> list[Path]:
+def _paths(registry: dict, key: str, kit_dir: Path = KIT) -> list[Path]:
     entry = registry["assets"][key]
-    base = KIT / "shorts" if entry["source"] == "shorts" else KIT
+    base = kit_dir / "shorts" if entry["source"] == "shorts" else kit_dir
     return [base / f for f in entry["frames"]]
 
 
@@ -113,15 +113,21 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--check", action="store_true",
                     help="measure only; exit 1 if a card is still dark")
+    ap.add_argument("--kit", type=Path, default=KIT,
+                    help="the kit directory to relight (default assets/kit). "
+                         "The ingest points this at whatever it just wrote, so "
+                         "relighting is part of landing a delivery rather than "
+                         "a separate step somebody has to remember.")
     args = ap.parse_args(argv)
 
-    registry_path = KIT / "kit-registry.json"
+    kit_dir: Path = args.kit
+    registry_path = kit_dir / "kit-registry.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
 
     dark: list[str] = []
     for key in DARK_CARDS:
         measured: list[float] = []
-        for path in _paths(registry, key):
+        for path in _paths(registry, key, kit_dir):
             if not path.exists():
                 print(f"missing: {path}", file=sys.stderr)
                 return 2
@@ -133,7 +139,7 @@ def main(argv: list[str] | None = None) -> int:
             lum = mean_luminance(path)
             measured.append(lum)
             state = "dark" if lum < 128 else "light"
-            print(f"  {lum:6.1f}  {state:<5}  {path.relative_to(KIT)}")
+            print(f"  {lum:6.1f}  {state:<5}  {path.relative_to(kit_dir)}")
             if lum < 128:
                 dark.append(str(path.relative_to(KIT)))
         # Keep the registry honest: `meanLum` is what the audit read the theme

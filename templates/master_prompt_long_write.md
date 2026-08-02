@@ -200,6 +200,8 @@ First the `=== HOOK OPTIONS ===` block, then the narration as plain text with in
 
 After the narration, append a `=== CHAPTERS ===` trailer the operator can paste straight into YouTube as chapters — one `mm:ss Title` per line, one line per chapter, in order (first line must be `00:00`; the rest are approximate and the operator adjusts). This trailer is metadata: it is split off and never spoken. Then append the `=== ASSET PROMPTS ===` trailer ONLY if you used [ASSET] tags (chapters before assets).
 
+**These titles go ON SCREEN.** The renderer draws each one as a full-frame section stinger at the first real cut at or after its timestamp, so write them as titles a viewer reads mid-video, not as index entries: short, lowercase, in voice. Every chapter needs a title — a bare timestamp gets a generic one and a warning. Without a usable trailer the video falls back to six generic section names that will not match your cut.
+
 === CHAPTERS ===
 00:00 Cold open — <the reframe>
 mm:ss <Chapter title>

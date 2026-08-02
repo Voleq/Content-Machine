@@ -314,17 +314,45 @@ def intro_card(settings: Settings, ticker: str, tagline: str, *,
 def chapter_stinger(settings: Settings, number: str, title: str, *,
                     width: int, height: int) -> Image.Image:
     """A full-frame chapter stinger card: a big Shantell chapter title with
-    a mono kicker and the red terminal dot — the LONG section divider."""
+    a mono kicker and the red terminal dot — the LONG section divider.
+
+    The title is FITTED. It used to be drawn at a fixed size from the left
+    margin, which was invisible while the titles were six hardcoded two-word
+    phrases; the moment the script's own sections reached the card, "what the
+    money actually does" ran off the right-hand edge mid-word.
+    """
     img = Image.new("RGBA", (width, height), (*BG, 235))
     d = ImageDraw.Draw(img)
     kick = load_font(settings, MONO_BOLD, max(int(height * 0.045), 14))
-    big = load_font(settings, SHANTELL, max(int(height * 0.16), 28))
-    d.text((int(width * 0.1), int(height * 0.36)), number.upper(), font=kick,
-           fill=(*MUTED, 255))
+    left = int(width * 0.1)
+    avail = width - left * 2
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    tw = probe.textlength(title, font=big)
-    d.text((int(width * 0.1), int(height * 0.44)), title, font=big, fill=(*INK, 255))
-    d.text((int(width * 0.1) + tw, int(height * 0.44)), ".", font=big, fill=(*RED, 255))
+
+    size = max(int(height * 0.16), 28)
+    floor = max(int(height * 0.07), 18)
+    big = load_font(settings, SHANTELL, size)
+    while size > floor and probe.textlength(f"{title}.", font=big) > avail:
+        size -= 2
+        big = load_font(settings, SHANTELL, size)
+
+    lines = [title]
+    if probe.textlength(f"{title}.", font=big) > avail:
+        # Still too long at the floor: break on a word boundary rather than
+        # shrinking the section title into illegibility.
+        from pipeline.kit_frames import _wrap_to
+
+        lines = _wrap_to(d, title, big, avail) or [title]
+
+    line_h = int(size * 1.12)
+    top = int(height * 0.44) - (len(lines) - 1) * line_h // 2
+    d.text((left, int(height * 0.36) - (len(lines) - 1) * line_h // 2),
+           number.upper(), font=kick, fill=(*MUTED, 255))
+    for i, line in enumerate(lines):
+        y = top + i * line_h
+        d.text((left, y), line, font=big, fill=(*INK, 255))
+        if i == len(lines) - 1:
+            d.text((left + probe.textlength(line, font=big), y), ".",
+                   font=big, fill=(*RED, 255))
     return img
 
 

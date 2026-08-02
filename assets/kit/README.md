@@ -41,6 +41,36 @@ python scripts/restyle_dark_cards.py
 The ingest **deletes `assets/kit/` and writes it fresh**. There is no merge
 mode: merging is what left dark-theme leftovers resolvable last time.
 
+### One command lands a delivery
+
+```
+python scripts/ingest_kit.py <delivery-dir> [<more-dirs>...]
+```
+
+That is the whole procedure, and its output decides whether to commit. It
+takes **several source directories**, so a batch that arrives on its own does
+not have to be copied into the main delivery first.
+
+* **A family that ships its own `manifest.json` registers itself.** Every
+  `manifest.json` under any source is merged into the registry, keyed by the
+  manifest's own `family` field rather than the folder it sits in — the
+  commissioned `stings/` arrived nested three deep and still had to register
+  as `stings/<name>`. A family the top-level `kit-registry.json` already
+  indexes is left to it, so re-registering the delivery's own shorts batch
+  under unprefixed keys cannot happen.
+* **Palette-mode source PNGs are refused, by name.** Palette is a size
+  optimisation that hard-quantises the antialiased edges the kit is drawn
+  with, and the line work IS the artwork here; it only ever surfaced as a
+  Pillow transparency warning at render time. `--allow-palette` proceeds
+  anyway and marks the run LOSSY, for working on a repo while a full-RGBA
+  re-export is outstanding.
+* **The dark cards are relit automatically**, then `--check`ed, so a
+  re-ingest cannot restore the dark closing cards. It used to be a separate
+  command somebody had to remember.
+* **It ends with a verification block** — assets, frames on disk, families,
+  aliases collapsed, anything not ingested, and `Kit.verify()`. A non-empty
+  `verify()` exits non-zero and says DO NOT COMMIT.
+
 ### The three blank layouts are NOT in the delivery
 
 `big-number-blank`, `term-card-blank` and `quote-pull-blank` came from the 2024
@@ -93,6 +123,34 @@ with it. It needs redrawing.
 `scripts/audit_placement.py` walks every asset through both engines' real
 placement maths and reports coverage, empty slots and clipping. Run it after
 a delivery.
+
+### The delivery on disk is size-optimised
+
+`dennis-assets-min` is the only archive there is, and **798 of its 846 frames
+are palette-mode PNGs** — measured, not assumed. The ingest refuses it without
+`--allow-palette`, which is the right refusal: the kit is line art, and
+palette quantisation lands on exactly the antialiased edges that line art is
+made of.
+
+**A full-RGBA re-export is artwork we are owed.** Until it arrives the kit on
+disk is the lossy version, and every ingest of it prints `fidelity : LOSSY`.
+The `stings/` batch is the counter-example — it shipped full RGBA and passes
+the check without the flag.
+
+### Transitions ship in both orientations
+
+`stings/` is 11 six-frame one-shots: 8 at 16:9 and `paper-slide-tall`,
+`page-turn-tall`, `torn-edge-tall` at 9:16. `transition_asset()` picks by
+**aspect**: a 9:16 short draws only from the tall strips, a 16:9 long only
+from the wide ones, and a `-tall` variant replaces its wide twin rather than
+competing with it. Falling back to the other orientation is logged, because
+it means a strip is missing rather than that the cut is fine.
+
+A 16:9 strip cover-fitted into 9:16 keeps 32% of its width. That is measured
+per strip (`cover_keeps_fraction`) and logged whenever it happens, and a strip
+whose action does not fill the crop window is contained onto paper instead —
+a transition that crops its own action out is worse than the white flash it
+replaced.
 
 ### A card is a whole frame; a two-shot needs a cut-out
 

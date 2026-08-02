@@ -4,7 +4,8 @@
  "generated": "2026-08-01",
  "roots": {
   "kit-v1": "assets/kit/",
-  "shorts": "assets/kit/shorts/"
+  "shorts": "assets/kit/shorts/",
+  "manifest:stings": "assets/kit/"
  },
  "note": "Unified registry. key = family/asset. kit-v1 assets have NO text slots (they are fixed drawings). shorts assets have slots in CANVAS coords and are exported at 2x - multiply by exportScale when compositing.",
  "palette": {
@@ -8844,6 +8845,438 @@
     }
    ],
    "source": "shorts"
+  },
+  "stings/ink-wipe": {
+   "family": "stings",
+   "name": "ink-wipe",
+   "frames": [
+    "stings/ink-wipe_f01.png",
+    "stings/ink-wipe_f02.png",
+    "stings/ink-wipe_f03.png",
+    "stings/ink-wipe_f04.png",
+    "stings/ink-wipe_f05.png",
+    "stings/ink-wipe_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:stings",
+   "title": "Ink wipe",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "left to right, ragged brush edge, red leading rule"
+  },
+  "stings/red-flood": {
+   "family": "stings",
+   "name": "red-flood",
+   "frames": [
+    "stings/red-flood_f01.png",
+    "stings/red-flood_f02.png",
+    "stings/red-flood_f03.png",
+    "stings/red-flood_f04.png",
+    "stings/red-flood_f05.png",
+    "stings/red-flood_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 420,
+      "y": 452,
+      "w": 1080,
+      "h": 176
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "optional \u2014 legible on f03\u2013f04 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Red flood",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "floods up from the bottom, drains out of the top"
+  },
+  "stings/paper-slide": {
+   "family": "stings",
+   "name": "paper-slide",
+   "frames": [
+    "stings/paper-slide_f01.png",
+    "stings/paper-slide_f02.png",
+    "stings/paper-slide_f03.png",
+    "stings/paper-slide_f04.png",
+    "stings/paper-slide_f05.png",
+    "stings/paper-slide_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 500,
+      "y": 438,
+      "w": 920,
+      "h": 204
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "rides the sheet \u2014 centred on f03 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Paper slide",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "sheet crosses right to left"
+  },
+  "stings/page-turn": {
+   "family": "stings",
+   "name": "page-turn",
+   "frames": [
+    "stings/page-turn_f01.png",
+    "stings/page-turn_f02.png",
+    "stings/page-turn_f03.png",
+    "stings/page-turn_f04.png",
+    "stings/page-turn_f05.png",
+    "stings/page-turn_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:stings",
+   "title": "Page turn",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "page turns over the lens, then peels off left"
+  },
+  "stings/ink-smear": {
+   "family": "stings",
+   "name": "ink-smear",
+   "frames": [
+    "stings/ink-smear_f01.png",
+    "stings/ink-smear_f02.png",
+    "stings/ink-smear_f03.png",
+    "stings/ink-smear_f04.png",
+    "stings/ink-smear_f05.png",
+    "stings/ink-smear_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:stings",
+   "title": "Ink smear",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "dragged smear, thickest at f03"
+  },
+  "stings/torn-edge": {
+   "family": "stings",
+   "name": "torn-edge",
+   "frames": [
+    "stings/torn-edge_f01.png",
+    "stings/torn-edge_f02.png",
+    "stings/torn-edge_f03.png",
+    "stings/torn-edge_f04.png",
+    "stings/torn-edge_f05.png",
+    "stings/torn-edge_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 520,
+      "y": 452,
+      "w": 880,
+      "h": 176
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "on the sheet \u2014 f03\u2013f04 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Torn edge",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "torn paper edge, diagonal sweep"
+  },
+  "stings/marker-scribble": {
+   "family": "stings",
+   "name": "marker-scribble",
+   "frames": [
+    "stings/marker-scribble_f01.png",
+    "stings/marker-scribble_f02.png",
+    "stings/marker-scribble_f03.png",
+    "stings/marker-scribble_f04.png",
+    "stings/marker-scribble_f05.png",
+    "stings/marker-scribble_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:stings",
+   "title": "Marker scribble",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "red marker scribbles the frame out, then unscribbles"
+  },
+  "stings/blackout-drop": {
+   "family": "stings",
+   "name": "blackout-drop",
+   "frames": [
+    "stings/blackout-drop_f01.png",
+    "stings/blackout-drop_f02.png",
+    "stings/blackout-drop_f03.png",
+    "stings/blackout-drop_f04.png",
+    "stings/blackout-drop_f05.png",
+    "stings/blackout-drop_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1920,
+    "h": 1080
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 460,
+      "y": 438,
+      "w": 1000,
+      "h": 204
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "the hard stop \u2014 f03\u2013f04 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Blackout drop",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "solid ink drops through frame"
+  },
+  "stings/paper-slide-tall": {
+   "family": "stings",
+   "name": "paper-slide-tall",
+   "frames": [
+    "stings/paper-slide-tall_f01.png",
+    "stings/paper-slide-tall_f02.png",
+    "stings/paper-slide-tall_f03.png",
+    "stings/paper-slide-tall_f04.png",
+    "stings/paper-slide-tall_f05.png",
+    "stings/paper-slide-tall_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1080,
+    "h": 1920
+   },
+   "aspect": "9:16",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 120,
+      "y": 830,
+      "w": 840,
+      "h": 260
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "rides the sheet \u2014 centred on f03 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Paper slide \u00b7 9:16",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "sheet crosses right to left \u2014 vertical cut"
+  },
+  "stings/page-turn-tall": {
+   "family": "stings",
+   "name": "page-turn-tall",
+   "frames": [
+    "stings/page-turn-tall_f01.png",
+    "stings/page-turn-tall_f02.png",
+    "stings/page-turn-tall_f03.png",
+    "stings/page-turn-tall_f04.png",
+    "stings/page-turn-tall_f05.png",
+    "stings/page-turn-tall_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1080,
+    "h": 1920
+   },
+   "aspect": "9:16",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:stings",
+   "title": "Page turn \u00b7 9:16",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "page turns over the lens, then peels off left \u2014 vertical cut"
+  },
+  "stings/torn-edge-tall": {
+   "family": "stings",
+   "name": "torn-edge-tall",
+   "frames": [
+    "stings/torn-edge-tall_f01.png",
+    "stings/torn-edge-tall_f02.png",
+    "stings/torn-edge-tall_f03.png",
+    "stings/torn-edge-tall_f04.png",
+    "stings/torn-edge-tall_f05.png",
+    "stings/torn-edge-tall_f06.png"
+   ],
+   "frameCount": 6,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1080,
+    "h": 1920
+   },
+   "aspect": "9:16",
+   "alpha": true,
+   "slots": [
+    {
+     "name": "word",
+     "box": {
+      "x": 140,
+      "y": 850,
+      "w": 800,
+      "h": 220
+     },
+     "align": "center",
+     "valign": "middle",
+     "font": {
+      "family": "Shantell Sans",
+      "weight": 800
+     },
+     "note": "on the sheet \u2014 f03\u2013f04 only"
+    }
+   ],
+   "source": "manifest:stings",
+   "title": "Torn edge \u00b7 9:16",
+   "exportScale": 2,
+   "coverFrames": [
+    3,
+    4
+   ],
+   "direction": "torn paper edge, diagonal sweep \u2014 vertical cut"
   },
   "blanks/big-number-blank": {
    "family": "blanks",

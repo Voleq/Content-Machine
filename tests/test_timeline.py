@@ -299,13 +299,42 @@ def _tiled(segments, duration):
         assert a.end == pytest.approx(b.start)
 
 
-def test_untagged_narration_is_one_held_host_beat():
-    """No tags means Dennis holds the frame — not a run of filler cards."""
-    segments, warnings = plan_long_segments([], 22.0)
-    _tiled(segments, 22.0)
+def test_untagged_narration_is_the_host_holding_the_frame():
+    """No tags means Dennis, not a run of filler cards."""
+    segments, warnings = plan_long_segments([], 10.0)
+    _tiled(segments, 10.0)
     assert [s.kind for s in segments] == ["host"]
-    assert segments[0].length == pytest.approx(22.0)
+    assert segments[0].length == pytest.approx(10.0)
     assert segments[0].payload["layout"] == "host-full"
+
+
+def test_a_long_untagged_stretch_changes_shot():
+    """One segment per gap meant ninety untagged seconds was ninety seconds
+    of a single frame with a mouth flap on it — and the planner considered
+    that correct, so nothing said so."""
+    from pipeline.timeline import MAX_HOST_BEAT_S
+
+    segments, warnings = plan_long_segments([], 95.0)
+    _tiled(segments, 95.0)
+    assert {s.kind for s in segments} == {"host"}, "still all Dennis"
+    assert len(segments) > 1, "the shot never changes"
+    assert max(s.length for s in segments) <= MAX_HOST_BEAT_S + 1e-6
+    variants = [s.payload["variant"] for s in segments]
+    assert len(set(variants)) == len(variants), "consecutive beats repeat a shot"
+
+
+def test_a_long_untagged_stretch_is_named_in_the_warnings():
+    """Splitting keeps the frame alive, but the writer should see where the
+    video goes visually silent."""
+    _, warnings = plan_long_segments([], 95.0)
+    assert any("95s" in w or "0s to 95s" in w for w in warnings), warnings
+
+
+def test_a_short_gap_is_not_split():
+    from pipeline.timeline import MAX_HOST_BEAT_S
+
+    segments, _ = plan_long_segments([], MAX_HOST_BEAT_S - 0.5)
+    assert len(segments) == 1
 
 
 def test_segments_with_cues(long_valid_text, settings):

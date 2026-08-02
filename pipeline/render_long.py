@@ -68,6 +68,12 @@ from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip
 from pipeline.kit import load_kit
+from pipeline.kit_frames import (
+    playback_seconds,
+    render_clip,
+    transition_asset,
+    transition_transform,
+)
 from pipeline.models import (
     CueKind,
     KIT_TAG_BLANKS,
@@ -117,8 +123,12 @@ from pipeline.timeline import (
 
 log = logging.getLogger(__name__)
 
-# chapter stinger titles (the LONG's designed section dividers) — rotated
-# across the runtime at act boundaries
+# FALLBACK chapter titles, for a script whose `=== CHAPTERS ===` trailer is
+# missing or unparseable. Not the source of truth: the writer's own trailer
+# is, and this list used to override it. Every long video carried these six
+# section titles spaced evenly across its runtime regardless of what its
+# sections actually were, which is a caption that is simply wrong on screen.
+# Using it is warned about.
 _CHAPTERS = [
     ("01", "the setup"),
     ("02", "what they do"),
@@ -127,6 +137,32 @@ _CHAPTERS = [
     ("05", "bull vs bear"),
     ("06", "the close"),
 ]
+
+
+def _chapter_plan(chapters: str, duration: float,
+                  warn: Callable[[str], None]) -> list[tuple[float, str]]:
+    """`(time, title)` for the stingers — the script's own, or the fallback.
+
+    A chapter with a timestamp and no title still counts as a boundary; it
+    borrows the fallback's wording rather than drawing a blank card.
+    """
+    from pipeline.timeline import chapter_start_times
+
+    parsed = chapter_start_times(chapters, duration)
+    if parsed:
+        out: list[tuple[float, str]] = []
+        for i, (t, title) in enumerate(parsed):
+            if not title:
+                warn(f"chapter at {t:.0f}s has a timestamp but no title — "
+                     f"using the generic one")
+                title = _CHAPTERS[i % len(_CHAPTERS)][1]
+            out.append((t, title))
+        return out
+
+    warn("the script has no usable `=== CHAPTERS ===` trailer — the stingers "
+         "fall back to generic section titles, which will not match the cut")
+    n = len(_CHAPTERS)
+    return [(duration * k / n, _CHAPTERS[k][1]) for k in range(1, n)]
 
 
 # NOTHING PANS OR ZOOMS. Dennis carries the motion — the mouth flap, the boil
@@ -218,9 +254,13 @@ def render_long(
     cues = build_long_timeline(script, tts.words, duration)
     doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
+    chapter_warnings: list[str] = []
+    chapters = _chapter_plan(script.chapters, duration, chapter_warnings.append)
+    for w in chapter_warnings:
+        log.warning("chapters: %s", w)
     segments, seg_warnings = plan_long_segments(
         cues, duration,
-        chapter_starts=chapter_start_times(script.chapters, duration),
+        chapter_starts=chapters,
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
     )
@@ -263,18 +303,31 @@ def render_long(
     # designed cards (each backdrop family drawn with several seeds), drawn
     # once and cached, so a run of fillers reads as motion through a deck and
     # no two adjacent fillers ever share a look.
-    backdrop_cache: dict[int, Path] = {}
+    backdrop_cache: dict[tuple[int, str], Path] = {}
 
-    def _backdrop_path(variant: int) -> Path:
+    # A backdrop is labelled with the chapter it falls in, so the words on a
+    # filler card belong to the section actually being narrated. Labelling
+    # them off the same hardcoded six-entry list as the stingers meant a
+    # filler in the valuation chapter could be captioned "the industry".
+    chapter_labels = [title for _, title in chapters]
+
+    def _backdrop_path(variant: int, at: float | None = None) -> Path:
         slot = variant % LONG_FILLER_LOOKS
-        if slot not in backdrop_cache:
-            bp = rdir / f"backdrop_{slot}.png"
+        label = ""
+        if chapter_labels:
+            if at is None:
+                label = chapter_labels[slot % len(chapter_labels)]
+            else:
+                label = next((ti for (ct, ti) in reversed(chapters) if at >= ct),
+                             chapter_labels[0])
+        key = (slot, label)
+        if key not in backdrop_cache:
+            bp = rdir / f"backdrop_{slot}_{abs(hash(label)) % 9973:04d}.png"
             if not bp.exists():
-                _, chap = _CHAPTERS[slot % len(_CHAPTERS)]
                 long_backdrop(settings, W, H, slot, ticker=script.ticker,
-                              label=chap, seed=f"{script.ticker}|bg").save(bp)
-            backdrop_cache[slot] = bp
-        return backdrop_cache[slot]
+                              label=label, seed=f"{script.ticker}|bg").save(bp)
+            backdrop_cache[key] = bp
+        return backdrop_cache[key]
 
     # ---------------------------------------------- kit artwork, rendered
     # Addressed by PATH before this, which meant the long cut got the raw
@@ -282,9 +335,23 @@ def render_long(
     # boxes empty, both blank layouts shipped the placeholder copy printed
     # into them ("What the word means"), and 22 one-shot strips froze on
     # frame 1 — a drawing of nothing having happened yet.
-    def _kit_still(seg, seg_i: int, value: str) -> Path:
+    # Every third eligible kit beat is framed tighter. Enough to break a
+    # forty-minute rhythm of identically-fitted cards, rare enough to stay an
+    # emphasis. Counted over ELIGIBLE beats, so it cannot fall out of phase.
+    punch_cycle = [0]
+
+    def _kit_art(seg, seg_i: int, value: str):
+        """(path, is_video, (w, h), frame plan) for one kit beat.
+
+        The long engine held every asset on frame 1 — 84 multi-frame drawings
+        frozen, the 57 boil pairs never shimmering, every one-shot showing the
+        moment before it happens. Everything here already existed in
+        `kit_frames` and was exercised by the short; none of it was reachable
+        from a long cut.
+        """
         from pipeline.kit_frames import (
-            bind_slot_values, render_still, strip_baked_furniture,
+            bind_slot_values, frame_indices, is_full_frame, playback_seconds,
+            punch_crop, render_clip, render_still, strip_baked_furniture,
         )
 
         tag = TagType(seg.kind.upper())
@@ -298,7 +365,9 @@ def render_long(
         if asset is None:
             log.warning("kit asset %s/%s missing — designed backdrop instead",
                         family, value)
-            return _backdrop_path(seg.payload.get("variant", seg_i))
+            bp = _backdrop_path(seg.payload.get("variant", seg_i),
+                                seg.payload.get("at"))
+            return bp, False, None, (), None
 
         if is_blank:
             values = _long_blank_values(tag, value, seg.payload.get("values"))
@@ -308,17 +377,45 @@ def render_long(
             for w in slot_warnings:
                 log.warning("slot: %s", w)
 
-        dest = rdir / f"kit_{seg_i}_{asset.name[:24]}.png"
-        # A one-shot's END state, the same rule the short uses: a six-frame
-        # transformation shown on its first frame has not happened yet.
-        #
-        # The furniture comes off here too. The long frame draws its own bug
-        # and disclaimer, and the card's painted-in chip carries the design
-        # file's placeholder ticker — `GYMX` sitting under our `$EXMPL`.
-        # The stripper no-ops on anything that is not a long-form card.
-        img = strip_baked_furniture(render_still(asset, values, settings), asset)
-        img.convert("RGBA").save(dest)
-        return dest
+        # A card drawn to BE a 16:9 frame stays the frame; a drawing sits in
+        # the evidence column, and every third one is cropped tighter. The
+        # blank layouts are typeset, so they never punch.
+        full = is_full_frame(asset, (W, H))
+        croppable = not full and not any(s.clear for s in asset.slots)
+        punch = False
+        if croppable:
+            punch_cycle[0] += 1
+            punch = punch_cycle[0] % 3 == 0
+
+        def shape(img):
+            # The furniture comes off first. The long frame draws its own bug
+            # and disclaimer, and the card's painted-in chip carries the design
+            # file's placeholder ticker — `GYMX` sitting under our `$EXMPL`.
+            img = strip_baked_furniture(img, asset)
+            return punch_crop(img, asset) if punch else img
+
+        if not asset.animated:
+            dest = rdir / f"kit_{seg_i}_{asset.name[:24]}.png"
+            img = shape(render_still(asset, values, settings)).convert("RGBA")
+            img.save(dest)
+            return dest, False, img.size, (), asset.key
+
+        # Animated: the strip plays for the beat. A one-shot runs once and
+        # holds its end frame; a boil pair shimmers; a loop cycles. The floor
+        # is the strip's own length, so a six-frame transformation is never
+        # cut half-drawn.
+        span = max(seg.end - seg.start, playback_seconds(asset))
+        plan = frame_indices(asset, span, fps)
+        dest = rdir / f"kit_{seg_i}_{asset.name[:24]}.mov"
+        clip, size = render_clip(
+            asset, dest, duration_s=span, fps=fps, settings=settings,
+            values=values, transform=shape,
+        )
+        return clip, True, size, tuple(plan), asset.key
+
+    def _kit_still(seg, seg_i: int, value: str) -> Path:
+        """Backwards-compatible still-only view of `_kit_art`."""
+        return _kit_art(seg, seg_i, value)[0]
 
     def _long_blank_values(tag, key: str, values: dict | None) -> dict[str, str]:
         """Copy for a blank layout when the kit has no artwork for the key."""
@@ -388,7 +485,87 @@ def render_long(
             f"{tail}"
         )
 
-    def _panel_frame(still: Path, host_side: str, dest: Path, *, variant: int) -> Path:
+    def _scaled_overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
+                              w: int, h: int, seg_len: float, tail: str) -> str:
+        """As `_overlay_chain`, but the strip is scaled into its column first.
+
+        Kit strips are rendered at their own canvas size; the plate reserves a
+        box for them, so the scale happens in the graph rather than by
+        re-rendering every frame at the display size.
+        """
+        return (
+            f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+            f"scale={W}:{H}[hbg];"
+            f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+            f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
+            f"trim=0:{seg_len:.4f},scale={w}:{h}[hfg];"
+            f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat"
+            f"{tail}"
+        )
+
+    def _two_shot_figure(variant: int):
+        """The cut-out pose for a two-shot, already scaled. None when absent."""
+        from PIL import Image
+
+        from pipeline.host import panel_figure
+        from pipeline.kit_frames import render_still, strip_baked_furniture
+
+        figure = panel_figure(kit, variant)
+        if figure is None:
+            return None
+        img = strip_baked_furniture(render_still(figure, None, settings), figure)
+        fh = int(H * 0.62)
+        fr = fh / max(img.height, 1)
+        return img.resize((max(int(img.width * fr), 1), fh), Image.LANCZOS)
+
+    def _evidence_box(fig_img, host_side: str) -> tuple[int, int, int]:
+        """(max width, max height, the figure's x) for the evidence column."""
+        fig_w = (fig_img.width + px(60)) if fig_img is not None else 0
+        max_w = max(W - fig_w - px(150), px(400))
+        fx = (px(70) if host_side == "left"
+              else W - (fig_img.width if fig_img is not None else 0) - px(70))
+        return max_w, int(H * 0.80), fx
+
+    def _panel_plate(size: tuple[int, int], host_side: str, dest: Path, *,
+                     variant: int, two_shot: bool) -> tuple[Path, int, int]:
+        """Paper (and the figure) with a HOLE the evidence goes in.
+
+        Returns (plate, x, y) — the origin an evidence image or clip of
+        `size` should be composited at. Split out of `_panel_frame` so an
+        animated beat can overlay its alpha strip on exactly the same
+        composition a still gets pasted into.
+        """
+        from PIL import Image
+
+        base = Image.new("RGB", (W, H), (242, 242, 239))
+        fig_img = _two_shot_figure(variant) if two_shot else None
+        _, _, fx = _evidence_box(fig_img, host_side)
+        ew, eh = size
+        if fig_img is None:
+            ex = int((W - ew) / 2)
+        elif host_side == "left":
+            ex = W - ew - px(70)
+        else:
+            ex = px(70)
+        ey = int((H - eh) / 2)
+        if fig_img is not None:
+            # Standing on the floor line, not floating mid-frame.
+            base.paste(fig_img, (fx, H - fig_img.height - px(70)), fig_img)
+        base.save(dest)
+        return dest, ex, ey
+
+    def _fit_evidence(w: int, h: int, host_side: str, *,
+                      variant: int, two_shot: bool) -> tuple[int, int]:
+        """The size an evidence image of (w, h) takes in its column."""
+        fig_img = _two_shot_figure(variant) if two_shot else None
+        max_w, max_h, _ = _evidence_box(fig_img, host_side)
+        if not two_shot:
+            max_w, max_h = int(W * 0.86), int(H * 0.86)
+        ratio = min(max_w / max(w, 1), max_h / max(h, 1))
+        return max(int(w * ratio), 1), max(int(h * ratio), 1)
+
+    def _panel_frame(still: Path, host_side: str, dest: Path, *, variant: int,
+                     two_shot: bool = True) -> Path:
         """The two-shot, as ONE composition: paper, the evidence, the figure.
 
         This used to be three finished designs stacked in one frame — a
@@ -403,42 +580,20 @@ def render_long(
         """
         from PIL import Image
 
-        from pipeline.host import panel_figure
-        from pipeline.kit_frames import render_still, strip_baked_furniture
+        from pipeline.kit_frames import strip_baked_furniture
 
-        base = Image.new("RGB", (W, H), (242, 242, 239))
         # Any panel can be a long-form card carrying its own disclaimer — the
         # mock chart falls back to one — and the frame draws its own, so the
         # beat came out with the line printed twice. Signature-gated, so a
         # generated chart or a photograph is never touched.
         panel = strip_baked_furniture(Image.open(still).convert("RGBA"))
-
-        figure = panel_figure(kit, variant)
-        fig_img = None
-        if figure is not None:
-            fig_img = strip_baked_furniture(
-                render_still(figure, None, settings), figure)
-            fh = int(H * 0.62)
-            fr = fh / max(fig_img.height, 1)
-            fig_img = fig_img.resize((max(int(fig_img.width * fr), 1), fh),
-                                     Image.LANCZOS)
-
-        # The evidence gets the frame minus the figure's column.
-        fig_w = (fig_img.width + px(60)) if fig_img is not None else 0
-        max_w = max(W - fig_w - px(150), px(400))
-        max_h = int(H * 0.80)
-        ratio = min(max_w / panel.width, max_h / panel.height)
-        panel = panel.resize((max(int(panel.width * ratio), 1),
-                              max(int(panel.height * ratio), 1)), Image.LANCZOS)
-
-        if host_side == "left":
-            fx, ex = px(70), W - panel.width - px(70)
-        else:
-            fx, ex = W - (fig_img.width if fig_img else 0) - px(70), px(70)
-        base.paste(panel, (ex, int((H - panel.height) / 2)), panel)
-        if fig_img is not None:
-            # Standing on the floor line, not floating mid-frame.
-            base.paste(fig_img, (fx, H - fig_img.height - px(70)), fig_img)
+        ew, eh = _fit_evidence(panel.width, panel.height, host_side,
+                               variant=variant, two_shot=two_shot)
+        panel = panel.resize((ew, eh), Image.LANCZOS)
+        plate, ex, ey = _panel_plate((ew, eh), host_side, dest,
+                                     variant=variant, two_shot=two_shot)
+        base = Image.open(plate).convert("RGB")
+        base.paste(panel, (ex, ey), panel)
         base.save(dest)
         return dest
 
@@ -462,6 +617,7 @@ def render_long(
         seg_len = seg.length
         seg_inputs = []
         n_inputs = 0
+        seg_animation: dict | None = None
         # setsar=1 AFTER the scale — a crop/scale would otherwise re-derive a
         # non-1:1 SAR and make the concat reject the stream
         tail = ",setsar=1,format=yuv420p[out]"
@@ -486,7 +642,7 @@ def render_long(
             # lip-synced to this segment's slice of the voice-over.
             visual = None
             variant = seg.payload.get("variant", 0)
-            bg_i = _still_input(_backdrop_path(variant))
+            bg_i = _still_input(_backdrop_path(variant, seg.start))
             host = _host_input(i, seg, seg_len)
             if host is None:
                 chain = _still_chain(bg_i, seg, seg_len, i, tail)
@@ -517,14 +673,31 @@ def render_long(
         elif seg.kind in ("term", "bignum", "table", "prop"):
             # owned design-kit artwork, addressed by name through the registry
             visual = None
-            still = _kit_still(seg, i, value)
-            # The two-shot is composed as ONE still now — paper, evidence,
-            # cut-out figure — rather than a host slide overlaid on a panel.
-            if seg.payload.get("layout") == "two-shot":
-                still = _panel_frame(still, seg.payload.get("host_side", "left"),
-                                     rdir / f"panel_{i}.png", variant=i)
-            still_i = _still_input(still)
-            chain = _still_chain(still_i, seg, seg_len, i, tail)
+            art, is_video, size, plan, key = _kit_art(seg, i, value)
+            side = seg.payload.get("host_side", "left")
+            two_shot = seg.payload.get("layout") == "two-shot"
+            if is_video:
+                # The strip is an alpha clip, so the plate it plays on is the
+                # same composition a still gets pasted into.
+                ew, eh = _fit_evidence(size[0], size[1], side,
+                                       variant=i, two_shot=two_shot)
+                plate, ex, ey = _panel_plate(
+                    (ew, eh), side, rdir / f"plate_{i}.png",
+                    variant=i, two_shot=two_shot)
+                bg_i = _still_input(plate)
+                fg_i = _add_input(["-i", str(art)])
+                chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
+                                              seg_len, tail)
+                seg_animation = {"asset": key, "frames": len(plan),
+                                 "distinct": len(set(plan))}
+            else:
+                still = art
+                # The two-shot is composed as ONE still — paper, evidence,
+                # cut-out figure — rather than a host slide over a panel.
+                still = _panel_frame(still, side, rdir / f"panel_{i}.png",
+                                     variant=i, two_shot=two_shot)
+                still_i = _still_input(still)
+                chain = _still_chain(still_i, seg, seg_len, i, tail)
         elif seg.kind in ("img", "chart", "asset", "meme"):
             if seg.kind == "img":
                 visual = content.resolve_image(
@@ -562,7 +735,7 @@ def render_long(
         else:  # an unrecognised kind still gets a designed backdrop
             visual = None
             variant = seg.payload.get("variant", 0)
-            still_i = _still_input(_backdrop_path(variant))
+            still_i = _still_input(_backdrop_path(variant, seg.start))
             chain = _still_chain(still_i, seg, seg_len, i, tail)
         meta = {"kind": seg.kind, "start": seg.start, "end": seg.end}
         if value:
@@ -576,14 +749,26 @@ def render_long(
             meta["variant"] = seg.payload.get("variant", 0)
         if seg.payload.get("layout"):
             meta["layout"] = seg.payload["layout"]
+        if seg_animation:
+            meta["animation"] = seg_animation
         meta["filter"] = chain
         seg_meta.append(meta)
+        # The frame plan is part of the segment's IDENTITY, not just its
+        # inputs. The cache is keyed on the spec, and a beat whose asset
+        # started moving can otherwise match a cached still: same size, same
+        # filter shape, same declared inputs. Then the cut silently keeps
+        # serving the frozen version.
+        identity: tuple[str, ...] = ()
+        if seg_animation:
+            identity = (f"anim:{seg_animation['asset']}:"
+                        f"{seg_animation['frames']}x{seg_animation['distinct']}",)
         seg_specs.append(SegmentSpec(
             index=i, kind=seg.kind, duration=seg_len,
             width=W, height=H, fps=fps,
             inputs=tuple(tuple(g) for g in seg_inputs),
             filter_chain=chain,
             layout=str(seg.payload.get("layout", "")),
+            extra_identity=identity,
         ))
 
     # ------------------------------------------------- assemble the base
@@ -640,20 +825,27 @@ def render_long(
         path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur, name="intro_card",
     ))
 
-    # chapter stingers — the design system's section dividers, landing on a
-    # real cut near each act boundary, brief with a fade (the intro covers
-    # act one, so these run from act two)
+    # chapter stingers — the design system's section dividers, landing on the
+    # first real cut at or after each chapter's own time, brief with a fade
+    # (the intro covers act one, so these run from act two).
+    #
+    # The title is the SCRIPT'S, from its `=== CHAPTERS ===` trailer. This
+    # used to space six hardcoded titles evenly across the runtime and ignore
+    # both the trailer's times and its words, so every video announced
+    # sections it did not have.
     seg_starts = [s.start for s in segments]
-    n_ch = len(_CHAPTERS)
     used_ch: set[float] = set()
-    for k in range(1, n_ch):
-        target = duration * k / n_ch
+    stinger_meta: list[dict] = []
+    transition_meta: list[dict] = []
+    for k, (target, title) in enumerate(chapters, start=1):
         t = next((s for s in seg_starts
                   if s >= max(target, intro_dur) and s not in used_ch), None)
         if t is None or t < 0.6 or t > duration - 1.2:
+            log.warning("chapters: %r at %.0fs has no cut to land on — skipped",
+                        title, target)
             continue
         used_ch.add(t)
-        num, title = _CHAPTERS[k]
+        num = f"{k + 1:02d}"     # the intro card is chapter one
         cs_path = rdir / f"chapter_{k}.png"
         if not cs_path.exists():
             chapter_stinger(settings, num, title, width=W, height=H).save(cs_path)
@@ -661,6 +853,26 @@ def render_long(
             path=cs_path, x=0, y=0, t_start=t, t_end=min(t + 0.9, duration),
             fade_in=0.2, name=f"chapter_{k}",
         ))
+        stinger_meta.append({"n": num, "title": title,
+                             "script_t": round(target, 2), "t": round(t, 2)})
+
+        # An ink transition on the act cut, under the stinger. Picked from a
+        # frame-sequence family so the commissioned strips drop in as data;
+        # until they ship, `transition_asset` returns None and the stinger
+        # carries the cut on its own, as it always has.
+        strip = transition_asset(kit, script.content_sha(), k, frame=(W, H))
+        if strip is None:
+            continue
+        span = max(playback_seconds(strip), 0.25)
+        tclip, (cw, ch) = render_clip(
+            strip, rdir / f"transition_{k}.mov", duration_s=span, fps=fps,
+            settings=settings,
+            transform=transition_transform(strip, W, H, settings))
+        layers.append(OverlayLayer(
+            path=tclip, x=0, y=0, t_start=max(t - span * 0.5, 0.0),
+            t_end=min(t + span * 0.5, duration), is_video=True,
+            name=f"transition_{k}_{strip.name[:16]}"))
+        transition_meta.append({"asset": strip.key, "t": round(t, 2)})
 
     # glitch flash on every filing reveal (pre-rendered overlay)
     glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"
@@ -842,6 +1054,19 @@ def render_long(
             for l in layers
         ],
         "segment_warnings": seg_warnings,
+        "chapter_warnings": chapter_warnings,
+        # What the video actually announces, against what the script asked
+        # for. Read this rather than trusting the suite: the stingers used to
+        # be six hardcoded titles spaced evenly, and every test passed.
+        "chapters": [{"t": round(t, 2), "title": ti} for t, ti in chapters],
+        "stingers": stinger_meta,
+        "transitions": transition_meta,
+        # The motion that reached the cut. Zero here means the long is back to
+        # holding every drawing on frame 1.
+        "animated_segments": sum(1 for m in seg_meta if m.get("animation")),
+        "longest_host_beat_s": round(
+            max((m["end"] - m["start"] for m in seg_meta
+                 if m["kind"] == "host"), default=0.0), 2),
         "attributions": attributions,
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),

@@ -21,6 +21,7 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 
 from pipeline.models import (
@@ -640,17 +641,36 @@ CHAPTER_HOST_S = 2.5
 # already on screen simply stays up until the next one is due.
 MIN_HOST_BEAT_S = 1.2
 
+# The LONGEST one host beat may run before the shot has to change. There was
+# no maximum: `add_host` emitted exactly one segment per untagged gap, so
+# ninety untagged seconds was ninety seconds of a single frame with a mouth
+# flap on it — and the planner considered that correct, so nothing said so.
+# A gap longer than this is split into consecutive beats with the shot
+# advancing, which is what the bank and the variant counter were already for.
+MAX_HOST_BEAT_S = 12.0
 
-def chapter_start_times(chapters: str, duration: float) -> list[float]:
-    """Seconds from the `=== CHAPTERS ===` trailer's `mm:ss Title` lines.
+# A gap this long has no visual of its own at all. Splitting it keeps the
+# frame alive, but the writer should know where the video goes visually
+# silent, so it is named with its timestamp.
+HOST_GAP_WARN_S = 25.0
 
-    The times are the writer's estimates, not measurements — they are used
-    only to reserve a host beat around each boundary, never to place audio.
-    Anything unparseable or past the end of the cut is skipped.
+
+def chapter_start_times(chapters: str, duration: float) -> list[tuple[float, str]]:
+    """`(seconds, title)` from the `=== CHAPTERS ===` trailer's `mm:ss Title`.
+
+    The times are the writer's estimates, not measurements — they are used to
+    reserve a host beat around each boundary and to place the section
+    stingers, never to place audio. Anything unparseable or past the end of
+    the cut is skipped.
+
+    The TITLE is returned as well because the renderer was throwing it away:
+    it spaced its stingers evenly across the runtime and drew them from a
+    hardcoded six-entry list, so every long video carried section titles that
+    had nothing to do with its own sections.
     """
-    out: list[float] = []
+    out: list[tuple[float, str]] = []
     for line in (chapters or "").splitlines():
-        stamp = line.strip().split(" ", 1)[0]
+        stamp, _, title = line.strip().partition(" ")
         parts = stamp.split(":")
         if not (2 <= len(parts) <= 3) or not all(p.isdigit() for p in parts):
             continue
@@ -658,8 +678,15 @@ def chapter_start_times(chapters: str, duration: float) -> list[float]:
         for p in parts:
             seconds = seconds * 60 + int(p)
         if 0.0 < seconds < duration:
-            out.append(seconds)
-    return sorted(set(out))
+            out.append((seconds, title.strip()))
+    # Sorted by time, first title wins a duplicated timestamp.
+    seen: set[float] = set()
+    unique: list[tuple[float, str]] = []
+    for t, title in sorted(out, key=lambda p: p[0]):
+        if t not in seen:
+            seen.add(t)
+            unique.append((t, title))
+    return unique
 
 
 def _diversify_fillers(segments: list["Segment"]) -> None:
@@ -681,7 +708,7 @@ def plan_long_segments(
     duration: float,
     *,
     holds: dict | None = None,
-    chapter_starts: list[float] | None = None,
+    chapter_starts: list[float] | list[tuple[float, str]] | None = None,
     min_readable_s: float = MIN_READABLE_S,
     chapter_host_s: float = CHAPTER_HOST_S,
 ) -> tuple[list[Segment], list[str]]:
@@ -703,10 +730,13 @@ def plan_long_segments(
     visual.sort(key=lambda c: c.t)
 
     # Windows the evidence may not occupy, so each chapter opens and closes
-    # on Dennis talking.
+    # on Dennis talking. `chapter_starts` carries titles now; either shape is
+    # accepted so a caller that only has times still works.
+    starts = [t[0] if isinstance(t, (tuple, list)) else float(t)
+              for t in (chapter_starts or [])]
     blocked: list[tuple[float, float]] = [
         (max(t - chapter_host_s, 0.0), min(t + chapter_host_s, duration))
-        for t in sorted(chapter_starts or []) if 0.0 < t < duration
+        for t in sorted(starts) if 0.0 < t < duration
     ]
 
     def push_past_chapter_beat(t: float) -> float:
@@ -719,18 +749,39 @@ def plan_long_segments(
     host_i = 0
 
     def add_host(a: float, b: float) -> None:
-        """One held host beat for the gap — never chopped into filler cuts."""
+        """Host beats for the gap — never chopped into filler cuts, but never
+        one frame for a minute and a half either.
+
+        A gap longer than `MAX_HOST_BEAT_S` becomes consecutive host segments.
+        They are still all Dennis talking, so this is not a cut away from him;
+        it is the shot changing, which the bank and the `variant` counter
+        already do between gaps and never did inside one.
+        """
         nonlocal host_i
-        if b - a <= 0:
+        span = b - a
+        if span <= 0:
             return
-        if b - a < MIN_HOST_BEAT_S and segments:
+        if span < MIN_HOST_BEAT_S and segments:
             # too short to be a beat: leave the previous visual up instead of
             # blinking to the host and straight back out
             segments[-1].end = b
             return
-        segments.append(Segment(start=a, end=b, kind="host",
-                                payload={"variant": host_i, "layout": "host-full"}))
-        host_i += 1
+        if span > HOST_GAP_WARN_S:
+            warnings.append(
+                f"{span:.0f}s with no visual from {a:.0f}s to {b:.0f}s — the "
+                f"shot changes but nothing new is shown; consider a tag in "
+                f"that stretch"
+            )
+        # Even parts, so the last one is never a stub.
+        n = max(int(math.ceil(span / MAX_HOST_BEAT_S)), 1)
+        step = span / n
+        for i in range(n):
+            start = a + i * step
+            end = b if i == n - 1 else a + (i + 1) * step
+            segments.append(Segment(start=start, end=end, kind="host",
+                                    payload={"variant": host_i,
+                                             "layout": "host-full"}))
+            host_i += 1
 
     cursor = 0.0
     two_shot_i = 0

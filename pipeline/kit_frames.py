@@ -557,6 +557,100 @@ def cover_on_paper(img, width: int, height: int, paper=(242, 242, 239)):
     return plate
 
 
+def contain_on_paper(img, width: int, height: int, paper=(242, 242, 239)):
+    """Contain-fit onto an opaque paper plate — nothing is cropped away."""
+    from PIL import Image
+
+    ratio = min(width / img.width, height / img.height)
+    scaled = img.resize((max(int(img.width * ratio), 1),
+                         max(int(img.height * ratio), 1)), Image.LANCZOS)
+    plate = Image.new("RGBA", (width, height), (*paper, 255))
+    plate.alpha_composite(scaled, (int((width - scaled.width) / 2),
+                                   int((height - scaled.height) / 2)))
+    return plate
+
+
+def cover_keeps_fraction(asset: Asset, width: int, height: int) -> float:
+    """How much of the asset's own frame survives a cover-fit into WxH.
+
+    1.0 when the aspects match. A 16:9 strip cover-fitted into a 9:16 frame
+    keeps 0.32 of its width — which is fine for an effect that happens in the
+    middle and destroys one that crosses the frame.
+    """
+    aw, ah = asset.canvas
+    if not aw or not ah or not width or not height:
+        return 1.0
+    ratio = max(width / aw, height / ah)
+    return min((width / (aw * ratio)) if aw * ratio else 1.0,
+               (height / (ah * ratio)) if ah * ratio else 1.0)
+
+
+# How much of the crop window a transition has to actually fill, at its
+# fullest frame, for a centre crop to be doing its job. Below this the effect
+# is happening somewhere the crop cannot see.
+TRANSITION_COVER_FLOOR = 0.6
+
+
+def crop_window_coverage(asset: Asset, settings: Settings, keep: float) -> float:
+    """The most of a centre crop window this strip ever covers, 0..1.
+
+    Measured off the frames rather than guessed from the name or the
+    `direction` note. The question a transition has to answer is not "does the
+    ink stay inside the window" — a full-frame effect always touches the edges
+    — but "does the window get covered", because that is what a cut lands
+    under. `blackout-drop` fills it down the middle; a strip whose action ran
+    up one edge would never reach it, and would play as a blank flicker.
+    """
+    try:
+        import numpy as np
+    except ImportError:      # pragma: no cover
+        return 1.0
+    if keep >= 0.999:
+        return 1.0
+
+    lo, hi = (1.0 - keep) / 2.0, 1.0 - (1.0 - keep) / 2.0
+    best = 0.0
+    for idx in range(asset.frame_count):
+        img = render_frame(asset, idx, None, settings)
+        a = np.asarray(img.convert("RGBA"))
+        ink = a[..., 3] > 40
+        w = img.width or 1
+        window = ink[:, int(lo * w):max(int(hi * w), int(lo * w) + 1)]
+        if window.size:
+            best = max(best, float(window.mean()))
+    return best
+
+
+def transition_transform(asset: Asset, width: int, height: int,
+                         settings: Settings):
+    """How a transition strip should be fitted to the frame.
+
+    The commissioned stings are 16:9 and a short is 9:16, so a cover-fit keeps
+    less than a third of their width. For `blackout-drop` that is invisible;
+    for `paper-slide`, whose sheet crosses the frame edge to edge, the whole
+    effect lands outside the crop and the viewer sees a blank flicker.
+
+    So: cover when the action survives it, contain onto paper when it does
+    not. Either way the mismatch is logged with the measured ratio, because a
+    transition that crops its own action out is worse than the white flash it
+    replaced and nothing said so.
+    """
+    keep = cover_keeps_fraction(asset, width, height)
+    if keep < 0.995:
+        covered = crop_window_coverage(asset, settings, keep)
+        survives = covered >= TRANSITION_COVER_FLOOR
+        log.info(
+            "transition %s is %s into a %dx%d frame — a cover-fit keeps %.0f%% "
+            "of its width, and the action fills %.0f%% of what is left; %s",
+            asset.key, asset.aspect or "?", width, height,
+            keep * 100, covered * 100,
+            "cropping" if survives
+            else "too little to land a cut under, containing onto paper instead")
+        if not survives:
+            return lambda img: contain_on_paper(img, width, height)
+    return lambda img: cover_on_paper(img, width, height)
+
+
 # Air kept around the slots when a punch tightens the frame, as a fraction of
 # the canvas per side.
 PUNCH_MARGIN = 0.06
@@ -680,7 +774,23 @@ TRANSITION_FAMILIES: tuple[str, ...] = (
 )
 
 
-def transition_asset(kit, seed: str, index: int = 0) -> Asset | None:
+# Name suffixes marking an orientation variant of another strip.
+# `paper-slide-tall` is the vertical twin of `paper-slide`, not a twelfth
+# independent option — offering both in a 9:16 frame means the picker shows
+# the cropped one half the time, which is the thing the tall variants were
+# commissioned to stop.
+ORIENTATION_SUFFIXES: tuple[str, ...] = ("-tall", "-wide", "-vertical")
+
+
+def _orientation_base(name: str) -> str:
+    for suffix in ORIENTATION_SUFFIXES:
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def transition_asset(kit, seed: str, index: int = 0,
+                     frame: tuple[int, int] | None = None) -> Asset | None:
     """One transition strip, or None when none ships.
 
     Only a real frame SEQUENCE qualifies. A static drawing swept over the
@@ -690,14 +800,47 @@ def transition_asset(kit, seed: str, index: int = 0) -> Asset | None:
 
     Stepped by `index` rather than hashed, so consecutive cuts in one video are
     guaranteed to differ instead of merely likely to.
+
+    `frame` makes the choice ASPECT-AWARE. Picking uniformly across the family
+    let a 9:16 short draw a 16:9 strip, which a cover-fit crops to a third of
+    its width — the exact failure the `-tall` variants exist to prevent.
+
+    So the rotation is the matching orientation and nothing else, which also
+    settles the twin question: `paper-slide-tall` replaces `paper-slide` in a
+    vertical frame rather than competing with it. Falling back to the other
+    orientation happens only when NOTHING matches, and is logged, because then
+    it means a strip is missing rather than that the cut is fine.
     """
-    options = [
-        key for fam in TRANSITION_FAMILIES for key in kit.family(fam)
-        if (a := kit.get(key)) is not None and a.frame_count > 1
-    ]
-    if not options:
-        return None
     import hashlib
 
+    candidates = [
+        a for fam in TRANSITION_FAMILIES for key in kit.family(fam)
+        if (a := kit.get(key)) is not None and a.frame_count > 1
+    ]
+    if not candidates:
+        return None
+
+    if frame:
+        matching = [a for a in candidates if is_full_frame(a, frame)]
+        if matching:
+            # ONLY the matching orientation. Ordering the pool was not enough:
+            # the step starts at a hashed offset, so a wide strip still came up
+            # first five cuts out of six. A strip that has to be cropped is a
+            # last resort, not a member of the rotation.
+            candidates = matching
+        else:
+            log.warning(
+                "transitions: no strip matches a %dx%d frame — every cut will "
+                "use a %s strip cropped to fit. Tall variants are artwork "
+                "owed.", frame[0], frame[1],
+                candidates[0].aspect or "mismatched")
+            # Everything is going to be cropped, so at least do not offer the
+            # same effect twice under two orientation names.
+            by_base: dict[str, Asset] = {}
+            for a in candidates:
+                by_base.setdefault(_orientation_base(a.name), a)
+            candidates = list(by_base.values())
+
+    keys = [a.key for a in candidates]
     offset = int(hashlib.sha256(f"transition|{seed}".encode()).hexdigest()[:8], 16)
-    return kit.get(options[(offset + index) % len(options)])
+    return kit.get(keys[(offset + index) % len(keys)])

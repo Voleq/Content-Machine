@@ -65,6 +65,126 @@ def is_meta(rel: Path) -> bool:
     return rel.name in META_NAMES or any(p in META_DIRS for p in rel.parts)
 
 
+# --------------------------------------------------------------------------
+# Per-family manifests.
+#
+# The top-level `kit-registry.json` is the delivery's own index, and it only
+# knows about the families that were in the delivery when it was written. A
+# folder that GAINS a family — the commissioned `stings/`, say — shipped its
+# own `manifest.json` and had nowhere to go: registering it meant hand-merging
+# entries into the top-level registry, which is a code-adjacent edit for what
+# is really just new artwork arriving.
+#
+# So every `manifest.json` found under any source is merged. A family that
+# ships one registers with no edit and no code change.
+# --------------------------------------------------------------------------
+MANIFEST_NAME = "manifest.json"
+
+
+def discover_manifests(sources: list[Path]) -> list[tuple[Path, dict]]:
+    """Every per-family `manifest.json` under the given sources."""
+    found: list[tuple[Path, dict]] = []
+    for src in sources:
+        if not src.exists():
+            continue
+        for mpath in sorted(src.rglob(MANIFEST_NAME)):
+            try:
+                data = json.loads(mpath.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                print(f"skipping unreadable {mpath}: {exc}", file=sys.stderr)
+                continue
+            if isinstance(data, dict) and data.get("assets"):
+                found.append((mpath, data))
+    return found
+
+
+def entries_from_manifest(mpath: Path, data: dict) -> tuple[dict[str, dict], Path]:
+    """`{registry key: entry}` for one family manifest, and its frame root.
+
+    The manifest's own `family` is the authority for the key, not the folder
+    it happens to sit in — `stings/` arrived nested three deep inside the
+    delivery and still has to register as `stings/<name>`.
+    """
+    family = str(data.get("family") or mpath.parent.name).strip("/")
+    canvas = data.get("canvas") or {}
+    cw = int(canvas.get("width") or canvas.get("w") or 0)
+    ch = int(canvas.get("height") or canvas.get("h") or 0)
+    export_scale = int(canvas.get("exportScale") or 1)
+    fam_fps = int(data.get("fps") or 12)
+
+    out: dict[str, dict] = {}
+    for raw in data.get("assets") or []:
+        name = str(raw.get("name") or "").strip()
+        if not name:
+            continue
+        files = [str(f) for f in (raw.get("files") or [])]
+        if not files:
+            single = raw.get("path")
+            files = [Path(str(single)).name] if single else []
+        if not files:
+            continue
+        acanvas = raw.get("canvas") or {}
+        aw = int(acanvas.get("width") or acanvas.get("w") or cw)
+        ah = int(acanvas.get("height") or acanvas.get("h") or ch)
+        entry = {
+            "family": family,
+            "name": name,
+            "frames": [f"{family}/{Path(f).name}" for f in files],
+            "frameCount": int(raw.get("frameCount") or len(files)),
+            "playback": str(raw.get("playback")
+                            or ("one-shot" if len(files) > 1 else "static")),
+            "fps": int(raw.get("fps") or fam_fps),
+            "canvas": {"w": aw, "h": ah},
+            "aspect": _aspect(aw, ah),
+            "alpha": True,
+            "slots": raw.get("slots") or [],
+            "source": f"manifest:{family}",
+        }
+        if raw.get("title"):
+            entry["title"] = str(raw["title"])
+        if export_scale > 1:
+            entry["exportScale"] = export_scale
+        for extra in ("coverFrames", "direction", "note"):
+            if raw.get(extra) is not None:
+                entry[extra] = raw[extra]
+        out[f"{family}/{name}"] = entry
+    return out, mpath.parent
+
+
+def _aspect(w: int, h: int) -> str:
+    """The registry's aspect string for a canvas, or "" when unknown."""
+    if not w or not h:
+        return ""
+    ratio = w / h
+    for label, value in (("1:1", 1.0), ("16:9", 16 / 9), ("9:16", 9 / 16),
+                         ("4:5", 0.8), ("4:3", 4 / 3)):
+        if abs(ratio - value) / value < 0.02:
+            return label
+    return f"{w}:{h}"
+
+
+def palette_offenders(paths: dict[str, Path]) -> list[str]:
+    """Source PNGs saved in palette mode, as `key -> file` lines.
+
+    A palette PNG is a size optimisation that hard-quantises the antialiased
+    edges the whole kit is drawn with — the line work is the artwork here, so
+    an optimised delivery is a lossy one. It also surfaces as a Pillow
+    transparency warning at render time rather than as an error at ingest.
+    """
+    from PIL import Image
+
+    bad: list[str] = []
+    for key, path in sorted(paths.items()):
+        try:
+            with Image.open(path) as im:
+                mode = im.mode
+        except OSError:
+            continue
+        if mode not in ("RGBA", "LA"):
+            bad.append(f"{key} -> {path.name} ({mode})")
+    return bad
+
+
 def unportable(rel: str) -> str | None:
     """Why a registry frame path could not be checked out everywhere, or None.
 
@@ -353,38 +473,97 @@ def compute_aliases(assets: dict[str, dict], root_for: dict[str, Path],
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("archive", type=Path,
-                    help="the unpacked delivery (contains kit-v1/, shorts/, "
-                         "kit-registry.json)")
+    ap.add_argument("archive", type=Path, nargs="+",
+                    help="one or more unpacked delivery directories. The "
+                         "first that carries a kit-registry.json provides the "
+                         "base index; every manifest.json found under any of "
+                         "them registers its family.")
     ap.add_argument("--out", type=Path, default=KIT_OUT)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--allow-palette", action="store_true",
+        help="ingest palette-mode PNGs anyway. They are a lossy size "
+             "optimisation of artwork whose line work IS the asset; this "
+             "exists only so a repo can be worked on while a full-fidelity "
+             "re-export is outstanding. Every offender is still named.")
     args = ap.parse_args(argv)
 
-    archive: Path = args.archive
-    registry_src = archive / REGISTRY_NAME
-    if not registry_src.exists():
-        print(f"no {REGISTRY_NAME} in {archive}", file=sys.stderr)
-        return 2
+    sources: list[Path] = list(args.archive)
+    for src in sources:
+        if not src.exists():
+            print(f"no such directory: {src}", file=sys.stderr)
+            return 2
 
-    registry = json.loads(registry_src.read_text(encoding="utf-8"))
-    assets: dict[str, dict] = registry["assets"]
+    base = next((s for s in sources if (s / REGISTRY_NAME).exists()), None)
+    if base is not None:
+        registry = json.loads((base / REGISTRY_NAME).read_text(encoding="utf-8"))
+        assets: dict[str, dict] = registry["assets"]
+    else:
+        # A delivery can be nothing but families with their own manifests.
+        base = sources[0]
+        registry = {"kit": "dennis", "version": 1, "roots": {}, "assets": {}}
+        assets = registry["assets"]
 
     # The registry declares where each source lands; frame paths are relative
     # to their own root, so resolution has to go through it.
-    src_root = {"kit-v1": archive / "kit-v1", "shorts": archive / "shorts"}
-    dst_rel = {"kit-v1": Path("."), "shorts": Path("shorts")}
-    root_for = {k: src_root[v["source"]] for k, v in assets.items()}
+    src_root: dict[str, Path] = {"kit-v1": base / "kit-v1",
+                                 "shorts": base / "shorts"}
+    dst_rel: dict[str, Path] = {"kit-v1": Path("."), "shorts": Path("shorts")}
+    root_for = {k: src_root[v["source"]] for k, v in assets.items()
+                if v.get("source") in src_root}
+
+    # ---- families that brought their own manifest ---------------------
+    #
+    # Only families the base registry does NOT already cover. Every family in
+    # the delivery ships a manifest of its own, and those are already indexed
+    # by the top-level registry — under its own keys, which carry the
+    # delivery's prefix (`shorts/dennis-vs-numbers`, not `dennis-vs-numbers`).
+    # Merging them again registered a second, unprefixed copy of the whole
+    # shorts batch and left `shorts/dennis-vs-numbers/crushed-flat`
+    # unresolvable. The manifest route is for artwork that ARRIVES, which is
+    # the case it exists for.
+    existing_families = {str(v.get("family", "")) for v in assets.values()}
+    merged_families: list[tuple[str, int]] = []
+    for mpath, data in discover_manifests(sources):
+        entries, froot = entries_from_manifest(mpath, data)
+        if not entries:
+            continue
+        family = next(iter(entries.values()))["family"]
+        if any(f == family or f.endswith(f"/{family}") for f in existing_families):
+            continue        # the base registry already indexes this family
+        source = f"manifest:{family}"
+        src_root[source] = froot.parent      # frames are `<family>/<file>`
+        dst_rel[source] = Path(".")
+        registry.setdefault("roots", {})[source] = "assets/kit/"
+        assets.update(entries)
+        for key in entries:
+            root_for[key] = froot.parent
+        existing_families.add(family)
+        merged_families.append((family, len(entries)))
+
+    if not assets:
+        print(f"nothing to ingest — no {REGISTRY_NAME} and no {MANIFEST_NAME} "
+              f"under {', '.join(str(s) for s in sources)}", file=sys.stderr)
+        return 2
 
     # ---- reconcile before touching anything --------------------------
-    declared: dict[str, set[str]] = {"kit-v1": set(), "shorts": set()}
+    declared: dict[str, set[str]] = defaultdict(set)
     unportable_paths: list[str] = []
+    frame_files: dict[str, Path] = {}
     for key, entry in assets.items():
+        root = root_for.get(key)
+        if root is None:
+            print(f"registry entry {key} has an unknown source "
+                  f"{entry.get('source')!r}", file=sys.stderr)
+            return 2
         for frame in entry["frames"]:
             declared[entry["source"]].add(frame)
-            if not (root_for[key] / frame).exists():
+            src = root / frame
+            if not src.exists():
                 print(f"registry lists a frame that is not in the archive: "
                       f"{key} -> {frame}", file=sys.stderr)
                 return 2
+            frame_files[f"{key} [{frame}]"] = src
             why = unportable(frame)
             if why is not None:
                 unportable_paths.append(f"{key} -> {frame}: {why}")
@@ -396,19 +575,51 @@ def main(argv: list[str] | None = None) -> int:
         print("Rename them in the delivery and re-export.", file=sys.stderr)
         return 2
 
+    # ---- full fidelity, checked rather than assumed -------------------
+    palette = palette_offenders(frame_files)
+    if palette:
+        head = ("PALETTE-MODE SOURCE PNGs — this delivery is size-optimised, "
+                f"not full fidelity ({len(palette)} of {len(frame_files)} "
+                f"frames):")
+        if not args.allow_palette:
+            print(f"refusing to ingest — {head}", file=sys.stderr)
+            for line in palette[:40]:
+                print(f"  {line}", file=sys.stderr)
+            if len(palette) > 40:
+                print(f"  ... and {len(palette) - 40} more", file=sys.stderr)
+            print(
+                "\nPalette mode hard-quantises the antialiased edges the kit "
+                "is drawn with, and the line work IS the artwork. Ask for a "
+                "full-RGBA re-export.\nTo proceed anyway with the lossy "
+                "delivery, pass --allow-palette.", file=sys.stderr)
+            return 2
+        print(f"WARNING     : {head}")
+        for line in palette[:10]:
+            print(f"              {line}")
+        if len(palette) > 10:
+            print(f"              ... and {len(palette) - 10} more")
+
     skipped: list[str] = []
     for source, root in src_root.items():
+        if not root.exists():
+            continue
         for png in sorted(root.rglob("*.png")):
             rel = png.relative_to(root)
             if str(rel) in declared[source]:
                 continue
-            skipped.append(f"{source}/{rel}" + ("  (meta)" if is_meta(rel) else "  (no registry entry)"))
+            if any(str(rel) in d for d in declared.values()):
+                continue
+            skipped.append(f"{source}/{rel}"
+                           + ("  (meta)" if is_meta(rel) else "  (no registry entry)"))
 
     aliases, dead_flaps = compute_aliases(assets, root_for)
     corrections = apply_corrections(assets)
     _, missing_preview = find_blank_sources(args.out)
 
-    print(f"archive     : {archive}")
+    print(f"sources     : {', '.join(str(s) for s in sources)}")
+    for family, n in merged_families:
+        print(f"manifest    : {family} -> {n} assets registered from its own "
+              f"{MANIFEST_NAME}")
     if missing_preview:
         print(f"blanks      : MISSING — {', '.join(missing_preview)} "
               f"(the ingest will refuse)")
@@ -503,6 +714,84 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps(registry, indent=1, sort_keys=False) + "\n", encoding="utf-8")
 
     print(f"wrote       : {copied} frames + {REGISTRY_NAME} under {out}")
+
+    # ---- relight the dark cards, then prove they are lit ---------------
+    # Seven cards ship in the dark palette — the closing card, the subscribe
+    # card, the disclaimer, the end screen. Left alone, every video closes by
+    # switching theme. This used to be a separate command an operator had to
+    # remember after every ingest, which means it was a step that could be
+    # missed and silently restore them.
+    restyled = _restyle(out)
+    if restyled is None:
+        return 2
+
+    return _verify(out, assets, aliases, dead_flaps, skipped, restyled,
+                   merged_families, bool(palette))
+
+
+def _restyle(out: Path) -> int | None:
+    """Relight the dark cards and prove it. None when it did not take."""
+    from scripts.restyle_dark_cards import main as restyle_main
+
+    print("restyle     : relighting the dark cards")
+    if restyle_main(["--kit", str(out)]) != 0:
+        print("restyle     : FAILED", file=sys.stderr)
+        return None
+    if restyle_main(["--kit", str(out), "--check"]) != 0:
+        print("restyle     : ran, but --check still reports a dark card",
+              file=sys.stderr)
+        return None
+    return 1
+
+
+def _verify(out: Path, assets: dict, aliases: dict, dead_flaps, skipped: list,
+            restyled, merged_families: list, lossy: bool) -> int:
+    """The block that decides whether to commit.
+
+    An ingest that printed "wrote N frames" and stopped told you it copied
+    files, not that the result is loadable. This walks the written kit the way
+    the pipeline will.
+    """
+    from collections import Counter
+
+    from pipeline.kit import load_kit
+
+    kit = load_kit(out.parent)
+    problems = kit.verify()
+    on_disk = sum(1 for _ in out.rglob("*.png"))
+    by_family = Counter(a.family for k in kit.keys()
+                        if (a := kit.get(k)) is not None)
+
+    print()
+    print("=" * 62)
+    print("VERIFICATION")
+    print("=" * 62)
+    print(f"  registered assets : {len(kit)}")
+    print(f"  frames on disk    : {on_disk}")
+    print(f"  aliases collapsed : {len(aliases)} -> "
+          f"{len(set(aliases.values()))} canonical")
+    print(f"  dead mouth flaps  : {len(list(dead_flaps))}")
+    print(f"  dark cards relit  : {'yes' if restyled else 'no'}")
+    print(f"  not ingested      : {len(skipped)}")
+    if merged_families:
+        print("  families from their own manifest:")
+        for family, n in merged_families:
+            print(f"      {family:28s} {n:3d} assets")
+    print(f"  families ({len(by_family)}):")
+    for family, n in sorted(by_family.items()):
+        print(f"      {family:36s} {n:3d}")
+    if lossy:
+        print("  fidelity          : LOSSY — palette-mode source was allowed")
+    print(f"  Kit.verify()      : {len(problems)} problem(s)")
+    for p in problems[:20]:
+        print(f"      {p}")
+    if len(problems) > 20:
+        print(f"      ... and {len(problems) - 20} more")
+    print("=" * 62)
+    if problems:
+        print("DO NOT COMMIT — the written kit does not verify.", file=sys.stderr)
+        return 1
+    print("OK to commit." + ("  (but the fidelity is lossy)" if lossy else ""))
     return 0
 
 

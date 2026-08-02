@@ -141,15 +141,36 @@ class HostShot:
         return self.closed.key
 
 
+# A bank that may borrow from another once its own shots are exhausted.
+#
+# `beat` is five shots. On a short that is plenty; on a forty-minute cut with
+# a host beat every twelve seconds it wraps every minute, and the repetition
+# is the most visible thing in the video. The `panel` shots are also just
+# Dennis presenting, so they extend the rotation without changing the register.
+BANK_EXTENSIONS: dict[str, tuple[str, ...]] = {
+    "beat": ("panel",),
+}
+
+
 def shots(kit: Kit, role: str = "open") -> list[HostShot]:
-    """Every usable shot in a bank, in bank order."""
+    """Every usable shot in a bank, in bank order.
+
+    A bank listed in `BANK_EXTENSIONS` continues into its extension, so the
+    rotation is long enough for the runtime rather than long enough for the
+    bank. Its own shots always come first, and a shot is never listed twice.
+    """
     out: list[HostShot] = []
-    for key in HOST_BANKS.get(role, ()):
-        pair = kit.talk_pair(key)
-        if pair is None:
-            log.debug("host shot %s has no usable talk twin — skipped", key)
-            continue
-        out.append(HostShot(closed=pair[0], open_=pair[1]))
+    seen: set[str] = set()
+    for bank in (role, *BANK_EXTENSIONS.get(role, ())):
+        for key in HOST_BANKS.get(bank, ()):
+            pair = kit.talk_pair(key)
+            if pair is None:
+                log.debug("host shot %s has no usable talk twin — skipped", key)
+                continue
+            if pair[0].key in seen:
+                continue
+            seen.add(pair[0].key)
+            out.append(HostShot(closed=pair[0], open_=pair[1]))
     return out
 
 

@@ -61,6 +61,7 @@ from pipeline.kit_frames import (
     render_still,
     strip_baked_furniture,
     transition_asset,
+    transition_transform,
 )
 from pipeline.number_beats import beat_for_row
 from pipeline.models import (
@@ -777,7 +778,7 @@ def render_short(
         flash_frames(W, H, fps=fps), fps, rdir / "flash.mov",
     )
     for ti, c in enumerate(t for t in transitions if t.t > 0.05):
-        strip = transition_asset(kit, script.content_sha(), ti)
+        strip = transition_asset(kit, script.content_sha(), ti, frame=(W, H))
         name = f"flash_{c.payload['name']}"
         if strip is None:
             layers.append(OverlayLayer(
@@ -788,7 +789,8 @@ def render_short(
         span = max(playback_seconds(strip), 0.25)
         clip, (cw, ch) = render_clip(
             strip, rdir / f"transition_{ti}.mov", duration_s=span, fps=fps,
-            settings=settings, transform=lambda img: cover_on_paper(img, W, H))
+            settings=settings,
+            transform=transition_transform(strip, W, H, settings))
         layers.append(OverlayLayer(
             path=clip, x=0, y=0, t_start=c.t,
             t_end=min(c.t + span, duration), is_video=True,
