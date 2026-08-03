@@ -1081,103 +1081,115 @@
     {
       "segment": 0,
       "shot": "chapters/how-we-got-here/dennis-narrates",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 2,
       "shot": "chapters/bull-vs-bear/dennis-torn",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 3,
       "shot": "chapters/cold-open/desk-lean",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 8,
       "shot": "chapters/bull-vs-bear/dennis-both-hands",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     },
     {
       "segment": 10,
       "shot": "chapters/short-interest/dennis-eyes-the-squeeze",
-      "blinks": 0,
+      "blinks": 2,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     },
     {
       "segment": 13,
       "shot": "chapters/bull-vs-bear/dennis-torn",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 21,
       "shot": "chapters/short-interest/dennis-eyes-the-squeeze",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     },
     {
       "segment": 27,
       "shot": "chapters/the-numbers/chart-bars",
       "blinks": 0,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 29,
       "shot": "chapters/valuation/dennis-weighing",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     },
     {
       "segment": 31,
       "shot": "chapters/moat/dennis-inspects",
       "blinks": 0,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     },
     {
       "segment": 33,
       "shot": "chapters/how-we-got-here/dennis-narrates",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     },
     {
       "segment": 34,
       "shot": "chapters/valuation/dennis-shrug-value",
-      "blinks": 0,
+      "blinks": 1,
       "idle_frames": 0,
-      "has_blink": false,
-      "has_idle": false
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
     }
   ],
-  "blinks": 0,
-  "shots_with_blink": 0,
-  "shots_with_idle": 0,
+  "blinks": 11,
+  "shots_with_blink": 12,
+  "shots_with_idle": 12,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
