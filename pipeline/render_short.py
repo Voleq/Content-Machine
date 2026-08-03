@@ -1070,6 +1070,10 @@ def render_short(
     # a smaller inset beside the evidence, which stays up, so the cut never
     # leaves him and never hides what he is talking about.
     host_shot_i = 0
+    # What the face actually did, per shot. A blink is the smallest thing in
+    # the video and the hardest to spot on playback, so the manifest says
+    # whether one was scheduled rather than leaving it to the eye.
+    host_motion: list[dict] = []
 
     def add_host(cue, role: str, name: str, *, inset: bool = False) -> bool:
         nonlocal host_shot_i
@@ -1078,14 +1082,18 @@ def render_short(
         if t1 <= t0:
             return False
         width = px(INSET_W) if inset else W
+        motion: dict = {}
         built = build_host_clip(
             tts.words, t0, t1, rdir / f"host_{name}.mov",
             kit=kit, settings=settings, display_w=width, fps=fps,
             role=role, shot_index=host_shot_i, strip_furniture=True,
+            report=motion,
         )
         host_shot_i += 1
         if built is None:
             return False
+        if motion:
+            host_motion.append({"name": name, **motion})
         clip, (hw, hh) = built
         shot = pick_shot(kit, role, host_shot_i - 1)
         if shot is not None:
@@ -1315,7 +1323,9 @@ def render_short(
         "duration": duration,
         "opener": opener,
         "theme": "light",
-        "host": {"shots": host_shot_i, "bookends": True},
+        "host": {"shots": host_shot_i, "bookends": True,
+                 "motion": host_motion,
+                 "blinks": sum(m.get("blinks", 0) for m in host_motion)},
         "chart": {"source": prices.source, "degraded": prices.degraded,
                   "direction": chart_meta["direction"],
                   "style": script.chart_style.value},

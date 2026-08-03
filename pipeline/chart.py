@@ -21,13 +21,16 @@ chart; all inks pass ≥3:1 contrast on the paper surface.
 
 from __future__ import annotations
 
+import logging
 import math
 import random
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 from config import Settings
+
+log = logging.getLogger(__name__)
 
 # light-surface palette — the Dennis kit tokens (validated: contrast ≥ 3:1)
 SURFACE = (250, 249, 246)     # #faf9f6 card
@@ -78,10 +81,20 @@ def render_price_chart(
     up = closes[-1] >= closes[0]
     line_rgb = UP if up else DOWN
 
+    # One rng for every drawn mark on this card, seeded off the series so the
+    # same data always draws the same card — a chart that re-wobbles on every
+    # render breaks the golden-frame check for no reason.
+    rng = random.Random(f"clean|{series.ticker}|{closes[-1]}|{len(closes)}")
+
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
+    # The card is still a card — the CLEAN style is the precise register — but
+    # its EDGE is drawn. A `rounded_rectangle` outline was the one hard
+    # geometric line in a kit whose every other border is a pen stroke.
     d.rounded_rectangle([0, 0, W - 1, H - 1], radius=int(W * 0.03),
-                        fill=(*SURFACE, 255), outline=(*GRID, 255), width=2)
+                        fill=(*SURFACE, 255))
+    _drawn_rect(d, [2, 2, W - 3, H - 3], rng, width=2, color=(*GRID, 255),
+                jitter=1.4, overshoot=0.004)
 
     pad = int(W * 0.055)
     head_h = int(H * 0.17)
@@ -132,7 +145,10 @@ def render_price_chart(
     lbl_font = _font(settings, _MONO, max(int(H * 0.026), 12))
     for k in range(4):
         gy = y0 + (y1 - y0) * k / 3
-        d.line([x0, gy, x1, gy], fill=(*GRID, 255), width=1)
+        # Ruled by hand. A 1px grid line is a printed rule; the kit's rules
+        # are drawn, and at this jitter it still reads as recessive.
+        _marker_stroke(d, [(x0, gy), (x1, gy)], rng, width=1,
+                       color=(*GRID, 255), jitter=0.9, passes=1)
         val = hi - span * k / 3
         d.text((x1 - d.textlength(_fmt_price(val), font=lbl_font), gy - lbl_font.size - 3),
                _fmt_price(val), font=lbl_font, fill=(*MUTED, 255))
@@ -166,14 +182,20 @@ def render_price_chart(
     d = ImageDraw.Draw(img)
     d.line(pts, fill=(*line_rgb, 255), width=max(int(W * 0.004), 2), joint="curve")
 
-    # ---- last-point marker with a soft glow
+    # ---- last-point marker, ringed by hand
+    #
+    # It used to sit inside a Gaussian glow. Nothing on paper glows: a blur is
+    # a screen effect, and it was the one mark on the card that could not have
+    # been made with a pen. The ring is `marks/circle` — the same scrawl the
+    # renderer already draws over a numbers row — and a drawn one when the kit
+    # has not shipped it.
     lx, ly = pts[-1]
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse([lx - 14, ly - 14, lx + 14, ly + 14],
-                                 fill=(*line_rgb, 140))
-    img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(6)))
     d.ellipse([lx - 7, ly - 7, lx + 7, ly + 7], fill=(*line_rgb, 255),
               outline=(*SURFACE, 255), width=2)
+    _drawn_ring(img, lx, ly, W * 0.042, W * 0.036, rng,
+                width=max(int(W * 0.004), 2), color=(*line_rgb, 235),
+                settings=settings)
+    d = ImageDraw.Draw(img)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)
@@ -195,6 +217,18 @@ def render_price_chart(
     return out_path, meta
 
 
+# --------------------------------------------------------------------------
+# The drawn primitives.
+#
+# Both charts go through these. The channel had two chart renderers speaking
+# two different visual languages: one drew wobbly axes with a chunky nib, the
+# other drew `rounded_rectangle(radius=W*0.03)`, 1px grid lines and a Gaussian
+# glow. Two chart STYLES in one channel is fine — precision is a legitimate
+# register. Two drawing LANGUAGES is not, and the clean card was the only
+# surface in the kit that looked machine-made.
+# --------------------------------------------------------------------------
+
+
 def _marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
     """A marker line: the polyline drawn a few times with per-point jitter
     and a chunky nib — the crude hand-drawn look."""
@@ -202,6 +236,104 @@ def _marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
         wobbled = [(x + rng.uniform(-jitter, jitter),
                     y + rng.uniform(-jitter, jitter)) for x, y in pts]
         d.line(wobbled, fill=color, width=width, joint="curve")
+
+
+def _drawn_rect(d, box, rng, *, width, color, jitter=1.6, passes=1,
+                overshoot=0.0):
+    """A rectangle drawn by hand: four strokes, not a rounded_rectangle.
+
+    `overshoot` runs each stroke past its corner by that fraction of the side,
+    the way a pen does when you do not lift it — which is what stops four
+    jittered lines from reading as a rectangle with bad anti-aliasing.
+    """
+    x0, y0, x1, y1 = box
+    ox, oy = (x1 - x0) * overshoot, (y1 - y0) * overshoot
+    for a, b in (((x0 - ox, y0), (x1 + ox, y0)),
+                 ((x1, y0 - oy), (x1, y1 + oy)),
+                 ((x1 + ox, y1), (x0 - ox, y1)),
+                 ((x0, y1 + oy), (x0, y0 - oy))):
+        _marker_stroke(d, [a, b], rng, width=width, color=color,
+                       jitter=jitter, passes=passes)
+
+
+def _drawn_ring(img, cx, cy, rx, ry, rng, *, width, color, settings=None,
+                turns=1.15):
+    """The kit's "doubt" ring around a point, drawn onto `img` in place.
+
+    Prefers real artwork: `marks/circle` is the mark the channel actually
+    uses, and a drawn one is the fallback for a kit that has not shipped it.
+    Never a glow — nothing on paper glows, and a Gaussian blur was the one
+    effect in the light kit that could not have been made with a pen.
+
+    The centre is pulled back onto the card when the point it marks sits near
+    an edge. A last close is very often the highest or the newest point, so
+    the ring ran off the right-hand side more often than not — the procedural
+    scrawl got away with it because it was thin, a real mark does not.
+    """
+    cx = min(max(cx, rx), max(img.width - rx, rx))
+    cy = min(max(cy, ry), max(img.height - ry, ry))
+    if settings is not None:
+        mark = _mark_image(settings, "marks/circle")
+        if mark is not None:
+            # Its OWN aspect, not a square: the mark is a 5:4 scrawl and
+            # squashing it to a circle is the machine look coming back in
+            # through the resize.
+            box = max(int(rx * 2), 8), max(int(ry * 2), 8)
+            scale = min(box[0] / mark.width, box[1] / mark.height)
+            w = max(int(mark.width * scale), 8)
+            h = max(int(mark.height * scale), 8)
+            mark = mark.resize((w, h), Image.LANCZOS)
+            # A 1200px-wide drawing at 76px has a sub-pixel stroke, so the
+            # scrawl arrives as a hairline — thinner than the data line it is
+            # marking. Dilating the ink back to the nib is what keeps it a pen
+            # stroke rather than a downscaling artefact.
+            mark = _thicken(mark, max(int(width) - 1, 0))
+            img.alpha_composite(_tint(mark, color),
+                                (int(cx - w / 2), int(cy - h / 2)))
+            return
+    d = ImageDraw.Draw(img)
+    for _ in range(2):
+        ring = []
+        for t in range(53):
+            th = -math.pi / 2 + 2 * math.pi * turns * (t / 52)
+            ring.append((cx + rx * math.cos(th) + rng.uniform(-3, 3),
+                         cy + ry * math.sin(th) + rng.uniform(-3, 3)))
+        d.line(ring, fill=color, width=width, joint="curve")
+
+
+def _mark_image(settings: Settings, key: str):
+    """One frame of a `marks/` asset, or None. Never raises — a chart that
+    cannot find its ring draws one rather than failing to render."""
+    try:
+        from pipeline.kit import load_kit
+
+        asset = load_kit(settings.assets_dir).get(key)
+        if asset is None or not asset.frames:
+            return None
+        return Image.open(asset.frames[0]).convert("RGBA")
+    except Exception:  # noqa: BLE001 — decoration is never fatal
+        log.debug("chart: no %s in the kit — drawing the ring instead", key)
+        return None
+
+
+def _thicken(img: Image.Image, radius: int) -> Image.Image:
+    """Grow a mark's ink by `radius` px, keeping its shape. No-op at 0."""
+    if radius <= 0:
+        return img
+    from PIL import ImageFilter
+
+    alpha = img.getchannel("A").filter(ImageFilter.MaxFilter(2 * radius + 1))
+    out = img.copy()
+    out.putalpha(alpha)
+    return out
+
+
+def _tint(img: Image.Image, color) -> Image.Image:
+    """Recolour a mark's ink, keeping its alpha. The marks ship in ink; the
+    ring on a chart is the direction colour."""
+    solid = Image.new("RGBA", img.size, (*color[:3], 255))
+    solid.putalpha(img.getchannel("A"))
+    return solid
 
 
 def render_marker_price_chart(
@@ -279,16 +411,10 @@ def render_marker_price_chart(
         _marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
                        rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
 
-    # the red scrawl circle around the spike (the kit's signature "doubt" mark):
-    # ~1.15 turns of a jittered ellipse in marker red, drawn twice
-    crx, cry = W * 0.11, H * 0.11
-    for _ in range(2):
-        ring = []
-        for t in range(0, 53):
-            th = -math.pi / 2 + 2 * math.pi * 1.15 * (t / 52)
-            ring.append((lx + crx * math.cos(th) + rng.uniform(-3, 3),
-                         ly + cry * math.sin(th) + rng.uniform(-3, 3)))
-        d.line(ring, fill=(*DOWN, 255), width=nib, joint="curve")
+    # the red scrawl circle around the spike (the kit's signature "doubt" mark)
+    _drawn_ring(img, lx, ly, W * 0.11, H * 0.11, rng, width=nib,
+                color=(*DOWN, 255), settings=settings)
+    d = ImageDraw.Draw(img)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.save(out_path)

@@ -525,8 +525,30 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "aliases": len(kit.aliases()),
         "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
         "furniture_stuck": stuck,
+        "missing_micro_motion": _shots_without_micro_motion(kit),
         "kit_size": len(kit),
     }
+
+
+def _shots_without_micro_motion(kit) -> dict[str, list[str]]:
+    """Host shots with no `-blink` / `-idle` strip, by suffix.
+
+    The renderer schedules blinks and idles the moment the strips exist and
+    boils silently until then, which is the right failure mode and also an
+    invisible one — a face that never blinks looks like a rendering choice
+    rather than like missing artwork. This is the list that turns it back
+    into a line item.
+    """
+    from pipeline.host import HOST_BANKS
+
+    out: dict[str, list[str]] = {"-blink": [], "-idle": []}
+    for key in sorted({k for bank in HOST_BANKS.values() for k in bank}):
+        if kit.get(key) is None:
+            continue
+        for suffix in out:
+            if kit.micro_motion(key, suffix) is None:
+                out[suffix].append(key)
+    return out
 
 
 def _cards_stuck_with_furniture(kit) -> list[str]:
@@ -604,6 +626,20 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
         lines.append("Artwork owed — a -talk twin identical to its base, so "
                      "the mouth flap animates nothing:")
         lines += [f"  {k}" for k in dead]
+
+    micro = stats.get("missing_micro_motion") or {}
+    if any(micro.values()):
+        lines.append("")
+        lines.append("Artwork owed — host shots that cannot blink or settle "
+                     "because no strip is registered beside them:")
+        for suffix, keys in micro.items():
+            if not keys:
+                continue
+            lines.append(f"  {suffix}: {len(keys)} shot(s) — "
+                         f"{', '.join(k.rsplit('/', 1)[-1] for k in keys[:4])}"
+                         f"{', ...' if len(keys) > 4 else ''}")
+        lines.append("  (drop `<shot>-blink` / `<shot>-idle` into the delivery "
+                     "and re-run ingest — no code change is needed)")
 
     stuck = stats.get("furniture_stuck") or []
     if stuck:

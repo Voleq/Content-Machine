@@ -268,7 +268,15 @@ class ShortScript(BaseModel):
     # against the four-beat format still parse.
     cheap_or_trap: str | None = Field(default=None, max_length=260)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
-    chart_style: ChartStyle = ChartStyle.CLEAN  # open on clean or marker chart
+    # The chart the short opens on, and holds from the stage open to the gut
+    # check — one of the longest single holds in the video.
+    #
+    # The default was CLEAN, so unless a script asked otherwise every short
+    # spent that hold on the machine-drawn card: a rounded rectangle, 1px
+    # rules and a Gaussian glow, in a channel whose whole visual argument is
+    # that a person drew this at three in the morning. MARKER is the house
+    # language; CLEAN stays selectable for a script that wants precision.
+    chart_style: ChartStyle = ChartStyle.MARKER
     meme: CutawayTag | None = None
     broll: CutawayTag | None = None
     annotations: list[Annotation] = Field(default_factory=list, max_length=4)

@@ -83,7 +83,8 @@ pipeline/
   kit_frames.py          the generic frame player (static/boil/one-shot/loop)
                          and the slot filler (exportScale, slotFrameDelta)
   host.py                Dennis on screen: the kit's -talk pairs, flapped to
-                         the voice-over, in banks per role
+                         the voice-over, in banks per role; -blink / -idle
+                         strips resolve by the same naming convention
   parser_long.py         offset-aware tag tokenizer + ASSET-prompt trailer
   tagging.py             the shared tag tokenizer (both formats) + chart style
   tts.py                 ElevenLabs with-timestamps client + cache + budgets

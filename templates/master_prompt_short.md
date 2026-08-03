@@ -49,7 +49,7 @@ Pick from these; anything else must be an [ASSET] with a design prompt:
 A trending stock gets ~60–75 seconds. **Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence. Five beats:
 
 0. HOST OPEN (~3–5s) — the first sentence is Dennis on screen, saying the hook out loud. Write it as a spoken line, not a caption.
-1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" (the polished branded card) or "marker" (a crude hand-drawn "napkin" chart — reach for it when the tone is extra deadpan / degenerate).
+1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
 3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
@@ -101,7 +101,7 @@ Budget: roughly 18–22 visual events across the whole short, of which 4–8 are
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. `annotations`: up to 4 scribbles. `target` "chart" (circles the move) or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script` where the scribble should fire; optional `note` ≤ 40 chars, lowercase, terse.
 8. `meme` (optional, use ONLY if it genuinely lands — most videos don't need one): `{"key": "<from the meme keys above>", "anchor_word": "<word in audio_script>"}`. `broll` (optional) the same shape with a palette key.
-9. `chart_style`: "clean" or "marker". Default "clean"; pick "marker" for the extra-deadpan napkin look.
+9. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
 10. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
 11. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
 12. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
@@ -122,7 +122,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "hook_text": "<= 90 chars, mute-safe>",
   "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
-  "chart_style": "clean",
+  "chart_style": "marker",
   "headlines": [
     {"text": "<on-screen headline>", "meaning": "<what it actually means>"}
   ],

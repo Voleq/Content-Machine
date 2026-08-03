@@ -458,18 +458,26 @@ def render_long(
     # panel leaves — the panel is 56% wide, he gets the rest.
     HOST_PANEL_W = 0.40
 
+    # What the face did, per segment. Over forty minutes the host is the
+    # most-viewed element in the channel and the easiest to leave static
+    # without noticing, so the manifest counts the blinks.
+    host_motion: list[dict] = []
+
     def _host_input(seg_i: int, seg, seg_len: float, *, panel: bool = False):
         """Add the host clip as an input. Returns (index, x, y) or None."""
         side = seg.payload.get("host_side", "left")
+        motion: dict = {}
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
             kit=kit, settings=settings, fps=fps,
             display_w=int(W * HOST_PANEL_W) if panel else W,
             role="panel" if panel else "beat", shot_index=seg_i,
-            strip_furniture=True,
+            strip_furniture=True, report=motion,
         )
         if built is None:
             return None
+        if motion:
+            host_motion.append({"segment": seg_i, **motion})
         clip_path, (hw, hh) = built
         if panel:
             x = px(60) if side == "left" else W - hw - px(60)
@@ -1080,6 +1088,14 @@ def render_long(
         "longest_host_beat_s": round(
             max((m["end"] - m["start"] for m in seg_meta
                  if m["kind"] == "host"), default=0.0), 2),
+        # The face. `blinks: 0` with `shots_with_blink: 0` means the artwork
+        # has not shipped `-blink` strips yet and every shot boiled, which is
+        # the designed fallback. `blinks: 0` with shots that HAVE the strips
+        # is the bug.
+        "host_motion": host_motion,
+        "blinks": sum(m.get("blinks", 0) for m in host_motion),
+        "shots_with_blink": sum(1 for m in host_motion if m.get("has_blink")),
+        "shots_with_idle": sum(1 for m in host_motion if m.get("has_idle")),
         "attributions": attributions,
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),

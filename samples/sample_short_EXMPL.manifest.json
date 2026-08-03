@@ -1,17 +1,44 @@
 {
   "ticker": "EXMPL",
   "duration": 51.872993,
-  "opener": "CALM DOWN. NUMBERS FIRST.",
+  "opener": "NOISE OR SIGNAL?",
   "theme": "light",
   "host": {
     "shots": 3,
-    "bookends": true
+    "bookends": true,
+    "motion": [
+      {
+        "name": "open",
+        "shot": "chapters/cold-open/at-desk-open",
+        "blinks": 0,
+        "idle_frames": 0,
+        "has_blink": false,
+        "has_idle": false
+      },
+      {
+        "name": "close",
+        "shot": "chapters/resigned-close/dennis-defeated",
+        "blinks": 0,
+        "idle_frames": 0,
+        "has_blink": false,
+        "has_idle": false
+      },
+      {
+        "name": "beat0",
+        "shot": "chapters/valuation/pe-history",
+        "blinks": 0,
+        "idle_frames": 0,
+        "has_blink": false,
+        "has_idle": false
+      }
+    ],
+    "blinks": 0
   },
   "chart": {
     "source": "fixture",
     "degraded": false,
     "direction": "up",
-    "style": "clean"
+    "style": "marker"
   },
   "cues": [
     {
@@ -30,7 +57,7 @@
       "payload": {
         "text": "EXMPL is up 29% today. The business is not.",
         "until": 8.756,
-        "variant": "c"
+        "variant": "e"
       },
       "fallback": false
     },
@@ -101,7 +128,7 @@
       "payload": {
         "rows": 4,
         "until": 51.872993,
-        "variant": "a"
+        "variant": "c"
       },
       "fallback": false
     },
@@ -233,7 +260,7 @@
       "payload": {
         "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
         "until": 51.872993,
-        "variant": "a"
+        "variant": "e"
       },
       "fallback": false
     },
@@ -256,13 +283,13 @@
   "beat_coverage": [
     {
       "name": "numbers_sheet",
-      "w": 1060,
-      "h": 1004,
+      "w": 1040,
+      "h": 988,
       "class": "data",
-      "frac": 0.5132
+      "frac": 0.4955
     },
     {
-      "name": "vertical_b-long-fall-line",
+      "name": "vertical_b2-elevator-drop",
       "w": 1080,
       "h": 1920,
       "class": "data",
@@ -278,7 +305,7 @@
       "source_aspect": 2.348
     }
   ],
-  "median_data_coverage": 0.5132,
+  "median_data_coverage": 0.4955,
   "median_punct_coverage": 0.0,
   "aspect_capped_beats": [
     {
@@ -302,7 +329,7 @@
     "shorts/the-world/d-desk-over-shoulder",
     "shorts/the-world/d-desk-side",
     "shorts/the-world/d-desk-wide",
-    "shorts/vertical-scenes/b-long-fall-line",
+    "shorts/vertical-scenes-2/b2-elevator-drop",
     "stings/page-turn-tall",
     "stings/paper-slide-tall",
     "stings/torn-edge-tall"
@@ -341,7 +368,7 @@
     "scribble_0_chart",
     "scribble_1_numbers",
     "ticker_pill",
-    "vertical_b-long-fall-line"
+    "vertical_b2-elevator-drop"
   ],
   "layers": [
     {
@@ -383,74 +410,74 @@
       "name": "numbers_sheet",
       "t_start": 26.4105,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 270
+      "x": 20,
+      "y": 310
     },
     {
       "name": "number_row_0",
       "t_start": 26.7605,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 499
+      "x": 20,
+      "y": 535
     },
     {
       "name": "number_row_1",
       "t_start": 30.0753,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 685
+      "x": 20,
+      "y": 718
     },
     {
       "name": "number_row_2",
       "t_start": 33.390100000000004,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 871
+      "x": 20,
+      "y": 901
     },
     {
       "name": "number_row_3",
       "t_start": 36.7049,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 1057
+      "x": 20,
+      "y": 1084
     },
     {
       "name": "scribble_0_chart",
       "t_start": 2.2522,
       "t_end": 26.4105,
-      "x": 735,
-      "y": 698
+      "x": 733,
+      "y": 700
     },
     {
       "name": "note_0",
       "t_start": 2.2522,
       "t_end": 26.4105,
-      "x": 676,
-      "y": 787
+      "x": 674,
+      "y": 789
     },
     {
       "name": "scribble_1_numbers",
       "t_start": 30.3253,
       "t_end": 40.5197,
-      "x": 10,
-      "y": 685
+      "x": 20,
+      "y": 718
     },
     {
       "name": "note_1",
       "t_start": 30.3253,
       "t_end": 40.5197,
       "x": 817,
-      "y": 637
+      "y": 670
     },
     {
       "name": "countup_0",
       "t_start": 30.3753,
       "t_end": 31.775299999999998,
-      "x": 501,
-      "y": 685
+      "x": 514,
+      "y": 718
     },
     {
-      "name": "vertical_b-long-fall-line",
+      "name": "vertical_b2-elevator-drop",
       "t_start": 30.3753,
       "t_end": 32.5753,
       "x": 0,
@@ -517,7 +544,7 @@
       "t_start": 45.0197,
       "t_end": 50.272993,
       "x": 60,
-      "y": 1340
+      "y": 1390
     },
     {
       "name": "host_open",
@@ -558,8 +585,8 @@
       "name": "hook",
       "t_start": 0.0,
       "t_end": 8.756,
-      "x": 50,
-      "y": 196
+      "x": 70,
+      "y": 176
     },
     {
       "name": "ticker_pill",
@@ -572,7 +599,7 @@
       "name": "brand_bug",
       "t_start": 0.0,
       "t_end": 51.872993,
-      "x": 604,
+      "x": 758,
       "y": 70
     },
     {

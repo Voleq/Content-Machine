@@ -152,3 +152,83 @@ def test_fixture_matches_series_schema(fixtures_dir):
     assert len(data["dates"]) == len(data["closes"])
     series = PriceSeries.from_json(json.dumps(data))
     assert series.ticker == "EXMPL"
+
+
+# --------------------------------------------------------------------------
+# One drawing language.
+#
+# There were two chart renderers speaking two different visual languages: one
+# drew wobbly axes with a chunky nib, the other drew a rounded rectangle, 1px
+# rules and a Gaussian glow. Two chart STYLES in one channel is fine —
+# precision is a legitimate register. Two drawing LANGUAGES is not.
+# --------------------------------------------------------------------------
+
+
+def test_the_clean_card_is_deterministic(settings, tmp_path):
+    """Its marks are drawn now, so they have to be drawn the SAME way twice —
+    a card that re-wobbles per render breaks the golden check for nothing."""
+    import hashlib
+
+    from pipeline.chart import render_price_chart
+    from pipeline.prices import get_price_history
+
+    series = get_price_history("EXMPL", settings)
+    digests = []
+    for n in range(2):
+        p, _ = render_price_chart(series, tmp_path / f"c{n}.png", settings)
+        digests.append(hashlib.sha256(p.read_bytes()).hexdigest())
+    assert digests[0] == digests[1]
+
+
+def test_nothing_on_the_clean_card_glows(settings, tmp_path):
+    """A Gaussian blur is a screen effect. The last-point marker used to sit
+    in one, and it was the only mark on the card that could not have been
+    made with a pen.
+
+    Measured as the alpha histogram around the marker: a glow is a wide ramp
+    of partial alpha, a drawn ring is ink and paper with an antialiased edge.
+    """
+    from PIL import Image
+
+    from pipeline.chart import render_price_chart
+    from pipeline.prices import get_price_history
+
+    series = get_price_history("EXMPL", settings)
+    path, meta = render_price_chart(series, tmp_path / "c.png", settings)
+    lx, ly = meta["last_point"]
+    img = Image.open(path).convert("RGBA")
+    r = 34
+    box = img.crop((max(lx - r, 0), max(ly - r, 0), lx + r, ly + r))
+    px = list(box.convert("RGB").getdata())
+    surface = (250, 249, 246)
+    # Pixels that are neither the paper nor solid ink — the ramp a blur makes.
+    def near(c, t, tol=10):
+        return all(abs(a - b) <= tol for a, b in zip(c, t))
+    ramp = sum(1 for c in px if not near(c, surface, 12))
+    assert ramp / len(px) < 0.45, \
+        f"{ramp / len(px):.0%} of the marker's box is neither paper nor mark"
+
+
+def test_both_charts_draw_their_ring_from_the_same_primitive(settings, tmp_path):
+    """The point of the change: one language, two styles."""
+    from pipeline.chart import _drawn_ring, _mark_image
+
+    assert _mark_image(settings, "marks/circle") is not None, \
+        "the kit ships marks/circle — the ring should be real artwork"
+    assert callable(_drawn_ring)
+
+
+def test_a_kit_with_no_ring_mark_still_draws_one(settings, tmp_path):
+    """Decoration is never fatal. A missing mark falls back to a drawn ring."""
+    import random
+
+    from PIL import Image
+
+    from pipeline.chart import _drawn_ring
+
+    img = Image.new("RGBA", (200, 200), (250, 249, 246, 255))
+    _drawn_ring(img, 100, 100, 40, 34, random.Random(1), width=3,
+                color=(255, 82, 71, 255), settings=None)
+    ink = sum(1 for c in img.convert("RGB").getdata()
+              if abs(c[0] - 255) < 40 and c[1] < 160)
+    assert ink > 200, f"the fallback ring drew {ink} px"

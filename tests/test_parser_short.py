@@ -33,8 +33,25 @@ def test_chart_style_marker_parsed(short_doodles_json, settings):
     assert script.chart_style is ChartStyle.MARKER
 
 
-def test_chart_style_defaults_clean(short_valid_json, settings):
+def test_chart_style_defaults_to_the_house_language(short_valid_json, settings):
+    """A script that says nothing gets the marker chart.
+
+    The default was CLEAN, and the short holds its chart from the stage open
+    to the gut check — one of the longest single holds in the video. So unless
+    a writer thought to ask, every short spent that hold on the machine-drawn
+    card in a channel whose whole argument is that a person drew this.
+    """
     script, _ = parse_short_script(short_valid_json, settings)
+    assert script.chart_style is ChartStyle.MARKER
+
+
+def test_clean_is_still_selectable(short_valid_json, settings):
+    """Two chart STYLES is fine — precision is a legitimate register."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["chart_style"] = "clean"
+    script, _ = parse_short_script(json.dumps(data), settings)
     assert script.chart_style is ChartStyle.CLEAN
 
 

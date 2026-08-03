@@ -468,6 +468,30 @@ class Kit:
             return None
         return base, talk
 
+    def micro_motion(self, key: str, suffix: str) -> Asset | None:
+        """A ``-blink`` / ``-idle`` strip twinned with `key`, or None.
+
+        The same naming convention :meth:`talk_pair` uses, and for the same
+        reason: a later artwork batch drops the strips beside the shots they
+        belong to, ingest registers them, and the face gains a blink with no
+        code change and no hand-edited registry.
+
+        The guards are the ones that made ``-talk`` honest. A strip that is an
+        alias of its base, or that ships a single frame, animates nothing —
+        saying so here means the caller boils instead of pretending.
+        """
+        base = self.get(key)
+        twin = self.get(f"{key}{suffix}")
+        if base is None or twin is None:
+            return None
+        if twin.key == base.key or twin.alias_of == base.key:
+            return None
+        if twin.frame_count < 2:
+            log.debug("micro-motion %s%s ships %d frame(s) — skipped",
+                      key, suffix, twin.frame_count)
+            return None
+        return twin
+
     # ------------------------------------------------------------------ boil
     def boil(self, key: str) -> list[Path]:
         """The frames to alternate on a hold — one entry for a static asset."""
