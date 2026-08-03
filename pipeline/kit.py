@@ -367,13 +367,28 @@ class Kit:
         * **``-talk`` twins**, which are the mouth-open frame of the asset
           beside them, reached through :meth:`talk_pair`. Listed on their own
           they read as twenty-one extra drawings that do not exist.
+        * **micro-motion strips** (``-blink``/``-idle``/``-idle-b``), for the
+          same reason and reached through :meth:`micro_motion`. They are the
+          shot they sit beside with an eyelid down or a head tilted, and their
+          f01 IS that shot. Left in, `chapters/resigned-close` went from six
+          options to eighteen and an end screen could be built from a frame of
+          somebody blinking.
         """
         prefix = prefix.rstrip("/")
         return tuple(sorted(
             k for k, a in self._assets.items()
             if a.family == prefix and not a.alias_of
-            and not (k.endswith("-talk") and self.canonical(k[:-5]) in self._assets)
+            and not self._is_twin_of_something(k)
         ))
+
+    def _is_twin_of_something(self, key: str) -> bool:
+        """True for a `-talk` or micro-motion frame whose base is registered."""
+        for suffix in ("-talk", *self.MICRO_SUFFIXES):
+            if key.endswith(suffix):
+                base = key[: -len(suffix)]
+                if self.canonical(base) in self._assets:
+                    return True
+        return False
 
     def families(self) -> tuple[str, ...]:
         return tuple(sorted({a.family for a in self._assets.values()}))

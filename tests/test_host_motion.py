@@ -373,3 +373,37 @@ def test_every_relit_card_and_strip_reads_light():
             if path.exists() and mean_luminance(path) < 128:
                 dark.append(str(path.relative_to(kit_dir)))
     assert dark == [], f"still dark in a light kit: {dark}"
+
+
+def test_a_strip_is_not_offered_as_a_drawing_of_its_own():
+    """`family()` lists OPTIONS, and a blink is not a different drawing.
+
+    It is the shot beside it with an eyelid down — its f01 is that shot, byte
+    for byte. Left in the family listing, `chapters/resigned-close` went from
+    six options to eighteen and the end-screen by-product could have been
+    built from a frame of somebody mid-blink.
+    """
+    from config import Settings
+    from pipeline.kit import load_kit
+
+    kit = load_kit(Settings().assets_dir)
+    for family in ("chapters/resigned-close", "chapters/cold-open",
+                   "chapters/the-numbers"):
+        listed = kit.family(family)
+        assert listed, family
+        for key in listed:
+            for suffix in (*kit.MICRO_SUFFIXES, "-talk"):
+                assert not key.endswith(suffix), \
+                    f"{key} is a twin, not an option in {family}"
+
+
+def test_hiding_them_does_not_hide_them_from_the_renderer():
+    """The exclusion is about option lists only — resolution still works."""
+    from config import Settings
+    from pipeline.kit import load_kit
+
+    kit = load_kit(Settings().assets_dir)
+    shot = "chapters/resigned-close/closing-card"
+    assert shot in kit.family("chapters/resigned-close")
+    assert kit.micro_motion(shot, "-blink") is not None
+    assert kit.micro_motion(shot, "-idle") is not None
