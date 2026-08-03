@@ -139,3 +139,112 @@ def test_repurpose_request_gate(settings, tmp_path):
     Workspace(settings, "ABC", "2026-07-01").create()
     kind, text, _ = core.repurpose_request("ABC")
     assert kind is None and "render_long first" in text
+
+
+# --------------------------------------------------------------------------
+# The cover is a frame from the video.
+#
+# It used to paint on a near-black photo (mean luminance 17), darken it, and
+# accent in a gold that is not in the kit palette, with a six-pixel black
+# outline on every string. The video it advertised is ink on paper.
+# --------------------------------------------------------------------------
+
+
+def _mean_luminance(img) -> float:
+    px = list(img.convert("RGB").resize((160, 90)).getdata())
+    return sum((r * 299 + g * 587 + b * 114) // 1000 for r, g, b in px) / len(px)
+
+
+def test_the_cover_is_paper_not_a_dark_photo(settings, workspace, long_valid_text):
+    """The one measurement that says which product this is selling."""
+    from PIL import Image
+
+    from pipeline.parser_long import parse_long_script
+    from pipeline.workspace import Workspace
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    out = make_thumbnail(script, Workspace(settings, "EXMPL", "2026-07-01"), settings)
+    assert out is not None
+    lum = _mean_luminance(Image.open(out))
+    assert lum > 150, f"the cover reads dark ({lum:.0f}) in a light-kit channel"
+
+
+def test_no_gold_anywhere_on_the_cover(settings, workspace, long_valid_text):
+    """`GOLD` is an alias of RED now, but the point is that the accent is the
+    kit's, so nothing on the cover may sit outside the palette."""
+    from PIL import Image
+
+    from pipeline.parser_long import parse_long_script
+    from pipeline.rasters import GREEN, INK, MUTED, RED
+    from pipeline.workspace import Workspace
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    out = make_thumbnail(script, Workspace(settings, "EXMPL", "2026-07-01"), settings)
+    img = Image.open(out).convert("RGB")
+    allowed = (RED, GREEN, INK, MUTED)
+    # Saturated pixels have to be a kit colour. The old gold (#c8a24a) is
+    # saturated and would fail; paper, ink and greys are not saturated.
+    bad = 0
+    for r, g, b in img.resize((320, 180)).getdata():
+        if max(r, g, b) - min(r, g, b) < 40:
+            continue                       # neutral: paper, ink, the greys
+        if any(abs(r - c[0]) + abs(g - c[1]) + abs(b - c[2]) < 120 for c in allowed):
+            continue
+        bad += 1
+    assert bad < 200, f"{bad} saturated px outside the kit palette"
+
+
+def test_a_short_gets_a_cover_at_all(settings, workspace, short_valid_json):
+    """It was typed to `LongScript`, so the daily-volume format had none."""
+    from PIL import Image
+
+    from pipeline.parser_short import parse_short_script
+    from pipeline.workspace import Workspace
+
+    script, _ = parse_short_script(short_valid_json, settings)
+    ws = Workspace(settings, "EXMPL", "2026-07-01")
+    out = make_thumbnail(script, ws, settings)
+    assert out is not None and out.exists()
+    assert Image.open(out).size == (1280, 720)
+    tall = ws.path / "thumbnail_tall.png"
+    assert tall.exists(), "a short has a vertical shelf and needs a 9:16 cover"
+    assert Image.open(tall).size == (1080, 1920)
+
+
+def test_a_long_gets_no_vertical_cover(settings, workspace, long_valid_text):
+    from pipeline.parser_long import parse_long_script
+    from pipeline.workspace import Workspace
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    ws = Workspace(settings, "EXMPL", "2026-07-01")
+    make_thumbnail(script, ws, settings)
+    assert not (ws.path / "thumbnail_tall.png").exists()
+
+
+def test_the_leading_figure_is_pulled_out_of_a_move_summary():
+    """A short leads on prose with no colon in it. Set whole it shrinks to
+    fit and the cover ends up with no figure on it at all."""
+    from pipeline.thumbnail import split_metric
+
+    assert split_metric("Net margin: -18%") == ("NET MARGIN", "-18%")
+    assert split_metric("+29% today · 5x average volume") == (
+        "TODAY · 5X AVERAGE VOLUME", "+29%")
+    assert split_metric("no numbers here") == ("", "no numbers here")
+
+
+def test_green_means_up_and_only_up():
+    """Red for a bad number, green for an up-move, ink for everything else.
+
+    Without the move/metric distinction green either never appears — and the
+    rule is decoration — or it lands on any positive figure and stops meaning
+    direction.
+    """
+    from pipeline.rasters import GREEN, INK, RED
+    from pipeline.thumbnail import metric_colour
+
+    assert metric_colour("-18%") == RED
+    assert metric_colour("-18%", is_move=True) == RED
+    assert metric_colour("+29%", is_move=True) == GREEN
+    assert metric_colour("+5%") == INK, "a positive metric is not an up-move"
+    assert metric_colour("22x") == INK
+    assert metric_colour("n/a") == INK

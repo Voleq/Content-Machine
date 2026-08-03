@@ -29,6 +29,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from config import Settings
+from pipeline.rasters import drawn_rect, marker_stroke
 
 log = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ def render_price_chart(
     # geometric line in a kit whose every other border is a pen stroke.
     d.rounded_rectangle([0, 0, W - 1, H - 1], radius=int(W * 0.03),
                         fill=(*SURFACE, 255))
-    _drawn_rect(d, [2, 2, W - 3, H - 3], rng, width=2, color=(*GRID, 255),
+    drawn_rect(d, [2, 2, W - 3, H - 3], rng, width=2, color=(*GRID, 255),
                 jitter=1.4, overshoot=0.004)
 
     pad = int(W * 0.055)
@@ -147,7 +148,7 @@ def render_price_chart(
         gy = y0 + (y1 - y0) * k / 3
         # Ruled by hand. A 1px grid line is a printed rule; the kit's rules
         # are drawn, and at this jitter it still reads as recessive.
-        _marker_stroke(d, [(x0, gy), (x1, gy)], rng, width=1,
+        marker_stroke(d, [(x0, gy), (x1, gy)], rng, width=1,
                        color=(*GRID, 255), jitter=0.9, passes=1)
         val = hi - span * k / 3
         d.text((x1 - d.textlength(_fmt_price(val), font=lbl_font), gy - lbl_font.size - 3),
@@ -227,33 +228,6 @@ def render_price_chart(
 # register. Two drawing LANGUAGES is not, and the clean card was the only
 # surface in the kit that looked machine-made.
 # --------------------------------------------------------------------------
-
-
-def _marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
-    """A marker line: the polyline drawn a few times with per-point jitter
-    and a chunky nib — the crude hand-drawn look."""
-    for _ in range(passes):
-        wobbled = [(x + rng.uniform(-jitter, jitter),
-                    y + rng.uniform(-jitter, jitter)) for x, y in pts]
-        d.line(wobbled, fill=color, width=width, joint="curve")
-
-
-def _drawn_rect(d, box, rng, *, width, color, jitter=1.6, passes=1,
-                overshoot=0.0):
-    """A rectangle drawn by hand: four strokes, not a rounded_rectangle.
-
-    `overshoot` runs each stroke past its corner by that fraction of the side,
-    the way a pen does when you do not lift it — which is what stops four
-    jittered lines from reading as a rectangle with bad anti-aliasing.
-    """
-    x0, y0, x1, y1 = box
-    ox, oy = (x1 - x0) * overshoot, (y1 - y0) * overshoot
-    for a, b in (((x0 - ox, y0), (x1 + ox, y0)),
-                 ((x1, y0 - oy), (x1, y1 + oy)),
-                 ((x1 + ox, y1), (x0 - ox, y1)),
-                 ((x0, y1 + oy), (x0, y0 - oy))):
-        _marker_stroke(d, [a, b], rng, width=width, color=color,
-                       jitter=jitter, passes=passes)
 
 
 def _drawn_ring(img, cx, cy, rx, ry, rng, *, width, color, settings=None,
@@ -378,9 +352,9 @@ def render_marker_price_chart(
     x0, y0 = pad, head_h + pad
     x1, y1 = W - pad, H - pad - int(H * 0.05)
     # crude hand-drawn axes
-    _marker_stroke(d, [(x0, y0 - 6), (x0, y1)], rng, width=nib, color=(*CHALK, 220),
+    marker_stroke(d, [(x0, y0 - 6), (x0, y1)], rng, width=nib, color=(*CHALK, 220),
                    jitter=2.5, passes=1)
-    _marker_stroke(d, [(x0, y1), (x1 + 4, y1)], rng, width=nib, color=(*CHALK, 220),
+    marker_stroke(d, [(x0, y1), (x1 + 4, y1)], rng, width=nib, color=(*CHALK, 220),
                    jitter=2.5, passes=1)
 
     lo, hi = min(closes), max(closes)
@@ -395,20 +369,20 @@ def render_marker_price_chart(
         return x, y
 
     pts = [pt(i) for i in range(len(closes))]
-    _marker_stroke(d, pts, rng, width=nib + 2, color=(*line_rgb, 255),
+    marker_stroke(d, pts, rng, width=nib + 2, color=(*line_rgb, 255),
                    jitter=3.2, passes=3)
 
     # a scrawled arrow off the last point, in the move direction
     lx, ly = pts[-1]
     ax, ay = lx + W * 0.02, ly - (H * 0.06 if up else -H * 0.06)
-    _marker_stroke(d, [(lx, ly), (ax, ay)], rng, width=nib, color=(*line_rgb, 255),
+    marker_stroke(d, [(lx, ly), (ax, ay)], rng, width=nib, color=(*line_rgb, 255),
                    jitter=2, passes=2)
     head = H * 0.028
     if up:
-        _marker_stroke(d, [(ax - head, ay + head), (ax, ay), (ax + head, ay + head * 0.6)],
+        marker_stroke(d, [(ax - head, ay + head), (ax, ay), (ax + head, ay + head * 0.6)],
                        rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
     else:
-        _marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
+        marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
                        rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
 
     # the red scrawl circle around the spike (the kit's signature "doubt" mark)

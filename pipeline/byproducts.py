@@ -15,11 +15,15 @@ build; a loose threshold notices nothing. This uses a downscaled per-channel
 mean-absolute-difference, which is stable across encoders and still moves
 sharply when a layout shifts or a plate changes colour.
 
-**By-products.** The kit ships eight thumbnail layouts, nine social cards and
-five end screens, and a finished render currently produces one thumbnail. The
-rest are free: same data, same fonts, already drawn. A render now emits the
-set, so a video arrives with the things you would otherwise make by hand at
-midnight.
+**By-products.** The kit ships cover, social and end-screen layouts, and a
+finished render used to produce one thumbnail. The rest are free: same data,
+same fonts, already drawn. A render now emits the set, so a video arrives with
+the things you would otherwise make by hand at midnight.
+
+What it emits is what the kit actually holds — measured, and reported when it
+falls short of an ask. It used to say eight thumbnail layouts; there are three,
+and the other five were being taken from `scenes/`, which is chapter
+backdrops. A folder with eight files in it looked finished either way.
 """
 
 from __future__ import annotations
@@ -249,10 +253,24 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 # set above what each ships so nothing is silently dropped — a cap is there to
 # stop a future family of two hundred swamping the folder, not to trim this
 # one.
-BYPRODUCT_FAMILIES: dict[str, tuple[tuple[str, ...], int]] = {
-    "thumbnails": (("thumbnails", "scenes"), 8),
-    "social": (("restyled/channel", "restyled/brand-scenes"), 20),
-    "end_screens": (("chapters/resigned-close",), 12),
+#
+# `wanted` is a real ASK — how many distinct layouts the channel wants — and
+# it is separate from the cap because the two say different things. A cap is a
+# ceiling; an ask is a number somebody owes. `None` means there is no ask and
+# whatever the kit ships is the right answer.
+#
+# Only thumbnails carry one. The cap was 8, the kit ships 3 cover layouts, and
+# the difference was being made up out of `scenes/` — chapter backdrops nobody
+# drew as covers. The folder came out with seven files in it and looked
+# finished. `scenes` is off the list and the gap is reported as artwork owed.
+#
+# The other two caps stay ceilings. Reading them as asks would invent a debt
+# nobody incurred: they were deliberately set above what ships so a full
+# family is never trimmed.
+BYPRODUCT_FAMILIES: dict[str, tuple[tuple[str, ...], int, int | None]] = {
+    "thumbnails": (("thumbnails",), 8, 8),
+    "social": (("restyled/channel", "restyled/brand-scenes"), 20, None),
+    "end_screens": (("chapters/resigned-close",), 12, None),
 }
 
 
@@ -261,9 +279,19 @@ class ByProducts:
     thumbnails: list[str] = field(default_factory=list)
     social: list[str] = field(default_factory=list)
     end_screens: list[str] = field(default_factory=list)
+    # `{label: {wanted, found, made}}` — what was asked for against what the
+    # kit could answer. Written into byproducts.json so a short delivery is a
+    # number somebody can read rather than a folder somebody has to count.
+    shortfall: dict = field(default_factory=dict)
 
     def total(self) -> int:
         return len(self.thumbnails) + len(self.social) + len(self.end_screens)
+
+    def owed(self) -> dict[str, int]:
+        """`{label: how many layouts Design still owes}`, empty when none."""
+        return {label: gap["wanted"] - gap["found"]
+                for label, gap in self.shortfall.items()
+                if gap.get("wanted") is not None and gap["found"] < gap["wanted"]}
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -287,9 +315,14 @@ def build_byproducts(workspace: Path, settings: Settings, *,
     out_dir.mkdir(parents=True, exist_ok=True)
     result = ByProducts()
 
-    for label, (families, cap) in BYPRODUCT_FAMILIES.items():
+    for label, (families, cap, wanted) in BYPRODUCT_FAMILIES.items():
         made: list[str] = []
-        assets = [a for fam in families for a in kit.family(fam)][:cap]
+        found = [a for fam in families for a in kit.family(fam)]
+        result.shortfall[label] = {"wanted": wanted, "found": len(found),
+                                   "families": list(families), "made": 0}
+        if wanted is None:
+            result.shortfall[label]["wanted"] = len(found)  # no ask: the kit is the answer
+        assets = found[:cap]
         for asset in assets:
             src = kit.path(asset)
             if src is None:
@@ -302,10 +335,32 @@ def build_byproducts(workspace: Path, settings: Settings, *,
             except Exception as e:  # noqa: BLE001 - one layout, not all of them
                 log.warning("by-product %s failed: %s", asset, e)
         setattr(result, label, made)
+        result.shortfall[label]["made"] = len(made)
 
     (out_dir / "byproducts.json").write_text(json.dumps(result.to_json(), indent=2), encoding="utf-8")
     log.info("by-products: %d asset(s) for %s", result.total(), ticker or "?")
+    for line in report_shortfall(result):
+        log.warning("%s", line)
     return result
+
+
+def report_shortfall(result: ByProducts) -> list[str]:
+    """One line per by-product the kit cannot fill, as a Design ask.
+
+    Said out loud because the alternative is what was happening: the
+    thumbnails cap was 8, the kit ships 3 cover layouts, and the difference
+    was made up from `scenes/` — chapter backdrops nobody drew as covers. The
+    folder had eight files in it and looked finished.
+    """
+    lines: list[str] = []
+    for label, gap in sorted(result.owed().items()):
+        info = result.shortfall[label]
+        lines.append(
+            f"{label}: {info['found']} layout(s) in "
+            f"{', '.join(info['families'])}, {info['wanted']} wanted — "
+            f"{gap} short. ARTWORK OWED: this is a Design ask, not something "
+            f"to fill from a family that was drawn for something else.")
+    return lines
 
 
 def _compose(src: Path, dest: Path, *, ticker: str, settings: Settings,

@@ -1308,6 +1308,45 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# The drawn primitives.
+#
+# The kit is a pen on paper: every border in it is a stroke, not a geometric
+# rule. These live here rather than in `chart.py` because three modules now
+# draw with them — both charts and the thumbnail — and a thumbnail that
+# frames itself with `rounded_rectangle` is advertising a different product
+# from the one it is a cover for.
+# --------------------------------------------------------------------------
+
+
+def marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
+    """A marker line: the polyline drawn a few times with per-point jitter
+    and a chunky nib — the crude hand-drawn look."""
+    for _ in range(passes):
+        wobbled = [(x + rng.uniform(-jitter, jitter),
+                    y + rng.uniform(-jitter, jitter)) for x, y in pts]
+        d.line(wobbled, fill=color, width=width, joint="curve")
+
+
+def drawn_rect(d, box, rng, *, width, color, jitter=1.6, passes=1,
+                overshoot=0.0):
+    """A rectangle drawn by hand: four strokes, not a rounded_rectangle.
+
+    `overshoot` runs each stroke past its corner by that fraction of the side,
+    the way a pen does when you do not lift it — which is what stops four
+    jittered lines from reading as a rectangle with bad anti-aliasing.
+    """
+    x0, y0, x1, y1 = box
+    ox, oy = (x1 - x0) * overshoot, (y1 - y0) * overshoot
+    for a, b in (((x0 - ox, y0), (x1 + ox, y0)),
+                 ((x1, y0 - oy), (x1, y1 + oy)),
+                 ((x1 + ox, y1), (x0 - ox, y1)),
+                 ((x0, y1 + oy), (x0, y0 - oy))):
+        marker_stroke(d, [a, b], rng, width=width, color=color,
+                       jitter=jitter, passes=passes)
+
+
+
 def _ease_out(t: float) -> float:
     """Fast, then settling. The house easing for anything that lands."""
     return 1.0 - (1.0 - min(max(t, 0.0), 1.0)) ** 3

@@ -218,7 +218,7 @@ def test_the_families_cover_what_the_kit_ships(settings):
     from pipeline.kit import load_kit
 
     kit = load_kit(settings.assets_dir)
-    for label, (families, cap) in BYPRODUCT_FAMILIES.items():
+    for label, (families, cap, _wanted) in BYPRODUCT_FAMILIES.items():
         shipped = [a for fam in families for a in kit.family(fam)]
         assert shipped, f"{label} draws from {families}, all of them empty"
         assert cap >= len(shipped), \
@@ -246,7 +246,7 @@ def test_one_broken_layout_does_not_cost_the_others(settings, tmp_path,
 def test_a_manifest_records_what_was_made(settings, tmp_path):
     build_byproducts(tmp_path, settings, ticker="EXMPL")
     payload = json.loads((tmp_path / "byproducts" / "byproducts.json").read_text(encoding="utf-8"))
-    assert set(payload) == {"thumbnails", "social", "end_screens"}
+    assert set(payload) == {"thumbnails", "social", "end_screens", "shortfall"}
 
 
 def test_no_data_is_survivable(settings, tmp_path):
@@ -321,3 +321,63 @@ def test_it_is_off_by_default_and_binds_loopback_when_on(settings):
         if server:
             server.shutdown()
             server.server_close()
+
+
+# --------------------------------------------------------------------------
+# What the kit could actually answer.
+# --------------------------------------------------------------------------
+
+
+def test_covers_come_only_from_the_cover_family(settings, tmp_path):
+    """`scenes/` is chapter backdrops, not cover layouts.
+
+    It was in the thumbnail source list, so the eight-layout ask came out
+    looking met — three covers and four backdrops that nobody drew as covers,
+    and a folder with seven files in it that looked finished.
+    """
+    from pipeline.byproducts import BYPRODUCT_FAMILIES
+
+    families, _, _ = BYPRODUCT_FAMILIES["thumbnails"]
+    assert "scenes" not in families
+
+
+def test_a_shortfall_against_an_ask_is_reported(settings, tmp_path):
+    from pipeline.byproducts import build_byproducts, report_shortfall
+
+    made = build_byproducts(tmp_path, settings, ticker="EXMPL")
+    gap = made.shortfall["thumbnails"]
+    assert gap["found"] == len(made.thumbnails)
+    assert gap["wanted"] >= gap["found"]
+    if gap["found"] < gap["wanted"]:
+        lines = report_shortfall(made)
+        assert any("thumbnails" in line and "ARTWORK OWED" in line
+                   for line in lines), lines
+
+
+def test_a_cap_with_no_ask_never_reports_a_debt(settings, tmp_path):
+    """Social and end screens have ceilings, not asks.
+
+    Their caps were deliberately set above what ships so a full family is
+    never trimmed. Reading a ceiling as an ask invents artwork debt nobody
+    incurred.
+    """
+    from pipeline.byproducts import BYPRODUCT_FAMILIES, build_byproducts
+
+    for label in ("social", "end_screens"):
+        assert BYPRODUCT_FAMILIES[label][2] is None
+    made = build_byproducts(tmp_path, settings, ticker="EXMPL")
+    assert set(made.owed()) <= {"thumbnails"}
+
+
+def test_the_shortfall_is_written_into_the_manifest(settings, tmp_path):
+    import json
+
+    from pipeline.byproducts import build_byproducts
+
+    build_byproducts(tmp_path, settings, ticker="EXMPL")
+    payload = json.loads((tmp_path / "byproducts" / "byproducts.json")
+                         .read_text(encoding="utf-8"))
+    assert "shortfall" in payload
+    assert set(payload["shortfall"]) == {"thumbnails", "social", "end_screens"}
+    for gap in payload["shortfall"].values():
+        assert gap["made"] <= gap["found"]

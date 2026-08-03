@@ -526,8 +526,28 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
         "furniture_stuck": stuck,
         "missing_micro_motion": _shots_without_micro_motion(kit),
+        "byproduct_shortfall": _byproduct_shortfall(kit),
         "kit_size": len(kit),
     }
+
+
+def _byproduct_shortfall(kit) -> list[str]:
+    """By-product layouts the channel asks for and the kit cannot supply.
+
+    Counted off the registry rather than off a render, so it is answerable
+    before anybody waits twelve minutes for one.
+    """
+    from pipeline.byproducts import BYPRODUCT_FAMILIES
+
+    out: list[str] = []
+    for label, (families, _cap, wanted) in BYPRODUCT_FAMILIES.items():
+        if wanted is None:
+            continue
+        found = sum(len(kit.family(fam)) for fam in families)
+        if found < wanted:
+            out.append(f"{label}: {found} of {wanted} layout(s) in "
+                       f"{', '.join(families)} — {wanted - found} short")
+    return out
 
 
 def _shots_without_micro_motion(kit) -> dict[str, list[str]]:
@@ -626,6 +646,12 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
         lines.append("Artwork owed — a -talk twin identical to its base, so "
                      "the mouth flap animates nothing:")
         lines += [f"  {k}" for k in dead]
+
+    covers = stats.get("byproduct_shortfall") or []
+    if covers:
+        lines.append("")
+        lines.append("Artwork owed — by-product layouts the kit cannot fill:")
+        lines += [f"  {line}" for line in covers]
 
     micro = stats.get("missing_micro_motion") or {}
     if any(micro.values()):
