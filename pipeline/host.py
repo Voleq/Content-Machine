@@ -197,6 +197,7 @@ class HostShot:
     open_: Asset
     blink: Asset | None = None
     idle: Asset | None = None
+    idle_b: Asset | None = None
 
     @property
     def key(self) -> str:
@@ -236,6 +237,7 @@ def shots(kit: Kit, role: str = "open") -> list[HostShot]:
                 closed=pair[0], open_=pair[1],
                 blink=kit.micro_motion(key, "-blink"),
                 idle=kit.micro_motion(key, "-idle"),
+                idle_b=kit.micro_motion(key, "-idle-b"),
             ))
     return out
 
@@ -436,7 +438,11 @@ def build_host_clip(
             return []
 
     blink = optional(shot.blink)
-    idle = optional(shot.idle)
+    # Two idle cycles where the artwork ships both — the second leans the
+    # other way and settles off-phase. Alternated per quiet span so a long
+    # hold never reads as one loop repeating, which is what the six
+    # longest-held shots got a second cycle for.
+    idle_cycles = [c for c in (optional(shot.idle), optional(shot.idle_b)) if c]
 
     plan = mouth_schedule(words, start, end, fps)
     # Which output frame each blink starts on. The strip plays straight
@@ -449,7 +455,7 @@ def build_host_clip(
     # Long quiet stretches — where the idle strip shifts his weight rather
     # than the boil twitching a line.
     quiet = [(a, b) for a, b in quiet_spans(words, start, end)
-             if b - a >= IDLE_MIN_SPAN_S] if idle else []
+             if b - a >= IDLE_MIN_SPAN_S] if idle_cycles else []
 
     frames: list[Image.Image] = []
     blinking = -1          # frames remaining in the blink currently playing
@@ -471,8 +477,10 @@ def build_host_clip(
             continue
         blinking = -1
         t = start + i / fps
-        if idle and not is_open and any(a <= t < b for a, b in quiet):
-            frames.append(idle[int(t * IDLE_HZ) % len(idle)])
+        span = next((n for n, (a, b) in enumerate(quiet) if a <= t < b), None)
+        if idle_cycles and not is_open and span is not None:
+            cycle = idle_cycles[span % len(idle_cycles)]
+            frames.append(cycle[int(t * IDLE_HZ) % len(cycle)])
             idle_frames += 1
             continue
         idx = int(i / fps * BOIL_HZ) % len(pool) if held and len(pool) > 1 else 0
@@ -484,7 +492,8 @@ def build_host_clip(
             "blinks": blinks_played,
             "idle_frames": idle_frames,
             "has_blink": bool(blink),
-            "has_idle": bool(idle),
+            "has_idle": bool(idle_cycles),
+            "idle_cycles": len(idle_cycles),
         })
 
     frames_to_alpha_clip(frames, fps, out_path)

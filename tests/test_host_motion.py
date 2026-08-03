@@ -4,10 +4,20 @@
 plus a boil on held frames. Over a forty-minute cut that is a face that only
 ever talks, and it is the most-viewed element in the channel.
 
-`-blink` and `-idle` strips arrive by naming convention through the registry,
-the same way `-talk` does. The artwork has not shipped yet, so the bar these
-hold is twofold: the scheduling is right for when it does, and a kit without
-the strips renders exactly as it did before — silently, never raising.
+`-blink`, `-idle` and `-idle-b` strips arrive by naming convention through the
+registry, the same way `-talk` does — all twenty host shots now ship them.
+
+Three things are held here:
+
+* the scheduling — a blink never runs over an open mouth, never falls into a
+  rhythm, and two shots in one cut never blink together;
+* the silent degrade — a kit without the strips renders exactly as it did
+  before, because a face is never worth a failed cut;
+* the artwork contract — a dark card relights its strips along with itself,
+  or every blink on the closing card flashes a black frame.
+
+The f01-is-the-base-still invariant lives in `test_ingest.py`, next to the
+ingest step that makes it true.
 """
 
 from __future__ import annotations
@@ -321,3 +331,45 @@ class _EmptyScript:
 
     def evidence_events(self):
         return []
+
+
+def test_a_dark_card_relights_its_micro_motion_too():
+    """A hand-maintained twin list is how a strip gets left behind.
+
+    `closing-card` is one of the seven dark cards. Relit while
+    `closing-card-blink` stayed dark, the shot reads light and every blink
+    flashes a black frame — worse than the pop the batch was re-exported to
+    remove. The targets are expanded from the registry, so a suffix nobody
+    updated a list for is still covered.
+    """
+    import json
+
+    from config import Settings
+    from scripts.restyle_dark_cards import DARK_CARDS, dark_targets
+
+    registry = json.loads(
+        (Settings().assets_dir / "kit" / "kit-registry.json")
+        .read_text(encoding="utf-8"))
+    targets = dark_targets(registry)
+    assert set(DARK_CARDS) <= set(targets), "every named card must be a target"
+    strips = [t for t in targets if t not in DARK_CARDS]
+    assert strips, "the dark cards ship micro-motion — it has to be relit too"
+    for key in strips:
+        assert key in registry["assets"]
+
+
+def test_every_relit_card_and_strip_reads_light():
+    """Measured, after the fact, on the kit that is actually shipped."""
+    import json
+
+    from config import Settings
+    from scripts.restyle_dark_cards import _paths, dark_targets, mean_luminance
+
+    kit_dir = Settings().assets_dir / "kit"
+    registry = json.loads((kit_dir / "kit-registry.json").read_text(encoding="utf-8"))
+    dark = []
+    for key in dark_targets(registry):
+        for path in _paths(registry, key, kit_dir):
+            if path.exists() and mean_luminance(path) < 128:
+                dark.append(str(path.relative_to(kit_dir)))
+    assert dark == [], f"still dark in a light kit: {dark}"

@@ -83,8 +83,11 @@ pipeline/
   kit_frames.py          the generic frame player (static/boil/one-shot/loop)
                          and the slot filler (exportScale, slotFrameDelta)
   host.py                Dennis on screen: the kit's -talk pairs, flapped to
-                         the voice-over, in banks per role; -blink / -idle
-                         strips resolve by the same naming convention
+                         the voice-over, in banks per role; -blink / -idle /
+                         -idle-b strips resolve by the same naming convention.
+                         Every strip's f01 IS the shot's own still, byte for
+                         byte, so a blink starts and lands without a pop —
+                         Kit.micro_motion_drift() fails the ingest otherwise
   parser_long.py         offset-aware tag tokenizer + ASSET-prompt trailer
   tagging.py             the shared tag tokenizer (both formats) + chart style
   tts.py                 ElevenLabs with-timestamps client + cache + budgets

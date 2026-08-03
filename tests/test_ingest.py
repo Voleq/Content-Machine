@@ -152,8 +152,13 @@ def test_the_stings_family_landed_through_the_manifest_route():
 
     kit = load_kit(ROOT / "assets")
     strips = kit.family("stings")
-    if not strips:
-        pytest.skip("stings have not been ingested into this checkout")
+    # Asserted, not skipped. These are committed artwork, so an empty family
+    # means the last ingest ran without the stings delivery on its command
+    # line — the ingest is a full rebuild, so a source left off is a family
+    # deleted. That happened, and a skip is what let it through.
+    assert strips, (
+        "no stings in the kit — re-run the ingest with EVERY delivery in the "
+        "one command (see scripts/ingest_kit.py)")
     assert len(strips) >= 8
     for key in strips:
         asset = kit.get(key)
@@ -168,7 +173,170 @@ def test_the_stings_ship_both_orientations():
 
     kit = load_kit(ROOT / "assets")
     strips = [kit.get(k) for k in kit.family("stings")]
-    if not strips:
-        pytest.skip("stings have not been ingested into this checkout")
+    assert strips, "no stings in the kit — see the note above"
     assert {"16:9", "9:16"} <= {a.aspect for a in strips}, \
         "a 9:16 short needs a strip it does not have to crop"
+
+
+# --------------------------------------------------------------------------
+# Micro-motion: f01 IS the base still.
+#
+# The whole reason the batch was re-exported. Every sequence starts on a byte
+# copy of the shot it animates, so a blink can begin on any hold and land back
+# on the shot's own pose with nothing moving but the eyelid. Ship a base still
+# that went through a lossy re-encode and the property is gone — palette
+# quantisation moved every pixel in `at-desk-open` by about a level and 0.85%
+# of them by up to 18, which reads as a pop the moment the strip starts.
+# --------------------------------------------------------------------------
+
+MOTION_MANIFEST = {
+    "family": "host-motion",
+    "canvas": {"width": 1600, "height": 900, "exportScale": 1},
+    "fps": {"blink": 12, "idle": 8, "idleB": 8},
+    "assets": [{
+        "name": "chapters/cold-open/at-desk-open",
+        "baseStill": "chapters/cold-open/at-desk-open.png",
+        "sequences": {
+            "blink": {"files": [f"chapters/cold-open/at-desk-open-blink_f0{i}.png"
+                                for i in (1, 2, 3)],
+                      "frameCount": 3, "fps": 12, "playback": "one-shot"},
+            "idle": {"files": [f"chapters/cold-open/at-desk-open-idle_f0{i}.png"
+                               for i in (1, 2, 3, 4)],
+                     "frameCount": 4, "fps": 8, "playback": "loop"},
+            "idleB": {"files": [f"chapters/cold-open/at-desk-open-idle-b_f0{i}.png"
+                                for i in (1, 2, 3, 4)],
+                      "frameCount": 4, "fps": 8, "playback": "loop"},
+        },
+    }],
+}
+
+
+def test_the_motion_shape_is_recognised():
+    from scripts.ingest_kit import is_host_motion
+
+    assert is_host_motion(MOTION_MANIFEST)
+    assert not is_host_motion({"family": "stings",
+                               "assets": [{"name": "x", "files": ["x.png"]}]})
+
+
+def test_each_sequence_registers_beside_the_shot_it_animates(tmp_path):
+    """`-blink` next to the shot, not under a `host-motion` family.
+
+    Registered under the delivery's own family the strips would sit somewhere
+    nothing looks — the renderer resolves them by asking for `<key>-blink`.
+    """
+    from scripts.ingest_kit import entries_from_host_motion
+
+    entries, root = entries_from_host_motion(tmp_path / "manifest.json",
+                                             MOTION_MANIFEST)
+    assert set(entries) == {
+        "chapters/cold-open/at-desk-open-blink",
+        "chapters/cold-open/at-desk-open-idle",
+        "chapters/cold-open/at-desk-open-idle-b",
+    }
+    blink = entries["chapters/cold-open/at-desk-open-blink"]
+    assert blink["family"] == "chapters/cold-open"
+    assert blink["baseAsset"] == "chapters/cold-open/at-desk-open"
+    assert blink["frameCount"] == 3 and blink["fps"] == 12
+    assert blink["frames"][0].endswith("at-desk-open-blink_f01.png")
+
+
+def test_f01_is_kept_in_the_frame_list(tmp_path):
+    """It is a byte copy of the base still and it still has to ship.
+
+    Dropping the duplicate frame is the obvious size saving and it destroys
+    the property: the strip could no longer start or stop on the shot's pose.
+    """
+    from scripts.ingest_kit import entries_from_host_motion
+
+    entries, _ = entries_from_host_motion(tmp_path / "m.json", MOTION_MANIFEST)
+    idle = entries["chapters/cold-open/at-desk-open-idle"]
+    assert len(idle["frames"]) == 4
+    assert idle["frames"][0].endswith("_f01.png")
+
+
+def test_the_shipped_kit_holds_the_invariant():
+    """The real kit, checked the way the ingest checks it."""
+    from config import Settings
+    from pipeline.kit import load_kit
+
+    kit = load_kit(Settings().assets_dir)
+    pairs = kit.micro_motion_pairs()
+    assert pairs, "the motion batch is ingested — strips must be registered"
+    assert kit.micro_motion_drift() == []
+
+
+def test_drift_is_detected_when_the_base_is_re_encoded(tmp_path):
+    """The failure the check exists for, reproduced.
+
+    A lossless re-save with different bytes is enough: the drawing is
+    identical and the property is still gone.
+    """
+    import json
+
+    from PIL import Image
+
+    from pipeline.kit import Kit
+
+    root = tmp_path / "kit"
+    (root / "a").mkdir(parents=True)
+    img = Image.new("RGBA", (24, 24), (30, 30, 30, 255))
+    img.save(root / "a/shot.png")
+    (root / "a/shot-blink_f01.png").write_bytes((root / "a/shot.png").read_bytes())
+    for i in (2, 3):
+        Image.new("RGBA", (24, 24), (60, 60, 60, 255)).save(
+            root / f"a/shot-blink_f0{i}.png")
+
+    def entry(name, frames, base=""):
+        e = {"family": "a", "name": name, "frames": frames,
+             "frameCount": len(frames), "playback": "static", "fps": 12,
+             "canvas": {"w": 24, "h": 24}, "aspect": "1:1", "alpha": True,
+             "slots": [], "source": "t"}
+        if base:
+            e["baseAsset"] = base
+        return e
+
+    (root / "kit-registry.json").write_text(json.dumps({
+        "kit": "t", "version": 2, "roots": {"t": ""}, "assets": {
+            "a/shot": entry("shot", ["a/shot.png"]),
+            "a/shot-blink": entry(
+                "shot-blink", [f"a/shot-blink_f0{i}.png" for i in (1, 2, 3)],
+                base="a/shot"),
+        }}), encoding="utf-8")
+
+    assert Kit(root).micro_motion_drift() == [], "byte-identical must pass"
+
+    # Re-encode the base. Same pixels, different bytes.
+    Image.open(root / "a/shot.png").save(root / "a/shot.png", optimize=True)
+    if (root / "a/shot.png").read_bytes() == (root / "a/shot-blink_f01.png").read_bytes():
+        pytest.skip("this Pillow re-encodes to identical bytes")
+    drift = Kit(root).micro_motion_drift()
+    assert len(drift) == 1 and "not byte-identical" in drift[0]
+    assert drift[0] in Kit(root).verify(), "verify() must carry it"
+
+
+def test_the_convention_alone_is_enough_to_hold_a_strip_to_the_rule(tmp_path):
+    """A strip with no `baseAsset` is still checked, off its name."""
+    import json
+
+    from PIL import Image
+
+    from pipeline.kit import Kit
+
+    root = tmp_path / "kit"
+    (root / "a").mkdir(parents=True)
+    Image.new("RGBA", (8, 8), (1, 2, 3, 255)).save(root / "a/shot.png")
+    Image.new("RGBA", (8, 8), (9, 9, 9, 255)).save(root / "a/shot-idle_f01.png")
+    Image.new("RGBA", (8, 8), (9, 9, 9, 255)).save(root / "a/shot-idle_f02.png")
+    e = lambda n, f: {"family": "a", "name": n, "frames": f,  # noqa: E731
+                      "frameCount": len(f), "playback": "loop", "fps": 8,
+                      "canvas": {"w": 8, "h": 8}, "aspect": "1:1",
+                      "alpha": True, "slots": [], "source": "t"}
+    (root / "kit-registry.json").write_text(json.dumps({
+        "kit": "t", "version": 2, "roots": {"t": ""}, "assets": {
+            "a/shot": e("shot", ["a/shot.png"]),
+            "a/shot-idle": e("shot-idle", ["a/shot-idle_f01.png",
+                                           "a/shot-idle_f02.png"]),
+        }}), encoding="utf-8")
+    drift = Kit(root).micro_motion_drift()
+    assert len(drift) == 1 and drift[0].startswith("a/shot-idle:")

@@ -191,6 +191,9 @@ class Asset:
     slot_frame_delta: SlotFrameDelta | None = None
     alias_of: str = ""
     dead_mouth_flap: bool = False
+    # For a micro-motion strip: the shot it animates. Its f01 must stay
+    # byte-identical to that shot's still.
+    base_asset: str = ""
 
     @property
     def animated(self) -> bool:
@@ -281,6 +284,7 @@ class Kit:
             slot_frame_delta=SlotFrameDelta.from_registry(raw.get("slotFrameDelta")),
             alias_of=str(raw.get("aliasOf", "")),
             dead_mouth_flap=bool(raw.get("deadMouthFlap", False)),
+            base_asset=str(raw.get("baseAsset", "")),
         )
 
     # ---------------------------------------------------------------- basics
@@ -468,6 +472,61 @@ class Kit:
             return None
         return base, talk
 
+    # Every micro-motion strip declares the shot it animates. `-idle-b` is the
+    # second idle cycle, alternated with `-idle` so a long hold never reads as
+    # one repeating loop.
+    MICRO_SUFFIXES = ("-blink", "-idle", "-idle-b")
+
+    def micro_motion_pairs(self) -> list[tuple[str, str]]:
+        """`(strip key, base key)` for every micro-motion strip registered.
+
+        Read off the strip's own `baseAsset` where ingest recorded one, and
+        off the naming convention otherwise — so a hand-added strip is held to
+        the same rule as an ingested one.
+        """
+        out: list[tuple[str, str]] = []
+        for key, asset in sorted(self._assets.items()):
+            base = getattr(asset, "base_asset", "")
+            if not base:
+                for suffix in self.MICRO_SUFFIXES:
+                    if key.endswith(suffix):
+                        base = key[: -len(suffix)]
+                        break
+            if base and base in self._assets:
+                out.append((key, base))
+        return out
+
+    def micro_motion_drift(self) -> list[str]:
+        """Strips whose f01 is not byte-identical to the shot it belongs to.
+
+        This is the invariant the motion batch was re-exported to satisfy, and
+        the only one that cannot be recovered by looking at the artwork: f01 is
+        supposed to BE the base still, so a blink can start on any hold and
+        land back on the shot's own pose with nothing moving but the eyelid.
+
+        It is a byte comparison rather than a pixel one on purpose. The failure
+        this catches is a base still that went through a lossy re-encode —
+        palette quantisation moved every pixel in the frame by about a level,
+        which is invisible in a diff and reads on screen as a pop the moment
+        the strip starts. Two files that are the same drawing but not the same
+        bytes have already lost the property.
+        """
+        out: list[str] = []
+        for key, base in self.micro_motion_pairs():
+            strip, shot = self._assets[key], self._assets[base]
+            if not strip.frames or not shot.frames:
+                continue
+            f01, still = strip.frames[0], shot.frames[0]
+            if not f01.is_file() or not still.is_file():
+                continue
+            if f01.read_bytes() == still.read_bytes():
+                continue
+            out.append(
+                f"{key}: f01 is not byte-identical to {base} — a blink or "
+                f"idle that starts on this shot will pop "
+                f"({f01.name} vs {still.name})")
+        return out
+
     def micro_motion(self, key: str, suffix: str) -> Asset | None:
         """A ``-blink`` / ``-idle`` strip twinned with `key`, or None.
 
@@ -521,6 +580,7 @@ class Kit:
                     problems.append(
                         f"{key}: registry lists {frame.relative_to(self.root)} "
                         f"but it is not on disk")
+        problems += self.micro_motion_drift()
         if not self.root.exists():
             return problems
         for png in sorted(self.root.rglob("*.png")):

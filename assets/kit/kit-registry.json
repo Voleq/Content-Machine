@@ -5,7 +5,8 @@
  "roots": {
   "kit-v1": "assets/kit/",
   "shorts": "assets/kit/shorts/",
-  "manifest:stings": "assets/kit/"
+  "manifest:stings": "assets/kit/",
+  "manifest:host-motion": "assets/kit/"
  },
  "note": "Unified registry. key = family/asset. kit-v1 assets have NO text slots (they are fixed drawings). shorts assets have slots in CANVAS coords and are exported at 2x - multiply by exportScale when compositing.",
  "palette": {
@@ -9277,6 +9278,1094 @@
     4
    ],
    "direction": "torn paper edge, diagonal sweep \u2014 vertical cut"
+  },
+  "chapters/the-numbers/chart-annotated-blink": {
+   "family": "chapters/the-numbers",
+   "name": "chart-annotated-blink",
+   "frames": [
+    "chapters/the-numbers/chart-annotated-blink_f01.png",
+    "chapters/the-numbers/chart-annotated-blink_f02.png",
+    "chapters/the-numbers/chart-annotated-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/the-numbers/chart-annotated",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/the-numbers/chart-annotated-idle": {
+   "family": "chapters/the-numbers",
+   "name": "chart-annotated-idle",
+   "frames": [
+    "chapters/the-numbers/chart-annotated-idle_f01.png",
+    "chapters/the-numbers/chart-annotated-idle_f02.png",
+    "chapters/the-numbers/chart-annotated-idle_f03.png",
+    "chapters/the-numbers/chart-annotated-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/the-numbers/chart-annotated",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/the-numbers/chart-annotated-idle-b": {
+   "family": "chapters/the-numbers",
+   "name": "chart-annotated-idle-b",
+   "frames": [
+    "chapters/the-numbers/chart-annotated-idle-b_f01.png",
+    "chapters/the-numbers/chart-annotated-idle-b_f02.png",
+    "chapters/the-numbers/chart-annotated-idle-b_f03.png",
+    "chapters/the-numbers/chart-annotated-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/the-numbers/chart-annotated",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/the-numbers/chart-bars-blink": {
+   "family": "chapters/the-numbers",
+   "name": "chart-bars-blink",
+   "frames": [
+    "chapters/the-numbers/chart-bars-blink_f01.png",
+    "chapters/the-numbers/chart-bars-blink_f02.png",
+    "chapters/the-numbers/chart-bars-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/the-numbers/chart-bars",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/the-numbers/chart-bars-idle": {
+   "family": "chapters/the-numbers",
+   "name": "chart-bars-idle",
+   "frames": [
+    "chapters/the-numbers/chart-bars-idle_f01.png",
+    "chapters/the-numbers/chart-bars-idle_f02.png",
+    "chapters/the-numbers/chart-bars-idle_f03.png",
+    "chapters/the-numbers/chart-bars-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/the-numbers/chart-bars",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/the-numbers/chart-bars-idle-b": {
+   "family": "chapters/the-numbers",
+   "name": "chart-bars-idle-b",
+   "frames": [
+    "chapters/the-numbers/chart-bars-idle-b_f01.png",
+    "chapters/the-numbers/chart-bars-idle-b_f02.png",
+    "chapters/the-numbers/chart-bars-idle-b_f03.png",
+    "chapters/the-numbers/chart-bars-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/the-numbers/chart-bars",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/valuation/pe-history-blink": {
+   "family": "chapters/valuation",
+   "name": "pe-history-blink",
+   "frames": [
+    "chapters/valuation/pe-history-blink_f01.png",
+    "chapters/valuation/pe-history-blink_f02.png",
+    "chapters/valuation/pe-history-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/valuation/pe-history",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/valuation/pe-history-idle": {
+   "family": "chapters/valuation",
+   "name": "pe-history-idle",
+   "frames": [
+    "chapters/valuation/pe-history-idle_f01.png",
+    "chapters/valuation/pe-history-idle_f02.png",
+    "chapters/valuation/pe-history-idle_f03.png",
+    "chapters/valuation/pe-history-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/valuation/pe-history",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/valuation/dennis-weighing-blink": {
+   "family": "chapters/valuation",
+   "name": "dennis-weighing-blink",
+   "frames": [
+    "chapters/valuation/dennis-weighing-blink_f01.png",
+    "chapters/valuation/dennis-weighing-blink_f02.png",
+    "chapters/valuation/dennis-weighing-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/valuation/dennis-weighing",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/valuation/dennis-weighing-idle": {
+   "family": "chapters/valuation",
+   "name": "dennis-weighing-idle",
+   "frames": [
+    "chapters/valuation/dennis-weighing-idle_f01.png",
+    "chapters/valuation/dennis-weighing-idle_f02.png",
+    "chapters/valuation/dennis-weighing-idle_f03.png",
+    "chapters/valuation/dennis-weighing-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/valuation/dennis-weighing",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/bull-vs-bear/dennis-both-hands-blink": {
+   "family": "chapters/bull-vs-bear",
+   "name": "dennis-both-hands-blink",
+   "frames": [
+    "chapters/bull-vs-bear/dennis-both-hands-blink_f01.png",
+    "chapters/bull-vs-bear/dennis-both-hands-blink_f02.png",
+    "chapters/bull-vs-bear/dennis-both-hands-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/bull-vs-bear/dennis-both-hands",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/bull-vs-bear/dennis-both-hands-idle": {
+   "family": "chapters/bull-vs-bear",
+   "name": "dennis-both-hands-idle",
+   "frames": [
+    "chapters/bull-vs-bear/dennis-both-hands-idle_f01.png",
+    "chapters/bull-vs-bear/dennis-both-hands-idle_f02.png",
+    "chapters/bull-vs-bear/dennis-both-hands-idle_f03.png",
+    "chapters/bull-vs-bear/dennis-both-hands-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/bull-vs-bear/dennis-both-hands",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/moat/dennis-inspects-blink": {
+   "family": "chapters/moat",
+   "name": "dennis-inspects-blink",
+   "frames": [
+    "chapters/moat/dennis-inspects-blink_f01.png",
+    "chapters/moat/dennis-inspects-blink_f02.png",
+    "chapters/moat/dennis-inspects-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/moat/dennis-inspects",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/moat/dennis-inspects-idle": {
+   "family": "chapters/moat",
+   "name": "dennis-inspects-idle",
+   "frames": [
+    "chapters/moat/dennis-inspects-idle_f01.png",
+    "chapters/moat/dennis-inspects-idle_f02.png",
+    "chapters/moat/dennis-inspects-idle_f03.png",
+    "chapters/moat/dennis-inspects-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/moat/dennis-inspects",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/short-interest/dennis-eyes-the-squeeze-blink": {
+   "family": "chapters/short-interest",
+   "name": "dennis-eyes-the-squeeze-blink",
+   "frames": [
+    "chapters/short-interest/dennis-eyes-the-squeeze-blink_f01.png",
+    "chapters/short-interest/dennis-eyes-the-squeeze-blink_f02.png",
+    "chapters/short-interest/dennis-eyes-the-squeeze-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/short-interest/dennis-eyes-the-squeeze",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/short-interest/dennis-eyes-the-squeeze-idle": {
+   "family": "chapters/short-interest",
+   "name": "dennis-eyes-the-squeeze-idle",
+   "frames": [
+    "chapters/short-interest/dennis-eyes-the-squeeze-idle_f01.png",
+    "chapters/short-interest/dennis-eyes-the-squeeze-idle_f02.png",
+    "chapters/short-interest/dennis-eyes-the-squeeze-idle_f03.png",
+    "chapters/short-interest/dennis-eyes-the-squeeze-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/short-interest/dennis-eyes-the-squeeze",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/how-we-got-here/dennis-narrates-blink": {
+   "family": "chapters/how-we-got-here",
+   "name": "dennis-narrates-blink",
+   "frames": [
+    "chapters/how-we-got-here/dennis-narrates-blink_f01.png",
+    "chapters/how-we-got-here/dennis-narrates-blink_f02.png",
+    "chapters/how-we-got-here/dennis-narrates-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/how-we-got-here/dennis-narrates",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/how-we-got-here/dennis-narrates-idle": {
+   "family": "chapters/how-we-got-here",
+   "name": "dennis-narrates-idle",
+   "frames": [
+    "chapters/how-we-got-here/dennis-narrates-idle_f01.png",
+    "chapters/how-we-got-here/dennis-narrates-idle_f02.png",
+    "chapters/how-we-got-here/dennis-narrates-idle_f03.png",
+    "chapters/how-we-got-here/dennis-narrates-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/how-we-got-here/dennis-narrates",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/how-we-got-here/dennis-narrates-idle-b": {
+   "family": "chapters/how-we-got-here",
+   "name": "dennis-narrates-idle-b",
+   "frames": [
+    "chapters/how-we-got-here/dennis-narrates-idle-b_f01.png",
+    "chapters/how-we-got-here/dennis-narrates-idle-b_f02.png",
+    "chapters/how-we-got-here/dennis-narrates-idle-b_f03.png",
+    "chapters/how-we-got-here/dennis-narrates-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/how-we-got-here/dennis-narrates",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/valuation/dennis-shrug-value-blink": {
+   "family": "chapters/valuation",
+   "name": "dennis-shrug-value-blink",
+   "frames": [
+    "chapters/valuation/dennis-shrug-value-blink_f01.png",
+    "chapters/valuation/dennis-shrug-value-blink_f02.png",
+    "chapters/valuation/dennis-shrug-value-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/valuation/dennis-shrug-value",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/valuation/dennis-shrug-value-idle": {
+   "family": "chapters/valuation",
+   "name": "dennis-shrug-value-idle",
+   "frames": [
+    "chapters/valuation/dennis-shrug-value-idle_f01.png",
+    "chapters/valuation/dennis-shrug-value-idle_f02.png",
+    "chapters/valuation/dennis-shrug-value-idle_f03.png",
+    "chapters/valuation/dennis-shrug-value-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/valuation/dennis-shrug-value",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/valuation/dennis-shrug-value-idle-b": {
+   "family": "chapters/valuation",
+   "name": "dennis-shrug-value-idle-b",
+   "frames": [
+    "chapters/valuation/dennis-shrug-value-idle-b_f01.png",
+    "chapters/valuation/dennis-shrug-value-idle-b_f02.png",
+    "chapters/valuation/dennis-shrug-value-idle-b_f03.png",
+    "chapters/valuation/dennis-shrug-value-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/valuation/dennis-shrug-value",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/bull-vs-bear/dennis-torn-blink": {
+   "family": "chapters/bull-vs-bear",
+   "name": "dennis-torn-blink",
+   "frames": [
+    "chapters/bull-vs-bear/dennis-torn-blink_f01.png",
+    "chapters/bull-vs-bear/dennis-torn-blink_f02.png",
+    "chapters/bull-vs-bear/dennis-torn-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/bull-vs-bear/dennis-torn",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/bull-vs-bear/dennis-torn-idle": {
+   "family": "chapters/bull-vs-bear",
+   "name": "dennis-torn-idle",
+   "frames": [
+    "chapters/bull-vs-bear/dennis-torn-idle_f01.png",
+    "chapters/bull-vs-bear/dennis-torn-idle_f02.png",
+    "chapters/bull-vs-bear/dennis-torn-idle_f03.png",
+    "chapters/bull-vs-bear/dennis-torn-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/bull-vs-bear/dennis-torn",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/bull-vs-bear/dennis-torn-idle-b": {
+   "family": "chapters/bull-vs-bear",
+   "name": "dennis-torn-idle-b",
+   "frames": [
+    "chapters/bull-vs-bear/dennis-torn-idle-b_f01.png",
+    "chapters/bull-vs-bear/dennis-torn-idle-b_f02.png",
+    "chapters/bull-vs-bear/dennis-torn-idle-b_f03.png",
+    "chapters/bull-vs-bear/dennis-torn-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/bull-vs-bear/dennis-torn",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/cold-open/desk-lean-blink": {
+   "family": "chapters/cold-open",
+   "name": "desk-lean-blink",
+   "frames": [
+    "chapters/cold-open/desk-lean-blink_f01.png",
+    "chapters/cold-open/desk-lean-blink_f02.png",
+    "chapters/cold-open/desk-lean-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/desk-lean",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/desk-lean-idle": {
+   "family": "chapters/cold-open",
+   "name": "desk-lean-idle",
+   "frames": [
+    "chapters/cold-open/desk-lean-idle_f01.png",
+    "chapters/cold-open/desk-lean-idle_f02.png",
+    "chapters/cold-open/desk-lean-idle_f03.png",
+    "chapters/cold-open/desk-lean-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/desk-lean",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/cold-open/desk-lean-idle-b": {
+   "family": "chapters/cold-open",
+   "name": "desk-lean-idle-b",
+   "frames": [
+    "chapters/cold-open/desk-lean-idle-b_f01.png",
+    "chapters/cold-open/desk-lean-idle-b_f02.png",
+    "chapters/cold-open/desk-lean-idle-b_f03.png",
+    "chapters/cold-open/desk-lean-idle-b_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idleB",
+   "baseAsset": "chapters/cold-open/desk-lean",
+   "note": "Second idle cycle \u2014 leans the other way first, settle off-phase, shallower sway. Alternate with idle so a long hold never reads as one repeating loop."
+  },
+  "chapters/cold-open/at-desk-open-blink": {
+   "family": "chapters/cold-open",
+   "name": "at-desk-open-blink",
+   "frames": [
+    "chapters/cold-open/at-desk-open-blink_f01.png",
+    "chapters/cold-open/at-desk-open-blink_f02.png",
+    "chapters/cold-open/at-desk-open-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/at-desk-open",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/at-desk-open-idle": {
+   "family": "chapters/cold-open",
+   "name": "at-desk-open-idle",
+   "frames": [
+    "chapters/cold-open/at-desk-open-idle_f01.png",
+    "chapters/cold-open/at-desk-open-idle_f02.png",
+    "chapters/cold-open/at-desk-open-idle_f03.png",
+    "chapters/cold-open/at-desk-open-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/at-desk-open",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/cold-open/establishing-blink": {
+   "family": "chapters/cold-open",
+   "name": "establishing-blink",
+   "frames": [
+    "chapters/cold-open/establishing-blink_f01.png",
+    "chapters/cold-open/establishing-blink_f02.png",
+    "chapters/cold-open/establishing-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/establishing",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/establishing-idle": {
+   "family": "chapters/cold-open",
+   "name": "establishing-idle",
+   "frames": [
+    "chapters/cold-open/establishing-idle_f01.png",
+    "chapters/cold-open/establishing-idle_f02.png",
+    "chapters/cold-open/establishing-idle_f03.png",
+    "chapters/cold-open/establishing-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/establishing",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/cold-open/title-room-blink": {
+   "family": "chapters/cold-open",
+   "name": "title-room-blink",
+   "frames": [
+    "chapters/cold-open/title-room-blink_f01.png",
+    "chapters/cold-open/title-room-blink_f02.png",
+    "chapters/cold-open/title-room-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/title-room",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/title-room-idle": {
+   "family": "chapters/cold-open",
+   "name": "title-room-idle",
+   "frames": [
+    "chapters/cold-open/title-room-idle_f01.png",
+    "chapters/cold-open/title-room-idle_f02.png",
+    "chapters/cold-open/title-room-idle_f03.png",
+    "chapters/cold-open/title-room-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/title-room",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/cold-open/reframe-blink": {
+   "family": "chapters/cold-open",
+   "name": "reframe-blink",
+   "frames": [
+    "chapters/cold-open/reframe-blink_f01.png",
+    "chapters/cold-open/reframe-blink_f02.png",
+    "chapters/cold-open/reframe-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/reframe",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/reframe-idle": {
+   "family": "chapters/cold-open",
+   "name": "reframe-idle",
+   "frames": [
+    "chapters/cold-open/reframe-idle_f01.png",
+    "chapters/cold-open/reframe-idle_f02.png",
+    "chapters/cold-open/reframe-idle_f03.png",
+    "chapters/cold-open/reframe-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/reframe",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/cold-open/at-desk-tired-blink": {
+   "family": "chapters/cold-open",
+   "name": "at-desk-tired-blink",
+   "frames": [
+    "chapters/cold-open/at-desk-tired-blink_f01.png",
+    "chapters/cold-open/at-desk-tired-blink_f02.png",
+    "chapters/cold-open/at-desk-tired-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/cold-open/at-desk-tired",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/cold-open/at-desk-tired-idle": {
+   "family": "chapters/cold-open",
+   "name": "at-desk-tired-idle",
+   "frames": [
+    "chapters/cold-open/at-desk-tired-idle_f01.png",
+    "chapters/cold-open/at-desk-tired-idle_f02.png",
+    "chapters/cold-open/at-desk-tired-idle_f03.png",
+    "chapters/cold-open/at-desk-tired-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/cold-open/at-desk-tired",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/resigned-close/dennis-shrug-out-blink": {
+   "family": "chapters/resigned-close",
+   "name": "dennis-shrug-out-blink",
+   "frames": [
+    "chapters/resigned-close/dennis-shrug-out-blink_f01.png",
+    "chapters/resigned-close/dennis-shrug-out-blink_f02.png",
+    "chapters/resigned-close/dennis-shrug-out-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/resigned-close/dennis-shrug-out",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/resigned-close/dennis-shrug-out-idle": {
+   "family": "chapters/resigned-close",
+   "name": "dennis-shrug-out-idle",
+   "frames": [
+    "chapters/resigned-close/dennis-shrug-out-idle_f01.png",
+    "chapters/resigned-close/dennis-shrug-out-idle_f02.png",
+    "chapters/resigned-close/dennis-shrug-out-idle_f03.png",
+    "chapters/resigned-close/dennis-shrug-out-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/resigned-close/dennis-shrug-out",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/resigned-close/dennis-defeated-blink": {
+   "family": "chapters/resigned-close",
+   "name": "dennis-defeated-blink",
+   "frames": [
+    "chapters/resigned-close/dennis-defeated-blink_f01.png",
+    "chapters/resigned-close/dennis-defeated-blink_f02.png",
+    "chapters/resigned-close/dennis-defeated-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/resigned-close/dennis-defeated",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01."
+  },
+  "chapters/resigned-close/dennis-defeated-idle": {
+   "family": "chapters/resigned-close",
+   "name": "dennis-defeated-idle",
+   "frames": [
+    "chapters/resigned-close/dennis-defeated-idle_f01.png",
+    "chapters/resigned-close/dennis-defeated-idle_f02.png",
+    "chapters/resigned-close/dennis-defeated-idle_f03.png",
+    "chapters/resigned-close/dennis-defeated-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/resigned-close/dennis-defeated",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame."
+  },
+  "chapters/resigned-close/closing-card-blink": {
+   "family": "chapters/resigned-close",
+   "name": "closing-card-blink",
+   "frames": [
+    "chapters/resigned-close/closing-card-blink_f01.png",
+    "chapters/resigned-close/closing-card-blink_f02.png",
+    "chapters/resigned-close/closing-card-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/resigned-close/closing-card",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01.",
+   "meanLum": 207
+  },
+  "chapters/resigned-close/closing-card-idle": {
+   "family": "chapters/resigned-close",
+   "name": "closing-card-idle",
+   "frames": [
+    "chapters/resigned-close/closing-card-idle_f01.png",
+    "chapters/resigned-close/closing-card-idle_f02.png",
+    "chapters/resigned-close/closing-card-idle_f03.png",
+    "chapters/resigned-close/closing-card-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/resigned-close/closing-card",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame.",
+   "meanLum": 207
+  },
+  "chapters/resigned-close/outro-subscribe-blink": {
+   "family": "chapters/resigned-close",
+   "name": "outro-subscribe-blink",
+   "frames": [
+    "chapters/resigned-close/outro-subscribe-blink_f01.png",
+    "chapters/resigned-close/outro-subscribe-blink_f02.png",
+    "chapters/resigned-close/outro-subscribe-blink_f03.png"
+   ],
+   "frameCount": 3,
+   "playback": "one-shot",
+   "fps": 12,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "blink",
+   "baseAsset": "chapters/resigned-close/outro-subscribe",
+   "note": "One-shot. f01 IS the base still (byte copy) \u2014 hold it, fire f02\u2013f03, land back on f01.",
+   "meanLum": 207
+  },
+  "chapters/resigned-close/outro-subscribe-idle": {
+   "family": "chapters/resigned-close",
+   "name": "outro-subscribe-idle",
+   "frames": [
+    "chapters/resigned-close/outro-subscribe-idle_f01.png",
+    "chapters/resigned-close/outro-subscribe-idle_f02.png",
+    "chapters/resigned-close/outro-subscribe-idle_f03.png",
+    "chapters/resigned-close/outro-subscribe-idle_f04.png"
+   ],
+   "frameCount": 4,
+   "playback": "loop",
+   "fps": 8,
+   "canvas": {
+    "w": 1600,
+    "h": 900
+   },
+   "aspect": "16:9",
+   "alpha": true,
+   "slots": [],
+   "source": "manifest:host-motion",
+   "micromotion": "idle",
+   "baseAsset": "chapters/resigned-close/outro-subscribe",
+   "note": "Loops f01\u2192f04\u2192f01. f01 is the base still, so the loop can be entered or left on any frame.",
+   "meanLum": 207
   },
   "blanks/big-number-blank": {
    "family": "blanks",

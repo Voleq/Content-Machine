@@ -8,6 +8,36 @@ ingest is a rule, not a habit, so the next delivery lands the same way.
 
     python scripts/ingest_kit.py path/to/dennis-assets-min
 
+EVERY DELIVERY GOES IN THE SAME RUN. Step 1 deletes the kit and rebuilds it, so
+a source left off the command line is a family deleted — re-ingesting the base
+and the motion batch alone silently dropped all eleven transition stings, and
+the only thing that noticed was two skipped tests. The current set is::
+
+    python scripts/ingest_kit.py \\
+        <delivery>/dennis-assets-min \\
+        <delivery>/stings/memes/shorts \\
+        <delivery>/motion/memes/new\\ assets \\
+        --allow-palette
+
+`--allow-palette` is still needed because the base archive is size-optimised;
+see the fidelity note below.
+
+Three shapes of manifest are read, all by their own declared family:
+
+* the base registry (``kit-registry.json``),
+* a per-family ``manifest.json`` (the stings batch),
+* the host-motion delivery, whose assets carry ``sequences`` and register as
+  ``<shot>-blink`` / ``-idle`` / ``-idle-b`` BESIDE the shot they animate.
+
+FIDELITY. `f01` of every micro-motion sequence is a byte copy of the base
+still, which is what lets a blink start and stop on the shot's own pose. The
+base archive ships those same stills palette-quantised, so ingesting the
+motion batch against it would leave f01 differing from the shipped shot by
+about a level on every pixel — the pop, quieter. The motion delivery's f01 is
+the full-RGBA original, so it is promoted to BE the base still, and
+:meth:`pipeline.kit.Kit.micro_motion_drift` fails the ingest if the two ever
+stop matching byte for byte.
+
 What it does
 
 1. **Deletes ``assets/kit/`` outright**, then writes it fresh. Merging is what
@@ -148,6 +178,81 @@ def entries_from_manifest(mpath: Path, data: dict) -> tuple[dict[str, dict], Pat
             if raw.get(extra) is not None:
                 entry[extra] = raw[extra]
         out[f"{family}/{name}"] = entry
+    return out, mpath.parent
+
+
+# The host-motion delivery is a different SHAPE of manifest, not a different
+# family. Its assets are existing kit keys — `chapters/cold-open/at-desk-open`
+# — each carrying two or three sequences that register as `<key>-blink`,
+# `<key>-idle`, `<key>-idle-b`, beside the shot they belong to. That is the
+# same naming convention the `-talk` twins use, which is what lets the
+# renderer find them with no code change.
+MICRO_SUFFIX = {"blink": "-blink", "idle": "-idle", "idleB": "-idle-b"}
+
+
+def is_host_motion(data: dict) -> bool:
+    """True for the host-motion manifest shape (assets carry `sequences`)."""
+    assets = data.get("assets")
+    return bool(isinstance(assets, list) and assets
+                and isinstance(assets[0], dict) and assets[0].get("sequences"))
+
+
+def entries_from_host_motion(mpath: Path, data: dict) -> tuple[dict[str, dict], Path]:
+    """`{registry key: entry}` for a host-motion delivery, and its frame root.
+
+    Each sequence becomes its own registry entry under the base shot's OWN
+    family, so `chapters/cold-open/at-desk-open-blink` sits next to
+    `chapters/cold-open/at-desk-open`. Registering them under the delivery's
+    own `host-motion` family would put them somewhere nothing looks.
+
+    `f01` is deliberately kept in the frame list even though it is a byte
+    copy of the base still: the strip has to be able to start and stop on the
+    shot's own pose, and dropping the frame that makes that true is how the
+    pop gets reintroduced.
+    """
+    canvas = data.get("canvas") or {}
+    cw = int(canvas.get("width") or canvas.get("w") or 0)
+    ch = int(canvas.get("height") or canvas.get("h") or 0)
+    export_scale = int(canvas.get("exportScale") or 1)
+    fps_by_kind = data.get("fps") or {}
+
+    out: dict[str, dict] = {}
+    for raw in data.get("assets") or []:
+        key = str(raw.get("name") or "").strip().strip("/")
+        if not key or "/" not in key:
+            continue
+        family = key.rsplit("/", 1)[0]
+        for kind, seq in (raw.get("sequences") or {}).items():
+            suffix = MICRO_SUFFIX.get(kind)
+            if suffix is None:
+                print(f"unknown micro-motion sequence {kind!r} on {key} — "
+                      f"skipped", file=sys.stderr)
+                continue
+            files = [str(f) for f in (seq.get("files") or [])]
+            if not files:
+                continue
+            entry = {
+                "family": family,
+                "name": f"{key.rsplit('/', 1)[-1]}{suffix}",
+                "frames": [f"{family}/{Path(f).name}" for f in files],
+                "frameCount": int(seq.get("frameCount") or len(files)),
+                "playback": str(seq.get("playback") or "loop"),
+                "fps": int(seq.get("fps") or fps_by_kind.get(kind) or 12),
+                "canvas": {"w": cw, "h": ch},
+                "aspect": _aspect(cw, ch),
+                "alpha": True,
+                "slots": [],
+                "source": "manifest:host-motion",
+                # What this strip animates, and the shot it must not drift
+                # from. `baseAsset` is what the f01 identity check reads.
+                "micromotion": kind,
+                "baseAsset": key,
+            }
+            if export_scale > 1:
+                entry["exportScale"] = export_scale
+            if seq.get("note"):
+                entry["note"] = seq["note"]
+            out[f"{key}{suffix}"] = entry
     return out, mpath.parent
 
 
@@ -524,7 +629,26 @@ def main(argv: list[str] | None = None) -> int:
     # the case it exists for.
     existing_families = {str(v.get("family", "")) for v in assets.values()}
     merged_families: list[tuple[str, int]] = []
+    micro_entries: dict[str, dict] = {}
     for mpath, data in discover_manifests(sources):
+        # Micro-motion registers ALONGSIDE families the base registry already
+        # covers — that is the whole point of it — so it is handled before the
+        # "family already indexed" skip rather than falling foul of it.
+        if is_host_motion(data):
+            entries, froot = entries_from_host_motion(mpath, data)
+            if not entries:
+                continue
+            source = "manifest:host-motion"
+            src_root[source] = froot         # frames are `<family>/<file>`
+            dst_rel[source] = Path(".")
+            registry.setdefault("roots", {})[source] = "assets/kit/"
+            assets.update(entries)
+            for key in entries:
+                root_for[key] = froot
+            micro_entries.update(entries)
+            merged_families.append(("host-motion", len(entries)))
+            continue
+
         entries, froot = entries_from_manifest(mpath, data)
         if not entries:
             continue
@@ -686,6 +810,42 @@ def main(argv: list[str] | None = None) -> int:
             dst.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(base_in / frame, dst)
             copied += 1
+
+    # ---- the base still IS f01 ----------------------------------------
+    #
+    # Design exports every micro-motion sequence with `f01` a byte copy of the
+    # base still, so a blink can start and stop on the shot's own pose without
+    # a pop. That only holds if the base still the pipeline SHIPS is the same
+    # file — and the shipped bases came from the size-optimised archive, which
+    # palette-quantises them. Measured on `at-desk-open`: the whole frame
+    # shifts by about a level and 0.85% of pixels move by up to 18, so the
+    # pop comes back quieter rather than going away.
+    #
+    # The motion delivery's f01 is the full-RGBA original, so it is promoted
+    # to be the base still. That is not a repair of the invariant after the
+    # fact — it is what makes it true by construction, and `_verify` then has
+    # something real to check rather than a coincidence to hope for.
+    promoted: list[str] = []
+    for key, entry in sorted(micro_entries.items()):
+        base_key = entry.get("baseAsset")
+        base_entry = assets.get(base_key)
+        if base_entry is None:
+            print(f"micro-motion {key} names a base asset that is not in the "
+                  f"registry: {base_key}", file=sys.stderr)
+            return 2
+        f01 = (out / dst_rel[entry["source"]] / entry["frames"][0]).resolve()
+        base_png = (out / dst_rel[base_entry["source"]]
+                    / base_entry["frames"][0]).resolve()
+        if not f01.is_file():
+            print(f"micro-motion {key} has no f01 on disk at {f01}",
+                  file=sys.stderr)
+            return 2
+        if base_png.read_bytes() != f01.read_bytes():
+            base_png.write_bytes(f01.read_bytes())
+            promoted.append(base_key)
+    for base_key in sorted(set(promoted)):
+        print(f"promoted    : {base_key} <- its micro-motion f01 "
+              f"(full-RGBA original; the shipped copy was quantised)")
 
     # ---- the blank layouts, carried forward --------------------------
     # Read into memory before the rmtree, because the kit's own copy is

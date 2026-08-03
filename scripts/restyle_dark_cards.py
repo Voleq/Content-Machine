@@ -50,6 +50,14 @@ DARK_CARDS = (
     "short/card-noise",
 )
 
+# Twins that belong to a dark card and were drawn from the same dark original.
+# Expanded from the registry rather than named, because a hand-maintained list
+# of twins goes stale the moment a delivery adds a suffix: `-talk` had to be
+# written out above, and when the micro-motion batch landed, `closing-card`
+# was relit while `closing-card-blink` stayed dark — so the shot was light and
+# every blink flashed a black frame. The ingest's own f01 check caught it.
+TWIN_SUFFIXES = ("-talk", "-blink", "-idle", "-idle-b")
+
 PAPER = (242, 242, 239)
 INK = (35, 35, 38)
 
@@ -103,6 +111,18 @@ def mean_luminance(path: Path) -> float:
     return total / count if count else 255.0
 
 
+def dark_targets(registry: dict) -> list[str]:
+    """Every registered key that has to be relit: the named cards plus each
+    twin registered beside one, in a stable order and never duplicated."""
+    assets = registry.get("assets") or {}
+    out: list[str] = []
+    for key in DARK_CARDS:
+        for candidate in (key, *(f"{key}{s}" for s in TWIN_SUFFIXES)):
+            if candidate in assets and candidate not in out:
+                out.append(candidate)
+    return out
+
+
 def _paths(registry: dict, key: str, kit_dir: Path = KIT) -> list[Path]:
     entry = registry["assets"][key]
     base = kit_dir / "shorts" if entry["source"] == "shorts" else kit_dir
@@ -124,8 +144,9 @@ def main(argv: list[str] | None = None) -> int:
     registry_path = kit_dir / "kit-registry.json"
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
 
+    targets = dark_targets(registry)
     dark: list[str] = []
-    for key in DARK_CARDS:
+    for key in targets:
         measured: list[float] = []
         for path in _paths(registry, key, kit_dir):
             if not path.exists():
@@ -156,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\n{len(dark)} card(s) still dark in a light kit: "
               + ", ".join(dark), file=sys.stderr)
         return 1
-    print(f"\nall {len(DARK_CARDS)} cards are light-theme")
+    print(f"\nall {len(targets)} cards are light-theme")
     return 0
 
 

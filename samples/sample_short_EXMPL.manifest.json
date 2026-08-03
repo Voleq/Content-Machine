@@ -10,29 +10,32 @@
       {
         "name": "open",
         "shot": "chapters/cold-open/at-desk-open",
-        "blinks": 0,
+        "blinks": 1,
         "idle_frames": 0,
-        "has_blink": false,
-        "has_idle": false
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
       },
       {
         "name": "close",
         "shot": "chapters/resigned-close/dennis-defeated",
-        "blinks": 0,
+        "blinks": 1,
         "idle_frames": 0,
-        "has_blink": false,
-        "has_idle": false
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
       },
       {
         "name": "beat0",
         "shot": "chapters/valuation/pe-history",
-        "blinks": 0,
+        "blinks": 2,
         "idle_frames": 0,
-        "has_blink": false,
-        "has_idle": false
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
       }
     ],
-    "blinks": 0
+    "blinks": 4
   },
   "chart": {
     "source": "fixture",
