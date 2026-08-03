@@ -90,7 +90,11 @@ Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are n
 
 **Delivery — never reaches the screen, only the voice.** `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short. Write them NOW — they change what gets generated, so adding one later means paying for the voice twice.
 
-Budget: roughly 18–22 visual events across the whole short, of which 4–8 are your tags. Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
+Budget: roughly 22–30 visual events across the whole short. Two layers, and they are counted separately because they do different jobs:
+- **4–8 data beats** — a figure, a card, a filing, an article. These are READ, so each holds 3–8 seconds. More than eight and something gets cut short.
+- **8–14 punctuation beats** — a prop, a reaction, a transformation, a doodle. These ride over whatever is up for under two seconds and cost the viewer nothing. This is the layer that gives short-form its pulse, and it is the one scripts consistently under-write: eight is the FLOOR, not the target.
+
+Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
 
 ## HARD RULES
 1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.

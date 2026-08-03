@@ -65,10 +65,18 @@ def skeleton(payoff: float = 66.0) -> list[Cue]:
     ]
 
 
-# A tag load that lands the whole cut inside the 18-22 band: data beats with
+# A tag load that lands the whole cut inside every band: data beats with
 # punctuation between them, spread across the runtime.
-WELL_PACED = [punct(8.0), data(14.0), punct(22.0), data(28.0),
-              punct(38.0), data(44.0), punct(52.0), punct(60.0)]
+#
+# Reloaded when the punctuation target went up. The old version — five
+# reactions and three figures — sat inside the single combined band it was
+# written against, and that was the point of splitting the bands: a cut can
+# hold the total budget while the layer that carries the pulse runs at half
+# the density the format wants. A reference cut has to meet the contract it
+# is the reference for.
+WELL_PACED = [punct(6.0), punct(9.0), data(14.0), punct(20.0), punct(24.0),
+              data(30.0), punct(36.0), punct(40.0), data(46.0), punct(53.0),
+              punct(57.0), punct(61.0)]
 
 
 def by_kind(cues: list[Cue], kind: CueKind) -> list[Cue]:
@@ -238,8 +246,8 @@ def test_a_well_populated_short_is_not_warned_about_at_all():
 
 @pytest.mark.parametrize("duration", [45.0, 60.0, 75.0, 90.0])
 def test_the_band_scales_with_the_runtime(duration):
-    """18-22 per 75s, not 18-22 per video: a 45-second cut with 20 events is
-    frantic and a 90-second one with 20 is fine."""
+    """Per 75s, not per video: a 45-second cut with 20 events is frantic and
+    a 90-second one with 20 is fine."""
     lo, hi = SHORT_EVENTS_PER_75S
     _, warnings = plan_short_pacing(skeleton() + [punct(20.0)], duration)
     band = [w for w in warnings if "band" in w]
@@ -252,11 +260,26 @@ def test_the_band_scales_with_the_runtime(duration):
 # --------------------------------------------------------------------------
 
 
-def test_a_short_with_no_tags_is_returned_untouched():
+def test_a_short_with_no_tags_is_checked_like_any_other():
+    """A script that tagged NOTHING is the worst case, not an exempt one.
+
+    This used to return early and untouched: no host cadence, no counts, no
+    warnings. So the one cut the pacing contract was written for — four fixed
+    cards and a face for a minute — was the single cut it never looked at.
+    """
     cues = skeleton()
     out, warnings = plan_short_pacing(list(cues), DURATION)
-    assert [c.kind for c in out] == [c.kind for c in cues]
-    assert warnings == []
+    assert any("slideshow" in w for w in warnings), warnings
+    assert any("punctuation beats" in w for w in warnings), warnings
+
+
+def test_a_short_with_no_tags_keeps_every_fixed_beat():
+    """Checking it must not cost it anything it had."""
+    cues = skeleton()
+    out, _ = plan_short_pacing(list(cues), DURATION)
+    for c in cues:
+        assert c.kind in [o.kind for o in out], f"{c.kind} was dropped"
+    assert [c.t for c in out] == sorted(c.t for c in out)
 
 
 def test_the_output_stays_sorted_and_keeps_the_fixed_beats():

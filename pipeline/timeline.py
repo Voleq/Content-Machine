@@ -419,8 +419,11 @@ def plan_short_pacing(
        it, or is dropped.
     4. **Dennis every four to five beats.** A host return is inserted in the
        gap after the fourth consecutive evidence beat.
-    5. The event count is checked against the 18-22-per-75s band and warned
-       about, never enforced — the script is the operator's call.
+    5. The counts are checked against their per-75s bands and warned about,
+       never enforced — the script is the operator's call. Three bands, not
+       one: the total, and then the data and punctuation layers separately,
+       because a cut can sit inside the total while the layer that carries
+       the pulse runs at half the density the format wants.
     """
     warnings: list[str] = []
     evidence = sorted(
