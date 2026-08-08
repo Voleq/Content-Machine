@@ -530,15 +530,17 @@ env var, case-insensitive).
   the backgrounds, and the meme + doodle placeholders with the
   Claude-Design / licensed kit for production polish; everything is
   normalized on ingest.
-- **Placeholder AUDIO says so.** Every wav in `assets/sfx` is an ffmpeg
-  oscillator until `scripts/fetch_sfx.py` replaces it — that script pulls
-  licence-clean effects for all 14 cue keys plus the room bed, normalises
-  each to one peak, and records source/licence/author per file in
+- **Placeholder AUDIO cannot be published.** Every wav in `assets/sfx` is an
+  ffmpeg oscillator until `scripts/fetch_sfx.py` replaces it — that script
+  pulls licence-clean effects for all 14 cue keys plus the room bed,
+  normalises each to one peak, and records source/licence/author per file in
   `assets/sfx/SOURCES.json`. A file with no provenance entry counts as
-  generated, and both renderers log a one-line `PLACEHOLDER AUDIO` banner
-  when they are about to play one — the same treatment mock data gets, so a
-  video that sounds like a synthesiser is obvious from the log rather than
-  from listening to it after upload.
+  generated. Both renderers log a one-line `PLACEHOLDER AUDIO` banner, and
+  the same list is a **gate** (`pipeline.gates.check_audio`): a blocking
+  finding in the validation report the operator approves from whenever a
+  FINAL render outside `MOCK_MODE` would play one, a warning in `MOCK_MODE`
+  and on drafts — which is what the offline suite runs on. A banner is
+  discipline; the block is the guarantee.
 - **Draft renders sit behind the same approval gate in live mode** — the
   first LONG render (draft or final) is what triggers the single paid TTS
   call; after that, drafts and re-renders are free from cache.

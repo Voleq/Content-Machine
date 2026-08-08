@@ -4,7 +4,7 @@ Operator involvement should stay near zero, so these run unprompted between
 approval and spend. Silence means proceed; every finding carries a line
 reference so it can be acted on without hunting.
 
-Five gates, four of them free and deterministic:
+Six gates, five of them free and deterministic:
 
 * **fact-check** — every number the script says out loud, re-read against the
   loaded `CompanyData`. This is the main credibility risk: a writer that
@@ -14,6 +14,9 @@ Five gates, four of them free and deterministic:
   marks, a vendor name reaching screen text. It never counts jokes; density
   is a matter for the writer, not a linter.
 * **data freshness** — refuses a render built on a stale snapshot.
+* **audio** — refuses a final render that would publish synthesised
+  placeholder effects. A banner in the log was the whole defence before this,
+  which is discipline rather than a guarantee.
 * **kit doctor** — unresolved tag keys, plus which kit families go unused,
   so the library grows from real gaps rather than guesses.
 * **skeptic** — an LLM read of the finished script as a hostile investor.
@@ -434,6 +437,51 @@ def _parse_as_of(as_of: str) -> date | None:
 
 
 # --------------------------------------------------------------------------
+# Placeholder audio.
+# --------------------------------------------------------------------------
+
+
+def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
+    """Every sound file the render would play that is a synthesised placeholder.
+
+    `scripts/gen_assets.py` builds the effects out of ffmpeg oscillators — two
+    `sine=` sources standing in for a cash register — which is the right thing
+    for a repo that has to build and test offline, and the wrong thing to
+    publish. The provenance sidecar has recorded which is which since it was
+    written; what nothing did was STOP one.
+
+    `audio_banner` wrote a single INFO line at the top of a render, on a
+    pipeline whose whole design principle is that a guarantee lives in code
+    rather than in the operator's memory. So it is a gate: a finding the
+    validation report carries next to the other blockers, before the Approve
+    button rather than after the upload.
+
+    It BLOCKS a real final render (`MOCK_MODE=false`) and warns otherwise —
+    drafts and the offline suite are supposed to run on placeholders, that is
+    what they are for, and a gate that stopped them would only teach the
+    operator to skip gates.
+    """
+    from pipeline.audio_assets import generated_audio
+
+    placeholders = generated_audio(settings)
+    if not placeholders:
+        return []
+    blocks = final and not settings.mock_mode
+    shown = ", ".join(placeholders[:6])
+    if len(placeholders) > 6:
+        shown += f", …and {len(placeholders) - 6} more"
+    reason = ("this render is a FINAL and MOCK_MODE is off"
+              if blocks else
+              ("MOCK_MODE is on" if settings.mock_mode else "this is a draft"))
+    return [Finding(
+        gate="audio", severity="block" if blocks else "warn",
+        message=(f"PLACEHOLDER AUDIO — {len(placeholders)} of the sound files "
+                 f"this render plays are ffmpeg oscillators, not real effects "
+                 f"({shown}). Run scripts/fetch_sfx.py before publishing "
+                 f"({reason})."))]
+
+
+# --------------------------------------------------------------------------
 # Kit doctor.
 # --------------------------------------------------------------------------
 
@@ -755,13 +803,23 @@ def skeptic_notes(narration: str, settings: Settings,
 
 
 def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
-              skeptic: bool = True, workspace: Path | None = None) -> GateReport:
-    """Every gate, in cost order. Silence means proceed."""
+              skeptic: bool = True, workspace: Path | None = None,
+              final: bool = True) -> GateReport:
+    """Every gate, in cost order. Silence means proceed.
+
+    `final` says whether what follows approval is a publishable render. It
+    defaults to true because this battery runs on the intake path, and intake
+    leads to the Approve button — the only thing on the other side of it is a
+    final. A draft never comes through here (it skips approval entirely, which
+    is the point of a draft), and the flag is what keeps the audio gate from
+    blocking one if it ever does.
+    """
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
     report.findings += fact_check(narration, data)
     report.findings += voice_lint(narration)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
+    report.findings += check_audio(settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)
     report.findings += kit_findings
     if skeptic:

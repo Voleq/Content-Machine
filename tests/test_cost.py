@@ -52,3 +52,32 @@ def test_corrupt_state_file_recovers(settings):
     assert ledger.mtd_spend_usd() == 0.0
     ledger.record_tts(1.0)
     assert ledger.mtd_spend_usd() == 1.0
+
+
+def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json):
+    """The operator sees it before tapping Approve, not after the upload.
+
+    The SHORT lane has no gate battery — the LONG runs `run_gates` at intake
+    and folds its findings into the same report — so the daily-volume format
+    was the one with nothing between a synthesised cash register and YouTube.
+    """
+    from pipeline.cost import build_short_report
+    from pipeline.parser_short import parse_short_script
+    from pipeline.tts import TTSEngine
+
+    live = settings.model_copy(update={"mock_mode": False})
+    script, warnings = parse_short_script(short_valid_json, live)
+    report = build_short_report(script, warnings, live, SpendLedger(live),
+                                TTSEngine(live))
+    blockers = [b for b in report.blocking if "PLACEHOLDER AUDIO" in b]
+    assert blockers, f"nothing blocked on the placeholders: {report.blocking}"
+    assert "scripts/fetch_sfx.py" in blockers[0]
+    assert not report.approvable, "a blocked report must not be approvable"
+    assert "PLACEHOLDER AUDIO" in report.render_text()
+
+    # In MOCK_MODE the same files are a warning: the offline suite and every
+    # draft run on them, and a gate that stopped those teaches gate-skipping.
+    draft_report = build_short_report(script, warnings, settings,
+                                      SpendLedger(settings), TTSEngine(settings))
+    assert draft_report.approvable
+    assert any("PLACEHOLDER AUDIO" in w for w in draft_report.warnings)

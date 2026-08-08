@@ -216,3 +216,29 @@ def test_the_skeptic_never_runs_offline(settings, long_valid_text):
 
     assert settings.mock_mode
     assert skeptic_notes("anything at all", settings) == []
+
+
+def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):
+    """`run_gates` is where the LONG's report gets its findings from.
+
+    The banner at the top of a render was the entire defence against
+    publishing oscillators. This is the same check, in the shape the operator's
+    report already renders — and blocking, on the one combination that would
+    reach an upload.
+    """
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    offline = run_gates(script, settings, data=data, as_of="2026-07-01",
+                        skeptic=False)
+    audio = [f for f in offline.findings if f.gate == "audio"]
+    assert audio and audio[0].severity == "warn", \
+        "MOCK_MODE must warn, never block — the offline suite runs on these"
+
+    live = settings.model_copy(update={"mock_mode": False})
+    final = run_gates(script, live, data=data, as_of="2026-07-01", skeptic=False)
+    assert [f.severity for f in final.findings if f.gate == "audio"] == ["block"]
+    assert any("PLACEHOLDER AUDIO" in f.message for f in final.blocking)
+    draft = run_gates(script, live, data=data, as_of="2026-07-01",
+                      skeptic=False, final=False)
+    assert [f.severity for f in draft.findings if f.gate == "audio"] == ["warn"]
