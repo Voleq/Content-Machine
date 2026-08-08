@@ -41,6 +41,23 @@ def _restore_politeness():
     _POLITENESS.update(before)
 
 
+@pytest.fixture()
+def eight_cores(monkeypatch):
+    """Pin the core count.
+
+    `resolved_render_threads` clamps to os.cpu_count(), so a test that asks for
+    3 or 4 threads and asserts it gets them is asserting a fact about the HOST,
+    not about the code: it fails on any box with fewer cores. bootstrap.sh
+    refuses to finish on a red suite, so that turned a small runner into a
+    failed install for a reason unrelated to the install.
+
+    The clamp itself is worth testing, so it is tested — deterministically,
+    from both sides, below.
+    """
+    monkeypatch.setattr(os, "cpu_count", lambda: 8)
+    return 8
+
+
 def test_threads_default_to_about_half_the_cores():
     s = Settings(_env_file=None)
     cores = os.cpu_count() or 4
@@ -48,11 +65,24 @@ def test_threads_default_to_about_half_the_cores():
     assert 1 <= s.resolved_render_threads() <= cores
 
 
-def test_an_explicit_thread_count_wins_but_is_clamped():
-    cores = os.cpu_count() or 4
+def test_an_explicit_thread_count_wins_but_is_clamped(eight_cores):
     assert Settings(render_threads=3, _env_file=None).resolved_render_threads() == 3
     huge = Settings(render_threads=999, _env_file=None)
-    assert huge.resolved_render_threads() == cores
+    assert huge.resolved_render_threads() == eight_cores
+
+
+def test_the_clamp_holds_on_a_machine_smaller_than_the_ask(monkeypatch):
+    """The half of the clamp the old test could only exercise by accident, on
+    a small runner — where it read as a failure rather than as coverage."""
+    monkeypatch.setattr(os, "cpu_count", lambda: 2)
+    assert Settings(render_threads=4, _env_file=None).resolved_render_threads() == 2
+    assert Settings(render_thread_fraction=1.0, _env_file=None).resolved_render_threads() == 2
+
+
+def test_a_single_core_box_still_gets_one_thread(monkeypatch):
+    monkeypatch.setattr(os, "cpu_count", lambda: 1)
+    assert Settings(render_thread_fraction=0.05, _env_file=None).resolved_render_threads() == 1
+    assert Settings(render_threads=8, _env_file=None).resolved_render_threads() == 1
 
 
 def test_a_tiny_fraction_still_leaves_one_thread():
@@ -60,7 +90,7 @@ def test_a_tiny_fraction_still_leaves_one_thread():
     assert s.resolved_render_threads() >= 1
 
 
-def test_politeness_caps_the_filter_pools_too():
+def test_politeness_caps_the_filter_pools_too(eight_cores):
     """The filter graph is the bottleneck, not the encode — capping only
     -threads would leave zoompan/overlay running wide open."""
     set_render_politeness(Settings(render_threads=4, _env_file=None))

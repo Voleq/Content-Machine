@@ -259,15 +259,37 @@ def test_without_a_fallback_a_bad_segment_raises(tmp_path, settings):
 # open `workers` of them at once, and consumer cards cap concurrent NVENC
 # sessions — so the realistic failure is some arbitrary segment, minutes into a
 # forty-minute render. That has to cost a slower clip, not the job.
+#
+# These used to build EncodeProfile(vcodec="h264_nvenc") and depend on the
+# encode FAILING, which is an assertion about the HOST rather than the code: on
+# WSL2 with the GPU passed through — the documented target — NVENC succeeds and
+# the fallback under test never runs. Two of them then failed the suite, and
+# bootstrap.sh refuses to finish on a red suite, so a working GPU became a
+# failed install. The third passed on both kinds of machine for different
+# reasons and therefore asserted nothing about the degrade on a GPU box.
+#
+# EncodeProfile.is_hardware is `vcodec != "libx264"`, so a codec name ffmpeg
+# does not have is a hardware profile that fails on EVERY machine — including
+# the ones that have NVENC, which is exactly where the fallback matters most.
+# Skipping when NVENC is present would leave it untested there.
+ABSENT_ENCODER = "h264_no_such_encoder"
+
+
+def _doomed_profile():
+    """A hardware profile whose encode cannot succeed anywhere."""
+    from pipeline.render_common import EncodeProfile
+
+    p = EncodeProfile(vcodec=ABSENT_ENCODER, preset="p4", crf=32)
+    assert p.is_hardware, "the fallback is only tried for hardware profiles"
+    return p
 
 
 def test_a_gpu_that_dies_mid_run_finishes_on_the_cpu(tmp_path, settings):
-    """h264_nvenc is genuinely unavailable here, which is the point: the
-    render still completes, on libx264, without raising."""
+    """The hardware encode cannot succeed, on any machine: the render still
+    completes, on libx264, without raising."""
     set_render_politeness(settings)
-    from pipeline.render_common import EncodeProfile
 
-    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    gpu = _doomed_profile()
     cpu = gpu.software_equivalent(settings)
     specs = [_spec(tmp_path, index=i, colour=c)
              for i, c in enumerate(("red", "green", "blue"))]
@@ -286,9 +308,8 @@ def test_the_cpu_retry_is_announced_once_not_per_segment(tmp_path, settings, cap
     import logging
 
     set_render_politeness(settings)
-    from pipeline.render_common import EncodeProfile
 
-    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    gpu = _doomed_profile()
     specs = [_spec(tmp_path, index=i, duration=0.3) for i in range(6)]
 
     with caplog.at_level(logging.WARNING, logger="pipeline.segments"):
@@ -304,9 +325,8 @@ def test_without_a_software_profile_a_dead_gpu_still_raises(tmp_path, settings):
     """The degrade is opt-in. A caller that did not ask for it gets the error,
     rather than silently different encoder settings."""
     set_render_politeness(settings)
-    from pipeline.render_common import EncodeProfile
 
-    gpu = EncodeProfile(vcodec="h264_nvenc", preset="p4", crf=32)
+    gpu = _doomed_profile()
     with pytest.raises(RenderError):
         encode_segments([_spec(tmp_path)], tmp_path / "c", gpu, total_threads=2)
 
