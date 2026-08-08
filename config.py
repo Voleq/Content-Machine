@@ -311,6 +311,16 @@ class Settings(BaseSettings):
     # floor for data visuals — a later cut is deferred rather than truncating
     # a chart or a filing the viewer is still reading.
     long_min_readable_s: float = 5.0
+    # The ceiling on a held composition. Nothing on a SHORT may sit unchanged
+    # longer than this without a cut, a new overlay or motion — measured off
+    # the frames, not the manifest, because a filter graph that "has the right
+    # arguments" is exactly what produced a 12.5-second still.
+    #
+    # Defaulted from the format's own spec rather than picked: timeline's
+    # SHORT_DATA_HOLD_S tops out at 8s, so a composition holding longer than
+    # the longest legitimate DATA hold is not being read, it is being waited
+    # out — in a format whose spec is fast cuts.
+    short_max_hold_s: float = 8.0
     # host on each side of a chapter boundary, so chapters bookend on his face
     long_chapter_host_s: float = 2.5
 

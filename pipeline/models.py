@@ -478,6 +478,7 @@ class CueKind(str, Enum):
     ANNOTATION = "annotation"    # hand-drawn scribble
     ZOOM = "zoom"                # zoom-punch on the key number
     CHEAP_OR_TRAP = "cheap_or_trap"  # the value-trap beat, held to be read
+    TRAP_LINE = "trap_line"      # one clause of it, landing on its own figure
     CONCLUSION = "conclusion"
     HOST_CLOSE = "host_close"    # Dennis talking, after the payoff
     HOST_BEAT = "host_beat"      # Dennis returning mid-video, every 4-5 beats

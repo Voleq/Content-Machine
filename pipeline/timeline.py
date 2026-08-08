@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import re
 from dataclasses import dataclass, field
 
 from pipeline.models import (
@@ -157,6 +158,47 @@ SHORT_PUNCT_TAGS = frozenset({
     TagType.PROP, TagType.MEME, TagType.CLIP, TagType.BROLL,
 })
 
+# A clause boundary the trap read can be cut on. Sentences first; a long
+# sentence is split again at its comma, because "It only is if revenue stops
+# sliding, and it has not stopped sliding" is two claims and reads as two.
+_TRAP_SPLIT_RE = re.compile(r"[^.!?]+(?:[.!?]+|$)")
+_TRAP_LONG_WORDS = 9
+
+# What a clause is ABOUT: the figure it carries. Spoken scripts write numbers
+# as words ("eleven times earnings", "forty one percent"), so digits alone
+# would miss nearly every one.
+_FIGURE_WORDS = (
+    "zero one two three four five six seven eight nine ten eleven twelve "
+    "thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty "
+    "thirty forty fifty sixty seventy eighty ninety hundred thousand million "
+    "billion trillion percent"
+).split()
+_FIGURE_RE = re.compile(
+    r"\d[\d,.]*%?|\b(?:" + "|".join(_FIGURE_WORDS) + r")\b", re.IGNORECASE)
+
+
+def split_trap_lines(text: str) -> list[str]:
+    """The value-trap read, cut into the clauses it is actually made of."""
+    out: list[str] = []
+    for raw in _TRAP_SPLIT_RE.findall(text or ""):
+        s = raw.strip()
+        if not s:
+            continue
+        if len(s.split()) <= _TRAP_LONG_WORDS or "," not in s:
+            out.append(s)
+            continue
+        head, _, tail = s.partition(",")
+        out.append(head.strip() + ",")
+        out.append(tail.strip())
+    return out
+
+
+def _first_figure(line: str) -> str:
+    """The figure this clause is delivering, for anchoring — or ""."""
+    m = _FIGURE_RE.search(line or "")
+    return m.group(0) if m else ""
+
+
 _SHORT_TAG_TO_KIND = {
     TagType.BIGNUM: CueKind.BIGNUM,
     TagType.TERM: CueKind.TERM,
@@ -214,6 +256,7 @@ def build_short_timeline(
     meme_hold_s: float = 1.4,
     cutaway_hold_s: float = 2.0,
     doodle_hold_s: float = 1.6,
+    max_hold_s: float = SHORT_DATA_HOLD_S[1],
 ) -> list[Cue]:
     """Every SHORT cue, positioned off the spoken audio. No number in the
     renderer may override these."""
@@ -277,15 +320,30 @@ def build_short_timeline(
                         payload={"name": name}))
 
     # ---- 2. why: driver headlines overlaid ON the chart
+    #
+    # Each card ends when the NEXT one claims the frame — the same rule the
+    # stage already runs on. They used to end at gut_t without exception, so
+    # the first card landed around 10s and was still there at 30s with the
+    # second stacked under it: two cards, neither replaced, both shrunk to
+    # roughly 9px-equivalent on a phone. Added and never removed.
     n_head = len(script.headlines)
     why_span = max(gut_t - hook_end, 0.5)
+    head_times = [
+        clamp(min(hook_end + why_span * i / n_head + 0.15, gut_t - 0.2), duration)
+        for i in range(n_head)
+    ]
     for i, h in enumerate(script.headlines):
-        t = hook_end + why_span * i / n_head + 0.15
+        nxt = head_times[i + 1] if i + 1 < n_head else gut_t
         cues.append(Cue(
-            t=clamp(min(t, gut_t - 0.2), duration),
+            t=head_times[i],
             kind=CueKind.HEADLINE,
             payload={"index": i, "text": h.text, "meaning": h.meaning,
-                     "until": gut_t, "variant": variants["why"]},
+                     # ...and never past the ceiling either way. Two headlines
+                     # across a thirty-second why-span leaves each one sitting
+                     # for fifteen seconds even when it does replace the other;
+                     # a card that has been read lifts off rather than waiting.
+                     "until": min(nxt, head_times[i] + max_hold_s),
+                     "variant": variants["why"]},
         ))
 
     # ---- 3. gut check: the numbers sheet slides in, rows type on
@@ -363,12 +421,52 @@ def build_short_timeline(
         cues.append(Cue(t=t, kind=CueKind.SCRIBBLE,
                         payload={"value": e.payload, "hold": doodle_hold_s}))
 
-    # ---- 4. cheap or trap: the value-trap read, held long enough to land
+    # ---- 4. cheap or trap: the value-trap read, one clause at a time
+    #
+    # This used to be a single text panel carrying the whole paragraph, held
+    # from the moment it landed until the payoff — forty words of body copy
+    # unchanged for twenty seconds while the karaoke caption underneath read
+    # the same sentence out loud. A paragraph is not a visual.
+    #
+    # So it lands the way the numbers sheet already does: one clause per beat,
+    # each on the word it is about. Anchoring is tried on the clause's own
+    # figure first, because the figure is the thing the line exists to
+    # deliver; a clause with no figure, or one whose figure is not in the
+    # spoken words, falls back to its share of the span. Times are forced
+    # monotonic, so a bad anchor can reorder nothing.
     if trap_t is not None:
+        trap_end = clamp(max(trap_t + SHORT_MIN_READABLE_S, payoff_t), duration)
         cues.append(Cue(t=trap_t, kind=CueKind.CHEAP_OR_TRAP,
                         payload={"text": script.cheap_or_trap,
-                                 "until": clamp(max(trap_t + SHORT_MIN_READABLE_S,
-                                                    payoff_t), duration)}))
+                                 "until": trap_end}))
+        lines = split_trap_lines(script.cheap_or_trap)
+        span = max(trap_end - trap_t, 0.6)
+        prev = trap_t
+        times: list[float] = []
+        for i, line in enumerate(lines):
+            fallback_t = trap_t + span * i / len(lines)
+            figure = _first_figure(line)
+            anchored = find_anchor_time(words, figure) if figure else None
+            # An anchor OUTSIDE this beat's own window is not an anchor for it
+            # — the same figure is usually said elsewhere in the script, and
+            # taking it collapsed every clause onto the end of the beat.
+            if anchored is None or not (trap_t <= anchored <= trap_end):
+                anchored = None
+            t = anchored if anchored is not None else fallback_t
+            # never before the beat opens, never before the previous clause,
+            # and never so late the last line cannot be read
+            t = min(max(t, prev), trap_end - 0.4)
+            prev = t + 0.3
+            times.append(clamp(t, duration))
+        for i, (line, t) in enumerate(zip(lines, times)):
+            # each clause holds until the next one replaces it, and no clause
+            # outstays the ceiling even if it is the last
+            nxt = times[i + 1] if i + 1 < len(times) else trap_end
+            cues.append(Cue(
+                t=t, kind=CueKind.TRAP_LINE,
+                payload={"index": i, "text": line, "of": len(lines),
+                         "until": min(nxt, trap_end, t + max_hold_s)},
+            ))
 
     # ---- 5. payoff: the deadpan conclusion (noise or signal — no stamp)
     cues.append(Cue(t=payoff_t, kind=CueKind.CONCLUSION, fallback=payoff_fallback,

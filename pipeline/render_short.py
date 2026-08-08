@@ -343,7 +343,8 @@ def render_short(
     prices = prices or get_price_history(script.ticker, settings)
 
     duration = tts.duration_s
-    cues = build_short_timeline(script, tts.words, duration)
+    cues = build_short_timeline(script, tts.words, duration,
+                                max_hold_s=settings.short_max_hold_s)
     cues, pacing_warnings = plan_short_pacing(cues, duration)
     for w in pacing_warnings:
         log.warning("short pacing: %s", w)
@@ -634,8 +635,11 @@ def render_short(
         card_clip = frames_to_alpha_clip(
             entry + (roll or []), fps, rdir / f"headline_{i}.mov")
         if desk is not None:
+            # All in the same slot, not stacked down the band. They replace
+            # one another now, so only one is ever up — stacking bought
+            # nothing and cost both cards half their legible size.
             hx = px(40)
-            hy = px(1030) + i * (card.height + px(18))
+            hy = px(1030)
         else:
             sx, sy = slots[min(i, len(slots) - 1)]
             hx, hy = chart_pos[0] + int(sx), chart_pos[1] + int(sy)
@@ -1001,17 +1005,27 @@ def render_short(
             name=f"{name}_{strip.name[:16]}"))
 
     # ------------------------------- cheap or trap: the value-trap beat
-    for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
-        trap_img = text_panel(settings, c.payload["text"], width=px(980),
+    #
+    # One clause at a time, each landing on its own figure and leaving when
+    # the next one does — the same shape as the numbers sheet's rows. It was
+    # a single panel carrying the whole paragraph, held for the length of the
+    # beat: forty words that never changed while the caption underneath read
+    # them aloud, which is the longest still in the format.
+    trap_line_cues = [c for c in cues if c.kind is CueKind.TRAP_LINE]
+    for n, c in enumerate(trap_line_cues):
+        end = min(float(c.payload["until"]), payoff_t)
+        if end - float(c.t) < 0.2:      # degenerate window: nothing to read
+            continue
+        line_img = text_panel(settings, c.payload["text"], width=px(980),
                               font_name=SHANTELL, font_size=px(46), accent=RED,
                               bg=(250, 249, 246, 242))
-        trap_clip = frames_to_alpha_clip(
-            slide_in_frames(trap_img, fps=fps, seconds=0.4, direction="up"),
-            fps, rdir / "cheap_or_trap.mov")
+        line_clip = frames_to_alpha_clip(
+            slide_in_frames(line_img, fps=fps, seconds=0.4, direction="up"),
+            fps, rdir / f"trap_line_{n}.mov")
         layers.append(OverlayLayer(
-            path=trap_clip, x=int((W - trap_img.width) / 2), y=px(STAGE_Y + 120),
-            t_start=c.t, t_end=min(float(c.payload["until"]), payoff_t),
-            is_video=True, hold=True, name="cheap_or_trap",
+            path=line_clip, x=int((W - line_img.width) / 2), y=px(STAGE_Y + 120),
+            t_start=c.t, t_end=end,
+            is_video=True, hold=True, name=f"trap_line_{n}",
         ))
 
     # ------------------------------------------------- the payoff

@@ -653,3 +653,54 @@ def test_nothing_but_furniture_is_composited_over_the_hook(hosted):
         and l["name"] not in FURNITURE
     ]
     assert above == [], f"composited over the hook: {above}"
+
+
+# --------------------------------------------------------------------------
+# The ceiling on a held composition.
+# --------------------------------------------------------------------------
+# Measured off the frames, because every other kind of evidence said this was
+# fine. A real SNDK render came out 79.6s with four compositions carrying 40
+# of those seconds — a 12.5s still, an 11.5s still, a 9.5s still — and 72% of
+# its runtime inside holds of 3s or more, in a format whose spec is fast cuts.
+# The manifest was correct. The layer windows were correct. The suite was
+# green. Nothing had ever looked at the output.
+
+
+def test_no_composition_holds_past_the_ceiling(hosted):
+    from pipeline.byproducts import held_spans
+
+    settings, _script, _tts, out, _manifest, _frames, _warnings = hosted
+    ceiling = settings.short_max_hold_s
+    over = [(a, b) for a, b in held_spans(out) if b - a > ceiling]
+    assert not over, (
+        "a composition sits unchanged past the "
+        f"{ceiling:.1f}s ceiling: "
+        + ", ".join(f"{a:.1f}s->{b:.1f}s ({b - a:.1f}s)" for a, b in over)
+        + ". A held frame is not a beat — cut, add an overlay, or move "
+          "something."
+    )
+
+
+def test_the_ceiling_is_the_formats_own_number(settings):
+    """N is defaulted from the spec, not picked: a composition may not outlast
+    the longest legitimate DATA hold."""
+    from pipeline.timeline import SHORT_DATA_HOLD_S
+
+    assert settings.short_max_hold_s == SHORT_DATA_HOLD_S[1]
+
+
+def test_the_hold_measurement_catches_a_real_still():
+    """The measurement itself, against something known to be still — so a
+    green result above means 'nothing held', not 'the check is broken'."""
+    import subprocess
+    import tempfile
+
+    from pipeline.byproducts import held_spans, longest_hold
+
+    with tempfile.TemporaryDirectory() as td:
+        still = Path(td) / "still.mp4"
+        subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+             "-f", "lavfi", "-i", "color=c=gray:s=240x426:d=12",
+             "-pix_fmt", "yuv420p", str(still)], check=True, timeout=120)
+        assert longest_hold(still) >= 10.0, held_spans(still)

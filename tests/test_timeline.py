@@ -123,9 +123,12 @@ def test_short_beats_are_ordered(short_script):
 
     hook_end = float(hook.payload["until"])
     assert 0 < hook_end < numbers.t < conclusion.t < duration
-    for h in headlines:
+    for i, h in enumerate(headlines):
         assert hook_end <= h.t < numbers.t, "headlines live in the why-zone"
-        assert float(h.payload["until"]) == pytest.approx(numbers.t)
+        # each ends when the NEXT one claims the frame — or at the sheet if
+        # it is the last — and never past the hold ceiling either way
+        nxt = headlines[i + 1].t if i + 1 < len(headlines) else numbers.t
+        assert float(h.payload["until"]) == pytest.approx(min(nxt, h.t + 8.0))
 
 
 def test_short_payoff_anchors_on_conclusion_words(short_script):
@@ -618,3 +621,102 @@ def test_delivery_tags_are_never_reported_as_unrenderable(long_valid_text, setti
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
     assert unrenderable_long_tags(script) == []
+
+
+# ------------------------------------------------- the hold ceiling
+#
+# Measured on a real SNDK short: four compositions carried 40 of its 79
+# seconds — a 12.5s still, an 11.5s still, a 9.5s still — with 72% of the
+# runtime inside holds of 3s or more, in a format whose spec is fast cuts.
+# Two causes, both here: the value-trap read was one text panel carrying a
+# whole paragraph and held to the payoff, and headline cards were added and
+# never removed.
+
+
+def _sndk_shaped(settings):
+    """A SHORT with the shape that produced the long holds: a multi-clause
+    trap whose opening words are spoken EARLY (so the beat anchors early and
+    then has nothing to do until the payoff), and two headlines across a wide
+    why-span."""
+    import json
+
+    from pipeline.parser_short import parse_short_script
+
+    raw = json.loads(
+        (FIXTURES / "scripts" / "short_valid.json").read_text(encoding="utf-8")
+        if (FIXTURES := __import__("pathlib").Path(__file__).resolve().parents[1]
+            / "fixtures") else "")
+    raw["cheap_or_trap"] = (
+        "Twelve times earnings is not cheap when the earnings are falling. "
+        "Revenue fell forty one percent last year, and the buyback stopped in "
+        "March. Management calls it a transition.")
+    raw["audio_script"] = (
+        "Twelve times earnings is what the screen says. " + raw["audio_script"]
+        + " Revenue fell forty one percent last year, and the buyback stopped "
+        "in March. Management calls it a transition, which is a word that buys "
+        "time. So the multiple is not the story, the direction is, and the "
+        "direction is down.")
+    script, _ = parse_short_script(json.dumps(raw), settings)
+    return script
+
+
+def test_no_short_beat_is_planned_to_hold_past_the_ceiling(settings):
+    """The invariant, at the layer that decides it. A composition may not sit
+    unchanged longer than the format's own longest legitimate data hold."""
+    from pipeline.timeline import SHORT_DATA_HOLD_S
+
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    ceiling = settings.short_max_hold_s
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=ceiling)
+
+    over = []
+    for c in cues:
+        until = c.payload.get("until")
+        # Beats whose window is a STAGE CLAIM rather than a drawn composition:
+        # the thing on screen changes inside them. NUMBERS is carried by its
+        # NUMBER_ROW cues and CHEAP_OR_TRAP by its TRAP_LINE cues; the payoff
+        # and the bookends legitimately own the tail of the frame.
+        if until is None or c.kind in (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP,
+                                       CueKind.CONCLUSION, CueKind.HOST_CLOSE,
+                                       CueKind.HOST_OPEN):
+            continue
+        if float(until) - c.t > ceiling + 1e-6:
+            over.append((c.kind.value, round(c.t, 1), round(float(until) - c.t, 1)))
+    assert not over, f"planned to hold past {ceiling}s: {over}"
+    assert ceiling == SHORT_DATA_HOLD_S[1]
+
+
+def test_the_trap_lands_one_clause_at_a_time_not_as_a_paragraph(settings):
+    """It was a single panel carrying forty words, held from the moment it
+    landed until the payoff, while the caption underneath read it aloud."""
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=settings.short_max_hold_s)
+
+    lines = [c for c in cues if c.kind is CueKind.TRAP_LINE]
+    assert len(lines) >= 3, "the paragraph was not broken into beats"
+    times = [c.t for c in lines]
+    assert times == sorted(times)
+    # they must be spread across the beat, not stacked on one instant — an
+    # anchor resolving outside the beat's own window used to collapse them
+    assert len(set(round(t, 1) for t in times)) == len(times), times
+    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
+    assert max(times) < float(trap.payload["until"])
+
+
+def test_headline_cards_are_removed_not_accumulated(settings):
+    """The Citi card landed at ~10s and was still there at 30s with the second
+    stacked under it, both shrunk to roughly 9px-equivalent on a phone."""
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=settings.short_max_hold_s)
+
+    heads = sorted((c for c in cues if c.kind is CueKind.HEADLINE), key=lambda c: c.t)
+    assert len(heads) >= 2
+    for a, b in zip(heads, heads[1:]):
+        assert float(a.payload["until"]) <= b.t + 1e-6, (
+            "a headline is still on screen when the next one lands")
