@@ -21,6 +21,7 @@ script's own anchors — no scene time is ever hardcoded in a renderer.
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 
 from pipeline.models import (
@@ -106,6 +107,76 @@ SHORT_BEAT_VARIANTS: dict[str, tuple[str, ...]] = {
 # carry data have to survive long enough to be read.
 SHORT_MIN_READABLE_S = 4.5   # numbers sheet and the cheap-or-trap card
 HOST_BOOKEND_S = (3.0, 5.0)  # Dennis opens and closes on camera
+
+# --------------------------------------------------------------------------
+# SHORT pacing (§4 pace, enforced rather than hoped for)
+#
+# Two classes of beat, and the whole rhythm is the difference between them:
+#
+# * DATA is something the viewer reads — a figure, a filing line, a term card,
+#   the numbers sheet. It gets 3 to 8 seconds and is never cut short; a later
+#   tag is deferred rather than allowed to truncate it.
+# * PUNCTUATION is something they register — a reaction, a transformation, a
+#   meme, a doodle. It runs 0.6 to 2 seconds, layered over the frame.
+#
+# Two data beats back to back is the failure this exists to stop: two things
+# to read with nothing between them reads as a slideshow, and the second one
+# is not read at all.
+# --------------------------------------------------------------------------
+SHORT_DATA_HOLD_S = (3.0, 8.0)
+SHORT_PUNCT_HOLD_S = (0.6, 2.0)
+
+# Dennis comes back every four to five beats. Longer and the video stops being
+# a person talking; shorter and the evidence never gets a run.
+SHORT_HOST_EVERY = 4
+
+# Outside this band the cut is either frantic or a slideshow — a warning, not
+# a failure, because the script is the operator's call.
+#
+# The two layers are counted SEPARATELY because they have nothing to do with
+# each other. A data beat is READ: it holds 3-8 seconds and the density of
+# those is what readability actually depends on. Punctuation is REGISTERED —
+# a reaction, a transformation, a doodle riding over the frame for under two
+# seconds — and it is what gives short-form its pulse. Holding the two to one
+# combined budget meant every extra reaction competed with a figure the viewer
+# needed to read, so the punctuation layer stayed at about half the density
+# the format wants.
+SHORT_DATA_PER_75S = (4, 8)
+SHORT_PUNCT_PER_75S = (8, 14)
+SHORT_EVENTS_PER_75S = (22, 30)
+
+# Which tag kinds are read and which are registered.
+SHORT_DATA_TAGS = frozenset({
+    TagType.BIGNUM, TagType.TERM, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT,
+})
+SHORT_PUNCT_TAGS = frozenset({
+    TagType.PROP, TagType.MEME, TagType.CLIP, TagType.BROLL,
+})
+
+_SHORT_TAG_TO_KIND = {
+    TagType.BIGNUM: CueKind.BIGNUM,
+    TagType.TERM: CueKind.TERM,
+    TagType.PROP: CueKind.PROP,
+    TagType.SHOW_FILING: CueKind.FILING,
+    TagType.SHOW_ARTICLE: CueKind.ARTICLE,
+    TagType.SCREENGRAB: CueKind.SCREENGRAB,
+    TagType.IMG: CueKind.IMG,
+    TagType.PRODUCT: CueKind.IMG,
+    TagType.MEME: CueKind.MEME,
+    TagType.CLIP: CueKind.CLIP,
+    TagType.BROLL: CueKind.CLIP,
+}
+
+# The fixed beats that are themselves data — they count for adjacency.
+_FIXED_DATA_KINDS = (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP)
+
+# Every fixed beat that claims the frame, for the host-cadence count.
+_HOST_CADENCE_KINDS = (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
+                       CueKind.CHEAP_OR_TRAP)
+
+# A host return shorter than this is a flicker, not a beat.
+MIN_HOST_RETURN_S = 1.6
 
 
 def pick_beat_variant(beat: str, script_sha: str) -> str:
@@ -288,13 +359,204 @@ def build_short_timeline(
 
     # ---- 6. host bookend: Dennis closes on camera over the last words
     host_close_len = min(max(duration - payoff_t, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1])
-    cues.append(Cue(t=clamp(duration - host_close_len, duration),
-                    kind=CueKind.HOST_CLOSE,
+    host_close_t = clamp(duration - host_close_len, duration)
+    cues.append(Cue(t=host_close_t, kind=CueKind.HOST_CLOSE,
                     payload={"until": duration, "text": script.conclusion,
                              "variant": "close"}))
 
+    # ---- 7. the tag grammar: evidence the script asked for by name.
+    #      Anchored to the word it was written against, exactly like the LONG.
+    #      These are what turn a short from four fixed cards into something
+    #      that can reach the library.
+    for e in script.evidence_events():
+        kind = _SHORT_TAG_TO_KIND.get(e.type)
+        if kind is None:
+            continue
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        is_data = e.type in SHORT_DATA_TAGS
+        lo, hi = SHORT_DATA_HOLD_S if is_data else SHORT_PUNCT_HOLD_S
+        cues.append(Cue(
+            t=t, kind=kind,
+            payload={"value": e.payload, "tag": e.type.value,
+                     "style": e.style, "values": dict(e.values),
+                     "class": "data" if is_data else "punct",
+                     "hold": lo, "min_hold": lo, "max_hold": hi},
+        ))
+
+    # ---- 8. [ALERT] lower-thirds ride over whatever is on screen
+    for e in script.alert_events():
+        t = clamp(char_offset_time(words, e.char_offset), duration)
+        cues.append(Cue(t=t, kind=CueKind.ALERT,
+                        payload={"value": e.payload, "hold": 2.4}))
+
     cues.sort(key=lambda c: c.t)
     return cues
+
+
+# --------------------------------------------------------------------------
+# SHORT pacing pass.
+# --------------------------------------------------------------------------
+def plan_short_pacing(
+    cues: list[Cue],
+    duration: float,
+    *,
+    host_every: int = SHORT_HOST_EVERY,
+) -> tuple[list[Cue], list[str]]:
+    """Apply the pacing contract to a short's evidence cues.
+
+    Returns the cues with `hold` resolved and any host returns inserted, plus
+    warnings the operator should read. The rules, in the order they are
+    applied:
+
+    1. **A data beat is never cut short.** Each one gets at least its minimum
+       hold; a beat that would truncate it is pushed out instead of shortening
+       it. If the push runs past the payoff, the beat is dropped and said so —
+       an unreadable beat is worse than a missing one.
+    2. **Punctuation stays punctuation.** Held between 0.6 and 2 seconds,
+       layered over whatever frame is up rather than replacing it.
+    3. **Never two data beats adjacent.** With nothing between them the second
+       one is not read. The later one moves after the punctuation that follows
+       it, or is dropped.
+    4. **Dennis every four to five beats.** A host return is inserted in the
+       gap after the fourth consecutive evidence beat.
+    5. The counts are checked against their per-75s bands and warned about,
+       never enforced — the script is the operator's call. Three bands, not
+       one: the total, and then the data and punctuation layers separately,
+       because a cut can sit inside the total while the layer that carries
+       the pulse runs at half the density the format wants.
+    """
+    warnings: list[str] = []
+    evidence = sorted(
+        (c for c in cues if c.payload.get("class") in ("data", "punct")),
+        key=lambda c: c.t)
+    # No early return on an empty evidence list. A script that tagged nothing
+    # at all is the WORST case for the density check, not an exempt one — it
+    # is four fixed cards and a face for a minute — and returning here meant
+    # the one contract that would have said so never ran.
+
+    payoff = next((c.t for c in cues if c.kind is CueKind.CONCLUSION), duration)
+    fixed_data = sorted(c.t for c in cues if c.kind in _FIXED_DATA_KINDS)
+
+    kept: list[Cue] = []
+    prev_end = 0.0
+    prev_was_data = False
+    for cue in evidence:
+        is_data = cue.payload.get("class") == "data"
+        lo = float(cue.payload.get("min_hold", 0.6))
+        hi = float(cue.payload.get("max_hold", 2.0))
+        t = max(cue.t, prev_end)
+
+        # Rule 3 — two data beats in a row need something between them.
+        #
+        # Only a crowded pair is a problem: two things to read with a real gap
+        # between them is a normal edit. The warning has to be true, because it
+        # is what the operator reads — saying "moved" when nothing moved is how
+        # a warning stops being worth reading.
+        if is_data and prev_was_data and t < prev_end + SHORT_PUNCT_HOLD_S[0]:
+            t = prev_end + SHORT_PUNCT_HOLD_S[0]
+            warnings.append(
+                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] "
+                f"landed straight on top of another data beat — pushed to "
+                f"{t:.1f}s so the first one can be read")
+
+        if is_data and t + lo > payoff:
+            warnings.append(
+                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] cannot "
+                f"hold {lo:.1f}s before the payoff at {payoff:.1f}s — dropped "
+                f"rather than flashed")
+            continue
+
+        # Rule 1 — the hold runs until the next beat wants the frame, inside
+        # the class's band.
+        nxt = next((c.t for c in evidence if c.t > cue.t), duration)
+        nxt = min(nxt, *(f for f in fixed_data if f > t), duration) \
+            if any(f > t for f in fixed_data) else min(nxt, duration)
+        hold = min(max(nxt - t, lo), hi)
+        cue.payload["hold"] = round(hold, 3)
+        cue.t = round(t, 3)
+        kept.append(cue)
+        prev_end = t + hold
+        prev_was_data = is_data
+
+    # Rule 4 — Dennis comes back every four to five beats.
+    #
+    # Counted over EVERY beat that claims the frame, not just the tagged ones.
+    # A short whose evidence is the fixed cards still spends forty seconds away
+    # from his face, and counting only tag beats meant a script with three of
+    # them never brought him back at all.
+    fixed_beats = [c for c in cues if c.kind in _HOST_CADENCE_KINDS]
+    beats = sorted(fixed_beats + kept, key=lambda c: c.t)
+    host_cues: list[Cue] = []
+    run = 0
+    for i, cue in enumerate(beats):
+        run += 1
+        if run < host_every:
+            continue
+        gap_start = cue.t + float(cue.payload.get("hold", 0.0) or 0.0)
+        gap_end = beats[i + 1].t if i + 1 < len(beats) else payoff
+        if gap_end - gap_start < MIN_HOST_RETURN_S or gap_start >= payoff:
+            continue
+        run = 0
+        host_cues.append(Cue(
+            t=round(gap_start, 3), kind=CueKind.HOST_BEAT,
+            payload={"until": round(min(gap_end, payoff), 3), "variant": "beat"}))
+    if not host_cues and payoff - (beats[0].t if beats else 0.0) > 12.0:
+        # Nothing found a gap. Rather than let a minute go by without him,
+        # take the longest gap there is.
+        spans = [(beats[i + 1].t - beats[i].t, i) for i in range(len(beats) - 1)]
+        if spans:
+            span, i = max(spans)
+            if span >= MIN_HOST_RETURN_S:
+                host_cues.append(Cue(
+                    t=round(beats[i].t + span * 0.35, 3), kind=CueKind.HOST_BEAT,
+                    payload={"until": round(beats[i + 1].t, 3), "variant": "beat"}))
+
+    others = [c for c in cues if c.payload.get("class") not in ("data", "punct")]
+    out = sorted(others + kept + host_cues, key=lambda c: c.t)
+
+    n_events = len(kept) + sum(
+        1 for c in others
+        if c.kind in (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
+                      CueKind.CHEAP_OR_TRAP, CueKind.CONCLUSION,
+                      CueKind.HOST_OPEN, CueKind.HOST_CLOSE))
+    n_events += len(host_cues)
+    lo_n, hi_n = SHORT_EVENTS_PER_75S
+    scaled = (lo_n * duration / 75.0, hi_n * duration / 75.0)
+    if n_events < scaled[0]:
+        warnings.append(
+            f"{n_events} visual events in {duration:.0f}s — below the "
+            f"{scaled[0]:.0f}-{scaled[1]:.0f} band for this runtime; the cut "
+            f"will read as a slideshow")
+    elif n_events > scaled[1]:
+        warnings.append(
+            f"{n_events} visual events in {duration:.0f}s — above the "
+            f"{scaled[0]:.0f}-{scaled[1]:.0f} band; something will flash past")
+
+    # The two layers, separately. A thin punctuation layer is the specific
+    # failure that reads as "flat" while every data beat is perfectly legible,
+    # and a combined count cannot see it: a script can sit inside the total
+    # band with nothing but things to read.
+    n_data = sum(1 for c in kept if c.payload.get("class") == "data")
+    n_punct = sum(1 for c in kept if c.payload.get("class") == "punct")
+    p_lo, p_hi = (v * duration / 75.0 for v in SHORT_PUNCT_PER_75S)
+    if n_punct < p_lo:
+        warnings.append(
+            f"{n_punct} punctuation beats in {duration:.0f}s — below the "
+            f"{p_lo:.0f}-{p_hi:.0f} band. Data beats hold 3-8s and are read; "
+            f"the reactions riding over them are what give the cut its pulse, "
+            f"and they cost nothing to add")
+    elif n_punct > p_hi:
+        warnings.append(
+            f"{n_punct} punctuation beats in {duration:.0f}s — above the "
+            f"{p_lo:.0f}-{p_hi:.0f} band; the layer stops punctuating and "
+            f"becomes the frame")
+    d_lo, d_hi = (v * duration / 75.0 for v in SHORT_DATA_PER_75S)
+    if n_data > d_hi:
+        warnings.append(
+            f"{n_data} data beats in {duration:.0f}s — above the "
+            f"{d_lo:.0f}-{d_hi:.0f} band. Each one has to hold 3-8s to be "
+            f"read, so they cannot all fit without something being cut short")
+    return out, warnings
 
 
 # --------------------------------------------------------------------------
@@ -346,7 +608,8 @@ def build_long_timeline(
     for idx, e in enumerate(script.events):
         t = clamp(char_offset_time(words, e.char_offset), duration)
         kind = _TAG_TO_KIND[e.type]
-        payload = {"order": idx, "value": e.payload, "tag": e.type.value}
+        payload = {"order": idx, "value": e.payload, "tag": e.type.value,
+                   "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
         if kind in (CueKind.SCRIBBLE, CueKind.DOODLE):
@@ -418,17 +681,36 @@ CHAPTER_HOST_S = 2.5
 # already on screen simply stays up until the next one is due.
 MIN_HOST_BEAT_S = 1.2
 
+# The LONGEST one host beat may run before the shot has to change. There was
+# no maximum: `add_host` emitted exactly one segment per untagged gap, so
+# ninety untagged seconds was ninety seconds of a single frame with a mouth
+# flap on it — and the planner considered that correct, so nothing said so.
+# A gap longer than this is split into consecutive beats with the shot
+# advancing, which is what the bank and the variant counter were already for.
+MAX_HOST_BEAT_S = 12.0
 
-def chapter_start_times(chapters: str, duration: float) -> list[float]:
-    """Seconds from the `=== CHAPTERS ===` trailer's `mm:ss Title` lines.
+# A gap this long has no visual of its own at all. Splitting it keeps the
+# frame alive, but the writer should know where the video goes visually
+# silent, so it is named with its timestamp.
+HOST_GAP_WARN_S = 25.0
 
-    The times are the writer's estimates, not measurements — they are used
-    only to reserve a host beat around each boundary, never to place audio.
-    Anything unparseable or past the end of the cut is skipped.
+
+def chapter_start_times(chapters: str, duration: float) -> list[tuple[float, str]]:
+    """`(seconds, title)` from the `=== CHAPTERS ===` trailer's `mm:ss Title`.
+
+    The times are the writer's estimates, not measurements — they are used to
+    reserve a host beat around each boundary and to place the section
+    stingers, never to place audio. Anything unparseable or past the end of
+    the cut is skipped.
+
+    The TITLE is returned as well because the renderer was throwing it away:
+    it spaced its stingers evenly across the runtime and drew them from a
+    hardcoded six-entry list, so every long video carried section titles that
+    had nothing to do with its own sections.
     """
-    out: list[float] = []
+    out: list[tuple[float, str]] = []
     for line in (chapters or "").splitlines():
-        stamp = line.strip().split(" ", 1)[0]
+        stamp, _, title = line.strip().partition(" ")
         parts = stamp.split(":")
         if not (2 <= len(parts) <= 3) or not all(p.isdigit() for p in parts):
             continue
@@ -436,8 +718,15 @@ def chapter_start_times(chapters: str, duration: float) -> list[float]:
         for p in parts:
             seconds = seconds * 60 + int(p)
         if 0.0 < seconds < duration:
-            out.append(seconds)
-    return sorted(set(out))
+            out.append((seconds, title.strip()))
+    # Sorted by time, first title wins a duplicated timestamp.
+    seen: set[float] = set()
+    unique: list[tuple[float, str]] = []
+    for t, title in sorted(out, key=lambda p: p[0]):
+        if t not in seen:
+            seen.add(t)
+            unique.append((t, title))
+    return unique
 
 
 def _diversify_fillers(segments: list["Segment"]) -> None:
@@ -459,7 +748,7 @@ def plan_long_segments(
     duration: float,
     *,
     holds: dict | None = None,
-    chapter_starts: list[float] | None = None,
+    chapter_starts: list[float] | list[tuple[float, str]] | None = None,
     min_readable_s: float = MIN_READABLE_S,
     chapter_host_s: float = CHAPTER_HOST_S,
 ) -> tuple[list[Segment], list[str]]:
@@ -481,10 +770,13 @@ def plan_long_segments(
     visual.sort(key=lambda c: c.t)
 
     # Windows the evidence may not occupy, so each chapter opens and closes
-    # on Dennis talking.
+    # on Dennis talking. `chapter_starts` carries titles now; either shape is
+    # accepted so a caller that only has times still works.
+    starts = [t[0] if isinstance(t, (tuple, list)) else float(t)
+              for t in (chapter_starts or [])]
     blocked: list[tuple[float, float]] = [
         (max(t - chapter_host_s, 0.0), min(t + chapter_host_s, duration))
-        for t in sorted(chapter_starts or []) if 0.0 < t < duration
+        for t in sorted(starts) if 0.0 < t < duration
     ]
 
     def push_past_chapter_beat(t: float) -> float:
@@ -497,18 +789,39 @@ def plan_long_segments(
     host_i = 0
 
     def add_host(a: float, b: float) -> None:
-        """One held host beat for the gap — never chopped into filler cuts."""
+        """Host beats for the gap — never chopped into filler cuts, but never
+        one frame for a minute and a half either.
+
+        A gap longer than `MAX_HOST_BEAT_S` becomes consecutive host segments.
+        They are still all Dennis talking, so this is not a cut away from him;
+        it is the shot changing, which the bank and the `variant` counter
+        already do between gaps and never did inside one.
+        """
         nonlocal host_i
-        if b - a <= 0:
+        span = b - a
+        if span <= 0:
             return
-        if b - a < MIN_HOST_BEAT_S and segments:
+        if span < MIN_HOST_BEAT_S and segments:
             # too short to be a beat: leave the previous visual up instead of
             # blinking to the host and straight back out
             segments[-1].end = b
             return
-        segments.append(Segment(start=a, end=b, kind="host",
-                                payload={"variant": host_i, "layout": "host-full"}))
-        host_i += 1
+        if span > HOST_GAP_WARN_S:
+            warnings.append(
+                f"{span:.0f}s with no visual from {a:.0f}s to {b:.0f}s — the "
+                f"shot changes but nothing new is shown; consider a tag in "
+                f"that stretch"
+            )
+        # Even parts, so the last one is never a stub.
+        n = max(int(math.ceil(span / MAX_HOST_BEAT_S)), 1)
+        step = span / n
+        for i in range(n):
+            start = a + i * step
+            end = b if i == n - 1 else a + (i + 1) * step
+            segments.append(Segment(start=start, end=end, kind="host",
+                                    payload={"variant": host_i,
+                                             "layout": "host-full"}))
+            host_i += 1
 
     cursor = 0.0
     two_shot_i = 0

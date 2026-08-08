@@ -142,7 +142,7 @@ class YahooPriceSource:
 
 
 def make_price_source(settings: Settings) -> PriceSource:
-    return MockPriceSource(settings) if settings.mock_mode else YahooPriceSource(settings)
+    return MockPriceSource(settings) if settings.mocking_prices else YahooPriceSource(settings)
 
 
 def get_price_history(ticker: str, settings: Settings,

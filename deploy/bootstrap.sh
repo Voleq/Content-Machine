@@ -30,10 +30,19 @@ DEST="${1:-/opt/dennis}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_USER="dennis"
 
-# The floor is set by pyproject.toml (requires-python = ">=3.11"). Ubuntu
-# 24.04 - the default WSL2 distro - ships 3.12 and has NO python3.11 package,
-# so pinning 3.11 by name made this script fail on step one there. Any
-# interpreter at or above the floor is fine; newest first.
+# The floor is set by pyproject.toml (requires-python = ">=3.11"). The CEILING
+# is set by the pinned dependency wheels: this installs exact versions, and
+# pydantic-core, numpy and pillow do not publish wheels for an interpreter
+# newer than the pins were cut against. A too-new Python does not fail here -
+# it fails several minutes later, mid-pip, trying to build a Rust extension
+# from source.
+#
+# Both bounds are checked BY VERSION rather than by name. Pinning python3.11
+# by name made this script die on step one on Ubuntu 24.04 (ships 3.12, has no
+# python3.11 package); pinning nothing made it pick up a 3.14 that cannot
+# install the dependencies at all.
+PY_MIN_MINOR=11
+PY_MAX_MINOR=13
 PYTHON_CANDIDATES=(python3.13 python3.12 python3.11 python3)
 FFMPEG_MIN_MAJOR=6
 
@@ -128,25 +137,47 @@ fi
 # A Python at or above the floor. Checked before apt so the message can name
 # the real problem rather than a missing package.
 PY=""
+SEEN=""
 for cand in "${PYTHON_CANDIDATES[@]}"; do
   command -v "$cand" >/dev/null 2>&1 || continue
-  if "$cand" -c 'import sys; raise SystemExit(0 if sys.version_info[:2] >= (3, 11) else 1)' 2>/dev/null; then
+  cand_ver="$("$cand" -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || true)"
+  [ -n "$cand_ver" ] || continue
+  SEEN="${SEEN}${SEEN:+, }${cand} (${cand_ver})"
+  if "$cand" -c "import sys
+lo, hi = ${PY_MIN_MINOR}, ${PY_MAX_MINOR}
+raise SystemExit(0 if sys.version_info[0] == 3 and lo <= sys.version_info[1] <= hi else 1)" 2>/dev/null; then
     PY="$cand"
     break
   fi
 done
 if [ -z "$PY" ]; then
   die \
-"No Python 3.11 or newer found (tried: ${PYTHON_CANDIDATES[*]}).
+"No usable Python found. This needs 3.${PY_MIN_MINOR}-3.${PY_MAX_MINOR}.
+Interpreters on this machine: ${SEEN:-none}
 
-Ubuntu 24.04 ships 3.12, which is fine - install it if it is somehow absent:
+Every dependency in pyproject.toml is pinned exactly, and those pins have no
+wheels for anything newer than 3.${PY_MAX_MINOR} - a newer interpreter gets
+several minutes into pip and then fails compiling pydantic-core from source.
 
-    sudo apt-get install -y python3 python3-venv
+Pick whichever of these fits the machine:
 
-On an older release that ships something below 3.11, add deadsnakes:
+  1. The distro package, if it has one in range:
+         sudo apt-get install -y python3.${PY_MAX_MINOR} python3.${PY_MAX_MINOR}-venv
 
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    sudo apt-get install -y python3.12 python3.12-venv"
+  2. deadsnakes, on a release old enough to have it:
+         sudo add-apt-repository ppa:deadsnakes/ppa
+         sudo apt-get update
+         sudo apt-get install -y python3.${PY_MIN_MINOR} python3.${PY_MIN_MINOR}-venv
+
+  3. uv - the one that always works, and the answer when the distro is too
+     NEW for deadsnakes (which is the usual case on a fresh release: there is
+     no PPA build for it yet, and back-version PPAs will not install):
+         curl -LsSf https://astral.sh/uv/install.sh | sh
+         uv python install 3.${PY_MIN_MINOR}
+         sudo bash deploy/bootstrap.sh ${DEST}
+
+     uv puts the interpreter on PATH as python3.${PY_MIN_MINOR}, which this
+     script then finds on its own."
 fi
 PY_VERSION="$("$PY" -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])')"
 info "python: $PY ($PY_VERSION)"

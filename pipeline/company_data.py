@@ -390,6 +390,42 @@ def _read_csv_pairs(src: Path) -> dict[str, object]:
     return pairs
 
 
+# Exchange codes a RIC may carry. A curated list rather than "any short
+# alphabetic tail", because `.A` and `.B` are share classes: BRK.A and BRK.B
+# are different securities and must not collapse onto each other.
+RIC_SUFFIXES = frozenset({
+    "O", "OQ", "N", "P", "K", "Q", "PK", "V",          # US
+    "L", "PA", "DE", "F", "MI", "MC", "AS", "BR",      # Europe
+    "SW", "ST", "HE", "CO", "OL", "VI", "LS", "IR",
+    "TO", "TSX", "MX", "SA", "BA", "SN",               # Americas
+    "AX", "NZ", "T", "HK", "SS", "SZ", "KS", "KQ",     # Asia-Pacific
+    "TW", "TWO", "SI", "BO", "NS", "JK", "BK", "KL",
+    "SR", "TA", "JO", "CA",                            # MEA
+})
+
+
+def ticker_root(value: str) -> str:
+    """A ticker with its exchange/vendor suffix removed.
+
+    `SNDK.O`, `SNDK.OQ`, `VOD.L` and `SNDK` all name the same company. The
+    terminal writes a RIC, the operator opens a workspace with a plain ticker,
+    and an exact string comparison rejected a workbook that was for exactly
+    the right company — which is how a valid export got refused at upload.
+
+    Only a suffix in :data:`RIC_SUFFIXES` is stripped. `BRK.B` keeps its tail:
+    a share class is a different security, and quietly treating it as the same
+    one would swap the wrong company's numbers into a video.
+    """
+    head, _, tail = value.strip().upper().partition(".")
+    return head if tail in RIC_SUFFIXES else value.strip().upper()
+
+
+def tickers_match(a: str, b: str) -> bool:
+    """True when two ticker spellings name the same company."""
+    a, b = a.strip().upper(), b.strip().upper()
+    return bool(a) and bool(b) and (a == b or ticker_root(a) == ticker_root(b))
+
+
 def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
                     max_age_days: int | None, today: _dt.date | None) -> None:
     """The checks that are about what the export SAYS, not how it is shaped.
@@ -430,7 +466,7 @@ def _check_contents(check: ExportCheck, pairs: dict, expect_ticker: str,
     # --- wrong company -------------------------------------------------
     want = expect_ticker.strip().upper()
     got = check.ticker.strip().upper()
-    if want and got and got != want:
+    if want and got and not tickers_match(got, want):
         check.problems.append(ExportProblem(
             kind="wrong_ticker",
             message=(f"{name} is {got}, but this workspace is {want}. "

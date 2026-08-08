@@ -453,7 +453,7 @@ def fetch_quotes(settings: Settings, tickers: Sequence[str]) -> list[dict]:
     """
     if not tickers:
         return []
-    if settings.mock_mode:
+    if settings.mocking_prices:
         try:
             raw = json.loads(
                 (settings.fixtures_dir / "screener" / "yahoo_trending.json").read_text(encoding="utf-8"))
@@ -471,7 +471,15 @@ def fetch_quotes(settings: Settings, tickers: Sequence[str]) -> list[dict]:
         return []
 
 
-def digest(alerts: Sequence[Alert]) -> str:
+def digest(alerts: Sequence[Alert], settings: Settings | None = None) -> str:
+    """The alert digest, with a mock banner on top when any of it is invented.
+
+    The banner is the whole point of the signature change: a digest built from
+    fixture quotes reads exactly like a digest built from the market, and one
+    of those is a reason to act.
+    """
     if not alerts:
         return ""
-    return "\n\n".join(a.render() for a in alerts)
+    body = "\n\n".join(a.render() for a in alerts)
+    banner = settings.mock_banner() if settings is not None else ""
+    return f"{banner}\n\n{body}" if banner else body

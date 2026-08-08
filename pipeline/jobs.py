@@ -166,6 +166,11 @@ class RenderJobQueue:
                 job.status = JobStatus.DONE
                 job.artifact = artifact
                 self.store.save(job)
+                # Success was the one outcome that sent nothing. A render
+                # started, failed or was cancelled all pushed; a render that
+                # WORKED had to be discovered by polling /status, which is how
+                # a finished video sat unnoticed for hours.
+                await self._notify(self._done_text(job))
             except JobCancelled:
                 job = self.store.load(job_id) or job
                 job.status = JobStatus.CANCELLED
@@ -177,7 +182,36 @@ class RenderJobQueue:
                 job.status = JobStatus.FAILED
                 job.error = str(e)[:1500]
                 self.store.save(job)
-                await self._notify(f"❌ {job.ticker} {job.kind.value} failed:\n{job.error[:600]}")
+                await self._notify(self._failed_text(job))
+
+    def _done_text(self, job: JobRecord) -> str:
+        """The success push. Always names the output path.
+
+        "Done" on its own sends the operator back to /status to find out what
+        was produced and where — which is the polling this replaced.
+        """
+        lines = [f"✅ {job.ticker}: {job.kind.value} done"]
+        if job.artifact:
+            path = Path(job.artifact)
+            lines.append(str(path))
+            try:
+                mb = path.stat().st_size / 1_000_000
+                lines.append(f"{mb:.1f} MB")
+            except OSError:
+                pass
+        if job.delivered_link:
+            lines.append(job.delivered_link)
+        banner = self.settings.mock_banner()
+        if banner:
+            lines.append(banner)
+        return "\n".join(lines)
+
+    def _failed_text(self, job: JobRecord) -> str:
+        """The failure push. Names the workspace so the artifacts are findable."""
+        lines = [f"❌ {job.ticker} {job.kind.value} failed:", job.error[:600]]
+        ws = self.settings.workspace_dir / job.ticker / job.workdate
+        lines.append(f"workspace: {ws}")
+        return "\n".join(lines)
 
     async def _notify(self, text: str) -> None:
         if self.notifier is not None:

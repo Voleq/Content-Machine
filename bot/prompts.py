@@ -93,9 +93,12 @@ _CONCEPT_USE = {
 _STRIP_PREFIXES = ("obj-", "term-", "big-number-", "compare-", "react-", "beat-")
 
 
-def _leaves(kit, prefix: str, *, keep: str = "", strip: bool = True,
-            drop_blanks: bool = False) -> list[str]:
+def _leaves(kit, prefix: str | tuple[str, ...], *, keep: str = "",
+            strip: bool = True, drop_blanks: bool = False) -> list[str]:
     """Family leaf keys, optionally filtered to one naming prefix.
+
+    Takes several families, because one tag's artwork now lives across more
+    than one folder in the rebuilt kit.
 
     `drop_blanks` removes the empty layouts (`term-card-blank`,
     `big-number-blank`). They are real and useful — they take arbitrary text —
@@ -103,39 +106,65 @@ def _leaves(kit, prefix: str, *, keep: str = "", strip: bool = True,
     framework, which is exactly the confusion this catalog is meant to remove.
     They get their own line instead.
     """
-    head = prefix.rstrip("/") + "/"
+    prefixes = (prefix,) if isinstance(prefix, str) else tuple(prefix)
     out: list[str] = []
-    for name in kit.family(prefix):
-        leaf = name[len(head):]
-        if keep and not leaf.startswith(keep):
-            continue
-        if strip:
-            for p in _STRIP_PREFIXES:
-                if leaf.startswith(p):
-                    leaf = leaf[len(p):]
-                    break
-        if drop_blanks and (leaf == "blank" or leaf.endswith("-blank")):
-            continue
-        out.append(leaf)
+    for fam in prefixes:
+        head = fam.rstrip("/") + "/"
+        for name in kit.family(fam):
+            leaf = name[len(head):]
+            if keep and not leaf.startswith(keep):
+                continue
+            if strip:
+                for p in _STRIP_PREFIXES:
+                    if leaf.startswith(p):
+                        leaf = leaf[len(p):]
+                        break
+            if drop_blanks and (leaf == "blank" or leaf.endswith("-blank")):
+                continue
+            out.append(leaf)
     return sorted(set(out))
 
 
 def _chapter_kits(kit) -> list[str]:
-    """Chapter kit names, descending into the nested long-form ones.
+    """Chapter kits that ship dedicated artwork."""
+    return sorted(f.split("/", 1)[1] for f in kit.families()
+                  if f.startswith("chapters/"))
 
-    `chapters/long-form/` is a container for four sub-kits (bvb, rc, tn, val),
-    so listing "long-form" as a chapter would name something that isn't one.
+
+def _shorts_families(kit) -> list[tuple[str, list[str]]]:
+    """The shorts batch, family by family, with each asset's title.
+
+    This is the half of the library the SHORT writer has never been shown. The
+    long-form prompt has had a catalog since the kit existed; the short prompt
+    got the tags and none of the vocabulary, so every script reached for the
+    same four beats.
     """
-    out: set[str] = set()
-    for name in kit._assets:
-        if not name.startswith("chapters/"):
+    out: list[tuple[str, list[str]]] = []
+    for family in kit.families():
+        if not family.startswith("shorts/"):
             continue
-        parts = name.split("/")
-        if len(parts) >= 4:          # chapters/long-form/tn/<asset>
-            out.add(f"{parts[1]}/{parts[2]}")
-        elif len(parts) == 3:
-            out.add(parts[1])
-    return sorted(out)
+        rows: list[str] = []
+        for key in kit.family(family):
+            asset = kit.get(key)
+            if asset is None:
+                continue
+            leaf = key.rsplit("/", 1)[-1]
+            bits: list[str] = []
+            if asset.title:
+                bits.append(asset.title)
+            if asset.frame_count > 1:
+                bits.append(f"{asset.frame_count}f {asset.playback}")
+            if asset.slots:
+                # Slot NAMES, because they are what the writer types after the
+                # `=`, and the first slot's note, because "what goes in it" is
+                # the thing the name does not say.
+                names = ", ".join(s.name for s in asset.slots)
+                note = next((s.note for s in asset.slots if s.note), "")
+                bits.append(f"takes {names}" + (f" ({note})" if note else ""))
+            rows.append(f"{leaf}" + (f" — {'; '.join(bits)}" if bits else ""))
+        if rows:
+            out.append((family.split("/", 1)[1], rows))
+    return out
 
 
 def _group(title: str, keys: list[str], *, note: str = "") -> list[str]:
@@ -166,27 +195,34 @@ def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
     Terse by design. Grouped keys with a `use when` only for the concepts,
     because those are the ones whose names don't say what they're for.
     """
+    from pipeline.host import HOST_BANKS  # noqa: F401  (used below)
     from pipeline.kit import load_kit
 
     kit = load_kit(settings.assets_dir)
     if not len(kit):
-        return ("(design kit not exported — run scripts/export_design_kit.py. "
+        return ("(design kit not ingested — run scripts/ingest_kit.py. "
                 "Until then use [ASSET] for anything the kit would have covered.)")
+
+    from pipeline.models import KIT_TAG_FAMILIES, TagType
 
     out: list[str] = []
     out += _group("[TERM: key] — explainer cards that EXIST (only these)",
-                  _leaves(kit, "type/callouts", keep="term-", drop_blanks=True))
-    out += _group("[BIGNUM: key] — one-number cards",
-                  _leaves(kit, "type/callouts", keep="big-number-",
+                  _leaves(kit, KIT_TAG_FAMILIES[TagType.TERM], keep="term-",
                           drop_blanks=True))
+    out += _group("[BIGNUM: key] — one-number cards",
+                  _leaves(kit, KIT_TAG_FAMILIES[TagType.BIGNUM],
+                          keep="big-number-", drop_blanks=True))
     out.append("  A blank layout exists for both, so an unlisted term or number "
-               "still gets a card — the named ones just come with their own art.")
-    out += _group("[TABLE: kind]", _leaves(kit, "type/tables"))
-    out += _group("[ALERT: kind]", _leaves(kit, "type/alerts"))
-    out += _group("[PROP: key] — object cutaways",
-                  _leaves(kit, "props/objects"))
+               "still gets a card — the text you write is composited into it.")
+    out += _group("[TABLE: kind]", _leaves(kit, KIT_TAG_FAMILIES[TagType.TABLE]))
+    out += _group("[ALERT: kind]", _leaves(kit, KIT_TAG_FAMILIES[TagType.ALERT]))
+    # The shorts families resolve as [PROP] too, but they get the detailed
+    # section below — listing them twice turns a menu into a wall.
+    out += _group("[PROP: key] — object cutaways and concept illustrations",
+                  _leaves(kit, tuple(f for f in KIT_TAG_FAMILIES[TagType.PROP]
+                                     if not f.startswith("shorts/"))))
 
-    concepts = _leaves(kit, "props/concepts")
+    concepts = _leaves(kit, "concepts")
     if concepts:
         out.append("Concept illustrations — use when:")
         for c in concepts:
@@ -194,16 +230,39 @@ def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
             out.append(f"  - {c}" + (f" — {use}" if use else ""))
 
     if fmt == "short":
-        out += _group("Short beat variants (the renderer rotates these itself)",
-                      _leaves(kit, "short/variants"),
-                      note="you don't pick these; they vary across uploads")
+        # The shorts batch, in full. 51 assets, 74 fillable slots, 27 of them
+        # animated — the writer names a beat and the renderer plays it. This
+        # is the part the short prompt has never carried.
+        families = _shorts_families(kit)
+        if families:
+            out.append("")
+            out.append(
+                "SHORT BEAT LIBRARY — name one as [PROP: key = value] and the "
+                "renderer plays it, composites your figure into the drawing, "
+                "and holds it for the beat.")
+            out.append(
+                "  [PROP: crushed-flat = -41%]                         one slot")
+            out.append(
+                "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
+            out.append(
+                "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
+            out.append(
+                "  WITHOUT the `= value` the drawing renders with its boxes "
+                "EMPTY. Always give a figure.")
+            for name, rows in families:
+                out.append(f"  {name}:")
+                for row in rows:
+                    out.append(f"    - {row}")
     else:
         out += _group("Chapter kits with dedicated artwork", _chapter_kits(kit),
-                      note="name a chapter close to one of these and it gets its own visuals")
+                      note="name a chapter close to one of these and it gets "
+                           "its own visuals")
 
-    out += _group("Host poses", _leaves(kit, "mascot/host"),
-                  note="the renderer places these; listed so you know what he can do")
-    out += _group("Host reactions", _leaves(kit, "mascot/reactions"))
+    out += _group("Host shots (the renderer places these; listed so you know "
+                  "what he can do)",
+                  sorted({k.rsplit("/", 1)[-1] for role in HOST_BANKS.values()
+                          for k in role}))
+    out += _group("Host reactions", _leaves(kit, "mascot"))
     out.append(
         "\nAnything genuinely NOT in the lists above: use [ASSET: slug] and append "
         "a Claude Design prompt for it. That is the escape hatch for a diagram the "

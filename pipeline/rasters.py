@@ -100,8 +100,14 @@ def text_panel(
     pad: int = 36,
     align: str = "center",
     radius: int = 26,
+    placed: list | None = None,
 ) -> Image.Image:
-    """Auto-height rounded panel with wrapped text (hook / conclusion cards)."""
+    """Auto-height rounded panel with wrapped text (hook / conclusion cards).
+
+    `placed`, when given, is filled with `(line, x, y)` for every line drawn —
+    what `roll_over_lines` needs to repaint a figure without re-wrapping the
+    sentence around it.
+    """
     font = load_font(settings, font_name, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     inner = width - 2 * pad - (14 if accent else 0)
@@ -123,7 +129,35 @@ def text_panel(
         else:
             x = x0
         d.text((x, pad + i * lh), line, font=font, fill=fg)
+        if placed is not None:
+            placed.append((line, x, pad + i * lh))
     return img
+
+
+def text_panel_frames(
+    settings: Settings,
+    text: str,
+    *,
+    fps: int = 30,
+    seconds: float = 0.7,
+    **panel,
+) -> tuple[Image.Image, list[Image.Image] | None]:
+    """`(panel, roll frames or None)` — the ledger line with its figure landing.
+
+    The payoff line is where the short's own number is finally said, and it
+    arrived fully formed while the sheet above it counted. Every other
+    argument is `text_panel`'s.
+    """
+    placed: list = []
+    img = text_panel(settings, text, placed=placed, **panel)
+    font = load_font(settings, panel.get("font_name", DISPLAY_BOLD),
+                     panel.get("font_size", 64))
+    ascent, descent = font.getmetrics()
+    frames = roll_over_lines(
+        img, placed, font,
+        fill=panel.get("fg", (*INK, 255)), bg=panel.get("bg", (*PANEL, 235)),
+        line_h=int((ascent + descent) * 1.12), fps=fps, seconds=seconds)
+    return img, frames
 
 
 def simple_text(
@@ -314,17 +348,45 @@ def intro_card(settings: Settings, ticker: str, tagline: str, *,
 def chapter_stinger(settings: Settings, number: str, title: str, *,
                     width: int, height: int) -> Image.Image:
     """A full-frame chapter stinger card: a big Shantell chapter title with
-    a mono kicker and the red terminal dot — the LONG section divider."""
+    a mono kicker and the red terminal dot — the LONG section divider.
+
+    The title is FITTED. It used to be drawn at a fixed size from the left
+    margin, which was invisible while the titles were six hardcoded two-word
+    phrases; the moment the script's own sections reached the card, "what the
+    money actually does" ran off the right-hand edge mid-word.
+    """
     img = Image.new("RGBA", (width, height), (*BG, 235))
     d = ImageDraw.Draw(img)
     kick = load_font(settings, MONO_BOLD, max(int(height * 0.045), 14))
-    big = load_font(settings, SHANTELL, max(int(height * 0.16), 28))
-    d.text((int(width * 0.1), int(height * 0.36)), number.upper(), font=kick,
-           fill=(*MUTED, 255))
+    left = int(width * 0.1)
+    avail = width - left * 2
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    tw = probe.textlength(title, font=big)
-    d.text((int(width * 0.1), int(height * 0.44)), title, font=big, fill=(*INK, 255))
-    d.text((int(width * 0.1) + tw, int(height * 0.44)), ".", font=big, fill=(*RED, 255))
+
+    size = max(int(height * 0.16), 28)
+    floor = max(int(height * 0.07), 18)
+    big = load_font(settings, SHANTELL, size)
+    while size > floor and probe.textlength(f"{title}.", font=big) > avail:
+        size -= 2
+        big = load_font(settings, SHANTELL, size)
+
+    lines = [title]
+    if probe.textlength(f"{title}.", font=big) > avail:
+        # Still too long at the floor: break on a word boundary rather than
+        # shrinking the section title into illegibility.
+        from pipeline.kit_frames import _wrap_to
+
+        lines = _wrap_to(d, title, big, avail) or [title]
+
+    line_h = int(size * 1.12)
+    top = int(height * 0.44) - (len(lines) - 1) * line_h // 2
+    d.text((left, int(height * 0.36) - (len(lines) - 1) * line_h // 2),
+           number.upper(), font=kick, fill=(*MUTED, 255))
+    for i, line in enumerate(lines):
+        y = top + i * line_h
+        d.text((left, y), line, font=big, fill=(*INK, 255))
+        if i == len(lines) - 1:
+            d.text((left + probe.textlength(line, font=big), y), ".",
+                   font=big, fill=(*RED, 255))
     return img
 
 
@@ -601,10 +663,15 @@ def typing_frames(
 
 
 def headline_card(settings: Settings, text: str, *, meaning: str = "",
-                  width: int, font_size: int = 40) -> Image.Image:
+                  width: int, font_size: int = 40,
+                  placed: list | None = None) -> Image.Image:
     """Driver-headline card (the WHY beat): a red left border, the quoted
     headline in Space Grotesk, and the red hand-drawn "gloss" line under it
-    (Shantell Sans) saying what it actually means."""
+    (Shantell Sans) saying what it actually means.
+
+    `placed`, when given, is filled with `(line, x, y)` for the QUOTED lines —
+    the headline's own figure is what rolls, not the gloss under it.
+    """
     font = load_font(settings, GROTESK_BOLD, font_size)
     gloss_font = load_font(settings, SHANTELL, int(font_size * 0.82))
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
@@ -626,12 +693,33 @@ def headline_card(settings: Settings, text: str, *, meaning: str = "",
     y = pad
     for line in lines:
         d.text((bar_w + pad, y), line, font=font, fill=(*INK, 255))
+        if placed is not None:
+            placed.append((line, bar_w + pad, y))
         y += lh
     y += int(pad * 0.6)
     for line in gloss_lines:
         d.text((bar_w + pad, y), line, font=gloss_font, fill=(*RED, 255))
         y += glh
     return img
+
+
+def headline_card_frames(settings: Settings, text: str, *, meaning: str = "",
+                         width: int, font_size: int = 40,
+                         fps: int = 30, seconds: float = 0.7
+                         ) -> tuple[Image.Image, list[Image.Image] | None]:
+    """`(card, roll frames or None)` — the driver's figure landing on arrival.
+
+    A driver headline is almost always a number ("orders fell 41%"), and it
+    was the one place a figure reached the frame already counted.
+    """
+    placed: list = []
+    card = headline_card(settings, text, meaning=meaning, width=width,
+                         font_size=font_size, placed=placed)
+    frames = roll_over_lines(
+        card, placed, load_font(settings, GROTESK_BOLD, font_size),
+        fill=(*INK, 255), bg=(*CARD, 244), line_h=int(font_size * 1.24),
+        fps=fps, seconds=seconds)
+    return card, frames
 
 
 # --------------------------------------------------------------------------
@@ -658,10 +746,33 @@ def parse_row_values(values: list[str]) -> list[float] | None:
     return out
 
 
+# The sheet's metrics are authored against a 1000px-wide card — the width the
+# SHORT's design layout asks for at full resolution.
+SHEET_DESIGN_W = 1000
+
+
 def sheet_layout(settings: Settings, n_rows: int, *, width: int,
-                 row_h: int = 118, title_h: int = 96, years_h: int = 64,
-                 pad: int = 28) -> dict:
-    """Pixel geometry shared by the base card, row clips and zoom pops."""
+                 row_h: int | None = None, title_h: int | None = None,
+                 years_h: int | None = None, pad: int | None = None) -> dict:
+    """Pixel geometry shared by the base card, row clips and zoom pops.
+
+    Every metric scales with the card's width. They used to be fixed pixel
+    counts, so a card rendered at half size kept full-size rows and a
+    full-size title — the same sheet, but proportioned differently. That makes
+    a reduced-resolution render stop being a miniature of the real one, which
+    matters most for the golden frames, whose whole job is to be evidence
+    about what ships.
+    """
+    # The rows are generous because this is a PHONE. The gut check is the most
+    # read thing in the short and it rendered as a thin landscape strip —
+    # 1000x570 on a 1080x1920 frame, 27% of it — with figures small enough to
+    # squint at. The sheet is a generated raster, so unlike the 16:9 card
+    # artwork its proportions are a choice rather than arithmetic.
+    s = max(width, 1) / SHEET_DESIGN_W
+    row_h = row_h if row_h is not None else max(int(176 * s), 24)
+    title_h = title_h if title_h is not None else max(int(116 * s), 20)
+    years_h = years_h if years_h is not None else max(int(72 * s), 14)
+    pad = pad if pad is not None else max(int(30 * s), 6)
     return {
         "width": width,
         "pad": pad,
@@ -693,11 +804,20 @@ def numbers_sheet_base(settings: Settings, n_rows: int, years: list[str], *,
            "from the filing · direction, not a snapshot", font=sub_font,
            fill=(*MUTED, 255))
 
-    # year headers over the value columns
+    # Year headers over the value columns, fitted to the column they sit in.
+    # The row VALUES have always shrunk to fit; the headers did not, so a
+    # narrow card printed "2021 2022 2023" on top of itself while the numbers
+    # under them stayed legible.
     if years:
-        yr_font = load_font(settings, MONO_BOLD, int(ly["years_h"] * 0.44))
         x0 = ly["label_w"]
         cols_w = W - x0 - ly["bars_w"] - ly["pad"]
+        cell_w = cols_w / len(years)
+        ysize = max(int(ly["years_h"] * 0.44), 1)
+        yr_font = load_font(settings, MONO_BOLD, ysize)
+        widest = max((str(y) for y in years), key=len)
+        while ysize > 7 and d.textlength(widest, font=yr_font) > cell_w - 4:
+            ysize -= 1
+            yr_font = load_font(settings, MONO_BOLD, ysize)
         for j, y in enumerate(years):
             cx = x0 + cols_w * (j + 0.5) / len(years)
             d.text((cx - d.textlength(str(y), font=yr_font) / 2,
@@ -1046,3 +1166,429 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Caps,,0,0,0,,{text}"
         )
     return header + "\n".join(events) + "\n"
+
+
+# --------------------------------------------------------------------------
+# Phrase captions (the SHORT's caption track).
+# --------------------------------------------------------------------------
+
+# Where a caption may break. A karaoke page that fills up mid-clause splits
+# "revenue went four hundred / million to four ninety six", which reads as two
+# unrelated fragments; breaking after the punctuation keeps a phrase whole.
+_PHRASE_END = re.compile(r"[.!?…]$|[,;:—–]$")
+
+# Function words a line must never end on: a caption ending "of" or "the"
+# leaves the eye hanging for a frame and a half.
+_NEVER_LAST = {
+    "a", "an", "the", "and", "or", "but", "of", "to", "in", "on", "at", "for",
+    "from", "with", "by", "as", "is", "was", "are", "were", "that", "which",
+    "than", "into", "over", "its", "it's", "their", "your", "our", "his",
+}
+
+
+def phrase_pages(
+    words: list[WordTimestamp],
+    *,
+    max_words: int = 6,
+    max_chars: int = 30,
+    max_gap: float = 0.45,
+) -> list[list[WordTimestamp]]:
+    """Group words into caption lines that break on phrase boundaries.
+
+    Three things end a line, in priority order: sentence-final punctuation, a
+    real pause in the delivery, and clause punctuation once the line is long
+    enough to be worth breaking. The length caps are a backstop, and when one
+    fires it walks back off a function word rather than stranding it.
+    """
+    pages: list[list[WordTimestamp]] = []
+    page: list[WordTimestamp] = []
+
+    def flush() -> None:
+        nonlocal page
+        if page:
+            pages.append(page)
+            page = []
+
+    for i, w in enumerate(words):
+        page.append(w)
+        text = w.word.strip()
+        n_chars = sum(len(x.word) + 1 for x in page) - 1
+        nxt = words[i + 1] if i + 1 < len(words) else None
+        gap = (nxt.start - w.end) if nxt else 0.0
+
+        hard = bool(re.search(r"[.!?…]$", text))
+        soft = bool(_PHRASE_END.search(text)) and len(page) >= 3
+        paused = nxt is not None and gap >= max_gap and len(page) >= 2
+        full = len(page) >= max_words or n_chars >= max_chars
+
+        if hard or soft or paused:
+            flush()
+        elif full:
+            # Walk back off a dangling function word so the break lands
+            # somewhere a reader would have paused anyway.
+            if len(page) > 2 and page[-1].word.strip(".,;:!?").lower() in _NEVER_LAST:
+                carry = page.pop()
+                flush()
+                page = [carry]
+            else:
+                flush()
+    flush()
+    return pages
+
+
+def build_phrase_ass(
+    words: list[WordTimestamp],
+    *,
+    play_res: tuple[int, int],
+    font_size: int = 62,
+    margin_v: int = 300,
+    margin_h: int = 70,
+    max_words: int = 6,
+    max_chars: int = 30,
+    duration: float | None = None,
+    punch: bool = True,
+) -> str:
+    """The SHORT's captions: dark ink on a paper chip, phrase by phrase.
+
+    Not karaoke. The word-by-word red fill was doing two things at once —
+    colouring text the same red the kit uses for a down-move, and drawing the
+    eye along a line that had already been split mid-clause. This is one
+    legible phrase at a time, in the same ink as everything else on the frame.
+
+    `punch` gives each line a 60ms scale-up on entry. It is the caption half of
+    the motion layer: enough to register as a cut, not enough to bounce.
+    """
+    W, H = play_res
+
+    def bgr(c):  # ASS colours are &HAABBGGRR
+        r, g, b = c
+        return f"&H00{b:02X}{g:02X}{r:02X}"
+
+    header = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {W}
+PlayResY: {H}
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Caps,Shantell Sans,{font_size},{bgr(INK)},{bgr(INK)},&H0AF6F9FA,&H0AF6F9FA,-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    events: list[str] = []
+    pages = phrase_pages(words, max_words=max_words, max_chars=max_chars)
+    for i, page in enumerate(pages):
+        start = page[0].start
+        if i + 1 < len(pages):
+            end = max(pages[i + 1][0].start, page[-1].end)
+        else:
+            end = page[-1].end + 0.7
+        if duration is not None:
+            end = min(end, duration)
+        if end <= start:
+            continue
+        text = " ".join(w.word for w in page)
+        prefix = "{\\fscx92\\fscy92\\t(0,60,\\fscx100\\fscy100)}" if punch else ""
+        events.append(
+            f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Caps,,0,0,0,,{prefix}{text}"
+        )
+    return header + "\n".join(events) + "\n"
+
+
+# --------------------------------------------------------------------------
+# Motion layer.
+#
+# Every one of these takes a finished still and returns the frames that bring
+# it on. They are deliberately transforms rather than bespoke animations: the
+# artwork is already drawn, and the motion is how it ARRIVES. Nothing here
+# pans or zooms a held frame — the movement is entry only, and then it stops.
+# --------------------------------------------------------------------------
+
+
+# --------------------------------------------------------------------------
+# The drawn primitives.
+#
+# The kit is a pen on paper: every border in it is a stroke, not a geometric
+# rule. These live here rather than in `chart.py` because three modules now
+# draw with them — both charts and the thumbnail — and a thumbnail that
+# frames itself with `rounded_rectangle` is advertising a different product
+# from the one it is a cover for.
+# --------------------------------------------------------------------------
+
+
+def marker_stroke(d, pts, rng, *, width, color, jitter, passes=2):
+    """A marker line: the polyline drawn a few times with per-point jitter
+    and a chunky nib — the crude hand-drawn look."""
+    for _ in range(passes):
+        wobbled = [(x + rng.uniform(-jitter, jitter),
+                    y + rng.uniform(-jitter, jitter)) for x, y in pts]
+        d.line(wobbled, fill=color, width=width, joint="curve")
+
+
+def drawn_rect(d, box, rng, *, width, color, jitter=1.6, passes=1,
+                overshoot=0.0):
+    """A rectangle drawn by hand: four strokes, not a rounded_rectangle.
+
+    `overshoot` runs each stroke past its corner by that fraction of the side,
+    the way a pen does when you do not lift it — which is what stops four
+    jittered lines from reading as a rectangle with bad anti-aliasing.
+    """
+    x0, y0, x1, y1 = box
+    ox, oy = (x1 - x0) * overshoot, (y1 - y0) * overshoot
+    for a, b in (((x0 - ox, y0), (x1 + ox, y0)),
+                 ((x1, y0 - oy), (x1, y1 + oy)),
+                 ((x1 + ox, y1), (x0 - ox, y1)),
+                 ((x0, y1 + oy), (x0, y0 - oy))):
+        marker_stroke(d, [a, b], rng, width=width, color=color,
+                       jitter=jitter, passes=passes)
+
+
+
+def _ease_out(t: float) -> float:
+    """Fast, then settling. The house easing for anything that lands."""
+    return 1.0 - (1.0 - min(max(t, 0.0), 1.0)) ** 3
+
+
+# The figure inside a display string. Shared by the roller and the locator so
+# what gets found is exactly what gets rolled.
+_ROLL_RE = re.compile(r"-?\d[\d,]*\.?\d*")
+
+
+def roll_steps(value: str, n: int) -> list[str] | None:
+    """`value` rolling from zero to itself over `n+1` display strings.
+
+    None when there is no number in it, so a caller can hold the string
+    instead of animating punctuation. The prefix, suffix and sign do not
+    count — "$4.1B" rolls "0.0" to "4.1" and keeps the dollar and the B,
+    because a currency symbol flickering through the alphabet is noise.
+
+    Split out of `count_up_frames` so the roll is not tied to one raster.
+    Every figure in a short arrives somewhere — a slot on a drawing, a
+    blank layout's `figure` box, a headline card, the ledger line — and only
+    the numbers-sheet cue was ever animated, so every other one appeared
+    fully formed and the motion layer stopped at the sheet.
+    """
+    m = _ROLL_RE.search(value or "")
+    if m is None:
+        return None
+    raw = m.group(0).replace(",", "")
+    try:
+        target = float(raw)
+    except ValueError:
+        return None
+    head, tail = value[:m.start()], value[m.end():]
+    decimals = len(raw.split(".")[1]) if "." in raw else 0
+    grouped = "," in m.group(0)
+    out: list[str] = []
+    for k in range(max(n, 1) + 1):
+        cur = target * _ease_out(k / max(n, 1))
+        body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
+        out.append(f"{head}{body}{tail}")
+    return out
+
+
+def roll_over_lines(
+    base: Image.Image,
+    placed: list[tuple[str, float, float]],
+    font,
+    *,
+    fill,
+    bg,
+    line_h: int,
+    fps: int = 30,
+    seconds: float = 0.7,
+) -> list[Image.Image] | None:
+    """`base` re-drawn with the first figure in `placed` counting up to itself.
+
+    `placed` is `[(line_text, x, y)]` — the wrapped lines exactly as the card
+    drew them. None when no line carries a figure, so this is safe to call on
+    any card.
+
+    The figure is repainted INSIDE the box it already occupies rather than the
+    line being re-rendered around it. Both display faces have PROPORTIONAL
+    figures — a `4` is 33% wider than a `1` in Space Grotesk Bold, and 60% in
+    Shantell — so re-wrapping "fell 0%" into "fell 41%" slides every word
+    after the number back and forth under the digits. That reads as a wobble,
+    not as a counter, and it is worse than the static card it replaced.
+
+    The last frame is `base` itself, so a card that holds after the roll holds
+    exactly the pixels the rest of the render was measured against.
+    """
+    for line, lx, ly in placed:
+        m = _ROLL_RE.search(line)
+        if m is None:
+            continue
+        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+        body = line[m.start():m.end()]
+        steps = roll_steps(body, max(int(seconds * fps), 2))
+        if steps is None:
+            continue
+        bx = lx + probe.textlength(line[:m.start()], font=font)
+        bw = probe.textlength(body, font=font)
+        frames: list[Image.Image] = []
+        for s in steps[:-1]:
+            f = base.copy()
+            d = ImageDraw.Draw(f)
+            # The card's plate is a flat fill, so painting the box back to it
+            # restores exactly what was under the digits.
+            d.rectangle([bx, ly, bx + bw + 1, ly + line_h], fill=bg)
+            # RIGHT-aligned in the box the final value will fill. A narrower
+            # step has to leave its slack somewhere, and the right edge puts it
+            # at the word boundary before the number instead of between the
+            # number and its unit — left-aligned, "12%" mid-roll rendered as
+            # "12 %", which reads as a typo rather than as a count.
+            d.text((bx + bw - probe.textlength(s, font=font), ly), s,
+                   font=font, fill=fill)
+            frames.append(f)
+        frames.append(base)
+        return frames
+    return None
+
+
+def count_up_frames(
+    settings: Settings,
+    value: str,
+    *,
+    width: int,
+    height: int,
+    fps: int = 30,
+    seconds: float = 0.8,
+    font_name: str = MONO_BOLD,
+    fill=INK,
+    align: str = "center",
+) -> list[Image.Image]:
+    """A figure rolling up to its spoken value.
+
+    The digits count; the prefix, suffix and sign do not — "$4.1B" rolls
+    "0.0" to "4.1" and keeps the dollar and the B, because a currency symbol
+    flickering through the alphabet is noise, not motion. A value with no
+    digits at all is simply held, so this is safe to call on anything.
+    """
+    m = re.search(r"-?\d[\d,]*\.?\d*", value)
+    frames: list[Image.Image] = []
+    n = max(int(seconds * fps), 2)
+
+    def draw(text: str) -> Image.Image:
+        img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        size = int(height * 0.82)
+        font = load_font(settings, font_name, size)
+        while size > 10 and d.textlength(text, font=font) > width:
+            size = int(size * 0.92)
+            font = load_font(settings, font_name, size)
+        w = d.textlength(text, font=font)
+        x = 0 if align == "left" else (width - w if align == "right" else (width - w) / 2)
+        ascent, descent = font.getmetrics()
+        d.text((x, (height - ascent - descent) / 2), text, font=font, fill=(*fill, 255))
+        return img
+
+    if m is None:
+        return [draw(value)] * 2
+
+    head, tail = value[:m.start()], value[m.end():]
+    raw = m.group(0).replace(",", "")
+    try:
+        target = float(raw)
+    except ValueError:
+        return [draw(value)] * 2
+    decimals = len(raw.split(".")[1]) if "." in raw else 0
+    grouped = "," in m.group(0)
+
+    for k in range(n + 1):
+        cur = target * _ease_out(k / n)
+        body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
+        frames.append(draw(f"{head}{body}{tail}"))
+    return frames
+
+
+def draw_on_frames(
+    image: Image.Image,
+    *,
+    fps: int = 30,
+    seconds: float = 0.9,
+    direction: str = "left",
+) -> list[Image.Image]:
+    """A finished graphic revealed as if it were being drawn.
+
+    A wipe rather than a re-render: the chart, the bars and the table are
+    already correct pixels, and revealing them along the reading direction is
+    indistinguishable from watching the line drawn — without a second code
+    path that could disagree with the still.
+    """
+    frames: list[Image.Image] = []
+    W, H = image.size
+    n = max(int(seconds * fps), 2)
+    for k in range(n + 1):
+        p = _ease_out(k / n)
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        if direction == "up":
+            box = (0, H - max(int(H * p), 1), W, H)
+        elif direction == "down":
+            box = (0, 0, W, max(int(H * p), 1))
+        else:
+            box = (0, 0, max(int(W * p), 1), H)
+        frame.paste(image.crop(box), (box[0], box[1]))
+        frames.append(frame)
+    return frames
+
+
+def stamp_slam_frames(
+    image: Image.Image,
+    *,
+    fps: int = 30,
+    seconds: float = 0.45,
+    from_scale: float = 1.9,
+) -> list[Image.Image]:
+    """A card slammed down onto the frame: oversized, dropping to size, still.
+
+    Ends on the untouched image, so the beat that follows can hold this exact
+    frame — the slam is an entrance, not a state.
+    """
+    frames: list[Image.Image] = []
+    W, H = image.size
+    n = max(int(seconds * fps), 2)
+    for k in range(n + 1):
+        p = _ease_out(k / n)
+        scale = from_scale + (1.0 - from_scale) * p
+        sw, sh = max(int(W * scale), 1), max(int(H * scale), 1)
+        scaled = image.resize((sw, sh), Image.LANCZOS)
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        frame.paste(scaled, (int((W - sw) / 2), int((H - sh) / 2)), scaled)
+        if k == n:
+            frame = image.copy()
+        frames.append(frame)
+    return frames
+
+
+def slide_in_frames(
+    image: Image.Image,
+    *,
+    fps: int = 30,
+    seconds: float = 0.4,
+    direction: str = "up",
+    travel: float = 0.14,
+) -> list[Image.Image]:
+    """A card arriving from just off its resting position."""
+    frames: list[Image.Image] = []
+    W, H = image.size
+    n = max(int(seconds * fps), 2)
+    span = int((H if direction in ("up", "down") else W) * travel)
+    for k in range(n + 1):
+        p = _ease_out(k / n)
+        off = int(span * (1.0 - p))
+        dx, dy = 0, 0
+        if direction == "up":
+            dy = off
+        elif direction == "down":
+            dy = -off
+        elif direction == "left":
+            dx = off
+        else:
+            dx = -off
+        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        frame.paste(image, (dx, dy), image)
+        frames.append(frame)
+    return frames

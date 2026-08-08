@@ -96,6 +96,7 @@ HELP_TEXT = """Dennis — operator commands
 /status — job queue
 /cancel TICKER — cancel queued/running jobs + pending approval
 /cost — month-to-date spend vs cap
+/kit doctor — unresolved tag keys, never-used artwork, unregistered PNGs
 /help — this text
 
 Flow: /short or /long TICKER (the numbers refresh themselves; upload
@@ -1672,8 +1673,23 @@ class BotCore:
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
             f"{self.settings.pexels_monthly_call_cap}\n"
             f"Filing-flagger LLM: ${self.ledger.llm_usd_this_month():.2f}\n"
-            f"Mode: {'MOCK (no paid calls possible)' if self.settings.mock_mode else 'LIVE'}"
+            f"Mode: {'MOCK (no paid calls possible)' if self.settings.mock_mode else 'LIVE'}\n"
+            + self._mock_status_line()
         )
+
+    def _mock_status_line(self) -> str:
+        """Which subsystems are fake, spelled out — never just "mock mode".
+
+        Three of them can be mocked independently now, and a run with real
+        prices and a placeholder voice looks identical to a run with neither
+        unless something says so.
+        """
+        s = self.settings
+        rows = [f"{name}: {'MOCK' if on else 'live'}" for name, on in (
+            ("TTS", s.mocking_tts), ("Prices", s.mocking_prices),
+            ("Screener", s.mocking_screener))]
+        banner = s.mock_banner()
+        return "  ·  ".join(rows) + (f"\n{banner}" if banner else "")
 
 
 # ---------------------------------------------------------------------------
@@ -1946,6 +1962,18 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, Reply(core.cost_text()))
 
     @guard
+    async def cmd_kit(update, ctx):
+        """`/kit doctor` — what the library cannot answer, and what nothing
+        has asked for. The gap list is the input to the next batch of art."""
+        from pipeline.gates import kit_doctor_text
+
+        what = (ctx.args[0].lower() if ctx.args else "doctor")
+        if what not in ("doctor", "report"):
+            await _send(update, Reply("usage: /kit doctor"))
+            return
+        await _send(update, Reply(kit_doctor_text(core.settings)))
+
+    @guard
     async def cmd_screen(update, ctx):
         from pipeline.screener import screen_reply
         lane = ctx.args[0].lower() if ctx.args else "all"
@@ -2036,6 +2064,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("cost", cmd_cost))
+    app.add_handler(CommandHandler("kit", cmd_kit))
     app.add_handler(CommandHandler("screen", cmd_screen))
     app.add_handler(CallbackQueryHandler(on_callback))
     app.add_handler(MessageHandler(filters.Document.ALL, on_document))

@@ -262,9 +262,10 @@ class TTSEngine:
 
         MOCK_MODE still wins outright — the hard guarantee is that mock mode
         is offline and $0, and a local voice, free as it is, is a subprocess
-        and a model file that a test run must not depend on.
+        and a model file that a test run must not depend on. MOCK_TTS mocks
+        just this one, so prices and the screener can stay live.
         """
-        if self.settings.mock_mode:
+        if self.settings.mocking_tts:
             return "mock"
         if not draft:
             return "paid"
@@ -449,11 +450,28 @@ class TTSEngine:
             n_words = max(len(chunk.split()), 1)
             duration = max(n_words / wps, 0.8)
             f = cdir / f"chunk_{i:03d}.m4a"
-            # audible deterministic placeholder: low hum with word-rate tremolo
+            # A deterministic placeholder in the SPEECH BAND, not a hum.
+            #
+            # This used to be a single 155 Hz sine. Almost all of its energy
+            # sat below 200 Hz, so `loudnorm` measured a near-silent programme
+            # and raised it ~30 dB, which pushed inaudible sub-bass into the
+            # limiter: the render measured 0.0 LUFS integrated with a -0.9 dB
+            # peak and played as silence. Three harmonics through a
+            # telephone-band filter land where a voice lands, so the mix reads
+            # like speech to both the ear and the loudness meter.
             run_ffmpeg([
                 "-f", "lavfi",
-                "-i", f"sine=frequency=155:sample_rate=44100:duration={duration:.3f}",
-                "-af", f"tremolo=f={wps:.2f}:d=0.85,volume=0.35",
+                "-i", f"sine=frequency=210:sample_rate=44100:duration={duration:.3f}",
+                "-f", "lavfi",
+                "-i", f"sine=frequency=620:sample_rate=44100:duration={duration:.3f}",
+                "-f", "lavfi",
+                "-i", f"sine=frequency=1450:sample_rate=44100:duration={duration:.3f}",
+                "-filter_complex",
+                (f"[0:a]volume=0.5[a0];[1:a]volume=0.8[a1];[2:a]volume=0.4[a2];"
+                 f"[a0][a1][a2]amix=inputs=3:normalize=0,"
+                 f"highpass=f=180,lowpass=f=3400,"
+                 f"tremolo=f={wps:.2f}:d=0.85,volume=0.62[out]"),
+                "-map", "[out]",
                 "-c:a", "aac", "-b:a", "128k", str(f),
             ])
             files.append(f)

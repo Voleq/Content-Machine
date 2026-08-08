@@ -30,7 +30,20 @@ def main() -> None:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
     ffmpeg, _ = detect_ffmpeg()
-    log.info("ffmpeg: %s | mock_mode=%s", ffmpeg, settings.mock_mode)
+    log.info("ffmpeg: %s", ffmpeg)
+    # Say which subsystems are inventing data, at startup, every time. A run
+    # where /screen returned fixture tickers and the chart drew synthetic
+    # prices — neither labelled — produced a bug report about numbers that
+    # were never real.
+    banner = settings.mock_banner()
+    if banner:
+        log.warning("%s", banner)
+        log.warning("mock: %s | live: %s",
+                    ", ".join(settings.active_mocks()) or "none",
+                    ", ".join(n for n in ("TTS", "PRICES", "SCREENER")
+                              if n not in settings.active_mocks()) or "none")
+    else:
+        log.info("all subsystems LIVE (no mock data)")
     # Under WSL2, workspace/cache/state on a Windows drive (/mnt/c/...) makes
     # the render cache pathologically slow — it is thousands of small files
     # and every access crosses the translation layer. Warned about here rather

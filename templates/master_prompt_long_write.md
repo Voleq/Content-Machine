@@ -139,10 +139,16 @@ Then write the script using that hook as its first line.
 [DOODLE: key]           EXTRA punctuation only — a doodle from the catalog, over the current media. Never the main visual of a cut.
 [SCRIBBLE: circle|arrow|underline -> target]  a drawn mark + target callout over whatever media is on screen
 [ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
-[TERM: key]             the owned "word of the day" card — use it for the ONE framework you teach (roic · owner-earnings · fcf-yield · reverse-dcf · …)
-[BIGNUM: key]           the owned single-stat card, for the one number a chapter turns on
+[TERM: key = definition]  the owned "word of the day" card — use it for the ONE framework you teach (roic · owner-earnings · fcf-yield · reverse-dcf · …)
+[BIGNUM: key = figure]  the owned single-stat card, for the one number a chapter turns on
 [TABLE: kind]           a strict readable table from the owned kit (pl · comps · segments · maturities). 6 rows, 4 columns — held ~8s, so write narration over it
-[PROP: key]             a generic object cutaway when no real photo fits (warehouse · servers · van · laptop · safe · scales · calendar · …)
+[PROP: key = value]     a generic object cutaway when no real photo fits (warehouse · servers · van · laptop · safe · scales · calendar · …)
+
+WRITE THE VALUE INTO THE CARD. Most owned artwork has a box waiting for a figure, and a key on its own renders that box EMPTY — or worse, ships the layout's own placeholder copy. Three forms:
+  [PROP: crushed-flat = -41%]                             one slot, one value
+  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]   name each slot when there is more than one
+  [PROP: numbers-raining = -8%, -12%, -3%]                a bare list fills them in order
+[TERM] and [BIGNUM] fall through to a blank layout when nothing is drawn for your key, and the text after the `=` is what gets composited into it — so an unlisted term still gets a proper card.
 [ALERT: kind]           a lower-third interjection over whatever is on screen (correction · fact-check · definition · disclosure · developing · flag). Holds 3–4s, never longer
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
@@ -193,6 +199,8 @@ The pipeline BLOCKS the render until the operator pastes that prompt into Claude
 First the `=== HOOK OPTIONS ===` block, then the narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin the script at the chosen hook.
 
 After the narration, append a `=== CHAPTERS ===` trailer the operator can paste straight into YouTube as chapters — one `mm:ss Title` per line, one line per chapter, in order (first line must be `00:00`; the rest are approximate and the operator adjusts). This trailer is metadata: it is split off and never spoken. Then append the `=== ASSET PROMPTS ===` trailer ONLY if you used [ASSET] tags (chapters before assets).
+
+**These titles go ON SCREEN.** The renderer draws each one as a full-frame section stinger at the first real cut at or after its timestamp, so write them as titles a viewer reads mid-video, not as index entries: short, lowercase, in voice. Every chapter needs a title — a bare timestamp gets a generic one and a warning. Without a usable trailer the video falls back to six generic section names that will not match your cut.
 
 === CHAPTERS ===
 00:00 Cold open — <the reframe>

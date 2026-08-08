@@ -327,7 +327,7 @@ def score_value(
 
 
 def make_sources(settings: Settings) -> tuple[MarketSource, SentimentSource]:
-    if settings.mock_mode:
+    if settings.mocking_screener:
         return MockMarketSource(settings), MockSentimentSource(settings)
     return YahooMarketSource(settings), StockTwitsSentimentSource(settings)
 
@@ -582,7 +582,7 @@ def schedule_alerts(application, core) -> None:
             return
         if not alerts:
             return
-        text = digest(alerts)
+        text = digest(alerts, settings)
         for chat_id in settings.operator_chat_ids:
             await ctx.bot.send_message(chat_id, text)
 

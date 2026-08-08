@@ -574,3 +574,41 @@ def test_the_kit_export_cannot_recreate_an_illegal_name():
     # …and a name that is already fine is left exactly alone.
     for good in ("restyle", "concepts", "hype-vs-reality", "f01", "obj-laptop_b"):
         assert safe_segment(good) == good
+
+
+def test_the_kit_ingest_refuses_a_path_windows_cannot_create():
+    """The ingest writes assets/kit/ now, so the guard has to live there too.
+
+    A delivery is somebody else's export. `restyle/con/` arrived that way the
+    first time and took eighteen frames down with it, silently, because the
+    Linux tree still looked clean.
+    """
+    from scripts.ingest_kit import unportable
+
+    for bad in ("restyle/con/alert.png", "a/NUL.png", "a/com1/x.png",
+                "trailing./x.png", "a/b /x.png", 'quote"pipe|.png', "a:b/x.png"):
+        assert unportable(bad) is not None, f"{bad!r} was accepted"
+
+    for good in ("restyle/concepts/alert.png", "mascot/deadpan.png",
+                 "shorts/dennis-vs-numbers/numbers-raining_f01.png",
+                 "blanks/big-number-blank.png"):
+        assert unportable(good) is None, f"{good!r} was rejected"
+
+
+def test_the_shipped_kit_is_portable():
+    """Every frame the registry declares, checked against the same rule."""
+    import json
+
+    from scripts.ingest_kit import unportable
+
+    registry = ROOT / "assets" / "kit" / "kit-registry.json"
+    if not registry.exists():
+        pytest.skip("kit not ingested")
+    data = json.loads(registry.read_text(encoding="utf-8"))
+    offenders = [
+        f"{key} -> {frame}: {why}"
+        for key, entry in data["assets"].items()
+        for frame in entry["frames"]
+        if (why := unportable(frame)) is not None
+    ]
+    assert not offenders, "\n  ".join(["unportable frame paths:"] + offenders)

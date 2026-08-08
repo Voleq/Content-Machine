@@ -19,12 +19,15 @@ from pydantic import ValidationError
 
 from config import Settings
 from pipeline.models import (
-    OVERLAY_TAG_TYPES,
+    DELIVERY_TAG_TYPES,
+    SELF_RESOLVING_TAG_TYPES,
+    SHORT_TAG_TYPES,
     ShortScript,
     TagEvent,
     TagType,
     parse_scribble_payload,
 )
+from pipeline.tagging import parse_chart_payload, parse_slot_values
 from pipeline.tagging import tokenize_tags
 
 log = logging.getLogger(__name__)
@@ -149,6 +152,47 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
     return hits
 
 
+def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
+    """What the short's inline tags will and won't reach at render time.
+
+    Kit keys are checked here rather than discovered mid-render, and the
+    absence of delivery direction is called out: a script with none reads
+    exactly like a script whose [BEAT]s were silently dropped, and for two
+    years it was the second one.
+    """
+    from pipeline.kit import load_kit
+    from pipeline.models import KIT_TAG_FAMILIES, KIT_TAG_BLANKS
+
+    out: list[str] = []
+    kit = load_kit(settings.assets_dir)
+    for e in script.inline_events:
+        families = KIT_TAG_FAMILIES.get(e.type)
+        if not families or not len(kit):
+            continue
+        if kit.resolve(families, e.payload) is not None:
+            continue
+        blank = KIT_TAG_BLANKS.get(e.type)
+        if blank and blank in kit:
+            out.append(
+                f'[{e.type.value}: {e.payload}] has no named artwork — the '
+                f'blank layout will be filled with your text instead')
+        else:
+            options = ", ".join(
+                n.rsplit("/", 1)[-1]
+                for fam in families for n in kit.family(fam)[:6])
+            out.append(
+                f'[{e.type.value}: {e.payload}] is not in '
+                f'{" / ".join(families)} — the beat will be skipped. '
+                f"Available: {options}…")
+
+    if not script.delivery_events():
+        out.append(
+            "no delivery direction in the script — [BEAT]/[SIGH]/[FLAT]/[DRY] "
+            "are what make the deadpan land, and four or five across a short "
+            "is the budget. Without them TTS reads it evenly.")
+    return out
+
+
 def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[str]]:
     """Parse + validate. Returns (script, warnings). Raises ScriptParseError.
 
@@ -158,13 +202,20 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
     block = _extract_json_block(raw)
     data = _loads_tolerant(block)
 
-    # strip inline [DOODLE]/[SCRIBBLE] tags out of audio_script BEFORE
-    # validation: the clean text is what TTS speaks and what the budget is
-    # measured against; the events are word-anchored into that clean text.
+    # Strip the inline tags out of audio_script BEFORE validation: the clean
+    # text is what TTS speaks and what the budget is measured against; the
+    # events are word-anchored into that clean text.
+    #
+    # The allowed set is the SHORT's full grammar now. It used to be three
+    # tags, which had two consequences worth naming: the evidence tags the
+    # prompt showed the writer were stripped with a warning nobody read, and
+    # [BEAT]/[FLAT]/[SIGH]/[DRY] — documented in the prompt as the thing that
+    # makes the delivery land — were dropped on the floor, so TTS received
+    # unpunctuated text and every short came out flat.
     inline_warnings: list[str] = []
     if isinstance(data.get("audio_script"), str):
         clean, raw_tags, tok_warnings = tokenize_tags(
-            data["audio_script"], allowed=OVERLAY_TAG_TYPES
+            data["audio_script"], allowed=SHORT_TAG_TYPES
         )
         inline_warnings.extend(tok_warnings)
         events: list[dict] = []
@@ -175,8 +226,22 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     f'"circle|arrow|underline -> target") — skipped'
                 )
                 continue
+            payload, style, values = rt.payload, "", {}
+            if rt.type not in DELIVERY_TAG_TYPES:
+                payload, style = parse_chart_payload(rt.payload)
+                # `= value` binds the asset's text slots. Without it, named
+                # artwork renders with every box empty — Dennis crushed under
+                # a blank rectangle — and 74 slots stay unreachable.
+                payload, values = parse_slot_values(payload)
+            if (rt.type not in DELIVERY_TAG_TYPES
+                    and rt.type not in SELF_RESOLVING_TAG_TYPES
+                    and not payload):
+                inline_warnings.append(
+                    f"[{rt.type.value}] at char {rt.char_offset} carries no "
+                    f"key — skipped")
+                continue
             events.append(TagEvent(
-                type=rt.type, payload=rt.payload,
+                type=rt.type, payload=payload, style=style, values=values,
                 char_offset=rt.char_offset, raw_offset=rt.raw_offset,
             ).model_dump())
         data["audio_script"] = clean
@@ -203,6 +268,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
         )
 
     warnings: list[str] = list(inline_warnings)
+    warnings.extend(_tag_warnings(script, settings))
     for anchor in script.missing_anchor_words():
         warnings.append(
             f'anchor_word "{anchor}" not found in audio_script — the cue will '

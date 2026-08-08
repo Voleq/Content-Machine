@@ -1,20 +1,66 @@
 {
   "ticker": "EXMPL",
   "duration": 51.872993,
-  "opener": "ONE CHART. FIVE YEARS. RELAX.",
+  "opener": "NOISE OR SIGNAL?",
+  "theme": "light",
+  "host": {
+    "shots": 3,
+    "bookends": true,
+    "motion": [
+      {
+        "name": "open",
+        "shot": "chapters/cold-open/at-desk-open",
+        "blinks": 1,
+        "idle_frames": 0,
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
+      },
+      {
+        "name": "close",
+        "shot": "chapters/resigned-close/dennis-defeated",
+        "blinks": 1,
+        "idle_frames": 0,
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
+      },
+      {
+        "name": "beat0",
+        "shot": "chapters/valuation/pe-history",
+        "blinks": 2,
+        "idle_frames": 0,
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
+      }
+    ],
+    "blinks": 4
+  },
   "chart": {
     "source": "fixture",
     "degraded": false,
     "direction": "up",
-    "style": "clean"
+    "style": "marker"
   },
   "cues": [
+    {
+      "t": 0.0,
+      "kind": "host_open",
+      "payload": {
+        "until": 5.0,
+        "text": "EXMPL is up 29% today. The business is not.",
+        "variant": "open"
+      },
+      "fallback": false
+    },
     {
       "t": 0.0,
       "kind": "hook",
       "payload": {
         "text": "EXMPL is up 29% today. The business is not.",
-        "until": 8.756
+        "until": 8.756,
+        "variant": "e"
       },
       "fallback": false
     },
@@ -45,7 +91,8 @@
         "index": 0,
         "text": "EXMPL announces AI partnership",
         "meaning": "A press release, not a purchase order \u2014 no revenue attached.",
-        "until": 26.4105
+        "until": 26.4105,
+        "variant": "a"
       },
       "fallback": false
     },
@@ -56,7 +103,17 @@
         "index": 1,
         "text": "Squeeze chatter on retail forums",
         "meaning": "11% of the float is short. The crowd noticed and piled in.",
-        "until": 26.4105
+        "until": 26.4105,
+        "variant": "a"
+      },
+      "fallback": false
+    },
+    {
+      "t": 26.41,
+      "kind": "host_beat",
+      "payload": {
+        "until": 40.52,
+        "variant": "beat"
       },
       "fallback": false
     },
@@ -73,7 +130,8 @@
       "kind": "numbers",
       "payload": {
         "rows": 4,
-        "until": 51.872993
+        "until": 51.872993,
+        "variant": "c"
       },
       "fallback": false
     },
@@ -95,7 +153,7 @@
       "fallback": false
     },
     {
-      "t": 31.2003,
+      "t": 30.0753,
       "kind": "number_row",
       "payload": {
         "index": 1,
@@ -112,7 +170,7 @@
       "fallback": false
     },
     {
-      "t": 31.4503,
+      "t": 30.3253,
       "kind": "annotation",
       "payload": {
         "index": 1,
@@ -124,7 +182,7 @@
       "fallback": false
     },
     {
-      "t": 31.5003,
+      "t": 30.3753,
       "kind": "zoom",
       "payload": {
         "row_index": 1
@@ -132,7 +190,7 @@
       "fallback": false
     },
     {
-      "t": 35.640100000000004,
+      "t": 33.390100000000004,
       "kind": "number_row",
       "payload": {
         "index": 2,
@@ -149,7 +207,7 @@
       "fallback": false
     },
     {
-      "t": 40.0799,
+      "t": 36.7049,
       "kind": "number_row",
       "payload": {
         "index": 3,
@@ -162,6 +220,23 @@
           "365M"
         ],
         "type_seconds": 0.9
+      },
+      "fallback": false
+    },
+    {
+      "t": 40.5197,
+      "kind": "transition",
+      "payload": {
+        "name": "trap"
+      },
+      "fallback": false
+    },
+    {
+      "t": 40.5197,
+      "kind": "cheap_or_trap",
+      "payload": {
+        "text": "Eleven times earnings looks cheap. It only is if revenue stops sliding, and it has not stopped sliding.",
+        "until": 45.0197
       },
       "fallback": false
     },
@@ -187,179 +262,355 @@
       "kind": "conclusion",
       "payload": {
         "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
-        "until": 51.872993
+        "until": 51.872993,
+        "variant": "e"
+      },
+      "fallback": false
+    },
+    {
+      "t": 46.872993,
+      "kind": "host_close",
+      "payload": {
+        "until": 50.272993,
+        "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+        "variant": "close"
       },
       "fallback": false
     }
   ],
+  "pacing_warnings": [
+    "9 visual events in 52s \u2014 below the 15-21 band for this runtime; the cut will read as a slideshow",
+    "0 punctuation beats in 52s \u2014 below the 6-10 band. Data beats hold 3-8s and are read; the reactions riding over them are what give the cut its pulse, and they cost nothing to add"
+  ],
+  "unresolved_keys": [],
+  "beat_coverage": [
+    {
+      "name": "numbers_sheet",
+      "w": 1040,
+      "h": 988,
+      "class": "data",
+      "frac": 0.4955
+    },
+    {
+      "name": "vertical_b2-elevator-drop",
+      "w": 1080,
+      "h": 1920,
+      "class": "data",
+      "frac": 1.0
+    },
+    {
+      "name": "payoff_card",
+      "w": 1080,
+      "h": 460,
+      "class": "data",
+      "frac": 0.2396,
+      "capped": "aspect",
+      "source_aspect": 2.348
+    }
+  ],
+  "median_data_coverage": 0.4955,
+  "median_punct_coverage": 0.0,
+  "aspect_capped_beats": [
+    {
+      "name": "payoff_card",
+      "frac": 0.2396,
+      "source_aspect": 2.348
+    }
+  ],
+  "articles": [],
+  "kit_assets_used": [
+    "backgrounds/room-tall",
+    "chapters/cold-open/at-desk-open",
+    "chapters/cold-open/at-desk-open-talk",
+    "chapters/resigned-close/dennis-defeated",
+    "chapters/resigned-close/dennis-defeated-talk",
+    "chapters/valuation/pe-history",
+    "chapters/valuation/pe-history-talk",
+    "short/card-noise",
+    "shorts/open-close/e-close",
+    "shorts/open-close/e-open",
+    "shorts/the-world/d-desk-over-shoulder",
+    "shorts/the-world/d-desk-side",
+    "shorts/the-world/d-desk-wide",
+    "shorts/vertical-scenes-2/b2-elevator-drop",
+    "stings/page-turn-tall",
+    "stings/paper-slide-tall",
+    "stings/torn-edge-tall"
+  ],
+  "layer_names": [
+    "act_mid_0",
+    "act_open",
+    "act_payoff",
+    "brand_bug",
+    "chart",
+    "cheap_or_trap",
+    "conclusion",
+    "countup_0",
+    "disclaimer",
+    "e_close",
+    "e_open",
+    "flash_gut_torn-edge-tall",
+    "flash_payoff_paper-slide-tall",
+    "flash_trap_page-turn-tall",
+    "flash_why_paper-slide-tall",
+    "headline_0",
+    "headline_1",
+    "hook",
+    "host_beat0",
+    "host_close",
+    "host_open",
+    "meme_0",
+    "note_0",
+    "note_1",
+    "number_row_0",
+    "number_row_1",
+    "number_row_2",
+    "number_row_3",
+    "numbers_sheet",
+    "payoff_card",
+    "scribble_0_chart",
+    "scribble_1_numbers",
+    "ticker_pill",
+    "vertical_b2-elevator-drop"
+  ],
   "layers": [
     {
+      "name": "act_open",
+      "t_start": 0.0,
+      "t_end": 5.0,
+      "x": 0,
+      "y": 0
+    },
+    {
       "name": "chart",
-      "t_start": 0.0,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 170
+      "t_start": 5.0,
+      "t_end": 26.4105,
+      "x": 0,
+      "y": 0
     },
     {
-      "name": "brand_bug",
-      "t_start": 0.0,
-      "t_end": 51.872993,
-      "x": 90,
-      "y": 48
-    },
-    {
-      "name": "hook",
-      "t_start": 0.0,
-      "t_end": 8.756,
-      "x": 60,
-      "y": 1040
-    },
-    {
-      "name": "ticker_pill",
-      "t_start": 0.0,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 150
-    },
-    {
-      "name": "nos_header",
-      "t_start": 0.0,
-      "t_end": 51.872993,
-      "x": 784,
-      "y": 156
+      "name": "act_mid_0",
+      "t_start": 26.4105,
+      "t_end": 45.0197,
+      "x": 0,
+      "y": 0
     },
     {
       "name": "headline_0",
       "t_start": 8.906,
       "t_end": 26.4105,
-      "x": 95,
-      "y": 382
+      "x": 40,
+      "y": 1030
     },
     {
       "name": "headline_1",
       "t_start": 17.733249999999998,
       "t_end": 26.4105,
-      "x": 95,
-      "y": 526
+      "x": 40,
+      "y": 1219
     },
     {
       "name": "numbers_sheet",
       "t_start": 26.4105,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 990
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 310
     },
     {
       "name": "number_row_0",
       "t_start": 26.7605,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 1178
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 535
     },
     {
       "name": "number_row_1",
-      "t_start": 31.2003,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 1296
+      "t_start": 30.0753,
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 718
     },
     {
       "name": "number_row_2",
-      "t_start": 35.640100000000004,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 1414
+      "t_start": 33.390100000000004,
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 901
     },
     {
       "name": "number_row_3",
-      "t_start": 40.0799,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 1532
+      "t_start": 36.7049,
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 1084
     },
     {
       "name": "scribble_0_chart",
       "t_start": 2.2522,
       "t_end": 26.4105,
-      "x": 834,
-      "y": 285
+      "x": 733,
+      "y": 700
     },
     {
       "name": "note_0",
       "t_start": 2.2522,
       "t_end": 26.4105,
-      "x": 824,
-      "y": 479
+      "x": 674,
+      "y": 789
     },
     {
       "name": "scribble_1_numbers",
-      "t_start": 31.4503,
-      "t_end": 51.872993,
-      "x": 40,
-      "y": 1296
+      "t_start": 30.3253,
+      "t_end": 40.5197,
+      "x": 20,
+      "y": 718
     },
     {
       "name": "note_1",
-      "t_start": 31.4503,
-      "t_end": 51.872993,
-      "x": 804,
-      "y": 1244
+      "t_start": 30.3253,
+      "t_end": 40.5197,
+      "x": 817,
+      "y": 670
     },
     {
-      "name": "zoom_0",
-      "t_start": 31.5003,
-      "t_end": 32.1003,
-      "x": -124,
-      "y": 1273
+      "name": "countup_0",
+      "t_start": 30.3753,
+      "t_end": 31.775299999999998,
+      "x": 514,
+      "y": 718
+    },
+    {
+      "name": "vertical_b2-elevator-drop",
+      "t_start": 30.3753,
+      "t_end": 32.5753,
+      "x": 0,
+      "y": 0
     },
     {
       "name": "meme_0",
       "t_start": 42.5233,
       "t_end": 43.9233,
       "x": 279,
-      "y": 316
+      "y": 652
     },
     {
-      "name": "flash_why",
+      "name": "flash_why_paper-slide-tall",
       "t_start": 8.756,
-      "t_end": 8.956,
+      "t_end": 9.256,
       "x": 0,
       "y": 0
     },
     {
-      "name": "flash_gut",
+      "name": "flash_gut_torn-edge-tall",
       "t_start": 26.4105,
-      "t_end": 26.6105,
+      "t_end": 26.9105,
       "x": 0,
       "y": 0
     },
     {
-      "name": "flash_payoff",
+      "name": "flash_trap_page-turn-tall",
+      "t_start": 40.5197,
+      "t_end": 41.0197,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "flash_payoff_paper-slide-tall",
       "t_start": 45.0197,
-      "t_end": 45.2197,
+      "t_end": 45.5197,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "cheap_or_trap",
+      "t_start": 40.5197,
+      "t_end": 45.0197,
+      "x": 50,
+      "y": 350
+    },
+    {
+      "name": "payoff_card",
+      "t_start": 45.0197,
+      "t_end": 46.872993,
+      "x": 0,
+      "y": 370
+    },
+    {
+      "name": "act_payoff",
+      "t_start": 45.0197,
+      "t_end": 51.872993,
       "x": 0,
       "y": 0
     },
     {
       "name": "conclusion",
       "t_start": 45.0197,
-      "t_end": 51.872993,
+      "t_end": 50.272993,
       "x": 60,
+      "y": 1390
+    },
+    {
+      "name": "host_open",
+      "t_start": 0.0,
+      "t_end": 5.0,
+      "x": 0,
       "y": 430
     },
     {
-      "name": "mascot",
-      "t_start": 45.0197,
+      "name": "host_close",
+      "t_start": 46.872993,
+      "t_end": 50.272993,
+      "x": 0,
+      "y": 430
+    },
+    {
+      "name": "host_beat0",
+      "t_start": 26.41,
+      "t_end": 40.52,
+      "x": 570,
+      "y": 1120
+    },
+    {
+      "name": "e_open",
+      "t_start": 0.0,
+      "t_end": 1.6,
+      "x": 40,
+      "y": 1044
+    },
+    {
+      "name": "e_close",
+      "t_start": 50.272993,
       "t_end": 51.872993,
-      "x": 764,
-      "y": 800
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "hook",
+      "t_start": 0.0,
+      "t_end": 8.756,
+      "x": 70,
+      "y": 176
+    },
+    {
+      "name": "ticker_pill",
+      "t_start": 0.0,
+      "t_end": 51.872993,
+      "x": 40,
+      "y": 56
+    },
+    {
+      "name": "brand_bug",
+      "t_start": 0.0,
+      "t_end": 51.872993,
+      "x": 758,
+      "y": 70
     },
     {
       "name": "disclaimer",
       "t_start": 0.0,
       "t_end": 51.872993,
-      "x": 112,
-      "y": 1850
+      "x": 142,
+      "y": 1854
     }
   ],
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/short_final.filter.txt",

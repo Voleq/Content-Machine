@@ -33,8 +33,25 @@ def test_chart_style_marker_parsed(short_doodles_json, settings):
     assert script.chart_style is ChartStyle.MARKER
 
 
-def test_chart_style_defaults_clean(short_valid_json, settings):
+def test_chart_style_defaults_to_the_house_language(short_valid_json, settings):
+    """A script that says nothing gets the marker chart.
+
+    The default was CLEAN, and the short holds its chart from the stage open
+    to the gut check — one of the longest single holds in the video. So unless
+    a writer thought to ask, every short spent that hold on the machine-drawn
+    card in a channel whose whole argument is that a person drew this.
+    """
     script, _ = parse_short_script(short_valid_json, settings)
+    assert script.chart_style is ChartStyle.MARKER
+
+
+def test_clean_is_still_selectable(short_valid_json, settings):
+    """Two chart STYLES is fine — precision is a legitimate register."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["chart_style"] = "clean"
+    script, _ = parse_short_script(json.dumps(data), settings)
     assert script.chart_style is ChartStyle.CLEAN
 
 
@@ -79,22 +96,70 @@ def test_malformed_inline_scribble_warned_and_skipped(settings):
     assert any("scribble" in w.lower() and "malformed" in w.lower() for w in warnings)
 
 
-def test_non_overlay_inline_tag_stripped(settings):
+def _short_with(audio_script: str) -> str:
     import json
 
-    data = {
+    return json.dumps({
         "ticker": "EXMPL", "format": "short",
         "hook_text": "A muted hook line here.",
-        "audio_script": "Here is a clip tag [CLIP: dumpster_fire] that does not belong. Noise.",
+        "audio_script": audio_script,
         "move_summary": "+5% today",
         "headlines": [{"text": "H", "meaning": "M"}],
         "years": ["2024", "2025"],
         "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
         "numbers_comment": "flat", "conclusion": "Noise.",
-    }
-    script, warnings = parse_short_script(json.dumps(data), settings)
-    assert "[CLIP" not in script.audio_script, "non-overlay tags stripped from SHORT"
+    })
+
+
+def test_the_short_grammar_keeps_evidence_tags_and_strips_them_from_the_text(settings):
+    """The SHORT accepted three tags and dropped the rest with a warning
+    nobody read, so the evidence grammar the prompt showed the writer reached
+    nothing. Every tag is stripped from what is SPOKEN; the ones the short can
+    act on survive as events."""
+    from pipeline.models import TagType
+
+    script, _ = parse_short_script(
+        _short_with("Here is a clip tag [CLIP: dumpster_fire] that belongs "
+                    "now. [PROP: crushed-flat] Noise."), settings)
+    assert "[CLIP" not in script.audio_script and "[PROP" not in script.audio_script
+    assert [e.type for e in script.inline_events] == [TagType.CLIP, TagType.PROP]
+    assert [e.payload for e in script.inline_events] == \
+        ["dumpster_fire", "crushed-flat"]
+
+
+def test_delivery_direction_reaches_the_voice_instead_of_the_floor(settings):
+    """[BEAT]/[SIGH]/[FLAT]/[DRY] were documented in the prompt and dropped by
+    the parser, so TTS got unpunctuated text and every short came out flat.
+    They never reach the screen — they reach the request."""
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    script, warnings = parse_short_script(
+        _short_with("The number lands. [BEAT] It is not good. [DRY] Noise."),
+        settings)
+    for tag in ("[BEAT]", "[DRY]"):
+        assert tag not in script.audio_script
+    delivery = [e for e in script.inline_events if e.type in DELIVERY_TAG_TYPES]
+    assert len(delivery) == 2
+    assert all(e.payload == "" for e in delivery)
+    assert not any("not allowed here" in w for w in warnings)
+
+
+def test_a_script_with_no_delivery_direction_is_called_out(settings):
+    script, warnings = parse_short_script(
+        _short_with("A flat sentence with no direction at all. Noise."), settings)
+    assert not script.delivery_events()
+    assert any("delivery direction" in w for w in warnings)
+
+
+def test_a_tag_the_short_cannot_act_on_is_still_refused(settings):
+    """Looser is not open season: [SOUND] claims nothing on a short's frame
+    and is stripped with a warning, as it always was."""
+    script, warnings = parse_short_script(
+        _short_with("A line with a sound cue [SOUND: buzzer] in it. Noise."),
+        settings)
+    assert "[SOUND" not in script.audio_script
     assert script.inline_events == []
+    assert any("not allowed here" in w for w in warnings)
     assert any("not allowed" in w for w in warnings)
 
 
@@ -210,3 +275,35 @@ def test_show_your_work_preamble_before_json(settings, short_valid_json):
 def test_unclosed_json_still_rejected(settings):
     with pytest.raises(ScriptParseError):
         parse_short_script('prose then {"ticker": "EXMPL", "format": "short"', settings)
+
+
+def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
+    """`[SHOW ARTICLE]` means something with no payload at all.
+
+    Every other tag needs a key, so the parser dropped any tag without one —
+    which meant the writer had to paste a URL for the highest-credibility
+    visual the format has, and so it was never used. The renderer resolves the
+    link off the export's own news rows; the tag only has to reach it.
+    """
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = "The news is a partnership. [SHOW ARTICLE] " + \
+        data["audio_script"]
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    articles = [e for e in script.inline_events
+                if e.type is TagType.SHOW_ARTICLE]
+    assert len(articles) == 1
+    assert articles[0].payload == ""
+    assert not any("carries no key" in w for w in warnings)
+
+
+def test_other_tags_still_need_a_key(settings, short_valid_json):
+    """The exemption is one tag, not the end of the rule."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = "[PROP] " + data["audio_script"]
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    assert not [e for e in script.inline_events if e.type is TagType.PROP]
+    assert any("carries no key" in w for w in warnings)

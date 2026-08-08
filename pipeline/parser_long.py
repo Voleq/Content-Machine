@@ -44,7 +44,7 @@ from pipeline.models import (
     TagType,
     parse_scribble_payload,
 )
-from pipeline.tagging import parse_chart_payload, tokenize_tags
+from pipeline.tagging import parse_chart_payload, parse_slot_values, tokenize_tags
 
 log = logging.getLogger(__name__)
 
@@ -143,6 +143,14 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     for rt in raw_tags:
         payload = rt.payload
         style = ""
+        values: dict[str, str] = {}
+        if rt.type in KIT_TAG_FAMILIES:
+            # `= value` binds the artwork's text slots, exactly as in the
+            # short. The long engine addressed the kit by path and never
+            # filled one, so 39 reachable drawings and both blank layouts
+            # rendered with their boxes empty — or worse, with the layout's
+            # own placeholder copy still in them.
+            payload, values = parse_slot_values(payload)
         if rt.type in (TagType.ASSET, TagType.SCREENGRAB):
             slug = normalize_slug(payload)
             if not _SLUG_RE.match(slug):
@@ -159,7 +167,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
                                 f'"circle|arrow|underline -> target") — skipped')
                 continue
         events.append(TagEvent(
-            type=rt.type, payload=payload,
+            type=rt.type, payload=payload, values=values,
             char_offset=rt.char_offset, raw_offset=rt.raw_offset, style=style,
         ))
 
@@ -282,11 +290,13 @@ def validate_long_script(
             # design-kit families ([TERM]/[BIGNUM]/[TABLE]/[PROP]/[ALERT]) are
             # owned artwork: an unknown key degrades to a host beat rather
             # than blocking, but the operator should hear about it.
-            family = KIT_TAG_FAMILIES[e.type]
-            if kit.resolve(family, e.payload) is None:
-                options = ", ".join(n.rsplit("/", 1)[-1] for n in kit.family(family)[:8])
+            families = KIT_TAG_FAMILIES[e.type]
+            if kit.resolve(families, e.payload) is None:
+                options = ", ".join(
+                    n.rsplit("/", 1)[-1]
+                    for fam in families for n in kit.family(fam)[:6])
                 warnings.append(
-                    f'[{e.type.value}: {e.payload}] is not in the {family} kit '
+                    f'[{e.type.value}: {e.payload}] is not in {" / ".join(families)} '
                     f"— skipped at render. Available: {options}…"
                 )
         elif e.type is TagType.SCREENGRAB:

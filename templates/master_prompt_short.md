@@ -49,7 +49,7 @@ Pick from these; anything else must be an [ASSET] with a design prompt:
 A trending stock gets ~60–75 seconds. **Dennis opens and closes ON CAMERA** — the first ~3–5 seconds and the last ~3–5 seconds are him talking to the viewer, lip-synced to your words. Everything between is the evidence. Five beats:
 
 0. HOST OPEN (~3–5s) — the first sentence is Dennis on screen, saying the hook out loud. Write it as a spoken line, not a caption.
-1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. Choose `chart_style`: "clean" (the polished branded card) or "marker" (a crude hand-drawn "napkin" chart — reach for it when the tone is extra deadpan / degenerate).
+1. HOOK — the price chart is the hero. `hook_text` states the move and plants the doubt. Must land with sound OFF: ≤ 90 characters, mute-safe. `chart_style` defaults to "marker" — the hand-drawn napkin chart, which is the channel's own language and what the short holds for its longest single beat. Ask for "clean" (the polished branded card) only when the point of the beat is precision.
 2. WHY — the headline(s) that caused the move get overlaid ON the chart; you say what each actually means for the stock (usually less than the crowd thinks; occasionally more).
 3. GUT CHECK — the MULTI-YEAR numbers appear on a designed numbers sheet, **held ~4–5 seconds so they can be read**. Comment on them AS A WHOLE: is the business actually going anywhere, or is this just a move? If the PEER PERCENTILES sharpen the read, you MAY drop a SINGLE percentile one-liner here — at most one, never a table.
 4. CHEAP OR TRAP — the value-trap beat, **also held ~4–5 seconds**. Is the multiple a bargain or a trap? Name the multiple, then say what would have to be true for it to be cheap. Cheap and trapped look identical from the front; this is the beat that separates them. Goes in `cheap_or_trap`.
@@ -66,13 +66,35 @@ The beats are fixed; the added runtime goes to keeping the viewer, never to more
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
-## PUNCTUATING WITH HAND-DRAWN MARKS
-The channel's visual language is crude marker doodles composited on top of the frame. Use them to punctuate the UNDERCUT, not the teach — the doodle is the visual version of the flat aside. Place them inline in `audio_script`, immediately before the word they should hit; the parser strips them out (they are never spoken) and fires them on that word:
-- `[DOODLE: key]` — drop a crude doodle over the current frame (key or tag from the doodle list above). e.g. "...from twenty-five k to zero. [DOODLE: scribble-explosion]"
-- `[SCRIBBLE: circle -> target]` / `[SCRIBBLE: arrow -> target]` / `[SCRIBBLE: underline -> target]` — a drawn mark plus the target text as a callout, pointing at what you're talking about.
-You may also place DELIVERY DIRECTION inline — `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. These never reach the screen; they reach the voice. A [BEAT] before the payoff is what turns a sentence into a joke. Use them sparingly, and write them NOW — they change what gets generated, so adding one later means paying twice.
+## THE TAG GRAMMAR — inline in `audio_script`
+Place a tag immediately before the word it should hit. The parser strips every tag out before anything is spoken or counted, and fires it on that word. Three kinds:
 
-Keep it to ~1–3 inline marks per short. They ride on top of the fixed beats; they don't replace the JSON `annotations` (which anchor precisely to the chart's move and the numbers rows).
+**Evidence — takes the frame for a beat.** Dennis cuts away to it and comes back.
+- `[PROP: key = value]` — anything in the beat library or the prop/concept lists above. This is the main one: the beat library is 51 drawings built for exactly this, many animated, most with a box waiting for a figure. Name the situation, not the picture — and **always give the figure**, or the drawing renders with an empty box in it:
+  - `[PROP: crushed-flat = -41%]` — one slot, one value.
+  - `[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]` — name each slot when the asset has more than one. The catalogue lists the names.
+  - `[PROP: numbers-raining = -8%, -12%, -3%]` — a bare list fills the slots in order.
+- `[BIGNUM: key = value]` / `[TERM: key]` — a one-number card or an explainer card. If nothing is drawn for your key, the blank layout gets filled with your text — so an unlisted term still gets a proper card.
+- `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
+- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
+- `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
+- `[IMG: query]` / `[PRODUCT: query]` — real imagery.
+- `[MEME: key]` / `[CLIP: key]` — from the catalogs above, sparingly.
+
+Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are never cut short. Punctuation beats (a prop, a meme, a reaction) run 0.6–2 seconds over the frame. **Never put two data beats back to back** — with nothing between them the second one doesn't get read, and the renderer will move it.
+
+**Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
+- `[DOODLE: key]` — e.g. "...from twenty-five k to zero. [DOODLE: scribble-explosion]"
+- `[SCRIBBLE: circle -> target]` / `arrow` / `underline` — a drawn mark plus the target as a callout.
+- `[ALERT: key]` — a lower-third interjection mid-frame.
+
+**Delivery — never reaches the screen, only the voice.** `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short. Write them NOW — they change what gets generated, so adding one later means paying for the voice twice.
+
+Budget: roughly 22–30 visual events across the whole short. Two layers, and they are counted separately because they do different jobs:
+- **4–8 data beats** — a figure, a card, a filing, an article. These are READ, so each holds 3–8 seconds. More than eight and something gets cut short.
+- **8–14 punctuation beats** — a prop, a reaction, a transformation, a doodle. These ride over whatever is up for under two seconds and cost the viewer nothing. This is the layer that gives short-form its pulse, and it is the one scripts consistently under-write: eight is the FLOOR, not the target.
+
+Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
 
 ## HARD RULES
 1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
@@ -83,7 +105,7 @@ Keep it to ~1–3 inline marks per short. They ride on top of the fixed beats; t
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
 7. `annotations`: up to 4 scribbles. `target` "chart" (circles the move) or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script` where the scribble should fire; optional `note` ≤ 40 chars, lowercase, terse.
 8. `meme` (optional, use ONLY if it genuinely lands — most videos don't need one): `{"key": "<from the meme keys above>", "anchor_word": "<word in audio_script>"}`. `broll` (optional) the same shape with a palette key.
-9. `chart_style`: "clean" or "marker". Default "clean"; pick "marker" for the extra-deadpan napkin look.
+9. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
 10. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
 11. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
 12. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
@@ -104,7 +126,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "hook_text": "<= 90 chars, mute-safe>",
   "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
-  "chart_style": "clean",
+  "chart_style": "marker",
   "headlines": [
     {"text": "<on-screen headline>", "meaning": "<what it actually means>"}
   ],

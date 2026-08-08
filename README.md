@@ -48,6 +48,9 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | One final render per approved ticker | job queue + `/draft`; no variant generation exists |
 | A `/draft` never spends: free local voice, else the mock hum — never ElevenLabs | `TTSEngine.tier_for`; the tier is part of the cache key |
 | Draft audio can never become a final render (its word timings are interpolated) | `render_long` / `render_short` refuse `tts.draft` |
+| Mock and draft audio is never loudness-normalised (normalising a placeholder tone is what made a render come out silent) | `CompositeSpec.normalise_audio`; the limiter stays on either way |
+| A SHORT without its host, backdrop or signature cards fails the render rather than degrading | `Kit.require`; `render_short` raises `KitError` |
+| A PNG in an asset folder with no registry entry fails the ingest | `scripts/ingest_kit.py`, `Kit.verify`, `/kit doctor` |
 | Visuals: owned library → cache → fetch → filler; a missing item **never** aborts a render | `pipeline/broll.py` content engine, `pipeline/memes.py` |
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[ASSET]` tags **block** the render until the designed file exists | `validate_long_script` + `assets/custom/` |
@@ -71,7 +74,20 @@ pipeline/
                          strict JSON), LongScript + Dennis tag grammar,
                          CompanyData (latest + 5y history), CostReport,
                          JobRecord, Candidate — no verdict enum anywhere
-  parser_short.py        tolerant JSON extraction + inline [DOODLE]/[SCRIBBLE]
+  parser_short.py        tolerant JSON extraction + the SHORT's full inline
+                         tag grammar (evidence, marks, delivery direction)
+  kit.py                 the design-kit registry — 387 assets under family/asset
+                         keys with frames, playback, canvas, exportScale and
+                         slot geometry; aliases collapse the duplicate names,
+                         require() raises rather than degrading
+  kit_frames.py          the generic frame player (static/boil/one-shot/loop)
+                         and the slot filler (exportScale, slotFrameDelta)
+  host.py                Dennis on screen: the kit's -talk pairs, flapped to
+                         the voice-over, in banks per role; -blink / -idle /
+                         -idle-b strips resolve by the same naming convention.
+                         Every strip's f01 IS the shot's own still, byte for
+                         byte, so a blink starts and lands without a pop —
+                         Kit.micro_motion_drift() fails the ingest otherwise
   parser_long.py         offset-aware tag tokenizer + ASSET-prompt trailer
   tagging.py             the shared tag tokenizer (both formats) + chart style
   tts.py                 ElevenLabs with-timestamps client + cache + budgets
@@ -85,7 +101,8 @@ pipeline/
                          scribbles, zoom-punch, stingers, karaoke captions,
                          doodle boil
   render_common.py       ffmpeg wrappers, encode profiles, compositing engine
-  render_short.py        9:16 "Noise or signal?" template filler
+  render_short.py        9:16 "Noise or signal?" — hosted bookends, the full
+                         tag grammar, motion on arrival, light theme throughout
   render_long.py         16:9 fast-cut concat engine (draft + final)
   broll.py               the content engine: [CLIP] Pexels palette,
                          [IMG]/[PRODUCT] Wikimedia + company site,
@@ -131,6 +148,12 @@ fixtures/                mock scripts / Pexels / Wikimedia / TTS / prices /
 samples/                 sample SHORT + LONG MP4s rendered from fixtures
 deploy/                  systemd units + cleanup timer + bootstrap.sh
 scripts/                 gen_assets.py, gen_fixtures.py, render_samples.py
+  ingest_kit.py          rebuild assets/kit/ from a design delivery: registry
+                         first, meta files left behind, duplicates aliased,
+                         unportable paths refused
+  restyle_dark_cards.py  map the seven dark cards onto the light palette
+                         (--check fails if one comes back)
+  export_design_kit.py   the .dc.html -> PNG exporter (build script)
 workspace|cache|state/   runtime (gitignored)
 ```
 
@@ -422,9 +445,13 @@ just less directly. Set the var once you know which macro your box has.
 
 | Var | Default | Meaning |
 |---|---|---|
-| `MOCK_MODE` | `true` | mock all paid APIs + local delivery |
+| `MOCK_MODE` | `true` | master switch: mock all paid APIs + local delivery |
+| `MOCK_TTS` / `MOCK_PRICES` / `MOCK_SCREENER` | unset | per-subsystem overrides; unset follows `MOCK_MODE`. Whatever is on is named at startup, in `/status`, in the digest and on the approval report — a fixture ticker and a real one used to look identical |
 | `TELEGRAM_BOT_TOKEN` | — | from @BotFather (free; required even in mock) |
-| `OPERATOR_CHAT_IDS` | — | comma-separated allow-list; empty denies all |
+| `OPERATOR_CHAT_IDS` | — | allow-list; empty denies all. `["123456789"]`, `123456789` and `123,456` all parse |
+| `BRAND_HANDLE` | `@dennisreads` | signed on the SHORT's closing card |
+| `SHORT_OPEN_STYLE` | `bug` | where the signature card goes in a SHORT: `bug` (a corner mark, so the video opens cold on the hook), `tail` (no open at all — `e_close` still runs), `full` (the original full-frame bumper). Tunable against retention data rather than by editing code |
+| `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
 | `USD_PER_1K_CHARS` | 0.15 | TTS cost estimate for reports |
@@ -498,6 +525,15 @@ env var, case-insensitive).
   the backgrounds, and the meme + doodle placeholders with the
   Claude-Design / licensed kit for production polish; everything is
   normalized on ingest.
+- **Placeholder AUDIO says so.** Every wav in `assets/sfx` is an ffmpeg
+  oscillator until `scripts/fetch_sfx.py` replaces it — that script pulls
+  licence-clean effects for all 14 cue keys plus the room bed, normalises
+  each to one peak, and records source/licence/author per file in
+  `assets/sfx/SOURCES.json`. A file with no provenance entry counts as
+  generated, and both renderers log a one-line `PLACEHOLDER AUDIO` banner
+  when they are about to play one — the same treatment mock data gets, so a
+  video that sounds like a synthesiser is obvious from the log rather than
+  from listening to it after upload.
 - **Draft renders sit behind the same approval gate in live mode** — the
   first LONG render (draft or final) is what triggers the single paid TTS
   call; after that, drafts and re-renders are free from cache.

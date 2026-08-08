@@ -11,7 +11,29 @@ Callback data grammar (64-byte Telegram limit — keep it terse):
 
 from __future__ import annotations
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+# `python-telegram-bot` is a real dependency of the running bot, but it is a
+# dependency of the FRONTEND only: `BotCore` handles strings and bytes and
+# treats a keyboard as an opaque object it hands back. Importing it at module
+# scope made three test modules — including the one whose own docstring says
+# "WITHOUT Telegram" — fail at COLLECTION on a checkout that had not installed
+# it, which turns one missing wheel into a suite that cannot start.
+#
+# So the buttons degrade to a plain data shape. The frontend still gets real
+# Telegram objects wherever the package is installed, which is everywhere it
+# is actually sending messages from.
+try:  # pragma: no cover - exercised by whichever branch the env provides
+    from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+except ImportError:  # pragma: no cover
+    from dataclasses import dataclass, field
+
+    @dataclass
+    class InlineKeyboardButton:      # type: ignore[no-redef]
+        text: str
+        callback_data: str = ""
+
+    @dataclass
+    class InlineKeyboardMarkup:      # type: ignore[no-redef]
+        inline_keyboard: list = field(default_factory=list)
 
 
 def approval_keyboard(fmt: str, ticker: str, workdate: str, sha: str,
