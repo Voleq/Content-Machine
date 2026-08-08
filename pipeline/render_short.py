@@ -324,13 +324,17 @@ def render_short(
     *,
     content: ContentManager | None = None,
     prices: PriceSeries | None = None,
+    proof: bool = False,
     out_name: str = "short_final.mp4",
 ) -> tuple[Path, Path]:
-    """Render the SHORT. Returns (mp4_path, manifest_path)."""
-    # A SHORT has no draft mode — it is a minute of video — so draft audio has
-    # no business here at all. Same reason as the LONG: interpolated word
-    # timings must never be the master clock of a published cut (P3.2).
-    if getattr(tts, "draft", False):
+    """Render the SHORT (or its full-res proof). Returns (mp4, manifest)."""
+    # Interpolated word timings must never be the master clock of a published
+    # cut (P3.2), so draft audio cannot make a FINAL — exactly the rule
+    # render_long enforces. A PROOF is the deliberate exception: it exists to
+    # be looked at, never delivered, and it is the only free way to see what a
+    # SHORT will actually look like. It is named, marked and gated
+    # accordingly.
+    if not proof and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to render a SHORT from {tts.tier} draft audio — its "
             f"word timings are interpolated. Approve the script so the paid "
@@ -1294,9 +1298,15 @@ def render_short(
         # is what made a render come out silent.
         normalise_audio=not (settings.mocking_tts or getattr(tts, "draft", False)),
     )
+    # A proof never takes the final's filename: the whole risk of a free
+    # full-quality pass is that it looks shippable, and something that looks
+    # shippable must not also be sitting where the shippable file goes. An
+    # explicit out_name (repurpose, tests) still wins.
+    if proof and out_name == "short_final.mp4":
+        out_name = "short_proof.mp4"
     out_path = workspace / out_name
-    composite_video(spec, encode_profile(settings, "short"), settings.audio_bitrate,
-                    out_path)
+    composite_video(spec, encode_profile(settings, "short", proof=proof),
+                    settings.audio_bitrate, out_path)
 
     rendered = ffprobe_duration(out_path)
     if abs(rendered - duration) > 0.5:
@@ -1322,9 +1332,15 @@ def render_short(
         log.warning("short: %d tag key(s) did not resolve: %s",
                     len(unresolved), ", ".join(unresolved))
 
-    manifest_path = workspace / "render_short_manifest.json"
+    manifest_path = workspace / ("render_short_proof_manifest.json" if proof
+                                 else "render_short_manifest.json")
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
+        "proof": proof,
+        # See render_long: the audio tier travels with the artefact, so
+        # "could this ship?" is answerable from the manifest alone.
+        "audio_tier": getattr(tts, "tier", ""),
+        "draft_audio": bool(getattr(tts, "draft", False)),
         "duration": duration,
         "opener": opener,
         "theme": "light",

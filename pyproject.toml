@@ -50,6 +50,16 @@ filings = [
     "playwright==1.61.0",
     "beautifulsoup4==4.15.0",
 ]
+# The free local voice (Piper) — what makes /draft and /proof both free AND
+# listenable. Optional so the base install and CI stay lean: without it
+# tier_for() falls back to the mock hum rather than to a paid generation, so
+# absence costs quality, never money. bootstrap.sh installs it, downloads the
+# voice model into assets/voices/, and refuses to finish unless a real test
+# synthesis produces audio — a tier that reports success and delivers a hum is
+# worse than one that is plainly absent.
+voice = [
+    "piper-tts==1.6.0",
+]
 # Driving Excel for the data refresh (P3.1b). Windows-only by nature — the
 # COM bridge does not exist elsewhere — and optional: on the Linux/WSL2
 # target it never installs, `excel_available()` reports it as unavailable,

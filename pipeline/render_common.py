@@ -234,12 +234,19 @@ def detect_hardware_encoder() -> str | None:
 
 
 def encode_profile(settings: Settings, fmt: str, draft: bool = False,
-                   preview: bool = False) -> EncodeProfile:
+                   preview: bool = False, proof: bool = False) -> EncodeProfile:
     vcodec = "libx264"
-    if settings.use_hardware_encoder and not (draft or preview):
+    if settings.use_hardware_encoder and not (draft or preview or proof):
         hw = detect_hardware_encoder()
         if hw:
             vcodec = hw
+    if proof:
+        # A proof is full-resolution, so the encode is the only place left to
+        # buy time back. veryfast/crf 26 is visually clean enough that any
+        # legibility problem it shows is the design's and not the codec's —
+        # which is the entire question this pass exists to answer.
+        return EncodeProfile(vcodec="libx264", preset=settings.proof_preset,
+                             crf=settings.proof_crf)
     if preview:
         # x264 ultrafast beats the GPU here: the preview is filter-bound and
         # NVENC's setup cost is not worth paying for a throwaway pass.

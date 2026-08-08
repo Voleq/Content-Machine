@@ -704,6 +704,12 @@ class JobKind(str, Enum):
     RENDER_SHORT = "render_short"
     RENDER_LONG = "render_long"
     RENDER_DRAFT_LONG = "render_draft_long"
+    # Full-resolution, real-fps, free-voice pass — the only way to see what a
+    # video will actually LOOK like without buying a voice. Both formats have
+    # one, because the SHORT is the daily-volume format and had no free
+    # preview at all.
+    RENDER_PROOF_SHORT = "render_proof_short"
+    RENDER_PROOF_LONG = "render_proof_long"
     REPURPOSE = "repurpose"
 
 

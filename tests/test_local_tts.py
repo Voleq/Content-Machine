@@ -26,7 +26,10 @@ from pipeline.local_tts import (
 )
 from pipeline.models import TTSResult
 from pipeline.render_common import RenderError
+from pipeline.models import JobKind as _JobKind
 from pipeline.tts import TTSEngine
+
+JobKindProof = _JobKind.RENDER_PROOF_LONG
 
 TEXT = ("EXMPL is cheap and hated. Revenue grew four point seven percent. "
         "That is not a growth company.")
@@ -290,9 +293,10 @@ def test_a_draft_render_accepts_it(settings, tmp_path, long_valid_text):
     assert "draft audio" not in str(e.value)
 
 
-def test_a_short_render_refuses_draft_audio_outright(settings, tmp_path,
-                                                     short_valid_json):
-    """A SHORT has no draft mode, so draft audio has no business there."""
+def test_a_final_short_render_refuses_draft_audio(settings, tmp_path,
+                                                  short_valid_json):
+    """Interpolated timings must never be the master clock of a published cut
+    — the same rule render_long enforces."""
     from pipeline.parser_short import parse_short_script
     from pipeline.render_short import render_short
 
@@ -303,6 +307,22 @@ def test_a_short_render_refuses_draft_audio_outright(settings, tmp_path,
     with pytest.raises(RenderError) as e:
         render_short(script, tts, tmp_path, settings)
     assert "draft audio" in str(e.value)
+
+
+def test_a_short_proof_accepts_draft_audio(settings, tmp_path, short_valid_json):
+    """A proof is the deliberate exception: it exists to be looked at and is
+    never delivered, so it may run on the free voice. It must not fail for the
+    reason a final does."""
+    from pipeline.parser_short import parse_short_script
+    from pipeline.render_short import render_short
+
+    script, _ = parse_short_script(short_valid_json, settings)
+    tts = TTSResult(audio_path=tmp_path / "a.m4a", words=[], duration_s=10.0,
+                    chars=10, cached=False, cost_usd=0.0, tier="local",
+                    draft=True)
+    with pytest.raises(Exception) as e:
+        render_short(script, tts, tmp_path, settings, proof=True)
+    assert "draft audio" not in str(e.value)
 
 
 def test_the_operator_is_told_what_they_are_listening_to():
@@ -331,3 +351,170 @@ def test_the_draft_command_no_longer_gates_on_approval(settings, monkeypatch,
     kind, text, _ = core.render_request("EXMPL", "long", draft=True)
     assert kind is JobKind.RENDER_DRAFT_LONG, text
     assert "$0" in text
+
+
+# --------------------------------------------------------------------------
+# The PROOF tier: everything real except the voice, and $0 enforced in code.
+#
+# The gap this closes: the only free path used to be MOCK_MODE, which also
+# fakes prices, imagery, memes, filings and delivery — so a free render told
+# the operator nothing about what would actually ship. ElevenLabs is the only
+# real cost in the system, so the tier that mocks ONLY the voice is the one
+# worth having, and its $0 promise has to be structural rather than a comment.
+# --------------------------------------------------------------------------
+
+
+def test_a_proof_cannot_reach_the_paid_voice(settings, monkeypatch):
+    """The gate, at the boundary. Not 'does not' — CANNOT."""
+    from pipeline.tts import PaidVoiceForbidden
+
+    monkeypatch.setattr(settings, "mock_tts", False)
+    monkeypatch.setattr(settings, "mock_mode", False)
+    monkeypatch.setattr(settings, "local_tts_enabled", False)  # no Piper here
+    eng = TTSEngine(settings)
+    # draft=False is exactly the mistyped-command case: without free_only this
+    # resolves to "paid" and spends.
+    assert eng.tier_for(False) == "paid"
+    with pytest.raises(PaidVoiceForbidden):
+        eng.synthesize("Noise, or signal?", "short", draft=False, free_only=True)
+
+
+def test_the_free_only_gate_raises_before_anything_is_sent(settings, monkeypatch):
+    """It must fail before the HTTP client is even reached — a gate that
+    raises after the request is not a gate."""
+    from pipeline.tts import PaidVoiceForbidden
+
+    monkeypatch.setattr(settings, "mock_tts", False)
+    monkeypatch.setattr(settings, "mock_mode", False)
+    monkeypatch.setattr(settings, "local_tts_enabled", False)
+
+    def explode(*a, **k):  # pragma: no cover — reaching this IS the failure
+        raise AssertionError("a free-only job reached the paid generator")
+
+    eng = TTSEngine(settings)
+    monkeypatch.setattr(eng, "_generate_real", explode)
+    with pytest.raises(PaidVoiceForbidden):
+        eng.synthesize("Noise, or signal?", "long", draft=False, free_only=True)
+
+
+def test_a_proof_falls_back_to_mock_and_never_to_paid(settings, monkeypatch):
+    """No Piper on the box is a degraded proof, not a purchase."""
+    monkeypatch.setattr(settings, "mock_tts", False)
+    monkeypatch.setattr(settings, "mock_mode", False)
+    monkeypatch.setattr(settings, "local_tts_enabled", False)
+    eng = TTSEngine(settings)
+    assert eng.tier_for(True) == "mock"
+    res = eng.synthesize("Noise, or signal?", "short", draft=True, free_only=True)
+    assert res.cost_usd == 0.0
+    assert res.tier == "mock"
+
+
+def test_the_free_tiers_pass_the_gate(settings):
+    """local and mock are free, so the gate must let them through — a gate
+    that blocks the tier it exists to protect is just an outage."""
+    eng = TTSEngine(settings)
+    eng.guard_free_only("local")
+    eng.guard_free_only("mock")
+
+
+def test_the_proof_command_works_for_both_formats(settings, monkeypatch,
+                                                  long_valid_text,
+                                                  short_valid_json):
+    """/draft is LONG-only, and the SHORT is the daily-volume format. A proof
+    has to exist for both or the format that ships most often still has no
+    free way to be looked at."""
+    import shutil
+    from bot.handlers import BotCore
+    from pipeline.models import JobKind
+
+    core = BotCore(settings)
+    core.start_lane(91, "long", "EXMPL")
+    ws = core.context.get(91)
+    shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
+                "company_data" / "dennis_data.xlsx", ws.path / "dennis_data.xlsx")
+    core.intake_script(91, long_valid_text)
+    # the same workspace carries both lanes, so one ticker exercises both
+    core.intake_script(91, short_valid_json)
+
+    kind, text, _ = core.render_request("EXMPL", "long", proof=True)
+    assert kind is JobKind.RENDER_PROOF_LONG
+    kind, _, _ = core.render_request("EXMPL", "short", proof=True)
+    assert kind is JobKind.RENDER_PROOF_SHORT
+    # and it says what it is, in the reply, without the operator guessing
+    assert "$0" in text and "real visuals" in text.lower()
+
+
+def test_a_proof_needs_no_approval(settings, monkeypatch, long_valid_text):
+    """Approval is the SPEND gate. A pass that cannot spend must not be
+    behind it, or you approve a video to find out if it is worth approving."""
+    import shutil
+    from bot.handlers import BotCore
+    from pipeline.models import JobKind
+
+    core = BotCore(settings)
+    core.start_lane(92, "long", "EXMPL")
+    ws = core.context.get(92)
+    shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
+                "company_data" / "dennis_data.xlsx", ws.path / "dennis_data.xlsx")
+    core.intake_script(92, long_valid_text)
+    assert not ws.is_approved("long")
+    kind, _, _ = core.render_request("EXMPL", "long", proof=True)
+    assert kind is JobKind.RENDER_PROOF_LONG
+
+
+def test_a_proof_renders_at_full_resolution(settings):
+    """The whole point. Legibility is a resolution question, so a pass that
+    scales down cannot answer it — draft (0.5) and preview (0.25) both throw
+    away the evidence, which is why this is a third constant and not an
+    overload of preview_scale."""
+    assert settings.proof_scale == 1.0
+    assert settings.proof_scale > settings.draft_scale > settings.preview_scale
+
+
+def test_a_proof_buys_its_speed_from_the_encoder(settings):
+    from pipeline.render_common import encode_profile
+
+    proof = encode_profile(settings, "short", proof=True)
+    final = encode_profile(settings, "short")
+    assert proof.vcodec == "libx264"
+    assert proof.preset == "veryfast"
+    # cheaper than a final, nowhere near the throwaway passes
+    assert final.crf < proof.crf < settings.preview_crf
+
+
+def test_a_proof_mocks_the_voice_and_nothing_else(settings, monkeypatch,
+                                                  long_valid_text):
+    """The complaint this tier answers: MOCK_MODE is the only other free path
+    and it fakes prices, imagery, memes, filings and delivery too, so a free
+    render was unrepresentative of what ships. A proof may mock exactly one
+    subsystem — the only one that costs money."""
+    import shutil
+    from bot.handlers import BotCore
+
+    live = settings.model_copy(update={"mock_mode": False, "mock_tts": None,
+                                       "mock_prices": None, "mock_screener": None})
+    live.ensure_runtime_dirs()
+    core = BotCore(live)
+    core.start_lane(93, "long", "EXMPL")
+    ws = core.context.get(93)
+    shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
+                "company_data" / "dennis_data.xlsx", ws.path / "dennis_data.xlsx")
+    core.intake_script(93, long_valid_text)
+
+    seen: dict = {}
+
+    def spy(text, fmt, **kw):
+        seen.update(kw)
+        raise RuntimeError("stop here — the TTS call is all we are inspecting")
+
+    monkeypatch.setattr(core.tts, "synthesize", spy)
+    job = type("J", (), {"kind": JobKindProof, "ticker": "EXMPL",
+                         "workdate": ws.workdate, "delivered_link": None})()
+    with pytest.raises(RuntimeError):
+        core._run_proof(job, ws, lambda _d: None)
+
+    # the voice is asked for free, and guaranteed free
+    assert seen["draft"] is True and seen["free_only"] is True
+    # and nothing else was switched to mock behind the operator's back
+    assert not live.mocking_prices
+    assert not live.mocking_screener

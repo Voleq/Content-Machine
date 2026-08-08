@@ -327,6 +327,73 @@ step "brand assets + fixtures (deterministic, generated locally)"
 ok "generated"
 
 # --------------------------------------------------------------------------
+# local neural voice (Piper) - the free tier
+# --------------------------------------------------------------------------
+# This is what makes /proof and /draft free AND listenable. Without it
+# tier_for() falls back to the mock hum, which reports success and delivers a
+# tone - a tier that is configured but non-functional is worse than one that
+# is absent, so this step VERIFIES with a real synthesis rather than trusting
+# that pip exited 0. Same principle as the NVENC probe above: believe the
+# artefact, not the feature list.
+step "local neural voice (Piper) - the free draft/proof tier"
+PIPER_VOICE="en_GB-northern_english_male-medium"
+PIPER_DIR="$DEST/assets/voices"
+PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/northern_english_male/medium/$PIPER_VOICE"
+
+sudo -u "$SERVICE_USER" .venv/bin/pip install -q -e '.[voice]' || die \
+"Could not install the pinned piper-tts into the venv.
+
+Without it /draft and /proof fall back to the mock hum: they still cost \$0,
+but you are listening to a tone rather than the script, and no amount of
+squinting at the video will tell you that is what happened. Fix the network or
+the wheel and re-run - everything else is already installed."
+
+install -d -o "$SERVICE_USER" -g "$SERVICE_USER" "$PIPER_DIR"
+for suffix in .onnx .onnx.json; do
+  target="$PIPER_DIR/$PIPER_VOICE$suffix"
+  if [ -s "$target" ]; then
+    info "$PIPER_VOICE$suffix already present"
+    continue
+  fi
+  info "downloading $PIPER_VOICE$suffix"
+  sudo -u "$SERVICE_USER" curl -sSfL -o "$target" "$PIPER_BASE$suffix" || die \
+"Could not download the Piper voice model:
+    $PIPER_BASE$suffix
+
+The binary installed but there is no voice for it to speak with, so the free
+tier would silently degrade to the mock hum. Re-run when the network is back."
+done
+
+# The smoke test. A model file that exists proves nothing: it can be a
+# truncated download, the wrong architecture, or a voice this build of piper
+# cannot load. Synthesize a real sentence and require real audio out.
+PIPER_SMOKE="$(mktemp -d)/smoke.wav"
+if echo "Noise, or signal? We are about to find out." \
+    | sudo -u "$SERVICE_USER" .venv/bin/piper \
+        -m "$PIPER_DIR/$PIPER_VOICE.onnx" -f "$PIPER_SMOKE" >/dev/null 2>&1 \
+   && [ -s "$PIPER_SMOKE" ] \
+   && [ "$(ffprobe -v error -show_entries format=duration -of csv=p=0 \
+            "$PIPER_SMOKE" 2>/dev/null | cut -d. -f1)" -ge 1 ] 2>/dev/null; then
+  ok "Piper speaks - /draft and /proof get a real voice for \$0"
+  rm -rf "$(dirname "$PIPER_SMOKE")"
+else
+  rm -rf "$(dirname "$PIPER_SMOKE")"
+  die \
+"Piper is installed and the voice model is present, but synthesizing a test
+sentence produced no usable audio.
+
+This is the failure worth stopping for: the pipeline would report the 'local'
+tier, hand you the mock hum, and leave you to work out from the audio that the
+free voice never ran. Reproduce with:
+
+    cd $DEST && echo hello | .venv/bin/piper \\
+        -m assets/voices/$PIPER_VOICE.onnx -f /tmp/t.wav
+
+To install anyway without the free voice, set LOCAL_TTS_ENABLED=false in .env
+and re-run; /draft and /proof will use the mock hum and say so."
+fi
+
+# --------------------------------------------------------------------------
 # .env
 # --------------------------------------------------------------------------
 step ".env"
@@ -339,6 +406,22 @@ if [ ! -f .env ]; then
   info "  pulls), GITHUB_MODELS_TOKEN (free-tier quote flagging)"
 else
   info ".env already exists - left alone"
+fi
+
+# LOCAL_TTS_MODEL is the one setting the operator cannot be expected to know:
+# it is an absolute path to a file this script just downloaded. Left blank,
+# available() reports "LOCAL_TTS_MODEL is not set" and every /draft and /proof
+# quietly gets the mock hum despite a working Piper - so it is written here,
+# for a fresh .env and an existing one alike, and only when still unset.
+PIPER_MODEL_PATH="$PIPER_DIR/$PIPER_VOICE.onnx"
+if grep -qE '^LOCAL_TTS_MODEL=.+' .env; then
+  info "LOCAL_TTS_MODEL already set - left alone"
+elif grep -q '^LOCAL_TTS_MODEL=' .env; then
+  sed -i "s|^LOCAL_TTS_MODEL=.*|LOCAL_TTS_MODEL=$PIPER_MODEL_PATH|" .env
+  ok "LOCAL_TTS_MODEL -> $PIPER_MODEL_PATH"
+else
+  printf 'LOCAL_TTS_MODEL=%s\n' "$PIPER_MODEL_PATH" >> .env
+  ok "LOCAL_TTS_MODEL -> $PIPER_MODEL_PATH"
 fi
 
 chown -R "$SERVICE_USER:$SERVICE_USER" "$DEST"

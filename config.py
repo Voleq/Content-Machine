@@ -250,7 +250,11 @@ class Settings(BaseSettings):
     local_tts_binary: str = Field(default="piper", alias="LOCAL_TTS_BINARY")
     local_tts_model: str = Field(default="", alias="LOCAL_TTS_MODEL")  # .onnx voice
     local_tts_speaker: int = Field(default=-1, alias="LOCAL_TTS_SPEAKER")  # -1 = default
-    local_tts_cuda: bool = Field(default=True, alias="LOCAL_TTS_CUDA")
+    # CPU by default: Piper medium runs several times faster than real time on
+    # CPU, and the GPU path needs onnxruntime-gpu against a matching CUDA
+    # stack — a fragile dependency on a modest laptop, for a tier whose whole
+    # value is that it always works. The GPU is reserved for NVENC on finals.
+    local_tts_cuda: bool = Field(default=False, alias="LOCAL_TTS_CUDA")
 
     # ------------------------------------------------- Excel refresh (COM)
     # The render box runs Windows with Excel and the LSEG/CIQ add-in loaded,
@@ -325,6 +329,24 @@ class Settings(BaseSettings):
     preview_scale: float = 0.25
     preview_fps: int = 15
     preview_crf: int = 34
+    # Three passes sit below a final, and each answers a DIFFERENT question.
+    # Read the scale, not the name, before reusing one:
+    #
+    #   draft   (0.5, real fps)   — does the TIMING work? where do the cuts land?
+    #   preview (0.25, 15 fps)    — does the EDIT work, at contact-sheet size?
+    #   proof   (1.0, real fps)   — does it LOOK right on a phone?
+    #
+    # PROOF is the only one that can answer the third question, because
+    # legibility is a function of RESOLUTION: a headline card that renders
+    # around 9px-equivalent is unreadable at 1080p and invisible at 270p, and
+    # both cheaper passes destroy exactly the evidence you are looking for.
+    # So proof keeps the full frame and buys its speed from the ENCODER
+    # instead — veryfast/crf 26, which is where a modest laptop should be
+    # saving. Encode quality does not change whether type is readable at
+    # size; frame size does.
+    proof_scale: float = 1.0
+    proof_crf: int = 26
+    proof_preset: str = "veryfast"
     audio_bitrate: str = "192k"
     music_gain_db: float = -22.0           # music bed under the VO
     sfx_gain_db: float = -6.0
