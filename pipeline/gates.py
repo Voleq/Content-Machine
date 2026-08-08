@@ -472,9 +472,25 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         families = KIT_TAG_FAMILIES.get(e.type)
         if families is None:
             continue
-        asset = kit.resolve_asset(families, e.payload)
+        asset = kit.resolve_asset(families, e.payload, placeable=True)
         if asset is not None:
             used.add(asset.key)
+            continue
+        # Artwork exists for this beat and cannot be placed: every card that
+        # answers the key keeps baked furniture the frame draws itself. That is
+        # not "worth drawing if it recurs" — the beat has nowhere to go, and a
+        # silent fallback to a stuck card is how the disclaimer reached the
+        # sample twice. It blocks, and it names the beat.
+        blocked = kit.resolve_asset(families, e.payload)
+        if blocked is not None:
+            findings.append(Finding(
+                gate="kit", severity="block",
+                message=(f"[{e.type.value}: {e.payload}] has no eligible card: "
+                         f"{blocked.key} carries the ticker chip and disclaimer "
+                         f"painted into it and the strip cannot lift them, so "
+                         f"placing it prints both twice. Artwork owed — the "
+                         f"same card without the frame furniture "
+                         f"(`/kit doctor` lists the batch).")))
             continue
         unresolved.append(f"[{e.type.value}: {e.payload}]")
         blank = KIT_TAG_BLANKS.get(e.type)
@@ -506,15 +522,17 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
             gate="kit", severity="warn",
             message=f"{p} — it is not addressable and never will be"))
 
-    stuck = _cards_stuck_with_furniture(kit)
+    stuck = sorted(kit.furniture_stuck())
     if stuck:
+        drawings = _furniture_work_order(kit)
         findings.append(Finding(
             gate="kit", severity="warn",
-            message=(f"{len(stuck)} chapter card(s) still carry the long-form "
-                     f"ticker chip and disclaimer into a 9:16 short — the "
-                     f"stripper leaves a card alone when artwork crosses the "
-                     f"band. Artwork owed: the same cards without frame "
-                     f"furniture. e.g. {', '.join(stuck[:3])}")))
+            message=(f"{sum(len(v) for v in drawings.values())} chapter "
+                     f"drawing(s) carry the ticker chip and disclaimer painted "
+                     f"in, and the strip cannot lift them — they are OUT of "
+                     f"selection until Design redraws them, so the rotation is "
+                     f"that much shorter. `/kit doctor` lists the batch by "
+                     f"family. e.g. {', '.join(stuck[:3])}")))
 
     return findings, {
         "used": sorted(used),
@@ -525,6 +543,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "aliases": len(kit.aliases()),
         "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
         "furniture_stuck": stuck,
+        "furniture_work_order": _furniture_work_order(kit),
         "missing_micro_motion": _shots_without_micro_motion(kit),
         "byproduct_shortfall": _byproduct_shortfall(kit),
         "kit_size": len(kit),
@@ -571,32 +590,31 @@ def _shots_without_micro_motion(kit) -> dict[str, list[str]]:
     return out
 
 
-def _cards_stuck_with_furniture(kit) -> list[str]:
-    """16:9 cards whose baked chip/disclaimer cannot be removed safely.
+FURNITURE_ASK = ("the same card, no ticker chip, no disclaimer line, "
+                 "everything else byte-identical")
 
-    The stripper fails safe by design, so this is the list Design has to fix
-    at source rather than a list of bugs. Kept cheap: first frame only, and
-    only cards on the long-form canvas.
+
+def _furniture_work_order(kit) -> dict[str, list[str]]:
+    """The Design deliverable: stuck DRAWINGS by chapter family.
+
+    Grouped and de-twinned on purpose. The stuck set counts every registered
+    frame, so a shot appears four times over (itself plus its `-talk`, `-blink`
+    and `-idle` strips) — Design redraws one card and its strips follow, so a
+    work order that listed all four would overstate the ask by three.
+
+    This is the actual fix. Filtering the cards out of selection only stops
+    them shipping in the meantime, and it costs the rotation every one of them.
     """
-    from PIL import Image
-
-    from pipeline.kit_frames import FURNITURE_BANDS, strip_baked_furniture
-
-    del FURNITURE_BANDS  # imported to fail loudly if the module loses it
-    stuck: list[str] = []
-    for key in sorted(kit.keys()):
+    order: dict[str, list[str]] = {}
+    for key in sorted(kit.furniture_stuck()):
         asset = kit.get(key)
-        if asset is None or asset.aspect != "16:9" or not asset.frames:
+        if asset is None:
             continue
-        if not asset.family.startswith("chapters/"):
+        leaf = key.rsplit("/", 1)[-1]
+        if any(leaf.endswith(s) for s in ("-talk", *kit.MICRO_SUFFIXES)):
             continue
-        try:
-            src = Image.open(asset.frames[0]).convert("RGBA")
-        except OSError:
-            continue
-        if strip_baked_furniture(src, asset) is src:
-            stuck.append(key)
-    return stuck
+        order.setdefault(asset.family, []).append(key)
+    return order
 
 
 def kit_doctor_text(settings: Settings, script=None) -> str:
@@ -667,15 +685,21 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
         lines.append("  (drop `<shot>-blink` / `<shot>-idle` into the delivery "
                      "and re-run ingest — no code change is needed)")
 
-    stuck = stats.get("furniture_stuck") or []
-    if stuck:
+    order = stats.get("furniture_work_order") or {}
+    if order:
+        total = sum(len(v) for v in order.values())
         lines.append("")
-        lines.append(f"Artwork owed — {len(stuck)} chapter card(s) carry the "
-                     "long-form ticker chip and disclaimer into a short, and "
-                     "artwork crosses the band so it cannot be erased:")
-        lines += [f"  {k}" for k in stuck[:15]]
-        if len(stuck) > 15:
-            lines.append(f"  ... and {len(stuck) - 15} more")
+        lines.append(f"ARTWORK OWED — {total} chapter drawing(s) in "
+                     f"{len(order)} families, listed in full because this is "
+                     f"the deliverable:")
+        lines.append(f"  Ask, for every key below: {FURNITURE_ASK}.")
+        lines.append("  Until then each one is OUT of long-form and short-form "
+                     "selection — the frame draws the chip and the disclaimer, "
+                     "so a card that keeps its own prints both twice.")
+        for family, keys in sorted(order.items()):
+            pool = len(kit.family(family))
+            lines.append(f"  {family} — {len(keys)} of {pool} drawing(s):")
+            lines += [f"      {k.rsplit('/', 1)[-1]}" for k in keys]
 
     if findings:
         lines.append("")

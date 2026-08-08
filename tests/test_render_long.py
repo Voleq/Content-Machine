@@ -330,3 +330,59 @@ def test_doodle_and_scribble_overlays_present(rendered_doodles):
         assert f"between(t,{c.t:.4f}" in filter_text
     # overlays never became concat segments (they ride on top)
     assert not any(s["kind"] in ("doodle", "scribble") for s in manifest["segments"])
+
+
+def test_the_chapter_stinger_is_an_opaque_card(rendered):
+    """A section divider interrupts. It does not wash over the cut.
+
+    It was `(*BG, 235)` — 92% opaque — so for its whole 0.9s the frame
+    underneath printed through it: "02 / what they do." landed on top of
+    "EXMPL dispatch dashboard" at 35s of the sample, both large, neither
+    readable. Asserted on the PNG the renderer composites rather than on a
+    video frame, because that is where the decision lives.
+    """
+    from PIL import Image
+
+    settings, script, tts, out, manifest = rendered
+    rdir = out.parent / "render_long"
+    cards = sorted(rdir.glob("chapter_*.png"))
+    assert cards, "no chapter stinger was drawn"
+    for card in cards:
+        alpha = Image.open(card).convert("RGBA").getchannel("A")
+        assert alpha.getextrema() == (255, 255), \
+            f"{card.name} is translucent — the cut under it shows through"
+
+
+def test_the_stinger_sits_above_its_own_transition_strip(rendered):
+    """z-order is list order, and the ink wipe belongs behind the divider.
+
+    The comment has always said "under the stinger" while the append order put
+    it on top. Harmless at 92% opacity, because everything washed together;
+    with an opaque card it decides which one you can read.
+    """
+    settings, script, tts, out, manifest = rendered
+    names = [l["name"] for l in manifest["layers"]]
+    for i, name in enumerate(names):
+        if not name.startswith("transition_"):
+            continue
+        k = name.split("_")[1]
+        assert f"chapter_{k}" in names, f"{name} has no stinger to sit under"
+        assert names.index(f"chapter_{k}") > i, \
+            f"{name} is composited over chapter_{k}"
+
+
+def test_no_host_beat_places_a_card_that_keeps_its_furniture(rendered):
+    """The duplicated disclaimer, asserted on what the render CHOSE.
+
+    Five of the twenty banked host keys carry the chip and the disclaimer
+    painted in and cannot be stripped; `chapters/short-interest/
+    dennis-eyes-the-squeeze` was on screen at 60s of the sample with the line
+    printed twice. The manifest records every shot the rig used.
+    """
+    from pipeline.kit import load_kit
+
+    settings, script, tts, out, manifest = rendered
+    stuck = load_kit(settings.assets_dir).furniture_stuck()
+    used = {m["shot"] for m in manifest.get("host_motion", [])}
+    assert used, "no host shot was recorded"
+    assert not (used & stuck), f"placed with baked furniture: {sorted(used & stuck)}"

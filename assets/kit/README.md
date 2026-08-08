@@ -112,8 +112,34 @@ deliberately timid: a card is only touched when the ink in the band matches
 the known geometry *and* has the clear paper beside it that the furniture
 always has. A blanket crop of the same bands was measured against the library
 first and would have damaged 32 cards at the top and 75 at the bottom — legs,
-chart axes and table rules all cross there. 64 of 138 cards come out clean;
-the other 74 keep their furniture rather than risk the artwork.
+chart axes and table rules all cross there. **96 of the 176 registered 16:9
+chapter frames come out clean; 76 keep their furniture** rather than risk the
+artwork, and the remaining 4 never had any.
+
+**A card that keeps it is out of selection.** `Kit.furniture_stuck()` computes
+that set once per kit load and `Kit.placeable()` is what every placement site
+asks: the host banks (`host.shots`), card-tag resolution in both renderers
+(`Kit.resolve_asset(..., placeable=True)`) and the writer's catalogue all skip
+them, and a beat whose only artwork is stuck is a **blocking** gate finding
+naming the beat rather than a silent fallback. Reporting it was not enough: the
+long sample printed the disclaimer twice, in two different faces, in four of
+eight frames sampled across its runtime, while `/kit doctor` had been listing
+the cards all along.
+
+The detector is deliberately more eager than the eraser, because the two pay
+different prices for being wrong: a false positive costs one card out of a
+hundred going unused, a false negative puts the disclaimer on YouTube twice. So
+it accepts the furniture at **either** margin —
+`resigned-close/outro-subscribe` prints the same sentence right-aligned, which
+the eraser's left-margin signature does not match — while ink that matches
+neither margin is artwork crossing the band (`resigned-close/end-card`) and is
+left placeable.
+
+`/kit doctor` ends with the work order: **59 drawings across 12 families**, one
+row per card (a `-talk`/`-blink`/`-idle` twin follows its base, so listing all
+of them would overstate the ask by seventeen). Three families —
+`guidance-estimates`, `moat`, `short-interest` — are stuck in full, and the
+host's `panel` bank is down from 7 shots to 3 until they land.
 
 One card is broken as delivered: `chapters/sector-comps/comps-table` prints
 its `Median` row directly on top of the disclaimer, overlapping glyph for

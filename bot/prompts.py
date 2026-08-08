@@ -70,6 +70,24 @@ def broll_catalog() -> str:
     return "\n".join(f"  - {k} — {PALETTE[k]}" for k in palette_keys())
 
 
+def scribble_styles(settings: Settings) -> str:
+    """The `[SCRIBBLE: style -> target]` vocabulary, off the kit on disk.
+
+    Generated for the same reason every other catalog here is: the templates
+    named three styles while the kit ships twelve marks, and none of the three
+    drew the artwork — so a writer was never told the drawings existed and
+    could not have asked for one. A style whose artwork is missing still
+    renders (a drawn stand-in takes it), but it is not offered.
+    """
+    from pipeline.kit import load_kit
+    from pipeline.rasters import SCRIBBLE_MARKS
+
+    kit = load_kit(settings.assets_dir)
+    have = [s for s, (key, _) in sorted(SCRIBBLE_MARKS.items())
+            if kit.get(key) is not None]
+    return ", ".join(f"`{s}`" for s in have) or "`circle`, `arrow`, `underline`"
+
+
 # --------------------------------------------------------------------------
 # The kit catalog (addendum 1e).
 # --------------------------------------------------------------------------
@@ -105,6 +123,11 @@ def _leaves(kit, prefix: str | tuple[str, ...], *, keep: str = "",
     but in a list headed "frameworks that exist" they read as one more named
     framework, which is exactly the confusion this catalog is meant to remove.
     They get their own line instead.
+
+    A card whose baked furniture cannot be stripped is never offered. The
+    renderer refuses to place one, so offering it would steer a writer into a
+    blocking gate finding — the catalog and the renderer have to agree about
+    what exists, in both directions.
     """
     prefixes = (prefix,) if isinstance(prefix, str) else tuple(prefix)
     out: list[str] = []
@@ -113,6 +136,8 @@ def _leaves(kit, prefix: str | tuple[str, ...], *, keep: str = "",
         for name in kit.family(fam):
             leaf = name[len(head):]
             if keep and not leaf.startswith(keep):
+                continue
+            if not kit.placeable(name):
                 continue
             if strip:
                 for p in _STRIP_PREFIXES:
@@ -126,9 +151,18 @@ def _leaves(kit, prefix: str | tuple[str, ...], *, keep: str = "",
 
 
 def _chapter_kits(kit) -> list[str]:
-    """Chapter kits that ship dedicated artwork."""
-    return sorted(f.split("/", 1)[1] for f in kit.families()
-                  if f.startswith("chapters/"))
+    """Chapter kits that ship dedicated, placeable artwork.
+
+    A family whose every drawing keeps its baked furniture has nothing the
+    renderer will place, so promising "name a chapter close to one of these and
+    it gets its own visuals" would be false — four families are in exactly that
+    state until Design redraws them.
+    """
+    return sorted(
+        f.split("/", 1)[1] for f in kit.families()
+        if f.startswith("chapters/")
+        and any(kit.placeable(k) for k in kit.family(f))
+    )
 
 
 def _shorts_families(kit) -> list[tuple[str, list[str]]]:
@@ -440,6 +474,7 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{scribble_styles}}"] = scribble_styles(settings)
         r["{{kit_catalog}}"] = kit_catalog(settings, fmt="short")
         r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
@@ -454,6 +489,7 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{scribble_styles}}"] = scribble_styles(settings)
         r["{{kit_catalog}}"] = kit_catalog(settings, fmt="long")
         r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{available_screenshots}}"] = screenshots_line(workspace)
@@ -470,6 +506,7 @@ def fill_prompt(
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)
         r["{{broll_palette}}"] = broll_catalog()
+        r["{{scribble_styles}}"] = scribble_styles(settings)
         r["{{kit_catalog}}"] = kit_catalog(settings, fmt="short")
         r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
         r["{{peer_percentiles}}"] = (

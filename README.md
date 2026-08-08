@@ -496,10 +496,15 @@ env var, case-insensitive).
 - **Hand-drawn overlay language**: `[DOODLE: key]` drops a crude marker
   overlay (stick-figure reactions, arrows, a scribble explosion — 14 in
   `assets/doodles/`, indexed like the memes, resolved locally, given a
-  frame-to-frame "boil"); `[SCRIBBLE: circle|arrow|underline -> target]`
-  draws a mark plus a target callout on a number/point. Both parse in the
-  SHORT (inline in `audio_script`, stripped before TTS) and the LONG, and
-  composite as the TOP layer over charts, screenshots and b-roll.
+  frame-to-frame "boil"); `[SCRIBBLE: style -> target]` draws a mark plus a
+  target callout on a number/point. The styles ARE the twelve drawings in the
+  kit's `marks/` family — `circle`, `oval`, `bracket`, `star`, `question`,
+  `check`, `cross-out`, `redaction`, `underline`, `jab`, `arrow-down`,
+  `arrow-curve-down` — mapped in `rasters.SCRIBBLE_MARKS`, listed in every
+  writing prompt off the kit on disk, and drawn from the real artwork with a
+  procedural stroke as the fallback. Both parse in the SHORT (inline in
+  `audio_script`, stripped before TTS) and the LONG, and composite as the TOP
+  layer over charts, screenshots and b-roll.
 - **Screen-grab backbone**: `[SCREENGRAB: slug]` composites an operator-
   supplied capture (a broker app, a portfolio P&L, a Google search) —
   image or short screen-record dropped into `assets/custom/`, pad-fit

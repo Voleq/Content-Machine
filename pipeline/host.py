@@ -221,11 +221,22 @@ def shots(kit: Kit, role: str = "open") -> list[HostShot]:
     A bank listed in `BANK_EXTENSIONS` continues into its extension, so the
     rotation is long enough for the runtime rather than long enough for the
     bank. Its own shots always come first, and a shot is never listed twice.
+
+    A shot whose baked furniture cannot be stripped is not usable, whatever the
+    bank says. These are full-frame cards composited onto a frame that draws its
+    own chip and disclaimer, so the one on the card is a second copy of both —
+    it is the reason the long sample prints "Opinion / entertainment. Not
+    financial advice." twice, in two different faces. Five of the twenty banked
+    keys are in that state; the shot is dropped here rather than at the pixels,
+    and `/kit doctor` names the artwork owed.
     """
     out: list[HostShot] = []
     seen: set[str] = set()
     for bank in (role, *BANK_EXTENSIONS.get(role, ())):
         for key in HOST_BANKS.get(bank, ()):
+            if not kit.placeable(key):
+                log.debug("host shot %s keeps its baked furniture — skipped", key)
+                continue
             pair = kit.talk_pair(key)
             if pair is None:
                 log.debug("host shot %s has no usable talk twin — skipped", key)

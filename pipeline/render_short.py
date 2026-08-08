@@ -276,10 +276,15 @@ def _kit_asset_for(kit: Kit, tag: TagType, key: str):
 
     Named artwork first, then the parameterised blank layout — which is how
     `[TERM: owner earnings]` gets a card at all when nobody has drawn one.
+
+    `placeable` skips a card whose baked chip and disclaimer cannot be lifted:
+    the 9:16 frame draws both itself, so such a card arrives as a duplicated
+    disclaimer and a second, wrong ticker. The blank layout carrying the beat is
+    a better frame than that, and the gate says what artwork is owed.
     """
     families = KIT_TAG_FAMILIES.get(tag)
     if families:
-        asset = kit.resolve_asset(families, key)
+        asset = kit.resolve_asset(families, key, placeable=True)
         if asset is not None:
             return asset, False
     blank = KIT_TAG_BLANKS.get(tag)

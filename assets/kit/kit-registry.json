@@ -3246,25 +3246,6 @@
    "slots": [],
    "source": "kit-v1"
   },
-  "marks/library-sheet": {
-   "family": "marks",
-   "name": "library-sheet",
-   "frames": [
-    "marks/library-sheet.png"
-   ],
-   "frameCount": 1,
-   "playback": "static",
-   "fps": 0,
-   "canvas": {
-    "w": 2236,
-    "h": 2178
-   },
-   "aspect": "1:1",
-   "alpha": true,
-   "meanLum": 238,
-   "slots": [],
-   "source": "kit-v1"
-  },
   "marks/oval": {
    "family": "marks",
    "name": "oval",
@@ -3357,25 +3338,6 @@
    "aspect": "1:1",
    "alpha": true,
    "meanLum": 34,
-   "slots": [],
-   "source": "kit-v1"
-  },
-  "marks/variant-grids": {
-   "family": "marks",
-   "name": "variant-grids",
-   "frames": [
-    "marks/variant-grids.png"
-   ],
-   "frameCount": 1,
-   "playback": "static",
-   "fps": 0,
-   "canvas": {
-    "w": 1118,
-    "h": 5152
-   },
-   "aspect": "9:16",
-   "alpha": true,
-   "meanLum": 238,
    "slots": [],
    "source": "kit-v1"
   },
@@ -10637,7 +10599,9 @@
   "names": [
    "contact-sheet.png",
    "_index.png",
-   "_STYLE-REF.png"
+   "_STYLE-REF.png",
+   "library-sheet.png",
+   "variant-grids.png"
   ],
   "dirs": [
    "_meta",

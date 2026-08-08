@@ -154,3 +154,126 @@ def test_the_blank_layouts_are_reachable_from_a_long_script(kit):
         assert blank in kit, f"{tag.value} falls through to a missing layout"
         assert any(s.clear for s in kit.get(blank).slots), (
             f"{blank} must clear its placeholder copy before the real text")
+
+
+# --------------------------------------------------------------------------
+# Baked furniture is a placement rule, not a report.
+#
+# The long sample printed "Opinion / entertainment. Not financial advice."
+# twice — once in the card's own face, once in the renderer's Space Mono — in
+# four of the eight frames sampled across its runtime. The stripper was not at
+# fault: it is timid by design, because a blanket crop of the same bands was
+# measured against the library and damages 32 cards at the top and 75 at the
+# bottom. The artwork broke the convention, `kit_doctor` reported it, and a
+# report does not stop a frame reaching YouTube.
+#
+# These assert on SELECTION. A pixel test here would rot the first time the
+# palette moves, and the property that matters is upstream of the pixels: a
+# card that keeps its furniture is never chosen.
+# --------------------------------------------------------------------------
+
+
+def test_no_stuck_card_can_be_selected_for_a_long_form_beat(kit):
+    """Every path that puts a chapter card on a rendered frame."""
+    from pipeline.host import HOST_BANKS, shots
+
+    stuck = kit.furniture_stuck()
+    assert stuck, "the fixture kit is supposed to have some — else this is vacuous"
+
+    for role in HOST_BANKS:
+        chosen = {s.key for s in shots(kit, role)}
+        assert chosen, f"the {role} bank has no usable shot left"
+        assert not (chosen & stuck), \
+            f"{role} can still place {sorted(chosen & stuck)}"
+
+    # the tag path: every key a script can name, resolved the way a renderer
+    # resolves it
+    for tag, families in KIT_TAG_FAMILIES.items():
+        for family in families:
+            for key in kit.family(family):
+                leaf = key.rsplit("/", 1)[-1]
+                asset = kit.resolve_asset(families, leaf, placeable=True)
+                assert asset is None or asset.key not in stuck, \
+                    f"[{tag.value}: {leaf}] resolved to the stuck {asset.key}"
+
+
+def test_a_beat_with_only_stuck_artwork_blocks_rather_than_falling_back(settings, kit):
+    """A silent fallback to a stuck card is how this shipped. It blocks now."""
+    from pipeline.gates import kit_doctor
+    from pipeline.models import TagType
+
+    # `[TABLE: …]` resolves against chapters/sector-comps, five of whose six
+    # drawings keep their furniture — so this is a real key, not a made-up one.
+    stuck_leaf = next(
+        (k.rsplit("/", 1)[-1] for k in sorted(kit.furniture_stuck())
+         if k.startswith("chapters/sector-comps/")), None)
+    if stuck_leaf is None:
+        pytest.skip("no stuck sector-comps card in this kit")
+
+    class _Script:
+        events = [type("E", (), {"type": TagType.TABLE, "payload": stuck_leaf})()]
+        inline_events: list = []
+
+    findings, stats = kit_doctor(_Script(), settings)
+    blocking = [f for f in findings if f.severity == "block"]
+    assert blocking, f"no blocking finding for [TABLE: {stuck_leaf}]"
+    assert stuck_leaf in blocking[0].message, "the finding has to name the beat"
+    assert "Artwork owed" in blocking[0].message
+
+
+def test_the_work_order_lists_drawings_not_twins(kit, settings):
+    """(b): the list Design works from. One row per card, not one per strip."""
+    from pipeline.gates import FURNITURE_ASK, _furniture_work_order, kit_doctor_text
+
+    order = _furniture_work_order(kit)
+    assert order, "nothing owed — then the containment above is untestable"
+    flat = [k for keys in order.values() for k in keys]
+    assert set(flat) <= set(kit.furniture_stuck())
+    for key in flat:
+        leaf = key.rsplit("/", 1)[-1]
+        assert not leaf.endswith(("-talk", "-blink", "-idle", "-idle-b")), \
+            f"{key} is a twin of the card beside it — Design redraws one"
+        assert key in kit.family(key.rsplit("/", 1)[0]), \
+            f"{key} is not an independently pickable drawing"
+    assert len(flat) < len(kit.furniture_stuck()), \
+        "de-twinning removed nothing — the count overstates the ask"
+
+    report = kit_doctor_text(settings)
+    assert "ARTWORK OWED" in report
+    assert FURNITURE_ASK in report, "the report has to say what is being asked for"
+    for family in order:
+        assert family in report, f"{family} is owed but not in the report"
+
+
+def test_a_card_with_no_furniture_stays_usable(kit):
+    """The distinction the containment turns on.
+
+    "The strip did nothing" is not "the card carries furniture": three
+    `how-the-money-is-made` drawings and `resigned-close/end-card` have none at
+    all, and excluding them would cost usable artwork for no reason. The other
+    direction matters more: `outro-subscribe` prints the disclaimer
+    RIGHT-aligned, so the eraser's left-margin signature misses it and the
+    sentence is on screen twice anyway.
+    """
+    from PIL import Image
+
+    from pipeline.kit_frames import carries_baked_furniture, strip_baked_furniture
+
+    stuck = kit.furniture_stuck()
+    for key in ("chapters/resigned-close/end-card",
+                "chapters/how-the-money-is-made/segments-pie"):
+        asset = kit.get(key)
+        if asset is None:
+            continue
+        img = Image.open(asset.frames[0]).convert("RGBA")
+        assert strip_baked_furniture(img, asset) is img, \
+            f"{key} was expected to have nothing to strip"
+        assert not carries_baked_furniture(img, asset), f"{key} has no furniture"
+        assert key not in stuck and kit.placeable(key)
+
+    right = kit.get("chapters/resigned-close/outro-subscribe")
+    if right is not None:
+        img = Image.open(right.frames[0]).convert("RGBA")
+        assert carries_baked_furniture(img, right), \
+            "the right-aligned disclaimer has to be detected"
+        assert not kit.placeable(right.key)

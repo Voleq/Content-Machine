@@ -85,7 +85,7 @@ Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are n
 
 **Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
 - `[DOODLE: key]` — e.g. "...from twenty-five k to zero. [DOODLE: scribble-explosion]"
-- `[SCRIBBLE: circle -> target]` / `arrow` / `underline` — a drawn mark plus the target as a callout.
+- `[SCRIBBLE: style -> target]` — a drawn mark plus the target as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
 - `[ALERT: key]` — a lower-third interjection mid-frame.
 
 **Delivery — never reaches the screen, only the voice.** `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short. Write them NOW — they change what gets generated, so adding one later means paying for the voice twice.

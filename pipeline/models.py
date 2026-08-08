@@ -151,18 +151,42 @@ KIT_TAG_BLANKS: dict[TagType, str] = {
 
 
 class ScribbleStyle(str, Enum):
+    """The `[SCRIBBLE: …]` vocabulary — one member per drawing in ``marks/``.
+
+    It was three names against twelve marks, so eleven drawings the kit had
+    already shipped were unreachable from a script. The values ARE the mark
+    names: `pipeline.rasters.SCRIBBLE_MARKS` maps each to its artwork and to
+    the procedural stroke that stands in when the kit has not shipped it, and
+    there is no per-mark code path anywhere.
+    """
+
     CIRCLE = "circle"
-    ARROW = "arrow"
+    OVAL = "oval"
+    BRACKET = "bracket"
+    STAR = "star"
+    QUESTION = "question"
+    CHECK = "check"
+    CROSS_OUT = "cross-out"
+    REDACTION = "redaction"
     UNDERLINE = "underline"
+    JAB = "jab"
+    ARROW = "arrow"
+    ARROW_DOWN = "arrow-down"
+    ARROW_CURVE_DOWN = "arrow-curve-down"
 
 
 def parse_scribble_payload(payload: str) -> tuple[ScribbleStyle, str] | None:
     """`[SCRIBBLE: circle -> target]` -> (style, target). None if malformed
-    or the style is unknown (caller logs + skips — never fatal)."""
+    or the style is unknown (caller logs + skips — never fatal).
+
+    Spaces and underscores fold to hyphens, the way kit keys resolve: a writer
+    typing `[SCRIBBLE: cross out -> …]` means the mark called `cross-out`, and
+    losing the beat over the separator would be a silent nothing on screen.
+    """
     if "->" not in payload:
         return None
     style_raw, target = payload.split("->", 1)
-    style_raw = style_raw.strip().lower()
+    style_raw = style_raw.strip().lower().replace(" ", "-").replace("_", "-")
     target = target.strip()
     if not target:
         return None

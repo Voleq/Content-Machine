@@ -27,7 +27,7 @@
       },
       {
         "name": "beat0",
-        "shot": "chapters/valuation/pe-history",
+        "shot": "chapters/bull-vs-bear/dennis-both-hands",
         "blinks": 2,
         "idle_frames": 0,
         "has_blink": true,
@@ -320,12 +320,12 @@
   "articles": [],
   "kit_assets_used": [
     "backgrounds/room-tall",
+    "chapters/bull-vs-bear/dennis-both-hands",
+    "chapters/bull-vs-bear/dennis-both-hands-talk",
     "chapters/cold-open/at-desk-open",
     "chapters/cold-open/at-desk-open-talk",
     "chapters/resigned-close/dennis-defeated",
     "chapters/resigned-close/dennis-defeated-talk",
-    "chapters/valuation/pe-history",
-    "chapters/valuation/pe-history-talk",
     "short/card-noise",
     "shorts/open-close/e-close",
     "shorts/open-close/e-open",

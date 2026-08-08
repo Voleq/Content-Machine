@@ -29,7 +29,13 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from config import Settings
-from pipeline.rasters import drawn_rect, marker_stroke
+from pipeline.rasters import (
+    drawn_rect,
+    mark_image,
+    marker_stroke,
+    thicken_mark,
+    tint_mark,
+)
 
 log = logging.getLogger(__name__)
 
@@ -219,14 +225,18 @@ def render_price_chart(
 
 
 # --------------------------------------------------------------------------
-# The drawn primitives.
+# The chart's ring, on the shared primitives.
 #
-# Both charts go through these. The channel had two chart renderers speaking
-# two different visual languages: one drew wobbly axes with a chunky nib, the
-# other drew `rounded_rectangle(radius=W*0.03)`, 1px grid lines and a Gaussian
-# glow. Two chart STYLES in one channel is fine — precision is a legitimate
-# register. Two drawing LANGUAGES is not, and the clean card was the only
-# surface in the kit that looked machine-made.
+# Both charts go through it. The channel had two chart renderers speaking two
+# different visual languages: one drew wobbly axes with a chunky nib, the other
+# drew `rounded_rectangle(radius=W*0.03)`, 1px grid lines and a Gaussian glow.
+# Two chart STYLES in one channel is fine — precision is a legitimate register.
+# Two drawing LANGUAGES is not, and the clean card was the only surface in the
+# kit that looked machine-made.
+#
+# The primitives themselves — `marker_stroke`, `drawn_rect`, `mark_image` and
+# the mark's tint/dilate — live in `rasters.py`, because the charts are no
+# longer the only surface drawing with them.
 # --------------------------------------------------------------------------
 
 
@@ -247,7 +257,7 @@ def _drawn_ring(img, cx, cy, rx, ry, rng, *, width, color, settings=None,
     cx = min(max(cx, rx), max(img.width - rx, rx))
     cy = min(max(cy, ry), max(img.height - ry, ry))
     if settings is not None:
-        mark = _mark_image(settings, "marks/circle")
+        mark = mark_image(settings, "marks/circle")
         if mark is not None:
             # Its OWN aspect, not a square: the mark is a 5:4 scrawl and
             # squashing it to a circle is the machine look coming back in
@@ -261,8 +271,8 @@ def _drawn_ring(img, cx, cy, rx, ry, rng, *, width, color, settings=None,
             # scrawl arrives as a hairline — thinner than the data line it is
             # marking. Dilating the ink back to the nib is what keeps it a pen
             # stroke rather than a downscaling artefact.
-            mark = _thicken(mark, max(int(width) - 1, 0))
-            img.alpha_composite(_tint(mark, color),
+            mark = thicken_mark(mark, max(int(width) - 1, 0))
+            img.alpha_composite(tint_mark(mark, color),
                                 (int(cx - w / 2), int(cy - h / 2)))
             return
     d = ImageDraw.Draw(img)
@@ -273,41 +283,6 @@ def _drawn_ring(img, cx, cy, rx, ry, rng, *, width, color, settings=None,
             ring.append((cx + rx * math.cos(th) + rng.uniform(-3, 3),
                          cy + ry * math.sin(th) + rng.uniform(-3, 3)))
         d.line(ring, fill=color, width=width, joint="curve")
-
-
-def _mark_image(settings: Settings, key: str):
-    """One frame of a `marks/` asset, or None. Never raises — a chart that
-    cannot find its ring draws one rather than failing to render."""
-    try:
-        from pipeline.kit import load_kit
-
-        asset = load_kit(settings.assets_dir).get(key)
-        if asset is None or not asset.frames:
-            return None
-        return Image.open(asset.frames[0]).convert("RGBA")
-    except Exception:  # noqa: BLE001 — decoration is never fatal
-        log.debug("chart: no %s in the kit — drawing the ring instead", key)
-        return None
-
-
-def _thicken(img: Image.Image, radius: int) -> Image.Image:
-    """Grow a mark's ink by `radius` px, keeping its shape. No-op at 0."""
-    if radius <= 0:
-        return img
-    from PIL import ImageFilter
-
-    alpha = img.getchannel("A").filter(ImageFilter.MaxFilter(2 * radius + 1))
-    out = img.copy()
-    out.putalpha(alpha)
-    return out
-
-
-def _tint(img: Image.Image, color) -> Image.Image:
-    """Recolour a mark's ink, keeping its alpha. The marks ship in ink; the
-    ring on a chart is the direction colour."""
-    solid = Image.new("RGBA", img.size, (*color[:3], 255))
-    solid.putalpha(img.getchannel("A"))
-    return solid
 
 
 def render_marker_price_chart(
