@@ -213,11 +213,24 @@ def brand_bug(settings: Settings, opener: str, *, width: int,
     return img
 
 
-def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40) -> Image.Image:
-    """The $TICKER chip — Space Mono bold, near-black on signal green.
+# What the $TICKER chip's colour is allowed to mean. The channel rule, stated
+# in thumbnail.py and enforced by `metric_colour`: green is UP ONLY, red is a
+# bad number, everything else is ink.
+PILL_FILL = {"up": GREEN, "down": RED}
 
-    A chip of green paper with a drawn edge. It was a rounded rectangle, which
-    is the one shape in the kit nothing else has.
+
+def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40,
+                direction: str | None = None) -> Image.Image:
+    """The $TICKER chip — Space Mono bold, near-black on paper or on direction.
+
+    The chip carries DIRECTION or it carries nothing. It used to be filled
+    GREEN unconditionally, so a short about a 48% drawdown wore a bright green
+    $SNDK in the corner of every frame — and a chip that is green on every
+    video says nothing at all, which is exactly the argument 87f2839 made when
+    it took GOLD off the thumbnail for being on every thumbnail.
+
+    So: green when the move is up, red when it is down, and an ink edge on
+    plain paper when the caller has no move to report — never decoration.
     """
     font = load_font(settings, MONO_BOLD, font_size)
     label = ticker if ticker.startswith("$") else f"${ticker}"
@@ -227,8 +240,14 @@ def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40) -> Imag
     w, h = int(tw + 2 * padx), int(font.size + 2 * pady)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
+    fill = PILL_FILL.get((direction or "").strip().lower())
+    # The seed deliberately does NOT include the direction: a ticker's chip
+    # keeps the same hand-drawn edge whichever way the price went, so only the
+    # colour carries the information.
     drawn_card(d, [0, 0, w - 1, h - 1], random.Random(f"pill|{label}|{w}x{h}"),
-               fill=(*GREEN, 255))
+               fill=(*(fill or BG), 255),
+               # on paper the chip needs its own edge to read as a chip at all
+               line=(*(CARD_LINE if fill else INK), 255))
     d.text((padx, pady - 2), label, font=font, fill=(*INK, 255))
     return img
 

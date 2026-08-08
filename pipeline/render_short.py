@@ -1179,7 +1179,11 @@ def render_short(
     # is only up for the open, so nothing has a claim to be over it.
     layers.append(hook_layer)
 
-    pill = ticker_pill(settings, script.ticker, font_size=px(38))
+    # The chip is in the corner of every frame, so its colour is the most
+    # repeated statement in the video. It carries the move the chart is already
+    # showing — green up, red down — instead of being green regardless.
+    pill = ticker_pill(settings, script.ticker, font_size=px(38),
+                       direction=chart_meta["direction"])
     pill_path = rdir / "ticker_pill.png"
     pill.save(pill_path)
     layers.append(OverlayLayer(
