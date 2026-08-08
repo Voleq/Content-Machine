@@ -361,7 +361,11 @@ def render_long(
 
         tag = TagType(seg.kind.upper())
         family = KIT_TAG_FAMILIES[tag]
-        asset = kit.resolve_asset(family, value)
+        # `placeable`: a card whose baked chip and disclaimer cannot be stripped
+        # would arrive with a second copy of both — the frame draws its own. It
+        # is not resolved here at all, so the beat takes the blank layout or the
+        # backdrop, and `run_gates` blocks the render naming the beat.
+        asset = kit.resolve_asset(family, value, placeable=True)
         is_blank = False
         if asset is None:
             blank = KIT_TAG_BLANKS.get(tag)
@@ -859,6 +863,27 @@ def render_long(
             continue
         used_ch.add(t)
         num = f"{k + 1:02d}"     # the intro card is chapter one
+
+        # The ink transition goes on FIRST, because z-order is list order and
+        # the stinger belongs on top of it. The comment here has always said
+        # "under the stinger" and the append order said the opposite; it only
+        # stopped mattering because the divider was 92% opaque, which is the
+        # bug above. Picked from a frame-sequence family so the commissioned
+        # strips drop in as data; until they ship, `transition_asset` returns
+        # None and the stinger carries the cut on its own, as it always has.
+        strip = transition_asset(kit, script.content_sha(), k, frame=(W, H))
+        if strip is not None:
+            span = max(playback_seconds(strip), 0.25)
+            tclip, (cw, ch) = render_clip(
+                strip, rdir / f"transition_{k}.mov", duration_s=span, fps=fps,
+                settings=settings,
+                transform=transition_transform(strip, W, H, settings))
+            layers.append(OverlayLayer(
+                path=tclip, x=0, y=0, t_start=max(t - span * 0.5, 0.0),
+                t_end=min(t + span * 0.5, duration), is_video=True,
+                name=f"transition_{k}_{strip.name[:16]}"))
+            transition_meta.append({"asset": strip.key, "t": round(t, 2)})
+
         cs_path = rdir / f"chapter_{k}.png"
         if not cs_path.exists():
             chapter_stinger(settings, num, title, width=W, height=H).save(cs_path)
@@ -868,24 +893,6 @@ def render_long(
         ))
         stinger_meta.append({"n": num, "title": title,
                              "script_t": round(target, 2), "t": round(t, 2)})
-
-        # An ink transition on the act cut, under the stinger. Picked from a
-        # frame-sequence family so the commissioned strips drop in as data;
-        # until they ship, `transition_asset` returns None and the stinger
-        # carries the cut on its own, as it always has.
-        strip = transition_asset(kit, script.content_sha(), k, frame=(W, H))
-        if strip is None:
-            continue
-        span = max(playback_seconds(strip), 0.25)
-        tclip, (cw, ch) = render_clip(
-            strip, rdir / f"transition_{k}.mov", duration_s=span, fps=fps,
-            settings=settings,
-            transform=transition_transform(strip, W, H, settings))
-        layers.append(OverlayLayer(
-            path=tclip, x=0, y=0, t_start=max(t - span * 0.5, 0.0),
-            t_end=min(t + span * 0.5, duration), is_video=True,
-            name=f"transition_{k}_{strip.name[:16]}"))
-        transition_meta.append({"asset": strip.key, "t": round(t, 2)})
 
     # glitch flash on every filing reveal (pre-rendered overlay)
     glitch = settings.assets_dir / "overlays" / "glitch_noise.mov"

@@ -223,3 +223,90 @@ def test_a_ledger_line_with_no_figure_stays_a_png():
         SETTINGS, "That is the whole trade.", fps=30, width=960,
         font_name=SHANTELL, font_size=48, bg=(250, 249, 246, 246))
     assert roll is None
+
+
+# --------------------------------------------------------------------------
+# The marks.
+#
+# `marks/` ships twelve drawings and the pipeline reached one of them — the
+# ring on the price chart. `[SCRIBBLE: …]` drew a procedural ellipse over
+# artwork that already existed, and it only had three names for it.
+#
+# The golden set does not sample the callout's 2.1s window, so this is the
+# pixel evidence that the real mark is what gets drawn.
+# --------------------------------------------------------------------------
+
+
+def _ink(img) -> np.ndarray:
+    """The alpha silhouette of a mark, as a boolean mask."""
+    return np.array(img.convert("RGBA"))[..., 3] > 40
+
+
+def test_a_scribble_draws_the_kit_mark_not_a_drawn_stand_in():
+    """Every style in the vocabulary resolves to its own drawing.
+
+    Compared against the artwork's own silhouette rather than against "some
+    ink appeared": a procedural fallback also draws ink, and the failure this
+    guards is exactly the fallback quietly taking over.
+    """
+    from pipeline.rasters import (
+        SCRIBBLE_MARKS,
+        fitted_mark,
+        mark_frames,
+        scribble_callout_frames,
+    )
+
+    for style, (key, fallback) in sorted(SCRIBBLE_MARKS.items()):
+        art = fitted_mark(SETTINGS, 400, 240, style=style)
+        assert art is not None, f"{style} resolves no artwork ({key})"
+        drawn = mark_frames(SETTINGS, 400, 240, style=style, draw_seconds=0.4)[-1]
+        overlap = (_ink(drawn) & _ink(art)).sum() / max(_ink(art).sum(), 1)
+        assert overlap > 0.9, (
+            f"{style} drew something other than {key} "
+            f"({overlap:.0%} of the artwork's ink)")
+
+        # and the same mark reaches the callout the renderer composites
+        callout = scribble_callout_frames(
+            SETTINGS, 400, 380, style=style, target="Net income",
+            fps=30, hold_seconds=0.1)[-1]
+        assert _ink(callout)[:240].sum() > 0.5 * _ink(art).sum(), \
+            f"{style}: the callout's mark band is emptier than the artwork"
+
+
+def test_a_kit_with_no_mark_still_draws_one():
+    """Decoration is never fatal — the chart's rule, for every mark.
+
+    `settings=None` is the "kit not ingested" case, and an unknown style is the
+    "writer typed something new" case. Both draw, neither raises.
+    """
+    from pipeline.rasters import mark_frames
+
+    for settings, style in ((None, "check"), (SETTINGS, "not-a-mark")):
+        frames = mark_frames(settings, 400, 240, style=style, draw_seconds=0.3)
+        assert frames and frames[-1].size == (400, 240)
+        assert _ink(frames[-1]).sum() > 200, \
+            f"the stand-in for {style!r} drew nothing"
+
+
+def test_the_scribble_vocabulary_is_the_artwork_that_exists():
+    """The mapping table and the enum say the same thing, both ways.
+
+    Three names against twelve marks is how nine drawings stayed dead; a
+    fourteenth name with no drawing behind it would be the same bug pointed the
+    other way.
+    """
+    from pipeline.kit import load_kit
+    from pipeline.models import ScribbleStyle
+    from pipeline.rasters import SCRIBBLE_MARKS
+
+    kit = load_kit(SETTINGS.assets_dir)
+    assert {s.value for s in ScribbleStyle} == set(SCRIBBLE_MARKS), \
+        "a style a writer can type must have a row in the mapping table"
+    for style, (key, fallback) in SCRIBBLE_MARKS.items():
+        assert kit.get(key) is not None, f"{style} names missing artwork {key}"
+        assert fallback in ("circle", "arrow", "underline"), \
+            f"{style} falls back to {fallback!r}, which nothing draws"
+    # Every mark in the family is reachable from a script.
+    named = {key for key, _ in SCRIBBLE_MARKS.values()}
+    unreachable = [k for k in kit.family("marks") if k not in named]
+    assert not unreachable, f"artwork nothing can ask for: {unreachable}"

@@ -210,10 +210,15 @@ def test_nothing_on_the_clean_card_glows(settings, tmp_path):
 
 
 def test_both_charts_draw_their_ring_from_the_same_primitive(settings, tmp_path):
-    """The point of the change: one language, two styles."""
-    from pipeline.chart import _drawn_ring, _mark_image
+    """The point of the change: one language, two styles.
 
-    assert _mark_image(settings, "marks/circle") is not None, \
+    `mark_image` lives in `rasters` now — the chart was the only surface
+    reaching the kit's marks, and `[SCRIBBLE: …]` needs the same three steps.
+    """
+    from pipeline.chart import _drawn_ring
+    from pipeline.rasters import mark_image
+
+    assert mark_image(settings, "marks/circle") is not None, \
         "the kit ships marks/circle — the ring should be real artwork"
     assert callable(_drawn_ring)
 

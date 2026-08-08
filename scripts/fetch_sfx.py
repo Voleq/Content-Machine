@@ -17,9 +17,11 @@ with a machine-readable licence per sound and a free API. Every file gets:
   for a real effect does not change the mix under it.
 
 `gen_assets.py` keeps generating placeholders, so a checkout with no network
-still renders and the suite still runs. The difference is that a render now
-SAYS which of its sounds are synthesised, the same way mock data is labelled —
-see `pipeline.audio_assets.audio_banner`.
+still renders and the suite still runs. The difference is that a placeholder
+cannot be published: `pipeline.gates.check_audio` is a BLOCKING finding on a
+final render outside MOCK_MODE, carried in the validation report the operator
+approves from, and `pipeline.audio_assets.audio_banner` still labels the log.
+Until this script has run, the block is what an operator sees.
 
     export FREESOUND_API_KEY=...
     python scripts/fetch_sfx.py             # every key that is still a placeholder

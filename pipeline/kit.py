@@ -222,6 +222,7 @@ class Kit:
         self._aliases: dict[str, str] = {}
         self._meta_names: tuple[str, ...] = ()
         self._meta_dirs: tuple[str, ...] = ()
+        self._furniture_stuck: frozenset[str] | None = None
         self.palette: dict[str, str] = {}
 
         registry = self.root / REGISTRY_NAME
@@ -433,7 +434,8 @@ class Kit:
         return self.get(chosen)
 
     # ------------------------------------------------------------ resolution
-    def resolve_asset(self, prefix: str | tuple[str, ...], key: str) -> Asset | None:
+    def resolve_asset(self, prefix: str | tuple[str, ...], key: str, *,
+                      placeable: bool = False) -> Asset | None:
         """An asset by family + key, tolerating the family's naming prefix.
 
         ``[PROP: podium]`` should find ``props/podium-ceo`` and
@@ -445,12 +447,24 @@ class Kit:
         across more than one folder (an ALERT is a press lower-third), and a
         tag that resolved only against a single hardcoded folder is how most of
         the library stayed unreachable.
+
+        `placeable` is what a RENDERER asks for: it skips cards whose baked
+        furniture cannot be stripped, so a beat is skipped (and gated) rather
+        than composited with a second disclaimer on it. The default answers the
+        catalogue's question instead — what artwork exists — because the doctor
+        has to be able to name what it is refusing.
         """
         prefixes = (prefix,) if isinstance(prefix, str) else tuple(prefix)
         key = key.strip().lower().replace(" ", "-").replace("_", "-")
+
+        def ok(asset: Asset | None) -> Asset | None:
+            if asset is None or (placeable and not self.placeable(asset.key)):
+                return None
+            return asset
+
         for head in prefixes:
             head = head.rstrip("/")
-            direct = self.get(f"{head}/{key}")
+            direct = ok(self.get(f"{head}/{key}"))
             if direct is not None:
                 return direct
         for head in prefixes:
@@ -458,16 +472,20 @@ class Kit:
             for name in self.family(head.rstrip("/")):
                 leaf = name[len(head):]
                 if leaf == key:
-                    return self.get(name)
+                    if (hit := ok(self.get(name))) is not None:
+                        return hit
+                    continue
                 # leaf "big-number-buyback" offers suffixes "number-buyback"
                 # and "buyback"; a bare split would only ever try the first.
                 parts = leaf.split("-")
                 if any("-".join(parts[i:]) == key for i in range(1, len(parts))):
-                    return self.get(name)
+                    if (hit := ok(self.get(name))) is not None:
+                        return hit
         return None
 
-    def resolve(self, prefix: str | tuple[str, ...], key: str) -> Path | None:
-        asset = self.resolve_asset(prefix, key)
+    def resolve(self, prefix: str | tuple[str, ...], key: str, *,
+                placeable: bool = False) -> Path | None:
+        asset = self.resolve_asset(prefix, key, placeable=placeable)
         return asset.path if asset else None
 
     # ------------------------------------------------------------ host pairs
@@ -565,6 +583,66 @@ class Kit:
                       key, suffix, twin.frame_count)
             return None
         return twin
+
+    # ------------------------------------------------------- baked furniture
+    def furniture_stuck(self) -> frozenset[str]:
+        """Cards carrying furniture that :func:`strip_baked_furniture` cannot lift.
+
+        The 16:9 chapter cards were drawn to BE the long-form frame, so the
+        ticker chip and the "Opinion / entertainment." line are painted into the
+        PNG. Both renderers draw those themselves, so a card that keeps them
+        puts the disclaimer on screen twice in two different faces — measured in
+        four of eight frames sampled across the long sample's runtime.
+
+        This is a property of the CARD, not of a render, so it is computed once
+        per kit load and cached. It costs one open of every 16:9 chapter frame —
+        176 of them, measured at 12s on the sample box — against a render that
+        takes eleven minutes, and every call after the first is a set lookup.
+        Per beat it would be unaffordable, which is roughly why the kit doctor
+        recomputed it on demand while nothing consulted it at placement time.
+
+        A card is listed only when the furniture is really there AND could not
+        be removed. Three of the no-op cards carry none in the first place
+        (`how-the-money-is-made/*`), and they stay placeable — excluding them
+        would cost usable artwork for nothing.
+        """
+        if self._furniture_stuck is None:
+            self._furniture_stuck = frozenset(self._compute_furniture_stuck())
+        return self._furniture_stuck
+
+    def _compute_furniture_stuck(self) -> list[str]:
+        from PIL import Image
+
+        from pipeline.kit_frames import (carries_baked_furniture,
+                                         strip_baked_furniture)
+
+        out: list[str] = []
+        for key in sorted(self._assets):
+            asset = self.get(key)
+            if asset is None or asset.aspect != "16:9" or not asset.frames:
+                continue
+            if not asset.family.startswith("chapters/"):
+                continue
+            try:
+                img = Image.open(asset.frames[0]).convert("RGBA")
+            except OSError:
+                continue
+            if strip_baked_furniture(img, asset) is not img:
+                continue          # the furniture came off — the card is fine
+            if carries_baked_furniture(img, asset):
+                out.append(key)
+        return out
+
+    def placeable(self, key: str) -> bool:
+        """False for a card that must not be composited onto a rendered frame.
+
+        The one question a placement site asks. A card whose baked furniture
+        cannot be stripped is not a rendering bug to work around later — it is
+        artwork the channel is owed (:meth:`furniture_stuck` is the work order),
+        and until it arrives the card is out of selection rather than on screen
+        with our disclaimer printed under its own.
+        """
+        return self.canonical(key) not in self.furniture_stuck()
 
     # ------------------------------------------------------------------ boil
     def boil(self, key: str) -> list[Path]:

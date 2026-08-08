@@ -524,15 +524,62 @@ def test_room_tone_runs_under_the_whole_cut(hosted):
         "a room bed you can pick out is a hum, not a room"
 
 
-def test_generated_audio_is_labelled_like_mock_data_is(hosted):
-    """A render playing oscillators must say so, once."""
-    from pipeline.audio_assets import audio_banner
+def test_placeholder_audio_is_gated_not_just_logged(tmp_path):
+    """The MECHANISM: unattributed sound is a finding, attributed sound is not.
 
-    settings, script, tts, out, manifest, frames, warnings = hosted
-    banner = audio_banner(settings)
-    # The suite ships placeholders, so this run IS playing generated audio.
-    assert banner and "PLACEHOLDER AUDIO" in banner
+    This used to assert that the shipped effects DO produce a banner — "the
+    suite ships placeholders, so this run IS playing generated audio". That is
+    a true statement about today and a test of nothing: it pinned the broken
+    state, and the day real effects land it would have gone red for the right
+    reason.
+
+    So it asserts both directions on a directory built for the purpose, and it
+    asserts the gate rather than the log line — a banner is discipline, a
+    blocking finding is a guarantee. Severity is the other half: placeholders
+    have to keep working in MOCK_MODE and on a draft, because the offline suite
+    and every timing check run on them.
+    """
+    from config import Settings
+
+    from pipeline.audio_assets import AudioSource, audio_banner, save_sources
+    from pipeline.gates import check_audio
+
+    assets = tmp_path / "assets"
+    sfx = assets / "sfx"
+    sfx.mkdir(parents=True)
+    # Provenance is the subject here, not the waveform — nothing opens these.
+    for name in ("cash_register.wav", "sad_trombone.wav"):
+        (sfx / name).write_bytes(b"RIFF")
+
+    offline = Settings(MOCK_MODE=True, assets_dir=assets, _env_file=None)
+    live = Settings(MOCK_MODE=False, assets_dir=assets, _env_file=None)
+
+    # ---- no sidecar: every file counts as generated, because that is what
+    # every one of them was before the sidecar existed.
+    banner = audio_banner(offline)
+    assert "PLACEHOLDER AUDIO" in banner
     assert "fetch_sfx" in banner, "the banner has to say what to run"
+
+    findings = check_audio(offline)
+    assert [f.gate for f in findings] == ["audio"]
+    assert findings[0].severity == "warn", "MOCK_MODE must keep rendering"
+    assert "cash_register.wav" in findings[0].message, "it names the files"
+    assert "scripts/fetch_sfx.py" in findings[0].message, "and what to run"
+
+    assert check_audio(live)[0].severity == "block", \
+        "a FINAL render outside MOCK_MODE must not publish oscillators"
+    assert check_audio(live, final=False)[0].severity == "warn", \
+        "a draft is not a publish"
+
+    # ---- a valid sidecar: real, attributed effects. Neither output fires.
+    save_sources(sfx, {
+        name: AudioSource(name=name, source=f"freesound.org/s/{i}",
+                          licence="CC0", author="somebody", generated=False)
+        for i, name in enumerate(("cash_register.wav", "sad_trombone.wav"))
+    })
+    assert audio_banner(live) == ""
+    assert check_audio(live) == [], \
+        "attributed audio is the state this gate exists to reach"
 
 
 def test_the_headline_figure_arrives_by_counting(hosted):

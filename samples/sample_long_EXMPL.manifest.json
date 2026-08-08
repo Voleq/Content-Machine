@@ -454,7 +454,7 @@
       "start": 8.7993,
       "end": 13.7993,
       "value": "tumbleweed",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -482,7 +482,7 @@
       "start": 29.0325,
       "end": 34.24166666666666,
       "value": "EXMPL data center server racks",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.2092,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -492,7 +492,7 @@
       "start": 34.24166666666666,
       "end": 39.5353,
       "value": "EXMPL dispatch dashboard",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.2936,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -502,7 +502,7 @@
       "start": 39.5353,
       "end": 45.7134,
       "value": "logistics warehouse interior",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -512,7 +512,7 @@
       "start": 45.7134,
       "end": 50.7134,
       "value": "delivery trucks fleet depot",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -550,7 +550,7 @@
       "start": 66.7189,
       "end": 72.2019,
       "value": "hamster_wheel",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.4830,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.4830,trim=0:5.4830,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -598,7 +598,7 @@
       "start": 99.049,
       "end": 104.049,
       "value": "printing_money",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -608,7 +608,7 @@
       "start": 104.049,
       "end": 109.049,
       "value": "boardroom_suits",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -618,7 +618,7 @@
       "start": 109.049,
       "end": 114.049,
       "value": "corporate office building",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -628,7 +628,7 @@
       "start": 114.049,
       "end": 119.049,
       "value": "paper_shredder",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -656,7 +656,7 @@
       "start": 129.46666666666664,
       "end": 134.46666666666664,
       "value": "treadmill_running",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -686,7 +686,7 @@
       "start": 144.46666666666664,
       "end": 149.46666666666664,
       "value": "casino_roulette",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -696,7 +696,7 @@
       "start": 149.46666666666664,
       "end": 154.46666666666664,
       "value": "growing_plant",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -715,7 +715,7 @@
       "start": 156.0694,
       "end": 161.0694,
       "value": "EXMPL data center servers",
-      "source": "cache",
+      "source": "mock",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
@@ -734,7 +734,7 @@
       "start": 166.9583,
       "end": 171.9583,
       "value": "dumpster_fire",
-      "source": "cache",
+      "source": "pexels",
       "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
@@ -778,20 +778,13 @@
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 23,
+  "segment_cache_hits": 1,
   "segment_failures": [],
   "layers": [
     {
       "name": "intro_card",
       "t_start": 0.0,
       "t_end": 2.6,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "chapter_1",
-      "t_start": 34.24166666666666,
-      "t_end": 35.14166666666666,
       "x": 0,
       "y": 0
     },
@@ -803,9 +796,9 @@
       "y": 0
     },
     {
-      "name": "chapter_2",
-      "t_start": 66.7189,
-      "t_end": 67.61890000000001,
+      "name": "chapter_1",
+      "t_start": 34.24166666666666,
+      "t_end": 35.14166666666666,
       "x": 0,
       "y": 0
     },
@@ -817,9 +810,9 @@
       "y": 0
     },
     {
-      "name": "chapter_3",
-      "t_start": 99.049,
-      "t_end": 99.94900000000001,
+      "name": "chapter_2",
+      "t_start": 66.7189,
+      "t_end": 67.61890000000001,
       "x": 0,
       "y": 0
     },
@@ -831,9 +824,9 @@
       "y": 0
     },
     {
-      "name": "chapter_4",
-      "t_start": 129.46666666666664,
-      "t_end": 130.36666666666665,
+      "name": "chapter_3",
+      "t_start": 99.049,
+      "t_end": 99.94900000000001,
       "x": 0,
       "y": 0
     },
@@ -845,9 +838,9 @@
       "y": 0
     },
     {
-      "name": "chapter_5",
-      "t_start": 161.0694,
-      "t_end": 161.9694,
+      "name": "chapter_4",
+      "t_start": 129.46666666666664,
+      "t_end": 130.36666666666665,
       "x": 0,
       "y": 0
     },
@@ -855,6 +848,13 @@
       "name": "transition_5_ink-wipe",
       "t_start": 160.8194,
       "t_end": 161.3194,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_5",
+      "t_start": 161.0694,
+      "t_end": 161.9694,
       "x": 0,
       "y": 0
     },
@@ -1107,6 +1107,24 @@
     },
     {
       "segment": 8,
+      "shot": "chapters/valuation/dennis-shrug-value",
+      "blinks": 0,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
+    },
+    {
+      "segment": 10,
+      "shot": "chapters/cold-open/desk-lean",
+      "blinks": 2,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
+    },
+    {
+      "segment": 13,
       "shot": "chapters/bull-vs-bear/dennis-both-hands",
       "blinks": 1,
       "idle_frames": 0,
@@ -1115,61 +1133,7 @@
       "idle_cycles": 1
     },
     {
-      "segment": 10,
-      "shot": "chapters/short-interest/dennis-eyes-the-squeeze",
-      "blinks": 2,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
-    },
-    {
-      "segment": 13,
-      "shot": "chapters/bull-vs-bear/dennis-torn",
-      "blinks": 1,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
-    },
-    {
       "segment": 21,
-      "shot": "chapters/short-interest/dennis-eyes-the-squeeze",
-      "blinks": 1,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
-    },
-    {
-      "segment": 27,
-      "shot": "chapters/the-numbers/chart-bars",
-      "blinks": 0,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
-    },
-    {
-      "segment": 29,
-      "shot": "chapters/valuation/dennis-weighing",
-      "blinks": 1,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
-    },
-    {
-      "segment": 31,
-      "shot": "chapters/moat/dennis-inspects",
-      "blinks": 0,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
-    },
-    {
-      "segment": 33,
       "shot": "chapters/how-we-got-here/dennis-narrates",
       "blinks": 1,
       "idle_frames": 0,
@@ -1178,16 +1142,52 @@
       "idle_cycles": 2
     },
     {
-      "segment": 34,
+      "segment": 27,
+      "shot": "chapters/bull-vs-bear/dennis-both-hands",
+      "blinks": 0,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
+    },
+    {
+      "segment": 29,
       "shot": "chapters/valuation/dennis-shrug-value",
       "blinks": 1,
       "idle_frames": 0,
       "has_blink": true,
       "has_idle": true,
       "idle_cycles": 2
+    },
+    {
+      "segment": 31,
+      "shot": "chapters/cold-open/desk-lean",
+      "blinks": 0,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 2
+    },
+    {
+      "segment": 33,
+      "shot": "chapters/valuation/dennis-weighing",
+      "blinks": 1,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
+    },
+    {
+      "segment": 34,
+      "shot": "chapters/bull-vs-bear/dennis-both-hands",
+      "blinks": 1,
+      "idle_frames": 0,
+      "has_blink": true,
+      "has_idle": true,
+      "idle_cycles": 1
     }
   ],
-  "blinks": 11,
+  "blinks": 10,
   "shots_with_blink": 12,
   "shots_with_idle": 12,
   "attributions": [

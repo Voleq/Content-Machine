@@ -58,15 +58,27 @@ def test_every_offered_key_resolves_to_real_artwork(settings, kit):
 def test_the_families_with_named_artwork_are_all_offered(settings, kit):
     """Drift in the other direction: shipped artwork the model is never told
     about is artwork that goes unused, which is how the library ends up
-    feeling incomplete while being full."""
+    feeling incomplete while being full.
+
+    "Named artwork" means artwork the renderer will PLACE. A card whose baked
+    chip and disclaimer cannot be stripped is refused at placement — offering it
+    would steer a writer into a blocking gate finding, which is drift of a worse
+    kind than not being told about it.
+    """
     catalog = kit_catalog(settings)
     for header, tag in (("[TABLE: kind]", TagType.TABLE),
                         ("[ALERT: kind]", TagType.ALERT)):
         offered = set(_section(catalog, header))
         on_disk = {n.rsplit("/", 1)[-1]
-                   for fam in KIT_TAG_FAMILIES[tag] for n in kit.family(fam)}
+                   for fam in KIT_TAG_FAMILIES[tag] for n in kit.family(fam)
+                   if kit.placeable(n)}
         assert on_disk <= offered, \
             f"{header} does not offer: {sorted(on_disk - offered)}"
+        stuck = {n.rsplit("/", 1)[-1]
+                 for fam in KIT_TAG_FAMILIES[tag] for n in kit.family(fam)
+                 if not kit.placeable(n)}
+        assert not (stuck & offered), \
+            f"{header} offers cards the renderer refuses: {sorted(stuck & offered)}"
 
 
 def test_the_short_catalog_carries_the_whole_beat_library(settings, kit):
@@ -129,13 +141,29 @@ def test_the_blank_layouts_are_explained_rather_than_listed_as_frameworks(settin
 
 
 def test_the_chapter_kits_are_named_from_the_registry(settings, kit):
-    """Named from the families that ship artwork, so a new chapter kit is
-    offered without a code change and a container is never named as one."""
+    """Named from the families that ship PLACEABLE artwork, so a new chapter kit
+    is offered without a code change and a container is never named as one.
+
+    A family whose every drawing keeps its baked furniture has nothing the
+    renderer will place, so promising the writer "name a chapter close to one of
+    these and it gets its own visuals" would be false. Three families are in
+    that state until Design redraws them, and they are named here so the day the
+    artwork lands this test says what changed.
+    """
     kits = _chapter_kits(kit)
     assert "chapters" not in kits
-    for chapter in ("moat", "valuation", "the-numbers", "resigned-close",
-                    "guidance-estimates"):
+    for chapter in ("valuation", "the-numbers", "resigned-close", "cold-open"):
         assert chapter in kits, kits
+
+    fully_stuck = [f.split("/", 1)[1] for f in kit.families()
+                   if f.startswith("chapters/")
+                   and kit.family(f) and not any(kit.placeable(k)
+                                                 for k in kit.family(f))]
+    assert set(fully_stuck) == {"guidance-estimates", "moat", "short-interest"}, \
+        f"the fully-stuck families moved: {sorted(fully_stuck)}"
+    for chapter in fully_stuck:
+        assert chapter not in kits, \
+            f"{chapter} is offered but nothing in it can be placed"
 
 
 def test_concepts_carry_a_use_when_because_their_names_do_not_say(settings):

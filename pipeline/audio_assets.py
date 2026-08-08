@@ -11,9 +11,11 @@ So a sidecar records provenance. ``scripts/fetch_sfx.py`` writes it when it
 pulls real licence-clean effects; anything without an entry is assumed
 generated, because that is what it was before this file existed.
 
-The render says so once, the same way mock data is labelled: a video that
-sounds like a synthesiser should be obvious from the log rather than from
-listening to it after upload.
+Two things read it. :func:`audio_banner` labels the render's log the same way
+mock data is labelled. :func:`pipeline.gates.check_audio` turns the same list
+into a gate — blocking on a final render outside MOCK_MODE, and carried in the
+validation report the operator approves from. The banner alone was discipline:
+one INFO line at the top of a render nobody re-reads before uploading.
 """
 
 from __future__ import annotations

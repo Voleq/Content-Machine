@@ -87,7 +87,16 @@ REGISTRY_NAME = "kit-registry.json"
 # Files that live in the asset folders but are not assets: contact sheets,
 # index sheets, style references and probes. They are kept in the archive for
 # humans; nothing in the pipeline may resolve them.
-META_NAMES = ("contact-sheet.png", "_index.png", "_STYLE-REF.png")
+#
+# `library-sheet.png` and `variant-grids.png` are the marks family's own two:
+# 2236x2178 and 1118x5152 sheets of every mark at once, delivered with
+# ordinary names beside the twelve real drawings, and registered as assets by
+# the delivery's index. They are the same shape of problem as the twenty
+# contact sheets the first ingest left behind — a loader cannot tell a sheet
+# of marks from a mark — so they are named here rather than special-cased in
+# the resolver.
+META_NAMES = ("contact-sheet.png", "_index.png", "_STYLE-REF.png",
+              "library-sheet.png", "variant-grids.png")
 META_DIRS = ("_meta", "_probe")
 
 

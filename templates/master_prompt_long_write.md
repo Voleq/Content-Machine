@@ -137,7 +137,8 @@ Then write the script using that hook as its first line.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding
                         Use SPARSELY — a few per video at most. The deadpan set (coffee_slurp, keyboard_clack, paper_rustle, buzzer, ding) is the room he's sitting in, dry and undramatic; it punctuates, it never announces.
 [DOODLE: key]           EXTRA punctuation only — a doodle from the catalog, over the current media. Never the main visual of a cut.
-[SCRIBBLE: circle|arrow|underline -> target]  a drawn mark + target callout over whatever media is on screen
+[SCRIBBLE: style -> target]                   a drawn mark + target callout over whatever media is on screen
+                                              styles: {{scribble_styles}}
 [ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
 [TERM: key = definition]  the owned "word of the day" card — use it for the ONE framework you teach (roic · owner-earnings · fcf-yield · reverse-dcf · …)
 [BIGNUM: key = figure]  the owned single-stat card, for the one number a chapter turns on

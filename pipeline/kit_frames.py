@@ -474,6 +474,53 @@ _FURNITURE_TOL = 5              # px of slack on the signature, at canvas size
 _FURNITURE_AIR = 34 / 900
 
 
+def carries_baked_furniture(img, asset: Asset | None = None) -> bool:
+    """True when a card has its own chip or disclaimer painted into it.
+
+    A DETECTOR, not an eraser. It never touches a pixel, and it is deliberately
+    more eager than :func:`strip_baked_furniture`: the two answer different
+    questions and pay different prices for being wrong.
+
+    * The eraser has to be timid. Removing ink that is artwork damages the
+      drawing, and a blanket crop of these bands was measured against the
+      library — 32 cards damaged at the top, 75 at the bottom.
+    * The detector decides whether a card may be PLACED on a frame that draws
+      its own furniture. A false positive costs one card out of a hundred going
+      unused; a false negative puts the disclaimer on screen twice, in two
+      faces, on YouTube.
+
+    So it allows the furniture at either margin. `resigned-close/outro-subscribe`
+    prints the same disclaimer sentence RIGHT-aligned — the eraser's
+    left-margin signature does not match it, and the sentence is on screen
+    twice all the same. Ink that matches neither margin is artwork crossing the
+    band (`resigned-close/end-card`'s "watch next" boxes), and is not furniture.
+    """
+    try:
+        import numpy as np
+    except ImportError:      # pragma: no cover - numpy ships with Pillow's peers
+        return False
+
+    if asset is not None and asset.aspect not in ("16:9", ""):
+        return False
+    arr = np.asarray(img.convert("RGBA")).astype(int)
+    h, w = arr.shape[:2]
+    if not h or not w:
+        return False
+    tol = _FURNITURE_TOL * 2 * w / 1600      # the margin, not the glyph run
+    for top_f, bot_f, _probe_f, _erase_f, _air in FURNITURE_BANDS.values():
+        y0, y1 = max(int(top_f * h) - 5, 0), int(bot_f * h) + 6
+        band = arr[y0:y1]
+        ink = (band[..., :3].mean(axis=2) < 205) & (band[..., 3] > 60)
+        if not ink.any():
+            continue
+        xs = np.nonzero(ink)[1]
+        left, right = int(xs.min()), int(xs.max())
+        margin = FURNITURE_LEFT * w
+        if abs(left - margin) <= tol or abs((w - right) - margin) <= tol:
+            return True
+    return False
+
+
 def strip_baked_furniture(img, asset: Asset | None = None, paper=None):
     """Erase a long-form card's painted-in chip and disclaimer.
 

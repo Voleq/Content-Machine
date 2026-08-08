@@ -143,6 +143,7 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
 
 
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
+    from pipeline.gates import check_audio
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
 
     cached = tts_engine.is_cached(script.audio_script, "short",
@@ -156,11 +157,18 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
                  else f"numbers row {a.row_index if a.row_index is not None else 0}")
         notes.append(f'Scribble -> {where} "{a.anchor_word}" {mark}')
     blocking: list[str] = []
+    warnings = list(parse_warnings)
     if not cached and ledger.would_exceed(est):
         blocking.append(
             f"TTS (~${est:.2f}) would exceed the monthly cap "
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
+    # The SHORT lane has no gate battery — the LONG runs `run_gates` at intake
+    # and folds its findings in here, and the daily-volume format was the one
+    # with nothing between a synthesised cash register and an upload. The audio
+    # check is the same function the battery calls.
+    for f in check_audio(settings):
+        (blocking if f.severity == "block" else warnings).append(f.message)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
@@ -180,7 +188,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
-        warnings=list(parse_warnings),
+        warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),
     )
