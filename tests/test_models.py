@@ -151,3 +151,51 @@ def test_candidate_why():
         reasons=["+18% today", "ST #3 trending", "vol 4× avg"],
     )
     assert c.why == "+18% today · ST #3 trending · vol 4× avg"
+
+
+# --------------------------------------------------------------------------
+# The approval report describes the chart that was actually requested.
+# --------------------------------------------------------------------------
+# It said "Chart: branded, from cached prices ✓" unconditionally, so a script
+# with "chart_style": "marker" — the crude hand-drawn napkin chart — was shown
+# a line describing the other chart entirely. The approval screen is the one
+# place in this system that has to be true: it is what the operator reads
+# immediately before authorising the only spend in the pipeline.
+
+
+def _chart_line(report) -> str:
+    return next(l for l in report.render_text().splitlines() if l.startswith("Chart:"))
+
+
+def test_the_report_names_the_chart_that_was_asked_for():
+    from pipeline.models import ChartStyle, CostReport
+
+    common = dict(ticker="EXMPL", fmt="short", words=180, chars=900,
+                  tts_cached=True, est_tts_usd=0.0, headline_count=2,
+                  numbers_rows=4, numbers_years=5)
+    branded = CostReport(chart_style=ChartStyle.CLEAN.value, **common)
+    napkin = CostReport(chart_style=ChartStyle.MARKER.value, **common)
+
+    assert "branded" in _chart_line(branded)
+    assert "branded" not in _chart_line(napkin)
+    assert "napkin" in _chart_line(napkin)
+
+
+def test_the_requested_style_reaches_the_report(settings):
+    """Not just capable of it — the builder has to pass it through."""
+    import json
+    from pathlib import Path
+
+    from pipeline.cost import SpendLedger, build_short_report
+    from pipeline.parser_short import parse_short_script
+    from pipeline.tts import TTSEngine
+
+    raw = json.loads((Path(__file__).resolve().parents[1] / "fixtures" /
+                      "scripts" / "short_valid.json").read_text(encoding="utf-8"))
+    for style, expected in (("clean", "branded"), ("marker", "napkin")):
+        raw["chart_style"] = style
+        script, warnings = parse_short_script(json.dumps(raw), settings)
+        report = build_short_report(script, warnings, settings,
+                                    SpendLedger(settings), TTSEngine(settings))
+        assert report.chart_style == style
+        assert expected in _chart_line(report)

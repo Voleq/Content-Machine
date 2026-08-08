@@ -809,6 +809,10 @@ class CostReport(BaseModel):
     numbers_rows: int = 0
     numbers_years: int = 0
     annotation_note: str = ""
+    # Which chart the script actually asked for. The report used to state
+    # "branded" unconditionally, so a script with "chart_style": "marker" —
+    # the crude napkin chart — was shown a line describing the other one.
+    chart_style: str = ChartStyle.CLEAN.value
     # LONG specifics
     visuals: list[VisualPlanItem] = Field(default_factory=list)
     filing_overlays: int = 0
@@ -867,8 +871,13 @@ class CostReport(BaseModel):
         lines.append(tts)
 
         if self.fmt == "short":
+            # The approval screen is the one place in this system that has to
+            # be true, so it reports the chart that was REQUESTED rather than
+            # a hardcoded description of one of the two.
+            chart = ("hand-drawn napkin" if self.chart_style == ChartStyle.MARKER.value
+                     else "branded")
             lines.append(
-                f"Chart: branded, from cached prices ✓   "
+                f"Chart: {chart}, from cached prices ✓   "
                 f"Headlines: {self.headline_count} ✓   "
                 f"Numbers: {self.numbers_rows} rows × {self.numbers_years}yr"
             )
