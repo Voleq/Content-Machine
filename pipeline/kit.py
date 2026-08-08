@@ -752,3 +752,37 @@ def load_variant_ledger(settings) -> VariantLedger:
 def load_kit(assets_dir: Path) -> Kit:
     """The kit under an assets directory, cached per path."""
     return Kit(Path(assets_dir) / KIT_DIRNAME)
+
+
+# --------------------------------------------------------------------------
+# Card tags -> artwork, with the parameterised blank as the fallback.
+# --------------------------------------------------------------------------
+# ONE copy, imported by both renderers and by validation. It used to be a
+# private helper in render_short and an inline branch in render_long — two
+# implementations of the same rule, which is how the LONG spent a release
+# discarding [TERM] and [BIGNUM] keys the SHORT rendered fine, and how the
+# approval report ended up describing a third behaviour that matched neither.
+#
+# `placeable` skips a card whose baked chip and disclaimer cannot be lifted:
+# the frame draws both itself, so such a card arrives as a duplicated
+# disclaimer and a second, wrong ticker. The blank layout carrying the beat is
+# a better frame than that.
+
+
+def card_asset_for(kit: "Kit", tag, key: str) -> tuple["Asset | None", bool]:
+    """`(asset, is_blank)` for a card tag — named artwork first, then the
+    parameterised blank layout, which is how `[TERM: owner earnings]` gets a
+    card at all when nobody has drawn one."""
+    from pipeline.models import KIT_TAG_BLANKS, KIT_TAG_FAMILIES
+
+    families = KIT_TAG_FAMILIES.get(tag)
+    if families:
+        asset = kit.resolve_asset(families, key, placeable=True)
+        if asset is not None:
+            return asset, False
+    blank_key = KIT_TAG_BLANKS.get(tag)
+    if blank_key:
+        blank = kit.get(blank_key)
+        if blank is not None:
+            return blank, True
+    return None, False

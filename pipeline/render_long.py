@@ -75,7 +75,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip
-from pipeline.kit import load_kit
+from pipeline.kit import card_asset_for, load_kit
 from pipeline.kit_frames import (
     playback_seconds,
     render_clip,
@@ -381,16 +381,11 @@ def render_long(
 
         tag = TagType(seg.kind.upper())
         family = KIT_TAG_FAMILIES[tag]
-        # `placeable`: a card whose baked chip and disclaimer cannot be stripped
-        # would arrive with a second copy of both — the frame draws its own. It
-        # is not resolved here at all, so the beat takes the blank layout or the
-        # backdrop, and `run_gates` blocks the render naming the beat.
-        asset = kit.resolve_asset(family, value, placeable=True)
-        is_blank = False
-        if asset is None:
-            blank = KIT_TAG_BLANKS.get(tag)
-            asset = kit.get(blank) if blank else None
-            is_blank = asset is not None
+        # Named artwork, else the parameterised blank layout. The rule lives in
+        # pipeline.kit so this cut, the short and the approval report all agree
+        # about what an undrawn [TERM]/[BIGNUM] key does — they used to be
+        # three separate answers.
+        asset, is_blank = card_asset_for(kit, tag, value)
         if asset is None:
             log.warning("kit asset %s/%s missing — designed backdrop instead",
                         family, value)

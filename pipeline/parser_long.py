@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Iterable
 
 from config import Settings
-from pipeline.kit import load_kit
+from pipeline.kit import card_asset_for, load_kit
 from pipeline.models import (
     HISTORY_FIELDS,
     KIT_TAG_FAMILIES,
@@ -297,16 +297,33 @@ def validate_long_script(
                 )
         elif e.type in KIT_TAG_FAMILIES:
             # design-kit families ([TERM]/[BIGNUM]/[TABLE]/[PROP]/[ALERT]) are
-            # owned artwork: an unknown key degrades to a host beat rather
-            # than blocking, but the operator should hear about it.
+            # owned artwork: an unknown key degrades rather than blocking, but
+            # the operator should hear about it — and hear the TRUTH.
+            #
+            # This asked kit.resolve(), which only knows about named artwork,
+            # and then announced "skipped at render" for every miss. [TERM] and
+            # [BIGNUM] fall through to a parameterised blank layout, so four
+            # cards on a real 27-minute LONG — including the ROIC card its
+            # valuation chapter turns on — were reported as vanishing and then
+            # rendered perfectly well. The approval report is the one screen in
+            # this system that has to be true, so it now asks the same resolver
+            # the renderer does.
             families = KIT_TAG_FAMILIES[e.type]
-            if kit.resolve(families, e.payload) is None:
+            asset, is_blank = card_asset_for(kit, e.type, e.payload)
+            if is_blank:
+                warnings.append(
+                    f'[{e.type.value}: {e.payload}] has no drawn artwork — it '
+                    f'renders on the blank layout, using the text after "=". '
+                    f"Give it one if you want the card designed."
+                )
+            elif asset is None:
                 options = ", ".join(
                     n.rsplit("/", 1)[-1]
                     for fam in families for n in kit.family(fam)[:6])
                 warnings.append(
                     f'[{e.type.value}: {e.payload}] is not in {" / ".join(families)} '
-                    f"— skipped at render. Available: {options}…"
+                    f"and has no blank layout — skipped at render. "
+                    f"Available: {options}…"
                 )
         elif e.type is TagType.SCREENGRAB:
             hits = list(custom_dir.glob(f"{e.payload}.*")) if custom_dir.is_dir() else []

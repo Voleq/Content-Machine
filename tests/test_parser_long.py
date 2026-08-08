@@ -274,3 +274,68 @@ def test_bad_asset_slug_skipped(settings):
     )
     assert script.events_of(TagType.ASSET) == []
     assert any("not kebab-case" in w for w in warnings)
+
+
+# --------------------------------------------------------------------------
+# [TERM] / [BIGNUM] on a LONG: one resolver, and a report that matches it.
+# --------------------------------------------------------------------------
+# Validating a real 27-minute LONG reported four cards — including the ROIC
+# card its valuation chapter turns on — as "not in blanks / type — skipped at
+# render". They were not skipped: the LONG has had the blank-layout fallback
+# since 31e8f9b. Validation was asking kit.resolve(), which only knows about
+# named artwork, so the approval report described a third behaviour matching
+# neither renderer. The rule now lives in ONE place that all three call.
+
+
+def test_an_undrawn_card_key_renders_on_the_blank_layout(settings):
+    """The claim templates/master_prompt_long_write.md makes to the writer."""
+    from pipeline.kit import card_asset_for, load_kit
+    from pipeline.models import TagType
+
+    kit = load_kit(settings.assets_dir)
+    for tag, key in ((TagType.BIGNUM, "goodwill"), (TagType.BIGNUM, "organic"),
+                     (TagType.TERM, "roic"), (TagType.TERM, "reverse-dcf")):
+        asset, is_blank = card_asset_for(kit, tag, key)
+        assert asset is not None, f"[{tag.value}: {key}] resolves to nothing"
+        assert is_blank, f"[{tag.value}: {key}] unexpectedly has drawn artwork"
+
+
+def test_the_report_does_not_say_skipped_for_a_card_that_renders(settings, tmp_path):
+    """The approval screen is the one place in this system that has to be
+    true. It said four cards would vanish and then rendered all four."""
+    script, _ = parse_long_script(
+        "The return on capital. [TERM: roic] And the goodwill. "
+        "[BIGNUM: goodwill] That is the whole story. [CLIP: tumbleweed]",
+        "EXMPL", settings)
+    warnings, blocking = validate_long_script(script, [], tmp_path, settings)
+
+    said = [w for w in warnings if "TERM" in w or "BIGNUM" in w]
+    assert said, "the operator is told nothing about an undrawn key"
+    for w in said:
+        assert "skipped at render" not in w, w
+        assert "blank layout" in w, w
+
+
+def test_a_key_with_no_artwork_and_no_blank_is_still_reported(settings, tmp_path):
+    """The warning has to keep working for tags that really are dropped —
+    [PROP] has families but no blank layout to fall through to."""
+    script, _ = parse_long_script(
+        "Look at this. [PROP: definitely-not-a-real-key] [CLIP: tumbleweed]",
+        "EXMPL", settings)
+    warnings, _ = validate_long_script(script, [], tmp_path, settings)
+    said = next(w for w in warnings if "PROP" in w)
+    assert "skipped at render" in said
+
+
+def test_both_renderers_resolve_card_tags_through_the_same_function():
+    """Do not fork it: a third copy is how these drift. render_short's helper
+    delegates, and render_long calls it directly."""
+    import inspect
+
+    from pipeline import render_long, render_short
+    from pipeline.render_short import _kit_asset_for
+
+    assert "card_asset_for" in inspect.getsource(_kit_asset_for)
+    assert "card_asset_for" in inspect.getsource(render_long.render_long)
+    # and neither reimplements the blank lookup beside it
+    assert "KIT_TAG_BLANKS.get" not in inspect.getsource(render_short._kit_asset_for)

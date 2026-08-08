@@ -56,7 +56,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.chart import render_marker_price_chart, render_price_chart
 from pipeline.host import build_host_clip, pick_shot
-from pipeline.kit import Kit, KitError, load_kit, load_variant_ledger
+from pipeline.kit import Kit, KitError, card_asset_for, load_kit, load_variant_ledger
 from pipeline.kit_frames import (
     FULL_BLEED,
     plate,
@@ -272,27 +272,13 @@ def payoff_card_key(conclusion: str) -> str:
 
 
 def _kit_asset_for(kit: Kit, tag: TagType, key: str):
-    """(asset, is_blank) for a card tag, or (None, False).
+    """(asset, is_blank) for a card tag — see `kit.card_asset_for`.
 
-    Named artwork first, then the parameterised blank layout — which is how
-    `[TERM: owner earnings]` gets a card at all when nobody has drawn one.
-
-    `placeable` skips a card whose baked chip and disclaimer cannot be lifted:
-    the 9:16 frame draws both itself, so such a card arrives as a duplicated
-    disclaimer and a second, wrong ticker. The blank layout carrying the beat is
-    a better frame than that, and the gate says what artwork is owed.
+    The rule itself lives in pipeline.kit so the LONG renderer and validation
+    read the same one. It was duplicated here and inline in render_long, which
+    is precisely how the two cuts came to disagree about what a [TERM] key does.
     """
-    families = KIT_TAG_FAMILIES.get(tag)
-    if families:
-        asset = kit.resolve_asset(families, key, placeable=True)
-        if asset is not None:
-            return asset, False
-    blank = KIT_TAG_BLANKS.get(tag)
-    if blank:
-        asset = kit.get(blank)
-        if asset is not None:
-            return asset, True
-    return None, False
+    return card_asset_for(kit, tag, key)
 
 
 def _blank_values(tag: TagType, key: str, script: ShortScript,
