@@ -124,6 +124,7 @@ from pipeline.timeline import (
     build_long_timeline,
     chapter_start_times,
     plan_long_segments,
+    unrenderable_long_tags,
 )
 
 log = logging.getLogger(__name__)
@@ -256,6 +257,13 @@ def render_long(
             f"the script so the paid voice runs, then render.")
     content = content or ContentManager(settings)
     duration = tts.duration_s
+    # Tags that will not become cues. validate_long_script blocks on these
+    # before approval, so reaching here means a path that skipped validation
+    # (a draft, a CLI render) — say it anyway. A tag the writer asked for and
+    # the renderer dropped is never a silent pass.
+    for e, reason in unrenderable_long_tags(script):
+        log.warning("tag: [%s] at char %d draws nothing — %s",
+                    e.type.value, e.char_offset, reason or "unmapped tag type")
     cues = build_long_timeline(script, tts.words, duration)
     doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]

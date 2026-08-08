@@ -25,11 +25,14 @@ import math
 from dataclasses import dataclass, field
 
 from pipeline.models import (
+    DELIVERY_TAG_TYPES,
+    OVERLAY_TAG_TYPES,
     AnnotationTarget,
     Cue,
     CueKind,
     LongScript,
     ShortScript,
+    TagEvent,
     TagType,
     WordTimestamp,
 )
@@ -166,6 +169,21 @@ _SHORT_TAG_TO_KIND = {
     TagType.MEME: CueKind.MEME,
     TagType.CLIP: CueKind.CLIP,
     TagType.BROLL: CueKind.CLIP,
+}
+
+# The SHORT half of the same contract as _LONG_NO_CUE_REASONS: tags a SHORT
+# may carry that build_short_timeline's evidence loop deliberately does not
+# turn into a cue. Both formats keep this table so "draws nothing" is always a
+# decision on the record, and the coverage test can read it instead of
+# restating it.
+_SHORT_NO_CUE_REASONS: dict[TagType, str] = {
+    **{t: "delivery direction — consumed by TTS, never drawn"
+       for t in DELIVERY_TAG_TYPES},
+    # Overlays ride on top of whatever is showing rather than claiming a beat,
+    # so they are collected by their own passes further down (steps 7-8) with
+    # their own holds — not by the evidence loop.
+    **{t: "overlay — cued by its own pass, not the evidence loop"
+       for t in OVERLAY_TAG_TYPES},
 }
 
 # The fixed beats that are themselves data — they count for adjacency.
@@ -583,6 +601,56 @@ _TAG_TO_KIND = {
     TagType.ALERT: CueKind.ALERT,
 }
 
+# Tag types that draw nothing on the LONG timeline BY DESIGN, and why.
+#
+# This is the other half of _TAG_TO_KIND, and it exists so that "produces no
+# cue" is a decision recorded in the source rather than an absence. A TagType
+# in neither table is UNMAPPED: the renderer would drop a tag the writer asked
+# for, so validation blocks on it before the paid TTS call and the timeline
+# warns if it ever gets that far.
+#
+# The value is the reason, phrased for the operator's report.
+_LONG_NO_CUE_REASONS: dict[TagType, str] = {
+    # Delivery direction is audio, not picture: tts.py's expand_delivery
+    # turns these into <break> and voice settings and the captions are built
+    # from the clean text. One of them reaching the screen would be the bug.
+    # Keyed off DELIVERY_TAG_TYPES rather than listed, so a future delivery
+    # tag inherits the exclusion instead of crashing the render.
+    **{t: "delivery direction — consumed by TTS, never drawn"
+       for t in DELIVERY_TAG_TYPES},
+    # SHORT-only. render_short resolves it through article_lookup +
+    # screenshot_article; render_long has no article machinery, and
+    # master_prompt_long_write.md never asks for one. It still parses on a
+    # LONG (it is self-resolving, so a bare tag needs no payload), so it can
+    # arrive here — skipped, and said out loud, not mapped to a segment kind
+    # the long renderer cannot paint.
+    TagType.SHOW_ARTICLE: (
+        "[SHOW ARTICLE] is a SHORT beat — the LONG renderer has no article "
+        "path, so this draws nothing. Use [SCREENGRAB] with the capture, or "
+        "cut the tag"),
+}
+
+
+def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
+    """Every tag on a LONG that will not become a cue, with the reason.
+
+    Resolvability is a pure function of the script, which is the whole point:
+    this runs at validation time, before the paid TTS call, instead of
+    KeyError-ing in build_long_timeline once the money is already spent.
+
+    Delivery tags are excluded from the result entirely — they are supposed to
+    draw nothing, so reporting them would be noise. An unmapped tag gets the
+    empty string as its reason, meaning "nobody decided this": that is a
+    defect in the mapping, not a design choice, and callers block on it.
+    """
+    out: list[tuple[TagEvent, str]] = []
+    for e in script.events:
+        if e.type in _TAG_TO_KIND or e.type in DELIVERY_TAG_TYPES:
+            continue
+        out.append((e, _LONG_NO_CUE_REASONS.get(e.type, "")))
+    return out
+
+
 # cue kinds that claim a visual segment on the LONG timeline (the base
 # frame). DOODLE/SCRIBBLE are overlays; SOUND is audio — none claim a cut.
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
@@ -606,8 +674,16 @@ def build_long_timeline(
     the ironic cut lands on the exact word it undercuts."""
     cues: list[Cue] = []
     for idx, e in enumerate(script.events):
+        # Not every tag draws. Delivery direction is audio and is filtered
+        # against DELIVERY_TAG_TYPES so the intent stays readable here;
+        # anything else without a CueKind is skipped rather than crashing the
+        # render, and validate_long_script has already reported it.
+        if e.type in DELIVERY_TAG_TYPES:
+            continue
+        kind = _TAG_TO_KIND.get(e.type)
+        if kind is None:
+            continue
         t = clamp(char_offset_time(words, e.char_offset), duration)
-        kind = _TAG_TO_KIND[e.type]
         payload = {"order": idx, "value": e.payload, "tag": e.type.value,
                    "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from pipeline.models import CueKind, ShortScript
+from pipeline.models import DELIVERY_TAG_TYPES, CueKind, ShortScript
 from pipeline.parser_long import parse_long_script
 from pipeline.timeline import (
     build_long_timeline,
@@ -220,7 +220,9 @@ def test_long_timeline_offsets_hit_words(long_valid_text, settings):
     words = mock_words(script.narration, duration)
     cues = build_long_timeline(script, words, duration)
 
-    assert len(cues) == len(script.events)
+    # every tag EXCEPT delivery direction, which is audio and draws nothing
+    drawn = [e for e in script.events if e.type not in DELIVERY_TAG_TYPES]
+    assert len(cues) == len(drawn)
     times = [c.t for c in cues]
     assert times == sorted(times)
 
@@ -529,3 +531,90 @@ def test_beat_variants_reach_the_cues(short_script):
     for cue, beat in ((hook, "hook"), (numbers, "gutcheck"), (conclusion, "payoff")):
         from pipeline.timeline import SHORT_BEAT_VARIANTS
         assert cue.payload["variant"] in SHORT_BEAT_VARIANTS[beat]
+
+
+# ------------------------------------------------- tag -> cue coverage
+#
+# The regression these exist for: _TAG_TO_KIND was a bare dict lookup covering
+# 17 of 22 TagTypes, so every LONG carrying a [BEAT] — the tag the write prompt
+# calls "the single most useful tool you have" — died with a KeyError inside
+# build_long_timeline. It died AFTER the paid TTS call, and no fixture in the
+# repo contained a delivery tag, so ~190 green tests never touched it.
+#
+# The point of these two is that adding a TagType now fails here, loudly, until
+# somebody records what it draws or why it draws nothing.
+
+
+def test_every_tag_type_is_drawn_or_deliberately_not_on_long():
+    from pipeline.models import DELIVERY_TAG_TYPES, TagType
+    from pipeline.timeline import _LONG_NO_CUE_REASONS, _TAG_TO_KIND
+
+    undecided = sorted(
+        t.value for t in TagType
+        if t not in _TAG_TO_KIND
+        and t not in DELIVERY_TAG_TYPES
+        and t not in _LONG_NO_CUE_REASONS
+    )
+    assert not undecided, (
+        f"{undecided} reach a LONG script but build_long_timeline has no "
+        f"CueKind for them and no recorded reason they draw nothing. Map them "
+        f"in _TAG_TO_KIND or record why in _LONG_NO_CUE_REASONS."
+    )
+
+
+def test_every_tag_type_is_drawn_or_deliberately_not_on_short():
+    from pipeline.models import SHORT_TAG_TYPES, TagType
+    from pipeline.timeline import _SHORT_NO_CUE_REASONS, _SHORT_TAG_TO_KIND
+
+    undecided = sorted(
+        t.value for t in TagType
+        # a tag a SHORT may not carry at all is the parser's problem, not the
+        # timeline's — the guarantee here covers everything that can arrive.
+        if t in SHORT_TAG_TYPES
+        and t not in _SHORT_TAG_TO_KIND
+        and t not in _SHORT_NO_CUE_REASONS
+    )
+    assert not undecided, (
+        f"{undecided} are allowed in a SHORT but build_short_timeline neither "
+        f"cues them nor records why not."
+    )
+
+
+def test_a_delivery_tag_on_a_long_renders_instead_of_crashing(long_valid_text, settings):
+    """[BEAT]/[SIGH]/[FLAT]/[DRY] are audio direction: they must reach TTS and
+    draw nothing, rather than KeyError-ing the render after the money is spent."""
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    delivery = [e for e in script.events if e.type in DELIVERY_TAG_TYPES]
+    assert delivery, "the long fixture no longer exercises delivery tags"
+
+    duration = 120.0
+    cues = build_long_timeline(script, mock_words(script.narration, duration), duration)
+
+    assert len(cues) == len(script.events) - len(delivery)
+    assert not [c for c in cues
+                if c.payload.get("tag") in {e.type.value for e in delivery}]
+
+
+def test_an_unmapped_long_tag_is_reported_not_swallowed(settings):
+    """A tag with no CueKind and no recorded reason is a blocker at approval —
+    before the paid TTS call — because at render time it is already too late."""
+    from pipeline.timeline import unrenderable_long_tags
+
+    script, _ = parse_long_script(
+        "The filing says one thing. [SHOW ARTICLE] The tape says another.",
+        "EXMPL", settings,
+    )
+    reported = unrenderable_long_tags(script)
+    assert [e.type.value for e, _ in reported] == ["SHOW ARTICLE"]
+    # decided-and-skipped carries a reason; unmapped carries none, and
+    # validate_long_script blocks on exactly that difference.
+    assert reported[0][1]
+
+
+def test_delivery_tags_are_never_reported_as_unrenderable(long_valid_text, settings):
+    from pipeline.timeline import unrenderable_long_tags
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    assert unrenderable_long_tags(script) == []

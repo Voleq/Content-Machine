@@ -1280,9 +1280,18 @@ class BotCore:
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
             )
-        except Exception as e:  # noqa: BLE001
-            log.warning("storyboard failed for %s (%s) — rendering anyway",
-                        job.ticker, e)
+        except JobCancelled:
+            # A cancel is not a storyboard failure. Swallowing it here would
+            # answer the operator's cancel with "rendering anyway" and then
+            # spend forty minutes doing exactly that.
+            raise
+        except Exception:  # noqa: BLE001
+            # exc_info, not str(e): this branch is the only record that the
+            # storyboard did not happen, and a bare exception message is not
+            # enough to find the cause. The KeyError this used to mask printed
+            # as "<TagType.BEAT: 'BEAT'>" and named neither file nor line.
+            log.exception("storyboard failed for %s — rendering anyway",
+                          job.ticker)
             return
         caption = f"{job.ticker} — storyboard, {len(segments)} beats"
         if problems:

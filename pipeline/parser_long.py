@@ -228,7 +228,16 @@ def validate_long_script(
       ASSET file missing              -> BLOCKING until the operator pastes the
                                          appended prompt into Claude Design and
                                          drops the export at assets/custom/<slug>
+      tag with no CueKind             -> BLOCKING if nothing decided it draws
+                                         nothing; warning if it did
+
+    That last one runs HERE, and not at render time, on purpose. Whether a tag
+    resolves to a cue is a pure function of the script, but build_long_timeline
+    runs after the paid TTS call — so a tag it could not place used to spend
+    the money first and then abort the render. Approval is the last point where
+    catching it is free.
     """
+    from pipeline.timeline import unrenderable_long_tags
     from pipeline.doodles import DoodleLibrary
     from pipeline.memes import MemeLibrary
 
@@ -318,4 +327,21 @@ def validate_long_script(
                     f'[ASSET: {e.payload}] has no file at assets/custom/{e.payload}.*'
                     f' — render is blocked until it exists.{hint}'
                 )
+
+    for e, reason in unrenderable_long_tags(script):
+        where = f"char {e.char_offset}"
+        if reason:
+            # decided: the renderer will skip it, and the operator is told so
+            # rather than finding a missing visual in the finished cut.
+            warnings.append(f"[{e.type.value}] at {where} — {reason}")
+        else:
+            # nobody decided anything about this tag. It reaches the timeline,
+            # draws nothing, and no one signed off on that.
+            blocking.append(
+                f"[{e.type.value}] at {where} has no visual on the LONG "
+                f"timeline and no recorded reason for it. Map it in "
+                f"_TAG_TO_KIND or record why it draws nothing in "
+                f"_LONG_NO_CUE_REASONS (pipeline/timeline.py); until then the "
+                f"tag would be dropped from the render in silence."
+            )
     return warnings, blocking
