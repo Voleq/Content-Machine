@@ -740,3 +740,63 @@ def test_the_help_text_offers_it(core):
     from bot.handlers import HELP_TEXT
 
     assert "/update TICKER" in HELP_TEXT
+
+
+# --------------------------------------------------------------------------
+# The cooldown suppresses fresh coverage. An update is the opposite of that.
+# --------------------------------------------------------------------------
+
+
+def _covered_recently(settings, ticker: str) -> None:
+    """A workspace dated today — which is what the cooldown reads."""
+    Workspace(settings, ticker, today_str()).create()
+
+
+def test_a_cooled_ticker_is_still_not_a_fresh_candidate(settings, monkeypatch):
+    """The screener's own suppression is left alone: covering a name three
+    weeks ago is still a reason not to pitch it as a new one."""
+    from pipeline import screener
+
+    _covered_recently(settings, "EXMPL")
+    result = screener.run_screen(settings, "all")
+    fresh = {c.ticker for lane in ("trending", "value")
+             for c in result.get(lane, [])}
+    assert "EXMPL" not in fresh
+
+
+def test_a_moved_thesis_is_exempt_from_the_cooldown(settings):
+    """Being recently covered is the PRECONDITION for an update, not a reason
+    to skip it — and every ticker in this lane is cooled by definition."""
+    from pipeline import screener
+
+    _covered_recently(settings, "EXMPL")
+    book = ThesisBook(settings)
+    book.record("EXMPL", "the margin is the thesis",
+                FakeData({"gross_margin": 0.744}))
+    book.check("EXMPL", FakeData({"gross_margin": 0.652}))   # -12%, cracking
+
+    result = screener.run_screen(settings, "all")
+    assert "EXMPL" in result["updates"]
+    assert "EXMPL" not in {c.ticker for lane in ("trending", "value")
+                           for c in result.get(lane, [])}
+    assert "/update EXMPL" in screener.digest_text(result)
+
+
+def test_an_intact_thesis_is_not_an_update_candidate(settings):
+    from pipeline import screener
+
+    book = ThesisBook(settings)
+    book.record("EXMPL", "nothing has changed", FakeData({"price": 10.0}))
+    book.check("EXMPL", FakeData({"price": 10.2}))           # +2%, intact
+    assert screener.run_screen(settings, "all")["updates"] == []
+
+
+def test_an_unreadable_thesis_book_does_not_break_a_screen(settings):
+    from pipeline import screener
+
+    path = settings.state_dir / "theses.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{not json", encoding="utf-8")
+    result = screener.run_screen(settings, "all")
+    assert result["updates"] == []
+    assert "trending" in result, "a screen still screens"
