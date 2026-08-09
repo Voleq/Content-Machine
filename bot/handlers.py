@@ -171,6 +171,47 @@ def _macro_index_for(symbol: str) -> str:
     return sym if sym in _INDEX_SYMS else "SPY"
 
 
+def _what_it_said(script, fmt: str) -> dict:
+    """`hook` / `conclusion` / `claims` off a shipped script, best-effort.
+
+    The two formats carry very different amounts of structure, so this is the
+    one place the difference is handled rather than a branch at every reader:
+
+    * a SHORT declares all of it — `hook_text`, `conclusion`, and two prose
+      fields (`numbers_comment`, `cheap_or_trap`) that ARE the claims;
+    * a LONG carries only `narration` and the chapter trailer, so the closing
+      claim is the last two sentences of the narration (the format ends on the
+      verdict, deliberately) and the chapter titles are the claim skeleton —
+      the trailer is already the argument's outline.
+
+    Never raises. A shipped video is not failed by bookkeeping, and a thesis
+    with empty fields is honestly thin rather than wrong.
+    """
+    if script is None:
+        return {}
+    try:
+        if fmt == "short":
+            claims = [c for c in (getattr(script, "numbers_comment", ""),
+                                  getattr(script, "cheap_or_trap", "") or "")
+                      if c]
+            return {"hook": getattr(script, "hook_text", "") or "",
+                    "conclusion": getattr(script, "conclusion", "") or "",
+                    "claims": claims}
+        from pipeline.publish import normalise_chapters
+
+        narration = getattr(script, "narration", "") or ""
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", narration)
+                     if s.strip()]
+        titles = [title for _ts, title in
+                  normalise_chapters(getattr(script, "chapters", "") or "")]
+        return {"hook": sentences[0] if sentences else "",
+                "conclusion": " ".join(sentences[-2:]),
+                "claims": titles}
+    except Exception as e:  # noqa: BLE001 — bookkeeping, never the video
+        log.warning("could not read back what the %s said: %s", fmt, e)
+        return {}
+
+
 class BotCore:
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -1428,13 +1469,16 @@ class BotCore:
             data = self._company_data(ws)
             if data is None:
                 return
+            fmt = "short" if job.kind is JobKind.RENDER_SHORT else "long"
+            script = ws.load_short() if fmt == "short" else ws.load_long()
             summary = ws.chosen_angle() or ""
             if not summary:
-                script = ws.load_long() or ws.load_short()
                 summary = (getattr(script, "title", "")
                            or getattr(script, "hook_text", "") or "")
-            ThesisBook(self.settings).record(job.ticker, summary, data,
-                                             workdate=job.workdate)
+            said = _what_it_said(script, fmt)
+            ThesisBook(self.settings).record(
+                job.ticker, summary, data, workdate=job.workdate, fmt=fmt,
+                **said)
         except Exception as e:  # noqa: BLE001 - never fail a shipped video
             log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
 

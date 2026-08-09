@@ -419,3 +419,105 @@ def test_thesis_bookkeeping_cannot_fail_a_shipped_video(core, settings, monkeypa
     job = JobRecord(id="j2", kind=JobKind.RENDER_LONG, ticker="EXMPL",
                     workdate="2026-07-26")
     core._record_thesis(job)          # must not raise
+
+
+# --------------------------------------------------------------------------
+# What the bot remembers about a stock between videos (Stage B).
+# --------------------------------------------------------------------------
+
+
+OLD_SCHEMA = {
+    "EXMPL": {
+        "ticker": "EXMPL",
+        "summary": "cheap for a reason, and the reason hasn't changed",
+        "numbers": {"price": 10.0, "gross_margin": 0.40},
+        "recorded_at": "2026-05-01T09:00:00+00:00",
+        "workdate": "2026-05-01",
+        "status": "intact",
+        "checked_at": "",
+        "last_moves": [],
+    }
+}
+
+
+def test_a_thesis_written_by_an_older_build_still_loads(settings):
+    """The one that protects live state.
+
+    There is a theses.json on the operator's disk written before `hook`,
+    `conclusion`, `claims` and `fmt` existed. A schema change that drops it is
+    a real regression — the module's own premise is that the interesting
+    failure is a reboot mid-week, not a migration.
+    """
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text(json.dumps(OLD_SCHEMA), encoding="utf-8")
+
+    t = book.get("EXMPL")
+    assert t is not None
+    assert t.summary.startswith("cheap for a reason")
+    assert t.numbers["price"] == 10.0
+    # the new fields are absent, not wrong
+    assert t.hook == "" and t.conclusion == "" and t.claims == [] and t.fmt == ""
+
+
+def test_a_row_from_a_newer_build_does_not_take_the_book_down(settings):
+    """The other direction: a field this build has never heard of is dropped,
+    not raised on. One unknown key must not cost every thesis on file."""
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    row = dict(OLD_SCHEMA["EXMPL"], something_from_the_future="hello")
+    book.path.write_text(json.dumps({"EXMPL": row}), encoding="utf-8")
+    assert book.get("EXMPL").summary.startswith("cheap for a reason")
+
+
+def test_the_widened_record_round_trips(settings):
+    book = ThesisBook(settings)
+    book.record("exmpl", "the value trap", FakeData({"price": 10.0}),
+                hook="EXMPL is up 29% today. The business is not.",
+                conclusion="Noise. Set a reminder for the next 10-Q.",
+                claims=["Revenue has flatlined", "The share count grows 6% a year"],
+                fmt="short")
+
+    t = ThesisBook(settings).get("EXMPL")     # a fresh book: off disk, not memory
+    assert t.hook.startswith("EXMPL is up 29%")
+    assert t.conclusion == "Noise. Set a reminder for the next 10-Q."
+    assert t.claims == ["Revenue has flatlined",
+                        "The share count grows 6% a year"]
+    assert t.fmt == "short"
+    # and a check() still writes it back without losing any of it
+    ThesisBook(settings).check("EXMPL", FakeData({"price": 30.0}))
+    assert ThesisBook(settings).get("EXMPL").conclusion.startswith("Noise.")
+
+
+def test_a_short_records_its_own_structured_fields(short_valid_json, settings):
+    from bot.handlers import _what_it_said
+    from pipeline.parser_short import parse_short_script
+
+    script, _ = parse_short_script(short_valid_json, settings)
+    said = _what_it_said(script, "short")
+    assert said["hook"] == script.hook_text
+    assert said["conclusion"] == script.conclusion
+    assert script.numbers_comment in said["claims"]
+
+
+def test_a_long_records_a_conclusion_from_its_last_two_sentences(
+        long_valid_text, settings):
+    """LongScript carries only narration and the chapter trailer, so the
+    closing claim has to be read back out of the prose. The format ends on
+    the verdict, which is what makes the last two sentences the right ones."""
+    from bot.handlers import _what_it_said
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    said = _what_it_said(script, "long")
+    assert said["conclusion"], "the long path produced no conclusion"
+    assert said["conclusion"] in script.narration.replace("\n", " ") or \
+        said["conclusion"].split()[-1] in script.narration
+    assert said["hook"], "the long path produced no hook"
+
+
+def test_reading_back_a_missing_script_is_not_an_error():
+    from bot.handlers import _what_it_said
+
+    assert _what_it_said(None, "long") == {}
+    assert _what_it_said(None, "short") == {}
