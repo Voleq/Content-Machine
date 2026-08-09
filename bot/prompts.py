@@ -378,32 +378,43 @@ def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
             use = _CONCEPT_USE.get(c, "")
             out.append(f"  - {c}" + (f" — {use}" if use else ""))
 
-    if fmt == "short":
-        # The beat library — drawings built to carry a figure, grouped by the
-        # situation they are FOR.
-        library = _beat_library(kit, aspects=("1:1", "9:16"))
-        if library:
-            out.append("")
+    # The beat library — drawings built to carry a figure, grouped by the
+    # situation they are FOR. The whole thing was gated behind fmt == "short",
+    # which cost the LONG 38 drawings for no reason anyone had stated: the 1:1
+    # half is square, so it composites into 16:9 whole, with no crop. Only the
+    # 9:16 half is genuinely short-only — those were drawn to BE the vertical
+    # frame, and contain-fitting one into 16:9 is a letterboxed stamp.
+    library = _beat_library(kit, aspects=("1:1", "9:16") if fmt == "short"
+                            else ("1:1",))
+    if library:
+        out.append("")
+        out.append(
+            ("SHORT BEAT LIBRARY" if fmt == "short" else "BEAT LIBRARY")
+            + " — name one as [PROP: key = value] and the renderer plays it, "
+            "composites your figure into the drawing, and holds it for the "
+            "beat. Grouped by WHAT THE BEAT IS DOING; pick the situation "
+            "first, the drawing second.")
+        out.append(
+            "  [PROP: crushed-flat = -41%]                         one slot")
+        out.append(
+            "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
+        out.append(
+            "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
+        out.append(
+            "  WITHOUT the `= value` the drawing renders with its boxes "
+            "EMPTY. Always give a figure.")
+        if fmt != "short":
             out.append(
-                "SHORT BEAT LIBRARY — name one as [PROP: key = value] and the "
-                "renderer plays it, composites your figure into the drawing, "
-                "and holds it for the beat. Grouped by WHAT THE BEAT IS DOING; "
-                "pick the situation first, the drawing second.")
-            out.append(
-                "  [PROP: crushed-flat = -41%]                         one slot")
-            out.append(
-                "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
-            out.append(
-                "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
-            out.append(
-                "  WITHOUT the `= value` the drawing renders with its boxes "
-                "EMPTY. Always give a figure.")
-            for situation, rows in library:
-                note = _SIT_NOTE.get(situation, "")
-                out.append(f"  {situation}:" + (f"  ({note})" if note else ""))
-                for row in rows:
-                    out.append(f"    - {row}")
-    else:
+                "  These are square, so they arrive in the 16:9 frame whole "
+                "and uncropped. The full-height half of the library is "
+                "9:16 and stays short-only.")
+        for situation, rows in library:
+            note = _SIT_NOTE.get(situation, "")
+            out.append(f"  {situation}:" + (f"  ({note})" if note else ""))
+            for row in rows:
+                out.append(f"    - {row}")
+
+    if fmt != "short":
         out += _group("Chapter kits with dedicated artwork", _chapter_kits(kit),
                       note="name a chapter close to one of these and it gets "
                            "its own visuals")

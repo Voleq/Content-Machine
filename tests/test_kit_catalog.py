@@ -147,6 +147,30 @@ def test_it_only_offers_beats_the_prop_tag_can_actually_resolve(settings, kit):
             f"the beat library offers {key!r}, which resolves to nothing"
 
 
+def test_the_long_writer_is_offered_the_square_subset(settings, kit):
+    """The 1:1 half composites into 16:9 without cropping, and the whole
+    library used to be gated behind fmt == "short". The 9:16 half stays
+    short-only: those were drawn to BE the vertical frame, and contain-fitting
+    one into 16:9 is the letterboxed stamp they were built not to be."""
+    long_library = _library_sections(kit_catalog(settings, fmt="long"))
+    assert long_library, "the long writer is offered no beats at all"
+    listed = {row.split(" — ")[0] for rows in long_library.values() for row in rows}
+    for key in listed:
+        asset = kit.resolve_asset(KIT_TAG_FAMILIES[TagType.PROP], key)
+        assert asset is not None and asset.aspect == "1:1", \
+            f"{key} is {asset.aspect if asset else 'unresolved'}, not 1:1"
+    assert "Fills the FULL HEIGHT" not in kit_catalog(settings, fmt="long")
+
+    short_listed = {row.split(" — ")[0]
+                    for rows in _library_sections(
+                        kit_catalog(settings, fmt="short")).values()
+                    for row in rows}
+    assert listed < short_listed, "the long subset should be strictly smaller"
+    assert all(kit.resolve_asset(KIT_TAG_FAMILIES[TagType.PROP], k).aspect == "9:16"
+               for k in short_listed - listed), \
+        "the short-only remainder should be exactly the full-height half"
+
+
 def test_a_new_shorts_asset_is_grouped_with_no_code_change(settings, tmp_path):
     """Registry drift, the property that matters most.
 
@@ -279,9 +303,13 @@ def test_it_stays_a_menu_not_a_dump_of_every_frame(settings, kit):
     carrying the slots it takes.
     """
     assert len(kit) >= 384, "sanity: the kit really is that big"
+    # The long budget grew once, when the beat library started being offered
+    # there too — the 1:1 half composites into 16:9 with no crop, and gating
+    # it behind fmt == "short" cost 38 drawings. ~38 rows of menu against a
+    # 22,000-char prompt is still a menu, not a dump of every frame.
     long_catalog = kit_catalog(settings, fmt="long")
-    assert len(long_catalog) < 5000, f"long catalog is {len(long_catalog)} chars"
-    assert len(long_catalog.splitlines()) < 70
+    assert len(long_catalog) < 8000, f"long catalog is {len(long_catalog)} chars"
+    assert len(long_catalog.splitlines()) < 100
     short_catalog = kit_catalog(settings, fmt="short")
     assert len(short_catalog) < 9000, f"short catalog is {len(short_catalog)} chars"
     assert len(short_catalog.splitlines()) < 130
