@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from bot.prompts import (
+    BEAT_SITUATIONS,
     EXPRESSIVITY_AND_PACING,
     _chapter_kits,
     fill_prompt,
@@ -86,13 +87,96 @@ def test_the_short_catalog_carries_the_whole_beat_library(settings, kit):
     shown any of it, so every script reached for the same four beats."""
     catalog = kit_catalog(settings, fmt="short")
     assert "SHORT BEAT LIBRARY" in catalog
-    for family in ("dennis-vs-numbers", "vertical-scenes", "transformations",
-                   "the-world", "open-close"):
-        assert f"  {family}:" in catalog, family
     # slot names are what the writer supplies, so they have to be named — and
     # named the way they are TYPED, after the `=`, not counted.
     assert "takes rain-1" in catalog
     assert "6f loop" in catalog and "8f one-shot" in catalog
+
+
+# --------------------------------------------------------------------------
+# The beat library is grouped by SITUATION, not by folder.
+# --------------------------------------------------------------------------
+
+
+def test_every_situation_heading_holds_at_least_one_asset(settings):
+    """A heading with nothing under it is a menu section that teaches the
+    writer the library is thinner than it is."""
+    library = _library_sections(kit_catalog(settings, fmt="short"))
+    assert set(library) == set(BEAT_SITUATIONS), \
+        f"headings drifted: {sorted(set(BEAT_SITUATIONS) ^ set(library))}"
+    for heading, rows in library.items():
+        assert rows, f"{heading!r} is an empty heading"
+
+
+def test_every_placeable_beat_asset_appears_under_exactly_one_heading(settings, kit):
+    """The listing is a PARTITION of what `[PROP]` can reach.
+
+    Both halves matter. An asset under two headings is a menu that reads as a
+    bigger library than it is; an asset under none is artwork the writer is
+    never told about, which is the whole defect this replaces.
+    """
+    library = _library_sections(kit_catalog(settings, fmt="short"))
+    listed = [row.split(" — ")[0] for rows in library.values() for row in rows]
+    assert len(listed) == len(set(listed)), \
+        f"listed twice: {sorted({k for k in listed if listed.count(k) > 1})}"
+
+    reachable = {
+        key.rsplit("/", 1)[-1]
+        for fam in KIT_TAG_FAMILIES[TagType.PROP] if fam.startswith("shorts/")
+        for key in kit.family(fam) if kit.placeable(key)
+    }
+    assert reachable, "sanity: the shorts families are routed to [PROP]"
+    assert set(listed) == reachable, \
+        f"not listed: {sorted(reachable - set(listed))}; " \
+        f"listed but unreachable: {sorted(set(listed) - reachable)}"
+
+
+def test_it_only_offers_beats_the_prop_tag_can_actually_resolve(settings, kit):
+    """`shorts/the-world` and `shorts/open-close` are NOT routed to [PROP] —
+    the renderer places the desk and the signature open/close itself. The
+    catalog listed all six anyway, so it offered keys that resolve to nothing.
+    """
+    catalog = kit_catalog(settings, fmt="short")
+    for key in ("d-desk-wide", "d-desk-empty", "e-open", "e-close"):
+        assert kit.resolve(KIT_TAG_FAMILIES[TagType.PROP], key) is None, \
+            f"{key} now resolves — this test is stale, not the catalog"
+        assert f"- {key} —" not in catalog, f"{key} is offered and resolves to nothing"
+    for row in (r for rows in _library_sections(catalog).values() for r in rows):
+        key = row.split(" — ")[0]
+        assert kit.resolve(KIT_TAG_FAMILIES[TagType.PROP], key) is not None, \
+            f"the beat library offers {key!r}, which resolves to nothing"
+
+
+def test_a_new_shorts_asset_is_grouped_with_no_code_change(settings, tmp_path):
+    """Registry drift, the property that matters most.
+
+    The generator's best quality is that adding artwork never needs a code
+    change. A hand-maintained key -> situation table would cost exactly that,
+    so this adds an asset to a real registry — off disk, through the real read
+    path — and expects it to arrive in the catalog, under a heading, unaided.
+    """
+    import json
+
+    src = ROOT / "assets" / "kit"
+    dst = tmp_path / "assets" / "kit"
+    dst.mkdir(parents=True)
+    for child in src.iterdir():
+        if child.is_dir():
+            (dst / child.name).symlink_to(child)
+
+    registry = json.loads((src / "kit-registry.json").read_text(encoding="utf-8"))
+    entry = dict(registry["assets"]["shorts/dennis-vs-numbers/stand-in-hole"])
+    entry["name"] = "brand-new-hole"
+    entry["title"] = "An even deeper hole"
+    registry["assets"]["shorts/dennis-vs-numbers/brand-new-hole"] = entry
+    (dst / "kit-registry.json").write_text(json.dumps(registry), encoding="utf-8")
+
+    s = settings.model_copy(update={"assets_dir": tmp_path / "assets"})
+    library = _library_sections(kit_catalog(s, fmt="short"))
+    placed = [h for h, rows in library.items()
+              if any(r.startswith("brand-new-hole ") for r in rows)]
+    assert placed == ["ONE figure, and it went the wrong way"], \
+        f"the new drawing landed under {placed}"
 
 
 def test_the_short_catalog_shows_how_to_write_a_value(settings, kit):
@@ -279,6 +363,35 @@ def test_no_placeholder_is_left_unfilled_in_any_template(settings, workspace):
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
+
+
+def _library_sections(catalog: str) -> dict[str, list[str]]:
+    """`{situation heading: [row, …]}` for the beat-library block.
+
+    Parsed back out of the rendered catalog rather than read off the helper
+    that built it — what the writer is shown is the thing under test.
+    """
+    out: dict[str, list[str]] = {}
+    heading = ""
+    inside = False
+    for line in catalog.splitlines():
+        if "BEAT LIBRARY —" in line:
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.startswith("    - "):
+            if heading:
+                out[heading].append(line[6:].strip())
+        elif line.startswith("  ") and line.rstrip().endswith(":"):
+            heading = line.strip().rstrip(":")
+            out.setdefault(heading, [])
+        elif line.startswith("  ") and ":  (" in line:
+            heading = line.strip().split(":  (")[0]
+            out.setdefault(heading, [])
+        elif not line.startswith("  "):
+            break
+    return out
 
 
 def _section(catalog: str, header: str) -> list[str]:
