@@ -283,14 +283,21 @@ def _value_of(data, field_name: str) -> float | None:
     return None
 
 
-def update_warranted(moves: Sequence[Move]) -> str:
-    """The message, or "" when nothing is worth interrupting for."""
+def update_warranted(moves: Sequence[Move], ticker: str = "") -> str:
+    """The message, or "" when nothing is worth interrupting for.
+
+    It names the action now. "An update video is warranted" told the operator
+    a conclusion and left them to work out what to type — and what they typed
+    was `/long`, which filled a prompt identical to a first-time one and
+    forgot everything this notice had just proved the bot knew.
+    """
     if not moves:
         return ""
     lines = [m.render() for m in moves[:6]]
+    action = (f"\n An update video is warranted: /update {ticker.upper()}"
+              if ticker else "\n An update video is warranted.")
     return ("📌 the numbers behind this thesis moved:\n  "
-            + "\n  ".join(lines)
-            + "\n An update video is warranted.")
+            + "\n  ".join(lines) + action)
 
 
 # --------------------------------------------------------------------------

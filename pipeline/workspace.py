@@ -75,15 +75,31 @@ class Workspace:
     def _lane_file(self) -> Path:
         return self.path / "lane.json"
 
-    def set_lane(self, lane: str) -> None:
+    def set_lane(self, lane: str, *, update: bool = False) -> None:
         self.path.mkdir(parents=True, exist_ok=True)
-        self._lane_file().write_text(json.dumps({"lane": lane}), encoding="utf-8")
+        self._lane_file().write_text(
+            json.dumps({"lane": lane, "update": bool(update)}), encoding="utf-8")
+
+    def _lane_data(self) -> dict:
+        try:
+            data = json.loads(self._lane_file().read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
 
     def lane(self) -> str:
-        try:
-            return str(json.loads(self._lane_file().read_text(encoding="utf-8")).get("lane") or "")
-        except (FileNotFoundError, json.JSONDecodeError):
-            return ""
+        return str(self._lane_data().get("lane") or "")
+
+    def is_update(self) -> bool:
+        """Whether this workspace is Dennis revisiting his own call.
+
+        Deliberately NOT a third lane. An update is a LONG in every mechanical
+        sense — same parser, same renderer, same validation — and making it a
+        lane would put an unknown value in front of `current_format()`, which
+        every render path reads. It is a flag on the long lane, which is what
+        it actually is: one prompt swapped, nothing else.
+        """
+        return bool(self._lane_data().get("update"))
 
     def current_format(self) -> str | None:
         """Which format this workspace is working in.

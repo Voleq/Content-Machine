@@ -73,6 +73,7 @@ HELP_TEXT = """Dennis — operator commands
 
 /short TICKER — start a SHORT (9:16, 60–75s); refreshes the numbers itself
 /long TICKER — start a LONG (16:9 deep dive, value lane)
+/update TICKER — revisit a name we've covered: what I said, what happened, was I right
 /refresh TICKER [RIC] — re-pull the numbers in Excel; a RIC pins the override
 /headline TICKER <news> — a SHORT about a specific headline (macro: /headline macro <text>)
 /prompts — re-send this lane's pre-filled master prompt
@@ -242,32 +243,46 @@ class BotCore:
     # The format is declared up front rather than inferred from which of two
     # prompts the operator happened to run. Each command prepares only its own
     # lane's prompt, and /render follows from the lane.
-    def start_lane(self, chat_id: int, lane: str, ticker: str) -> Reply:
+    def start_lane(self, chat_id: int, lane: str, ticker: str, *,
+                   update: bool = False) -> Reply:
         ticker = ticker.strip().upper()
         if not ticker or not ticker.replace(".", "").replace("-", "").isalnum():
-            return Reply(f"Usage: /{lane} TICKER")
+            return Reply(f"Usage: /{'update' if update else lane} TICKER")
+        if update:
+            from pipeline.standing import ThesisBook
+
+            if ThesisBook(self.settings).get(ticker) is None:
+                return Reply(
+                    f"No thesis on file for {ticker} — nothing was recorded "
+                    f"from a previous video, so there is nothing to grade. "
+                    f"/long {ticker} for a first-time take.")
         ws = Workspace(self.settings, ticker, today_str()).create()
-        ws.set_lane(lane)
+        ws.set_lane(lane, update=update)
         self.context.set(chat_id, ticker, ws.workdate)
-        if lane == "long":
+        # An update has no angle step: the angle is fixed, and it is "I said a
+        # thing about this company, here is what happened."
+        if lane == "long" and not update:
             ws.set_awaiting_angle()
         else:
             ws.clear_awaiting_angle()
 
-        label = "SHORT (9:16, 60–75s)" if lane == "short" else "LONG (16:9 deep dive)"
+        label = ("UPDATE (16:9 — grading the last call)" if update else
+                 "SHORT (9:16, 60–75s)" if lane == "short" else
+                 "LONG (16:9 deep dive)")
         head = f"📁 {ticker} / {ws.workdate} — {label}"
-        warn = self._lane_warning(ticker, lane)
+        warn = "" if update else self._lane_warning(ticker, lane)
 
+        name = "update" if update else lane
         can_refresh, _why = excel_available(self.settings)
         if can_refresh:
             return Reply(
                 f"{head}{warn}\n\nRefreshing {ticker} in Excel now — a minute "
-                f"while the add-in resolves. The {lane} prompt follows when the "
+                f"while the add-in resolves. The {name} prompt follows when the "
                 f"numbers are in.")
         template = self.settings.templates_dir / "dennis_data_template.xlsx"
         return Reply(
             f"{head}{warn}\n\nRefresh the attached template for {ticker} and "
-            f"upload it here as dennis_data.xlsx — I'll reply with the {lane} "
+            f"upload it here as dennis_data.xlsx — I'll reply with the {name} "
             f"prompt.",
             files=[template] if template.exists() else [],
         )
@@ -429,8 +444,11 @@ class BotCore:
         # /new has no lane, so it still gets both — that is the alias's whole
         # job for the release it survives.
         lane = ws.lane()
-        wanted = {"short": ["short"], "long": ["long_angle"]}.get(
-            lane, ["short", "long_angle"])
+        # An update is a long on the long lane with one prompt swapped, and it
+        # skips Step 1 — there is no angle to pick.
+        wanted = (["update"] if ws.is_update() else
+                  {"short": ["short"], "long": ["long_angle"]}.get(
+                      lane, ["short", "long_angle"]))
         files = []
         for fmt in wanted:
             text = fill_prompt(fmt, ws.ticker, data, ws.path, self.settings,
@@ -462,6 +480,10 @@ class BotCore:
             lines.append("• LONG: run prompt_long_angle.md (Step 1) — it returns "
                          "ranked angles. Reply here with a number (or a tweak) "
                          "and I'll hand you Step 2, the writing prompt.")
+        if "update" in wanted:
+            lines.append("• UPDATE: run prompt_update.md and paste the script "
+                         "back. One step — it already carries what the last "
+                         "video claimed and what has moved since.")
         if not lane:
             lines.append("(/new is deprecated — /short TICKER or /long TICKER "
                          "prepares just the one prompt.)")
@@ -1545,7 +1567,7 @@ class BotCore:
         th, moves = book.check(ticker, data)
         icon = {"intact": "🟢", "cracking": "🟡", "broken": "🔴"}.get(th.status, "⚪")
         body = f"{icon} {ticker} — THESIS: {th.status.upper()}\n{th.summary}"
-        note = update_warranted(moves)
+        note = update_warranted(moves, ticker)
         if note:
             ideas_from_thesis_moves(self.settings, ticker, moves)
             body += f"\n\n{note}\n(added to the idea queue)"
@@ -1896,9 +1918,11 @@ def build_application(settings: Settings, core: BotCore):
             core.refresh_data, update.effective_chat.id, args)
         await _send(update, reply)
 
-    async def _start_lane(update, lane: str, args: list[str]) -> None:
+    async def _start_lane(update, lane: str, args: list[str], *,
+                          is_update: bool = False) -> None:
         ticker = args[0] if args else ""
-        await _send(update, core.start_lane(update.effective_chat.id, lane, ticker))
+        await _send(update, core.start_lane(update.effective_chat.id, lane,
+                                            ticker, update=is_update))
         # The refresh follows immediately — the manual data step is what P3.1b
         # removes, and the lane's prompt comes back with the numbers.
         if ticker and excel_available(core.settings)[0]:
@@ -1911,6 +1935,12 @@ def build_application(settings: Settings, core: BotCore):
     @guard
     async def cmd_long(update, ctx):
         await _start_lane(update, "long", list(ctx.args or []))
+
+    @guard
+    async def cmd_update(update, ctx):
+        """Dennis grading his own call. Explicit, never inferred from /long —
+        whether this is an update or a fresh take is the operator's call."""
+        await _start_lane(update, "long", list(ctx.args or []), is_update=True)
 
     @guard
     async def cmd_new(update, ctx):
@@ -2204,6 +2234,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler(["start", "help"], cmd_start))
     app.add_handler(CommandHandler("short", cmd_short))
     app.add_handler(CommandHandler("long", cmd_long))
+    app.add_handler(CommandHandler("update", cmd_update))
     app.add_handler(CommandHandler("new", cmd_new))     # deprecated alias
     app.add_handler(CommandHandler("refresh", cmd_refresh))
     app.add_handler(CommandHandler("headline", cmd_headline))

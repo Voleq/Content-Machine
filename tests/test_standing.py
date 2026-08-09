@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from pipeline.workspace import Workspace, today_str
 from pipeline.standing import (
     BatchQueue,
     IdeaQueue,
@@ -671,3 +672,71 @@ def test_an_uncovered_ticker_says_so_rather_than_faking_a_history(
     assert "no thesis on file" in text
     assert "/long TICKER" in text
     assert "PRIOR COVERAGE" not in text
+
+
+# --------------------------------------------------------------------------
+# /update — the trigger names the action, and the action is explicit.
+# --------------------------------------------------------------------------
+
+
+def test_the_notice_names_the_command_not_just_the_conclusion(settings):
+    """"An update video is warranted" told the operator a conclusion and left
+    them to work out what to type. What they typed was /long."""
+    moves = [Move(field="gross_margin", before=0.744, after=0.652)]
+    assert "/update EXMPL" in update_warranted(moves, "exmpl")
+    # and it still stands alone when nobody passed a ticker
+    assert "warranted" in update_warranted(moves)
+
+
+def test_update_on_an_uncovered_ticker_points_at_long(core, settings):
+    reply = core.start_lane(1, "long", "NEVER", update=True)
+    assert "No thesis on file" in reply.text
+    assert "/long NEVER" in reply.text
+    ws = Workspace(settings, "NEVER", today_str())
+    assert not ws.path.exists(), "it must not open a workspace it cannot fill"
+
+
+def test_update_opens_a_long_workspace_with_no_angle_step(core, settings):
+    ThesisBook(settings).record("EXMPL", "the value trap",
+                                FakeData({"price": 10.0}))
+    reply = core.start_lane(1, "long", "EXMPL", update=True)
+    assert "UPDATE" in reply.text
+
+    ws = Workspace(settings, "EXMPL", today_str())
+    assert ws.lane() == "long", "an update renders as a long"
+    assert ws.is_update()
+    assert not ws.awaiting_angle(), "an update has no angle to pick"
+    assert ws.current_format() == "long", \
+        "the render path must still see a plain long"
+
+
+def test_a_plain_long_is_not_an_update(core, settings):
+    core.start_lane(1, "long", "EXMPL")
+    ws = Workspace(settings, "EXMPL", today_str())
+    assert not ws.is_update()
+    assert ws.awaiting_angle()
+
+
+def test_the_update_workspace_hands_back_the_update_prompt(core, settings, tmp_path):
+    import shutil
+
+    ThesisBook(settings).record("EXMPL", "the value trap",
+                                FakeData({"price": 10.0}), fmt="long",
+                                conclusion="Noise.", claims=["The margin is the thesis"])
+    core.start_lane(1, "long", "EXMPL", update=True)
+    ws = Workspace(settings, "EXMPL", today_str())
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+
+    reply = core.prompts_reply(1)
+    assert "UPDATE" in reply.text
+    names = [f.name for f in reply.files]
+    assert names == ["prompt_update.md"], names
+    assert "THE FOUR MOVEMENTS" in (ws.path / "prompt_update.md").read_text(
+        encoding="utf-8")
+
+
+def test_the_help_text_offers_it(core):
+    from bot.handlers import HELP_TEXT
+
+    assert "/update TICKER" in HELP_TEXT
