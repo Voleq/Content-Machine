@@ -521,3 +521,63 @@ def test_reading_back_a_missing_script_is_not_an_error():
 
     assert _what_it_said(None, "long") == {}
     assert _what_it_said(None, "short") == {}
+
+
+def test_prior_coverage_is_empty_when_nothing_is_on_file(settings):
+    """A name we have never covered has nothing to say, and a heading over an
+    empty block is worse than no heading."""
+    from bot.prompts import prior_coverage
+
+    assert prior_coverage(settings, "NEVER") == ""
+    assert prior_coverage(settings, "") == ""
+
+
+def test_prior_coverage_renders_an_old_record_without_inventing_fields(settings):
+    """A writer told "the conclusion is not on file" writes around it. A
+    writer told nothing invents a conclusion that was never made and then
+    grades the channel against a claim it never put on screen."""
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text(json.dumps(OLD_SCHEMA), encoding="utf-8")
+
+    block = prior_coverage(settings, "exmpl")
+    assert "PRIOR COVERAGE" in block
+    assert "cheap for a reason" in block
+    assert "2026-05-01" in block
+    assert "NOT ON FILE" in block
+    assert "the conclusion" in block and "the specific claims" in block
+    assert "do NOT invent them" in block
+    assert "VERBATIM" not in block, "it has no conclusion — it must not print one"
+
+
+def test_prior_coverage_carries_the_claims_and_what_moved(settings):
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.record("EXMPL", "the value trap", FakeData({"gross_margin": 0.744}),
+                workdate="2026-05-01", fmt="long",
+                hook="Revenue has not moved in five years.",
+                conclusion="Noise. Set a reminder for the next 10-Q.",
+                claims=["Margins hold", "The buyback is real"])
+    book.check("EXMPL", FakeData({"gross_margin": 0.652}))
+
+    block = prior_coverage(settings, "EXMPL")
+    assert "(LONG)" in block
+    assert 'It concluded, VERBATIM: "Noise. Set a reminder for the next 10-Q."' in block
+    assert "- Margins hold" in block and "- The buyback is real" in block
+    assert "Thesis status: cracking" in block
+    # rendered by Move.render(), not by a second formatter
+    assert "gross_margin ↓12%" in block
+    assert "NOT ON FILE" not in block
+
+
+def test_prior_coverage_survives_an_unreadable_book(settings, monkeypatch):
+    """It is injected into a prompt. It never blocks one."""
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text("{not json", encoding="utf-8")
+    assert prior_coverage(settings, "EXMPL") == ""

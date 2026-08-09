@@ -553,6 +553,116 @@ def screenshots_line(workspace: Path) -> str:
     return ", ".join(shots) if shots else "(none uploaded — upload filing PNGs first)"
 
 
+# --------------------------------------------------------------------------
+# What this channel has already said about the ticker.
+# --------------------------------------------------------------------------
+# The loop used to be: remember -> notify -> forget. `ThesisBook` recorded a
+# thesis when a video shipped, `update_warranted` told the operator the numbers
+# had moved and dropped it in the idea queue — and then the writing prompt was
+# byte-identical to a first-time one. The bot knew, and never told the writer.
+
+
+def _days_since(stamp: str) -> int | None:
+    """Whole days between an ISO stamp and today, or None if unparseable."""
+    from datetime import datetime, timezone
+
+    for text in (stamp or "",):
+        try:
+            when = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max((datetime.now(timezone.utc) - when).days, 0)
+    return None
+
+
+def _moves_since(thesis) -> list[str]:
+    """The last check's material moves, rendered.
+
+    Through `Move.render()` rather than a second formatter: it already says
+    "gross_margin ↓12% (74.4 → 65.2)", and two formatters for one fact is how
+    the report and the notification end up disagreeing about the same number.
+    The stored rows carry a cached `change` that `Move` computes itself, so
+    unknown keys are dropped rather than passed to the constructor.
+    """
+    from pipeline.standing import Move
+
+    known = {f for f in Move.__dataclass_fields__}
+    out: list[str] = []
+    for row in getattr(thesis, "last_moves", None) or []:
+        try:
+            out.append(Move(**{k: v for k, v in row.items() if k in known}).render())
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def prior_coverage(settings: Settings, ticker: str) -> str:
+    """What this channel already said about `ticker`, for the next writer.
+
+    Returns "" when there is no thesis on file — an update prompt filled for a
+    name we have never covered has nothing to say, and saying nothing is
+    better than a heading over an empty block.
+
+    A thesis recorded before the record was widened carries only a summary. It
+    still renders, and the block states which fields are ABSENT: a writer told
+    "the conclusion is not on file" writes around it, while a writer told
+    nothing invents a conclusion that was never made and grades the channel
+    against a claim it never put on screen.
+    """
+    from pipeline.standing import ThesisBook
+
+    try:
+        thesis = ThesisBook(settings).get(ticker)
+    except Exception:  # noqa: BLE001 — a thin record never blocks a prompt
+        thesis = None
+    if thesis is None:
+        return ""
+
+    fmt = (thesis.fmt or "").upper()
+    when = thesis.workdate or (thesis.recorded_at or "")[:10] or "date not recorded"
+    age = _days_since(thesis.recorded_at)
+    ago = {None: "", 0: " — today", 1: " — yesterday"}.get(age, f" — {age} days ago")
+    shipped = when + (f" ({fmt})" if fmt else "") + ago
+
+    lines = [f"PRIOR COVERAGE — this channel has already made a video about "
+             f"{ticker.upper()}. This is what it said.",
+             f"  Shipped: {shipped}"]
+    if thesis.summary:
+        lines.append(f"  The angle: {thesis.summary}")
+    if thesis.hook:
+        lines.append(f'  It opened on: "{thesis.hook}"')
+    if thesis.conclusion:
+        lines.append(f'  It concluded, VERBATIM: "{thesis.conclusion}"')
+    if thesis.claims:
+        lines.append("  It asserted:")
+        lines += [f"    - {c}" for c in thesis.claims]
+
+    status = thesis.status or "intact"
+    checked = (thesis.checked_at or "")[:10]
+    lines.append(f"  Thesis status: {status}"
+                 + (f" (last checked {checked})" if checked else ""))
+
+    moves = _moves_since(thesis)
+    if moves:
+        lines.append("  What has moved since:")
+        lines += [f"    - {m}" for m in moves]
+    else:
+        lines.append("  What has moved since: nothing material at the last check.")
+
+    absent = [name for name, value in (("the hook", thesis.hook),
+                                       ("the conclusion", thesis.conclusion),
+                                       ("the specific claims", thesis.claims))
+              if not value]
+    if absent:
+        lines.append(
+            "  NOT ON FILE: " + ", ".join(absent) + ". That video shipped "
+            "before those were recorded — do NOT invent them. Grade only what "
+            "is written above, and say plainly that the rest is not on record.")
+    return "\n".join(lines)
+
+
 def fill_prompt(
     fmt: str,
     ticker: str,
