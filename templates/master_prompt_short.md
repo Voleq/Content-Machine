@@ -96,6 +96,8 @@ Budget: roughly 22–30 visual events across the whole short. Two layers, and th
 
 Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
 
+**If a beat has a figure in it and no `[PROP]`, the renderer draws the desk. The desk is not a beat.** The beat library exists so that every number you say out loud has a drawing built to carry it — a figure that went the wrong way, a document, a thing becoming another thing. Reach for a DIFFERENT one each time: four distinct beat-library scenes is the floor for a short with four data beats, not the target, and repeating one drawing twice reads as a template. At least one of them should be animated, and at most one should be a 9:16 full-height scene.
+
 ## HARD RULES
 1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.

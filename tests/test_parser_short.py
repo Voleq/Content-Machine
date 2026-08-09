@@ -307,3 +307,82 @@ def test_other_tags_still_need_a_key(settings, short_valid_json):
     script, warnings = parse_short_script(json.dumps(data), settings)
     assert not [e for e in script.inline_events if e.type is TagType.PROP]
     assert any("carries no key" in w for w in warnings)
+
+
+# --------------------------------------------------------------------------
+# The reach warning: how much of the beat library the script actually asks for.
+# --------------------------------------------------------------------------
+
+
+def _with_props(short_valid_json: str, *tags: str) -> str:
+    """The fixture with beat-library tags spliced onto the front."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = " ".join(tags) + " " + data["audio_script"]
+    return json.dumps(data)
+
+
+def test_a_thin_script_is_warned_about_and_the_beats_are_named(
+        settings, short_valid_json):
+    """A warning that does not say WHICH beat is short is one nobody acts on.
+
+    The library is 51 drawings built to carry a figure and the showcase render
+    reached one of them. Nothing measured that, before or after, so it stayed
+    a feeling about the videos rather than a number on the report.
+    """
+    script, warnings = parse_short_script(short_valid_json, settings)
+    reach = [w for w in warnings if "beat-library scene" in w]
+    assert len(reach) == 1, warnings
+    assert "the floor is 4" in reach[0]
+    # every data beat in the fixture, named, because none of them has a drawing
+    assert 'the move ("+29% today · 5× average volume")' in reach[0]
+    for i, label in enumerate(("Revenue", "Net income", "Free cash flow",
+                               "Shares out")):
+        assert f"numbers row {i} ({label} " in reach[0], label
+
+
+def test_the_reach_warning_never_blocks(settings, short_valid_json):
+    """A thin script is a judgement call, not a defect. It parses, it renders,
+    and the operator decides — a gate here would teach gate-skipping."""
+    from pipeline.cost import SpendLedger, build_short_report
+    from pipeline.tts import TTSEngine
+
+    script, warnings = parse_short_script(short_valid_json, settings)
+    report = build_short_report(script, warnings, settings,
+                                SpendLedger(settings), TTSEngine(settings))
+    assert report.approvable
+    assert not any("beat-library" in b for b in report.blocking)
+    assert any("beat-library" in w for w in report.warnings)
+
+
+def test_a_script_that_draws_its_beats_is_not_warned(settings, short_valid_json):
+    """Four distinct scenes, one per data beat — the floor, not the target."""
+    raw = _with_props(
+        short_valid_json,
+        "[PROP: crushed-flat = -$89M]",
+        "[PROP: chart-off-cliff = -$15M]",
+        "[PROP: climb-bars = $496M]",
+        "[PROP: numbers-raining = 365M, +29%, -$15M]",
+    )
+    script, warnings = parse_short_script(raw, settings)
+    assert len([e for e in script.inline_events
+                if e.type is TagType.PROP]) == 4
+    assert not [w for w in warnings if "beat-library scene" in w], warnings
+
+
+def test_the_same_drawing_four_times_is_still_thin(settings, short_valid_json):
+    """DISTINCT picks. Repeating one drawing is the template look this is for."""
+    raw = _with_props(short_valid_json, *["[PROP: crushed-flat = -$89M]"] * 4)
+    script, warnings = parse_short_script(raw, settings)
+    reach = [w for w in warnings if "beat-library scene" in w]
+    assert reach and reach[0].startswith("1 beat-library scene "), reach
+
+
+def test_the_short_prompt_states_that_the_desk_is_not_a_beat(settings):
+    """The default has to be written down: a figure with no [PROP] gets the
+    desk, and the desk is not a beat."""
+    text = (settings.templates_dir / "master_prompt_short.md").read_text(
+        encoding="utf-8")
+    assert "The desk is not a beat." in text
+    assert "four distinct beat-library scenes is the floor" in text

@@ -190,7 +190,34 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
             "no delivery direction in the script — [BEAT]/[SIGH]/[FLAT]/[DRY] "
             "are what make the deadpan land, and four or five across a short "
             "is the budget. Without them TTS reads it evenly.")
+    out.extend(_reach_warning(script, settings))
     return out
+
+
+def _reach_warning(script: ShortScript, settings: Settings) -> list[str]:
+    """One warning when the script reaches for too little of the beat library.
+
+    A warning, never a blocker: a thin script is a judgement call, and a gate
+    that refused one would be a gate that teaches gate-skipping. But it names
+    the beats — a warning that says "reach for more" without saying which beat
+    is short is a warning nobody acts on, and the beat library went unused for
+    months with nothing saying anything at all.
+    """
+    from pipeline.reach import script_reach
+
+    reach = script_reach(script, settings)
+    if not reach.thin:
+        return []
+    scenes = len(reach.scenes)
+    msg = (f"{scenes} beat-library scene{'' if scenes == 1 else 's'} for "
+           f"{reach.data_beats} beats that carry a figure — the floor is "
+           f"{reach.floor}, one drawing per data beat.")
+    if reach.undrawn:
+        msg += (" These have a number in them and no drawing to put it in, so "
+                "the renderer falls back to the desk: "
+                + "; ".join(reach.undrawn) + ".")
+    return [msg + " The SHORT BEAT LIBRARY in the prompt is grouped by "
+                  "situation — pick a different one for each beat."]
 
 
 def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[str]]:
