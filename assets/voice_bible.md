@@ -18,7 +18,12 @@ A line that is flat AND unfunny has failed. Flatness is the *delivery*, never th
 - **Teach one real thing, then undercut it flat.** The teach is load-bearing and stays accurate; the undercut is the payoff.
 - **Functional teaching analogies.** If a comparison genuinely explains the mechanism, use it — clarity outranks purity.
 
-Still banned: puns, wordplay, exclamation marks, "wacky," anything that reads as *trying*, and any joke aimed at the viewer.
+Still banned: wordplay, exclamation marks, "wacky," anything that reads as *trying*, and any joke aimed at the viewer.
+
+**Puns are banned EXCEPT when Dennis immediately owns that it was bad and moves on.** The reasoning behind the old blanket ban is sound — a pun reads as trying, and this register's authority comes from not trying. But an *acknowledged* bad pun is not trying, it is confessing, which is exactly the register. The admission is the joke; the pun alone is not. One per script at the absolute most, and never in the hook. A pun he seems pleased with has failed.
+
+- Permitted: "A memory company, priced at the top of the cycle. Nobody remembers. [BEAT] I'm not proud of that one either."
+- Not permitted: the same line without the second sentence.
 
 ## Density — the discipline that keeps it dry
 
