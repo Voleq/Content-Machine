@@ -519,10 +519,7 @@
       "fallback": false
     }
   ],
-  "pacing_warnings": [
-    "18 visual events in 71s \u2014 below the 21-29 band for this runtime; the cut will read as a slideshow",
-    "7 punctuation beats in 71s \u2014 below the 8-13 band. Data beats hold 3-8s and are read; the reactions riding over them are what give the cut its pulse, and they cost nothing to add"
-  ],
+  "pacing_warnings": [],
   "unresolved_keys": [],
   "beat_coverage": [
     {

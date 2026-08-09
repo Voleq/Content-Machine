@@ -297,3 +297,73 @@ def test_host_every_is_configurable_and_actually_drives_the_cadence():
                                  host_every=SHORT_HOST_EVERY)
     assert len(by_kind(tight, CueKind.HOST_BEAT)) > \
         len(by_kind(loose, CueKind.HOST_BEAT))
+
+
+# --------------------------------------------------------------------------
+# The overlay layer counts. It is punctuation by the band's own definition.
+# --------------------------------------------------------------------------
+
+
+def overlay(kind: CueKind, t: float, value: str = "crash") -> Cue:
+    """A cue built OUTSIDE the tag loop, so it carries no `class` — which is
+    exactly why none of them was ever counted."""
+    return Cue(t=t, kind=kind, payload={"value": value, "hold": 2.0})
+
+
+def test_a_doodle_is_a_punctuation_beat():
+    """The band's definition says "a reaction, a transformation, a doodle
+    riding over the frame". The counter read `class`, doodles never had one,
+    and the warning told the writer to add reactions — so a writer who added
+    five doodles watched the number stay where it was."""
+    bare, warn_bare = plan_short_pacing(skeleton() + [punct(20.0)], DURATION)
+    doodled, warn_doodled = plan_short_pacing(
+        skeleton() + [punct(20.0)] + [overlay(CueKind.DOODLE, 8.0 + i * 6)
+                                      for i in range(5)], DURATION)
+
+    def punct_count(warnings):
+        line = next(w for w in warnings if "punctuation beats" in w)
+        return int(line.split()[0])
+
+    assert punct_count(warn_bare) == 1
+    assert punct_count(warn_doodled) == 6, warn_doodled
+
+
+def test_every_overlay_kind_counts():
+    """A scribble, a meme and a b-roll cutaway are built outside the tag loop
+    too — the `meme` and `broll` JSON fields, and inline [SCRIBBLE]."""
+    for kind in (CueKind.SCRIBBLE, CueKind.MEME, CueKind.CUTAWAY):
+        _, warnings = plan_short_pacing(
+            skeleton() + [punct(20.0), overlay(kind, 30.0)], DURATION)
+        line = next(w for w in warnings if "punctuation beats" in w)
+        assert line.startswith("2 punctuation beats"), f"{kind}: {line}"
+
+
+def test_an_annotation_is_not_a_beat():
+    """It is a callout ON a data beat — a circle round a number already on
+    screen — not a beat of its own, and the format's punctuation list does
+    not name one."""
+    _, warnings = plan_short_pacing(
+        skeleton() + [punct(20.0), overlay(CueKind.ANNOTATION, 30.0)], DURATION)
+    line = next(w for w in warnings if "punctuation beats" in w)
+    assert line.startswith("1 punctuation beats"), line
+
+
+def test_a_meme_counts_once_however_it_was_asked_for():
+    """Inline [MEME: key] goes through the tag loop and is already counted;
+    the `meme` JSON field is not. Counting the overlay layer must not double
+    the first one."""
+    inline = Cue(t=30.0, kind=CueKind.MEME,
+                 payload={"value": "k", "tag": "MEME", "class": "punct",
+                          "hold": 1.0, "min_hold": 0.6, "max_hold": 2.0})
+    _, warnings = plan_short_pacing(skeleton() + [punct(20.0), inline], DURATION)
+    line = next(w for w in warnings if "punctuation beats" in w)
+    assert line.startswith("2 punctuation beats"), line
+
+
+def test_the_overlays_are_counted_but_never_moved():
+    """Each one is anchored to the word it fires on, which is the whole job.
+    The pacing pass must not reschedule one."""
+    doodles = [overlay(CueKind.DOODLE, 20.05), overlay(CueKind.DOODLE, 20.10)]
+    out, _ = plan_short_pacing(skeleton() + [data(20.0)] + doodles, DURATION)
+    placed = sorted(c.t for c in out if c.kind is CueKind.DOODLE)
+    assert placed == [20.05, 20.10], placed

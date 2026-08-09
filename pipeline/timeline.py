@@ -158,6 +158,23 @@ SHORT_PUNCT_TAGS = frozenset({
     TagType.PROP, TagType.MEME, TagType.CLIP, TagType.BROLL,
 })
 
+# Punctuation that RIDES OVER the frame instead of claiming it.
+#
+# `class` is written by the tag loop, and these four cues are built outside it
+# — the inline [DOODLE]/[SCRIBBLE] overlays, and the `meme`/`broll` JSON
+# fields — so every one of them carried no class at all and the counter, which
+# reads `class`, scored them as neither data nor punctuation. The band above
+# names a doodle as punctuation in its own definition, and the warning it
+# raises tells the writer to add reactions: a writer who did exactly that
+# watched the number not move. The committed fixture added five doodles and
+# the count stayed at seven.
+#
+# They are COUNTED here and scheduled nowhere. Each one is anchored to the
+# word it fires on, which is the entire job — putting them through the pacing
+# pass would move them off it.
+_OVERLAY_PUNCT_KINDS = (CueKind.DOODLE, CueKind.SCRIBBLE,
+                        CueKind.MEME, CueKind.CUTAWAY)
+
 # A clause boundary the trap read can be cut on. Sentences first; a long
 # sentence is split again at its comma, because "It only is if revenue stops
 # sliding, and it has not stopped sliding" is two claims and reads as two.
@@ -630,7 +647,12 @@ def plan_short_pacing(
     others = [c for c in cues if c.payload.get("class") not in ("data", "punct")]
     out = sorted(others + kept + host_cues, key=lambda c: c.t)
 
-    n_events = len(kept) + sum(
+    # The overlay layer: on screen, counted, never rescheduled. An inline
+    # [MEME: key] arrives through the tag loop and is already in `kept`, so a
+    # meme is counted once whichever way the writer asked for it.
+    overlays = [c for c in others if c.kind in _OVERLAY_PUNCT_KINDS]
+
+    n_events = len(kept) + len(overlays) + sum(
         1 for c in others
         if c.kind in (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
                       CueKind.CHEAP_OR_TRAP, CueKind.CONCLUSION,
@@ -653,7 +675,8 @@ def plan_short_pacing(
     # and a combined count cannot see it: a script can sit inside the total
     # band with nothing but things to read.
     n_data = sum(1 for c in kept if c.payload.get("class") == "data")
-    n_punct = sum(1 for c in kept if c.payload.get("class") == "punct")
+    n_punct = sum(1 for c in kept
+                  if c.payload.get("class") == "punct") + len(overlays)
     p_lo, p_hi = (v * duration / 75.0 for v in SHORT_PUNCT_PER_75S)
     if n_punct < p_lo:
         warnings.append(
