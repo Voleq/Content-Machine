@@ -151,6 +151,49 @@ def test_a_script_with_no_delivery_direction_is_called_out(settings):
     assert any("delivery direction" in w for w in warnings)
 
 
+# --------------------------------------------------------------------------
+# A box with nothing in it, said BEFORE the render.
+# --------------------------------------------------------------------------
+# The catalogue tells the writer this matters — "WITHOUT the `= value` the
+# drawing renders with its boxes EMPTY. Always give a figure." — and nothing
+# enforced it. The tag resolved, the beat played, and an empty red box went to
+# air. Approval is the last point where catching it is free; after it, the
+# operator has watched the render to find out.
+
+
+def test_a_tag_that_leaves_a_box_empty_is_on_the_approval_report(settings):
+    _, warnings = parse_short_script(
+        _short_with("The floors go past. "
+                    "[PROP: b2-elevator-drop = -$8M, -$25M] Noise."), settings)
+    empty = [w for w in warnings if "no value" in w]
+    assert len(empty) == 4, warnings          # six floors, two figures
+    assert all("b2-elevator-drop" in w for w in empty)
+    assert any("'floor-6'" in w for w in empty), empty
+
+
+def test_a_tag_with_no_value_at_all_is_reported_too(settings):
+    """The quietest case and the worst one: every box on the drawing empty."""
+    _, warnings = parse_short_script(
+        _short_with("It lands flat. [PROP: crushed-flat] Noise."), settings)
+    assert any("no value" in w and "crushed-flat" in w for w in warnings), warnings
+
+
+def test_an_empty_box_is_a_warning_and_never_a_blocker(settings):
+    """A deliberately empty box is a legitimate choice on some drawings, and
+    the operator is the one who can say so. The script still parses."""
+    script, warnings = parse_short_script(
+        _short_with("It lands flat. [PROP: crushed-flat] Noise."), settings)
+    assert script.ticker == "EXMPL"
+    assert [e.payload for e in script.inline_events] == ["crushed-flat"]
+
+
+def test_the_showcase_fixture_leaves_no_box_empty(short_valid_json, settings):
+    """The fixture the sample MP4 is built from, and the first thing anyone
+    reads to learn the format. It was demonstrating the bug."""
+    _, warnings = parse_short_script(short_valid_json, settings)
+    assert [w for w in warnings if "no value" in w] == []
+
+
 def test_a_tag_the_short_cannot_act_on_is_still_refused(settings):
     """Looser is not open season: [SOUND] claims nothing on a short's frame
     and is stripped with a warning, as it always was."""

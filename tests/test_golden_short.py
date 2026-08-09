@@ -821,3 +821,31 @@ def test_the_committed_sample_has_no_layer_holding_the_frame(settings, sample):
 def test_there_is_a_committed_short_sample_to_check():
     """A glob that matches nothing passes every parametrised test above it."""
     assert SAMPLES, "samples/sample_short_*.mp4 is missing — nothing was checked"
+
+
+# --------------------------------------------------------------------------
+# No box reaches the screen with nothing in it.
+# --------------------------------------------------------------------------
+# A slot nobody bound renders as a drawn, empty rectangle, and the binder said
+# nothing about it in either direction that mattered: a value with nowhere to
+# go warned, a slot that received nothing did not. The committed sample showed
+# it at t≈40s — a lift shaft with six floors and a row of five numbers, the
+# sixth floor blank and red.
+
+
+def test_the_fixture_renders_with_no_empty_boxes(hosted):
+    _settings, _script, _tts, _out, manifest, _frames, warnings = hosted
+    assert manifest["empty_boxes"] == [], \
+        "the showcase is demonstrating the bug: " + "; ".join(manifest["empty_boxes"])
+    assert [w for w in warnings if "no value" in w] == [], \
+        "...and the approval report said so before the render did"
+
+
+@pytest.mark.parametrize("sample", SAMPLES, ids=lambda p: p.stem)
+def test_the_committed_sample_renders_with_no_empty_boxes(sample):
+    manifest = json.loads(
+        sample.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    assert manifest["empty_boxes"] == [], (
+        f"{sample.name} draws a box with nothing in it: "
+        + "; ".join(manifest["empty_boxes"])
+        + ". Re-render it: scripts/render_samples.py short")

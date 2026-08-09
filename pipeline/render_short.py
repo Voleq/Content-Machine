@@ -75,6 +75,7 @@ from pipeline.kit_frames import (
     strip_baked_furniture,
     transition_asset,
     transition_transform,
+    unfilled_slots,
 )
 from pipeline.number_beats import beat_for_row
 from pipeline.vertical_beats import beat_for_row as vertical_beat_for_row
@@ -455,6 +456,15 @@ def render_short(
     # ledger at the end, which is what makes "never used across recent
     # renders" a real measurement rather than a guess.
     used_keys: set[str] = set()
+    # ...and every declared box that reached the screen with nothing in it. A
+    # slot nobody bound is not a no-op: it is a drawn, empty rectangle in the
+    # middle of a beat, and one went to air in the committed sample because
+    # the only thing that ever noticed was the eye of whoever watched it.
+    empty_boxes: list[str] = []
+
+    def note_empty(asset, values, why: str) -> None:
+        for name in unfilled_slots(asset, values):
+            empty_boxes.append(f"{asset.key}: slot {name!r} has no value ({why})")
 
     # The stage is exclusive: a beat ENDS when the next one claims the frame.
     # Everything used to be placed with t_end=duration, so a sixty-second short
@@ -917,6 +927,7 @@ def render_short(
                     if vend - vstart >= 1.2:
                         vertical_done = True
                         used_keys.add(scene.key)
+                        note_empty(scene, vvalues, f"auto-reached for {row.label}")
                         vimg = cover_on_paper(
                             render_still(scene, vvalues, settings), W, H)
                         vdest = rdir / f"verticalbeat_{k}.png"
@@ -952,6 +963,7 @@ def render_short(
         # manifest listed assets the render had dropped, and the manifest is
         # the evidence the rebuild landed.
         used_keys.add(asset.key)
+        note_empty(asset, slot_values, f"auto-reached for {row.label}")
         img = fit_into(render_still(asset, slot_values, settings),
                        px(560), px(560))
         beat_clip = frames_to_alpha_clip(
@@ -988,7 +1000,7 @@ def render_short(
             rdir=rdir, layers=layers, W=W, H=H, px=px, fps=fps,
             duration=duration, hold=hold, is_data=is_data, name=name,
             used_keys=used_keys, punch_cycle=punch_cycle,
-            note=note_beat, articles=articles,
+            note=note_beat, articles=articles, empty_boxes=empty_boxes,
         )
         if not placed:
             unresolved.append(f"[{tag.value if tag else c.kind.value}: {value}]")
@@ -1491,6 +1503,11 @@ def render_short(
         "cues": [c.model_dump() for c in cues],
         "pacing_warnings": pacing_warnings,
         "unresolved_keys": unresolved,
+        # Declared boxes that reached the screen with nothing in them. A key
+        # that does not resolve has always been recorded here; a key that
+        # resolves and draws an empty rectangle was not, and it is the one the
+        # viewer can see.
+        "empty_boxes": empty_boxes,
         # How much of the frame each beat actually takes, and the median of
         # the ones the viewer is meant to READ. This is the number the layout
         # exists to move and it is checkable without anybody's opinion: a 1:1
@@ -1530,7 +1547,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                     px, fps: int, duration: float, hold: float, is_data: bool,
                     name: str, used_keys: set[str] | None = None,
                     punch_cycle: list[int] | None = None,
-                    note=None, articles: list[dict] | None = None) -> bool:
+                    note=None, articles: list[dict] | None = None,
+                    empty_boxes: list[str] | None = None) -> bool:
     """Composite one tag beat. Returns False when the key did not resolve.
 
     Data beats take the frame — fitted large and centred. Punctuation rides
@@ -1617,6 +1635,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
                 asset, cue.payload.get("values"))
             for w in slot_warnings:
                 log.warning("slot: %s", w)
+                if empty_boxes is not None and "no value" in w:
+                    empty_boxes.append(f"[{tag.value}: {value}] — {w}")
 
         register = _register_for(asset, is_data,
                                  punch_cycle if punch_cycle is not None

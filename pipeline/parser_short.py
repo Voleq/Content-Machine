@@ -159,8 +159,16 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     absence of delivery direction is called out: a script with none reads
     exactly like a script whose [BEAT]s were silently dropped, and for two
     years it was the second one.
+
+    The tag's `= value` is checked here for the same reason. A slot nobody
+    bound is a drawn, empty box in the finished cut, and the only place
+    catching it is free is BEFORE approval — after it, the operator has
+    watched the render to find out. A warning, never a blocker: an empty box
+    is a legitimate choice on some drawings and this is the person who can
+    say so.
     """
     from pipeline.kit import load_kit
+    from pipeline.kit_frames import bind_slot_values
     from pipeline.models import KIT_TAG_FAMILIES, KIT_TAG_BLANKS
 
     out: list[str] = []
@@ -169,7 +177,10 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
         families = KIT_TAG_FAMILIES.get(e.type)
         if not families or not len(kit):
             continue
-        if kit.resolve(families, e.payload) is not None:
+        asset = kit.resolve_asset(families, e.payload)
+        if asset is not None:
+            for w in bind_slot_values(asset, e.values)[1]:
+                out.append(f"[{e.type.value}: {e.payload}] — {w}")
             continue
         blank = KIT_TAG_BLANKS.get(e.type)
         if blank and blank in kit:

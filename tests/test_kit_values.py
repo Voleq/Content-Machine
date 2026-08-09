@@ -109,11 +109,74 @@ def test_a_name_no_slot_declares_is_reported_not_swallowed(kit):
     assert "nonesuch" in " ".join(warnings)
 
 
-def test_binding_nothing_leaves_the_artwork_alone(kit):
+# --------------------------------------------------------------------------
+# ...and the other direction: a BOX WITH NOTHING IN IT.
+# --------------------------------------------------------------------------
+# The binder reported a value with nowhere to go, and a value naming a slot
+# that does not exist, and said nothing whatsoever about a slot that received
+# nothing — which is the only one of the three the viewer can see. It is a
+# drawn, empty box in the middle of a beat, and one shipped in the committed
+# sample: a lift shaft with six floors and a row of five numbers.
+
+
+def test_a_box_with_nothing_in_it_is_reported(kit):
+    """Six floors, four figures — two warnings, and they name which two.
+
+    The library has no five-slot drawing, so this is 4-of-6 rather than the
+    3-of-5 the report is written against; the property is the same and the
+    asset is the one that actually shipped an empty box.
+    """
+    asset = kit.get("shorts/vertical-scenes-2/b2-elevator-drop")
+    names = [s.name for s in asset.slots]
+    assert len(names) == 6
+    given = {n: f"-${i + 1}M" for i, n in enumerate(names[:4])}
+    values, warnings = bind_slot_values(asset, given)
+
+    assert values == given, "the bound values still bind"
+    unfilled = [w for w in warnings if "no value" in w]
+    assert len(unfilled) == 2, warnings
+    assert all(any(n in w for w in unfilled) for n in names[4:]), unfilled
+    assert not any(n in w for n in names[:4] for w in unfilled), \
+        "a filled box must not be reported empty"
+
+
+def test_a_tag_with_no_value_at_all_is_the_loudest_case_not_the_quietest(kit):
+    """`[PROP: crushed-flat]` — no `= value`, every box empty.
+
+    This is the one that shipped, and it was the one line the binder never
+    reached: `if not values: return {}, []` was the first statement in it.
+    The catalogue promises the writer otherwise — "WITHOUT the `= value` the
+    drawing renders with its boxes EMPTY. Always give a figure."
+    """
     asset = kit.get("shorts/dennis-vs-numbers/crushed-flat")
     values, warnings = bind_slot_values(asset, None)
     assert values == {}
-    assert warnings == []
+    assert len(warnings) == 1 and asset.slots[0].name in warnings[0], warnings
+
+    empty, empty_warnings = bind_slot_values(asset, {})
+    assert empty == {} and empty_warnings == warnings, \
+        "no `=` and an empty `=` are the same drawing with the same empty box"
+
+
+def test_a_drawing_with_no_slots_is_still_a_no_op(kit):
+    """Nothing to fill and nothing asked for: silence is correct here."""
+    asset = next(kit.get(k) for k in kit.keys()
+                 if kit.get(k) is not None and not kit.get(k).slots)
+    assert bind_slot_values(asset, None) == ({}, [])
+
+
+def test_a_box_a_layout_means_to_clear_is_not_an_empty_box(kit, settings):
+    """The blank layouts declare `clear` on every slot.
+
+    Their boxes carry dummy copy that an empty value ERASES — leaving one
+    empty is what the layout is for, not an omission, and reporting it would
+    make the warning worth ignoring.
+    """
+    from pipeline.kit_frames import unfilled_slots
+
+    asset = kit.get("blanks/big-number-blank")
+    assert asset.slots and all(s.clear for s in asset.slots)
+    assert unfilled_slots(asset, {"figure": "6% a year"}) == []
 
 
 # --------------------------------------------------------------------------
@@ -257,6 +320,51 @@ def test_a_row_gets_a_drawing_carrying_its_latest_figure(kit):
 
 def test_a_row_with_no_values_gets_no_drawing(kit):
     assert beat_for_row(kit, "Revenue", [], seed="sha") is None
+
+
+# --------------------------------------------------------------------------
+# ...and the full-frame batch, which reached for a drawing it could not fill.
+# --------------------------------------------------------------------------
+# Nobody writes these on a tag: a key-number beat picks one off the number.
+# Three of the eleven are built around a SERIES — eight rungs, six floors, six
+# bricks — and five years of accounts fills none of them, so the renderer
+# chose a lift shaft for a five-value row and drew the sixth floor empty. That
+# is the frame at t≈40s of the committed sample.
+
+
+def test_the_full_frame_batch_never_picks_a_drawing_the_row_cannot_fill(kit):
+    """Every scene it can choose, for every row shape a script can have."""
+    from pipeline.kit_frames import unfilled_slots
+    from pipeline.vertical_beats import VERTICAL_BEATS
+    from pipeline.vertical_beats import beat_for_row as vertical_beat_for_row
+
+    rows = [
+        ("Net income", ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]),
+        ("Revenue", ["$400M", "$452M", "$471M", "$491M", "$496M"]),
+        ("Total debt", ["$1.1B", "$1.4B", "$1.9B"]),
+        ("Cash", ["$40M"]),
+    ]
+    for label, values in rows:
+        for seed in (f"s{i}" for i in range(24)):
+            got = vertical_beat_for_row(kit, label, values, seed=seed)
+            assert got is not None, f"{label} reached for nothing at {seed}"
+            key, bound = got
+            asset = kit.get(key)
+            assert unfilled_slots(asset, bound) == [], (
+                f"{label} ({len(values)} figures) reached for {key}, which "
+                f"declares {len(asset.slots)} boxes — "
+                f"{unfilled_slots(asset, bound)} would render empty")
+
+    # And the series scenes are still reachable — the fix is a filter on the
+    # choice, not a quiet removal of three drawings from the library.
+    series = [k for keys in VERTICAL_BEATS.values() for k in keys
+              if kit.get(k) is not None and len(kit.get(k).slots) > 1]
+    assert series, "no multi-slot vertical scene in the banks to check"
+    long_row = [f"-${i}M" for i in range(1, 9)]
+    reached = {vertical_beat_for_row(kit, "Net income", long_row, seed=f"s{i}")[0]
+               for i in range(40)}
+    assert reached & set(series), \
+        "a row long enough to fill one still never reaches a series scene"
 
 
 # --------------------------------------------------------------------------

@@ -521,6 +521,7 @@
   ],
   "pacing_warnings": [],
   "unresolved_keys": [],
+  "empty_boxes": [],
   "beat_coverage": [
     {
       "name": "numbers_sheet",
@@ -530,7 +531,7 @@
       "frac": 0.5132
     },
     {
-      "name": "vertical_b2-elevator-drop",
+      "name": "vertical_b-falling-at-him",
       "w": 1080,
       "h": 1920,
       "class": "data",
@@ -630,13 +631,13 @@
     "shorts/the-world/d-desk-wide",
     "shorts/transformations/c-number-deflate",
     "shorts/transformations/c-press-release-crumple",
-    "shorts/vertical-scenes-2/b2-elevator-drop",
+    "shorts/vertical-scenes/b-falling-at-him",
     "shorts/vertical-scenes/b-long-fall-line",
     "stings/page-turn-tall",
     "stings/paper-slide-tall",
     "stings/torn-edge-tall"
   ],
-  "kit_reach": "Kit: 29 of 442 assets \u00b7 15 families \u00b7 8 beat-library scenes",
+  "kit_reach": "Kit: 29 of 442 assets \u00b7 14 families \u00b7 8 beat-library scenes",
   "layer_names": [
     "act_mid_0",
     "act_mid_1",
@@ -692,7 +693,7 @@
     "trap_line_0",
     "trap_line_1",
     "trap_line_2",
-    "vertical_b2-elevator-drop"
+    "vertical_b-falling-at-him"
   ],
   "layers": [
     {
@@ -836,7 +837,7 @@
       "y": 685
     },
     {
-      "name": "vertical_b2-elevator-drop",
+      "name": "vertical_b-falling-at-him",
       "t_start": 38.49414999999999,
       "t_end": 40.69414999999999,
       "x": 0,
