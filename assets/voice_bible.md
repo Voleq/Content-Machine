@@ -27,9 +27,9 @@ Still banned: wordplay, exclamation marks, "wacky," anything that reads as *tryi
 
 ## Four mechanics that carry the teaching
 
-**The learning is the principal part.** Jokes are one of the means by which the learning is delivered — never a thing that happens next to it. These four are the ones that do that job best. They are not a checklist and they are not new permissions to spend: they are additions to what is above, and they mostly *replace* other jokes rather than adding to them. One good mechanism analogy does the work of three decorative asides, so reaching for these should usually make a script drier, not busier. The density rule below is still the ceiling.
+**The learning is the principal part.** Jokes are one of the means by which the learning is delivered — never a thing that happens next to it. These are the four that do that job best, named so you can reach for one, not listed so you can tick them off. Nothing here is a new permission to spend: they mostly *replace* other jokes rather than adding to them, because one good mechanism analogy does the work of three decorative asides. Reaching for these should usually make a script drier. The density rule below is still the ceiling.
 
-**1. The mechanism analogy.** The important one. When the script teaches a mechanism, explain it with a mundane physical image, so that the explanation and the joke are the *same sentence*. The test is deletion: if the image can be removed without losing any understanding, it was decoration.
+**The mechanism analogy** — the important one. When the script has to teach a mechanism, explain it with a mundane physical image, so that the explanation and the joke are the *same sentence*. The test is deletion: if the image can be removed without losing any understanding, it was decoration.
 
 > ROIC collapsing after an acquisition:
 > "Picture a restaurant that was excellent in one small room, and then bought the building next door. Same chef. Same recipes. Twice the rent, and the new dining room isn't full yet. Nothing about the cooking got worse. The arithmetic did."
@@ -37,17 +37,17 @@ Still banned: wordplay, exclamation marks, "wacky," anything that reads as *tryi
 > Buybacks swamped by dilution:
 > "That's not capital return. That's topping up the bath with the plug out."
 
-**2. The sincere fake-out.** Build the honest counter-case straight, at full strength, then puncture it with one short clause. The setup has to be played completely straight or the drop does not work — a setup you can hear coming is a setup that has already been dropped. This is how "honest both ways" becomes funny instead of dutiful.
+**The sincere fake-out** — when the counter-case is genuinely strong. Build it straight, at full strength, then puncture it with one short clause. The setup has to be played completely straight or the drop does not work — a setup you can hear coming is a setup that has already been dropped. This is how "honest both ways" becomes funny instead of dutiful.
 
 > "That defence is real, and it's the one I'd be making if I owned this. [BEAT] It's also been four years."
 
-**3. Make the number mean something.** Anchor an abstract figure to something the viewer already has a feel for. The anchor is what teaches; the flatness is what's funny.
+**Make the number mean something** — when a figure is abstract on its own. Anchor it to something the viewer already has a feel for. The anchor is what teaches; the flatness is what's funny.
 
 > "Two years ago, e.l.f. put a dollar in and got twelve cents back. [BEAT] If your savings account did that, you'd bring it up at parties."
 
 > "Borrow at eight, earn six, grow as fast as you like. That isn't a business, it's a subscription to being slightly poorer."
 
-**4. The acknowledged pun.** As above: the admission is the joke. Rare — most scripts should not have one.
+**The acknowledged pun** — as above: the admission is the joke, and the pun alone is not. Rare. Most scripts should not have one.
 
 ### The test that governs all of them
 
