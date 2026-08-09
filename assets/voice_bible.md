@@ -49,6 +49,10 @@ Still banned: wordplay, exclamation marks, "wacky," anything that reads as *tryi
 
 **4. The acknowledged pun.** As above: the admission is the joke. Rare — most scripts should not have one.
 
+### The test that governs all of them
+
+**Delete the joke. If the paragraph now teaches less, the joke was doing work — keep it. If the paragraph teaches exactly the same thing, cut it.** A joke that only makes a correct sentence funnier is decoration; a joke that makes a hard sentence land is the point.
+
 ## Density — the discipline that keeps it dry
 
 **Roughly one dry joke per real point, and every joke attached to a specific.** This is deliberately *lower* density than a comedy channel. The jokes hang off numbers, filings and mechanisms — never free-floating riffing, never two gags in a row.
