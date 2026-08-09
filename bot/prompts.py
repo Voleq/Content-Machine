@@ -622,7 +622,9 @@ def prior_coverage(settings: Settings, ticker: str) -> str:
 
     fmt = (thesis.fmt or "").upper()
     when = thesis.workdate or (thesis.recorded_at or "")[:10] or "date not recorded"
-    age = _days_since(thesis.recorded_at)
+    # Off the workdate where there is one, because that is the date shown and
+    # a stamp that disagrees with the date beside it reads as a bug.
+    age = _days_since(thesis.workdate) or _days_since(thesis.recorded_at)
     ago = {None: "", 0: " — today", 1: " — yesterday"}.get(age, f" — {age} days ago")
     shipped = when + (f" ({fmt})" if fmt else "") + ago
 
@@ -722,6 +724,27 @@ def fill_prompt(
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
     elif fmt == "long_write":
         r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
+        r["{{voice_bible}}"] = voice_bible(settings)
+        r["{{doodle_catalog}}"] = doodle_catalog(settings)
+        r["{{meme_catalog}}"] = meme_catalog(settings)
+        r["{{broll_palette}}"] = broll_catalog()
+        r["{{scribble_styles}}"] = scribble_styles(settings)
+        r["{{kit_catalog}}"] = kit_catalog(settings, fmt="long")
+        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{available_screenshots}}"] = screenshots_line(workspace)
+        r["{{valuation_data}}"] = valuation_data_block(data)
+        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
+    elif fmt == "update":
+        # An update is a LONG in every mechanical sense — same tag grammar,
+        # same parser, same renderer, same validation — so it takes the long
+        # writer's catalogs unchanged. What differs is the spine, and the
+        # spine's first movement is `prior_coverage`.
+        r["{{prior_coverage}}"] = prior_coverage(settings, ticker) or (
+            "(no thesis on file for this ticker — nothing was recorded from a "
+            "previous video. Write this as a first-time take instead: "
+            "/long TICKER.)"
+        )
         r["{{voice_bible}}"] = voice_bible(settings)
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)

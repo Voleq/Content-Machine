@@ -581,3 +581,93 @@ def test_prior_coverage_survives_an_unreadable_book(settings, monkeypatch):
     book.path.parent.mkdir(parents=True, exist_ok=True)
     book.path.write_text("{not json", encoding="utf-8")
     assert prior_coverage(settings, "EXMPL") == ""
+
+
+# --------------------------------------------------------------------------
+# The update prompt — its own format, not the first-time one with history.
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def covered(settings, workspace):
+    """A workspace for a ticker with a real thesis on file, already checked."""
+    book = ThesisBook(settings)
+    book.record("EXMPL", "cheap for a reason, and the reason hasn't changed",
+                FakeData({"gross_margin": 0.744, "price": 10.0}),
+                workdate="2026-05-01", fmt="long",
+                hook="Revenue has not moved in five years.",
+                conclusion="Noise. A press release and a squeeze, stapled to "
+                           "five years of drift.",
+                claims=["The margin is the thesis",
+                        "Capital allocation: the buyback that is not one"])
+    book.check("EXMPL", FakeData({"gross_margin": 0.652, "price": 13.4}))
+    return workspace
+
+
+def test_the_update_prompt_fills_end_to_end(settings, covered):
+    import re
+
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "EXMPL", load_company_data(covered), covered,
+                       settings)
+    left = [m for m in re.findall(r"\{\{[a-z_]+\}\}", text)
+            if m != "{{placeholder}}"]
+    assert not left, f"unfilled placeholders: {left}"
+    # the previous video is the SPINE, not an appendix
+    assert "PRIOR COVERAGE" in text
+    assert 'It concluded, VERBATIM: "Noise. A press release' in text
+    assert "gross_margin ↓12%" in text
+    # the four movements, in order
+    for i, movement in enumerate(("WHAT I SAID", "WHAT HAPPENED",
+                                  "WAS I RIGHT", "WHAT NOW")):
+        assert movement in text, movement
+    order = [text.index(m) for m in ("WHAT I SAID", "WHAT HAPPENED",
+                                     "WAS I RIGHT", "WHAT NOW")]
+    assert order == sorted(order), "the movements are out of order"
+    # it inherits the bible and the tag grammar unchanged
+    assert "Dennis — voice bible" in text
+    assert "[SHOW FILING: file.png]" in text
+    assert "=== CHAPTERS ===" in text
+
+
+def test_the_update_prompt_refuses_to_let_a_miss_be_hedged(settings, covered):
+    """The one failure mode of the format: a miss laundered into a near-hit."""
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "EXMPL", load_company_data(covered), covered,
+                       settings)
+    assert "broadly the direction we identified" in text, \
+        "the hedge has to be named to be banned"
+    assert "I was wrong about" in text
+    assert "THESIS: BROKEN" in text
+
+
+def test_the_update_prompt_is_not_the_long_prompt(settings, covered):
+    """A different spine, not the first-time brief with history glued on."""
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    data = load_company_data(covered)
+    update = fill_prompt("update", "EXMPL", data, covered, settings)
+    long = fill_prompt("long_write", "EXMPL", data, covered, settings,
+                       chosen_angle="the value trap")
+    assert "THE FOUR MOVEMENTS" in update and "THE FOUR MOVEMENTS" not in long
+    assert "THE CHOSEN ANGLE" in long and "THE CHOSEN ANGLE" not in update
+    assert "STEP A — HOOK OPTIONS" in long and "STEP A" not in update
+    # an update is narrower, so it is shorter than the deep dive it follows
+    assert len(update) < len(long)
+
+
+def test_an_uncovered_ticker_says_so_rather_than_faking_a_history(
+        settings, workspace):
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "NEVER", load_company_data(workspace),
+                       workspace, settings)
+    assert "no thesis on file" in text
+    assert "/long TICKER" in text
+    assert "PRIOR COVERAGE" not in text
