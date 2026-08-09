@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from bot.prompts import (
+    BEAT_SITUATIONS,
     EXPRESSIVITY_AND_PACING,
     _chapter_kits,
     fill_prompt,
@@ -86,13 +87,120 @@ def test_the_short_catalog_carries_the_whole_beat_library(settings, kit):
     shown any of it, so every script reached for the same four beats."""
     catalog = kit_catalog(settings, fmt="short")
     assert "SHORT BEAT LIBRARY" in catalog
-    for family in ("dennis-vs-numbers", "vertical-scenes", "transformations",
-                   "the-world", "open-close"):
-        assert f"  {family}:" in catalog, family
     # slot names are what the writer supplies, so they have to be named — and
     # named the way they are TYPED, after the `=`, not counted.
     assert "takes rain-1" in catalog
     assert "6f loop" in catalog and "8f one-shot" in catalog
+
+
+# --------------------------------------------------------------------------
+# The beat library is grouped by SITUATION, not by folder.
+# --------------------------------------------------------------------------
+
+
+def test_every_situation_heading_holds_at_least_one_asset(settings):
+    """A heading with nothing under it is a menu section that teaches the
+    writer the library is thinner than it is."""
+    library = _library_sections(kit_catalog(settings, fmt="short"))
+    assert set(library) == set(BEAT_SITUATIONS), \
+        f"headings drifted: {sorted(set(BEAT_SITUATIONS) ^ set(library))}"
+    for heading, rows in library.items():
+        assert rows, f"{heading!r} is an empty heading"
+
+
+def test_every_placeable_beat_asset_appears_under_exactly_one_heading(settings, kit):
+    """The listing is a PARTITION of what `[PROP]` can reach.
+
+    Both halves matter. An asset under two headings is a menu that reads as a
+    bigger library than it is; an asset under none is artwork the writer is
+    never told about, which is the whole defect this replaces.
+    """
+    library = _library_sections(kit_catalog(settings, fmt="short"))
+    listed = [row.split(" — ")[0] for rows in library.values() for row in rows]
+    assert len(listed) == len(set(listed)), \
+        f"listed twice: {sorted({k for k in listed if listed.count(k) > 1})}"
+
+    reachable = {
+        key.rsplit("/", 1)[-1]
+        for fam in KIT_TAG_FAMILIES[TagType.PROP] if fam.startswith("shorts/")
+        for key in kit.family(fam) if kit.placeable(key)
+    }
+    assert reachable, "sanity: the shorts families are routed to [PROP]"
+    assert set(listed) == reachable, \
+        f"not listed: {sorted(reachable - set(listed))}; " \
+        f"listed but unreachable: {sorted(set(listed) - reachable)}"
+
+
+def test_it_only_offers_beats_the_prop_tag_can_actually_resolve(settings, kit):
+    """`shorts/the-world` and `shorts/open-close` are NOT routed to [PROP] —
+    the renderer places the desk and the signature open/close itself. The
+    catalog listed all six anyway, so it offered keys that resolve to nothing.
+    """
+    catalog = kit_catalog(settings, fmt="short")
+    for key in ("d-desk-wide", "d-desk-empty", "e-open", "e-close"):
+        assert kit.resolve(KIT_TAG_FAMILIES[TagType.PROP], key) is None, \
+            f"{key} now resolves — this test is stale, not the catalog"
+        assert f"- {key} —" not in catalog, f"{key} is offered and resolves to nothing"
+    for row in (r for rows in _library_sections(catalog).values() for r in rows):
+        key = row.split(" — ")[0]
+        assert kit.resolve(KIT_TAG_FAMILIES[TagType.PROP], key) is not None, \
+            f"the beat library offers {key!r}, which resolves to nothing"
+
+
+def test_the_long_writer_is_offered_the_square_subset(settings, kit):
+    """The 1:1 half composites into 16:9 without cropping, and the whole
+    library used to be gated behind fmt == "short". The 9:16 half stays
+    short-only: those were drawn to BE the vertical frame, and contain-fitting
+    one into 16:9 is the letterboxed stamp they were built not to be."""
+    long_library = _library_sections(kit_catalog(settings, fmt="long"))
+    assert long_library, "the long writer is offered no beats at all"
+    listed = {row.split(" — ")[0] for rows in long_library.values() for row in rows}
+    for key in listed:
+        asset = kit.resolve_asset(KIT_TAG_FAMILIES[TagType.PROP], key)
+        assert asset is not None and asset.aspect == "1:1", \
+            f"{key} is {asset.aspect if asset else 'unresolved'}, not 1:1"
+    assert "Fills the FULL HEIGHT" not in kit_catalog(settings, fmt="long")
+
+    short_listed = {row.split(" — ")[0]
+                    for rows in _library_sections(
+                        kit_catalog(settings, fmt="short")).values()
+                    for row in rows}
+    assert listed < short_listed, "the long subset should be strictly smaller"
+    assert all(kit.resolve_asset(KIT_TAG_FAMILIES[TagType.PROP], k).aspect == "9:16"
+               for k in short_listed - listed), \
+        "the short-only remainder should be exactly the full-height half"
+
+
+def test_a_new_shorts_asset_is_grouped_with_no_code_change(settings, tmp_path):
+    """Registry drift, the property that matters most.
+
+    The generator's best quality is that adding artwork never needs a code
+    change. A hand-maintained key -> situation table would cost exactly that,
+    so this adds an asset to a real registry — off disk, through the real read
+    path — and expects it to arrive in the catalog, under a heading, unaided.
+    """
+    import json
+
+    src = ROOT / "assets" / "kit"
+    dst = tmp_path / "assets" / "kit"
+    dst.mkdir(parents=True)
+    for child in src.iterdir():
+        if child.is_dir():
+            (dst / child.name).symlink_to(child)
+
+    registry = json.loads((src / "kit-registry.json").read_text(encoding="utf-8"))
+    entry = dict(registry["assets"]["shorts/dennis-vs-numbers/stand-in-hole"])
+    entry["name"] = "brand-new-hole"
+    entry["title"] = "An even deeper hole"
+    registry["assets"]["shorts/dennis-vs-numbers/brand-new-hole"] = entry
+    (dst / "kit-registry.json").write_text(json.dumps(registry), encoding="utf-8")
+
+    s = settings.model_copy(update={"assets_dir": tmp_path / "assets"})
+    library = _library_sections(kit_catalog(s, fmt="short"))
+    placed = [h for h, rows in library.items()
+              if any(r.startswith("brand-new-hole ") for r in rows)]
+    assert placed == ["ONE figure, and it went the wrong way"], \
+        f"the new drawing landed under {placed}"
 
 
 def test_the_short_catalog_shows_how_to_write_a_value(settings, kit):
@@ -110,15 +218,14 @@ def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):
     assert "brand-new-idea" not in before
 
     real = load_kit
+    NEW = "blanks/term-brand-new-idea"
 
     def patched(assets_dir):
         from dataclasses import replace
 
         k = real(assets_dir)
         template = k.get("blanks/term-card-blank")
-        k._assets["blanks/term-brand-new-idea"] = replace(
-            template, key="blanks/term-brand-new-idea",
-            name="term-brand-new-idea")
+        k._assets[NEW] = replace(template, key=NEW, name="term-brand-new-idea")
         k.family.cache_clear()
         return k
 
@@ -127,8 +234,18 @@ def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):
     import pipeline.kit as kit_mod
     monkeypatch.setattr(kit_mod, "load_kit", patched)
 
-    after = kit_catalog(settings)
-    assert "brand-new-idea" in after
+    try:
+        after = kit_catalog(settings)
+        assert "brand-new-idea" in after
+    finally:
+        # `load_kit` is cached per assets dir, so the object this reaches into
+        # is the ONE kit every other test in the session reads. Without this
+        # the injected asset outlives the test and the library silently gains
+        # a 443rd drawing — which is exactly what broke the reach counts when
+        # this module happened to run before tests/test_cost.py.
+        kit = real(settings.assets_dir)
+        kit._assets.pop(NEW, None)
+        kit.family.cache_clear()
 
 
 def test_the_blank_layouts_are_explained_rather_than_listed_as_frameworks(settings):
@@ -186,9 +303,13 @@ def test_it_stays_a_menu_not_a_dump_of_every_frame(settings, kit):
     carrying the slots it takes.
     """
     assert len(kit) >= 384, "sanity: the kit really is that big"
+    # The long budget grew once, when the beat library started being offered
+    # there too — the 1:1 half composites into 16:9 with no crop, and gating
+    # it behind fmt == "short" cost 38 drawings. ~38 rows of menu against a
+    # 22,000-char prompt is still a menu, not a dump of every frame.
     long_catalog = kit_catalog(settings, fmt="long")
-    assert len(long_catalog) < 5000, f"long catalog is {len(long_catalog)} chars"
-    assert len(long_catalog.splitlines()) < 70
+    assert len(long_catalog) < 8000, f"long catalog is {len(long_catalog)} chars"
+    assert len(long_catalog.splitlines()) < 100
     short_catalog = kit_catalog(settings, fmt="short")
     assert len(short_catalog) < 9000, f"short catalog is {len(short_catalog)} chars"
     assert len(short_catalog.splitlines()) < 130
@@ -201,8 +322,17 @@ def test_the_short_and_long_catalogs_differ_where_they_should(settings):
     assert "SHORT BEAT LIBRARY" in short and "SHORT BEAT LIBRARY" not in long
     assert "Chapter kits" in long and "Chapter kits" not in short
     # the tag families are the same in both
-    for header in ("[TERM: key]", "[PROP: key]", "[ALERT: kind]"):
+    #
+    # [TERM] and [BIGNUM] are NOT in this list, and that is not an oversight:
+    # the kit ships no named card for either — `blanks/{term-card,big-number}-
+    # blank` are the only artwork, and both are dropped from a list headed
+    # "frameworks that exist". So neither header appears in a clean catalog,
+    # and the blank-layout line is what carries them (asserted separately).
+    # This test asserted [TERM: key] in both for as long as a sibling test
+    # leaked an injected `term-brand-new-idea` into the shared cached kit.
+    for header in ("[PROP: key]", "[TABLE: kind]", "[ALERT: kind]"):
         assert header in short and header in long
+    assert "A blank layout exists" in short and "A blank layout exists" in long
 
 
 def test_a_missing_kit_says_so_and_points_at_the_escape_hatch(settings, tmp_path):
@@ -279,6 +409,35 @@ def test_no_placeholder_is_left_unfilled_in_any_template(settings, workspace):
 # --------------------------------------------------------------------------
 # helpers
 # --------------------------------------------------------------------------
+
+
+def _library_sections(catalog: str) -> dict[str, list[str]]:
+    """`{situation heading: [row, …]}` for the beat-library block.
+
+    Parsed back out of the rendered catalog rather than read off the helper
+    that built it — what the writer is shown is the thing under test.
+    """
+    out: dict[str, list[str]] = {}
+    heading = ""
+    inside = False
+    for line in catalog.splitlines():
+        if "BEAT LIBRARY —" in line:
+            inside = True
+            continue
+        if not inside:
+            continue
+        if line.startswith("    - "):
+            if heading:
+                out[heading].append(line[6:].strip())
+        elif line.startswith("  ") and line.rstrip().endswith(":"):
+            heading = line.strip().rstrip(":")
+            out.setdefault(heading, [])
+        elif line.startswith("  ") and ":  (" in line:
+            heading = line.strip().split(":  (")[0]
+            out.setdefault(heading, [])
+        elif not line.startswith("  "):
+            break
+    return out
 
 
 def _section(catalog: str, header: str) -> list[str]:

@@ -125,6 +125,20 @@ def _num(v: float) -> str:
 
 @dataclass
 class Thesis:
+    """What one video claimed, and the numbers it claimed it about.
+
+    `summary` was the whole record for a long time, and it is enough to remind
+    the OPERATOR which video this was. It is not enough for a writer: "I said
+    the margin would hold, and it didn't" needs the claim, not a label for it.
+    So the video's own words are pinned too.
+
+    Every field past `summary` is optional and defaults to empty, because there
+    is live state on the operator's disk and this module's whole premise is
+    that the interesting failure is a reboot mid-week, not a migration. A
+    thesis recorded before these existed still loads, and the prompt says which
+    fields are absent rather than inventing them.
+    """
+
     ticker: str
     summary: str                       # the angle, in the operator's words
     numbers: dict[str, float] = field(default_factory=dict)
@@ -133,6 +147,11 @@ class Thesis:
     status: str = "intact"             # intact | cracking | broken
     checked_at: str = ""
     last_moves: list[dict] = field(default_factory=list)
+    # What the video actually said, for the writer of the next one.
+    hook: str = ""                     # what it opened on
+    conclusion: str = ""               # the closing claim, verbatim
+    claims: list[str] = field(default_factory=list)   # the 2-3 things asserted
+    fmt: str = ""                      # short | long
 
     def to_json(self) -> dict:
         return asdict(self)
@@ -150,14 +169,28 @@ class ThesisBook:
 
     def get(self, ticker: str) -> Thesis | None:
         row = self._all().get(ticker.upper())
-        return Thesis(**row) if row else None
+        if not row:
+            return None
+        # Unknown keys are dropped rather than raised on: a file written by a
+        # NEWER build than the one reading it is the other half of the
+        # compatibility this record is designed for, and a TypeError there
+        # would take the whole book down, not one row.
+        known = {f for f in Thesis.__dataclass_fields__}
+        return Thesis(**{k: v for k, v in row.items() if k in known})
 
     def tickers(self) -> list[str]:
         return sorted(self._all())
 
     def record(self, ticker: str, summary: str, data, *,
-               workdate: str = "", tracked: Sequence[str] = ()) -> Thesis:
-        """Pin the thesis and the numbers it rests on, at ship time."""
+               workdate: str = "", tracked: Sequence[str] = (),
+               hook: str = "", conclusion: str = "",
+               claims: Sequence[str] = (), fmt: str = "") -> Thesis:
+        """Pin the thesis, the numbers it rests on, and what it said.
+
+        Everything past `summary` is optional at the call site as well as in
+        the record: this runs at ship time, best-effort, and a video that
+        delivered must never be turned into a failure by bookkeeping.
+        """
         fields = list(tracked or DEFAULT_TRACKED)
         numbers = {}
         for f in fields:
@@ -166,7 +199,11 @@ class ThesisBook:
                 numbers[f] = v
         t = Thesis(ticker=ticker.upper(), summary=summary.strip(),
                    numbers=numbers, recorded_at=_now().isoformat(),
-                   workdate=workdate)
+                   workdate=workdate,
+                   hook=(hook or "").strip(),
+                   conclusion=(conclusion or "").strip(),
+                   claims=[c.strip() for c in claims if c and c.strip()],
+                   fmt=fmt)
         rows = self._all()
         rows[t.ticker] = t.to_json()
         _write(self.path, rows)
@@ -246,14 +283,21 @@ def _value_of(data, field_name: str) -> float | None:
     return None
 
 
-def update_warranted(moves: Sequence[Move]) -> str:
-    """The message, or "" when nothing is worth interrupting for."""
+def update_warranted(moves: Sequence[Move], ticker: str = "") -> str:
+    """The message, or "" when nothing is worth interrupting for.
+
+    It names the action now. "An update video is warranted" told the operator
+    a conclusion and left them to work out what to type — and what they typed
+    was `/long`, which filled a prompt identical to a first-time one and
+    forgot everything this notice had just proved the bot knew.
+    """
     if not moves:
         return ""
     lines = [m.render() for m in moves[:6]]
+    action = (f"\n An update video is warranted: /update {ticker.upper()}"
+              if ticker else "\n An update video is warranted.")
     return ("📌 the numbers behind this thesis moved:\n  "
-            + "\n  ".join(lines)
-            + "\n An update video is warranted.")
+            + "\n  ".join(lines) + action)
 
 
 # --------------------------------------------------------------------------

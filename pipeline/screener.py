@@ -333,8 +333,17 @@ def make_sources(settings: Settings) -> tuple[MarketSource, SentimentSource]:
 
 
 def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidate]]:
-    """Returns {'trending': [...], 'value': [...]} after hygiene, cooldown
-    dedup and top-N capping. Never raises; empty lanes mean degraded."""
+    """Returns {'trending': [...], 'value': [...], 'updates': [...]} after
+    hygiene, cooldown dedup and top-N capping. Never raises; empty lanes mean
+    degraded.
+
+    The cooldown suppresses a recently-covered ticker as a FRESH candidate,
+    which is right and stays. It must not suppress an update, because being
+    recently covered is the precondition for one rather than a reason to skip
+    it — a thesis that broke three weeks after the video is the single
+    strongest thing this bot knows, and the cooldown was hiding it from the one
+    surface the operator reads every morning.
+    """
     market, sentiment = make_sources(settings)
     cooled = audited_tickers_since(settings, settings.cooldown_days)
     st_symbols = None
@@ -366,6 +375,11 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
                  if c.ticker not in cooled]
         result["value"] = cands[: settings.screen_top_n]
 
+    # The update lane, exempt from the cooldown by construction: it is built
+    # from the thesis book rather than from candidates, and every ticker in it
+    # is cooled — that is what having covered it means.
+    result["updates"] = _theses_worth_revisiting(settings)  # type: ignore[assignment]
+
     _save_last_screen(settings, result)
     # Every screen feeds the standing backlog (P3.3), so a session opens with
     # a list instead of a blank page. Best-effort — bookkeeping must never
@@ -377,6 +391,27 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
     except Exception as e:  # noqa: BLE001
         log.warning("could not feed the idea queue: %s", e)
     return result
+
+
+def _theses_worth_revisiting(settings: Settings) -> list[str]:
+    """Covered tickers whose thesis is no longer intact.
+
+    Read off the last recorded check rather than re-checking here: a screen
+    runs against live sources and this must not turn into a second data pull
+    that can fail. `/thesis` is what updates the status; this only surfaces it.
+
+    Best-effort, like every other piece of standing-state bookkeeping in this
+    module — a screen still screens when the book is unreadable.
+    """
+    try:
+        from pipeline.standing import ThesisBook
+
+        book = ThesisBook(settings)
+        return [t for t in book.tickers()
+                if (book.get(t) or None) and book.get(t).status != "intact"]
+    except Exception as e:  # noqa: BLE001
+        log.warning("could not read the thesis book for the update lane: %s", e)
+        return []
 
 
 def _save_last_screen(settings: Settings, result: dict) -> None:
@@ -452,6 +487,10 @@ def digest_text(result: dict) -> str:
             lines.append("  (no candidates passed the filters)")
         for c in result["value"]:
             lines.append(f"  {c.ticker}: {c.why}")
+    if result.get("updates"):
+        lines.append("🔁 Already covered, thesis moved (UPDATE candidates)")
+        for ticker in result["updates"]:
+            lines.append(f"  {ticker}: /update {ticker}")
     lines.append("\nTap a ticker to open its workspace (/new).")
     return "\n".join(lines)
 

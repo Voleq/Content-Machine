@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from pipeline.workspace import Workspace, today_str
 from pipeline.standing import (
     BatchQueue,
     IdeaQueue,
@@ -419,3 +420,472 @@ def test_thesis_bookkeeping_cannot_fail_a_shipped_video(core, settings, monkeypa
     job = JobRecord(id="j2", kind=JobKind.RENDER_LONG, ticker="EXMPL",
                     workdate="2026-07-26")
     core._record_thesis(job)          # must not raise
+
+
+# --------------------------------------------------------------------------
+# What the bot remembers about a stock between videos (Stage B).
+# --------------------------------------------------------------------------
+
+
+OLD_SCHEMA = {
+    "EXMPL": {
+        "ticker": "EXMPL",
+        "summary": "cheap for a reason, and the reason hasn't changed",
+        "numbers": {"price": 10.0, "gross_margin": 0.40},
+        "recorded_at": "2026-05-01T09:00:00+00:00",
+        "workdate": "2026-05-01",
+        "status": "intact",
+        "checked_at": "",
+        "last_moves": [],
+    }
+}
+
+
+def test_a_thesis_written_by_an_older_build_still_loads(settings):
+    """The one that protects live state.
+
+    There is a theses.json on the operator's disk written before `hook`,
+    `conclusion`, `claims` and `fmt` existed. A schema change that drops it is
+    a real regression — the module's own premise is that the interesting
+    failure is a reboot mid-week, not a migration.
+    """
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text(json.dumps(OLD_SCHEMA), encoding="utf-8")
+
+    t = book.get("EXMPL")
+    assert t is not None
+    assert t.summary.startswith("cheap for a reason")
+    assert t.numbers["price"] == 10.0
+    # the new fields are absent, not wrong
+    assert t.hook == "" and t.conclusion == "" and t.claims == [] and t.fmt == ""
+
+
+def test_a_row_from_a_newer_build_does_not_take_the_book_down(settings):
+    """The other direction: a field this build has never heard of is dropped,
+    not raised on. One unknown key must not cost every thesis on file."""
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    row = dict(OLD_SCHEMA["EXMPL"], something_from_the_future="hello")
+    book.path.write_text(json.dumps({"EXMPL": row}), encoding="utf-8")
+    assert book.get("EXMPL").summary.startswith("cheap for a reason")
+
+
+def test_the_widened_record_round_trips(settings):
+    book = ThesisBook(settings)
+    book.record("exmpl", "the value trap", FakeData({"price": 10.0}),
+                hook="EXMPL is up 29% today. The business is not.",
+                conclusion="Noise. Set a reminder for the next 10-Q.",
+                claims=["Revenue has flatlined", "The share count grows 6% a year"],
+                fmt="short")
+
+    t = ThesisBook(settings).get("EXMPL")     # a fresh book: off disk, not memory
+    assert t.hook.startswith("EXMPL is up 29%")
+    assert t.conclusion == "Noise. Set a reminder for the next 10-Q."
+    assert t.claims == ["Revenue has flatlined",
+                        "The share count grows 6% a year"]
+    assert t.fmt == "short"
+    # and a check() still writes it back without losing any of it
+    ThesisBook(settings).check("EXMPL", FakeData({"price": 30.0}))
+    assert ThesisBook(settings).get("EXMPL").conclusion.startswith("Noise.")
+
+
+def test_a_short_records_its_own_structured_fields(short_valid_json, settings):
+    from bot.handlers import _what_it_said
+    from pipeline.parser_short import parse_short_script
+
+    script, _ = parse_short_script(short_valid_json, settings)
+    said = _what_it_said(script, "short")
+    assert said["hook"] == script.hook_text
+    assert said["conclusion"] == script.conclusion
+    assert script.numbers_comment in said["claims"]
+
+
+def test_a_long_records_a_conclusion_from_its_last_two_sentences(
+        long_valid_text, settings):
+    """LongScript carries only narration and the chapter trailer, so the
+    closing claim has to be read back out of the prose. The format ends on
+    the verdict, which is what makes the last two sentences the right ones."""
+    from bot.handlers import _what_it_said
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    said = _what_it_said(script, "long")
+    assert said["conclusion"], "the long path produced no conclusion"
+    assert said["conclusion"] in script.narration.replace("\n", " ") or \
+        said["conclusion"].split()[-1] in script.narration
+    assert said["hook"], "the long path produced no hook"
+
+
+def test_reading_back_a_missing_script_is_not_an_error():
+    from bot.handlers import _what_it_said
+
+    assert _what_it_said(None, "long") == {}
+    assert _what_it_said(None, "short") == {}
+
+
+def test_prior_coverage_is_empty_when_nothing_is_on_file(settings):
+    """A name we have never covered has nothing to say, and a heading over an
+    empty block is worse than no heading."""
+    from bot.prompts import prior_coverage
+
+    assert prior_coverage(settings, "NEVER") == ""
+    assert prior_coverage(settings, "") == ""
+
+
+def test_prior_coverage_renders_an_old_record_without_inventing_fields(settings):
+    """A writer told "the conclusion is not on file" writes around it. A
+    writer told nothing invents a conclusion that was never made and then
+    grades the channel against a claim it never put on screen."""
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text(json.dumps(OLD_SCHEMA), encoding="utf-8")
+
+    block = prior_coverage(settings, "exmpl")
+    assert "PRIOR COVERAGE" in block
+    assert "cheap for a reason" in block
+    assert "2026-05-01" in block
+    assert "NOT ON FILE" in block
+    assert "the conclusion" in block and "the specific claims" in block
+    assert "do NOT invent them" in block
+    assert "VERBATIM" not in block, "it has no conclusion — it must not print one"
+
+
+def test_prior_coverage_carries_the_claims_and_what_moved(settings):
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.record("EXMPL", "the value trap", FakeData({"gross_margin": 0.744}),
+                workdate="2026-05-01", fmt="long",
+                hook="Revenue has not moved in five years.",
+                conclusion="Noise. Set a reminder for the next 10-Q.",
+                claims=["Margins hold", "The buyback is real"])
+    book.check("EXMPL", FakeData({"gross_margin": 0.652}))
+
+    block = prior_coverage(settings, "EXMPL")
+    assert "(LONG)" in block
+    assert 'It concluded, VERBATIM: "Noise. Set a reminder for the next 10-Q."' in block
+    assert "- Margins hold" in block and "- The buyback is real" in block
+    assert "Thesis status: cracking" in block
+    # rendered by Move.render(), not by a second formatter
+    assert "gross_margin ↓12%" in block
+    assert "NOT ON FILE" not in block
+
+
+def test_prior_coverage_survives_an_unreadable_book(settings, monkeypatch):
+    """It is injected into a prompt. It never blocks one."""
+    from bot.prompts import prior_coverage
+
+    book = ThesisBook(settings)
+    book.path.parent.mkdir(parents=True, exist_ok=True)
+    book.path.write_text("{not json", encoding="utf-8")
+    assert prior_coverage(settings, "EXMPL") == ""
+
+
+# --------------------------------------------------------------------------
+# The update prompt — its own format, not the first-time one with history.
+# --------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def covered(settings, workspace):
+    """A workspace for a ticker with a real thesis on file, already checked."""
+    book = ThesisBook(settings)
+    book.record("EXMPL", "cheap for a reason, and the reason hasn't changed",
+                FakeData({"gross_margin": 0.744, "price": 10.0}),
+                workdate="2026-05-01", fmt="long",
+                hook="Revenue has not moved in five years.",
+                conclusion="Noise. A press release and a squeeze, stapled to "
+                           "five years of drift.",
+                claims=["The margin is the thesis",
+                        "Capital allocation: the buyback that is not one"])
+    book.check("EXMPL", FakeData({"gross_margin": 0.652, "price": 13.4}))
+    return workspace
+
+
+def test_the_update_prompt_fills_end_to_end(settings, covered):
+    import re
+
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "EXMPL", load_company_data(covered), covered,
+                       settings)
+    left = [m for m in re.findall(r"\{\{[a-z_]+\}\}", text)
+            if m != "{{placeholder}}"]
+    assert not left, f"unfilled placeholders: {left}"
+    # the previous video is the SPINE, not an appendix
+    assert "PRIOR COVERAGE" in text
+    assert 'It concluded, VERBATIM: "Noise. A press release' in text
+    assert "gross_margin ↓12%" in text
+    # the four movements, in order
+    for i, movement in enumerate(("WHAT I SAID", "WHAT HAPPENED",
+                                  "WAS I RIGHT", "WHAT NOW")):
+        assert movement in text, movement
+    order = [text.index(m) for m in ("WHAT I SAID", "WHAT HAPPENED",
+                                     "WAS I RIGHT", "WHAT NOW")]
+    assert order == sorted(order), "the movements are out of order"
+    # it inherits the bible and the tag grammar unchanged
+    assert "Dennis — voice bible" in text
+    assert "[SHOW FILING: file.png]" in text
+    assert "=== CHAPTERS ===" in text
+
+
+def test_the_update_prompt_refuses_to_let_a_miss_be_hedged(settings, covered):
+    """The one failure mode of the format: a miss laundered into a near-hit."""
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "EXMPL", load_company_data(covered), covered,
+                       settings)
+    assert "broadly the direction we identified" in text, \
+        "the hedge has to be named to be banned"
+    assert "I was wrong about" in text
+    assert "THESIS: BROKEN" in text
+
+
+def test_the_update_prompt_is_not_the_long_prompt(settings, covered):
+    """A different spine, not the first-time brief with history glued on."""
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    data = load_company_data(covered)
+    update = fill_prompt("update", "EXMPL", data, covered, settings)
+    long = fill_prompt("long_write", "EXMPL", data, covered, settings,
+                       chosen_angle="the value trap")
+    assert "THE FOUR MOVEMENTS" in update and "THE FOUR MOVEMENTS" not in long
+    assert "THE CHOSEN ANGLE" in long and "THE CHOSEN ANGLE" not in update
+    assert "STEP A — HOOK OPTIONS" in long and "STEP A" not in update
+    # an update is narrower, so it is shorter than the deep dive it follows
+    assert len(update) < len(long)
+
+
+def test_an_uncovered_ticker_says_so_rather_than_faking_a_history(
+        settings, workspace):
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("update", "NEVER", load_company_data(workspace),
+                       workspace, settings)
+    assert "no thesis on file" in text
+    assert "/long TICKER" in text
+    assert "PRIOR COVERAGE" not in text
+
+
+# --------------------------------------------------------------------------
+# /update — the trigger names the action, and the action is explicit.
+# --------------------------------------------------------------------------
+
+
+def test_the_notice_names_the_command_not_just_the_conclusion(settings):
+    """"An update video is warranted" told the operator a conclusion and left
+    them to work out what to type. What they typed was /long."""
+    moves = [Move(field="gross_margin", before=0.744, after=0.652)]
+    assert "/update EXMPL" in update_warranted(moves, "exmpl")
+    # and it still stands alone when nobody passed a ticker
+    assert "warranted" in update_warranted(moves)
+
+
+def test_update_on_an_uncovered_ticker_points_at_long(core, settings):
+    reply = core.start_lane(1, "long", "NEVER", update=True)
+    assert "No thesis on file" in reply.text
+    assert "/long NEVER" in reply.text
+    ws = Workspace(settings, "NEVER", today_str())
+    assert not ws.path.exists(), "it must not open a workspace it cannot fill"
+
+
+def test_update_opens_a_long_workspace_with_no_angle_step(core, settings):
+    ThesisBook(settings).record("EXMPL", "the value trap",
+                                FakeData({"price": 10.0}))
+    reply = core.start_lane(1, "long", "EXMPL", update=True)
+    assert "UPDATE" in reply.text
+
+    ws = Workspace(settings, "EXMPL", today_str())
+    assert ws.lane() == "long", "an update renders as a long"
+    assert ws.is_update()
+    assert not ws.awaiting_angle(), "an update has no angle to pick"
+    assert ws.current_format() == "long", \
+        "the render path must still see a plain long"
+
+
+def test_a_plain_long_is_not_an_update(core, settings):
+    core.start_lane(1, "long", "EXMPL")
+    ws = Workspace(settings, "EXMPL", today_str())
+    assert not ws.is_update()
+    assert ws.awaiting_angle()
+
+
+def test_the_update_workspace_hands_back_the_update_prompt(core, settings, tmp_path):
+    import shutil
+
+    ThesisBook(settings).record("EXMPL", "the value trap",
+                                FakeData({"price": 10.0}), fmt="long",
+                                conclusion="Noise.", claims=["The margin is the thesis"])
+    core.start_lane(1, "long", "EXMPL", update=True)
+    ws = Workspace(settings, "EXMPL", today_str())
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+
+    reply = core.prompts_reply(1)
+    assert "UPDATE" in reply.text
+    names = [f.name for f in reply.files]
+    assert names == ["prompt_update.md"], names
+    assert "THE FOUR MOVEMENTS" in (ws.path / "prompt_update.md").read_text(
+        encoding="utf-8")
+
+
+def test_the_help_text_offers_it(core):
+    from bot.handlers import HELP_TEXT
+
+    assert "/update TICKER" in HELP_TEXT
+
+
+# --------------------------------------------------------------------------
+# The cooldown suppresses fresh coverage. An update is the opposite of that.
+# --------------------------------------------------------------------------
+
+
+def _covered_recently(settings, ticker: str) -> None:
+    """A workspace dated today — which is what the cooldown reads."""
+    Workspace(settings, ticker, today_str()).create()
+
+
+def test_a_cooled_ticker_is_still_not_a_fresh_candidate(settings, monkeypatch):
+    """The screener's own suppression is left alone: covering a name three
+    weeks ago is still a reason not to pitch it as a new one."""
+    from pipeline import screener
+
+    _covered_recently(settings, "EXMPL")
+    result = screener.run_screen(settings, "all")
+    fresh = {c.ticker for lane in ("trending", "value")
+             for c in result.get(lane, [])}
+    assert "EXMPL" not in fresh
+
+
+def test_a_moved_thesis_is_exempt_from_the_cooldown(settings):
+    """Being recently covered is the PRECONDITION for an update, not a reason
+    to skip it — and every ticker in this lane is cooled by definition."""
+    from pipeline import screener
+
+    _covered_recently(settings, "EXMPL")
+    book = ThesisBook(settings)
+    book.record("EXMPL", "the margin is the thesis",
+                FakeData({"gross_margin": 0.744}))
+    book.check("EXMPL", FakeData({"gross_margin": 0.652}))   # -12%, cracking
+
+    result = screener.run_screen(settings, "all")
+    assert "EXMPL" in result["updates"]
+    assert "EXMPL" not in {c.ticker for lane in ("trending", "value")
+                           for c in result.get(lane, [])}
+    assert "/update EXMPL" in screener.digest_text(result)
+
+
+def test_an_intact_thesis_is_not_an_update_candidate(settings):
+    from pipeline import screener
+
+    book = ThesisBook(settings)
+    book.record("EXMPL", "nothing has changed", FakeData({"price": 10.0}))
+    book.check("EXMPL", FakeData({"price": 10.2}))           # +2%, intact
+    assert screener.run_screen(settings, "all")["updates"] == []
+
+
+def test_an_unreadable_thesis_book_does_not_break_a_screen(settings):
+    from pipeline import screener
+
+    path = settings.state_dir / "theses.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("{not json", encoding="utf-8")
+    result = screener.run_screen(settings, "all")
+    assert result["updates"] == []
+    assert "trending" in result, "a screen still screens"
+
+
+# --------------------------------------------------------------------------
+# The whole loop, across every seam: ship -> remember -> tell the next writer.
+# --------------------------------------------------------------------------
+
+
+def test_a_shipped_short_reaches_the_next_writers_prompt(core, settings,
+                                                         short_valid_json):
+    """The loop used to be remember -> notify -> FORGET. Every piece of it is
+    tested above in isolation; this is the one that crosses the seams, because
+    every one of those seams is where it used to fall apart.
+    """
+    import shutil
+
+    from bot.prompts import fill_prompt, prior_coverage
+    from pipeline.company_data import load_company_data
+    from pipeline.models import JobKind, JobRecord
+    from pipeline.parser_short import parse_short_script
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    script, _ = parse_short_script(short_valid_json, settings)
+    ws.save_short(script, short_valid_json)
+
+    # 1. it ships
+    core._record_thesis(JobRecord(id="j1", kind=JobKind.RENDER_SHORT,
+                                  ticker="EXMPL", workdate=ws.workdate))
+
+    # 2. the book has what it actually said, not just a label for it
+    thesis = ThesisBook(settings).get("EXMPL")
+    assert thesis is not None
+    assert thesis.fmt == "short"
+    assert thesis.conclusion == script.conclusion
+    assert thesis.hook == script.hook_text
+
+    # 3. the writer of the next one is told
+    block = prior_coverage(settings, "EXMPL")
+    assert script.conclusion in block
+    assert "NOT ON FILE" not in block
+
+    # 4. and it is in the prompt they are handed
+    text = fill_prompt("update", "EXMPL", load_company_data(ws.path), ws.path,
+                       settings)
+    assert script.conclusion in text
+    assert "WHAT I SAID" in text
+
+
+def test_a_shipped_long_reaches_it_too(core, settings, long_valid_text):
+    """The LONG has no structured fields, so this crosses the read-back path
+    that has to reconstruct the claim out of prose."""
+    import shutil
+
+    from bot.prompts import prior_coverage
+    from pipeline.models import JobKind, JobRecord
+    from pipeline.parser_long import parse_long_script
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    ws.save_long(script, long_valid_text)
+    ws.set_chosen_angle("the value trap")
+
+    core._record_thesis(JobRecord(id="j2", kind=JobKind.RENDER_LONG,
+                                  ticker="EXMPL", workdate=ws.workdate))
+
+    thesis = ThesisBook(settings).get("EXMPL")
+    assert thesis.fmt == "long"
+    assert thesis.summary == "the value trap"
+    assert thesis.conclusion, "the last-two-sentences path produced nothing"
+
+    block = prior_coverage(settings, "EXMPL")
+    assert thesis.conclusion in block
+    assert "(LONG)" in block
+
+
+def test_bookkeeping_never_fails_a_shipped_video(core, settings, monkeypatch):
+    """A video that delivered must not be turned into a failed job by the
+    record-keeping that runs after it."""
+    from pipeline.models import JobKind, JobRecord
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    # no data export at all, and a script that cannot be read back
+    monkeypatch.setattr(ThesisBook, "record",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("disk")))
+    core._record_thesis(JobRecord(id="j3", kind=JobKind.RENDER_SHORT,
+                                  ticker="EXMPL", workdate=ws.workdate))

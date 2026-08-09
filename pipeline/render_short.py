@@ -88,6 +88,7 @@ from pipeline.models import (
     parse_scribble_payload,
 )
 from pipeline.prices import PriceSeries, get_price_history
+from pipeline.reach import rendered_reach
 from pipeline.rasters import (
     INK,
     RED,
@@ -1332,6 +1333,12 @@ def render_short(
             beat_ledger.record(asset.family, asset.key)
     beat_ledger.save()
 
+    # Said out loud, in the same shape the approval report uses. `kit_assets_used`
+    # has been in this manifest since the kit existed and nobody ever opened it,
+    # which is how a short reaching 17 of 442 assets stayed unremarked.
+    reach = rendered_reach(used_keys, kit)
+    log.info("short: %s", reach.line())
+
     if unresolved:
         log.warning("short: %d tag key(s) did not resolve: %s",
                     len(unresolved), ", ".join(unresolved))
@@ -1378,6 +1385,7 @@ def render_short(
         # the export's own news row.
         "articles": articles,
         "kit_assets_used": sorted(used_keys),
+        "kit_reach": reach.line(),
         "layer_names": sorted({l.name for l in layers}),
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}
@@ -1425,9 +1433,8 @@ def _place_evidence(*, kit: Kit, tag, value: str, cue, script: ShortScript,
         """
         placed0, x, top = _frame_for(frames[0], register, box, y, W, H, px,
                                      asset, punct=not is_data)
+        out = _roll_frames_matched(frames, placed0, register)
         size = placed0.size
-        out = [placed0] + [f.resize(size, Image.LANCZOS) if f.size != size
-                           else f for f in frames[1:]]
         if note is not None:
             note(name, size[0], size[1], is_data=is_data)
         clip = frames_to_alpha_clip(out, fps, rdir / f"{name}.mov")
@@ -1705,6 +1712,37 @@ def _transform_for(register: str, asset, box, W: int, H: int, px):
         return fit_to_frame(img, box, W, H, px)
 
     return framed
+
+
+def _roll_frames_matched(frames, first, register: str) -> list:
+    """A roll's frames, every one framed exactly like the first.
+
+    The framing is computed once off frame 0 on purpose — every frame of a
+    roll is the same drawing with a different figure in it, so re-fitting each
+    one would let the beat breathe by a pixel as the digits change width.
+
+    But `FULL_BLEED` is not only a size, it is a paper plate: full-frame kit
+    assets carry alpha, and resizing one onto the plate's dimensions does not
+    make it opaque. Only frame 0 was going through `cover_on_paper`, so a
+    counted-in full-frame beat was opaque for one frame and transparent for
+    the rest of the roll — the gut-check sheet showing straight through the
+    drawing that was meant to replace it. The count-up path is the one the
+    committed fixture never exercised, which is why nothing caught it.
+    """
+    from PIL import Image
+
+    size = first.size
+    out = [first]
+    for frame in frames[1:]:
+        if register == FULL_BLEED:
+            # Same call, same geometry: `cover_on_paper` is a function of the
+            # target size, not of the frame handed to it.
+            out.append(cover_on_paper(frame, *size))
+        elif frame.size != size:
+            out.append(frame.resize(size, Image.LANCZOS))
+        else:
+            out.append(frame)
+    return out
 
 
 def _frame_for(img, register: str, box, y: int, W: int, H: int, px, asset=None,

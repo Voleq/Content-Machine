@@ -822,6 +822,12 @@ class CostReport(BaseModel):
     est_render_minutes: float = 0.0  # estimated ffmpeg processing time (min)
     mtd_spend_usd: float = 0.0
     monthly_cap_usd: float = 0.0
+    # How much of the 442-asset kit this script asks for. It lived only in
+    # `kit_assets_used` in a render manifest nobody opens, so a short reaching
+    # 17 assets and one beat-library scene went unremarked for months. The
+    # approval screen is the last moment a thin script can be sent back, so
+    # this is the moment to say it.
+    kit_reach: str = ""
     warnings: list[str] = Field(default_factory=list)
     blocking: list[str] = Field(default_factory=list)
     script_sha: str = ""
@@ -892,6 +898,8 @@ class CostReport(BaseModel):
         if self.fmt == "long":
             lines.append(f"Filing overlays: {self.filing_overlays or 'not used'}   "
                          f"Memes: {self.meme_count}/{self.meme_cap}")
+        if self.kit_reach:
+            lines.append(self.kit_reach)
         lines.append(
             f"Est. render: ~{self.est_render_minutes:.0f} min   "
             f"MTD spend: ${self.mtd_spend_usd:.2f} / ${self.monthly_cap_usd:.2f} cap"

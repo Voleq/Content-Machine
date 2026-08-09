@@ -1,10 +1,13 @@
 {
   "ticker": "EXMPL",
-  "duration": 51.872993,
-  "opener": "NOISE OR SIGNAL?",
+  "proof": false,
+  "audio_tier": "mock",
+  "draft_audio": false,
+  "duration": 71.493991,
+  "opener": "YOUR GROUP CHAT FOUND A STOCK.",
   "theme": "light",
   "host": {
-    "shots": 3,
+    "shots": 5,
     "bookends": true,
     "motion": [
       {
@@ -28,14 +31,32 @@
       {
         "name": "beat0",
         "shot": "chapters/bull-vs-bear/dennis-both-hands",
-        "blinks": 2,
+        "blinks": 0,
+        "idle_frames": 0,
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 1
+      },
+      {
+        "name": "beat1",
+        "shot": "chapters/the-numbers/chart-bars",
+        "blinks": 0,
+        "idle_frames": 0,
+        "has_blink": true,
+        "has_idle": true,
+        "idle_cycles": 2
+      },
+      {
+        "name": "beat2",
+        "shot": "chapters/valuation/dennis-weighing",
+        "blinks": 1,
         "idle_frames": 0,
         "has_blink": true,
         "has_idle": true,
         "idle_cycles": 1
       }
     ],
-    "blinks": 4
+    "blinks": 3
   },
   "chart": {
     "source": "fixture",
@@ -59,13 +80,30 @@
       "kind": "hook",
       "payload": {
         "text": "EXMPL is up 29% today. The business is not.",
-        "until": 8.756,
-        "variant": "e"
+        "until": 8.7228,
+        "variant": "b"
       },
       "fallback": false
     },
     {
-      "t": 2.2522,
+      "t": 0.739,
+      "kind": "prop",
+      "payload": {
+        "value": "chart-ride-up",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "": "+29%"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 2.2441,
       "kind": "annotation",
       "payload": {
         "index": 0,
@@ -77,7 +115,16 @@
       "fallback": false
     },
     {
-      "t": 8.756,
+      "t": 7.0213,
+      "kind": "doodle",
+      "payload": {
+        "value": "injokes/rocket-to-the-moon",
+        "hold": 1.6
+      },
+      "fallback": false
+    },
+    {
+      "t": 8.7228,
       "kind": "transition",
       "payload": {
         "name": "why"
@@ -85,40 +132,90 @@
       "fallback": false
     },
     {
-      "t": 8.906,
+      "t": 8.8728,
       "kind": "headline",
       "payload": {
         "index": 0,
         "text": "EXMPL announces AI partnership",
         "meaning": "A press release, not a purchase order \u2014 no revenue attached.",
-        "until": 26.4105,
-        "variant": "a"
+        "until": 16.872799999999998,
+        "variant": "b"
       },
       "fallback": false
     },
     {
-      "t": 17.733249999999998,
-      "kind": "headline",
+      "t": 13.566,
+      "kind": "prop",
       "payload": {
-        "index": 1,
-        "text": "Squeeze chatter on retail forums",
-        "meaning": "11% of the float is short. The crowd noticed and piled in.",
-        "until": 26.4105,
-        "variant": "a"
+        "value": "c-press-release-crumple",
+        "tag": "PROP",
+        "style": "",
+        "values": {},
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
       },
       "fallback": false
     },
     {
-      "t": 26.41,
+      "t": 15.566,
       "kind": "host_beat",
       "payload": {
-        "until": 40.52,
+        "until": 20.968,
         "variant": "beat"
       },
       "fallback": false
     },
     {
-      "t": 26.4105,
+      "t": 17.0339,
+      "kind": "doodle",
+      "payload": {
+        "value": "concepts/hype-vs-reality",
+        "hold": 1.6
+      },
+      "fallback": false
+    },
+    {
+      "t": 20.968399999999995,
+      "kind": "headline",
+      "payload": {
+        "index": 1,
+        "text": "Squeeze chatter on retail forums",
+        "meaning": "11% of the float is short. The crowd noticed and piled in.",
+        "until": 28.968399999999995,
+        "variant": "b"
+      },
+      "fallback": false
+    },
+    {
+      "t": 30.515,
+      "kind": "prop",
+      "payload": {
+        "value": "c-number-deflate",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "": "$496M"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 31.6927,
+      "kind": "doodle",
+      "payload": {
+        "value": "concepts/zzz-boring",
+        "hold": 1.6
+      },
+      "fallback": false
+    },
+    {
+      "t": 32.913999999999994,
       "kind": "transition",
       "payload": {
         "name": "gut"
@@ -126,17 +223,17 @@
       "fallback": false
     },
     {
-      "t": 26.4105,
+      "t": 32.913999999999994,
       "kind": "numbers",
       "payload": {
         "rows": 4,
-        "until": 51.872993,
-        "variant": "c"
+        "until": 71.493991,
+        "variant": "a"
       },
       "fallback": false
     },
     {
-      "t": 26.7605,
+      "t": 33.263999999999996,
       "kind": "number_row",
       "payload": {
         "index": 0,
@@ -153,7 +250,33 @@
       "fallback": false
     },
     {
-      "t": 30.0753,
+      "t": 36.012,
+      "kind": "prop",
+      "payload": {
+        "value": "chart-off-cliff",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "": "-$89M"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 38.012,
+      "kind": "host_beat",
+      "payload": {
+        "until": 42.425,
+        "variant": "beat"
+      },
+      "fallback": false
+    },
+    {
+      "t": 38.19414999999999,
       "kind": "number_row",
       "payload": {
         "index": 1,
@@ -170,7 +293,7 @@
       "fallback": false
     },
     {
-      "t": 30.3253,
+      "t": 38.44414999999999,
       "kind": "annotation",
       "payload": {
         "index": 1,
@@ -182,7 +305,7 @@
       "fallback": false
     },
     {
-      "t": 30.3753,
+      "t": 38.49414999999999,
       "kind": "zoom",
       "payload": {
         "row_index": 1
@@ -190,7 +313,24 @@
       "fallback": false
     },
     {
-      "t": 33.390100000000004,
+      "t": 42.425,
+      "kind": "prop",
+      "payload": {
+        "value": "b-long-fall-line",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "": "-$15M"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 43.1243,
       "kind": "number_row",
       "payload": {
         "index": 2,
@@ -207,7 +347,25 @@
       "fallback": false
     },
     {
-      "t": 36.7049,
+      "t": 44.781,
+      "kind": "prop",
+      "payload": {
+        "value": "see-saw-two-numbers",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "heavy": "365M",
+          "light": "298M"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 48.05445,
       "kind": "number_row",
       "payload": {
         "index": 3,
@@ -224,7 +382,16 @@
       "fallback": false
     },
     {
-      "t": 40.5197,
+      "t": 53.092,
+      "kind": "doodle",
+      "payload": {
+        "value": "injokes/holding-the-bag",
+        "hold": 1.6
+      },
+      "fallback": false
+    },
+    {
+      "t": 53.4846,
       "kind": "transition",
       "payload": {
         "name": "trap"
@@ -232,16 +399,81 @@
       "fallback": false
     },
     {
-      "t": 40.5197,
+      "t": 53.4846,
       "kind": "cheap_or_trap",
       "payload": {
         "text": "Eleven times earnings looks cheap. It only is if revenue stops sliding, and it has not stopped sliding.",
-        "until": 45.0197
+        "until": 64.6751
       },
       "fallback": false
     },
     {
-      "t": 42.5233,
+      "t": 53.4846,
+      "kind": "trap_line",
+      "payload": {
+        "index": 0,
+        "text": "Eleven times earnings looks cheap.",
+        "of": 3,
+        "until": 57.21476666666667
+      },
+      "fallback": false
+    },
+    {
+      "t": 57.21476666666667,
+      "kind": "trap_line",
+      "payload": {
+        "index": 1,
+        "text": "It only is if revenue stops sliding,",
+        "of": 3,
+        "until": 60.94493333333333
+      },
+      "fallback": false
+    },
+    {
+      "t": 57.215,
+      "kind": "prop",
+      "payload": {
+        "value": "numbers-raining",
+        "tag": "PROP",
+        "style": "",
+        "values": {
+          "#0": "-$8M",
+          "#1": "-$25M",
+          "#2": "-$49M",
+          "#3": "-$70M",
+          "#4": "-$89M",
+          "#5": "-$11M",
+          "#6": "-$15M"
+        },
+        "class": "punct",
+        "hold": 2.0,
+        "min_hold": 0.6,
+        "max_hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 59.215,
+      "kind": "host_beat",
+      "payload": {
+        "until": 64.675,
+        "variant": "beat"
+      },
+      "fallback": false
+    },
+    {
+      "t": 60.94493333333333,
+      "kind": "trap_line",
+      "payload": {
+        "index": 2,
+        "text": "and it has not stopped sliding.",
+        "of": 3,
+        "until": 64.6751
+      },
+      "fallback": false
+    },
+    {
+      "t": 62.1883,
       "kind": "meme",
       "payload": {
         "key": "fomo-stages-wish-i-bought-doodle",
@@ -250,7 +482,16 @@
       "fallback": false
     },
     {
-      "t": 45.0197,
+      "t": 64.0207,
+      "kind": "doodle",
+      "payload": {
+        "value": "poses/shrug-idk-man",
+        "hold": 1.6
+      },
+      "fallback": false
+    },
+    {
+      "t": 64.6751,
       "kind": "transition",
       "payload": {
         "name": "payoff"
@@ -258,38 +499,35 @@
       "fallback": false
     },
     {
-      "t": 45.0197,
+      "t": 64.6751,
       "kind": "conclusion",
       "payload": {
         "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
-        "until": 51.872993,
-        "variant": "e"
+        "until": 71.493991,
+        "variant": "c"
       },
       "fallback": false
     },
     {
-      "t": 46.872993,
+      "t": 66.493991,
       "kind": "host_close",
       "payload": {
-        "until": 50.272993,
+        "until": 69.893991,
         "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
         "variant": "close"
       },
       "fallback": false
     }
   ],
-  "pacing_warnings": [
-    "9 visual events in 52s \u2014 below the 15-21 band for this runtime; the cut will read as a slideshow",
-    "0 punctuation beats in 52s \u2014 below the 6-10 band. Data beats hold 3-8s and are read; the reactions riding over them are what give the cut its pulse, and they cost nothing to add"
-  ],
+  "pacing_warnings": [],
   "unresolved_keys": [],
   "beat_coverage": [
     {
       "name": "numbers_sheet",
-      "w": 1040,
-      "h": 988,
+      "w": 1060,
+      "h": 1004,
       "class": "data",
-      "frac": 0.4955
+      "frac": 0.5132
     },
     {
       "name": "vertical_b2-elevator-drop",
@@ -297,6 +535,55 @@
       "h": 1920,
       "class": "data",
       "frac": 1.0
+    },
+    {
+      "name": "tag_0_prop",
+      "w": 760,
+      "h": 760,
+      "class": "punct",
+      "frac": 0.2785
+    },
+    {
+      "name": "tag_1_prop",
+      "w": 760,
+      "h": 760,
+      "class": "punct",
+      "frac": 0.2785
+    },
+    {
+      "name": "tag_2_prop",
+      "w": 1040,
+      "h": 1040,
+      "class": "punct",
+      "frac": 0.5216
+    },
+    {
+      "name": "tag_3_prop",
+      "w": 760,
+      "h": 760,
+      "class": "punct",
+      "frac": 0.2785
+    },
+    {
+      "name": "tag_4_prop",
+      "w": 1080,
+      "h": 1920,
+      "class": "punct",
+      "frac": 1.0
+    },
+    {
+      "name": "tag_5_prop",
+      "w": 760,
+      "h": 760,
+      "class": "punct",
+      "frac": 0.2785
+    },
+    {
+      "name": "tag_6_prop",
+      "w": 1040,
+      "h": 1040,
+      "class": "punct",
+      "frac": 0.5216
     },
     {
       "name": "payoff_card",
@@ -308,8 +595,8 @@
       "source_aspect": 2.348
     }
   ],
-  "median_data_coverage": 0.4955,
-  "median_punct_coverage": 0.0,
+  "median_data_coverage": 0.5132,
+  "median_punct_coverage": 0.2785,
   "aspect_capped_beats": [
     {
       "name": "payoff_card",
@@ -326,37 +613,56 @@
     "chapters/cold-open/at-desk-open-talk",
     "chapters/resigned-close/dennis-defeated",
     "chapters/resigned-close/dennis-defeated-talk",
+    "chapters/the-numbers/chart-bars",
+    "chapters/the-numbers/chart-bars-talk",
+    "chapters/valuation/dennis-weighing",
+    "chapters/valuation/dennis-weighing-talk",
     "short/card-noise",
+    "shorts/dennis-vs-numbers-2/see-saw-two-numbers",
+    "shorts/dennis-vs-numbers/chart-off-cliff",
+    "shorts/dennis-vs-numbers/chart-ride-up",
+    "shorts/dennis-vs-numbers/numbers-raining",
     "shorts/open-close/e-close",
     "shorts/open-close/e-open",
     "shorts/the-world/d-desk-over-shoulder",
     "shorts/the-world/d-desk-side",
     "shorts/the-world/d-desk-wide",
+    "shorts/transformations/c-number-deflate",
+    "shorts/transformations/c-press-release-crumple",
     "shorts/vertical-scenes-2/b2-elevator-drop",
+    "shorts/vertical-scenes/b-long-fall-line",
     "stings/page-turn-tall",
     "stings/paper-slide-tall",
     "stings/torn-edge-tall"
   ],
+  "kit_reach": "Kit: 28 of 442 assets \u00b7 15 families \u00b7 8 beat-library scenes",
   "layer_names": [
     "act_mid_0",
+    "act_mid_1",
     "act_open",
     "act_payoff",
     "brand_bug",
     "chart",
-    "cheap_or_trap",
     "conclusion",
     "countup_0",
     "disclaimer",
+    "doodle_0_injokes/rocket-t",
+    "doodle_1_concepts/hype-vs",
+    "doodle_2_concepts/zzz-bor",
+    "doodle_3_injokes/holding-",
+    "doodle_4_poses/shrug-idk-",
     "e_close",
     "e_open",
-    "flash_gut_torn-edge-tall",
-    "flash_payoff_paper-slide-tall",
-    "flash_trap_page-turn-tall",
-    "flash_why_paper-slide-tall",
+    "flash_gut_paper-slide-tall",
+    "flash_payoff_page-turn-tall",
+    "flash_trap_torn-edge-tall",
+    "flash_why_page-turn-tall",
     "headline_0",
     "headline_1",
     "hook",
     "host_beat0",
+    "host_beat1",
+    "host_beat2",
     "host_close",
     "host_open",
     "meme_0",
@@ -370,7 +676,17 @@
     "payoff_card",
     "scribble_0_chart",
     "scribble_1_numbers",
+    "tag_0_prop",
+    "tag_1_prop",
+    "tag_2_prop",
+    "tag_3_prop",
+    "tag_4_prop",
+    "tag_5_prop",
+    "tag_6_prop",
     "ticker_pill",
+    "trap_line_0",
+    "trap_line_1",
+    "trap_line_2",
     "vertical_b2-elevator-drop"
   ],
   "layers": [
@@ -384,170 +700,275 @@
     {
       "name": "chart",
       "t_start": 5.0,
-      "t_end": 26.4105,
+      "t_end": 32.913999999999994,
       "x": 0,
       "y": 0
     },
     {
       "name": "act_mid_0",
-      "t_start": 26.4105,
-      "t_end": 45.0197,
+      "t_start": 32.913999999999994,
+      "t_end": 48.79455,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "act_mid_1",
+      "t_start": 48.79455,
+      "t_end": 64.6751,
       "x": 0,
       "y": 0
     },
     {
       "name": "headline_0",
-      "t_start": 8.906,
-      "t_end": 26.4105,
+      "t_start": 8.8728,
+      "t_end": 16.872799999999998,
       "x": 40,
       "y": 1030
     },
     {
       "name": "headline_1",
-      "t_start": 17.733249999999998,
-      "t_end": 26.4105,
+      "t_start": 20.968399999999995,
+      "t_end": 28.968399999999995,
       "x": 40,
-      "y": 1219
+      "y": 1030
     },
     {
       "name": "numbers_sheet",
-      "t_start": 26.4105,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 310
+      "t_start": 32.913999999999994,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 270
     },
     {
       "name": "number_row_0",
-      "t_start": 26.7605,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 535
+      "t_start": 33.263999999999996,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 499
     },
     {
       "name": "number_row_1",
-      "t_start": 30.0753,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 718
+      "t_start": 38.19414999999999,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 685
     },
     {
       "name": "number_row_2",
-      "t_start": 33.390100000000004,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 901
+      "t_start": 43.1243,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 871
     },
     {
       "name": "number_row_3",
-      "t_start": 36.7049,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 1084
+      "t_start": 48.05445,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 1057
     },
     {
       "name": "scribble_0_chart",
-      "t_start": 2.2522,
-      "t_end": 26.4105,
+      "t_start": 2.2441,
+      "t_end": 32.913999999999994,
       "x": 733,
       "y": 700
     },
     {
       "name": "note_0",
-      "t_start": 2.2522,
-      "t_end": 26.4105,
+      "t_start": 2.2441,
+      "t_end": 32.913999999999994,
       "x": 674,
       "y": 789
     },
     {
       "name": "scribble_1_numbers",
-      "t_start": 30.3253,
-      "t_end": 40.5197,
-      "x": 20,
-      "y": 718
+      "t_start": 38.44414999999999,
+      "t_end": 53.4846,
+      "x": 10,
+      "y": 685
     },
     {
       "name": "note_1",
-      "t_start": 30.3253,
-      "t_end": 40.5197,
+      "t_start": 38.44414999999999,
+      "t_end": 53.4846,
       "x": 817,
-      "y": 670
+      "y": 637
     },
     {
       "name": "countup_0",
-      "t_start": 30.3753,
-      "t_end": 31.775299999999998,
-      "x": 514,
-      "y": 718
+      "t_start": 38.49414999999999,
+      "t_end": 39.89414999999999,
+      "x": 501,
+      "y": 685
     },
     {
       "name": "vertical_b2-elevator-drop",
-      "t_start": 30.3753,
-      "t_end": 32.5753,
+      "t_start": 38.49414999999999,
+      "t_end": 40.69414999999999,
       "x": 0,
       "y": 0
     },
     {
+      "name": "tag_0_prop",
+      "t_start": 0.739,
+      "t_end": 2.739,
+      "x": 198,
+      "y": 610
+    },
+    {
+      "name": "tag_1_prop",
+      "t_start": 13.566,
+      "t_end": 15.566,
+      "x": 198,
+      "y": 610
+    },
+    {
+      "name": "tag_2_prop",
+      "t_start": 30.515,
+      "t_end": 32.515,
+      "x": 24,
+      "y": 486
+    },
+    {
+      "name": "tag_3_prop",
+      "t_start": 36.012,
+      "t_end": 38.012,
+      "x": 198,
+      "y": 610
+    },
+    {
+      "name": "tag_4_prop",
+      "t_start": 42.425,
+      "t_end": 44.425,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "tag_5_prop",
+      "t_start": 44.781,
+      "t_end": 46.781,
+      "x": 198,
+      "y": 610
+    },
+    {
+      "name": "tag_6_prop",
+      "t_start": 57.215,
+      "t_end": 59.215,
+      "x": 24,
+      "y": 486
+    },
+    {
       "name": "meme_0",
-      "t_start": 42.5233,
-      "t_end": 43.9233,
+      "t_start": 62.1883,
+      "t_end": 63.5883,
       "x": 279,
       "y": 652
     },
     {
-      "name": "flash_why_paper-slide-tall",
-      "t_start": 8.756,
-      "t_end": 9.256,
+      "name": "doodle_0_injokes/rocket-t",
+      "t_start": 7.0213,
+      "t_end": 8.6213,
+      "x": 560,
+      "y": 560
+    },
+    {
+      "name": "doodle_1_concepts/hype-vs",
+      "t_start": 17.0339,
+      "t_end": 18.6339,
+      "x": 120,
+      "y": 600
+    },
+    {
+      "name": "doodle_2_concepts/zzz-bor",
+      "t_start": 31.6927,
+      "t_end": 33.292699999999996,
+      "x": 540,
+      "y": 1180
+    },
+    {
+      "name": "doodle_3_injokes/holding-",
+      "t_start": 53.092,
+      "t_end": 54.692,
+      "x": 120,
+      "y": 1180
+    },
+    {
+      "name": "doodle_4_poses/shrug-idk-",
+      "t_start": 64.0207,
+      "t_end": 65.6207,
+      "x": 560,
+      "y": 560
+    },
+    {
+      "name": "flash_why_page-turn-tall",
+      "t_start": 8.7228,
+      "t_end": 9.2228,
       "x": 0,
       "y": 0
     },
     {
-      "name": "flash_gut_torn-edge-tall",
-      "t_start": 26.4105,
-      "t_end": 26.9105,
+      "name": "flash_gut_paper-slide-tall",
+      "t_start": 32.913999999999994,
+      "t_end": 33.413999999999994,
       "x": 0,
       "y": 0
     },
     {
-      "name": "flash_trap_page-turn-tall",
-      "t_start": 40.5197,
-      "t_end": 41.0197,
+      "name": "flash_trap_torn-edge-tall",
+      "t_start": 53.4846,
+      "t_end": 53.9846,
       "x": 0,
       "y": 0
     },
     {
-      "name": "flash_payoff_paper-slide-tall",
-      "t_start": 45.0197,
-      "t_end": 45.5197,
+      "name": "flash_payoff_page-turn-tall",
+      "t_start": 64.6751,
+      "t_end": 65.1751,
       "x": 0,
       "y": 0
     },
     {
-      "name": "cheap_or_trap",
-      "t_start": 40.5197,
-      "t_end": 45.0197,
+      "name": "trap_line_0",
+      "t_start": 53.4846,
+      "t_end": 57.21476666666667,
+      "x": 50,
+      "y": 350
+    },
+    {
+      "name": "trap_line_1",
+      "t_start": 57.21476666666667,
+      "t_end": 60.94493333333333,
+      "x": 50,
+      "y": 350
+    },
+    {
+      "name": "trap_line_2",
+      "t_start": 60.94493333333333,
+      "t_end": 64.6751,
       "x": 50,
       "y": 350
     },
     {
       "name": "payoff_card",
-      "t_start": 45.0197,
-      "t_end": 46.872993,
+      "t_start": 64.6751,
+      "t_end": 66.493991,
       "x": 0,
       "y": 370
     },
     {
       "name": "act_payoff",
-      "t_start": 45.0197,
-      "t_end": 51.872993,
+      "t_start": 64.6751,
+      "t_end": 71.493991,
       "x": 0,
       "y": 0
     },
     {
       "name": "conclusion",
-      "t_start": 45.0197,
-      "t_end": 50.272993,
+      "t_start": 64.6751,
+      "t_end": 69.893991,
       "x": 60,
-      "y": 1390
+      "y": 1320
     },
     {
       "name": "host_open",
@@ -558,15 +979,29 @@
     },
     {
       "name": "host_close",
-      "t_start": 46.872993,
-      "t_end": 50.272993,
+      "t_start": 66.493991,
+      "t_end": 69.893991,
       "x": 0,
       "y": 430
     },
     {
       "name": "host_beat0",
-      "t_start": 26.41,
-      "t_end": 40.52,
+      "t_start": 15.566,
+      "t_end": 20.968,
+      "x": 570,
+      "y": 1120
+    },
+    {
+      "name": "host_beat1",
+      "t_start": 38.012,
+      "t_end": 42.425,
+      "x": 570,
+      "y": 1120
+    },
+    {
+      "name": "host_beat2",
+      "t_start": 59.215,
+      "t_end": 64.675,
       "x": 570,
       "y": 1120
     },
@@ -579,36 +1014,36 @@
     },
     {
       "name": "e_close",
-      "t_start": 50.272993,
-      "t_end": 51.872993,
+      "t_start": 69.893991,
+      "t_end": 71.493991,
       "x": 0,
       "y": 0
     },
     {
       "name": "hook",
       "t_start": 0.0,
-      "t_end": 8.756,
-      "x": 70,
-      "y": 176
+      "t_end": 8.7228,
+      "x": 80,
+      "y": 184
     },
     {
       "name": "ticker_pill",
       "t_start": 0.0,
-      "t_end": 51.872993,
+      "t_end": 71.493991,
       "x": 40,
       "y": 56
     },
     {
       "name": "brand_bug",
       "t_start": 0.0,
-      "t_end": 51.872993,
-      "x": 758,
+      "t_end": 71.493991,
+      "x": 518,
       "y": 70
     },
     {
       "name": "disclaimer",
       "t_start": 0.0,
-      "t_end": 51.872993,
+      "t_end": 71.493991,
       "x": 142,
       "y": 1854
     }

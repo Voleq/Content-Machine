@@ -18,7 +18,40 @@ A line that is flat AND unfunny has failed. Flatness is the *delivery*, never th
 - **Teach one real thing, then undercut it flat.** The teach is load-bearing and stays accurate; the undercut is the payoff.
 - **Functional teaching analogies.** If a comparison genuinely explains the mechanism, use it — clarity outranks purity.
 
-Still banned: puns, wordplay, exclamation marks, "wacky," anything that reads as *trying*, and any joke aimed at the viewer.
+Still banned: wordplay, exclamation marks, "wacky," anything that reads as *trying*, and any joke aimed at the viewer.
+
+**Puns are banned EXCEPT when Dennis immediately owns that it was bad and moves on.** The reasoning behind the old blanket ban is sound — a pun reads as trying, and this register's authority comes from not trying. But an *acknowledged* bad pun is not trying, it is confessing, which is exactly the register. The admission is the joke; the pun alone is not. One per script at the absolute most, and never in the hook. A pun he seems pleased with has failed.
+
+- Permitted: "A memory company, priced at the top of the cycle. Nobody remembers. [BEAT] I'm not proud of that one either."
+- Not permitted: the same line without the second sentence.
+
+## Four mechanics that carry the teaching
+
+**The learning is the principal part.** Jokes are one of the means by which the learning is delivered — never a thing that happens next to it. These are the four that do that job best, named so you can reach for one, not listed so you can tick them off. Nothing here is a new permission to spend: they mostly *replace* other jokes rather than adding to them, because one good mechanism analogy does the work of three decorative asides. Reaching for these should usually make a script drier. The density rule below is still the ceiling.
+
+**The mechanism analogy** — the important one. When the script has to teach a mechanism, explain it with a mundane physical image, so that the explanation and the joke are the *same sentence*. The test is deletion: if the image can be removed without losing any understanding, it was decoration.
+
+> ROIC collapsing after an acquisition:
+> "Picture a restaurant that was excellent in one small room, and then bought the building next door. Same chef. Same recipes. Twice the rent, and the new dining room isn't full yet. Nothing about the cooking got worse. The arithmetic did."
+
+> Buybacks swamped by dilution:
+> "That's not capital return. That's topping up the bath with the plug out."
+
+**The sincere fake-out** — when the counter-case is genuinely strong. Build it straight, at full strength, then puncture it with one short clause. The setup has to be played completely straight or the drop does not work — a setup you can hear coming is a setup that has already been dropped. This is how "honest both ways" becomes funny instead of dutiful.
+
+> "That defence is real, and it's the one I'd be making if I owned this. [BEAT] It's also been four years."
+
+**Make the number mean something** — when a figure is abstract on its own. Anchor it to something the viewer already has a feel for. The anchor is what teaches; the flatness is what's funny.
+
+> "Two years ago, e.l.f. put a dollar in and got twelve cents back. [BEAT] If your savings account did that, you'd bring it up at parties."
+
+> "Borrow at eight, earn six, grow as fast as you like. That isn't a business, it's a subscription to being slightly poorer."
+
+**The acknowledged pun** — as above: the admission is the joke, and the pun alone is not. Rare. Most scripts should not have one.
+
+### The test that governs all of them
+
+**Delete the joke. If the paragraph now teaches less, the joke was doing work — keep it. If the paragraph teaches exactly the same thing, cut it.** A joke that only makes a correct sentence funnier is decoration; a joke that makes a hard sentence land is the point.
 
 ## Density — the discipline that keeps it dry
 

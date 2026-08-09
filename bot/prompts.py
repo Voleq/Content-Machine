@@ -15,6 +15,7 @@ plumbing.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 from pathlib import Path
 
@@ -165,40 +166,154 @@ def _chapter_kits(kit) -> list[str]:
     )
 
 
-def _shorts_families(kit) -> list[tuple[str, list[str]]]:
-    """The shorts batch, family by family, with each asset's title.
+# --------------------------------------------------------------------------
+# The beat library, grouped by SITUATION rather than by folder.
+# --------------------------------------------------------------------------
+# The catalog used to list the shorts batch family by family — grouped, that
+# is, by the folder the artwork happens to live in. That says what exists and
+# never says when to reach for it, and a writer handed 51 options with no
+# selection rule reaches for the four beats it already knows. The showcase
+# render is the proof: 17 of 442 assets, one beat-library scene.
+#
+# So the headings below are situations, and every one of them is DERIVED. Each
+# rule reads registry metadata that already exists — slot count, slot names,
+# frameCount, aspect, the title — so artwork added tomorrow is filed the day it
+# lands and nothing here needs a code change. That property is the generator's
+# best one and a hand-maintained key -> situation table would cost it. An asset
+# no rule can place is listed under the last heading rather than dropped.
 
-    This is the half of the library the SHORT writer has never been shown. The
-    long-form prompt has had a catalog since the kit existed; the short prompt
-    got the tags and none of the vocabulary, so every script reached for the
-    same four beats.
+SIT_DOC = "A DOCUMENT, a filing, a press release"
+SIT_BECOMES = "A thing BECOMING another thing (animated)"
+SIT_FULL_HEIGHT = "Fills the FULL HEIGHT — drawn to be the 9:16 frame"
+SIT_MANY = "MANY figures at once"
+SIT_TWO = "TWO figures weighed against each other"
+SIT_SCALE = "ONE figure, absurd in scale next to him"
+SIT_BAD = "ONE figure, and it went the wrong way"
+SIT_GOOD = "ONE figure, and it went the right way"
+SIT_REST = "Everything else in the beat library"
+
+# Display order, which is also the order an asset is TESTED against them: the
+# first rule that matches wins, so this tuple is the precedence. Situation
+# beats format — `b-filings-stack` is a filing that happens to be 9:16, and a
+# writer looking for a filing has to find it under filings.
+BEAT_SITUATIONS: tuple[str, ...] = (
+    SIT_DOC, SIT_BECOMES, SIT_FULL_HEIGHT, SIT_MANY, SIT_TWO,
+    SIT_SCALE, SIT_BAD, SIT_GOOD, SIT_REST,
+)
+
+# What each heading is FOR, in the writer's terms. The heading names the shape
+# of the beat; this says when to reach for the shape.
+_SIT_NOTE = {
+    SIT_DOC: "the evidence is paper",
+    SIT_BECOMES: "the beat IS the change — play it, don't hold it",
+    SIT_FULL_HEIGHT: "no letterboxing, no desk behind it — one per short",
+    SIT_MANY: "a whole row of figures at once, not one",
+    SIT_TWO: "this against that",
+    SIT_SCALE: "the size of the number IS the joke",
+    SIT_BAD: "down, red, buried",
+    SIT_GOOD: "up, green, on top of it",
+    SIT_REST: "no heuristic placed these — read the titles",
+}
+
+# Wording that says what a beat is doing, matched against the asset's key leaf
+# and its title. Deliberately NOT against the slot notes: those carry rendering
+# instructions ("scale down 24% per frame"), and a note like that reads as a
+# down beat to any word match while describing the balloon that INFLATES.
+_DOC_RE = re.compile(
+    r"\b(doc\w*|filing\w*|paper\w*|page\w*|press release|redact\w*|memo"
+    r"|prospectus|10 [kq])\b")
+_SCALE_RE = re.compile(
+    r"\b(atlas|tiny|dwarf\w*|tower\w*|giant|enormous|huge|ruler|measur\w*"
+    r"|colossal|microscop\w*)\b")
+# `red` and `up` are whole-word on purpose: `\bred` also matches "redacting",
+# and `\bup` also matches "uphill", which is a grind, not a rally.
+_DOWN_RE = re.compile(
+    r"\b(down|fall\w*|fell|drop\w*|crush\w*|cliff|hole|collaps\w*|red|sink\w*"
+    r"|under|buried|bury|flat|deflat\w*|melt\w*|toppl\w*|snap\w*|tear\w*|torn"
+    r"|evaporat\w*|crumpl\w*|uphill|saw\w*|cut|sweep\w*|drag\w*|tug|war"
+    r"|fight\w*|struggl\w*|loss\w*|wrong|negative|miss)\b")
+_UP_RE = re.compile(
+    r"\b(up|rise|rising|ride|riding|climb\w*|green|grow\w*|inflat\w*|lift\w*"
+    r"|sit\w*|win\w*|gain\w*|beat|record)\b")
+
+
+def _beat_words(asset) -> str:
+    """An asset's key leaf and title, normalised for word matching."""
+    leaf = asset.key.rsplit("/", 1)[-1]
+    return f"{leaf} {asset.title}".lower().replace("-", " ")
+
+
+def _beat_situation(asset) -> str:
+    """Which situation heading a beat-library asset belongs under.
+
+    First match wins, in :data:`BEAT_SITUATIONS` order, so every asset lands
+    under exactly one heading and the listing is a partition of the library.
     """
-    out: list[tuple[str, list[str]]] = []
-    for family in kit.families():
+    text = _beat_words(asset)
+    if _DOC_RE.search(text):
+        return SIT_DOC
+    # The family is what the prompt names; the frame count is what makes the
+    # rule survive a transformation exported into some other folder. Every
+    # 8-frame asset in the kit today is one of these.
+    if "transformations" in asset.family or asset.frame_count >= 8:
+        return SIT_BECOMES
+    if asset.aspect == "9:16":
+        return SIT_FULL_HEIGHT
+    if len(asset.slots) >= 3:
+        return SIT_MANY
+    if len(asset.slots) == 2:
+        return SIT_TWO
+    if len(asset.slots) == 1:
+        if _SCALE_RE.search(text):
+            return SIT_SCALE
+        if _DOWN_RE.search(text):
+            return SIT_BAD
+        if _UP_RE.search(text):
+            return SIT_GOOD
+    return SIT_REST
+
+
+def _beat_row(asset) -> str:
+    """One asset's line: the key the writer types, then what it is."""
+    bits: list[str] = []
+    if asset.title:
+        bits.append(asset.title)
+    if asset.frame_count > 1:
+        bits.append(f"{asset.frame_count}f {asset.playback}")
+    if asset.slots:
+        # Slot NAMES, because they are what the writer types after the `=`,
+        # and the first slot's note, because "what goes in it" is the thing
+        # the name does not say.
+        names = ", ".join(s.name for s in asset.slots)
+        note = next((s.note for s in asset.slots if s.note), "")
+        bits.append(f"takes {names}" + (f" ({note})" if note else ""))
+    leaf = asset.key.rsplit("/", 1)[-1]
+    return f"{leaf}" + (f" — {'; '.join(bits)}" if bits else "")
+
+
+def _beat_library(kit, *, aspects: tuple[str, ...]) -> list[tuple[str, list[str]]]:
+    """`(situation heading, rows)` for the beat library, headings in order.
+
+    Only the shorts families ``[PROP]`` actually resolves against are listed.
+    ``shorts/the-world`` (the desk) and ``shorts/open-close`` (the signature
+    open and close) are not among them — the renderer places those itself —
+    and the catalog offered all six as `[PROP:]` keys that resolve to nothing.
+    The catalog and the resolver have to agree in both directions.
+    """
+    from pipeline.models import KIT_TAG_FAMILIES, TagType
+
+    grouped: dict[str, list[str]] = {}
+    for family in KIT_TAG_FAMILIES[TagType.PROP]:
         if not family.startswith("shorts/"):
             continue
-        rows: list[str] = []
         for key in kit.family(family):
             asset = kit.get(key)
-            if asset is None:
+            if asset is None or not kit.placeable(key):
                 continue
-            leaf = key.rsplit("/", 1)[-1]
-            bits: list[str] = []
-            if asset.title:
-                bits.append(asset.title)
-            if asset.frame_count > 1:
-                bits.append(f"{asset.frame_count}f {asset.playback}")
-            if asset.slots:
-                # Slot NAMES, because they are what the writer types after the
-                # `=`, and the first slot's note, because "what goes in it" is
-                # the thing the name does not say.
-                names = ", ".join(s.name for s in asset.slots)
-                note = next((s.note for s in asset.slots if s.note), "")
-                bits.append(f"takes {names}" + (f" ({note})" if note else ""))
-            rows.append(f"{leaf}" + (f" — {'; '.join(bits)}" if bits else ""))
-        if rows:
-            out.append((family.split("/", 1)[1], rows))
-    return out
+            if asset.aspect not in aspects:
+                continue
+            grouped.setdefault(_beat_situation(asset), []).append(_beat_row(asset))
+    return [(sit, sorted(grouped[sit])) for sit in BEAT_SITUATIONS if grouped.get(sit)]
 
 
 def _group(title: str, keys: list[str], *, note: str = "") -> list[str]:
@@ -263,31 +378,43 @@ def kit_catalog(settings: Settings, *, fmt: str = "long") -> str:
             use = _CONCEPT_USE.get(c, "")
             out.append(f"  - {c}" + (f" — {use}" if use else ""))
 
-    if fmt == "short":
-        # The shorts batch, in full. 51 assets, 74 fillable slots, 27 of them
-        # animated — the writer names a beat and the renderer plays it. This
-        # is the part the short prompt has never carried.
-        families = _shorts_families(kit)
-        if families:
-            out.append("")
+    # The beat library — drawings built to carry a figure, grouped by the
+    # situation they are FOR. The whole thing was gated behind fmt == "short",
+    # which cost the LONG 38 drawings for no reason anyone had stated: the 1:1
+    # half is square, so it composites into 16:9 whole, with no crop. Only the
+    # 9:16 half is genuinely short-only — those were drawn to BE the vertical
+    # frame, and contain-fitting one into 16:9 is a letterboxed stamp.
+    library = _beat_library(kit, aspects=("1:1", "9:16") if fmt == "short"
+                            else ("1:1",))
+    if library:
+        out.append("")
+        out.append(
+            ("SHORT BEAT LIBRARY" if fmt == "short" else "BEAT LIBRARY")
+            + " — name one as [PROP: key = value] and the renderer plays it, "
+            "composites your figure into the drawing, and holds it for the "
+            "beat. Grouped by WHAT THE BEAT IS DOING; pick the situation "
+            "first, the drawing second.")
+        out.append(
+            "  [PROP: crushed-flat = -41%]                         one slot")
+        out.append(
+            "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
+        out.append(
+            "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
+        out.append(
+            "  WITHOUT the `= value` the drawing renders with its boxes "
+            "EMPTY. Always give a figure.")
+        if fmt != "short":
             out.append(
-                "SHORT BEAT LIBRARY — name one as [PROP: key = value] and the "
-                "renderer plays it, composites your figure into the drawing, "
-                "and holds it for the beat.")
-            out.append(
-                "  [PROP: crushed-flat = -41%]                         one slot")
-            out.append(
-                "  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]  named")
-            out.append(
-                "  [PROP: numbers-raining = -8%, -12%, -3%]            in order")
-            out.append(
-                "  WITHOUT the `= value` the drawing renders with its boxes "
-                "EMPTY. Always give a figure.")
-            for name, rows in families:
-                out.append(f"  {name}:")
-                for row in rows:
-                    out.append(f"    - {row}")
-    else:
+                "  These are square, so they arrive in the 16:9 frame whole "
+                "and uncropped. The full-height half of the library is "
+                "9:16 and stays short-only.")
+        for situation, rows in library:
+            note = _SIT_NOTE.get(situation, "")
+            out.append(f"  {situation}:" + (f"  ({note})" if note else ""))
+            for row in rows:
+                out.append(f"    - {row}")
+
+    if fmt != "short":
         out += _group("Chapter kits with dedicated artwork", _chapter_kits(kit),
                       note="name a chapter close to one of these and it gets "
                            "its own visuals")
@@ -426,6 +553,118 @@ def screenshots_line(workspace: Path) -> str:
     return ", ".join(shots) if shots else "(none uploaded — upload filing PNGs first)"
 
 
+# --------------------------------------------------------------------------
+# What this channel has already said about the ticker.
+# --------------------------------------------------------------------------
+# The loop used to be: remember -> notify -> forget. `ThesisBook` recorded a
+# thesis when a video shipped, `update_warranted` told the operator the numbers
+# had moved and dropped it in the idea queue — and then the writing prompt was
+# byte-identical to a first-time one. The bot knew, and never told the writer.
+
+
+def _days_since(stamp: str) -> int | None:
+    """Whole days between an ISO stamp and today, or None if unparseable."""
+    from datetime import datetime, timezone
+
+    for text in (stamp or "",):
+        try:
+            when = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max((datetime.now(timezone.utc) - when).days, 0)
+    return None
+
+
+def _moves_since(thesis) -> list[str]:
+    """The last check's material moves, rendered.
+
+    Through `Move.render()` rather than a second formatter: it already says
+    "gross_margin ↓12% (74.4 → 65.2)", and two formatters for one fact is how
+    the report and the notification end up disagreeing about the same number.
+    The stored rows carry a cached `change` that `Move` computes itself, so
+    unknown keys are dropped rather than passed to the constructor.
+    """
+    from pipeline.standing import Move
+
+    known = {f for f in Move.__dataclass_fields__}
+    out: list[str] = []
+    for row in getattr(thesis, "last_moves", None) or []:
+        try:
+            out.append(Move(**{k: v for k, v in row.items() if k in known}).render())
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def prior_coverage(settings: Settings, ticker: str) -> str:
+    """What this channel already said about `ticker`, for the next writer.
+
+    Returns "" when there is no thesis on file — an update prompt filled for a
+    name we have never covered has nothing to say, and saying nothing is
+    better than a heading over an empty block.
+
+    A thesis recorded before the record was widened carries only a summary. It
+    still renders, and the block states which fields are ABSENT: a writer told
+    "the conclusion is not on file" writes around it, while a writer told
+    nothing invents a conclusion that was never made and grades the channel
+    against a claim it never put on screen.
+    """
+    from pipeline.standing import ThesisBook
+
+    try:
+        thesis = ThesisBook(settings).get(ticker)
+    except Exception:  # noqa: BLE001 — a thin record never blocks a prompt
+        thesis = None
+    if thesis is None:
+        return ""
+
+    fmt = (thesis.fmt or "").upper()
+    when = thesis.workdate or (thesis.recorded_at or "")[:10] or "date not recorded"
+    # Off the workdate where there is one, because that is the date shown and
+    # a stamp that disagrees with the date beside it reads as a bug.
+    age = _days_since(thesis.workdate) or _days_since(thesis.recorded_at)
+    ago = {None: "", 0: " — today", 1: " — yesterday"}.get(age, f" — {age} days ago")
+    shipped = when + (f" ({fmt})" if fmt else "") + ago
+
+    lines = [f"PRIOR COVERAGE — this channel has already made a video about "
+             f"{ticker.upper()}. This is what it said.",
+             f"  Shipped: {shipped}"]
+    if thesis.summary:
+        lines.append(f"  The angle: {thesis.summary}")
+    if thesis.hook:
+        lines.append(f'  It opened on: "{thesis.hook}"')
+    if thesis.conclusion:
+        lines.append(f'  It concluded, VERBATIM: "{thesis.conclusion}"')
+    if thesis.claims:
+        lines.append("  It asserted:")
+        lines += [f"    - {c}" for c in thesis.claims]
+
+    status = thesis.status or "intact"
+    checked = (thesis.checked_at or "")[:10]
+    lines.append(f"  Thesis status: {status}"
+                 + (f" (last checked {checked})" if checked else ""))
+
+    moves = _moves_since(thesis)
+    if moves:
+        lines.append("  What has moved since:")
+        lines += [f"    - {m}" for m in moves]
+    else:
+        lines.append("  What has moved since: nothing material at the last check.")
+
+    absent = [name for name, value in (("the hook", thesis.hook),
+                                       ("the conclusion", thesis.conclusion),
+                                       ("the specific claims", thesis.claims))
+              if not value]
+    if absent:
+        lines.append(
+            "  NOT ON FILE: " + ", ".join(absent) + ". That video shipped "
+            "before those were recorded — do NOT invent them. Grade only what "
+            "is written above, and say plainly that the rest is not on record.")
+    return "\n".join(lines)
+
+
 def fill_prompt(
     fmt: str,
     ticker: str,
@@ -485,6 +724,27 @@ def fill_prompt(
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
     elif fmt == "long_write":
         r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
+        r["{{voice_bible}}"] = voice_bible(settings)
+        r["{{doodle_catalog}}"] = doodle_catalog(settings)
+        r["{{meme_catalog}}"] = meme_catalog(settings)
+        r["{{broll_palette}}"] = broll_catalog()
+        r["{{scribble_styles}}"] = scribble_styles(settings)
+        r["{{kit_catalog}}"] = kit_catalog(settings, fmt="long")
+        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{available_screenshots}}"] = screenshots_line(workspace)
+        r["{{valuation_data}}"] = valuation_data_block(data)
+        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
+        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
+    elif fmt == "update":
+        # An update is a LONG in every mechanical sense — same tag grammar,
+        # same parser, same renderer, same validation — so it takes the long
+        # writer's catalogs unchanged. What differs is the spine, and the
+        # spine's first movement is `prior_coverage`.
+        r["{{prior_coverage}}"] = prior_coverage(settings, ticker) or (
+            "(no thesis on file for this ticker — nothing was recorded from a "
+            "previous video. Write this as a first-time take instead: "
+            "/long TICKER.)"
+        )
         r["{{voice_bible}}"] = voice_bible(settings)
         r["{{doodle_catalog}}"] = doodle_catalog(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)

@@ -173,11 +173,14 @@ python3.11 -m venv .venv
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
 
-### WSL2 on the Windows desktop (the render box)
+### Windows (the render box) — see the full runbook below
 
-**The target platform is Linux.** `deploy/bootstrap.sh` is the installer for
-both WSL2 and a bare VPS — it is the same install, and the differences are
-detected rather than configured.
+**The target platform is Linux, and on Windows that means WSL2.**
+`deploy/bootstrap.sh` is the installer for both WSL2 and a bare VPS — it is
+the same install, and the differences are detected rather than configured.
+The step-by-step sequence from a clean machine is
+[Running it on Windows](#running-it-on-windows--the-full-sequence) below; the
+short version is:
 
 ```bash
 # inside WSL (Ubuntu), from a clone on the LINUX filesystem
@@ -185,30 +188,6 @@ sudo bash deploy/bootstrap.sh /opt/dennis
 sudo nano /opt/dennis/.env                  # token + operator chat id
 sudo systemctl enable --now dennis
 ```
-
-Two WSL prerequisites, both of which the script detects rather than assumes:
-
-**systemd is off by default.** Without it the service and timer cannot be
-enabled. Add to `/etc/wsl.conf`:
-
-```ini
-[boot]
-systemd=true
-```
-
-then `wsl --shutdown` from Windows and reopen. The bootstrap copies the unit
-files either way and tells you exactly this if PID 1 is not systemd; re-run it
-afterwards and they enable. Until then, run it in the foreground with
-`.venv/bin/python main.py`.
-
-**Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
-live on the Linux filesystem. `cache/segments` is thousands of small clips
-that get stat'd on every render to decide what to reuse, and every one of
-those crosses the 9p/drvfs translation layer — the cost lands precisely on
-the operation that is supposed to make a re-render cheap. The bootstrap
-refuses a destination under `/mnt`, warns if the checkout itself is there,
-and the bot warns at startup if `WORKSPACE_DIR`, `CACHE_DIR` or `STATE_DIR`
-resolve there (symlinks included).
 
 **GPU.** NVENC is detected with a real smoke encode, not by asking ffmpeg
 what it supports — `h264_nvenc` is listed on machines with no NVIDIA driver
@@ -247,13 +226,134 @@ an **aggregate**: the parallel segment encoder divides it among its workers
 thing. Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
 `RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
 
-### Native Windows
+### Running it on Windows — the full sequence
 
-Not supported. `deploy/bootstrap.ps1` and `deploy/install-task.ps1` are kept
-so a future native deployment has a starting point, but they are
-**unmaintained**, nothing tests them, and Excel COM automation — the one
-feature that needed native Windows — is replaced by the external refresh plus
-upload described above.
+**You run it inside WSL2, not natively.** That is not a workaround: the render
+path is FFmpeg filtergraphs, headless Chromium and a systemd service, and all
+three are first-class on Linux and awkward-to-broken on native Windows. The one
+feature that ever needed native Windows — Excel COM automation — has been
+replaced by the external refresh plus upload, so there is nothing left on that
+side of the line.
+
+From a clean Windows 11 machine, in order:
+
+**1. Install WSL2 and Ubuntu.** In PowerShell *as Administrator*:
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Reboot when it asks. Open **Ubuntu** from the Start menu and set your Linux
+username and password. Everything from here is typed in that Ubuntu window,
+not in PowerShell.
+
+**2. Turn systemd on.** WSL ships with it off, and without it the bot cannot
+run as a service that survives a reboot. Inside Ubuntu:
+
+```bash
+sudo nano /etc/wsl.conf
+```
+
+```ini
+[boot]
+systemd=true
+```
+
+Save, then back in **PowerShell**:
+
+```powershell
+wsl --shutdown
+```
+
+Reopen Ubuntu. `ps -p 1 -o comm=` should now print `systemd`.
+
+**3. Clone onto the Linux filesystem.** Under your Linux home — `~/` — and
+**never** under `/mnt/c`. See the warning below; this is the single most
+expensive mistake available here.
+
+```bash
+sudo apt update && sudo apt install -y git
+git clone <your-repo-url> ~/dennis
+```
+
+**4. Run the bootstrap.** It is the same installer as the VPS, and the
+differences are detected rather than configured.
+
+```bash
+sudo bash ~/dennis/deploy/bootstrap.sh /opt/dennis
+```
+
+It checks root, apt, Python ≥ 3.11, FFmpeg 6+ and the destination filesystem
+up front, and aborts with one readable message naming the fix rather than
+half-installing. It installs to `/opt/dennis` and runs the bot as a dedicated
+`dennis` service user, which is why the commands below are `sudo -u dennis`. Then: apt dependencies, the venv from the pinned
+`pyproject.toml`, headless Chromium and its system libraries, generated
+assets, the offline test suite, and the service plus the daily cleanup timer.
+It is idempotent — safe to re-run after every `git pull`.
+
+**5. Configure.**
+
+```bash
+sudo nano /opt/dennis/.env
+```
+
+At minimum `TELEGRAM_BOT_TOKEN` (from @BotFather) and `OPERATOR_CHAT_IDS`.
+Leave `MOCK_MODE=true` for now. Every key is listed in the configuration
+reference below, and `.env.example` documents each one in place.
+
+If you do not know your chat id: start the bot, message it, and it will reply
+with the id to add.
+
+**6. Start it.**
+
+```bash
+sudo systemctl enable --now dennis
+systemctl status dennis
+journalctl -u dennis -f          # live logs; Ctrl-C to stop watching
+```
+
+Message the bot `/help` in Telegram. If it answers, you are running.
+
+**7. Prove it end to end before spending anything.** With `MOCK_MODE=true`,
+run one whole video — `/short EXMPL`, upload `dennis_data.xlsx`, run the
+prompt, paste the script back, `Approve ✅`, `/render EXMPL`. It costs
+nothing and exercises every seam. Only then follow *Going live* above.
+
+**Day-to-day**
+
+| task | command (inside Ubuntu) |
+|---|---|
+| update to the latest code | `cd ~/dennis && git pull && sudo bash deploy/bootstrap.sh /opt/dennis` |
+| restart after an `.env` change | `sudo systemctl restart dennis` |
+| watch the logs | `journalctl -u dennis -f` |
+| stop it | `sudo systemctl stop dennis` |
+| run in the foreground instead (no systemd) | `cd /opt/dennis && sudo -u dennis .venv/bin/python main.py` |
+| run the tests | `cd /opt/dennis && sudo -u dennis .venv/bin/python -m pytest -q` |
+
+**The machine sleeps, and that is fine.** This is somebody's desktop, not a
+server. Nothing in the bot assumes it is awake: `/batch` queues renders for
+the overnight window and simply finds the work still there next time the
+window opens, and the daily cleanup timer catches up when it misses a run.
+Closing the Ubuntu window does not stop the service, but shutting Windows
+down does — WSL stops with it, and both resume when you next open Ubuntu.
+
+**Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
+live on the Linux filesystem. `cache/segments` is thousands of small clips
+that get stat'd on every render to decide what to reuse, and every one of
+those crosses the 9p/drvfs translation layer — the cost lands precisely on
+the operation that is supposed to make a re-render cheap. The bootstrap
+refuses a destination under `/mnt`, warns if the checkout itself is there,
+and the bot warns at startup if `WORKSPACE_DIR`, `CACHE_DIR` or `STATE_DIR`
+resolve there (symlinks included).
+
+**Getting files in and out.** Windows can reach the Linux side at
+`\\wsl$\Ubuntu\home\<you>\` in Explorer, and Ubuntu can reach Windows at
+`/mnt/c/Users/<you>/`. Copying a finished MP4 out that way is fine — it is a
+one-off read. Working *from* there is what is slow.
+
+**Native Windows.** Not supported. `deploy/bootstrap.ps1` and
+`deploy/install-task.ps1` are kept so a future native deployment has a
+starting point, but they are **unmaintained** and nothing tests them.
 
 ### Going live (spending real money)
 
@@ -301,7 +401,11 @@ upload described above.
    is shipped.
 4. Read the **validation + cost report** (chars, $ estimate, cache hits,
    visual sources + contact sheet, meme count, blockers, month-to-date
-   spend). If the LONG used `[ASSET: slug]` tags, the bot attaches each
+   spend). It also states how much of the kit this script reaches —
+   `Kit: 7 of 442 assets · 4 families · 7 beat-library scenes` — which is the
+   number that says whether the video will look like the last one. A script
+   under the floor gets a warning naming the beats that carry a figure and
+   have no drawing to put it in; it is a judgement call, never a blocker. If the LONG used `[ASSET: slug]` tags, the bot attaches each
    appended **Claude Design prompt as a paste-ready file** and BLOCKS the
    render until you paste it into Claude Design, export, and upload the
    PNG (bespoke visuals never come from an image-generation API).
@@ -350,6 +454,104 @@ upload described above.
    backlog (fed by every screen and by any thesis that moves), `/thesis
    TICKER` re-checks what you said against today's numbers, and `/batch`
    queues renders to run unattended overnight.
+9. **When a thesis moves, `/update TICKER`.** Shipping a video pins what it
+   claimed — the hook, the conclusion verbatim, the two or three things it
+   asserted — and `/thesis` re-reads the numbers behind it. When they have
+   moved materially the bot says so and names the command. `/update` is its
+   own prompt with its own spine (what I said → what happened → was I right →
+   what now), carrying the previous video's own words, so the writer grades a
+   real claim instead of inventing one. It is explicit on purpose: whether a
+   covered name is an update or a fresh take is an editorial call and stays
+   yours. The screener's 30-day cooldown does not apply — being recently
+   covered is the precondition for an update, not a reason to skip it.
+
+## Command reference
+
+Every command the bot registers, in the order you meet them. `TICKER` is
+always the symbol (`EXMPL`); anything in `[brackets]` is optional. Commands
+that touch a workspace use the **active** one when you omit the ticker — the
+last `/short`, `/long` or `/update` you ran in that chat.
+
+`tests/test_docs.py` checks this table against the handlers the bot actually
+registers, in both directions, so a command cannot be added or renamed without
+this section failing.
+
+### Starting a video
+
+| command | what it does |
+|---|---|
+| `/short TICKER` | Opens a SHORT (9:16, 60–75s). Refreshes the numbers itself where Excel is available, then hands back `prompt_short.md`. |
+| `/long TICKER` | Opens a LONG (16:9 deep dive). Two steps: Step 1 returns ranked angles, you reply with a number, Step 2 is the writing prompt. |
+| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Refuses (and points at `/long`) when no thesis is on file. |
+| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. |
+| `/new TICKER` | Deprecated alias, kept for one release. Prepares both prompts because it cannot know the lane. |
+| `/refresh TICKER [RIC]` | Re-pulls the numbers in Excel. A second argument pins a vendor-symbol override for good (`/refresh PLTR PLTR.O`). |
+| `/prompts` | Re-sends the active workspace's pre-filled prompt. |
+
+### Reviewing and editing the script
+
+| command | what it does |
+|---|---|
+| `/script` | The stored script, numbered, so `/edit N` and it agree. |
+| `/edit N <text>` | Replaces line N. `N-M` for a range; no text deletes the line. |
+| `/replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
+| `/undo` | Steps back one revision. |
+
+An edit that does not parse never lands. Every edit that does re-runs the
+gates, re-prices, and drops the approval — nothing renders from a version
+nobody read.
+
+### Rendering
+
+| command | what it does |
+|---|---|
+| `/render TICKER` | Renders the approved script for that ticker's lane. |
+| `/render_long TICKER` | Forces the LONG, for a ticker that has both. |
+| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". |
+| `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
+| `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
+| `/status` | The job queue. |
+| `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
+
+### Publishing
+
+| command | what it does |
+|---|---|
+| `/upload TICKER [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. |
+| `/scheduled` | What is queued to publish, and when. |
+| `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
+
+### Finding the next one
+
+| command | what it does |
+|---|---|
+| `/screen [trending\|value\|all]` | Ranked candidates. Trending → SHORT, value → LONG, plus the update lane (covered names whose thesis has moved). |
+| `/ideas` | The ranked backlog, fed by every screen and by any thesis that moves. |
+| `/idea TICKER <why>` | Adds one by hand. |
+| `/unidea TICKER` | Drops one. |
+| `/thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
+| `/watch [TICKER \| drop TICKER]` | Intraday watch. Published names join automatically. |
+| `/earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
+
+### Housekeeping
+
+| command | what it does |
+|---|---|
+| `/batch [TICKER [fmt] \| run \| clear]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
+| `/cost` | Month-to-date spend against the cap. |
+| `/kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. The gap list is the input to the next batch of art. |
+| `/help`, `/start` | The command list, in chat. |
+
+### Things that are not commands
+
+- **Paste a script** (message or `.txt`) into the chat and it is taken as the
+  script for the active workspace — short or long is detected, not declared.
+- **Reply with a number** while a LONG is awaiting an angle and it is read as
+  your angle pick, not as a script.
+- **Upload `dennis_data.xlsx`** any time to override the numbers.
+- **Upload a PNG** to satisfy a `[SHOW FILING:]` or `[ASSET:]` tag.
+- **The buttons**: `Approve ✅` arms a render, `Swap clip 🔄` rotates a
+  `[CLIP]` pick, `Cancel ✖️` withdraws a pending approval.
 
 ### The data contract (private, no API)
 
@@ -628,3 +830,30 @@ network calls:
 - **Renders feel slow on a small VPS** — lower `LONG_WIDTH/HEIGHT` to
   1280×720, keep `FINAL_PRESET=veryfast`; hardware encoders are used
   automatically when detected.
+- **`/update TICKER` says "No thesis on file"** — nothing was recorded from a
+  previous video for that name, so there is no claim to grade. `/long TICKER`
+  for a first-time take; the thesis is pinned when that one ships.
+
+### Windows / WSL2 specifically
+
+- **`sudo systemctl enable --now dennis` fails with "System has not been
+  booted with systemd"** — systemd is off. Put `[boot]\nsystemd=true` in
+  `/etc/wsl.conf`, run `wsl --shutdown` from PowerShell, reopen Ubuntu, and
+  re-run the bootstrap so the unit files enable. Until then run it in the
+  foreground: `cd /opt/dennis && .venv/bin/python main.py`.
+- **The bootstrap refuses the destination** — it is under `/mnt`. Install to
+  the Linux filesystem (`/opt/dennis`), not to a Windows drive.
+- **Renders are inexplicably slow, and the second render of the same video is
+  no faster** — the checkout or the cache is on `/mnt/c`. Every segment-reuse
+  check crosses the 9p translation layer, which is exactly the operation that
+  is supposed to make a re-render cheap. Move `WORKSPACE_DIR`, `CACHE_DIR` and
+  `STATE_DIR` onto the Linux side; the bot warns about this at startup.
+- **`Cannot load libcuda.so.1` in the logs** — the GPU is not passed through
+  to WSL. Nothing to fix: the encoder falls back to libx264 and the render
+  finishes.
+- **The bot stops answering overnight** — Windows slept or shut down, which
+  takes WSL with it. Expected. Reopen Ubuntu and the service comes back;
+  anything queued with `/batch` is still queued.
+- **Excel refresh never happens** — the add-in path only exists on a Windows
+  box with Excel and the add-in loaded, and it is the parked route. The manual
+  upload of `dennis_data.xlsx` is the primary one and always works.
