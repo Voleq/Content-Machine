@@ -33,6 +33,7 @@ from pipeline.render_short import (
     STAGE_MAX_W,
     STAGE_Y,
     _median_coverage,
+    _roll_frames_matched,
     fit_to_frame,
     stage_box,
 )
@@ -383,3 +384,47 @@ def test_a_down_short_does_not_render_a_green_chip(settings, tmp_path):
         assert fill != GREEN, "a down-move rendered a green chip"
     else:
         assert fill == GREEN
+
+
+# --------------------------------------------------------------------------
+# A counted-in beat keeps its register for the whole roll.
+# --------------------------------------------------------------------------
+
+
+def _drawing(w: int, h: int):
+    """A transparent canvas with a stroke on it — a kit asset's alpha shape."""
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    img.paste((35, 35, 38, 255), (w // 4, h // 4, w // 2, h // 2))
+    return img
+
+
+def test_a_rolled_full_bleed_beat_is_opaque_on_every_frame():
+    """The regression: it was opaque for exactly one frame.
+
+    A figure ARRIVES by counting, so a full-frame scene with a `number` slot
+    renders as a roll. Only frame 0 went through `cover_on_paper`; the rest
+    were resized raw, so one frame in, the beat went transparent and the
+    gut-check sheet showed through the drawing meant to replace it.
+    """
+    from pipeline.kit_frames import FULL_BLEED
+
+    frames = [_drawing(1080, 1920) for _ in range(4)]
+    first = Image.new("RGBA", (W, H), (242, 242, 239, 255))
+    out = _roll_frames_matched(frames, first, FULL_BLEED)
+    assert len(out) == len(frames)
+    for i, frame in enumerate(out):
+        assert frame.size == (W, H), i
+        assert frame.getchannel("A").getextrema() == (255, 255), \
+            f"frame {i} of the roll is transparent — the sheet shows through"
+
+
+def test_a_staged_roll_still_matches_the_first_frame_exactly():
+    """The other half of the rule: every frame of a roll is the same drawing
+    with a different figure in it, so re-fitting each one would let the beat
+    breathe by a pixel as the digits change width."""
+    from pipeline.kit_frames import STAGE
+
+    frames = [_drawing(900, 900) for _ in range(3)]
+    first = frames[0].resize((760, 760), Image.LANCZOS)
+    out = _roll_frames_matched(frames, first, STAGE)
+    assert [f.size for f in out] == [(760, 760)] * 3

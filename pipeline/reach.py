@@ -28,8 +28,10 @@ from dataclasses import dataclass
 
 # A figure as it is written on screen: 29, +29%, 5×, $1.1B, -$15M, 365M.
 # Deliberately not run over `audio_script`, where every number is spelled out
-# for the voice ("four hundred million") and none of this would match.
-_FIGURE_RE = re.compile(r"[+-]?\$?\d[\d.,]*\s*(?:%|×|x\b)?[a-zA-Z]{0,2}")
+# for the voice ("four hundred million") and none of this would match. The
+# suffix is a unit, never free text: `[a-zA-Z]{0,2}` swallowed the next word,
+# so "+29% today" and "+29%" were two different figures.
+_FIGURE_RE = re.compile(r"[+-]?\$?\d[\d.,]*(?:\s*[%×]|[KMBTkmbt]\b|x\b)?")
 
 # The format's own data beats, in order. Each one carries a figure and each one
 # is a beat the writer can hand a drawing; a beat with no figure in it is not

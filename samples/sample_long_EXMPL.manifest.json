@@ -1,6 +1,9 @@
 {
   "ticker": "EXMPL",
   "draft": false,
+  "proof": false,
+  "audio_tier": "mock",
+  "draft_audio": false,
   "duration": 190.45,
   "resolution": [
     1920,

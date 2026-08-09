@@ -194,15 +194,14 @@ def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):
     assert "brand-new-idea" not in before
 
     real = load_kit
+    NEW = "blanks/term-brand-new-idea"
 
     def patched(assets_dir):
         from dataclasses import replace
 
         k = real(assets_dir)
         template = k.get("blanks/term-card-blank")
-        k._assets["blanks/term-brand-new-idea"] = replace(
-            template, key="blanks/term-brand-new-idea",
-            name="term-brand-new-idea")
+        k._assets[NEW] = replace(template, key=NEW, name="term-brand-new-idea")
         k.family.cache_clear()
         return k
 
@@ -211,8 +210,18 @@ def test_a_new_asset_shows_up_without_a_code_change(settings, kit, monkeypatch):
     import pipeline.kit as kit_mod
     monkeypatch.setattr(kit_mod, "load_kit", patched)
 
-    after = kit_catalog(settings)
-    assert "brand-new-idea" in after
+    try:
+        after = kit_catalog(settings)
+        assert "brand-new-idea" in after
+    finally:
+        # `load_kit` is cached per assets dir, so the object this reaches into
+        # is the ONE kit every other test in the session reads. Without this
+        # the injected asset outlives the test and the library silently gains
+        # a 443rd drawing — which is exactly what broke the reach counts when
+        # this module happened to run before tests/test_cost.py.
+        kit = real(settings.assets_dir)
+        kit._assets.pop(NEW, None)
+        kit.family.cache_clear()
 
 
 def test_the_blank_layouts_are_explained_rather_than_listed_as_frameworks(settings):
@@ -285,8 +294,17 @@ def test_the_short_and_long_catalogs_differ_where_they_should(settings):
     assert "SHORT BEAT LIBRARY" in short and "SHORT BEAT LIBRARY" not in long
     assert "Chapter kits" in long and "Chapter kits" not in short
     # the tag families are the same in both
-    for header in ("[TERM: key]", "[PROP: key]", "[ALERT: kind]"):
+    #
+    # [TERM] and [BIGNUM] are NOT in this list, and that is not an oversight:
+    # the kit ships no named card for either — `blanks/{term-card,big-number}-
+    # blank` are the only artwork, and both are dropped from a list headed
+    # "frameworks that exist". So neither header appears in a clean catalog,
+    # and the blank-layout line is what carries them (asserted separately).
+    # This test asserted [TERM: key] in both for as long as a sibling test
+    # leaked an injected `term-brand-new-idea` into the shared cached kit.
+    for header in ("[PROP: key]", "[TABLE: kind]", "[ALERT: kind]"):
         assert header in short and header in long
+    assert "A blank layout exists" in short and "A blank layout exists" in long
 
 
 def test_a_missing_kit_says_so_and_points_at_the_escape_hatch(settings, tmp_path):

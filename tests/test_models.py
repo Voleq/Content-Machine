@@ -22,8 +22,17 @@ def test_short_script_valid(short_valid_json: str):
     assert script.years == ["2021", "2022", "2023", "2024", "2025"]
     assert script.meme is not None and script.meme.key == "fomo-stages-wish-i-bought-doodle"
     assert script.missing_anchor_words() == []
-    assert script.char_count <= 1200
     assert "noise" in script.conclusion.lower()
+    # The budget counts the SPOKEN text. Validated straight off the JSON like
+    # this, `audio_script` still carries its inline tags — the parser is what
+    # strips them, and it is where the budget is enforced — so measuring
+    # `script.char_count` here counts `[PROP: …]` payloads as speech.
+    from pipeline.models import SHORT_TAG_TYPES
+    from pipeline.tagging import tokenize_tags
+
+    clean, _tags, _warnings = tokenize_tags(script.audio_script,
+                                            allowed=SHORT_TAG_TYPES)
+    assert len(clean) <= 1200
 
 
 def test_short_script_rejects_bad_row_index(fixtures_dir):
