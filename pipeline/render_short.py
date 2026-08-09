@@ -45,6 +45,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 from pathlib import Path
 
 from config import Settings
@@ -165,6 +166,74 @@ DESK_SET: tuple[str, ...] = (
 # it is a place rather than a cut, short enough that a forty-second gut check
 # is not one still.
 DESK_ROTATE_S = 11.0
+
+# How much of the plate a re-frame keeps. The act continues on the same shot,
+# tighter — a cut in, not a zoom: nothing in this pipeline moves the frame.
+ACT_REFRAME_KEEP = 0.74
+
+
+# --------------------------------------------------------------------------
+# The ceiling on how long anything may sit still.
+# --------------------------------------------------------------------------
+# `short_max_hold_s` capped how long a CUE may hold, and nothing at all capped
+# how long a LAYER may live. Two conventions for `t_end` ran side by side in
+# here and only one of them was bounded:
+#
+#   * a CUE-DRIVEN layer ends at `min(c.t + hold, duration)`, so the pacing
+#     planner's ceiling reaches it;
+#   * an ACT-SCOPED layer ends at the next ACT BOUNDARY — `t_end=gut_t` — and
+#     an act is a structural division, not a duration. On a script whose gut
+#     check arrives late the chart was on the monitor for twenty-eight
+#     seconds, nine of them without a single thing entering or leaving the
+#     frame, and the ceiling was only ever measured off the finished encode.
+#
+# Clamping an act to the ceiling and letting the frame go empty trades a still
+# for a blank. An act runs to its boundary and CHANGES WITHIN ITSELF instead.
+def act_cuts(t0: float, t1: float, ceiling: float) -> list[tuple[float, float]]:
+    """`t0..t1` in the fewest equal segments none of which outlasts `ceiling`.
+
+    Equal rather than ceiling-length-plus-a-remainder: an act that cut at 8.0s
+    and again 0.4s later reads as a mistake, and the last segment is the one
+    the next beat cuts away from.
+    """
+    span = t1 - t0
+    if ceiling <= 0 or span <= ceiling:
+        return [(t0, t1)]
+    n = max(int(math.ceil(span / ceiling - 1e-9)), 1)
+    step = span / n
+    return [(t0 + i * step, t1 if i == n - 1 else t0 + (i + 1) * step)
+            for i in range(n)]
+
+
+def reframe_on(img, rect: tuple[int, int, int, int], keep: float, *,
+               y_frac: float = 0.5):
+    """The same plate, cropped tight around `rect` and scaled back to frame.
+
+    Returns `(image, crop origin, zoom)`. The origin and the zoom are what a
+    mark is placed through: a circle drawn round a point on the wide shot is a
+    circle round nothing on the punch-in, which is how the chart annotation
+    came to be measured against a chart that had moved.
+
+    `y_frac` is where `rect`'s centre lands down the output frame — the same
+    number :func:`~pipeline.kit_frames.plate` places the scene at, so the
+    punch-in holds the subject in the band the wide shot put it in and the
+    headline column underneath stays clear.
+
+    ONE static crop per segment, exactly as :func:`punch_crop` does for a
+    drawing — the emphasis is in the framing, never in moving the frame.
+    """
+    from PIL import Image
+
+    w, h = img.size
+    keep = min(max(keep, 0.2), 1.0)
+    cw, ch = max(int(w * keep), 1), max(int(h * keep), 1)
+    x, y, rw, rh = rect
+    cx, cy = x + rw // 2, y + rh // 2
+    x0 = min(max(cx - cw // 2, 0), max(w - cw, 0))
+    y0 = min(max(int(cy - ch * min(max(y_frac, 0.0), 1.0)), 0), max(h - ch, 0))
+    out = img.crop((x0, y0, x0 + cw, y0 + ch)).resize((w, h), Image.LANCZOS)
+    return out, (x0, y0), w / cw
+
 
 # --------------------------------------------------------------------------
 # The vertical layout, in 1080-wide design coordinates on a 1080x1920 frame.
@@ -496,7 +565,11 @@ def render_short(
         span = t1 - t0
         if span < 0.4:
             return
-        n = max(int(span // DESK_ROTATE_S), 1)
+        # Rounded UP, so DESK_ROTATE_S is the maximum a backdrop holds rather
+        # than the minimum. Floored, a 21.9s stretch was one angle for 21.9
+        # seconds — the constant's own comment says that is the thing it
+        # exists to stop.
+        n = max(int(math.ceil(span / DESK_ROTATE_S - 1e-9)), 1)
         step = span / n
         # Seeded off the script so two shorts cut on the same day do not open
         # the same section on the same angle, deterministic within one.
@@ -536,10 +609,9 @@ def render_short(
     chart_scale = 1.0
     if desk is not None:
         used_keys.add(desk.key)
-        desk_path = rdir / "desk_chart.png"
         slot_rects: dict[str, tuple[int, int, int, int]] = {}
-        plate(desk, W, H, settings, screen=("screen", chart_img),
-              y_frac=0.34, rects=slot_rects).convert("RGBA").save(desk_path)
+        chart_plate = plate(desk, W, H, settings, screen=("screen", chart_img),
+                            y_frac=0.34, rects=slot_rects).convert("RGBA")
         sx0, sy0, sw0, sh0 = slot_rects.get("screen", (0, 0, W, H))
         chart_pos = (sx0, sy0)
         # The chart is cover-cropped into the glass, so it is scaled by
@@ -548,20 +620,63 @@ def render_short(
         chart_scale = cover
         chart_pos = (int(sx0 - (chart_img.width * cover - sw0) / 2),
                      int(sy0 - (chart_img.height * cover - sh0) / 2))
-        layers.append(OverlayLayer(
-            path=desk_path, x=0, y=0,
-            t_start=stage_open_end, t_end=gut_t, name="chart",
-        ))
+        chart_rect = (sx0, sy0, sw0, sh0)
+        chart_entry = None
     else:
         chart_pos = (px(40), px(STAGE_Y))
-        chart_draw = frames_to_alpha_clip(
+        # The bare chart on a full-frame canvas, so the act re-frames through
+        # exactly the same path the desk shot does.
+        chart_plate = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        chart_plate.alpha_composite(chart_img, chart_pos)
+        chart_rect = (chart_pos[0], chart_pos[1], chart_img.width, chart_img.height)
+        chart_entry = frames_to_alpha_clip(
             draw_on_frames(chart_img, fps=fps, seconds=0.9),
             fps, rdir / "chart_on.mov")
-        layers.append(OverlayLayer(
-            path=chart_draw, x=chart_pos[0], y=chart_pos[1],
-            t_start=stage_open_end, t_end=gut_t, is_video=True, hold=True,
-            name="chart",
-        ))
+
+    # THE ACT, RE-FRAMED. `t_end=gut_t` gave the hero shot no maximum
+    # lifetime: the composition was whatever the script's cues happened to put
+    # over it, and on this one that was nothing for nine seconds. The act
+    # still runs to the gut check — it cuts between the wide shot and a
+    # punch-in on the monitor on the way there, so the shot continues and the
+    # composition does not persist.
+    #
+    # Re-framing rather than re-drawing or swapping the plate: the chart is
+    # the evidence this act exists to show, so it has to stay on screen and
+    # stay registered — a second draw-on pass re-animates ink the viewer has
+    # already read, and cutting to another drawing takes the chart away in the
+    # middle of the sentence that is about it.
+    #
+    # `chart_framing` is the record of it: `(origin, zoom, cut)` for the
+    # framing in force at a time, which is how a mark that points at the chart
+    # lands on the chart in whichever framing is up.
+    chart_segments: list[tuple[float, float, tuple[int, int], float]] = []
+    for i, (a, b) in enumerate(act_cuts(stage_open_end, gut_t,
+                                        settings.short_max_hold_s)):
+        name = "chart" if i == 0 else f"chart_{i}"
+        if i % 2:
+            img, origin, zoom = reframe_on(chart_plate, chart_rect,
+                                           ACT_REFRAME_KEEP, y_frac=0.34)
+        else:
+            img, origin, zoom = chart_plate, (0, 0), 1.0
+        chart_segments.append((a, b, origin, zoom))
+        if i == 0 and chart_entry is not None:
+            # The chart still DRAWS ON when it arrives; only the framing of
+            # what follows is new.
+            layers.append(OverlayLayer(
+                path=chart_entry, x=chart_pos[0], y=chart_pos[1],
+                t_start=a, t_end=b, is_video=True, hold=True, name=name))
+            continue
+        dest = rdir / f"chart_act_{i}.png"
+        img.save(dest)
+        layers.append(OverlayLayer(path=dest, x=0, y=0, t_start=a, t_end=b,
+                                   name=name))
+
+    def chart_framing(t: float) -> tuple[tuple[int, int], float, float]:
+        """`(crop origin, zoom, when this framing cuts)` for the chart at `t`."""
+        for _a, b, origin, zoom in chart_segments:
+            if t < b:
+                return origin, zoom, b
+        return (0, 0), 1.0, gut_t
 
     # The room through the middle — the gut check and the trap, which is most
     # of the runtime and had no backdrop beyond the flat plate. This goes in
@@ -688,21 +803,33 @@ def render_short(
         target = c.payload["target"]
         if target == "chart":
             lx, ly = chart_meta["last_point"]
-            # `last_point` is in the chart IMAGE's pixels; on the desk the
-            # chart is scaled into the monitor, so the mark scales with it.
-            sw = max(int(px(240) * min(chart_scale, 1.0)), px(90))
-            sh = max(int(px(190) * min(chart_scale, 1.0)), px(70))
-            x = chart_pos[0] + int(lx * chart_scale) - sw // 2
-            y = chart_pos[1] + int(ly * chart_scale) - sh // 2
             # a mark on the chart leaves with the chart; a mark on a row
-            # leaves with the sheet. Neither outlives what it points at.
+            # leaves with the sheet. Neither outlives what it points at — and
+            # neither outlives the FRAMING it was drawn for. The act cuts
+            # between the wide shot and the punch-in, and the circle is round
+            # a point that moved.
             t_start, t_end = clip_to_stage(c.t, gut_t)
+            (ox, oy), zoom, cut = chart_framing(t_start)
+            t_end = min(t_end, cut)
+            # `last_point` is in the chart IMAGE's pixels; on the desk the
+            # chart is scaled into the monitor, so the mark scales with it,
+            # and again with whatever the segment's framing does to the plate.
+            scale = chart_scale * zoom
+            sw = max(int(px(240) * min(scale, 1.0)), px(90))
+            sh = max(int(px(190) * min(scale, 1.0)), px(70))
+            x = int((chart_pos[0] + lx * chart_scale - ox) * zoom) - sw // 2
+            y = int((chart_pos[1] + ly * chart_scale - oy) * zoom) - sh // 2
         else:
             i = int(c.payload["row_index"] or 0)
             rx, ry = row_geo.get(i, (sheet_pos[0], sheet_pos[1]))
             sw, sh = px(1000), layout["row_h"]
             x, y = rx, ry
             t_start, t_end = clip_to_stage(c.t, sheet_end)
+        # A mark is a mark, not a fixture. Ending it at the act boundary is
+        # the same unbounded convention the acts themselves ran on — it is how
+        # one circle and its note sat on screen for thirty of the sample's
+        # seventy-one seconds.
+        t_end = min(t_end, t_start + settings.short_max_hold_s)
         x = min(max(x, px(6)), W - sw - px(6))
         y = min(max(y, px(6)), H - sh - px(6))
         clip = frames_to_alpha_clip(

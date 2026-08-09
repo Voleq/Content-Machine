@@ -624,6 +624,7 @@
     "shorts/dennis-vs-numbers/numbers-raining",
     "shorts/open-close/e-close",
     "shorts/open-close/e-open",
+    "shorts/the-world/d-desk-empty",
     "shorts/the-world/d-desk-over-shoulder",
     "shorts/the-world/d-desk-side",
     "shorts/the-world/d-desk-wide",
@@ -635,14 +636,18 @@
     "stings/paper-slide-tall",
     "stings/torn-edge-tall"
   ],
-  "kit_reach": "Kit: 28 of 442 assets \u00b7 15 families \u00b7 8 beat-library scenes",
+  "kit_reach": "Kit: 29 of 442 assets \u00b7 15 families \u00b7 8 beat-library scenes",
   "layer_names": [
     "act_mid_0",
     "act_mid_1",
+    "act_mid_2",
     "act_open",
     "act_payoff",
     "brand_bug",
     "chart",
+    "chart_1",
+    "chart_2",
+    "chart_3",
     "conclusion",
     "countup_0",
     "disclaimer",
@@ -700,6 +705,27 @@
     {
       "name": "chart",
       "t_start": 5.0,
+      "t_end": 11.978499999999999,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chart_1",
+      "t_start": 11.978499999999999,
+      "t_end": 18.956999999999997,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chart_2",
+      "t_start": 18.956999999999997,
+      "t_end": 25.935499999999998,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chart_3",
+      "t_start": 25.935499999999998,
       "t_end": 32.913999999999994,
       "x": 0,
       "y": 0
@@ -707,13 +733,20 @@
     {
       "name": "act_mid_0",
       "t_start": 32.913999999999994,
-      "t_end": 48.79455,
+      "t_end": 43.50103333333333,
       "x": 0,
       "y": 0
     },
     {
       "name": "act_mid_1",
-      "t_start": 48.79455,
+      "t_start": 43.50103333333333,
+      "t_end": 54.08806666666666,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "act_mid_2",
+      "t_start": 54.08806666666666,
       "t_end": 64.6751,
       "x": 0,
       "y": 0
@@ -770,28 +803,28 @@
     {
       "name": "scribble_0_chart",
       "t_start": 2.2441,
-      "t_end": 32.913999999999994,
+      "t_end": 10.2441,
       "x": 733,
       "y": 700
     },
     {
       "name": "note_0",
       "t_start": 2.2441,
-      "t_end": 32.913999999999994,
+      "t_end": 10.2441,
       "x": 674,
       "y": 789
     },
     {
       "name": "scribble_1_numbers",
       "t_start": 38.44414999999999,
-      "t_end": 53.4846,
+      "t_end": 46.44414999999999,
       "x": 10,
       "y": 685
     },
     {
       "name": "note_1",
       "t_start": 38.44414999999999,
-      "t_end": 53.4846,
+      "t_end": 46.44414999999999,
       "x": 817,
       "y": 637
     },
