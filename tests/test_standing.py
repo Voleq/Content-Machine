@@ -800,3 +800,92 @@ def test_an_unreadable_thesis_book_does_not_break_a_screen(settings):
     result = screener.run_screen(settings, "all")
     assert result["updates"] == []
     assert "trending" in result, "a screen still screens"
+
+
+# --------------------------------------------------------------------------
+# The whole loop, across every seam: ship -> remember -> tell the next writer.
+# --------------------------------------------------------------------------
+
+
+def test_a_shipped_short_reaches_the_next_writers_prompt(core, settings,
+                                                         short_valid_json):
+    """The loop used to be remember -> notify -> FORGET. Every piece of it is
+    tested above in isolation; this is the one that crosses the seams, because
+    every one of those seams is where it used to fall apart.
+    """
+    import shutil
+
+    from bot.prompts import fill_prompt, prior_coverage
+    from pipeline.company_data import load_company_data
+    from pipeline.models import JobKind, JobRecord
+    from pipeline.parser_short import parse_short_script
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    script, _ = parse_short_script(short_valid_json, settings)
+    ws.save_short(script, short_valid_json)
+
+    # 1. it ships
+    core._record_thesis(JobRecord(id="j1", kind=JobKind.RENDER_SHORT,
+                                  ticker="EXMPL", workdate=ws.workdate))
+
+    # 2. the book has what it actually said, not just a label for it
+    thesis = ThesisBook(settings).get("EXMPL")
+    assert thesis is not None
+    assert thesis.fmt == "short"
+    assert thesis.conclusion == script.conclusion
+    assert thesis.hook == script.hook_text
+
+    # 3. the writer of the next one is told
+    block = prior_coverage(settings, "EXMPL")
+    assert script.conclusion in block
+    assert "NOT ON FILE" not in block
+
+    # 4. and it is in the prompt they are handed
+    text = fill_prompt("update", "EXMPL", load_company_data(ws.path), ws.path,
+                       settings)
+    assert script.conclusion in text
+    assert "WHAT I SAID" in text
+
+
+def test_a_shipped_long_reaches_it_too(core, settings, long_valid_text):
+    """The LONG has no structured fields, so this crosses the read-back path
+    that has to reconstruct the claim out of prose."""
+    import shutil
+
+    from bot.prompts import prior_coverage
+    from pipeline.models import JobKind, JobRecord
+    from pipeline.parser_long import parse_long_script
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    shutil.copy(FIXTURES / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    ws.save_long(script, long_valid_text)
+    ws.set_chosen_angle("the value trap")
+
+    core._record_thesis(JobRecord(id="j2", kind=JobKind.RENDER_LONG,
+                                  ticker="EXMPL", workdate=ws.workdate))
+
+    thesis = ThesisBook(settings).get("EXMPL")
+    assert thesis.fmt == "long"
+    assert thesis.summary == "the value trap"
+    assert thesis.conclusion, "the last-two-sentences path produced nothing"
+
+    block = prior_coverage(settings, "EXMPL")
+    assert thesis.conclusion in block
+    assert "(LONG)" in block
+
+
+def test_bookkeeping_never_fails_a_shipped_video(core, settings, monkeypatch):
+    """A video that delivered must not be turned into a failed job by the
+    record-keeping that runs after it."""
+    from pipeline.models import JobKind, JobRecord
+
+    ws = Workspace(settings, "EXMPL", today_str()).create()
+    # no data export at all, and a script that cannot be read back
+    monkeypatch.setattr(ThesisBook, "record",
+                        lambda *a, **k: (_ for _ in ()).throw(RuntimeError("disk")))
+    core._record_thesis(JobRecord(id="j3", kind=JobKind.RENDER_SHORT,
+                                  ticker="EXMPL", workdate=ws.workdate))
