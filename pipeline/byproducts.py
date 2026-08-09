@@ -405,3 +405,63 @@ def _headline_metric(data) -> str:
         return shock_metric(data) or ""
     except Exception:  # noqa: BLE001
         return ""
+
+
+# --------------------------------------------------------------------------
+# Held compositions: how long the frame sits still.
+# --------------------------------------------------------------------------
+# A cut is not evidence that anything MOVED. The filter graph can be entirely
+# correct — right layers, right windows, right cue times — and still produce a
+# composition that holds for twelve and a half seconds, because nothing in the
+# system ever measured the output. A real SHORT came out with 72% of its
+# runtime inside holds of 3s or more and four compositions carrying 40 of its
+# 79 seconds, in a format whose spec is fast cuts, with a green suite.
+#
+# So this measures the frames. Downscaled greyscale, sampled on a fixed grid,
+# mean absolute delta under the threshold means "nothing changed".
+
+HOLD_SAMPLE_FPS = 2.0
+HOLD_STILL_DELTA = 2.0      # mean |delta| below this: the frame did not change
+
+
+def held_spans(video: Path, *, sample_fps: float = HOLD_SAMPLE_FPS,
+               still_delta: float = HOLD_STILL_DELTA) -> list[tuple[float, float]]:
+    """`(start, end)` for every span the composition holds unchanged.
+
+    Reproduce by hand with:
+        ffmpeg -i in.mp4 -vf "fps=2,scale=96:171,format=gray" -f image2 out/%04d.pgm
+    """
+    import tempfile
+
+    from PIL import Image, ImageChops, ImageStat
+
+    from pipeline.render_common import run_ffmpeg
+
+    step = 1.0 / sample_fps
+    with tempfile.TemporaryDirectory(prefix="holds_") as td:
+        out = Path(td)
+        run_ffmpeg(["-i", str(video),
+                    "-vf", f"fps={sample_fps},scale=96:171,format=gray",
+                    "-f", "image2", str(out / "%05d.pgm")])
+        frames = sorted(out.glob("*.pgm"))
+        if len(frames) < 2:
+            return []
+        imgs = [Image.open(f).convert("L").copy() for f in frames]
+
+    spans: list[tuple[float, float]] = []
+    start: int | None = None
+    for i, (a, b) in enumerate(zip(imgs, imgs[1:])):
+        still = ImageStat.Stat(ImageChops.difference(a, b)).mean[0] < still_delta
+        if still and start is None:
+            start = i
+        elif not still and start is not None:
+            spans.append((start * step, i * step))
+            start = None
+    if start is not None:
+        spans.append((start * step, (len(imgs) - 1) * step))
+    return spans
+
+
+def longest_hold(video: Path, **kw) -> float:
+    spans = held_spans(video, **kw)
+    return max((b - a for a, b in spans), default=0.0)

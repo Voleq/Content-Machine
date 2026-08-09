@@ -47,6 +47,7 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | Monthly cap (`MONTHLY_SPEND_CAP=50`) blocks paid calls in code | `pipeline/cost.py` SpendLedger, checked inside `TTSEngine` |
 | One final render per approved ticker | job queue + `/draft`; no variant generation exists |
 | A `/draft` never spends: free local voice, else the mock hum — never ElevenLabs | `TTSEngine.tier_for`; the tier is part of the cache key |
+| A `/proof` **cannot** spend — it raises at the boundary rather than reaching ElevenLabs, so $0 survives a mistyped command | `TTSEngine.guard_free_only` (`free_only=True`), asserted again immediately before the paid branch |
 | Draft audio can never become a final render (its word timings are interpolated) | `render_long` / `render_short` refuse `tts.draft` |
 | Mock and draft audio is never loudness-normalised (normalising a placeholder tone is what made a render come out silent) | `CompositeSpec.normalise_audio`; the limiter stays on either way |
 | A SHORT without its host, backdrop or signature cards fails the render rather than degrading | `Kit.require`; `render_short` raises `KitError` |
@@ -313,13 +314,34 @@ upload described above.
    keeps the script it had and you get the parser's complaint. Every revision
    that does land re-runs the gates, re-prices, and drops the approval, so
    nothing renders from a version nobody read. A full re-paste still works too.
-6. `/render TICKER` (SHORT) or `/render_long TICKER` — for LONG,
-   `/draft TICKER` first gives a half-res check for **free**: it uses the
-   local neural voice (Piper) when the box has one, the mock hum otherwise,
-   and never ElevenLabs. Draft audio is listenable but its word timings are
-   exact per sentence and interpolated within one, so judge pacing and edit
-   points, not lip-sync — and the renderer refuses to build a final from it.
-   Progress and failures arrive as messages.
+6. `/render TICKER` (SHORT) or `/render_long TICKER`. Before spending, there
+   are two free passes — see the tier table below. `/proof TICKER` is the one
+   that answers "what will this look like?"; `/draft TICKER` (LONG) answers
+   "does the timing work?". Both use the local neural voice (Piper) when the
+   box has one and the mock hum otherwise, never ElevenLabs. Draft audio is
+   listenable, but its word timings are exact per sentence and interpolated
+   within one, so judge pacing and composition, not lip-sync — and the
+   renderers refuse to build a final from it. Progress and failures arrive as
+   messages.
+
+   **The four tiers, once:**
+
+   | mode | visuals | voice | resolution | cost |
+   |---|---|---|---|---|
+   | `MOCK_MODE=true` | fake (prices, imagery, memes, filings, delivery) | mock hum | full | $0 |
+   | `/proof TICKER [short\|long]` | **live** — prices, Pexels, Wikimedia, memes, SEC, charts | free local (Piper) | **full** | $0 |
+   | `/draft TICKER` (LONG only) | live | free local (Piper) | half | $0 |
+   | `/render` / `/render_long` | live | **paid** ElevenLabs, one generation | full | ~one generation |
+
+   `MOCK_MODE` proves the pipeline runs and tells you nothing about what
+   ships, because it fakes everything a viewer would see. `/proof` is the
+   inverse: everything real except the one thing that costs money. It renders
+   at full resolution on purpose — whether type is legible at phone size is a
+   resolution question, so the cheaper passes cannot answer it — and buys its
+   speed from the encoder instead (`veryfast`, crf 26). It cannot reach the
+   paid voice: `TTSEngine` raises `PaidVoiceForbidden` rather than spend, so
+   the guarantee survives a mistyped command. Its output is named
+   `*_proof.mp4`, marked `draft_audio` in the manifest, and never delivered.
 7. Delivery: Google Drive link (default) posted in chat with attribution
    (Pexels + Wikimedia credits written beside the file);
    `/repurpose TICKER` afterwards cuts the best two or three ~58s windows

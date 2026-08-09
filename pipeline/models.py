@@ -478,6 +478,7 @@ class CueKind(str, Enum):
     ANNOTATION = "annotation"    # hand-drawn scribble
     ZOOM = "zoom"                # zoom-punch on the key number
     CHEAP_OR_TRAP = "cheap_or_trap"  # the value-trap beat, held to be read
+    TRAP_LINE = "trap_line"      # one clause of it, landing on its own figure
     CONCLUSION = "conclusion"
     HOST_CLOSE = "host_close"    # Dennis talking, after the payoff
     HOST_BEAT = "host_beat"      # Dennis returning mid-video, every 4-5 beats
@@ -704,6 +705,12 @@ class JobKind(str, Enum):
     RENDER_SHORT = "render_short"
     RENDER_LONG = "render_long"
     RENDER_DRAFT_LONG = "render_draft_long"
+    # Full-resolution, real-fps, free-voice pass — the only way to see what a
+    # video will actually LOOK like without buying a voice. Both formats have
+    # one, because the SHORT is the daily-volume format and had no free
+    # preview at all.
+    RENDER_PROOF_SHORT = "render_proof_short"
+    RENDER_PROOF_LONG = "render_proof_long"
     REPURPOSE = "repurpose"
 
 
@@ -802,6 +809,10 @@ class CostReport(BaseModel):
     numbers_rows: int = 0
     numbers_years: int = 0
     annotation_note: str = ""
+    # Which chart the script actually asked for. The report used to state
+    # "branded" unconditionally, so a script with "chart_style": "marker" —
+    # the crude napkin chart — was shown a line describing the other one.
+    chart_style: str = ChartStyle.CLEAN.value
     # LONG specifics
     visuals: list[VisualPlanItem] = Field(default_factory=list)
     filing_overlays: int = 0
@@ -860,8 +871,13 @@ class CostReport(BaseModel):
         lines.append(tts)
 
         if self.fmt == "short":
+            # The approval screen is the one place in this system that has to
+            # be true, so it reports the chart that was REQUESTED rather than
+            # a hardcoded description of one of the two.
+            chart = ("hand-drawn napkin" if self.chart_style == ChartStyle.MARKER.value
+                     else "branded")
             lines.append(
-                f"Chart: branded, from cached prices ✓   "
+                f"Chart: {chart}, from cached prices ✓   "
                 f"Headlines: {self.headline_count} ✓   "
                 f"Numbers: {self.numbers_rows} rows × {self.numbers_years}yr"
             )

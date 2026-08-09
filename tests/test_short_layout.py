@@ -310,3 +310,76 @@ def test_the_scribble_vocabulary_is_the_artwork_that_exists():
     named = {key for key, _ in SCRIBBLE_MARKS.values()}
     unreachable = [k for k in kit.family("marks") if k not in named]
     assert not unreachable, f"artwork nothing can ask for: {unreachable}"
+
+
+# --------------------------------------------------------------------------
+# The $TICKER chip states a direction or states nothing.
+# --------------------------------------------------------------------------
+# It was filled GREEN unconditionally, so a SHORT about a 48% drawdown carried
+# a bright green $SNDK in the corner of every frame. The channel rule — stated
+# in thumbnail.py and enforced by metric_colour — is that green is UP ONLY.
+# A chip that is green on every video says nothing, which is the argument
+# 87f2839 made when it took GOLD off the thumbnail for being on every one.
+
+
+def _dominant_fill(img):
+    from collections import Counter
+
+    px = [p[:3] for p in img.convert("RGBA").getdata() if p[3] > 200]
+    return Counter(px).most_common(1)[0][0]
+
+
+def test_the_ticker_chip_carries_the_move(settings):
+    from pipeline.rasters import GREEN, RED, ticker_pill
+
+    assert _dominant_fill(ticker_pill(settings, "SNDK", direction="up")) == GREEN
+    assert _dominant_fill(ticker_pill(settings, "SNDK", direction="down")) == RED
+
+
+def test_the_ticker_chip_is_never_decoratively_green(settings):
+    """No move to report means ink on paper — not green by default."""
+    from pipeline.rasters import GREEN, ticker_pill
+
+    for d in (None, "", "sideways"):
+        assert _dominant_fill(ticker_pill(settings, "SNDK", direction=d)) != GREEN
+
+
+def test_the_chip_is_deterministic_and_keeps_its_size(settings):
+    """Same arguments, byte-identical output; and the colour must not move the
+    chip, because every overlay near it is positioned against its box."""
+    from pipeline.rasters import ticker_pill
+
+    a = ticker_pill(settings, "SNDK", direction="up")
+    b = ticker_pill(settings, "SNDK", direction="up")
+    assert a.tobytes() == b.tobytes()
+    assert a.size == ticker_pill(settings, "SNDK", direction="down").size
+    assert a.size == ticker_pill(settings, "SNDK").size
+
+
+def test_a_down_short_does_not_render_a_green_chip(settings, tmp_path):
+    """End to end: the renderer must pass the chart's own direction through,
+    not just be capable of it."""
+    import json
+
+    from pipeline.parser_short import parse_short_script
+    from pipeline.render_short import render_short
+    from pipeline.tts import TTSEngine
+
+    raw = json.loads((Path(__file__).resolve().parents[1] / "fixtures" /
+                      "scripts" / "short_valid.json").read_text(encoding="utf-8"))
+    script, _ = parse_short_script(json.dumps(raw), settings)
+    tts = TTSEngine(settings).synthesize(script.audio_script, "short",
+                                         events=script.inline_events)
+    out, manifest_path = render_short(script, tts, tmp_path, settings)
+    manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+
+    from PIL import Image
+
+    from pipeline.rasters import GREEN
+
+    pill = next(p for p in tmp_path.rglob("ticker_pill.png"))
+    fill = _dominant_fill(Image.open(pill))
+    if manifest["chart"]["direction"] == "down":
+        assert fill != GREEN, "a down-move rendered a green chip"
+    else:
+        assert fill == GREEN

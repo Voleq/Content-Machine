@@ -178,6 +178,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         tts_cached=cached,
         est_tts_usd=est,
         headline_count=len(script.headlines),
+        chart_style=script.chart_style.value,
         numbers_rows=len(script.numbers),
         numbers_years=max(len(r.values) for r in script.numbers),
         annotation_note="\n".join(notes),

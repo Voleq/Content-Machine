@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from pipeline.models import CueKind, ShortScript
+from pipeline.models import DELIVERY_TAG_TYPES, CueKind, ShortScript
 from pipeline.parser_long import parse_long_script
 from pipeline.timeline import (
     build_long_timeline,
@@ -123,9 +123,12 @@ def test_short_beats_are_ordered(short_script):
 
     hook_end = float(hook.payload["until"])
     assert 0 < hook_end < numbers.t < conclusion.t < duration
-    for h in headlines:
+    for i, h in enumerate(headlines):
         assert hook_end <= h.t < numbers.t, "headlines live in the why-zone"
-        assert float(h.payload["until"]) == pytest.approx(numbers.t)
+        # each ends when the NEXT one claims the frame — or at the sheet if
+        # it is the last — and never past the hold ceiling either way
+        nxt = headlines[i + 1].t if i + 1 < len(headlines) else numbers.t
+        assert float(h.payload["until"]) == pytest.approx(min(nxt, h.t + 8.0))
 
 
 def test_short_payoff_anchors_on_conclusion_words(short_script):
@@ -220,7 +223,9 @@ def test_long_timeline_offsets_hit_words(long_valid_text, settings):
     words = mock_words(script.narration, duration)
     cues = build_long_timeline(script, words, duration)
 
-    assert len(cues) == len(script.events)
+    # every tag EXCEPT delivery direction, which is audio and draws nothing
+    drawn = [e for e in script.events if e.type not in DELIVERY_TAG_TYPES]
+    assert len(cues) == len(drawn)
     times = [c.t for c in cues]
     assert times == sorted(times)
 
@@ -529,3 +534,189 @@ def test_beat_variants_reach_the_cues(short_script):
     for cue, beat in ((hook, "hook"), (numbers, "gutcheck"), (conclusion, "payoff")):
         from pipeline.timeline import SHORT_BEAT_VARIANTS
         assert cue.payload["variant"] in SHORT_BEAT_VARIANTS[beat]
+
+
+# ------------------------------------------------- tag -> cue coverage
+#
+# The regression these exist for: _TAG_TO_KIND was a bare dict lookup covering
+# 17 of 22 TagTypes, so every LONG carrying a [BEAT] — the tag the write prompt
+# calls "the single most useful tool you have" — died with a KeyError inside
+# build_long_timeline. It died AFTER the paid TTS call, and no fixture in the
+# repo contained a delivery tag, so ~190 green tests never touched it.
+#
+# The point of these two is that adding a TagType now fails here, loudly, until
+# somebody records what it draws or why it draws nothing.
+
+
+def test_every_tag_type_is_drawn_or_deliberately_not_on_long():
+    from pipeline.models import DELIVERY_TAG_TYPES, TagType
+    from pipeline.timeline import _LONG_NO_CUE_REASONS, _TAG_TO_KIND
+
+    undecided = sorted(
+        t.value for t in TagType
+        if t not in _TAG_TO_KIND
+        and t not in DELIVERY_TAG_TYPES
+        and t not in _LONG_NO_CUE_REASONS
+    )
+    assert not undecided, (
+        f"{undecided} reach a LONG script but build_long_timeline has no "
+        f"CueKind for them and no recorded reason they draw nothing. Map them "
+        f"in _TAG_TO_KIND or record why in _LONG_NO_CUE_REASONS."
+    )
+
+
+def test_every_tag_type_is_drawn_or_deliberately_not_on_short():
+    from pipeline.models import SHORT_TAG_TYPES, TagType
+    from pipeline.timeline import _SHORT_NO_CUE_REASONS, _SHORT_TAG_TO_KIND
+
+    undecided = sorted(
+        t.value for t in TagType
+        # a tag a SHORT may not carry at all is the parser's problem, not the
+        # timeline's — the guarantee here covers everything that can arrive.
+        if t in SHORT_TAG_TYPES
+        and t not in _SHORT_TAG_TO_KIND
+        and t not in _SHORT_NO_CUE_REASONS
+    )
+    assert not undecided, (
+        f"{undecided} are allowed in a SHORT but build_short_timeline neither "
+        f"cues them nor records why not."
+    )
+
+
+def test_a_delivery_tag_on_a_long_renders_instead_of_crashing(long_valid_text, settings):
+    """[BEAT]/[SIGH]/[FLAT]/[DRY] are audio direction: they must reach TTS and
+    draw nothing, rather than KeyError-ing the render after the money is spent."""
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    delivery = [e for e in script.events if e.type in DELIVERY_TAG_TYPES]
+    assert delivery, "the long fixture no longer exercises delivery tags"
+
+    duration = 120.0
+    cues = build_long_timeline(script, mock_words(script.narration, duration), duration)
+
+    assert len(cues) == len(script.events) - len(delivery)
+    assert not [c for c in cues
+                if c.payload.get("tag") in {e.type.value for e in delivery}]
+
+
+def test_an_unmapped_long_tag_is_reported_not_swallowed(settings):
+    """A tag with no CueKind and no recorded reason is a blocker at approval —
+    before the paid TTS call — because at render time it is already too late."""
+    from pipeline.timeline import unrenderable_long_tags
+
+    script, _ = parse_long_script(
+        "The filing says one thing. [SHOW ARTICLE] The tape says another.",
+        "EXMPL", settings,
+    )
+    reported = unrenderable_long_tags(script)
+    assert [e.type.value for e, _ in reported] == ["SHOW ARTICLE"]
+    # decided-and-skipped carries a reason; unmapped carries none, and
+    # validate_long_script blocks on exactly that difference.
+    assert reported[0][1]
+
+
+def test_delivery_tags_are_never_reported_as_unrenderable(long_valid_text, settings):
+    from pipeline.timeline import unrenderable_long_tags
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    assert unrenderable_long_tags(script) == []
+
+
+# ------------------------------------------------- the hold ceiling
+#
+# Measured on a real SNDK short: four compositions carried 40 of its 79
+# seconds — a 12.5s still, an 11.5s still, a 9.5s still — with 72% of the
+# runtime inside holds of 3s or more, in a format whose spec is fast cuts.
+# Two causes, both here: the value-trap read was one text panel carrying a
+# whole paragraph and held to the payoff, and headline cards were added and
+# never removed.
+
+
+def _sndk_shaped(settings):
+    """A SHORT with the shape that produced the long holds: a multi-clause
+    trap whose opening words are spoken EARLY (so the beat anchors early and
+    then has nothing to do until the payoff), and two headlines across a wide
+    why-span."""
+    import json
+
+    from pipeline.parser_short import parse_short_script
+
+    raw = json.loads(
+        (FIXTURES / "scripts" / "short_valid.json").read_text(encoding="utf-8")
+        if (FIXTURES := __import__("pathlib").Path(__file__).resolve().parents[1]
+            / "fixtures") else "")
+    raw["cheap_or_trap"] = (
+        "Twelve times earnings is not cheap when the earnings are falling. "
+        "Revenue fell forty one percent last year, and the buyback stopped in "
+        "March. Management calls it a transition.")
+    raw["audio_script"] = (
+        "Twelve times earnings is what the screen says. " + raw["audio_script"]
+        + " Revenue fell forty one percent last year, and the buyback stopped "
+        "in March. Management calls it a transition, which is a word that buys "
+        "time. So the multiple is not the story, the direction is, and the "
+        "direction is down.")
+    script, _ = parse_short_script(json.dumps(raw), settings)
+    return script
+
+
+def test_no_short_beat_is_planned_to_hold_past_the_ceiling(settings):
+    """The invariant, at the layer that decides it. A composition may not sit
+    unchanged longer than the format's own longest legitimate data hold."""
+    from pipeline.timeline import SHORT_DATA_HOLD_S
+
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    ceiling = settings.short_max_hold_s
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=ceiling)
+
+    over = []
+    for c in cues:
+        until = c.payload.get("until")
+        # Beats whose window is a STAGE CLAIM rather than a drawn composition:
+        # the thing on screen changes inside them. NUMBERS is carried by its
+        # NUMBER_ROW cues and CHEAP_OR_TRAP by its TRAP_LINE cues; the payoff
+        # and the bookends legitimately own the tail of the frame.
+        if until is None or c.kind in (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP,
+                                       CueKind.CONCLUSION, CueKind.HOST_CLOSE,
+                                       CueKind.HOST_OPEN):
+            continue
+        if float(until) - c.t > ceiling + 1e-6:
+            over.append((c.kind.value, round(c.t, 1), round(float(until) - c.t, 1)))
+    assert not over, f"planned to hold past {ceiling}s: {over}"
+    assert ceiling == SHORT_DATA_HOLD_S[1]
+
+
+def test_the_trap_lands_one_clause_at_a_time_not_as_a_paragraph(settings):
+    """It was a single panel carrying forty words, held from the moment it
+    landed until the payoff, while the caption underneath read it aloud."""
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=settings.short_max_hold_s)
+
+    lines = [c for c in cues if c.kind is CueKind.TRAP_LINE]
+    assert len(lines) >= 3, "the paragraph was not broken into beats"
+    times = [c.t for c in lines]
+    assert times == sorted(times)
+    # they must be spread across the beat, not stacked on one instant — an
+    # anchor resolving outside the beat's own window used to collapse them
+    assert len(set(round(t, 1) for t in times)) == len(times), times
+    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
+    assert max(times) < float(trap.payload["until"])
+
+
+def test_headline_cards_are_removed_not_accumulated(settings):
+    """The Citi card landed at ~10s and was still there at 30s with the second
+    stacked under it, both shrunk to roughly 9px-equivalent on a phone."""
+    script = _sndk_shaped(settings)
+    duration = 80.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                                duration, max_hold_s=settings.short_max_hold_s)
+
+    heads = sorted((c for c in cues if c.kind is CueKind.HEADLINE), key=lambda c: c.t)
+    assert len(heads) >= 2
+    for a, b in zip(heads, heads[1:]):
+        assert float(a.payload["until"]) <= b.t + 1e-6, (
+            "a headline is still on screen when the next one lands")

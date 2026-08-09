@@ -25,3 +25,6 @@ state/
 # Local scratch
 *.log
 tmp/
+
+# Local neural voice (bootstrap downloads it; ~63MB of model, not source)
+assets/voices/

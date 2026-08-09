@@ -37,6 +37,16 @@ class TTSError(Exception):
     pass
 
 
+class PaidVoiceForbidden(TTSError):
+    """A job that guarantees $0 tried to reach the paid voice.
+
+    The guarantee has to be structural, the way SpendLedger.guard_tts_spend is
+    — a mode that is free by convention is one mistyped command away from a
+    bill. Any caller passing `free_only=True` gets an exception here instead of
+    an ElevenLabs request, and it is raised BEFORE the HTTP call, not after.
+    """
+
+
 # --------------------------------------------------------------------------
 # Pure helpers (unit-tested directly).
 # --------------------------------------------------------------------------
@@ -278,6 +288,20 @@ class TTSEngine:
         log.info("local TTS unavailable (%s) — draft falls back to mock", why)
         return "mock"
 
+    def guard_free_only(self, tier: str) -> None:
+        """Raise unless `tier` is one of the free ones.
+
+        The boundary a $0 mode is enforced at. tier_for() already refuses to
+        escalate a draft, so reaching this with "paid" means something above
+        changed — which is exactly when an assertion is worth having, and
+        exactly when a comment promising $0 is not.
+        """
+        if tier == "paid":
+            raise PaidVoiceForbidden(
+                f"this job guarantees $0 and may not use the paid voice "
+                f"(resolved tier: {tier}). Nothing was sent to ElevenLabs."
+            )
+
     def is_cached(self, text: str, fmt: str, *, events=None,
                   draft: bool = False) -> bool:
         """Would synthesize() be free? (drives the §9.3 cost report)"""
@@ -306,7 +330,7 @@ class TTSEngine:
                 cdir, req_text, voice_id, model_id, vsettings, tier)
 
     def synthesize(self, text: str, fmt: str, *, events=None,
-                   draft: bool = False) -> TTSResult:
+                   draft: bool = False, free_only: bool = False) -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long.
 
         `events` carries the script's delivery direction ([BEAT], [SIGH],
@@ -317,9 +341,17 @@ class TTSEngine:
         `draft=True` asks for the free tier: the local neural voice when the
         box has one, the mock hum otherwise. It never reaches ElevenLabs, and
         what it returns is marked `draft` so a final render can refuse it.
+
+        `free_only=True` makes that a guarantee rather than a consequence: the
+        call fails loudly instead of spending if the tier ever resolves to
+        paid. Callers whose whole promise to the operator is "$0" pass it.
         """
         if fmt not in ("short", "long"):
             raise ValueError(f"fmt must be short|long, got {fmt!r}")
+        if free_only:
+            # Before the budget check and before the cache probe: a $0 job must
+            # not get as far as deciding how much it would have cost.
+            self.guard_free_only(self.tier_for(draft))
         budget = self.settings.max_chars(fmt)
         if len(text) > budget:
             raise BudgetExceededError(
@@ -358,6 +390,12 @@ class TTSEngine:
         elif tier == "mock":
             chunk_files, chunk_words = self._generate_mock(chunks, fmt, cdir)
         else:
+            # The boundary itself. Unreachable through tier_for(), which is
+            # the point: this is the last statement before money is spent, so
+            # it is where the $0 promise is worth asserting rather than
+            # trusting the two branches above to have stayed correct.
+            if free_only:
+                self.guard_free_only(tier)
             # code-level spend gate (the operator Approve is the human gate)
             est = self.ledger.guard_tts_spend(len(text))
             chunk_files, chunk_words = self._generate_real(

@@ -92,6 +92,7 @@ HELP_TEXT = """Dennis — operator commands
 /replace old => new — fix a figure or a phrase in place (all: for every hit)
 /undo — step back one revision
 /draft TICKER — cheap low-res LONG timing check (no TTS spend)
+/proof TICKER [short|long] — FULL-RES look test: real visuals, free voice, $0
 /repurpose TICKER — free 9:16 SHORT from the finished LONG
 /status — job queue
 /cancel TICKER — cancel queued/running jobs + pending approval
@@ -1051,7 +1052,8 @@ class BotCore:
 
     # ------------------------------------------------------------- renders
     def render_request(self, ticker: str, fmt: str | None = None,
-                       draft: bool = False) -> tuple[JobKind | None, str, Workspace | None]:
+                       draft: bool = False, proof: bool = False,
+                       ) -> tuple[JobKind | None, str, Workspace | None]:
         """Queue a render. `fmt=None` takes the format from the workspace's lane.
 
         Since /short and /long declare the format up front (1d), plain /render
@@ -1071,6 +1073,35 @@ class BotCore:
         script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None, f"No {fmt.upper()} script for {ticker} — paste it first.", None
+        if proof:
+            # A PROOF answers "what will this look like?", which is the one
+            # question neither existing free pass can: MOCK_MODE fakes the
+            # prices, imagery, memes and filings, and both cheap passes throw
+            # away the resolution the answer lives in. So: every subsystem
+            # live, full frame, and the voice — the only thing in this
+            # pipeline that costs money — taken from the free local tier.
+            #
+            # No approval gate. Approval is the SPEND gate, and this cannot
+            # spend; requiring it would mean approving a video to find out
+            # whether it is worth approving.
+            tier = self.tts.tier_for(True)
+            voice = {
+                "local": "free local voice",
+                "mock": "⚠ mock hum — Piper is not installed on this box, so "
+                        "you get real pictures over a placeholder tone",
+            }.get(tier, tier)
+            kind = (JobKind.RENDER_PROOF_SHORT if fmt == "short"
+                    else JobKind.RENDER_PROOF_LONG)
+            return kind, (
+                f"🖼 queued FULL-RES PROOF for {ticker} {fmt.upper()}\n"
+                f"📺 real visuals — live prices, Pexels, Wikimedia, memes, "
+                f"filings and charts, exactly as a final\n"
+                f"🎧 {voice}\n"
+                f"💵 $0, enforced in code — this job cannot reach the paid "
+                f"voice\n"
+                f"⏱ cue times shift slightly when the paid voice lands: the "
+                f"draft clock is exact per sentence, interpolated inside one"
+            ), ws
         if draft and fmt == "long":
             # Since P3.2 a draft never buys audio: it uses the free local
             # voice, or the mock hum where there isn't one. So the old
@@ -1122,6 +1153,9 @@ class BotCore:
                 if fresh:
                     fresh.detail = detail
                     store.save(fresh)
+
+        if job.kind in (JobKind.RENDER_PROOF_SHORT, JobKind.RENDER_PROOF_LONG):
+            return self._run_proof(job, ws, checkpoint)
 
         if job.kind is JobKind.RENDER_SHORT:
             script = ws.load_short()
@@ -1256,6 +1290,59 @@ class BotCore:
 
         raise RuntimeError(f"unknown job kind {job.kind}")
 
+    def _run_proof(self, job: JobRecord, ws, checkpoint) -> str:
+        """The free full-quality pass, for either format.
+
+        Everything except the voice runs exactly as a final would — live
+        prices, Pexels, Wikimedia, memes, SEC filings, charts — at full
+        resolution and real fps. The voice comes from the free local tier.
+
+        The $0 promise is enforced, not documented: `free_only=True` makes
+        TTSEngine raise rather than reach ElevenLabs, so a mistyped command
+        cannot spend. `draft=True` is what routes to the free tier; free_only
+        is what guarantees it stayed routed there.
+        """
+        short = job.kind is JobKind.RENDER_PROOF_SHORT
+        script = ws.load_short() if short else ws.load_long()
+        if script is None:
+            raise RuntimeError("script vanished before proof")
+        checkpoint("tts")
+        tts = self.tts.synthesize(
+            script.audio_script if short else script.narration,
+            "short" if short else "long",
+            events=script.inline_events if short else script.events,
+            draft=True, free_only=True,
+        )
+        checkpoint(f"proof audio ({tts.tier}) — not the real voice")
+        if short:
+            checkpoint("render")
+            out, _ = render_short(script, tts, ws.path, self.settings,
+                                  content=self.content, proof=True)
+        else:
+            data = self._company_data(ws)
+            as_of = str(data.get("as_of_date") or "") if data is not None else ""
+            checkpoint("storyboard")
+            self._send_storyboard(job, script, tts, ws, data)
+            checkpoint("render")
+
+            def seg_progress(done: int, total: int) -> None:
+                if done == total or done % 5 == 0:
+                    checkpoint(f"proof {done}/{total} segments")
+
+            out, _ = render_long(
+                script, tts, ws.path, self.settings, content=self.content,
+                proof=True, broll_overrides=ws.broll_overrides(),
+                as_of=as_of, company_data=data, on_progress=seg_progress,
+            )
+        # Never delivered. A proof is for looking at, and `deliver()` is how
+        # something reaches YouTube — the local path is the whole output.
+        job.delivered_link = f"file://{out}"
+        self.push_file(Path(out), (
+            f"{job.ticker} — {'SHORT' if short else 'LONG'} PROOF, full "
+            f"resolution, {tts.tier} voice, $0. Cue times move slightly under "
+            f"the paid voice."))
+        return str(out)
+
     def _send_storyboard(self, job: JobRecord, script, tts, ws, data) -> None:
         """Contact sheet of the planned cut, pushed before the encode starts.
 
@@ -1280,9 +1367,18 @@ class BotCore:
                 content=self.content, ticker=job.ticker, company_data=data,
                 workspace=ws.path, title=f"{job.ticker} — LONG",
             )
-        except Exception as e:  # noqa: BLE001
-            log.warning("storyboard failed for %s (%s) — rendering anyway",
-                        job.ticker, e)
+        except JobCancelled:
+            # A cancel is not a storyboard failure. Swallowing it here would
+            # answer the operator's cancel with "rendering anyway" and then
+            # spend forty minutes doing exactly that.
+            raise
+        except Exception:  # noqa: BLE001
+            # exc_info, not str(e): this branch is the only record that the
+            # storyboard did not happen, and a bare exception message is not
+            # enough to find the cause. The KeyError this used to mask printed
+            # as "<TagType.BEAT: 'BEAT'>" and named neither file nor line.
+            log.exception("storyboard failed for %s — rendering anyway",
+                          job.ticker)
             return
         caption = f"{job.ticker} — storyboard, {len(segments)} beats"
         if problems:
@@ -1844,6 +1940,31 @@ def build_application(settings: Settings, core: BotCore):
         await _send(update, Reply(text))
 
     @guard
+    async def cmd_proof(update, ctx):
+        """Full-res, real visuals, free voice, $0 — for BOTH formats.
+
+        `/proof TICKER` follows the workspace's lane; `/proof TICKER short`
+        or `/proof TICKER long` picks one. Unlike /render there is no
+        approval gate, because approval gates spend and this cannot spend.
+        """
+        if not ctx.args:
+            await _send(update, Reply("Usage: /proof TICKER [short|long]"))
+            return
+        fmt = None
+        if len(ctx.args) > 1 and ctx.args[1].lower() in ("short", "long"):
+            fmt = ctx.args[1].lower()
+        kind, text, ws = core.render_request(ctx.args[0].upper(), fmt,
+                                             draft=False, proof=True)
+        if kind is None or ws is None:
+            await _send(update, Reply(text))
+            return
+        try:
+            await core.queue.submit(kind, ws.ticker, ws.workdate)
+        except ValueError as e:
+            text = f"⛔ {e}"
+        await _send(update, Reply(text))
+
+    @guard
     async def cmd_repurpose(update, ctx):
         if not ctx.args:
             await _send(update, Reply("Usage: /repurpose TICKER"))
@@ -2046,6 +2167,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("render", cmd_render))
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
+    app.add_handler(CommandHandler("proof", cmd_proof))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))
     app.add_handler(CommandHandler("upload", cmd_upload))
     app.add_handler(CommandHandler("scheduled", cmd_scheduled))

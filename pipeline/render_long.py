@@ -13,6 +13,9 @@ NOTHING PANS OR ZOOMS. Motion is the host (mouth flap, boil pairs), the cuts,
 and real video clips. Every still is scale + pad, held.
   * draft mode reuses the same cached audio and graph at low res /
     ultrafast (never re-calls TTS)
+  * proof mode reuses them at FULL res and real fps on a cheap encode, so
+    the operator can judge composition and type size — the one question
+    draft and preview scale away — without buying a voice
 
 DENNIS IS THE BASE FRAME (§editing): this is a talking-host show. Untagged
 narration is the host on screen, lip-synced to the voice-over by
@@ -72,7 +75,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip
-from pipeline.kit import load_kit
+from pipeline.kit import card_asset_for, load_kit
 from pipeline.kit_frames import (
     playback_seconds,
     render_clip,
@@ -124,6 +127,7 @@ from pipeline.timeline import (
     build_long_timeline,
     chapter_start_times,
     plan_long_segments,
+    unrenderable_long_tags,
 )
 
 log = logging.getLogger(__name__)
@@ -237,25 +241,36 @@ def render_long(
     *,
     draft: bool = False,
     preview: bool = False,
+    proof: bool = False,
     broll_overrides: dict[str, int] | None = None,
     as_of: str = "",
     company_data=None,
     on_progress: Callable[[int, int], None] | None = None,
 ) -> tuple[Path, Path]:
-    """Render the LONG (or its low-res draft). Returns (mp4, manifest)."""
+    """Render the LONG (or its low-res draft / full-res proof).
+
+    Returns (mp4, manifest).
+    """
     # Draft audio (the free local voice) has word timings that are exact per
     # sentence and interpolated within one. Good enough to judge pacing, not
     # good enough to be the master clock of something published — and the
     # whole pipeline trusts that clock. Enforced here rather than left to
     # discipline, because the failure is invisible: it renders fine, it is
     # just subtly out of sync.
-    if not draft and getattr(tts, "draft", False):
+    if not (draft or proof) and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to make a FINAL render from {tts.tier} draft audio — "
             f"its word timings are interpolated inside each sentence. Approve "
             f"the script so the paid voice runs, then render.")
     content = content or ContentManager(settings)
     duration = tts.duration_s
+    # Tags that will not become cues. validate_long_script blocks on these
+    # before approval, so reaching here means a path that skipped validation
+    # (a draft, a CLI render) — say it anyway. A tag the writer asked for and
+    # the renderer dropped is never a silent pass.
+    for e, reason in unrenderable_long_tags(script):
+        log.warning("tag: [%s] at char %d draws nothing — %s",
+                    e.type.value, e.char_offset, reason or "unmapped tag type")
     cues = build_long_timeline(script, tts.words, duration)
     doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
@@ -272,18 +287,23 @@ def render_long(
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
 
-    # Three tiers. PREVIEW is for judging the edit — 480p at half the frame
-    # rate, where the filter graph (not the encode) is the cost. DRAFT is the
-    # half-res review copy. Neither ever re-calls TTS.
+    # Four passes, each answering its own question (see config.py):
+    # PREVIEW judges the edit at 480p/15fps, where the filter graph — not the
+    # encode — is the cost. DRAFT is the half-res timing copy. PROOF keeps the
+    # FULL frame, because whether type is legible at phone size is a
+    # resolution question and both cheaper passes throw that evidence away;
+    # it pays for the pixels out of the encoder instead. None re-calls TTS.
     FW, FH = settings.long_resolution          # full spec
     scale = (settings.preview_scale if preview
-             else settings.draft_scale if draft else 1.0)
+             else settings.draft_scale if draft
+             else settings.proof_scale if proof else 1.0)
     W = int(FW * scale) // 2 * 2
     H = int(FH * scale) // 2 * 2
     fps = settings.preview_fps if preview else settings.fps
 
     rdir = workspace / ("render_long_preview" if preview
-                        else "render_long_draft" if draft else "render_long")
+                        else "render_long_draft" if draft
+                        else "render_long_proof" if proof else "render_long")
     rdir.mkdir(parents=True, exist_ok=True)
 
     website = str(company_data.get("website") or "") if company_data is not None else ""
@@ -361,16 +381,11 @@ def render_long(
 
         tag = TagType(seg.kind.upper())
         family = KIT_TAG_FAMILIES[tag]
-        # `placeable`: a card whose baked chip and disclaimer cannot be stripped
-        # would arrive with a second copy of both — the frame draws its own. It
-        # is not resolved here at all, so the beat takes the blank layout or the
-        # backdrop, and `run_gates` blocks the render naming the beat.
-        asset = kit.resolve_asset(family, value, placeable=True)
-        is_blank = False
-        if asset is None:
-            blank = KIT_TAG_BLANKS.get(tag)
-            asset = kit.get(blank) if blank else None
-            is_blank = asset is not None
+        # Named artwork, else the parameterised blank layout. The rule lives in
+        # pipeline.kit so this cut, the short and the approval report all agree
+        # about what an undrawn [TERM]/[BIGNUM] key does — they used to be
+        # three separate answers.
+        asset, is_blank = card_asset_for(kit, tag, value)
         if asset is None:
             log.warning("kit asset %s/%s missing — designed backdrop instead",
                         family, value)
@@ -798,7 +813,8 @@ def render_long(
     # corner bug, disclaimer, captions, chapter stingers, doodles — composite
     # over. Those span segment boundaries, so they cannot be baked in per
     # segment.
-    profile = encode_profile(settings, "long", draft=draft, preview=preview)
+    profile = encode_profile(settings, "long", draft=draft, preview=preview,
+                             proof=proof)
     seg_run: SegmentRun | None = None
     base_video: Path | None = None
     if settings.render_segmented:
@@ -1047,9 +1063,12 @@ def render_long(
         fonts_dir=settings.fonts_dir,
         duration=duration,
         fps=fps,
-        normalise_audio=not (settings.mocking_tts or draft or preview),
+        normalise_audio=not (settings.mocking_tts or draft or preview
+                             or getattr(tts, "draft", False)),
     )
-    out_path = workspace / ("long_draft.mp4" if draft else "long_final.mp4")
+    out_path = workspace / ("long_draft.mp4" if draft
+                            else "long_proof.mp4" if proof
+                            else "long_final.mp4")
     composite_video(spec, profile, settings.audio_bitrate, out_path)
 
     rendered = ffprobe_duration(out_path)
@@ -1060,12 +1079,20 @@ def render_long(
         )
 
     manifest_path = workspace / ("render_long_draft_manifest.json" if draft
+                                 else "render_long_proof_manifest.json" if proof
                                  else "render_long_manifest.json")
     attributions = sorted({m["attribution"] for m in seg_meta
                            if m.get("attribution")})
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,
+        "proof": proof,
+        # The audio tier, carried on the manifest so "is this shippable?" is
+        # answerable from the artefact rather than from whoever ran it. A
+        # proof is real pictures over a free voice: everything below is what
+        # a final would have used, the voice is not.
+        "audio_tier": getattr(tts, "tier", ""),
+        "draft_audio": bool(getattr(tts, "draft", False)),
         "duration": duration,
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],

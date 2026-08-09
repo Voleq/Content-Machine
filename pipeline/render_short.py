@@ -56,7 +56,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.chart import render_marker_price_chart, render_price_chart
 from pipeline.host import build_host_clip, pick_shot
-from pipeline.kit import Kit, KitError, load_kit, load_variant_ledger
+from pipeline.kit import Kit, KitError, card_asset_for, load_kit, load_variant_ledger
 from pipeline.kit_frames import (
     FULL_BLEED,
     plate,
@@ -272,27 +272,13 @@ def payoff_card_key(conclusion: str) -> str:
 
 
 def _kit_asset_for(kit: Kit, tag: TagType, key: str):
-    """(asset, is_blank) for a card tag, or (None, False).
+    """(asset, is_blank) for a card tag — see `kit.card_asset_for`.
 
-    Named artwork first, then the parameterised blank layout — which is how
-    `[TERM: owner earnings]` gets a card at all when nobody has drawn one.
-
-    `placeable` skips a card whose baked chip and disclaimer cannot be lifted:
-    the 9:16 frame draws both itself, so such a card arrives as a duplicated
-    disclaimer and a second, wrong ticker. The blank layout carrying the beat is
-    a better frame than that, and the gate says what artwork is owed.
+    The rule itself lives in pipeline.kit so the LONG renderer and validation
+    read the same one. It was duplicated here and inline in render_long, which
+    is precisely how the two cuts came to disagree about what a [TERM] key does.
     """
-    families = KIT_TAG_FAMILIES.get(tag)
-    if families:
-        asset = kit.resolve_asset(families, key, placeable=True)
-        if asset is not None:
-            return asset, False
-    blank = KIT_TAG_BLANKS.get(tag)
-    if blank:
-        asset = kit.get(blank)
-        if asset is not None:
-            return asset, True
-    return None, False
+    return card_asset_for(kit, tag, key)
 
 
 def _blank_values(tag: TagType, key: str, script: ShortScript,
@@ -324,13 +310,17 @@ def render_short(
     *,
     content: ContentManager | None = None,
     prices: PriceSeries | None = None,
+    proof: bool = False,
     out_name: str = "short_final.mp4",
 ) -> tuple[Path, Path]:
-    """Render the SHORT. Returns (mp4_path, manifest_path)."""
-    # A SHORT has no draft mode — it is a minute of video — so draft audio has
-    # no business here at all. Same reason as the LONG: interpolated word
-    # timings must never be the master clock of a published cut (P3.2).
-    if getattr(tts, "draft", False):
+    """Render the SHORT (or its full-res proof). Returns (mp4, manifest)."""
+    # Interpolated word timings must never be the master clock of a published
+    # cut (P3.2), so draft audio cannot make a FINAL — exactly the rule
+    # render_long enforces. A PROOF is the deliberate exception: it exists to
+    # be looked at, never delivered, and it is the only free way to see what a
+    # SHORT will actually look like. It is named, marked and gated
+    # accordingly.
+    if not proof and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to render a SHORT from {tts.tier} draft audio — its "
             f"word timings are interpolated. Approve the script so the paid "
@@ -339,7 +329,8 @@ def render_short(
     prices = prices or get_price_history(script.ticker, settings)
 
     duration = tts.duration_s
-    cues = build_short_timeline(script, tts.words, duration)
+    cues = build_short_timeline(script, tts.words, duration,
+                                max_hold_s=settings.short_max_hold_s)
     cues, pacing_warnings = plan_short_pacing(cues, duration)
     for w in pacing_warnings:
         log.warning("short pacing: %s", w)
@@ -630,8 +621,11 @@ def render_short(
         card_clip = frames_to_alpha_clip(
             entry + (roll or []), fps, rdir / f"headline_{i}.mov")
         if desk is not None:
+            # All in the same slot, not stacked down the band. They replace
+            # one another now, so only one is ever up — stacking bought
+            # nothing and cost both cards half their legible size.
             hx = px(40)
-            hy = px(1030) + i * (card.height + px(18))
+            hy = px(1030)
         else:
             sx, sy = slots[min(i, len(slots) - 1)]
             hx, hy = chart_pos[0] + int(sx), chart_pos[1] + int(sy)
@@ -997,17 +991,27 @@ def render_short(
             name=f"{name}_{strip.name[:16]}"))
 
     # ------------------------------- cheap or trap: the value-trap beat
-    for c in (c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP):
-        trap_img = text_panel(settings, c.payload["text"], width=px(980),
+    #
+    # One clause at a time, each landing on its own figure and leaving when
+    # the next one does — the same shape as the numbers sheet's rows. It was
+    # a single panel carrying the whole paragraph, held for the length of the
+    # beat: forty words that never changed while the caption underneath read
+    # them aloud, which is the longest still in the format.
+    trap_line_cues = [c for c in cues if c.kind is CueKind.TRAP_LINE]
+    for n, c in enumerate(trap_line_cues):
+        end = min(float(c.payload["until"]), payoff_t)
+        if end - float(c.t) < 0.2:      # degenerate window: nothing to read
+            continue
+        line_img = text_panel(settings, c.payload["text"], width=px(980),
                               font_name=SHANTELL, font_size=px(46), accent=RED,
                               bg=(250, 249, 246, 242))
-        trap_clip = frames_to_alpha_clip(
-            slide_in_frames(trap_img, fps=fps, seconds=0.4, direction="up"),
-            fps, rdir / "cheap_or_trap.mov")
+        line_clip = frames_to_alpha_clip(
+            slide_in_frames(line_img, fps=fps, seconds=0.4, direction="up"),
+            fps, rdir / f"trap_line_{n}.mov")
         layers.append(OverlayLayer(
-            path=trap_clip, x=int((W - trap_img.width) / 2), y=px(STAGE_Y + 120),
-            t_start=c.t, t_end=min(float(c.payload["until"]), payoff_t),
-            is_video=True, hold=True, name="cheap_or_trap",
+            path=line_clip, x=int((W - line_img.width) / 2), y=px(STAGE_Y + 120),
+            t_start=c.t, t_end=end,
+            is_video=True, hold=True, name=f"trap_line_{n}",
         ))
 
     # ------------------------------------------------- the payoff
@@ -1175,7 +1179,11 @@ def render_short(
     # is only up for the open, so nothing has a claim to be over it.
     layers.append(hook_layer)
 
-    pill = ticker_pill(settings, script.ticker, font_size=px(38))
+    # The chip is in the corner of every frame, so its colour is the most
+    # repeated statement in the video. It carries the move the chart is already
+    # showing — green up, red down — instead of being green regardless.
+    pill = ticker_pill(settings, script.ticker, font_size=px(38),
+                       direction=chart_meta["direction"])
     pill_path = rdir / "ticker_pill.png"
     pill.save(pill_path)
     layers.append(OverlayLayer(
@@ -1294,9 +1302,15 @@ def render_short(
         # is what made a render come out silent.
         normalise_audio=not (settings.mocking_tts or getattr(tts, "draft", False)),
     )
+    # A proof never takes the final's filename: the whole risk of a free
+    # full-quality pass is that it looks shippable, and something that looks
+    # shippable must not also be sitting where the shippable file goes. An
+    # explicit out_name (repurpose, tests) still wins.
+    if proof and out_name == "short_final.mp4":
+        out_name = "short_proof.mp4"
     out_path = workspace / out_name
-    composite_video(spec, encode_profile(settings, "short"), settings.audio_bitrate,
-                    out_path)
+    composite_video(spec, encode_profile(settings, "short", proof=proof),
+                    settings.audio_bitrate, out_path)
 
     rendered = ffprobe_duration(out_path)
     if abs(rendered - duration) > 0.5:
@@ -1322,9 +1336,15 @@ def render_short(
         log.warning("short: %d tag key(s) did not resolve: %s",
                     len(unresolved), ", ".join(unresolved))
 
-    manifest_path = workspace / "render_short_manifest.json"
+    manifest_path = workspace / ("render_short_proof_manifest.json" if proof
+                                 else "render_short_manifest.json")
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
+        "proof": proof,
+        # See render_long: the audio tier travels with the artefact, so
+        # "could this ship?" is answerable from the manifest alone.
+        "audio_tier": getattr(tts, "tier", ""),
+        "draft_audio": bool(getattr(tts, "draft", False)),
         "duration": duration,
         "opener": opener,
         "theme": "light",
