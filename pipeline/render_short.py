@@ -88,6 +88,7 @@ from pipeline.models import (
     parse_scribble_payload,
 )
 from pipeline.prices import PriceSeries, get_price_history
+from pipeline.reach import rendered_reach
 from pipeline.rasters import (
     INK,
     RED,
@@ -1332,6 +1333,12 @@ def render_short(
             beat_ledger.record(asset.family, asset.key)
     beat_ledger.save()
 
+    # Said out loud, in the same shape the approval report uses. `kit_assets_used`
+    # has been in this manifest since the kit existed and nobody ever opened it,
+    # which is how a short reaching 17 of 442 assets stayed unremarked.
+    reach = rendered_reach(used_keys, kit)
+    log.info("short: %s", reach.line())
+
     if unresolved:
         log.warning("short: %d tag key(s) did not resolve: %s",
                     len(unresolved), ", ".join(unresolved))
@@ -1378,6 +1385,7 @@ def render_short(
         # the export's own news row.
         "articles": articles,
         "kit_assets_used": sorted(used_keys),
+        "kit_reach": reach.line(),
         "layer_names": sorted({l.name for l in layers}),
         "layers": [
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end, "x": l.x, "y": l.y}

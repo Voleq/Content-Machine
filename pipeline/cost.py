@@ -145,6 +145,7 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
 def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
     from pipeline.gates import check_audio
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
+    from pipeline.reach import script_reach
 
     cached = tts_engine.is_cached(script.audio_script, "short",
                                   events=script.inline_events)
@@ -189,6 +190,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
+        kit_reach=script_reach(script, settings).line(),
         warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),
@@ -207,6 +209,7 @@ def build_long_report(
     settings, ledger, tts_engine, visual_plan, filing_count,
 ) -> "CostReport":
     from pipeline.models import CostReport, VisualPlanItem
+    from pipeline.reach import script_reach
 
     cached = tts_engine.is_cached(script.narration, "long", events=script.events)
     est = 0.0 if cached else estimate_tts_usd(script.char_count, settings)
@@ -237,6 +240,7 @@ def build_long_report(
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
+        kit_reach=script_reach(script, settings).line(),
         warnings=list(parse_warnings) + list(validation_warnings),
         blocking=blocking,
         script_sha=script.content_sha(),

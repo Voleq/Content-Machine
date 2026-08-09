@@ -81,3 +81,62 @@ def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json
                                       SpendLedger(settings), TTSEngine(settings))
     assert draft_report.approvable
     assert any("PLACEHOLDER AUDIO" in w for w in draft_report.warnings)
+
+
+# --------------------------------------------------------------------------
+# Reach on the approval report.
+# --------------------------------------------------------------------------
+
+
+def test_the_short_report_states_what_the_script_reaches(settings, short_valid_json):
+    """`kit_assets_used` has been in the render manifest since the kit existed
+    and nobody ever opened it, so a short reaching 17 of 442 assets and one
+    beat-library scene went unremarked for months. The approval screen is the
+    last moment the script can be sent back, so it says so there."""
+    import re
+
+    from pipeline.cost import build_short_report
+    from pipeline.parser_short import parse_short_script
+    from pipeline.tts import TTSEngine
+
+    script, warnings = parse_short_script(short_valid_json, settings)
+    report = build_short_report(script, warnings, settings,
+                                SpendLedger(settings), TTSEngine(settings))
+    line = next(ln for ln in report.render_text().splitlines()
+                if ln.startswith("Kit: "))
+    assert re.fullmatch(
+        r"Kit: \d+ of \d+ assets · \d+ families · \d+ beat-library scenes?",
+        line), line
+    # the committed fixture names none of the library — that is the defect
+    assert line.endswith("0 beat-library scenes")
+
+
+def test_the_line_counts_what_the_script_actually_names(settings, short_valid_json):
+    import json
+
+    from pipeline.cost import build_short_report
+    from pipeline.parser_short import parse_short_script
+    from pipeline.tts import TTSEngine
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = ("[PROP: crushed-flat = -$89M] "
+                            "[PROP: c-doc-tear] " + data["audio_script"])
+    script, warnings = parse_short_script(json.dumps(data), settings)
+    report = build_short_report(script, warnings, settings,
+                                SpendLedger(settings), TTSEngine(settings))
+    assert "2 of 442 assets · 2 families · 2 beat-library scenes" in report.kit_reach
+
+
+def test_the_long_report_carries_the_same_line(settings, long_valid_text, workspace):
+    """One shape, both formats: an operator reads the same number in both
+    lanes rather than learning two reports."""
+    from pipeline.cost import build_long_report
+    from pipeline.parser_long import parse_long_script
+    from pipeline.tts import TTSEngine
+
+    script, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
+    report = build_long_report(script, warnings, [], [], settings,
+                               SpendLedger(settings), TTSEngine(settings), [], 0)
+    assert report.kit_reach.startswith("Kit: ")
+    assert "of 442 assets" in report.kit_reach
+    assert report.kit_reach in report.render_text()

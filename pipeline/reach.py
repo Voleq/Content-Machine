@@ -107,6 +107,23 @@ class Reach:
                 f"{scenes} beat-library scene{'' if scenes == 1 else 's'}")
 
 
+def rendered_reach(kit_keys, kit) -> Reach:
+    """The reach of a FINISHED render, off the manifest's `kit_assets_used`.
+
+    The same line in the same shape as the script's, so the two are readable
+    against each other: the render is always the larger number, because it adds
+    the furniture (a backdrop, the stings, the desk, the host shots) and picks
+    a beat itself for a numbers row the writer left undrawn. A render whose
+    count is barely above the script's is a render carried by furniture.
+    """
+    keys = tuple(sorted(set(kit_keys)))
+    return Reach(
+        keys=keys,
+        scenes=tuple(k for k in keys if _is_beat_family(k.rsplit("/", 1)[0])),
+        total=len(kit),
+    )
+
+
 def script_reach(script, settings) -> Reach:
     """Measure one script against the kit on disk.
 
