@@ -211,8 +211,21 @@ The bootstrap checks everything up front — root, apt, a Python ≥ 3.11,
 FFmpeg 6+, the destination filesystem — and aborts with one readable message
 naming the fix rather than half-installing. Then: apt deps, the venv from the
 **pinned** `pyproject.toml`, headless Chromium *and its system libraries*,
-generated assets, the offline suite, and the service + daily cleanup timer.
-It is idempotent — safe to re-run after a pull. No display server, no
+generated assets, the free local voice, the offline suite, and the service +
+daily cleanup timer. It is idempotent — safe to re-run after a pull.
+
+**What it will and will not stop for.** A step aborts the run only if the bot
+cannot work without it. Headless Chromium and the local Piper voice are
+optional: each warns, names its retry, and the install carries on to the test
+suite and the systemd units, because a box that cannot install a *free draft
+voice* still deserves a working bot. The last line of the run says whether the
+voice is present, so a degraded install never looks like a clean one. Skip the
+voice outright with `--skip-piper`, with `sudo SKIP_PIPER=1 bash …` (on sudo's
+own command line — `SKIP_PIPER=1 sudo …` loses it to `env_reset`), or with
+`LOCAL_TTS_ENABLED=false` in an existing `.env`. All three are read; a skipped
+run leaves the `LOCAL_TTS_*` settings from an earlier install alone.
+
+No display server, no
 ImageMagick.
 
 Note it does not pin `python3.11` by name: Ubuntu 24.04, which is what WSL
