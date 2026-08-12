@@ -275,6 +275,25 @@ def render_frame(
     return img
 
 
+def unfilled_slots(asset: Asset, values: dict[str, str] | None) -> list[str]:
+    """The boxes this drawing declares that `values` leaves EMPTY.
+
+    The other direction — a value naming a box the drawing does not have — has
+    been reported since the slots existed. This one never was, and it is the
+    one that reaches the screen: an unbound slot is not a no-op, it is a
+    drawn, empty box in the middle of a beat, and the catalogue promises the
+    writer otherwise ("WITHOUT the `= value` the drawing renders with its
+    boxes EMPTY. Always give a figure.").
+
+    A slot declaring `clear` is not counted. Its box carries dummy copy that
+    an empty value ERASES, so leaving it empty is a decision the layout
+    depends on rather than an omission.
+    """
+    values = values or {}
+    return [s.name for s in asset.slots
+            if not str(values.get(s.name) or "").strip() and not s.clear]
+
+
 def render_still(asset: Asset, values: dict[str, str] | None, settings: Settings):
     """The frame to show when an asset is used as a still.
 
@@ -282,6 +301,14 @@ def render_still(asset: Asset, values: dict[str, str] | None, settings: Settings
     first frame is a drawing of nothing having happened yet.
     """
     idx = asset.frame_count - 1 if asset.playback == "one-shot" else 0
+    # Said once per beat, HERE rather than in `render_frame`, which an
+    # animated asset calls once per distinct frame. Only when somebody tried
+    # to fill this drawing: a plate or a card asked for with no values at all
+    # is a still being used as artwork, not a beat that lost its figure.
+    if values:
+        for name in unfilled_slots(asset, values):
+            log.warning("%s: slot %r has no value — it renders as an empty box",
+                        asset.key, name)
     return render_frame(asset, idx, values, settings)
 
 
@@ -399,14 +426,26 @@ def bind_slot_values(
     A value that cannot be placed is dropped with a warning rather than
     guessed at: putting a figure in the wrong box is worse than leaving the
     box empty, because it looks deliberate.
+
+    And the reverse, which used to be silent: a BOX WITH NOTHING IN IT is
+    reported too. The asymmetry ran one way for the whole life of the feature
+    — a value with nowhere to go warned, a value naming a slot that does not
+    exist warned, and a slot that received nothing said nothing at all, while
+    being the only one of the three the viewer can see. A tag written with no
+    `= value` was the worst case and the quietest: it returned `({}, [])` on
+    the first line and drew every box empty.
+
+    Warnings, never blockers. A deliberately empty box is a legitimate choice
+    on some drawings and only the operator can judge it.
     """
     from pipeline.tagging import DEFAULT_SLOT, POSITIONAL_PREFIX
 
-    if not values:
-        return {}, []
+    values = values or {}
     slots = list(asset.slots)
     warnings: list[str] = []
     if not slots:
+        if not values:
+            return {}, []
         return {}, [f"{asset.key} has no slots — "
                     f"{', '.join(sorted(v for v in values.values()))} dropped"]
 
@@ -436,6 +475,10 @@ def bind_slot_values(
             warnings.append(
                 f"{asset.key} has no slot called {key!r} "
                 f"(it has: {', '.join(names)}) — {value!r} dropped")
+    for name in unfilled_slots(asset, out):
+        warnings.append(
+            f"{asset.key}: slot {name!r} has no value — it renders as an empty "
+            f"box. Write `= <figure>` on the tag, or leave it if you mean it.")
     return out, warnings
 
 

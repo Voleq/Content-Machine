@@ -704,3 +704,148 @@ def test_the_hold_measurement_catches_a_real_still():
              "-f", "lavfi", "-i", "color=c=gray:s=240x426:d=12",
              "-pix_fmt", "yuv420p", str(still)], check=True, timeout=120)
         assert longest_hold(still) >= 10.0, held_spans(still)
+
+
+# --------------------------------------------------------------------------
+# ...and the same ceiling, on the LAYER LIST.
+# --------------------------------------------------------------------------
+# The pixel measurement above is the backstop. It costs a render and a decode,
+# it answers in whole half-seconds, and when it fails it says a rectangle of
+# the video sat still without saying which of forty layers is the reason.
+#
+# This says which. Two conventions for `t_end` ran side by side in the
+# renderer and only one of them was bounded: a CUE-DRIVEN layer ends at
+# `min(c.t + hold, duration)`, so `short_max_hold_s` reaches it; an ACT-SCOPED
+# layer ended at the next ACT BOUNDARY, and an act is a structural division,
+# not a duration. `short_max_hold_s` was consulted in exactly one place —
+# capping a CUE — and nothing capped a LAYER at all.
+#
+# It does NOT replace the pixel check, and the sample is the proof: its layer
+# list said the frame changed every 8.0s — exactly the ceiling, legal — while
+# the encode measured 9.0s unchanged, because the change was one headline card
+# lifting off and that moves the frame by less than the still threshold. A
+# layer entering is not always a change you can see. Both run, on the fixture
+# and on the samples.
+
+
+def test_the_layer_list_check_catches_an_act_with_nothing_in_it():
+    """The instrument, against a layer list known to be bad.
+
+    This is the shape that shipped: a plate scoped to an act, two marks that
+    arrived with it and leave with it, and one card that comes and goes. Nine
+    seconds in the middle of it where the composition cannot change, because
+    there is nothing left to change it.
+    """
+    from pipeline.byproducts import still_layers
+
+    bad = [
+        {"name": "scribble_0_chart", "t_start": 2.2, "t_end": 32.9},
+        {"name": "note_0", "t_start": 2.2, "t_end": 32.9},
+        {"name": "chart", "t_start": 5.0, "t_end": 32.9},
+        {"name": "headline_1", "t_start": 21.0, "t_end": 29.0},
+    ]
+    held = still_layers(bad, 8.0)
+    assert {h.name for h in held} == {"chart", "scribble_0_chart", "note_0"}, \
+        "the layer that cannot change is the one to name"
+    chart = next(h for h in held if h.name == "chart")
+    assert chart.window == (5.0, 21.0), chart.line()
+
+    # And the escape clause is real: the same plate is fine once something
+    # keeps arriving under it, which is what a numbers sheet does while its
+    # rows type on.
+    ok = [{"name": "numbers_sheet", "t_start": 0.0, "t_end": 20.0}] + [
+        {"name": f"row_{i}", "t_start": i * 4.0, "t_end": 20.0}
+        for i in range(5)
+    ]
+    assert still_layers(ok, 8.0) == []
+
+
+def test_no_layer_holds_the_frame_past_the_ceiling(hosted):
+    """The invariant, on the thing that produces the pixels.
+
+    An act longer than the ceiling has to CHANGE WITHIN ITSELF. Clamping it to
+    the ceiling and letting the frame go empty would trade a still for a
+    blank, so the assertion is not "no layer is longer than N" — it is "no
+    layer is longer than N with N seconds of nothing inside it".
+    """
+    from pipeline.byproducts import still_layers
+
+    settings, _script, _tts, _out, manifest, _frames, _warnings = hosted
+    held = still_layers(manifest["layers"], settings.short_max_hold_s)
+    assert not held, (
+        f"a layer holds the frame past the {settings.short_max_hold_s:.1f}s "
+        "ceiling:\n  " + "\n  ".join(h.line() for h in held)
+        + "\nAn act runs to its boundary — it has to re-frame, re-draw or "
+          "change plate on the way there."
+    )
+
+
+# --------------------------------------------------------------------------
+# The committed samples.
+# --------------------------------------------------------------------------
+# `samples/` is the artefact anyone is actually shown — the README links it,
+# and it is what a new operator watches to learn what the format looks like.
+# The ceiling was only ever checked against the fixture rendered inside this
+# module, so a sample violating it sat in the repository, on the branch that
+# added the check, demonstrating the bug to everyone who opened it.
+
+SAMPLES = sorted((ROOT / "samples").glob("sample_short_*.mp4"))
+
+
+@pytest.mark.parametrize("sample", SAMPLES, ids=lambda p: p.stem)
+def test_the_committed_sample_holds_nothing_past_the_ceiling(settings, sample):
+    from pipeline.byproducts import held_spans
+
+    ceiling = settings.short_max_hold_s
+    over = [(a, b) for a, b in held_spans(sample) if b - a > ceiling]
+    assert not over, (
+        f"{sample.name} sits unchanged past the {ceiling:.1f}s ceiling: "
+        + ", ".join(f"{a:.1f}s->{b:.1f}s ({b - a:.1f}s)" for a, b in over)
+        + ". Re-render it: scripts/render_samples.py short"
+    )
+
+
+@pytest.mark.parametrize("sample", SAMPLES, ids=lambda p: p.stem)
+def test_the_committed_sample_has_no_layer_holding_the_frame(settings, sample):
+    """The same thing off the sample's manifest, which says WHICH layer."""
+    from pipeline.byproducts import still_layers
+
+    manifest = json.loads(
+        sample.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    held = still_layers(manifest["layers"], settings.short_max_hold_s)
+    assert not held, (
+        f"{sample.name} holds the frame past the ceiling:\n  "
+        + "\n  ".join(h.line() for h in held))
+
+
+def test_there_is_a_committed_short_sample_to_check():
+    """A glob that matches nothing passes every parametrised test above it."""
+    assert SAMPLES, "samples/sample_short_*.mp4 is missing — nothing was checked"
+
+
+# --------------------------------------------------------------------------
+# No box reaches the screen with nothing in it.
+# --------------------------------------------------------------------------
+# A slot nobody bound renders as a drawn, empty rectangle, and the binder said
+# nothing about it in either direction that mattered: a value with nowhere to
+# go warned, a slot that received nothing did not. The committed sample showed
+# it at t≈40s — a lift shaft with six floors and a row of five numbers, the
+# sixth floor blank and red.
+
+
+def test_the_fixture_renders_with_no_empty_boxes(hosted):
+    _settings, _script, _tts, _out, manifest, _frames, warnings = hosted
+    assert manifest["empty_boxes"] == [], \
+        "the showcase is demonstrating the bug: " + "; ".join(manifest["empty_boxes"])
+    assert [w for w in warnings if "no value" in w] == [], \
+        "...and the approval report said so before the render did"
+
+
+@pytest.mark.parametrize("sample", SAMPLES, ids=lambda p: p.stem)
+def test_the_committed_sample_renders_with_no_empty_boxes(sample):
+    manifest = json.loads(
+        sample.with_suffix(".manifest.json").read_text(encoding="utf-8"))
+    assert manifest["empty_boxes"] == [], (
+        f"{sample.name} draws a box with nothing in it: "
+        + "; ".join(manifest["empty_boxes"])
+        + ". Re-render it: scripts/render_samples.py short")

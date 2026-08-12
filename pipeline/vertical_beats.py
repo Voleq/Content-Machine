@@ -60,17 +60,38 @@ VERTICAL_BEATS: dict[str, tuple[str, ...]] = {
 
 def pick(kit: Kit, direction: str, *, seed: str,
          ledger: VariantLedger | None = None,
-         exclude: Collection[str] = ()) -> str | None:
-    """A key from `direction`'s bank, deterministic and spread across uploads."""
+         exclude: Collection[str] = (),
+         fits: int | None = None) -> str | None:
+    """A key from `direction`'s bank, deterministic and spread across uploads.
+
+    `fits` is how many figures the caller has to put in it. Three of these
+    scenes are built around a series — eight rungs, six floors, six bricks —
+    and a row of five numbers fills neither, so the drawing came out with a
+    drawn, empty box at the end of it. That is the same judgement this module
+    already makes about the other end ("a ladder with one rung filled is not a
+    ladder"); it just never reached the choice.
+    """
     banned = {e.rsplit("/", 1)[-1].lower() for e in exclude}
+
+    def usable(key: str) -> bool:
+        if key.rsplit("/", 1)[-1].lower() in banned:
+            return False
+        if fits is None:
+            return True
+        asset = kit.get(key)
+        return asset is None or len(asset.slots) <= fits
+
     options = [k for k in VERTICAL_BEATS.get(direction, ())
-               if k in kit and k.rsplit("/", 1)[-1].lower() not in banned]
+               if k in kit and usable(k)]
     if not options:
         # Any vertical scene beats none: the register is the point.
         options = [k for fam in ("shorts/vertical-scenes",
                                  "shorts/vertical-scenes-2")
-                   for k in kit.family(fam)
-                   if k.rsplit("/", 1)[-1].lower() not in banned]
+                   for k in kit.family(fam) if usable(k)]
+    if not options and fits is not None:
+        # Nothing in the library it can fill. A scene with an empty box still
+        # beats no scene at all — `render_still` says which box it was.
+        return pick(kit, direction, seed=seed, ledger=ledger, exclude=exclude)
     if not options:
         return None
     if ledger is not None:
@@ -104,7 +125,7 @@ def beat_for_row(
         return None
     direction = classify(parse_row_values(values), label)
     key = pick(kit, direction, seed=f"{seed}|{label}", ledger=ledger,
-               exclude=exclude)
+               exclude=exclude, fits=len(values))
     if key is None:
         return None
     asset = kit.get(key)
@@ -113,6 +134,7 @@ def beat_for_row(
     names = [s.name for s in asset.slots]
     if len(names) == 1:
         return key, {names[0]: values[-1]}
-    # The series, oldest first, into as many boxes as the drawing has. A
-    # shorter row leaves the far boxes empty rather than repeating itself.
+    # The series, oldest first, into as many boxes as the drawing has. `fits`
+    # means the row reaches the last box; the zip only stops short on the
+    # fallback above, where nothing in the library could be filled.
     return key, {n: v for n, v in zip(names, values[-len(names):])}
