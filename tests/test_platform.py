@@ -642,3 +642,74 @@ def test_the_shipped_kit_is_portable():
         if (why := unportable(frame)) is not None
     ]
     assert not offenders, "\n  ".join(["unportable frame paths:"] + offenders)
+
+
+# --------------------------------------------------------------------------
+# deploy/bootstrap.sh — the two properties that made a clean install fail
+# --------------------------------------------------------------------------
+# Both defects below survived for one reason: bootstrap had only ever been
+# re-run over a tree that already worked, and an idempotent re-run passes
+# whether or not either is fixed. Only a genuinely empty destination showed
+# them, and nobody was testing that. These are the cheap structural halves of
+# that test — they cannot prove an install works, but they do fail the moment
+# the shape that broke it comes back.
+
+BOOTSTRAP = ROOT / "deploy" / "bootstrap.sh"
+
+
+def _bootstrap_lines() -> list[str]:
+    return BOOTSTRAP.read_text(encoding="utf-8").splitlines()
+
+
+def test_the_tree_is_handed_over_before_any_privilege_drop():
+    """A `sudo -u` into $DEST before the chown is the clean-install failure.
+
+    Root's `pip install -e` leaves a root-owned dennis.egg-info; the service
+    user's pip then cannot os.utime() it and dies with "Cannot update time
+    stamp of directory". The chown used to sit 84 lines below the first drop,
+    so every clean install failed and chowning by hand between runs did not
+    help — the next run's root-owned egg_info put it straight back.
+    """
+    first_own = first_drop = None
+    for n, line in enumerate(_bootstrap_lines(), 1):
+        code = line.split("#", 1)[0]
+        # The hand-over, however it is spelled: the helper, or a bare chown.
+        if first_own is None and re.search(r"^\s*(own_dest\b|chown -R .*DEST)", code):
+            first_own = n
+        # A real drop, not one quoted inside a message to the operator.
+        if (first_drop is None and "sudo -u" in code
+                and not re.match(r"\s*(warn|info|echo|printf)\b", code)):
+            first_drop = n
+    assert first_own, "nothing chowns $DEST to the service user at all"
+    assert first_drop, "no `sudo -u` at all — did the service user go away?"
+    assert first_own < first_drop, (
+        f"bootstrap.sh drops to the service user at line {first_drop} but does "
+        f"not chown $DEST until line {first_own}. Everything root wrote in "
+        f"between is root-owned, and the drop fails on a clean install.")
+
+
+def test_the_optional_voice_step_cannot_abort_the_install():
+    """Piper is optional, so it warns; `die` there costs the whole service.
+
+    tier_for() falls back mock -> local -> paid and can never escalate a draft
+    to a paid generation, so an absent voice costs audio quality and $0. When
+    this step used to `die`, the offline suite and the systemd units never ran
+    — a box that could not install a free draft voice got no bot at all.
+    """
+    lines = _bootstrap_lines()
+    start = end = None
+    for n, line in enumerate(lines, 1):
+        if start is None and line.startswith('step "local neural voice'):
+            start = n
+        elif start is not None and line.startswith("step ") and end is None:
+            end = n
+            break
+    assert start, "the Piper step is gone — update this test with it"
+    block = lines[start:(end or len(lines)) - 1]
+    offenders = [
+        f"L{start + i}: {ln.strip()}"
+        for i, ln in enumerate(block, 1)
+        if re.search(r"^[^#]*\bdie\b", ln)
+    ]
+    assert not offenders, (
+        "the optional voice step aborts the install:\n  " + "\n  ".join(offenders))

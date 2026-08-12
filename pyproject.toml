@@ -54,9 +54,11 @@ filings = [
 # listenable. Optional so the base install and CI stay lean: without it
 # tier_for() falls back to the mock hum rather than to a paid generation, so
 # absence costs quality, never money. bootstrap.sh installs it, downloads the
-# voice model into assets/voices/, and refuses to finish unless a real test
-# synthesis produces audio — a tier that reports success and delivers a hum is
-# worse than one that is plainly absent.
+# voice model into assets/voices/, and requires a real test synthesis before it
+# will write the settings that switch the tier on — a tier that reports success
+# and delivers a hum is worse than one that is plainly absent. It warns rather
+# than aborting when that fails: the same "absence costs quality, never money"
+# is the reason an unusable voice must not cost the operator the whole install.
 voice = [
     "piper-tts==1.6.0",
 ]

@@ -3,7 +3,8 @@
 # a bare Debian/Ubuntu VPS. Both are the same install; the differences are
 # detected, not configured.
 #
-#   sudo bash deploy/bootstrap.sh [DEST]        # DEST defaults to /opt/dennis
+#   sudo bash deploy/bootstrap.sh [DEST] [--skip-piper]
+#                                               # DEST defaults to /opt/dennis
 #
 # Idempotent: safe to re-run after a pull. Every step is either already-done
 # or re-done cleanly.
@@ -13,6 +14,23 @@
 # filesystem - is checked up front, and the run aborts with one readable
 # message naming the fix. After preflight the only expected failures are a
 # genuinely broken network or disk.
+#
+# What is REQUIRED and what is OPTIONAL is a decision made once, here: a step
+# is required only if the bot cannot run without it. FFmpeg, the venv and the
+# pinned dependencies are required. Headless Chromium (10-K screenshots) and
+# the local Piper voice (free draft audio) are not - each degrades a feature
+# and neither blocks a render, so each warns and the install carries on. An
+# optional step that aborts leaves the operator with no service at all, which
+# is strictly worse than the degradation it was trying to prevent.
+#
+# The local voice can be skipped outright, and this is honoured for real -
+# unlike the message it replaces, which told the operator to set a variable
+# nothing here read, in a file that did not exist yet:
+#     sudo bash deploy/bootstrap.sh /opt/dennis --skip-piper
+#     sudo SKIP_PIPER=1 bash deploy/bootstrap.sh /opt/dennis
+# or LOCAL_TTS_ENABLED=false in an existing .env, which this now reads. The
+# flag is the reliable one: `SKIP_PIPER=1 sudo bash ...` loses the variable to
+# sudo's env_reset, so it has to be set on sudo's own command line (or -E).
 #
 # WSL2 notes:
 #   * systemd is OFF by default in WSL. The service and timer install only
@@ -26,7 +44,16 @@
 
 set -Eeuo pipefail
 
-DEST="${1:-/opt/dennis}"
+DEST=""
+SKIP_PIPER="${SKIP_PIPER:-0}"
+for arg in "$@"; do
+  case "$arg" in
+    --skip-piper) SKIP_PIPER=1 ;;
+    -*) printf 'unknown option: %s\n\nusage: bash deploy/bootstrap.sh [DEST] [--skip-piper]\n' "$arg" >&2; exit 2 ;;
+    *) [ -n "$DEST" ] || DEST="$arg" ;;
+  esac
+done
+DEST="${DEST:-/opt/dennis}"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_USER="dennis"
 
@@ -78,6 +105,26 @@ on_err() {
   exit "$code"
 }
 trap 'on_err $LINENO' ERR
+
+# --------------------------------------------------------------------------
+# ownership
+# --------------------------------------------------------------------------
+# The invariant: whenever this script is about to run something AS the service
+# user, the tree already belongs to the service user. It is called at every
+# such boundary rather than once at the end, because root keeps writing into
+# $DEST between them - `pip install -e` in particular recreates
+# dennis.egg-info as root on every run, and the next `sudo -u` pip cannot
+# os.utime() a directory it does not own:
+#
+#     error: Cannot update time stamp of directory 'dennis.egg-info'
+#
+# That failed every clean install, and chowning by hand between runs did not
+# help: the next run's root-owned egg_info put it straight back. A chown that
+# happens once, at the end, is a chown that happens after the damage.
+#
+# Cheap (a recursive chown over a venv is a second) and idempotent, so calling
+# it more often than strictly needed is the right trade.
+own_dest() { chown -R "$SERVICE_USER:$SERVICE_USER" "$DEST"; }
 
 # --------------------------------------------------------------------------
 # environment detection
@@ -209,6 +256,15 @@ ok "preflight passed"
 step "apt dependencies (ffmpeg, fonts, python venv, rsync)"
 # ImageMagick is deliberately NOT required: all text rendering is Pillow, all
 # animation is Pillow-frames -> ffmpeg. No display server needed.
+#
+# espeak-ng is NOT required either, which is worth stating because Piper
+# phonemises through espeak and the obvious guess is that it needs the system
+# package. It does not: piper-tts 1.6.0 ships cp39-abi3 manylinux wheels
+# (x86_64 and aarch64) with espeak-ng statically linked into
+# piper/espeakbridge.so - ldd shows libc and nothing else - and the whole
+# espeak-ng-data tree inside the package. Verified by synthesizing on a box
+# with no espeak-ng, no libespeak in ldconfig and nothing on PATH: 2.9s of
+# real audio. Adding it would install a package nothing links against.
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 apt-get install -y -q ffmpeg "$VENV_PKG" fonts-dejavu-core rsync \
@@ -271,6 +327,7 @@ if [ "$SRC" != "$DEST" ]; then
     "$SRC/" "$DEST/"
 fi
 cd "$DEST"
+own_dest
 ok "$DEST"
 
 # --------------------------------------------------------------------------
@@ -327,75 +384,14 @@ step "brand assets + fixtures (deterministic, generated locally)"
 ok "generated"
 
 # --------------------------------------------------------------------------
-# local neural voice (Piper) - the free tier
-# --------------------------------------------------------------------------
-# This is what makes /proof and /draft free AND listenable. Without it
-# tier_for() falls back to the mock hum, which reports success and delivers a
-# tone - a tier that is configured but non-functional is worse than one that
-# is absent, so this step VERIFIES with a real synthesis rather than trusting
-# that pip exited 0. Same principle as the NVENC probe above: believe the
-# artefact, not the feature list.
-step "local neural voice (Piper) - the free draft/proof tier"
-PIPER_VOICE="en_GB-northern_english_male-medium"
-PIPER_DIR="$DEST/assets/voices"
-PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/northern_english_male/medium/$PIPER_VOICE"
-
-sudo -u "$SERVICE_USER" .venv/bin/pip install -q -e '.[voice]' || die \
-"Could not install the pinned piper-tts into the venv.
-
-Without it /draft and /proof fall back to the mock hum: they still cost \$0,
-but you are listening to a tone rather than the script, and no amount of
-squinting at the video will tell you that is what happened. Fix the network or
-the wheel and re-run - everything else is already installed."
-
-install -d -o "$SERVICE_USER" -g "$SERVICE_USER" "$PIPER_DIR"
-for suffix in .onnx .onnx.json; do
-  target="$PIPER_DIR/$PIPER_VOICE$suffix"
-  if [ -s "$target" ]; then
-    info "$PIPER_VOICE$suffix already present"
-    continue
-  fi
-  info "downloading $PIPER_VOICE$suffix"
-  sudo -u "$SERVICE_USER" curl -sSfL -o "$target" "$PIPER_BASE$suffix" || die \
-"Could not download the Piper voice model:
-    $PIPER_BASE$suffix
-
-The binary installed but there is no voice for it to speak with, so the free
-tier would silently degrade to the mock hum. Re-run when the network is back."
-done
-
-# The smoke test. A model file that exists proves nothing: it can be a
-# truncated download, the wrong architecture, or a voice this build of piper
-# cannot load. Synthesize a real sentence and require real audio out.
-PIPER_SMOKE="$(mktemp -d)/smoke.wav"
-if echo "Noise, or signal? We are about to find out." \
-    | sudo -u "$SERVICE_USER" .venv/bin/piper \
-        -m "$PIPER_DIR/$PIPER_VOICE.onnx" -f "$PIPER_SMOKE" >/dev/null 2>&1 \
-   && [ -s "$PIPER_SMOKE" ] \
-   && [ "$(ffprobe -v error -show_entries format=duration -of csv=p=0 \
-            "$PIPER_SMOKE" 2>/dev/null | cut -d. -f1)" -ge 1 ] 2>/dev/null; then
-  ok "Piper speaks - /draft and /proof get a real voice for \$0"
-  rm -rf "$(dirname "$PIPER_SMOKE")"
-else
-  rm -rf "$(dirname "$PIPER_SMOKE")"
-  die \
-"Piper is installed and the voice model is present, but synthesizing a test
-sentence produced no usable audio.
-
-This is the failure worth stopping for: the pipeline would report the 'local'
-tier, hand you the mock hum, and leave you to work out from the audio that the
-free voice never ran. Reproduce with:
-
-    cd $DEST && echo hello | .venv/bin/piper \\
-        -m assets/voices/$PIPER_VOICE.onnx -f /tmp/t.wav
-
-To install anyway without the free voice, set LOCAL_TTS_ENABLED=false in .env
-and re-run; /draft and /proof will use the mock hum and say so."
-fi
-
-# --------------------------------------------------------------------------
 # .env
 # --------------------------------------------------------------------------
+# Before the voice step, not after it: the voice step READS this file for the
+# operator's LOCAL_TTS_ENABLED switch, and WRITES back what it actually
+# managed to verify. Neither is possible while .env is created afterwards -
+# which is why the old "set LOCAL_TTS_ENABLED=false and re-run" instruction
+# could not work on a clean install: at that point there was no .env to set it
+# in, and nothing here read it if there had been.
 step ".env"
 if [ ! -f .env ]; then
   cp .env.example .env
@@ -408,23 +404,199 @@ else
   info ".env already exists - left alone"
 fi
 
-# LOCAL_TTS_MODEL is the one setting the operator cannot be expected to know:
-# it is an absolute path to a file this script just downloaded. Left blank,
-# available() reports "LOCAL_TTS_MODEL is not set" and every /draft and /proof
-# quietly gets the mock hum despite a working Piper - so it is written here,
-# for a fresh .env and an existing one alike, and only when still unset.
+# key=value in .env, whether the key is absent, blank or already set.
+env_set() {
+  if grep -q "^$1=" .env; then
+    sed -i "s|^$1=.*|$1=$2|" .env
+  else
+    printf '%s=%s\n' "$1" "$2" >> .env
+  fi
+}
+# A key set to one of the falsey spellings pydantic-settings accepts.
+env_off() { grep -qiE "^$1=[[:space:]]*(false|0|no|off)[[:space:]]*$" .env; }
+
+# --------------------------------------------------------------------------
+# local neural voice (Piper) - the free tier
+# --------------------------------------------------------------------------
+# This is what makes /proof and /draft free AND listenable. Without it
+# tier_for() falls back to the mock hum, which reports success and delivers a
+# tone - a tier that is configured but non-functional is worse than one that
+# is absent, so this step VERIFIES with a real synthesis rather than trusting
+# that pip exited 0. Same principle as the NVENC probe above: believe the
+# artefact, not the feature list.
+#
+# OPTIONAL, and every failure below is a warning. tier_for() falls back
+# mock -> local -> paid and can never escalate a draft to a paid generation,
+# so an absent voice costs audio quality and exactly $0. Aborting here used to
+# take the test suite and the systemd units with it: a box that could not
+# install Piper got no bot at all, and was told "everything else is already
+# installed", which was not true - the service did not exist.
+step "local neural voice (Piper) - the free draft/proof tier"
+PIPER_VOICE="en_GB-northern_english_male-medium"
+PIPER_DIR="$DEST/assets/voices"
+PIPER_BASE="https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_GB/northern_english_male/medium/$PIPER_VOICE"
 PIPER_MODEL_PATH="$PIPER_DIR/$PIPER_VOICE.onnx"
-if grep -qE '^LOCAL_TTS_MODEL=.+' .env; then
-  info "LOCAL_TTS_MODEL already set - left alone"
-elif grep -q '^LOCAL_TTS_MODEL=' .env; then
-  sed -i "s|^LOCAL_TTS_MODEL=.*|LOCAL_TTS_MODEL=$PIPER_MODEL_PATH|" .env
-  ok "LOCAL_TTS_MODEL -> $PIPER_MODEL_PATH"
+PIPER_BIN="$DEST/.venv/bin/piper"
+PIPER_OK=0
+# Skipped and failed are different answers, and .env is edited on only one of
+# them: a skipped run must leave a voice an earlier run proved working exactly
+# where it is. "Do not spend two minutes on this" is not "throw away my voice".
+PIPER_TRIED=0
+
+# One place to say what the loss is, so all three failure paths say the same
+# true thing and name a retry that exists.
+piper_degraded() {
+  warn ""
+  warn "The free local voice is NOT installed. This is a degradation, not a"
+  warn "blocked install: /draft and /proof still work and still cost \$0 - they"
+  warn "fall back to the mock hum, a tone rather than the script, and the bot"
+  warn "labels the tier so you can tell. A final still buys one ElevenLabs"
+  warn "generation exactly as before; a missing local voice can never escalate"
+  warn "a draft to a paid one. Re-run this script to retry it - it is"
+  warn "idempotent, so the steps that already succeeded are skipped:"
+  warn "    sudo bash $SRC/deploy/bootstrap.sh $DEST"
+  warn "Add --skip-piper to stop it trying at all."
+}
+
+if [ "$SKIP_PIPER" = "1" ]; then
+  info "skipped (--skip-piper / SKIP_PIPER=1)"
+  info "/draft and /proof will use the mock hum."
+elif env_off LOCAL_TTS_ENABLED; then
+  info "skipped: LOCAL_TTS_ENABLED is off in $DEST/.env"
+  info "Set it back to true and re-run to install the free voice."
 else
-  printf 'LOCAL_TTS_MODEL=%s\n' "$PIPER_MODEL_PATH" >> .env
-  ok "LOCAL_TTS_MODEL -> $PIPER_MODEL_PATH"
+  PIPER_TRIED=1
+  # Root, like every other install step. This ran under `sudo -u` before,
+  # which is what made a clean install impossible: root's `pip install -e`
+  # above leaves a root-owned dennis.egg-info, and the service user's pip then
+  # cannot touch it. The venv belongs to the install phase, and the install
+  # phase is root's; own_dest hands the result over.
+  if .venv/bin/pip install -q -e '.[voice]'; then
+    install -d -o "$SERVICE_USER" -g "$SERVICE_USER" "$PIPER_DIR"
+    PIPER_MODELS_OK=1
+    for suffix in .onnx .onnx.json; do
+      target="$PIPER_DIR/$PIPER_VOICE$suffix"
+      if [ -s "$target" ]; then
+        info "$PIPER_VOICE$suffix already present"
+        continue
+      fi
+      info "downloading $PIPER_VOICE$suffix"
+      if ! curl -sSfL -o "$target" "$PIPER_BASE$suffix"; then
+        rm -f "$target"   # a partial download is worse than none
+        PIPER_MODELS_OK=0
+        warn "could not download $PIPER_BASE$suffix"
+        break
+      fi
+    done
+
+    if [ "$PIPER_MODELS_OK" -eq 1 ]; then
+      # The smoke test. A model file that exists proves nothing: it can be a
+      # truncated download, the wrong architecture, or a voice this build of
+      # piper cannot load. Synthesize a real sentence and require real audio.
+      #
+      # It runs as $SERVICE_USER on purpose - that is the user systemd will
+      # run the bot as, so this also proves that user can execute the venv and
+      # read the model. Which makes the output directory part of the test:
+      # `mktemp -d` returns a 0700 root-owned directory that the service user
+      # cannot write, so piper died with PermissionError before it ever
+      # reached the model. The old `>/dev/null 2>&1` then swallowed the
+      # traceback and reported "no usable audio" - a true statement about the
+      # symptom that named none of the cause.
+      own_dest
+      PIPER_SMOKE_DIR="$(mktemp -d)"
+      chown "$SERVICE_USER:$SERVICE_USER" "$PIPER_SMOKE_DIR"
+      PIPER_SMOKE="$PIPER_SMOKE_DIR/smoke.wav"
+      PIPER_LOG="$PIPER_SMOKE_DIR/piper.log"
+
+      # stderr is captured, never discarded, so a failure prints the reason it
+      # actually hit instead of making the operator rebuild the command by
+      # hand. Captured beats re-running: it is the output of the run that
+      # failed, not of a second attempt that may not fail the same way.
+      # (The redirect is root's, not sudo's - which is what we want: the log
+      # is written by the shell that has to read it back.)
+      if echo "Noise, or signal? We are about to find out." \
+          | sudo -u "$SERVICE_USER" "$PIPER_BIN" \
+              -m "$PIPER_MODEL_PATH" -f "$PIPER_SMOKE" >"$PIPER_LOG" 2>&1 \
+         && [ -s "$PIPER_SMOKE" ] \
+         && [ "$(ffprobe -v error -show_entries format=duration -of csv=p=0 \
+                  "$PIPER_SMOKE" 2>/dev/null | cut -d. -f1)" -ge 1 ] 2>/dev/null; then
+        PIPER_OK=1
+        ok "Piper speaks - /draft and /proof get a real voice for \$0"
+      else
+        warn "Piper is installed and the voice model is present, but"
+        warn "synthesizing a test sentence produced no usable audio."
+        warn ""
+        warn "piper said:"
+        if [ -s "$PIPER_LOG" ]; then
+          while IFS= read -r piper_line; do
+            warn "  $piper_line"
+          done < <(tail -n 20 "$PIPER_LOG")
+        else
+          warn "  (nothing on stdout or stderr)"
+        fi
+        warn ""
+        warn "Reproduce it the way it runs - as $SERVICE_USER, into a"
+        warn "directory that user can write:"
+        warn "    d=\$(mktemp -d) && chown $SERVICE_USER \"\$d\" && echo hello |"
+        warn "    sudo -u $SERVICE_USER $PIPER_BIN -m $PIPER_MODEL_PATH -f \"\$d/t.wav\""
+        piper_degraded
+      fi
+      rm -rf "$PIPER_SMOKE_DIR"
+    else
+      warn "The voice model did not download, so there is nothing to speak with."
+      piper_degraded
+    fi
+  else
+    warn "Could not install the pinned piper-tts into the venv (see pip above)."
+    warn "Retry that step alone with:"
+    warn "    cd $DEST && sudo .venv/bin/pip install -e '.[voice]'"
+    piper_degraded
+  fi
 fi
 
-chown -R "$SERVICE_USER:$SERVICE_USER" "$DEST"
+# The .env now describes what was verified, not what was intended.
+#
+# LOCAL_TTS_BINARY and LOCAL_TTS_MODEL are the two settings the operator
+# cannot be expected to know. The model is an absolute path to a file this
+# script just downloaded. The binary is subtler: available() resolves it with
+# shutil.which(), the unit runs .venv/bin/python directly, and systemd's
+# default PATH does not contain .venv/bin - so the bare default "piper" is not
+# findable under the service even when Piper is installed and perfect, and
+# every /draft quietly gets the hum despite a working voice. An absolute path
+# is what which() needs, and it is the same class of setting as the model:
+# knowable only from here.
+#
+# Written only when the smoke test passed. Left blank otherwise, which is the
+# difference between a draft that falls back to the mock hum and one that
+# fails mid-render: available() reports "not set", tier_for() resolves to
+# mock, and the operator gets the hum they were warned about. A setting that
+# claims a voice this run could not demonstrate is exactly the lie the smoke
+# test exists to catch.
+if [ "$PIPER_OK" -eq 1 ]; then
+  if grep -qE '^LOCAL_TTS_MODEL=.+' .env; then
+    info "LOCAL_TTS_MODEL already set - left alone"
+  else
+    env_set LOCAL_TTS_MODEL "$PIPER_MODEL_PATH"
+    ok "LOCAL_TTS_MODEL -> $PIPER_MODEL_PATH"
+  fi
+  if grep -qE '^LOCAL_TTS_BINARY=[[:space:]]*(piper)?[[:space:]]*$' .env \
+     || ! grep -q '^LOCAL_TTS_BINARY=' .env; then
+    env_set LOCAL_TTS_BINARY "$PIPER_BIN"
+    ok "LOCAL_TTS_BINARY -> $PIPER_BIN"
+  else
+    info "LOCAL_TTS_BINARY already set - left alone"
+  fi
+elif [ "$PIPER_TRIED" -eq 1 ] \
+     && grep -qE "^LOCAL_TTS_MODEL=[[:space:]]*${PIPER_MODEL_PATH}[[:space:]]*$" .env; then
+  # It points at a voice this run tried and could not demonstrate. Blank it
+  # rather than leave a config promising a tier the box cannot deliver. A model
+  # path the operator chose is theirs, and is left alone.
+  env_set LOCAL_TTS_MODEL ""
+  warn "LOCAL_TTS_MODEL cleared - drafts fall back to the mock hum until the"
+  warn "voice installs cleanly."
+fi
+
+own_dest
 
 # --------------------------------------------------------------------------
 # offline test suite
@@ -483,6 +655,22 @@ else
   echo "     or just run it in the foreground:"
   echo "         cd $DEST && sudo -u $SERVICE_USER .venv/bin/python main.py"
   echo "  3. message your bot: /help"
+fi
+
+# The install is done either way, so the last word says which install it is.
+# An operator who scrolled past one warning fifty lines up should not have to
+# discover from the audio that the free voice never got installed.
+printf '\n'
+if [ "$PIPER_OK" -eq 1 ]; then
+  echo "  free draft voice: INSTALLED (/draft and /proof speak, \$0)"
+elif [ "$PIPER_TRIED" -eq 0 ]; then
+  echo "  free draft voice: SKIPPED - not touched this run, so whatever"
+  echo "  LOCAL_TTS_* already says in .env still stands."
+else
+  echo "  free draft voice: ABSENT - /draft and /proof fall back to the mock"
+  echo "  hum (a tone, not the script). Everything else above is installed and"
+  echo "  the bot runs. Finals are unaffected; nothing costs more because of"
+  echo "  this. Re-run this script to retry the voice."
 fi
 cat <<'DONE'
 
