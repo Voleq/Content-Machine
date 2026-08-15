@@ -6,3 +6,8 @@
 # The scripts themselves are unmaintained (the target is Linux/WSL2); this only
 # guarantees that what is in the repo still parses. See tests/test_platform.py.
 *.ps1 -text
+assets/marker/*.png filter=lfs diff=lfs merge=lfs -text
+assets/ballpoint/*.png filter=lfs diff=lfs merge=lfs -text
+assets/grease-pencil/*.png filter=lfs diff=lfs merge=lfs -text
+assets/cut-paper/*.png filter=lfs diff=lfs merge=lfs -text
+assets/light/*.png filter=lfs diff=lfs merge=lfs -text
