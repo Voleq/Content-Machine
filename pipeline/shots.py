@@ -37,6 +37,32 @@ class TemplateError(RuntimeError):
     """A shot template is malformed, or names something the kit lacks."""
 
 
+# Templates are data, which means a typo in one is a silent no-op unless the
+# parser refuses what it does not understand. `repeat` was dropped without a
+# word the first time MACRO declared it, and the shot parsed as bare ground
+# with nothing in it — a format quietly one shot shorter than it says it is.
+# Every key any of these objects may carry is listed, and anything else is an
+# error naming the key and the shot it is in.
+FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes"})
+SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
+                       "lit", "anchor", "max_hold_s", "captions", "notes",
+                       "repeat", "stagger_s"})
+TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
+                       "max_lines", "draw_on_s", "color", "slot"})
+MARK_KEYS = frozenset({"kind", "target", "name"})
+REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
+                         "stagger_s"})
+
+
+def _reject_unknown(obj: dict, allowed: frozenset, where: str) -> None:
+    extra = sorted(set(obj) - allowed)
+    if extra:
+        raise TemplateError(
+            f"{where}: unknown key(s) {extra}. A template key the engine does "
+            f"not read is a silent no-op, so it is refused here. Known keys: "
+            f"{sorted(allowed)}")
+
+
 @dataclass(frozen=True)
 class TextSpec:
     """Type drawn by code, sized as a fraction of FRAME height.
@@ -77,6 +103,29 @@ class MarkSpec:
 
 
 @dataclass(frozen=True)
+class RepeatSpec:
+    """One shot that places a LIST rather than a single plate.
+
+    Every other shot in every format names one plate and fills its slots.
+    MACRO's "who it hits" is four to five consequence cards in one beat, and
+    the SHORT's four numbers shots are the same idea written out longhand.
+    So this is a general capability, not a macro affordance: N instances of
+    one concept, arranged, each entering on its own beat.
+
+    The stagger is load-bearing. Cards arriving one at a time is something
+    provably entering, which is what lets a seven-second beat clear the hold
+    ceiling honestly rather than by exemption.
+    """
+
+    concept: str
+    src: str
+    max: int = 5
+    bind: dict[str, str] = field(default_factory=dict)
+    arrange: str = "grid"          # grid | row | column
+    stagger_s: float = 0.5
+
+
+@dataclass(frozen=True)
 class HostSpec:
     """The host, as a concept name plus the plate slot they stand in."""
 
@@ -96,12 +145,19 @@ class Shot:
     text: tuple[TextSpec, ...] = ()
     marks: tuple[MarkSpec, ...] = ()
     host: HostSpec | None = None
+    repeat: RepeatSpec | None = None
     enter: str | None = None
     # Which bound slot is LIT. Every row of the sheet is visible in every
     # numbers shot — one carries the figures being talked about and the rest
     # are ghosted back, so the eye lands without the sheet redrawing.
     lit: str | None = None
     anchor: str | None = None
+    # Fills enter in declaration order, this many seconds apart. A chain of
+    # three that appears all at once is not a chain, and on a sparse plate —
+    # a number, three boxes and two arrows — the boil moves too little ink to
+    # read as motion at all. Something entering is what the ceiling rule
+    # actually asks for.
+    stagger_s: float = 0.0
     max_hold_s: float = 8.0
     captions: bool = True
     notes: str = ""
@@ -143,6 +199,7 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
     for i, t in enumerate(raw or ()):
         if not isinstance(t, dict):
             raise TemplateError(f"{where}: text #{i} is not an object")
+        _reject_unknown(t, TEXT_KEYS, f"{where} text #{i}")
         try:
             out.append(TextSpec(
                 src=t["src"], size_fh=float(t["size_fh"]),
@@ -158,6 +215,7 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
 
 
 def parse_format(raw: dict, source: Path | None = None) -> Format:
+    _reject_unknown(raw, FORMAT_KEYS, "template")
     try:
         name = raw["format"]
         frame = (int(raw["frame"]["w"]), int(raw["frame"]["h"]))
@@ -170,7 +228,8 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
     shots = []
     seen: set[str] = set()
     for i, s in enumerate(shots_raw):
-        where = f"{name} shot #{i}"
+        where = f"{name} shot #{i} ({s.get('id', 'unnamed')})"
+        _reject_unknown(s, SHOT_KEYS, where)
         try:
             sid = s["id"]
             # Present-but-null is a bare-ground shot; absent is an authoring
@@ -192,22 +251,44 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             else:
                 host = HostSpec(pose=host_raw["pose"],
                                 slot=host_raw.get("slot", "figure"))
+        for j, m in enumerate(s.get("marks") or ()):
+            _reject_unknown(m, MARK_KEYS, f"{where} mark #{j}")
         marks = tuple(MarkSpec(kind=m["kind"], target=m["target"],
                                name=m.get("name", m["kind"]))
                       for m in (s.get("marks") or ()))
+
+        rep_raw = s.get("repeat")
+        repeat = None
+        if rep_raw:
+            _reject_unknown(rep_raw, REPEAT_KEYS, f"{where} repeat")
+            try:
+                repeat = RepeatSpec(
+                    concept=rep_raw["concept"], src=rep_raw["src"],
+                    max=int(rep_raw.get("max", 5)),
+                    bind=dict(rep_raw.get("bind") or {}),
+                    arrange=rep_raw.get("arrange", "grid"),
+                    stagger_s=float(rep_raw.get("stagger_s", 0.5)))
+            except KeyError as exc:
+                raise TemplateError(f"{where} repeat missing {exc}") from exc
         shots.append(Shot(
             id=sid, plate=plate,
             bind=dict(s.get("bind") or {}),
             text=_text_specs(s.get("text"), where),
-            marks=marks, host=host,
+            marks=marks, host=host, repeat=repeat,
             enter=s.get("enter"), lit=s.get("lit"),
-            anchor=s.get("anchor"),
+            anchor=s.get("anchor"), stagger_s=float(s.get("stagger_s", 0.0)),
             max_hold_s=float(s.get("max_hold_s", 8.0)),
             captions=bool(s.get("captions", True)),
             notes=s.get("notes", "")))
 
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
                  shots=tuple(shots), source=source)
+
+    for sh in fmt.shots:
+        if not (sh.plate or sh.text or sh.bind or sh.repeat or sh.host):
+            raise TemplateError(
+                f"{name}/{sh.id}: names no plate, no text, no binding and no "
+                f"repeat — there is nothing for this shot to draw")
 
     # Large type and the caption band are mutually exclusive. This is checked
     # at parse time so an unrenderable template cannot reach a render at all.

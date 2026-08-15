@@ -84,6 +84,7 @@ class Resolver(Protocol):
 
     def text_for(self, src: str) -> str | None: ...
     def image_for(self, src: str) -> Path | None: ...
+    def list_for(self, src: str) -> list[str] | None: ...
 
 
 @dataclass
@@ -130,6 +131,35 @@ def _slot_in_frame(entry: Entry, slot: str, placed: tuple[int, int, int, int]
     k = pw / entry.delivered[0]
     return (px + int(round(sx * k)), py + int(round(sy * k)),
             int(round(sw * k)), int(round(sh * k)))
+
+
+def _arrange(n: int, how: str, frame: tuple[int, int]
+             ) -> list[tuple[int, int, int, int]]:
+    """`n` cells filling the middle of the frame, as (x, y, w, h).
+
+    Kept deliberately dumb: a grid, a row or a column, with a margin. Cards
+    are centred inside their cell by the caller, so a cell being wider than
+    the card it holds is fine and no card is ever stretched.
+    """
+    fw, fh = frame
+    if n <= 0:
+        return []
+    if how == "row":
+        cols, rows = n, 1
+    elif how == "column":
+        cols, rows = 1, n
+    else:
+        cols = 1 if n == 1 else 2
+        rows = (n + cols - 1) // cols
+    mx, my = int(fw * 0.06), int(fh * 0.16)
+    gx, gy = int(fw * 0.03), int(fh * 0.02)
+    cw = (fw - 2 * mx - gx * (cols - 1)) // cols
+    ch = (fh - 2 * my - gy * (rows - 1)) // rows
+    out = []
+    for i in range(n):
+        r, c = divmod(i, cols)
+        out.append((mx + c * (cw + gx), my + r * (ch + gy), cw, ch))
+    return out
 
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
@@ -187,7 +217,9 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 entry_key=entry.key, concept=entry.concept, z=10))
 
         # -- slot fills: charts, nested plates, row content
-        for slot, src in shot.bind.items():
+        for fill_index, (slot, src) in enumerate(shot.bind.items()):
+            # Declaration order is entry order when the shot staggers.
+            fill_t0 = min(t0 + fill_index * shot.stagger_s, max(t1 - 0.3, t0))
             # A leading '?' means the slot is optional: a sheet has six row
             # bands and a script may carry four metrics, and two blank bands
             # is the correct drawing, not a missing asset. Everything without
@@ -210,7 +242,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 ny = (box[1] + (bh - nh) // 2) if box else (fh - nh) // 2
                 layers.append(Layer(
                     name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
                     x=nx, y=ny, w=nw, h=nh,
                     frames=nested.paths, fps=nested.fps, loops=nested.loops,
                     entry_key=nested.key, concept=nested.concept,
@@ -226,7 +258,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     continue
                 layers.append(Layer(
                     name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
                     x=box[0] if box else 0, y=box[1] if box else 0,
                     w=box[2] if box else fw, h=box[3] if box else fh,
                     slot=slot, text=txt, boil_fps=BOIL_FPS,
@@ -238,7 +270,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             if isinstance(img, (list, tuple)):
                 layers.append(Layer(
                     name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
                     x=box[0] if box else 0, y=box[1] if box else 0,
                     w=box[2] if box else fw, h=box[3] if box else fh,
                     frames=tuple(img), fps=BOIL_FPS, loops=True,
@@ -246,10 +278,66 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 continue
             layers.append(Layer(
                 name=f"{shot.id}:fill:{slot}", kind="fill",
-                shot_id=shot.id, t_start=t0, t_end=t1,
+                shot_id=shot.id, t_start=fill_t0, t_end=t1,
                 x=box[0] if box else 0, y=box[1] if box else 0,
                 w=box[2] if box else fw, h=box[3] if box else fh,
                 path=img, slot=slot, z=20))
+
+        # -- a repeated concept: N instances of one card, from a list
+        if shot.repeat:
+            rep = shot.repeat
+            items = []
+            getter = getattr(resolver, "list_for", None)
+            if getter is not None:
+                items = list(getter(rep.src) or [])
+            if not items:
+                unfilled.append(f"{shot.id}.repeat <- {rep.src}")
+            items = items[:max(rep.max, 1)]
+            rent = kit.concept(rep.concept, register)
+            for idx, (bx, by, bw, bh) in enumerate(
+                    _arrange(len(items), rep.arrange, frame)):
+                k = min(bw / rent.delivered[0], bh / rent.delivered[1])
+                cw, ch = int(rent.delivered[0] * k), int(rent.delivered[1] * k)
+                cx, cy = bx + (bw - cw) // 2, by + (bh - ch) // 2
+                # Each card enters on its own beat. That stagger is the motion
+                # the ceiling rule looks for, and it is why this beat can run
+                # seven seconds without being a held frame.
+                enter_at = min(t0 + idx * rep.stagger_s, max(t1 - 0.4, t0))
+                layers.append(Layer(
+                    name=f"{shot.id}:repeat:{rep.concept}:{idx}", kind="plate",
+                    shot_id=shot.id, t_start=enter_at, t_end=t1,
+                    x=cx, y=cy, w=cw, h=ch,
+                    frames=rent.paths, fps=rent.fps, loops=rent.loops,
+                    entry_key=rent.key, concept=rent.concept, z=15))
+                for slot_name, expr in (rep.bind or {}).items():
+                    if slot_name not in rent.slots:
+                        continue
+                    sx, sy, sw, sh = rent.slot_px(slot_name)
+                    kk = cw / rent.delivered[0]
+                    bx = (cx + int(sx * kk), cy + int(sy * kk),
+                          int(sw * kk), int(sh * kk))
+                    # A card's `mark` slot exists for a drawn mark, not for
+                    # type. Left unbound it is a declared, empty box in the
+                    # middle of every card.
+                    if expr.startswith("$mark:"):
+                        layers.append(Layer(
+                            name=f"{shot.id}:repeat:{slot_name}:{idx}",
+                            kind="mark", shot_id=shot.id,
+                            t_start=enter_at, t_end=t1,
+                            x=bx[0], y=bx[1], w=bx[2], h=bx[3],
+                            slot=expr.split(":", 1)[1], boil_fps=BOIL_FPS,
+                            z=25))
+                        continue
+                    value = (items[idx] if expr == "$item"
+                             else resolver.text_for(expr))
+                    if value is None:
+                        continue
+                    layers.append(Layer(
+                        name=f"{shot.id}:repeat:{slot_name}:{idx}", kind="fill",
+                        shot_id=shot.id, t_start=enter_at, t_end=t1,
+                        x=bx[0], y=bx[1], w=bx[2], h=bx[3],
+                        slot=slot_name, text=str(value), boil_fps=BOIL_FPS,
+                        z=25))
 
         # -- the host, in the plate's figure slot
         if shot.host:
@@ -341,6 +429,19 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                           host_fill.y + int(host_fill.h * fy),
                           max(int(host_fill.w * fwr), 8),
                           max(int(host_fill.h * fhr), 8))
+            # "page.body-3-circled" is a slot of the plate nested INTO this
+            # shot, the same address the text specs use. Resolved the same way,
+            # or the ring silently fails to land on the clause it is for.
+            if bx is None and "." in m.target:
+                where, _, sname = m.target.rpartition(".")
+                nested = next((l for l in layers
+                               if l.shot_id == shot.id and l.kind == "fill"
+                               and l.entry_key), None)
+                if where and nested is not None:
+                    ne = kit[nested.entry_key]
+                    if sname in ne.slots:
+                        bx = _slot_in_frame(
+                            ne, sname, (nested.x, nested.y, nested.w, nested.h))
             if bx is None:
                 target = next(
                     (l for l in layers

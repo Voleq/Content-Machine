@@ -31,6 +31,9 @@ from pipeline.shots import Format, load_format, resolve_spans
 FPS = 30
 # The kit boils at three frames, 7fps. Code-drawn artwork matches it.
 BOIL_FRAMES = 3
+# The SHORT's host shots, from its spec: 1, 5-8, 11, 12. Kept as the written
+# statement of that rule; the renderer reads the template, and
+# tests/test_short_shots.py asserts the two agree.
 HOST_SHOTS = ("cold-open", "numbers-1", "numbers-2", "numbers-3", "numbers-4",
               "payoff", "close")
 
@@ -80,6 +83,16 @@ class ShortResolver:
                 return None
         return str(obj) if obj is not None else None
 
+    def list_for(self, src: str) -> list[str] | None:
+        """A list source, for a shot that places a repeat."""
+        parts = src.split(".")
+        if parts[0] != "script" or len(parts) != 2:
+            return None
+        got = getattr(self.script, parts[1], None)
+        if isinstance(got, list) and got:
+            return [str(x) for x in got]
+        return None
+
     def _numbers(self, rest: list[str]) -> str | None:
         """One row of the sheet: its label and its figures, oldest to newest.
 
@@ -87,14 +100,19 @@ class ShortResolver:
         every band on the sheet is type this puts there.
         """
         rows = self.script.numbers
-        if rest and rest[0] == "row":
-            rest = rest[1:]
+        field = "row"
+        if rest and not rest[0].isdigit():
+            field, rest = rest[0], rest[1:]
         if not rest or not rest[0].isdigit():
             return None
         i = int(rest[0])
         if i >= len(rows):
             return None
         r = rows[i]
+        if field == "label":
+            return r.label
+        if field == "latest":
+            return r.values[-1]
         return f"{r.label}   " + "   ".join(r.values)
 
     def _compare(self, which: str) -> str | None:
@@ -102,6 +120,12 @@ class ShortResolver:
         rows = self.script.numbers
         if which == "versus":
             return "vs"
+        # EARNINGS and MACRO put the print against consensus. Both are their
+        # own fields when the script carries them.
+        if which == "reported":
+            return self.script.reported or (rows[0].values[-1] if rows else None)
+        if which == "expected":
+            return self.script.expected
         pick = None
         for r in rows:
             lab = r.label.lower()
@@ -190,6 +214,24 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         out["cheap_or_trap"] = script.cheap_or_trap
     if script.conclusion:
         out["conclusion"] = script.conclusion
+    # EARNINGS and MACRO listen for their own beats. A key with no field
+    # behind it simply never anchors, and its shot interpolates.
+    if script.verdict:
+        out["verdict"] = script.verdict
+    if script.guidance:
+        out["guidance"] = script.guidance
+    if script.expected:
+        out["expected"] = script.expected
+    if script.numbers:
+        out["print"] = script.numbers[0].label
+    if script.mechanism:
+        out["mechanism"] = script.mechanism[0]
+    if script.consequences:
+        out["consequences"] = script.consequences[0]
+    if script.headlines:
+        out["statement"] = script.headlines[0].text
+    if script.cheap_or_trap:
+        out["priced"] = script.cheap_or_trap
     return out
 
 
@@ -219,6 +261,15 @@ def prune_empty_shots(fmt: Format, probe: "ShortResolver") -> tuple[Format, list
                 continue
         if shot.plate or shot.bind:
             keep.append(shot)
+            continue
+        # A repeat shot names no plate and binds no slot — it places a list.
+        # Without this it was pruned as empty and MACRO rendered eight shots
+        # of nine, silently.
+        if shot.repeat:
+            if probe.list_for(shot.repeat.src):
+                keep.append(shot)
+            else:
+                dropped.append(shot.id)
             continue
         if any(probe.text_for(t.src) for t in shot.text):
             keep.append(shot)
@@ -269,6 +320,17 @@ def _frame_for(layer: Layer, t: float) -> Path:
     return layer.frames[max(i, 0)]
 
 
+def _type_floor(canvas: Image.Image) -> int:
+    """The smallest type any layer may shrink to: the readability floor.
+
+    Type shrinks before it truncates, but it stops here — below this nothing
+    can be read on a phone, and losing the words is then the lesser evil,
+    provided it is said out loud.
+    """
+    from pipeline.shots import MIN_TYPE_FH
+    return max(12, int(MIN_TYPE_FH * canvas.height))
+
+
 def _boil_index(layer: Layer, t: float) -> int:
     """Which redraw of a code-drawn layer is showing at `t`."""
     if not layer.boil_fps:
@@ -291,7 +353,8 @@ def _boil_offset(layer: Layer, t: float) -> tuple[int, int]:
 
 
 def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
-                register: str, resolver: ShortResolver) -> None:
+                register: str, resolver: ShortResolver,
+                lost: dict[str, int] | None = None) -> None:
     ink = mk.INK_FOR_REGISTER.get(register, mk.INK)
 
     if layer.kind == "ground":
@@ -314,12 +377,21 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
             return
         if layer.text:
             dx, dy = _boil_offset(layer, t)
-            mk.draw_block(canvas, layer.text,
-                          (layer.x + dx, layer.y + dy, layer.w, layer.h),
-                          font_name=DISPLAY_FONT if layer.lit else BODY_FONT,
-                          size_px=max(int(layer.h * 0.34), 14),
-                          color=ink if layer.lit else mk.MUTED,
-                          max_lines=2, halign="center", valign="center")
+            # How many lines the SLOT holds, not a guess. A kit slot is a
+            # declared box of a known height; hardcoding two lines lost the
+            # tail of every row that needed three.
+            size_px = max(int(layer.h * 0.34), 14)
+            fill_lines = max(1, int(layer.h / (size_px * 1.18)))
+            *_box, dropped = mk.draw_block(
+                canvas, layer.text,
+                (layer.x + dx, layer.y + dy, layer.w, layer.h),
+                font_name=DISPLAY_FONT if layer.lit else BODY_FONT,
+                size_px=size_px,
+                color=ink if layer.lit else mk.MUTED,
+                max_lines=fill_lines, halign="center", valign="center",
+                min_px=_type_floor(canvas))
+            if dropped and lost is not None:
+                lost[layer.name] = dropped
         return
 
     if layer.kind == "text":
@@ -331,12 +403,16 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
             reveal = mk.ease_out(min((t - layer.t_start) / layer.reveal_s, 1.0))
         big = layer.size_fh >= 0.06
         dx, dy = _boil_offset(layer, t)
-        mk.draw_block(canvas, layer.text,
-                      (layer.x + dx, layer.y + dy, layer.w, layer.h),
-                      font_name=DISPLAY_FONT if big else BODY_FONT,
-                      size_px=max(int(layer.size_fh * canvas.height), 12),
-                      color=colour, max_lines=layer.max_lines,
-                      halign="center", valign="top", reveal=reveal)
+        *_box, dropped = mk.draw_block(
+            canvas, layer.text,
+            (layer.x + dx, layer.y + dy, layer.w, layer.h),
+            font_name=DISPLAY_FONT if big else BODY_FONT,
+            size_px=max(int(layer.size_fh * canvas.height), 12),
+            color=colour, max_lines=layer.max_lines,
+            halign="center", valign="top", reveal=reveal,
+            min_px=_type_floor(canvas))
+        if dropped and lost is not None:
+            lost[layer.name] = dropped
         return
 
     if layer.kind == "mark":
@@ -351,6 +427,12 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         elif layer.slot == "underline":
             mk.underline(d, box, rng, color=ink,
                          width=max(4, canvas.width // 240))
+        elif layer.slot == "arrow-down":
+            mk.arrow_down(d, box, rng, color=mk.RED,
+                          width=max(5, canvas.width // 180))
+        elif layer.slot == "cross":
+            mk.cross(d, box, rng, color=mk.RED,
+                     width=max(5, canvas.width // 180))
         else:
             mk.drawn_rect(d, box, rng, width=max(3, canvas.width // 260),
                           color=ink, jitter=2.0, overshoot=0.02)
@@ -377,13 +459,15 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
     assert proc.stdin is not None
 
     ordered = sorted(result.layers, key=lambda l: (l.z, l.t_start))
+    lost: dict[str, int] = {}
     try:
         for i in range(n):
             t = i / FPS
             canvas = Image.new("RGBA", (w, h), mk.PAPER)
             for layer in ordered:
                 if layer.t_start - 1e-6 <= t < layer.t_end:
-                    _draw_layer(canvas, layer, t, cache, register, resolver)
+                    _draw_layer(canvas, layer, t, cache, register, resolver,
+                                lost)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -391,6 +475,7 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
         rc = proc.wait()
     if rc != 0:
         raise RenderError(f"encode failed ({rc}): {err[-800:]}")
+    render_frames.last_text_overflow = dict(lost)     # type: ignore[attr-defined]
     return out_video
 
 
@@ -400,7 +485,8 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
 
 def render_short(script: ShortScript, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
-                 out_name: str = "short_final.mp4") -> tuple[Path, Path]:
+                 out_name: str = "short_final.mp4",
+                 format_name: str = "short") -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
 
     Interpolated word timings must never be the master clock of a published
@@ -418,7 +504,10 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
 
     register = pick_register(script.content_sha())
     kit = kit_for(register)
-    fmt: Format = load_format("short")
+    # Which template, by name. This is the whole of what the engine needed to
+    # carry three formats instead of one — there is no per-format branch
+    # anywhere below, and a fourth format is a JSON file and this argument.
+    fmt: Format = load_format(format_name)
 
     words = list(getattr(tts, "words", []) or [])
     duration = float(getattr(tts, "duration_s", 0.0) or 0.0)
@@ -449,11 +538,14 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
     # still frame and a disclaimer printed twice, under a green suite.
-    # The host rule applies to the shots that are actually in this cut. A
-    # shot dropped for having nothing to say cannot be missing its host.
+    # The host rule applies to the shots that are actually in this cut, and
+    # WHICH shots those are is a property of the template rather than of this
+    # module — three formats put the host in three different places.
     present = {sp.shot.id for sp in spans}
     problems = check_invariants(
-        fmt, result, host_shots=[h for h in HOST_SHOTS if h in present])
+        fmt, result,
+        host_shots=[sh.id for sh in fmt.shots
+                    if sh.host and sh.id in present])
     if problems:
         raise RenderError(
             "the composition breaks its own invariants:\n  "
@@ -461,6 +553,7 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
 
     silent = workdir / "video_silent.mp4"
     render_frames(result, register, resolver, duration, silent, settings)
+    overflow = getattr(render_frames, "last_text_overflow", {}) or {}
 
     out = Path(workspace) / out_name
     audio = getattr(tts, "audio_path", None)
@@ -475,6 +568,7 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "format": fmt.name,
+        "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "register": register,
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
@@ -502,6 +596,10 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
             f"layers"),
         "skipped": result.skipped,
         "dropped_shots": dropped,
+        # Characters that did not fit even at the readability floor. Non-empty
+        # means a script said more than its shot can hold, and the words were
+        # cut. Under the writing form this is what a character budget prevents.
+        "text_overflow": overflow,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
     }, indent=1), encoding="utf-8")

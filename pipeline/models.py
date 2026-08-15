@@ -298,6 +298,16 @@ class ShortScript(BaseModel):
     # scripts written before the turn existed still parse; the renderer skips
     # the shot when it is absent rather than drawing an empty frame.
     turn_line: str | None = Field(default=None, max_length=120)
+    # EARNINGS and MACRO fields. Optional so a plain SHORT still parses, and
+    # so a script that fills none of them simply loses those shots rather
+    # than rendering them empty. Under the form the writing prompt becomes,
+    # each of these is one field of one shot.
+    verdict: str | None = Field(default=None, max_length=60)      # the stamp
+    guidance: str | None = Field(default=None, max_length=140)
+    expected: str | None = Field(default=None, max_length=60)     # consensus
+    reported: str | None = Field(default=None, max_length=60)     # the print
+    mechanism: list[str] = Field(default_factory=list, max_length=3)
+    consequences: list[str] = Field(default_factory=list, max_length=5)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
     # The chart the short opens on, and holds from the stage open to the gut
     # check — one of the longest single holds in the video.

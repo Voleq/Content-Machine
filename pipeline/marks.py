@@ -87,7 +87,14 @@ def scribble_ring(d, box, rng, *, color, width=6, passes=2):
     """
     x0, y0, x1, y1 = box
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    # ENCLOSE the thing, do not inscribe a shape inside it. A ring drawn to
+    # the exact bounds of a wide, short text slot is a flat ellipse that
+    # crosses the words instead of going round them — which is what a ring on
+    # a circled clause looked like the first time. Pad outward, and never let
+    # the minor axis collapse below a readable fraction of the major one.
     rx, ry = (x1 - x0) / 2, (y1 - y0) / 2
+    rx *= 1.06
+    ry = max(ry * 1.35, rx * 0.22)
     for p in range(passes):
         pts = []
         start = rng.uniform(0, 0.6)
@@ -98,6 +105,28 @@ def scribble_ring(d, box, rng, *, color, width=6, passes=2):
                         cy + math.sin(a) * ry * wob * (1 + p * 0.03)))
         marker_stroke(d, pts, rng, width=width, color=color, jitter=1.4,
                       passes=1)
+
+
+def arrow_down(d, box, rng, *, color, width=6):
+    """A hand-drawn down arrow: the shaft, then two strokes for the head."""
+    x0, y0, x1, y1 = box
+    cx = (x0 + x1) / 2
+    marker_stroke(d, [(cx, y0), (cx, y1)], rng, width=width, color=color,
+                  jitter=1.8, passes=2)
+    head = (x1 - x0) * 0.34
+    marker_stroke(d, [(cx - head, y1 - head), (cx, y1)], rng, width=width,
+                  color=color, jitter=1.5, passes=2)
+    marker_stroke(d, [(cx + head, y1 - head), (cx, y1)], rng, width=width,
+                  color=color, jitter=1.5, passes=2)
+
+
+def cross(d, box, rng, *, color, width=6):
+    """Two strokes through a box. Drawn, not typed."""
+    x0, y0, x1, y1 = box
+    marker_stroke(d, [(x0, y0), (x1, y1)], rng, width=width, color=color,
+                  jitter=2.0, passes=2)
+    marker_stroke(d, [(x1, y0), (x0, y1)], rng, width=width, color=color,
+                  jitter=2.0, passes=2)
 
 
 def underline(d, box, rng, *, color, width=6):
@@ -152,8 +181,8 @@ def wrap_to(draw, text: str, font, max_w: int) -> list[str]:
 
 
 def fit_lines(draw, text: str, font_name: str, box_w: int, box_h: int,
-              *, size_px: int, max_lines: int,
-              min_px: int | None = None) -> tuple[list[str], ImageFont.FreeTypeFont]:
+              *, size_px: int, max_lines: int, min_px: int | None = None
+              ) -> tuple[list[str], ImageFont.FreeTypeFont, int]:
     """Wrap `text` into at most `max_lines`, shrinking until it fits.
 
     Returns the lines and the font that holds them. The caller passes the size
@@ -161,27 +190,51 @@ def fit_lines(draw, text: str, font_name: str, box_w: int, box_h: int,
     the largest size at or below it that actually fits the box. Type that
     silently overflows its box is how a disclaimer ends up printed twice.
     """
-    floor = min_px if min_px is not None else max(12, int(size_px * 0.55))
+    # The floor is how small type may go before it is better to overflow. It
+    # was 55% of the asked size, which is not enough range for a wide clause
+    # in a one-line slot: the loop hit the floor, gave up, and drew two lines
+    # in a box that holds one. 38% still clears the 3.5%-of-frame-height rule
+    # for every size any template asks for.
+    floor = min_px if min_px is not None else max(12, int(size_px * 0.38))
     size = int(size_px)
     while size >= floor:
         font = load_font(font_name, size)
         lines = wrap_to(draw, text, font, box_w)
-        if len(lines) <= max_lines:
+        # Width as well as line count. `wrap_to` puts a word too long for the
+        # box on a line of its own rather than dropping it, so a narrow slot
+        # accepted lines far wider than itself: three chain boxes rendered
+        # their labels straight through each other and off the frame. A line
+        # that does not fit the box is not a fit.
+        widest = max((draw.textlength(ln, font=font) for ln in lines),
+                     default=0)
+        if len(lines) <= max_lines and widest <= box_w:
             asc, desc = font.getmetrics()
             line_h = (asc + desc) * 1.18
             if line_h * len(lines) <= box_h:
-                return lines, font
+                return lines, font, 0
         size -= max(1, int(size * 0.06))
+
+    # Below the floor, words start being lost. Smaller type is always better
+    # than a clause that stops mid-sentence, so the only truncation that ever
+    # happens is at the hard readability floor — and it is REPORTED, in
+    # characters, rather than being dropped on the way to the screen.
     font = load_font(font_name, floor)
-    lines = wrap_to(draw, text, font, box_w)[:max_lines]
-    return lines, font
+    full = wrap_to(draw, text, font, box_w)
+    lines = full[:max_lines]
+    lost = sum(len(ln) for ln in full[max_lines:])
+    return lines, font, lost
 
 
 def draw_block(img, text: str, box: tuple[int, int, int, int], *,
                font_name: str, size_px: int, color, max_lines: int = 3,
                halign: str = "center", valign: str = "top",
-               reveal: float = 1.0) -> tuple[int, int, int, int]:
-    """Draw wrapped type into `box`. Returns the bounding box actually used.
+               reveal: float = 1.0, min_px: int | None = None
+               ) -> tuple[int, int, int, int, int]:
+    """Draw wrapped type into `box`.
+
+    Returns `(x, y, w, h, characters_lost)`. The last element is how much text
+    did not fit even at the readability floor — always zero in a healthy
+    render, and never silently non-zero.
 
     `reveal` between 0 and 1 draws only that fraction of the characters, which
     is how type "draws on": the letters appear in reading order rather than
@@ -189,10 +242,10 @@ def draw_block(img, text: str, box: tuple[int, int, int, int], *,
     """
     x, y, w, h = box
     d = ImageDraw.Draw(img)
-    lines, font = fit_lines(d, text, font_name, w, h, size_px=size_px,
-                            max_lines=max_lines)
+    lines, font, lost = fit_lines(d, text, font_name, w, h, size_px=size_px,
+                                  max_lines=max_lines, min_px=min_px)
     if not lines:
-        return (x, y, 0, 0)
+        return (x, y, 0, 0, len(text))
 
     asc, desc = font.getmetrics()
     line_h = int((asc + desc) * 1.18)
@@ -222,7 +275,7 @@ def draw_block(img, text: str, box: tuple[int, int, int, int], *,
         else:
             ox = x
         d.text((ox, oy + i * line_h), ln, font=font, fill=color)
-    return (x, oy, used_w or w, total_h)
+    return (x, oy, used_w or w, total_h, lost)
 
 
 def measure_block(text: str, box: tuple[int, int, int, int], *,
@@ -231,8 +284,8 @@ def measure_block(text: str, box: tuple[int, int, int, int], *,
     """`(w, h)` the type will occupy, without drawing it."""
     from PIL import Image
     d = ImageDraw.Draw(Image.new("L", (8, 8)))
-    lines, font = fit_lines(d, text, font_name, box[2], box[3],
-                            size_px=size_px, max_lines=max_lines)
+    lines, font, _lost = fit_lines(d, text, font_name, box[2], box[3],
+                                   size_px=size_px, max_lines=max_lines)
     if not lines:
         return (0, 0)
     asc, desc = font.getmetrics()

@@ -1,0 +1,193 @@
+{
+  "format": "macro",
+  "aspect": "9:16",
+  "frame": {
+    "w": 1080,
+    "h": 1920
+  },
+  "notes": [
+    "Nine shots. No ticker, no company \u2014 the subject is a print and what it",
+    "does to people.",
+    "",
+    "'Who it hits' is four to five consequence cards in ONE beat. Every other",
+    "shot in every format so far places one plate; this one places a list.",
+    "See `repeat` below and the Stage 2 report."
+  ],
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-at-screen",
+        "slot": "figure"
+      },
+      "anchor": "hook",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "hook",
+          "src": "script.hook_text",
+          "size_fh": 0.085,
+          "align": "top",
+          "max_lines": 3,
+          "draw_on_s": 0.6
+        }
+      ]
+    },
+    {
+      "id": "the-print",
+      "plate": "number-full",
+      "anchor": "print",
+      "captions": false,
+      "max_hold_s": 5,
+      "bind": {
+        "label": "numbers.label.0",
+        "figure": "numbers.latest.0"
+      },
+      "notes": "The number, full frame. Label above it, figure filling the plate.",
+      "stagger_s": 0.9
+    },
+    {
+      "id": "vs-expected",
+      "plate": "compare-plate",
+      "anchor": "expected",
+      "max_hold_s": 5,
+      "bind": {
+        "left": "compare.reported",
+        "right": "compare.expected",
+        "gap": "compare.versus"
+      },
+      "text": [
+        {
+          "name": "gap-read",
+          "src": "script.move_summary",
+          "size_fh": 0.04,
+          "align": "0.78",
+          "max_lines": 3
+        }
+      ]
+    },
+    {
+      "id": "the-statement",
+      "plate": "desk-top-down",
+      "anchor": "statement",
+      "max_hold_s": 6,
+      "bind": {
+        "pages": "plate.page-institutional"
+      },
+      "text": [
+        {
+          "name": "statement-head",
+          "src": "script.headlines.0.text",
+          "size_fh": 0.042,
+          "slot": "page.headline",
+          "max_lines": 3
+        },
+        {
+          "name": "the-clause",
+          "src": "script.headlines.0.meaning",
+          "size_fh": 0.036,
+          "slot": "page.body-3-circled",
+          "max_lines": 4
+        }
+      ],
+      "marks": [
+        {
+          "kind": "ring",
+          "target": "page.body-3-circled",
+          "name": "clause-ring"
+        }
+      ],
+      "notes": "The institutional page with one clause circled \u2014 the clause slot is declared by the plate, and the ring lands on it."
+    },
+    {
+      "id": "the-mechanism",
+      "plate": null,
+      "anchor": "mechanism",
+      "max_hold_s": 6,
+      "notes": "Rate to credit to hiring. chain-of-three is delivered 16:9 only (1440x720): fitted into a 9:16 frame its text slots are 187px wide and no readable size fits a word like 'Refinancing' in one. Three stacked cards, each arriving on its own beat, is the same chain in the aspect this format actually is.",
+      "repeat": {
+        "concept": "card-consequence-b",
+        "src": "script.mechanism",
+        "max": 3,
+        "bind": {
+          "label": "$item",
+          "mark": "$mark:arrow-down"
+        },
+        "arrange": "column",
+        "stagger_s": 0.9
+      }
+    },
+    {
+      "id": "who-it-hits",
+      "plate": null,
+      "anchor": "consequences",
+      "max_hold_s": 7,
+      "repeat": {
+        "concept": "card-consequence",
+        "src": "script.consequences",
+        "max": 5,
+        "bind": {
+          "label": "$item",
+          "mark": "$mark:arrow-down"
+        },
+        "arrange": "grid",
+        "stagger_s": 0.5
+      },
+      "notes": "Four to five cards, entering one at a time. The stagger is what keeps a seven-second beat from being a held frame."
+    },
+    {
+      "id": "whats-priced",
+      "plate": "screen-full",
+      "enter": "ink-wipe",
+      "anchor": "priced",
+      "max_hold_s": 6,
+      "bind": {
+        "screen": "chart.price"
+      },
+      "marks": [
+        {
+          "kind": "ring",
+          "target": "chart.extreme_candle",
+          "name": "extreme-ring"
+        }
+      ],
+      "notes": "What the curve already believes."
+    },
+    {
+      "id": "so-what",
+      "plate": null,
+      "anchor": "conclusion",
+      "captions": false,
+      "max_hold_s": 5,
+      "text": [
+        {
+          "name": "so-what",
+          "src": "script.conclusion",
+          "size_fh": 0.075,
+          "align": "center",
+          "max_lines": 5,
+          "draw_on_s": 0.5
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "plate": "room-wide",
+      "host": {
+        "pose": "sitting-with-mug",
+        "slot": "figure"
+      },
+      "max_hold_s": 4,
+      "text": [
+        {
+          "name": "handle",
+          "src": "channel.handle",
+          "size_fh": 0.045,
+          "align": "0.82"
+        }
+      ]
+    }
+  ]
+}

@@ -1,7 +1,8 @@
 {
  "ticker": "EXMPL",
  "format": "short",
- "register": "cut-paper",
+ "anchored_shots": 3,
+ "register": "marker",
  "duration_s": 71.494,
  "frame": {
   "w": 1080,
@@ -201,20 +202,35 @@
  ],
  "layers": 70,
  "kit_assets_used": [
-  "compare-plate--cut-paper",
-  "desk-top-down--cut-paper",
-  "ink-wipe--cut-paper",
-  "page-corporate--cut-paper",
-  "pointing-at-sheet--cut-paper",
-  "room-wide--cut-paper",
-  "screen-full--cut-paper",
-  "sheet-tall--cut-paper",
-  "sitting-with-mug--cut-paper",
-  "talking-at-screen--cut-paper",
-  "talking-to-camera--cut-paper"
+  "compare-plate--marker",
+  "desk-top-down--marker",
+  "ink-wipe--marker",
+  "page-corporate--marker",
+  "pointing-at-sheet--marker",
+  "room-wide--marker",
+  "screen-full--marker",
+  "sheet-tall--marker",
+  "sitting-with-mug--marker",
+  "talking-at-screen--marker",
+  "talking-to-camera--marker"
  ],
- "kit_reach": "Kit: 11 entries in cut-paper, 11 concepts, 21 animated layers",
+ "kit_reach": "Kit: 11 entries in marker, 11 concepts, 21 animated layers",
  "skipped": [],
  "dropped_shots": [],
+ "text_overflow": {
+  "the-news:text:meaning": 9,
+  "numbers-1:fill:row-2": 5,
+  "numbers-1:fill:row-3": 5,
+  "numbers-2:fill:row-2": 5,
+  "numbers-2:fill:row-3": 5,
+  "numbers-3:fill:row-2": 5,
+  "numbers-3:fill:row-3": 5,
+  "numbers-4:fill:row-2": 5,
+  "numbers-4:fill:row-3": 5,
+  "the-sheet:fill:row-2": 5,
+  "the-sheet:fill:row-3": 5,
+  "the-sheet:text:numbers-comment": 37,
+  "cheap-or-trap:text:cheap-or-trap": 52
+ },
  "longest_layer_hold_s": 0.0
 }
