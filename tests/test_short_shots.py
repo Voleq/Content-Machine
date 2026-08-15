@@ -20,8 +20,9 @@ import pytest
 from pipeline.compose import build_layers, check_invariants, held_layer_spans
 from pipeline.kit_manifest import REGISTERS, kit_for, pick_register
 from pipeline.render_short import HOST_SHOTS, build_anchors
-from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, load_format,
-                            parse_format, resolve_spans, TemplateError)
+from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
+                            load_format, parse_format, resolve_spans,
+                            TemplateError)
 
 # Shots the host appears in, from the format spec: 1, 5-8, 11, 12.
 SPEC_HOST_SHOTS = {"cold-open", "numbers-1", "numbers-2", "numbers-3",
@@ -51,6 +52,19 @@ class StubResolver:
 
 @pytest.fixture()
 def fmt():
+    """The SHORT as it is CUT, not as it is authored.
+
+    Nine shots are authored; the numbers beat is one sequence repeat that
+    becomes one shot per metric. Four metrics is the fixture's shape and the
+    twelve-shot spec's shape, so every invariant below still reads against
+    twelve.
+    """
+    return expand_sequences(load_format("short"),
+                            lambda src: ["m1", "m2", "m3", "m4"])
+
+
+@pytest.fixture()
+def authored():
     return load_format("short")
 
 
@@ -73,7 +87,8 @@ def _build(fmt, kit, chart: Path | None = None, duration: float = 70.0):
 # The template itself
 # ---------------------------------------------------------------------------
 
-def test_the_short_is_twelve_shots(fmt):
+def test_the_short_is_twelve_shots(fmt, authored):
+    assert len(authored) == 9, "the numbers beat is authored once, not four times"
     assert len(fmt) == 12
     assert [s.id for s in fmt] == [
         "cold-open", "the-move", "the-news", "the-turn",
@@ -300,5 +315,8 @@ def test_the_template_is_data_not_code():
     raw = json.loads(Path("templates/shots/short.json").read_text(
         encoding="utf-8"))
     assert raw["format"] == "short"
-    assert len(raw["shots"]) == 12
+    # Nine authored, twelve cut. The numbers beat is one declaration.
+    assert len(raw["shots"]) == 9
     assert all("plate" in s for s in raw["shots"])
+    seq = [s for s in raw["shots"] if s.get("repeat", {}).get("arrange") == "sequence"]
+    assert len(seq) == 1 and seq[0]["id"] == "numbers"

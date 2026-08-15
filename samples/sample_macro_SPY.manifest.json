@@ -1,0 +1,183 @@
+{
+ "ticker": "SPY",
+ "format": "macro",
+ "anchored_shots": 2,
+ "register": "grease-pencil",
+ "duration_s": 66.316,
+ "frame": {
+  "w": 1080,
+  "h": 1920
+ },
+ "shots": [
+  {
+   "id": "open",
+   "plate": "room-wide",
+   "start_s": 0.0,
+   "end_s": 8.995,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "open:ground",
+    "open:plate:room-wide",
+    "open:host:talking-at-screen",
+    "open:text:hook"
+   ]
+  },
+  {
+   "id": "the-print",
+   "plate": "number-full",
+   "start_s": 8.995,
+   "end_s": 17.99,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "the-print:ground",
+    "the-print:plate:number-full",
+    "the-print:fill:label",
+    "the-print:fill:figure"
+   ]
+  },
+  {
+   "id": "vs-expected",
+   "plate": "compare-plate",
+   "start_s": 17.99,
+   "end_s": 26.985,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "vs-expected:ground",
+    "vs-expected:plate:compare-plate",
+    "vs-expected:fill:left",
+    "vs-expected:fill:right",
+    "vs-expected:fill:gap",
+    "vs-expected:text:gap-read"
+   ]
+  },
+  {
+   "id": "the-statement",
+   "plate": "desk-top-down",
+   "start_s": 26.985,
+   "end_s": 35.98,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-statement:ground",
+    "the-statement:plate:desk-top-down",
+    "the-statement:fill:pages",
+    "the-statement:text:statement-head",
+    "the-statement:text:the-clause",
+    "the-statement:mark:clause-ring"
+   ]
+  },
+  {
+   "id": "the-mechanism",
+   "plate": null,
+   "start_s": 35.98,
+   "end_s": 41.98,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-mechanism:ground",
+    "the-mechanism:repeat:card-consequence-b:0",
+    "the-mechanism:repeat:label:0",
+    "the-mechanism:repeat:mark:0",
+    "the-mechanism:repeat:card-consequence-b:1",
+    "the-mechanism:repeat:label:1",
+    "the-mechanism:repeat:mark:1",
+    "the-mechanism:repeat:card-consequence-b:2",
+    "the-mechanism:repeat:label:2",
+    "the-mechanism:repeat:mark:2"
+   ]
+  },
+  {
+   "id": "who-it-hits",
+   "plate": null,
+   "start_s": 41.98,
+   "end_s": 48.98,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "who-it-hits:ground",
+    "who-it-hits:repeat:card-consequence:0",
+    "who-it-hits:repeat:label:0",
+    "who-it-hits:repeat:mark:0",
+    "who-it-hits:repeat:card-consequence:1",
+    "who-it-hits:repeat:label:1",
+    "who-it-hits:repeat:mark:1",
+    "who-it-hits:repeat:card-consequence:2",
+    "who-it-hits:repeat:label:2",
+    "who-it-hits:repeat:mark:2",
+    "who-it-hits:repeat:card-consequence:3",
+    "who-it-hits:repeat:label:3",
+    "who-it-hits:repeat:mark:3"
+   ]
+  },
+  {
+   "id": "whats-priced",
+   "plate": "screen-full",
+   "start_s": 48.98,
+   "end_s": 62.964,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "whats-priced:ground",
+    "whats-priced:enter:ink-wipe",
+    "whats-priced:plate:screen-full",
+    "whats-priced:fill:screen",
+    "whats-priced:mark:extreme-ring"
+   ]
+  },
+  {
+   "id": "so-what",
+   "plate": null,
+   "start_s": 62.964,
+   "end_s": 64.64,
+   "anchored": true,
+   "max_hold_s": 5.0,
+   "layers": [
+    "so-what:ground",
+    "so-what:text:so-what"
+   ]
+  },
+  {
+   "id": "close",
+   "plate": "room-wide",
+   "start_s": 64.64,
+   "end_s": 66.316,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "close:ground",
+    "close:plate:room-wide",
+    "close:host:sitting-with-mug",
+    "close:text:handle"
+   ]
+  }
+ ],
+ "layers": 54,
+ "kit_assets_used": [
+  "card-consequence--grease-pencil",
+  "card-consequence-b--grease-pencil",
+  "compare-plate--grease-pencil",
+  "desk-top-down--grease-pencil",
+  "ink-wipe--grease-pencil",
+  "number-full--grease-pencil",
+  "page-institutional--grease-pencil",
+  "room-wide--grease-pencil",
+  "screen-full--grease-pencil",
+  "sitting-with-mug--grease-pencil",
+  "talking-at-screen--grease-pencil"
+ ],
+ "kit_reach": "Kit: 11 entries in grease-pencil, 11 concepts, 18 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "text_overflow": {
+  "the-statement:text:statement-head": 8,
+  "the-statement:text:the-clause": 31,
+  "the-mechanism:repeat:label:0": 6,
+  "the-mechanism:repeat:label:1": 6,
+  "who-it-hits:repeat:label:2": 7,
+  "who-it-hits:repeat:label:3": 5
+ },
+ "longest_layer_hold_s": 0.0
+}

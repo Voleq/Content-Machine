@@ -119,7 +119,7 @@
       "notes": "One sentence, centred, bare. Allowed to be empty; that is its job."
     },
     {
-      "id": "numbers-1",
+      "id": "numbers",
       "plate": "sheet-tall",
       "host": {
         "pose": "pointing-at-sheet",
@@ -138,83 +138,16 @@
       "marks": [
         {
           "kind": "scribble",
-          "target": "row-1"
+          "target": "row-$n"
         }
       ],
-      "notes": "All rows visible, row 1 lit, the rest ghosted.",
-      "lit": "row-1"
-    },
-    {
-      "id": "numbers-2",
-      "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
+      "repeat": {
+        "src": "script.numbers",
+        "max": 4,
+        "arrange": "sequence",
+        "lit": "row-$n"
       },
-      "max_hold_s": 5,
-      "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
-      },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-2"
-        }
-      ],
-      "lit": "row-2"
-    },
-    {
-      "id": "numbers-3",
-      "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
-      },
-      "max_hold_s": 5,
-      "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
-      },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-3"
-        }
-      ],
-      "lit": "row-3"
-    },
-    {
-      "id": "numbers-4",
-      "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
-      },
-      "max_hold_s": 5,
-      "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
-      },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-4"
-        }
-      ],
-      "lit": "row-4"
+      "notes": "One row per shot: all rows visible, one lit, the rest ghosted. Written once \u2014 the script's row count decides how many beats there are. This is the same repeat MACRO uses to place a list of cards, over time instead of over the frame."
     },
     {
       "id": "the-sheet",

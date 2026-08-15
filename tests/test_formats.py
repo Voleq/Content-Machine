@@ -18,8 +18,8 @@ import pytest
 from pipeline.compose import build_layers, check_invariants
 from pipeline.kit_manifest import REGISTERS, kit_for
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, available_formats,
-                            load_format, parse_format, resolve_spans,
-                            TemplateError)
+                            expand_sequences, load_format, parse_format,
+                            resolve_spans, TemplateError)
 
 FORMATS = available_formats()
 
@@ -43,6 +43,12 @@ class StubResolver:
         return (0.4, 0.3, 0.12, 0.09)
 
 
+def _cut(name: str):
+    """A format as it is cut: sequence repeats expanded against a stub list."""
+    return expand_sequences(load_format(name),
+                            lambda src: ["a", "b", "c", "d"])
+
+
 def _words(duration: float, n: int = 240):
     step = duration / n
     return [FakeWord(f"w{i}", i * step, (i + 1) * step) for i in range(n)]
@@ -61,7 +67,7 @@ def test_the_template_parses(name):
 
 @pytest.mark.parametrize("name", FORMATS)
 def test_every_plate_exists_in_every_register(name):
-    fmt = load_format(name)
+    fmt = _cut(name)
     for register in REGISTERS:
         k = kit_for(register)
         for shot in fmt:
@@ -76,7 +82,7 @@ def test_every_plate_exists_in_every_register(name):
 def test_every_bound_slot_is_declared_by_the_plate_it_binds(name):
     """A binding to a slot the plate does not have is a no-op that draws
     nothing and says nothing. It is caught here rather than in a frame."""
-    fmt = load_format(name)
+    fmt = _cut(name)
     k = kit_for("marker")
     for shot in fmt:
         if not shot.plate:
@@ -96,7 +102,7 @@ def test_a_repeat_binds_only_slots_its_card_declares(name):
     fmt = load_format(name)
     k = kit_for("marker")
     for shot in fmt:
-        if not shot.repeat:
+        if not shot.repeat or not shot.repeat.spatial:
             continue
         entry = k.concept(shot.repeat.concept, "marker")
         for slot in shot.repeat.bind:
@@ -110,7 +116,7 @@ def test_a_repeat_binds_only_slots_its_card_declares(name):
 
 @pytest.mark.parametrize("name", FORMATS)
 def test_the_composition_satisfies_every_invariant(name):
-    fmt = load_format(name)
+    fmt = _cut(name)
     kit = kit_for("marker")
     for duration in (45.0, 70.0):
         spans = resolve_spans(fmt, _words(duration), duration, {})
@@ -122,7 +128,7 @@ def test_the_composition_satisfies_every_invariant(name):
 
 @pytest.mark.parametrize("name", FORMATS)
 def test_a_bare_shot_never_outruns_its_ceiling(name):
-    fmt = load_format(name)
+    fmt = _cut(name)
     for duration in (40.0, 70.0, 120.0):
         for span in resolve_spans(fmt, _words(duration), duration, {}):
             if span.shot.plate or span.shot.repeat:
@@ -133,14 +139,14 @@ def test_a_bare_shot_never_outruns_its_ceiling(name):
 
 @pytest.mark.parametrize("name", FORMATS)
 def test_large_type_and_captions_never_share_a_shot(name):
-    for shot in load_format(name):
+    for shot in _cut(name):
         if any(t.size_fh >= LARGE_TYPE_FH for t in shot.text):
             assert not shot.captions, f"{name}/{shot.id}"
 
 
 @pytest.mark.parametrize("name", FORMATS)
 def test_nothing_is_authored_below_the_readability_floor(name):
-    for shot in load_format(name):
+    for shot in _cut(name):
         for t in shot.text:
             assert t.size_fh >= MIN_TYPE_FH, f"{name}/{shot.id}:{t.name}"
 

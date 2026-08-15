@@ -1,0 +1,71 @@
+{
+  "note": "Characters each text destination holds with ZERO loss, measured by running pipeline.marks.fit_lines against the real templates. Regenerate with scripts/measure_budgets.py; tests/test_budgets.py fails if this file and a fresh measurement disagree.",
+  "measured_with": {
+    "font_body": "Inter-Regular.ttf",
+    "font_display": "Inter-Bold.ttf",
+    "min_type_fh": 0.035,
+    "step": 2
+  },
+  "formats": {
+    "earnings": {
+      "fill:gap": 16,
+      "fill:label": 20,
+      "fill:left": 16,
+      "fill:right": 16,
+      "fill:row-1": 44,
+      "fill:row-2": 44,
+      "fill:row-3": 44,
+      "fill:row-4": 44,
+      "fill:row-5": 44,
+      "fill:row-6": 44,
+      "fill:screen": 44,
+      "fill:stamp-text": 32,
+      "text:gap-read": 66,
+      "text:guidance-read": 130,
+      "text:handle": 66,
+      "text:headline": 48,
+      "text:hook": 66,
+      "text:meaning": 48,
+      "text:so-what": 110
+    },
+    "macro": {
+      "fill:figure": 44,
+      "fill:gap": 16,
+      "fill:label": 20,
+      "fill:left": 16,
+      "fill:right": 16,
+      "fill:screen": 44,
+      "repeat:label:0": 16,
+      "repeat:label:1": 16,
+      "repeat:label:2": 16,
+      "repeat:label:3": 16,
+      "text:gap-read": 66,
+      "text:handle": 66,
+      "text:hook": 66,
+      "text:so-what": 110,
+      "text:statement-head": 28,
+      "text:the-clause": 40
+    },
+    "short": {
+      "fill:gap": 16,
+      "fill:left": 16,
+      "fill:right": 16,
+      "fill:row-1": 44,
+      "fill:row-2": 44,
+      "fill:row-3": 44,
+      "fill:row-4": 44,
+      "fill:row-5": 44,
+      "fill:row-6": 44,
+      "fill:screen": 44,
+      "text:cheap-or-trap": 44,
+      "text:conclusion": 110,
+      "text:handle": 66,
+      "text:headline": 36,
+      "text:hook": 66,
+      "text:meaning": 48,
+      "text:move-summary": 66,
+      "text:numbers-comment": 130,
+      "text:turn": 66
+    }
+  }
+}

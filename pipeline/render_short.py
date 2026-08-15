@@ -26,7 +26,8 @@ from pipeline.compose import (BuildResult, Layer, build_layers,
 from pipeline.kit_manifest import KitError, kit_for, pick_register
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
-from pipeline.shots import Format, load_format, resolve_spans
+from pipeline.shots import (Format, expand_sequences, load_format,
+                            resolve_spans)
 
 FPS = 30
 # The kit boils at three frames, 7fps. Code-drawn artwork matches it.
@@ -37,8 +38,9 @@ BOIL_FRAMES = 3
 HOST_SHOTS = ("cold-open", "numbers-1", "numbers-2", "numbers-3", "numbers-4",
               "payoff", "close")
 
-BODY_FONT = "Inter-Regular.ttf"
-DISPLAY_FONT = "Inter-Bold.ttf"
+# One definition, in marks, so the fitter and the budget measurement agree.
+BODY_FONT = mk.BODY_FONT
+DISPLAY_FONT = mk.DISPLAY_FONT
 
 
 # ---------------------------------------------------------------------------
@@ -517,7 +519,11 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
     # A shot the script carries no words for is DROPPED, not rendered blank.
     # THE TURN is one sentence on bare ground; with no sentence it is a held
     # empty frame, which is the exact failure this rewrite exists to remove.
-    fmt, dropped = prune_empty_shots(fmt, resolver_probe(script, settings))
+    # A sequence repeat becomes one shot per item BEFORE anything is timed:
+    # how many numbers beats a video has is a fact about its script.
+    probe = resolver_probe(script, settings)
+    fmt = expand_sequences(fmt, probe.list_for)
+    fmt, dropped = prune_empty_shots(fmt, probe)
 
     spans = resolve_spans(fmt, words, duration, build_anchors(script))
 

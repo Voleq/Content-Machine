@@ -33,26 +33,45 @@ def _settings() -> Settings:
     return s
 
 
-def render_short_sample() -> Path:
+# Every 9:16 format and the fixture it is built from. A format with no
+# committed sample is a format whose hold numbers cannot be checked against
+# an artefact — an evidence frame is a still, and a still cannot show a hold.
+VERTICAL_SAMPLES = {
+    "short": "short_valid",
+    "earnings": "earnings_valid",
+    "macro": "macro_valid",
+}
+
+
+def render_vertical_sample(format_name: str = "short") -> Path:
     from pipeline.render_short import render_short
 
     settings = _settings()
-    raw = (ROOT / "fixtures" / "scripts" / "short_valid.json").read_text(encoding="utf-8")
+    fixture = VERTICAL_SAMPLES[format_name]
+    raw = (ROOT / "fixtures" / "scripts" / f"{fixture}.json").read_text(encoding="utf-8")
     script, warnings = parse_short_script(raw, settings)
     for w in warnings:
         print(f"  warning: {w}")
     tts = TTSEngine(settings).synthesize(script.audio_script, "short")
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")
-    ws = WORK / script.ticker / "sample"
+    ws = WORK / script.ticker / f"sample_{format_name}"
     ws.mkdir(parents=True, exist_ok=True)
     t0 = time.time()
-    out, manifest = render_short(script, tts, ws, settings)
+    out, manifest = render_short(script, tts, ws, settings,
+                                 format_name=format_name,
+                                 out_name=f"{format_name}_final.mp4")
     print(f"  rendered in {time.time() - t0:.0f}s")
     SAMPLES.mkdir(exist_ok=True)
-    dest = SAMPLES / "sample_short_EXMPL.mp4"
+    stem = ("sample_short_EXMPL" if format_name == "short"
+            else f"sample_{format_name}_{script.ticker}")
+    dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / "sample_short_EXMPL.manifest.json")
+    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
     return dest
+
+
+def render_short_sample() -> Path:
+    return render_vertical_sample("short")
 
 
 def render_long_sample() -> Path:
@@ -105,9 +124,10 @@ def render_long_sample() -> Path:
 
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
-    if what in ("short", "all"):
-        print("SHORT sample:")
-        print(" ->", render_short_sample())
+    for name in VERTICAL_SAMPLES:
+        if what in (name, "vertical", "all"):
+            print(f"{name.upper()} sample:")
+            print(" ->", render_vertical_sample(name))
     if what in ("long", "all"):
         print("LONG sample:")
         print(" ->", render_long_sample())

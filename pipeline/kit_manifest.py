@@ -185,6 +185,10 @@ class Kit:
         rather than per register, so a lookup for them in any register
         resolves to the single copy that exists.
         """
+        if not name:
+            raise KitError(
+                "asked for a kit concept with no name — a sequence repeat "
+                "reuses its shot's plate and declares no concept of its own")
         hit = self._by_concept.get((name, register))
         if hit is not None:
             return hit

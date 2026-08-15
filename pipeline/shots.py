@@ -51,7 +51,7 @@ TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
 MARK_KEYS = frozenset({"kind", "target", "name"})
 REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
-                         "stagger_s"})
+                         "stagger_s", "lit"})
 
 
 def _reject_unknown(obj: dict, allowed: frozenset, where: str) -> None:
@@ -117,12 +117,20 @@ class RepeatSpec:
     ceiling honestly rather than by exemption.
     """
 
-    concept: str
     src: str
+    concept: str | None = None     # spatial only; a sequence reuses the plate
     max: int = 5
     bind: dict[str, str] = field(default_factory=dict)
-    arrange: str = "grid"          # grid | row | column
+    # grid | row | column place N cards in ONE shot.
+    # sequence expands the shot into N shots in TIME, one per item — which is
+    # what the SHORT's numbers beats are: one sheet, the lit row advancing.
+    arrange: str = "grid"
     stagger_s: float = 0.5
+    lit: str | None = None         # sequence only: which slot each step lights
+
+    @property
+    def spatial(self) -> bool:
+        return self.arrange in ("grid", "row", "column")
 
 
 @dataclass(frozen=True)
@@ -263,13 +271,21 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             _reject_unknown(rep_raw, REPEAT_KEYS, f"{where} repeat")
             try:
                 repeat = RepeatSpec(
-                    concept=rep_raw["concept"], src=rep_raw["src"],
+                    src=rep_raw["src"], concept=rep_raw.get("concept"),
                     max=int(rep_raw.get("max", 5)),
                     bind=dict(rep_raw.get("bind") or {}),
                     arrange=rep_raw.get("arrange", "grid"),
-                    stagger_s=float(rep_raw.get("stagger_s", 0.5)))
+                    stagger_s=float(rep_raw.get("stagger_s", 0.5)),
+                    lit=rep_raw.get("lit"))
             except KeyError as exc:
                 raise TemplateError(f"{where} repeat missing {exc}") from exc
+            if repeat.spatial and not repeat.concept:
+                raise TemplateError(
+                    f"{where} repeat: a {repeat.arrange} repeat places cards "
+                    f"and needs a concept")
+            if not repeat.spatial and repeat.arrange != "sequence":
+                raise TemplateError(
+                    f"{where} repeat: unknown arrange {repeat.arrange!r}")
         shots.append(Shot(
             id=sid, plate=plate,
             bind=dict(s.get("bind") or {}),
@@ -313,6 +329,50 @@ def load_format(name: str, root: Path | str = ".") -> Format:
     except json.JSONDecodeError as exc:
         raise TemplateError(f"{path} is not valid JSON: {exc}") from exc
     return parse_format(raw, source=path)
+
+
+def _sub(value: str | None, n: int) -> str | None:
+    """`$n` is the 1-based step of a sequence repeat."""
+    return None if value is None else value.replace("$n", str(n))
+
+
+def expand_sequences(fmt: Format, items_for) -> Format:
+    """Expand every `arrange: "sequence"` shot into one shot per item.
+
+    The SHORT's numbers beats are one sheet with the lit row advancing, and
+    they were four near-identical shot definitions differing only in which row
+    they lit. That is the same repeat MACRO uses to place a list of cards —
+    over TIME instead of over the frame — so it is the same declaration, and
+    two ways to express one thing is how templates drift apart.
+
+    `items_for(src)` supplies the list; the number of steps is what the SCRIPT
+    carries, capped by the template's `max`. Four metrics make four shots,
+    two make two, and neither case is authored twice.
+    """
+    out: list[Shot] = []
+    from dataclasses import replace
+    for shot in fmt.shots:
+        rep = shot.repeat
+        if rep is None or rep.spatial:
+            out.append(shot)
+            continue
+        items = list(items_for(rep.src) or [])[:max(rep.max, 1)]
+        if not items:
+            # No items, no shots. The caller's prune reports the drop.
+            out.append(shot)
+            continue
+        for i in range(1, len(items) + 1):
+            out.append(replace(
+                shot,
+                id=f"{shot.id}-{i}",
+                repeat=None,
+                lit=_sub(rep.lit, i),
+                anchor=shot.anchor if i == 1 else None,
+                marks=tuple(replace(m, target=_sub(m.target, i),
+                                    name=_sub(m.name, i) or m.kind)
+                            for m in shot.marks),
+            ))
+    return replace(fmt, shots=tuple(out))
 
 
 def available_formats(root: Path | str = ".") -> list[str]:

@@ -1,0 +1,184 @@
+{
+ "ticker": "EXMPL",
+ "format": "earnings",
+ "anchored_shots": 2,
+ "register": "ballpoint",
+ "duration_s": 64.458,
+ "frame": {
+  "w": 1080,
+  "h": 1920
+ },
+ "shots": [
+  {
+   "id": "open",
+   "plate": "room-wide",
+   "start_s": 0.0,
+   "end_s": 7.454,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "open:ground",
+    "open:plate:room-wide",
+    "open:host:talking-at-screen",
+    "open:text:hook"
+   ]
+  },
+  {
+   "id": "the-print",
+   "plate": "desk-top-down",
+   "start_s": 7.454,
+   "end_s": 14.907,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-print:ground",
+    "the-print:plate:desk-top-down",
+    "the-print:fill:pages",
+    "the-print:text:headline",
+    "the-print:text:meaning"
+   ]
+  },
+  {
+   "id": "vs-expected",
+   "plate": "compare-plate",
+   "start_s": 14.907,
+   "end_s": 22.361,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "vs-expected:ground",
+    "vs-expected:plate:compare-plate",
+    "vs-expected:fill:left",
+    "vs-expected:fill:right",
+    "vs-expected:fill:gap",
+    "vs-expected:text:gap-read"
+   ]
+  },
+  {
+   "id": "the-verdict",
+   "plate": "stamp",
+   "start_s": 22.361,
+   "end_s": 29.814,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "the-verdict:ground",
+    "the-verdict:plate:stamp",
+    "the-verdict:fill:stamp-text"
+   ]
+  },
+  {
+   "id": "line-moved-1",
+   "plate": "sheet-tall",
+   "start_s": 29.814,
+   "end_s": 37.268,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "line-moved-1:ground",
+    "line-moved-1:plate:sheet-tall",
+    "line-moved-1:fill:row-1",
+    "line-moved-1:fill:row-2",
+    "line-moved-1:host:pointing-at-sheet",
+    "line-moved-1:mark:scribble"
+   ]
+  },
+  {
+   "id": "line-moved-2",
+   "plate": "sheet-tall",
+   "start_s": 37.268,
+   "end_s": 44.721,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "line-moved-2:ground",
+    "line-moved-2:plate:sheet-tall",
+    "line-moved-2:fill:row-1",
+    "line-moved-2:fill:row-2",
+    "line-moved-2:host:pointing-at-sheet",
+    "line-moved-2:mark:scribble"
+   ]
+  },
+  {
+   "id": "guidance",
+   "plate": "card-guidance",
+   "start_s": 44.721,
+   "end_s": 52.175,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "guidance:ground",
+    "guidance:plate:card-guidance",
+    "guidance:fill:label",
+    "guidance:text:guidance-read"
+   ]
+  },
+  {
+   "id": "the-reaction",
+   "plate": "screen-full",
+   "start_s": 52.175,
+   "end_s": 59.628,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-reaction:ground",
+    "the-reaction:enter:ink-wipe",
+    "the-reaction:plate:screen-full",
+    "the-reaction:fill:screen",
+    "the-reaction:mark:extreme-ring"
+   ]
+  },
+  {
+   "id": "so-what",
+   "plate": null,
+   "start_s": 59.628,
+   "end_s": 62.043,
+   "anchored": true,
+   "max_hold_s": 5.0,
+   "layers": [
+    "so-what:ground",
+    "so-what:text:so-what"
+   ]
+  },
+  {
+   "id": "close",
+   "plate": "room-wide",
+   "start_s": 62.043,
+   "end_s": 64.458,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "close:ground",
+    "close:plate:room-wide",
+    "close:host:sitting-with-mug",
+    "close:text:handle"
+   ]
+  }
+ ],
+ "layers": 45,
+ "kit_assets_used": [
+  "card-guidance--ballpoint",
+  "compare-plate--ballpoint",
+  "desk-top-down--ballpoint",
+  "ink-wipe--ballpoint",
+  "page-corporate--ballpoint",
+  "pointing-at-sheet--ballpoint",
+  "room-wide--ballpoint",
+  "screen-full--ballpoint",
+  "sheet-tall--ballpoint",
+  "sitting-with-mug--ballpoint",
+  "stamp--ballpoint",
+  "talking-at-screen--ballpoint"
+ ],
+ "kit_reach": "Kit: 12 entries in ballpoint, 12 concepts, 16 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "text_overflow": {
+  "the-print:text:meaning": 9,
+  "line-moved-1:fill:row-2": 5,
+  "line-moved-2:fill:row-2": 5,
+  "guidance:fill:label": 16,
+  "guidance:text:guidance-read": 20
+ },
+ "longest_layer_hold_s": 0.0
+}

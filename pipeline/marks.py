@@ -141,6 +141,11 @@ def underline(d, box, rng, *, color, width=6):
 # Type
 # ---------------------------------------------------------------------------
 
+# The two faces. Named here rather than in the renderer so the budget
+# measurement and the fitter cannot be measuring different type.
+BODY_FONT = "Inter-Regular.ttf"
+DISPLAY_FONT = "Inter-Bold.ttf"
+
 _FONT_DIR = Path("assets/fonts")
 _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 
