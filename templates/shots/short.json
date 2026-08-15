@@ -1,0 +1,305 @@
+{
+  "format": "short",
+  "aspect": "9:16",
+  "frame": {
+    "w": 1080,
+    "h": 1920
+  },
+  "notes": [
+    "Twelve shots. The template fixes space and order; the audio clock fixes",
+    "duration. Positions and type sizes are fractions of FRAME HEIGHT, so one",
+    "template holds at any delivery resolution.",
+    "",
+    "The host appears in 1, 5-8, 11 and 12 and nowhere else. Large type and",
+    "the caption band never coexist: a shot carrying type at 6.5% of frame",
+    "height or more sets captions false, and the parser refuses the template",
+    "if it does not.",
+    "",
+    "Shot 2 enters on ink-wipe rather than dive-in. dive-in is delivered 16:9",
+    "only (group D, 1920x1080) because the dive is the LONG's lobby-to-monitor",
+    "motion; ink-wipe is the kit's 9:16 transition. See the Stage 1 report.",
+    "",
+    "Shot 4 names no plate. There is no statement plate in the delivery, and",
+    "the shot is one sentence on bare ground \u2014 'this shot is allowed to be",
+    "empty; that is its job'. A null plate is the ground and nothing else."
+  ],
+  "shots": [
+    {
+      "id": "cold-open",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-at-screen",
+        "slot": "figure"
+      },
+      "anchor": "hook",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "hook",
+          "src": "script.hook_text",
+          "size_fh": 0.085,
+          "align": "top",
+          "max_lines": 3,
+          "draw_on_s": 0.6
+        }
+      ],
+      "notes": "Room-wide with the host talking at the screen. The hook draws on."
+    },
+    {
+      "id": "the-move",
+      "plate": "screen-full",
+      "enter": "ink-wipe",
+      "anchor": "move",
+      "max_hold_s": 6,
+      "bind": {
+        "screen": "chart.price"
+      },
+      "marks": [
+        {
+          "kind": "ring",
+          "target": "chart.extreme_candle",
+          "name": "extreme-ring"
+        }
+      ],
+      "text": [
+        {
+          "name": "move-summary",
+          "src": "script.move_summary",
+          "size_fh": 0.04,
+          "align": "0.70",
+          "max_lines": 2
+        }
+      ],
+      "notes": "Chart full bleed in the screen slot. The ring lands on the extreme candle, never on a label."
+    },
+    {
+      "id": "the-news",
+      "plate": "desk-top-down",
+      "anchor": "headline",
+      "max_hold_s": 6,
+      "bind": {
+        "pages": "plate.page-corporate"
+      },
+      "text": [
+        {
+          "name": "headline",
+          "src": "script.headlines.0.text",
+          "size_fh": 0.045,
+          "slot": "page.headline",
+          "max_lines": 3
+        },
+        {
+          "name": "meaning",
+          "src": "script.headlines.0.meaning",
+          "size_fh": 0.036,
+          "slot": "page.body-1",
+          "max_lines": 3,
+          "color": "red"
+        }
+      ],
+      "notes": "Desk from above with the page in the pages slot. Host absent."
+    },
+    {
+      "id": "the-turn",
+      "plate": null,
+      "anchor": "turn",
+      "captions": false,
+      "max_hold_s": 5,
+      "text": [
+        {
+          "name": "turn",
+          "src": "script.turn_line",
+          "size_fh": 0.09,
+          "align": "center",
+          "max_lines": 3,
+          "draw_on_s": 0.5
+        }
+      ],
+      "notes": "One sentence, centred, bare. Allowed to be empty; that is its job."
+    },
+    {
+      "id": "numbers-1",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "anchor": "numbers",
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-1"
+        }
+      ],
+      "notes": "All rows visible, row 1 lit, the rest ghosted.",
+      "lit": "row-1"
+    },
+    {
+      "id": "numbers-2",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-2"
+        }
+      ],
+      "lit": "row-2"
+    },
+    {
+      "id": "numbers-3",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-3"
+        }
+      ],
+      "lit": "row-3"
+    },
+    {
+      "id": "numbers-4",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-4"
+        }
+      ],
+      "lit": "row-4"
+    },
+    {
+      "id": "the-sheet",
+      "plate": "sheet-tall",
+      "anchor": "numbers_comment",
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "text": [
+        {
+          "name": "numbers-comment",
+          "src": "script.numbers_comment",
+          "size_fh": 0.038,
+          "align": "0.74",
+          "max_lines": 3
+        }
+      ],
+      "notes": "Every row lit, the comment beneath.",
+      "lit": "all"
+    },
+    {
+      "id": "cheap-or-trap",
+      "plate": "compare-plate",
+      "anchor": "cheap_or_trap",
+      "max_hold_s": 5,
+      "bind": {
+        "left": "compare.heavy",
+        "right": "compare.light",
+        "gap": "compare.versus"
+      },
+      "text": [
+        {
+          "name": "cheap-or-trap",
+          "src": "script.cheap_or_trap",
+          "size_fh": 0.04,
+          "align": "0.78",
+          "max_lines": 2
+        }
+      ],
+      "notes": "Two multiples, heavy against light. Two lines of type at most."
+    },
+    {
+      "id": "payoff",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-to-camera",
+        "slot": "figure"
+      },
+      "anchor": "conclusion",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "conclusion",
+          "src": "script.conclusion",
+          "size_fh": 0.07,
+          "align": "top",
+          "max_lines": 3,
+          "draw_on_s": 0.5
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "plate": "room-wide",
+      "host": {
+        "pose": "sitting-with-mug",
+        "slot": "figure"
+      },
+      "max_hold_s": 4,
+      "text": [
+        {
+          "name": "handle",
+          "src": "channel.handle",
+          "size_fh": 0.045,
+          "align": "0.82"
+        }
+      ],
+      "notes": "Sitting with the mug, the handle, out."
+    }
+  ]
+}

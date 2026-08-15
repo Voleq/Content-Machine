@@ -1,1087 +1,220 @@
 {
-  "ticker": "EXMPL",
-  "proof": false,
-  "audio_tier": "mock",
-  "draft_audio": false,
-  "duration": 71.493991,
-  "opener": "YOUR GROUP CHAT FOUND A STOCK.",
-  "theme": "light",
-  "host": {
-    "shots": 5,
-    "bookends": true,
-    "motion": [
-      {
-        "name": "open",
-        "shot": "chapters/cold-open/at-desk-open",
-        "blinks": 1,
-        "idle_frames": 0,
-        "has_blink": true,
-        "has_idle": true,
-        "idle_cycles": 1
-      },
-      {
-        "name": "close",
-        "shot": "chapters/resigned-close/dennis-defeated",
-        "blinks": 1,
-        "idle_frames": 0,
-        "has_blink": true,
-        "has_idle": true,
-        "idle_cycles": 1
-      },
-      {
-        "name": "beat0",
-        "shot": "chapters/bull-vs-bear/dennis-both-hands",
-        "blinks": 0,
-        "idle_frames": 0,
-        "has_blink": true,
-        "has_idle": true,
-        "idle_cycles": 1
-      },
-      {
-        "name": "beat1",
-        "shot": "chapters/the-numbers/chart-bars",
-        "blinks": 0,
-        "idle_frames": 0,
-        "has_blink": true,
-        "has_idle": true,
-        "idle_cycles": 2
-      },
-      {
-        "name": "beat2",
-        "shot": "chapters/valuation/dennis-weighing",
-        "blinks": 1,
-        "idle_frames": 0,
-        "has_blink": true,
-        "has_idle": true,
-        "idle_cycles": 1
-      }
-    ],
-    "blinks": 3
+ "ticker": "EXMPL",
+ "format": "short",
+ "register": "cut-paper",
+ "duration_s": 71.494,
+ "frame": {
+  "w": 1080,
+  "h": 1920
+ },
+ "shots": [
+  {
+   "id": "cold-open",
+   "plate": "room-wide",
+   "start_s": 0.0,
+   "end_s": 3.584,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "cold-open:ground",
+    "cold-open:plate:room-wide",
+    "cold-open:host:talking-at-screen",
+    "cold-open:text:hook"
+   ]
   },
-  "chart": {
-    "source": "fixture",
-    "degraded": false,
-    "direction": "up",
-    "style": "marker"
+  {
+   "id": "the-move",
+   "plate": "screen-full",
+   "start_s": 3.584,
+   "end_s": 7.168,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-move:ground",
+    "the-move:enter:ink-wipe",
+    "the-move:plate:screen-full",
+    "the-move:fill:screen",
+    "the-move:text:move-summary",
+    "the-move:mark:extreme-ring"
+   ]
   },
-  "cues": [
-    {
-      "t": 0.0,
-      "kind": "host_open",
-      "payload": {
-        "until": 5.0,
-        "text": "EXMPL is up 29% today. The business is not.",
-        "variant": "open"
-      },
-      "fallback": false
-    },
-    {
-      "t": 0.0,
-      "kind": "hook",
-      "payload": {
-        "text": "EXMPL is up 29% today. The business is not.",
-        "until": 8.7228,
-        "variant": "b"
-      },
-      "fallback": false
-    },
-    {
-      "t": 0.739,
-      "kind": "prop",
-      "payload": {
-        "value": "chart-ride-up",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "": "+29%"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 2.2441,
-      "kind": "annotation",
-      "payload": {
-        "index": 0,
-        "target": "chart",
-        "note": "this candle",
-        "row_index": null,
-        "anchor_word": "today"
-      },
-      "fallback": false
-    },
-    {
-      "t": 7.0213,
-      "kind": "doodle",
-      "payload": {
-        "value": "injokes/rocket-to-the-moon",
-        "hold": 1.6
-      },
-      "fallback": false
-    },
-    {
-      "t": 8.7228,
-      "kind": "transition",
-      "payload": {
-        "name": "why"
-      },
-      "fallback": false
-    },
-    {
-      "t": 8.8728,
-      "kind": "headline",
-      "payload": {
-        "index": 0,
-        "text": "EXMPL announces AI partnership",
-        "meaning": "A press release, not a purchase order \u2014 no revenue attached.",
-        "until": 16.872799999999998,
-        "variant": "b"
-      },
-      "fallback": false
-    },
-    {
-      "t": 13.566,
-      "kind": "prop",
-      "payload": {
-        "value": "c-press-release-crumple",
-        "tag": "PROP",
-        "style": "",
-        "values": {},
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 15.566,
-      "kind": "host_beat",
-      "payload": {
-        "until": 20.968,
-        "variant": "beat"
-      },
-      "fallback": false
-    },
-    {
-      "t": 17.0339,
-      "kind": "doodle",
-      "payload": {
-        "value": "concepts/hype-vs-reality",
-        "hold": 1.6
-      },
-      "fallback": false
-    },
-    {
-      "t": 20.968399999999995,
-      "kind": "headline",
-      "payload": {
-        "index": 1,
-        "text": "Squeeze chatter on retail forums",
-        "meaning": "11% of the float is short. The crowd noticed and piled in.",
-        "until": 28.968399999999995,
-        "variant": "b"
-      },
-      "fallback": false
-    },
-    {
-      "t": 30.515,
-      "kind": "prop",
-      "payload": {
-        "value": "c-number-deflate",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "": "$496M"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 31.6927,
-      "kind": "doodle",
-      "payload": {
-        "value": "concepts/zzz-boring",
-        "hold": 1.6
-      },
-      "fallback": false
-    },
-    {
-      "t": 32.913999999999994,
-      "kind": "transition",
-      "payload": {
-        "name": "gut"
-      },
-      "fallback": false
-    },
-    {
-      "t": 32.913999999999994,
-      "kind": "numbers",
-      "payload": {
-        "rows": 4,
-        "until": 71.493991,
-        "variant": "a"
-      },
-      "fallback": false
-    },
-    {
-      "t": 33.263999999999996,
-      "kind": "number_row",
-      "payload": {
-        "index": 0,
-        "label": "Revenue",
-        "values": [
-          "$400M",
-          "$452M",
-          "$471M",
-          "$491M",
-          "$496M"
-        ],
-        "type_seconds": 0.9
-      },
-      "fallback": false
-    },
-    {
-      "t": 36.012,
-      "kind": "prop",
-      "payload": {
-        "value": "chart-off-cliff",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "": "-$89M"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 38.012,
-      "kind": "host_beat",
-      "payload": {
-        "until": 42.425,
-        "variant": "beat"
-      },
-      "fallback": false
-    },
-    {
-      "t": 38.19414999999999,
-      "kind": "number_row",
-      "payload": {
-        "index": 1,
-        "label": "Net income",
-        "values": [
-          "-$8M",
-          "-$25M",
-          "-$49M",
-          "-$70M",
-          "-$89M"
-        ],
-        "type_seconds": 0.9
-      },
-      "fallback": false
-    },
-    {
-      "t": 38.44414999999999,
-      "kind": "annotation",
-      "payload": {
-        "index": 1,
-        "target": "numbers",
-        "note": "every year",
-        "row_index": 1,
-        "anchor_word": "wider"
-      },
-      "fallback": false
-    },
-    {
-      "t": 38.49414999999999,
-      "kind": "zoom",
-      "payload": {
-        "row_index": 1
-      },
-      "fallback": false
-    },
-    {
-      "t": 42.425,
-      "kind": "prop",
-      "payload": {
-        "value": "b-long-fall-line",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "": "-$15M"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 43.1243,
-      "kind": "number_row",
-      "payload": {
-        "index": 2,
-        "label": "Free cash flow",
-        "values": [
-          "$12M",
-          "-$2M",
-          "-$6M",
-          "-$11M",
-          "-$15M"
-        ],
-        "type_seconds": 0.9
-      },
-      "fallback": false
-    },
-    {
-      "t": 44.781,
-      "kind": "prop",
-      "payload": {
-        "value": "see-saw-two-numbers",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "heavy": "365M",
-          "light": "298M"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 48.05445,
-      "kind": "number_row",
-      "payload": {
-        "index": 3,
-        "label": "Shares out",
-        "values": [
-          "298M",
-          "315M",
-          "330M",
-          "346M",
-          "365M"
-        ],
-        "type_seconds": 0.9
-      },
-      "fallback": false
-    },
-    {
-      "t": 53.092,
-      "kind": "doodle",
-      "payload": {
-        "value": "injokes/holding-the-bag",
-        "hold": 1.6
-      },
-      "fallback": false
-    },
-    {
-      "t": 53.4846,
-      "kind": "transition",
-      "payload": {
-        "name": "trap"
-      },
-      "fallback": false
-    },
-    {
-      "t": 53.4846,
-      "kind": "cheap_or_trap",
-      "payload": {
-        "text": "Eleven times earnings looks cheap. It only is if revenue stops sliding, and it has not stopped sliding.",
-        "until": 64.6751
-      },
-      "fallback": false
-    },
-    {
-      "t": 53.4846,
-      "kind": "trap_line",
-      "payload": {
-        "index": 0,
-        "text": "Eleven times earnings looks cheap.",
-        "of": 3,
-        "until": 57.21476666666667
-      },
-      "fallback": false
-    },
-    {
-      "t": 57.21476666666667,
-      "kind": "trap_line",
-      "payload": {
-        "index": 1,
-        "text": "It only is if revenue stops sliding,",
-        "of": 3,
-        "until": 60.94493333333333
-      },
-      "fallback": false
-    },
-    {
-      "t": 57.215,
-      "kind": "prop",
-      "payload": {
-        "value": "numbers-raining",
-        "tag": "PROP",
-        "style": "",
-        "values": {
-          "#0": "-$8M",
-          "#1": "-$25M",
-          "#2": "-$49M",
-          "#3": "-$70M",
-          "#4": "-$89M",
-          "#5": "-$11M",
-          "#6": "-$15M"
-        },
-        "class": "punct",
-        "hold": 2.0,
-        "min_hold": 0.6,
-        "max_hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 59.215,
-      "kind": "host_beat",
-      "payload": {
-        "until": 64.675,
-        "variant": "beat"
-      },
-      "fallback": false
-    },
-    {
-      "t": 60.94493333333333,
-      "kind": "trap_line",
-      "payload": {
-        "index": 2,
-        "text": "and it has not stopped sliding.",
-        "of": 3,
-        "until": 64.6751
-      },
-      "fallback": false
-    },
-    {
-      "t": 62.1883,
-      "kind": "meme",
-      "payload": {
-        "key": "fomo-stages-wish-i-bought-doodle",
-        "duration": 1.4
-      },
-      "fallback": false
-    },
-    {
-      "t": 64.0207,
-      "kind": "doodle",
-      "payload": {
-        "value": "poses/shrug-idk-man",
-        "hold": 1.6
-      },
-      "fallback": false
-    },
-    {
-      "t": 64.6751,
-      "kind": "transition",
-      "payload": {
-        "name": "payoff"
-      },
-      "fallback": false
-    },
-    {
-      "t": 64.6751,
-      "kind": "conclusion",
-      "payload": {
-        "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
-        "until": 71.493991,
-        "variant": "c"
-      },
-      "fallback": false
-    },
-    {
-      "t": 66.493991,
-      "kind": "host_close",
-      "payload": {
-        "until": 69.893991,
-        "text": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
-        "variant": "close"
-      },
-      "fallback": false
-    }
-  ],
-  "pacing_warnings": [],
-  "unresolved_keys": [],
-  "empty_boxes": [],
-  "beat_coverage": [
-    {
-      "name": "numbers_sheet",
-      "w": 1060,
-      "h": 1004,
-      "class": "data",
-      "frac": 0.5132
-    },
-    {
-      "name": "vertical_b-falling-at-him",
-      "w": 1080,
-      "h": 1920,
-      "class": "data",
-      "frac": 1.0
-    },
-    {
-      "name": "tag_0_prop",
-      "w": 760,
-      "h": 760,
-      "class": "punct",
-      "frac": 0.2785
-    },
-    {
-      "name": "tag_1_prop",
-      "w": 760,
-      "h": 760,
-      "class": "punct",
-      "frac": 0.2785
-    },
-    {
-      "name": "tag_2_prop",
-      "w": 1040,
-      "h": 1040,
-      "class": "punct",
-      "frac": 0.5216
-    },
-    {
-      "name": "tag_3_prop",
-      "w": 760,
-      "h": 760,
-      "class": "punct",
-      "frac": 0.2785
-    },
-    {
-      "name": "tag_4_prop",
-      "w": 1080,
-      "h": 1920,
-      "class": "punct",
-      "frac": 1.0
-    },
-    {
-      "name": "tag_5_prop",
-      "w": 760,
-      "h": 760,
-      "class": "punct",
-      "frac": 0.2785
-    },
-    {
-      "name": "tag_6_prop",
-      "w": 1040,
-      "h": 1040,
-      "class": "punct",
-      "frac": 0.5216
-    },
-    {
-      "name": "payoff_card",
-      "w": 1080,
-      "h": 460,
-      "class": "data",
-      "frac": 0.2396,
-      "capped": "aspect",
-      "source_aspect": 2.348
-    }
-  ],
-  "median_data_coverage": 0.5132,
-  "median_punct_coverage": 0.2785,
-  "aspect_capped_beats": [
-    {
-      "name": "payoff_card",
-      "frac": 0.2396,
-      "source_aspect": 2.348
-    }
-  ],
-  "articles": [],
-  "kit_assets_used": [
-    "backgrounds/room-tall",
-    "chapters/bull-vs-bear/dennis-both-hands",
-    "chapters/bull-vs-bear/dennis-both-hands-talk",
-    "chapters/cold-open/at-desk-open",
-    "chapters/cold-open/at-desk-open-talk",
-    "chapters/resigned-close/dennis-defeated",
-    "chapters/resigned-close/dennis-defeated-talk",
-    "chapters/the-numbers/chart-bars",
-    "chapters/the-numbers/chart-bars-talk",
-    "chapters/valuation/dennis-weighing",
-    "chapters/valuation/dennis-weighing-talk",
-    "short/card-noise",
-    "shorts/dennis-vs-numbers-2/see-saw-two-numbers",
-    "shorts/dennis-vs-numbers/chart-off-cliff",
-    "shorts/dennis-vs-numbers/chart-ride-up",
-    "shorts/dennis-vs-numbers/numbers-raining",
-    "shorts/open-close/e-close",
-    "shorts/open-close/e-open",
-    "shorts/the-world/d-desk-empty",
-    "shorts/the-world/d-desk-over-shoulder",
-    "shorts/the-world/d-desk-side",
-    "shorts/the-world/d-desk-wide",
-    "shorts/transformations/c-number-deflate",
-    "shorts/transformations/c-press-release-crumple",
-    "shorts/vertical-scenes/b-falling-at-him",
-    "shorts/vertical-scenes/b-long-fall-line",
-    "stings/page-turn-tall",
-    "stings/paper-slide-tall",
-    "stings/torn-edge-tall"
-  ],
-  "kit_reach": "Kit: 29 of 442 assets \u00b7 14 families \u00b7 8 beat-library scenes",
-  "layer_names": [
-    "act_mid_0",
-    "act_mid_1",
-    "act_mid_2",
-    "act_open",
-    "act_payoff",
-    "brand_bug",
-    "chart",
-    "chart_1",
-    "chart_2",
-    "chart_3",
-    "conclusion",
-    "countup_0",
-    "disclaimer",
-    "doodle_0_injokes/rocket-t",
-    "doodle_1_concepts/hype-vs",
-    "doodle_2_concepts/zzz-bor",
-    "doodle_3_injokes/holding-",
-    "doodle_4_poses/shrug-idk-",
-    "e_close",
-    "e_open",
-    "flash_gut_paper-slide-tall",
-    "flash_payoff_page-turn-tall",
-    "flash_trap_torn-edge-tall",
-    "flash_why_page-turn-tall",
-    "headline_0",
-    "headline_1",
-    "hook",
-    "host_beat0",
-    "host_beat1",
-    "host_beat2",
-    "host_close",
-    "host_open",
-    "meme_0",
-    "note_0",
-    "note_1",
-    "number_row_0",
-    "number_row_1",
-    "number_row_2",
-    "number_row_3",
-    "numbers_sheet",
-    "payoff_card",
-    "scribble_0_chart",
-    "scribble_1_numbers",
-    "tag_0_prop",
-    "tag_1_prop",
-    "tag_2_prop",
-    "tag_3_prop",
-    "tag_4_prop",
-    "tag_5_prop",
-    "tag_6_prop",
-    "ticker_pill",
-    "trap_line_0",
-    "trap_line_1",
-    "trap_line_2",
-    "vertical_b-falling-at-him"
-  ],
-  "layers": [
-    {
-      "name": "act_open",
-      "t_start": 0.0,
-      "t_end": 5.0,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "chart",
-      "t_start": 5.0,
-      "t_end": 11.978499999999999,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "chart_1",
-      "t_start": 11.978499999999999,
-      "t_end": 18.956999999999997,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "chart_2",
-      "t_start": 18.956999999999997,
-      "t_end": 25.935499999999998,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "chart_3",
-      "t_start": 25.935499999999998,
-      "t_end": 32.913999999999994,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "act_mid_0",
-      "t_start": 32.913999999999994,
-      "t_end": 43.50103333333333,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "act_mid_1",
-      "t_start": 43.50103333333333,
-      "t_end": 54.08806666666666,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "act_mid_2",
-      "t_start": 54.08806666666666,
-      "t_end": 64.6751,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "headline_0",
-      "t_start": 8.8728,
-      "t_end": 16.872799999999998,
-      "x": 40,
-      "y": 1030
-    },
-    {
-      "name": "headline_1",
-      "t_start": 20.968399999999995,
-      "t_end": 28.968399999999995,
-      "x": 40,
-      "y": 1030
-    },
-    {
-      "name": "numbers_sheet",
-      "t_start": 32.913999999999994,
-      "t_end": 53.4846,
-      "x": 10,
-      "y": 270
-    },
-    {
-      "name": "number_row_0",
-      "t_start": 33.263999999999996,
-      "t_end": 53.4846,
-      "x": 10,
-      "y": 499
-    },
-    {
-      "name": "number_row_1",
-      "t_start": 38.19414999999999,
-      "t_end": 53.4846,
-      "x": 10,
-      "y": 685
-    },
-    {
-      "name": "number_row_2",
-      "t_start": 43.1243,
-      "t_end": 53.4846,
-      "x": 10,
-      "y": 871
-    },
-    {
-      "name": "number_row_3",
-      "t_start": 48.05445,
-      "t_end": 53.4846,
-      "x": 10,
-      "y": 1057
-    },
-    {
-      "name": "scribble_0_chart",
-      "t_start": 2.2441,
-      "t_end": 10.2441,
-      "x": 733,
-      "y": 700
-    },
-    {
-      "name": "note_0",
-      "t_start": 2.2441,
-      "t_end": 10.2441,
-      "x": 674,
-      "y": 789
-    },
-    {
-      "name": "scribble_1_numbers",
-      "t_start": 38.44414999999999,
-      "t_end": 46.44414999999999,
-      "x": 10,
-      "y": 685
-    },
-    {
-      "name": "note_1",
-      "t_start": 38.44414999999999,
-      "t_end": 46.44414999999999,
-      "x": 817,
-      "y": 637
-    },
-    {
-      "name": "countup_0",
-      "t_start": 38.49414999999999,
-      "t_end": 39.89414999999999,
-      "x": 501,
-      "y": 685
-    },
-    {
-      "name": "vertical_b-falling-at-him",
-      "t_start": 38.49414999999999,
-      "t_end": 40.69414999999999,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "tag_0_prop",
-      "t_start": 0.739,
-      "t_end": 2.739,
-      "x": 198,
-      "y": 610
-    },
-    {
-      "name": "tag_1_prop",
-      "t_start": 13.566,
-      "t_end": 15.566,
-      "x": 198,
-      "y": 610
-    },
-    {
-      "name": "tag_2_prop",
-      "t_start": 30.515,
-      "t_end": 32.515,
-      "x": 24,
-      "y": 486
-    },
-    {
-      "name": "tag_3_prop",
-      "t_start": 36.012,
-      "t_end": 38.012,
-      "x": 198,
-      "y": 610
-    },
-    {
-      "name": "tag_4_prop",
-      "t_start": 42.425,
-      "t_end": 44.425,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "tag_5_prop",
-      "t_start": 44.781,
-      "t_end": 46.781,
-      "x": 198,
-      "y": 610
-    },
-    {
-      "name": "tag_6_prop",
-      "t_start": 57.215,
-      "t_end": 59.215,
-      "x": 24,
-      "y": 486
-    },
-    {
-      "name": "meme_0",
-      "t_start": 62.1883,
-      "t_end": 63.5883,
-      "x": 279,
-      "y": 652
-    },
-    {
-      "name": "doodle_0_injokes/rocket-t",
-      "t_start": 7.0213,
-      "t_end": 8.6213,
-      "x": 560,
-      "y": 560
-    },
-    {
-      "name": "doodle_1_concepts/hype-vs",
-      "t_start": 17.0339,
-      "t_end": 18.6339,
-      "x": 120,
-      "y": 600
-    },
-    {
-      "name": "doodle_2_concepts/zzz-bor",
-      "t_start": 31.6927,
-      "t_end": 33.292699999999996,
-      "x": 540,
-      "y": 1180
-    },
-    {
-      "name": "doodle_3_injokes/holding-",
-      "t_start": 53.092,
-      "t_end": 54.692,
-      "x": 120,
-      "y": 1180
-    },
-    {
-      "name": "doodle_4_poses/shrug-idk-",
-      "t_start": 64.0207,
-      "t_end": 65.6207,
-      "x": 560,
-      "y": 560
-    },
-    {
-      "name": "flash_why_page-turn-tall",
-      "t_start": 8.7228,
-      "t_end": 9.2228,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "flash_gut_paper-slide-tall",
-      "t_start": 32.913999999999994,
-      "t_end": 33.413999999999994,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "flash_trap_torn-edge-tall",
-      "t_start": 53.4846,
-      "t_end": 53.9846,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "flash_payoff_page-turn-tall",
-      "t_start": 64.6751,
-      "t_end": 65.1751,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "trap_line_0",
-      "t_start": 53.4846,
-      "t_end": 57.21476666666667,
-      "x": 50,
-      "y": 350
-    },
-    {
-      "name": "trap_line_1",
-      "t_start": 57.21476666666667,
-      "t_end": 60.94493333333333,
-      "x": 50,
-      "y": 350
-    },
-    {
-      "name": "trap_line_2",
-      "t_start": 60.94493333333333,
-      "t_end": 64.6751,
-      "x": 50,
-      "y": 350
-    },
-    {
-      "name": "payoff_card",
-      "t_start": 64.6751,
-      "t_end": 66.493991,
-      "x": 0,
-      "y": 370
-    },
-    {
-      "name": "act_payoff",
-      "t_start": 64.6751,
-      "t_end": 71.493991,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "conclusion",
-      "t_start": 64.6751,
-      "t_end": 69.893991,
-      "x": 60,
-      "y": 1320
-    },
-    {
-      "name": "host_open",
-      "t_start": 0.0,
-      "t_end": 5.0,
-      "x": 0,
-      "y": 430
-    },
-    {
-      "name": "host_close",
-      "t_start": 66.493991,
-      "t_end": 69.893991,
-      "x": 0,
-      "y": 430
-    },
-    {
-      "name": "host_beat0",
-      "t_start": 15.566,
-      "t_end": 20.968,
-      "x": 570,
-      "y": 1120
-    },
-    {
-      "name": "host_beat1",
-      "t_start": 38.012,
-      "t_end": 42.425,
-      "x": 570,
-      "y": 1120
-    },
-    {
-      "name": "host_beat2",
-      "t_start": 59.215,
-      "t_end": 64.675,
-      "x": 570,
-      "y": 1120
-    },
-    {
-      "name": "e_open",
-      "t_start": 0.0,
-      "t_end": 1.6,
-      "x": 40,
-      "y": 1044
-    },
-    {
-      "name": "e_close",
-      "t_start": 69.893991,
-      "t_end": 71.493991,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "hook",
-      "t_start": 0.0,
-      "t_end": 8.7228,
-      "x": 80,
-      "y": 184
-    },
-    {
-      "name": "ticker_pill",
-      "t_start": 0.0,
-      "t_end": 71.493991,
-      "x": 40,
-      "y": 56
-    },
-    {
-      "name": "brand_bug",
-      "t_start": 0.0,
-      "t_end": 71.493991,
-      "x": 518,
-      "y": 70
-    },
-    {
-      "name": "disclaimer",
-      "t_start": 0.0,
-      "t_end": 71.493991,
-      "x": 142,
-      "y": 1854
-    }
-  ],
-  "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/short_final.filter.txt",
-  "output": "/home/user/Content-Machine/workspace/EXMPL/sample/short_final.mp4"
+  {
+   "id": "the-news",
+   "plate": "desk-top-down",
+   "start_s": 7.168,
+   "end_s": 10.752,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-news:ground",
+    "the-news:plate:desk-top-down",
+    "the-news:fill:pages",
+    "the-news:text:headline",
+    "the-news:text:meaning"
+   ]
+  },
+  {
+   "id": "the-turn",
+   "plate": null,
+   "start_s": 10.752,
+   "end_s": 15.752,
+   "anchored": true,
+   "max_hold_s": 5.0,
+   "layers": [
+    "the-turn:ground",
+    "the-turn:text:turn"
+   ]
+  },
+  {
+   "id": "numbers-1",
+   "plate": "sheet-tall",
+   "start_s": 15.752,
+   "end_s": 26.158,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "numbers-1:ground",
+    "numbers-1:plate:sheet-tall",
+    "numbers-1:fill:row-1",
+    "numbers-1:fill:row-2",
+    "numbers-1:fill:row-3",
+    "numbers-1:fill:row-4",
+    "numbers-1:host:pointing-at-sheet",
+    "numbers-1:mark:scribble"
+   ]
+  },
+  {
+   "id": "numbers-2",
+   "plate": "sheet-tall",
+   "start_s": 26.158,
+   "end_s": 33.862,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "numbers-2:ground",
+    "numbers-2:plate:sheet-tall",
+    "numbers-2:fill:row-1",
+    "numbers-2:fill:row-2",
+    "numbers-2:fill:row-3",
+    "numbers-2:fill:row-4",
+    "numbers-2:host:pointing-at-sheet",
+    "numbers-2:mark:scribble"
+   ]
+  },
+  {
+   "id": "numbers-3",
+   "plate": "sheet-tall",
+   "start_s": 33.862,
+   "end_s": 41.565,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "numbers-3:ground",
+    "numbers-3:plate:sheet-tall",
+    "numbers-3:fill:row-1",
+    "numbers-3:fill:row-2",
+    "numbers-3:fill:row-3",
+    "numbers-3:fill:row-4",
+    "numbers-3:host:pointing-at-sheet",
+    "numbers-3:mark:scribble"
+   ]
+  },
+  {
+   "id": "numbers-4",
+   "plate": "sheet-tall",
+   "start_s": 41.565,
+   "end_s": 49.268,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "numbers-4:ground",
+    "numbers-4:plate:sheet-tall",
+    "numbers-4:fill:row-1",
+    "numbers-4:fill:row-2",
+    "numbers-4:fill:row-3",
+    "numbers-4:fill:row-4",
+    "numbers-4:host:pointing-at-sheet",
+    "numbers-4:mark:scribble"
+   ]
+  },
+  {
+   "id": "the-sheet",
+   "plate": "sheet-tall",
+   "start_s": 49.268,
+   "end_s": 56.972,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "the-sheet:ground",
+    "the-sheet:plate:sheet-tall",
+    "the-sheet:fill:row-1",
+    "the-sheet:fill:row-2",
+    "the-sheet:fill:row-3",
+    "the-sheet:fill:row-4",
+    "the-sheet:text:numbers-comment"
+   ]
+  },
+  {
+   "id": "cheap-or-trap",
+   "plate": "compare-plate",
+   "start_s": 56.972,
+   "end_s": 64.675,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "cheap-or-trap:ground",
+    "cheap-or-trap:plate:compare-plate",
+    "cheap-or-trap:fill:left",
+    "cheap-or-trap:fill:right",
+    "cheap-or-trap:fill:gap",
+    "cheap-or-trap:text:cheap-or-trap"
+   ]
+  },
+  {
+   "id": "payoff",
+   "plate": "room-wide",
+   "start_s": 64.675,
+   "end_s": 68.085,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "payoff:ground",
+    "payoff:plate:room-wide",
+    "payoff:host:talking-to-camera",
+    "payoff:text:conclusion"
+   ]
+  },
+  {
+   "id": "close",
+   "plate": "room-wide",
+   "start_s": 68.085,
+   "end_s": 71.494,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "close:ground",
+    "close:plate:room-wide",
+    "close:host:sitting-with-mug",
+    "close:text:handle"
+   ]
+  }
+ ],
+ "layers": 70,
+ "kit_assets_used": [
+  "compare-plate--cut-paper",
+  "desk-top-down--cut-paper",
+  "ink-wipe--cut-paper",
+  "page-corporate--cut-paper",
+  "pointing-at-sheet--cut-paper",
+  "room-wide--cut-paper",
+  "screen-full--cut-paper",
+  "sheet-tall--cut-paper",
+  "sitting-with-mug--cut-paper",
+  "talking-at-screen--cut-paper",
+  "talking-to-camera--cut-paper"
+ ],
+ "kit_reach": "Kit: 11 entries in cut-paper, 11 concepts, 21 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "longest_layer_hold_s": 0.0
 }

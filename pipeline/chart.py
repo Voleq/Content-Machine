@@ -292,15 +292,22 @@ def render_marker_price_chart(
     *,
     size: tuple[int, int] = (1000, 780),
     move_text: str = "",
+    seed: str = "",
+    ring: bool = True,
 ) -> tuple[Path, dict]:
     """The napkin chart: `series` price line drawn as a rough marker
     scribble on black. Returns (png_path, meta) with the SAME anchor
-    contract as render_price_chart."""
+    contract as render_price_chart.
+
+    `seed` moves the hand without moving the data: the same series drawn
+    again lands its line 2-3% differently, which is how a full-bleed chart
+    boils instead of sitting on the frame as a photograph. Empty seed
+    reproduces the original drawing exactly."""
     W, H = size
     closes = list(series.closes)
     up = closes[-1] >= closes[0]
     line_rgb = UP if up else DOWN
-    rng = random.Random(f"marker|{series.ticker}|{closes[-1]}|{len(closes)}")
+    rng = random.Random(f"marker|{series.ticker}|{closes[-1]}|{len(closes)}|{seed}")
 
     # The napkin chart is marker on PAPER, not chalk on black. It used to be
     # the one dark surface left in a light kit, and it sat behind the hook —
@@ -360,9 +367,13 @@ def render_marker_price_chart(
         marker_stroke(d, [(ax - head, ay - head), (ax, ay), (ax + head, ay - head * 0.6)],
                        rng, width=nib, color=(*line_rgb, 255), jitter=1.5, passes=1)
 
-    # the red scrawl circle around the spike (the kit's signature "doubt" mark)
-    _drawn_ring(img, lx, ly, W * 0.11, H * 0.11, rng, width=nib,
-                color=(*DOWN, 255), settings=settings)
+    # The red scrawl circle around the spike (the kit's signature "doubt"
+    # mark). Optional, because under the shot templates a mark is composition
+    # and composition belongs to the template: with both drawing one, the
+    # frame carried two rings in two weights, on two different candles.
+    if ring:
+        _drawn_ring(img, lx, ly, W * 0.11, H * 0.11, rng, width=nib,
+                    color=(*DOWN, 255), settings=settings)
     d = ImageDraw.Draw(img)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)

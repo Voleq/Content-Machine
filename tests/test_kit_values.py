@@ -332,39 +332,12 @@ def test_a_row_with_no_values_gets_no_drawing(kit):
 # is the frame at t≈40s of the committed sample.
 
 
-def test_the_full_frame_batch_never_picks_a_drawing_the_row_cannot_fill(kit):
-    """Every scene it can choose, for every row shape a script can have."""
-    from pipeline.kit_frames import unfilled_slots
-    from pipeline.vertical_beats import VERTICAL_BEATS
-    from pipeline.vertical_beats import beat_for_row as vertical_beat_for_row
-
-    rows = [
-        ("Net income", ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]),
-        ("Revenue", ["$400M", "$452M", "$471M", "$491M", "$496M"]),
-        ("Total debt", ["$1.1B", "$1.4B", "$1.9B"]),
-        ("Cash", ["$40M"]),
-    ]
-    for label, values in rows:
-        for seed in (f"s{i}" for i in range(24)):
-            got = vertical_beat_for_row(kit, label, values, seed=seed)
-            assert got is not None, f"{label} reached for nothing at {seed}"
-            key, bound = got
-            asset = kit.get(key)
-            assert unfilled_slots(asset, bound) == [], (
-                f"{label} ({len(values)} figures) reached for {key}, which "
-                f"declares {len(asset.slots)} boxes — "
-                f"{unfilled_slots(asset, bound)} would render empty")
-
-    # And the series scenes are still reachable — the fix is a filter on the
-    # choice, not a quiet removal of three drawings from the library.
-    series = [k for keys in VERTICAL_BEATS.values() for k in keys
-              if kit.get(k) is not None and len(kit.get(k).slots) > 1]
-    assert series, "no multi-slot vertical scene in the banks to check"
-    long_row = [f"-${i}M" for i in range(1, 9)]
-    reached = {vertical_beat_for_row(kit, "Net income", long_row, seed=f"s{i}")[0]
-               for i in range(40)}
-    assert reached & set(series), \
-        "a row long enough to fill one still never reaches a series scene"
+# The vertical-beat scene chooser this used to test is gone with the
+# tag-driven renderer. The concern it guarded — a drawing reached for whose
+# slots the row cannot fill, which is how an empty red box got on screen —
+# now lives in tests/test_short_shots.py as
+# `test_an_unfilled_slot_is_a_failure_not_an_empty_box`, where an unfilled
+# slot fails the build instead of being drawn.
 
 
 # --------------------------------------------------------------------------

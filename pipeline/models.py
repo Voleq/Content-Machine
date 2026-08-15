@@ -291,6 +291,13 @@ class ShortScript(BaseModel):
     # on screen ~4-5s so it can actually be read. Optional so scripts written
     # against the four-beat format still parse.
     cheap_or_trap: str | None = Field(default=None, max_length=260)
+    # THE TURN: the one sentence the whole short pivots on, alone on the
+    # frame at 9% of frame height. It has its own field because the shot has
+    # its own slot in the template — under the form the writing prompt
+    # becomes, every shot is a field and this is that shot's. Optional so
+    # scripts written before the turn existed still parse; the renderer skips
+    # the shot when it is absent rather than drawing an empty frame.
+    turn_line: str | None = Field(default=None, max_length=120)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
     # The chart the short opens on, and holds from the stage open to the gut
     # check — one of the longest single holds in the video.

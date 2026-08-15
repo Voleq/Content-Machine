@@ -327,15 +327,28 @@ def test_a_key_with_no_artwork_and_no_blank_is_still_reported(settings, tmp_path
     assert "skipped at render" in said
 
 
-def test_both_renderers_resolve_card_tags_through_the_same_function():
-    """Do not fork it: a third copy is how these drift. render_short's helper
-    delegates, and render_long calls it directly."""
+def test_the_long_resolves_card_tags_through_the_shared_function():
+    """Do not fork it: a second copy is how these drift.
+
+    This used to check BOTH renderers. The SHORT no longer has card tags —
+    the shot templates removed tag-driven composition from it entirely — so
+    there is one caller left and the rule now applies to it alone. When the
+    LONG moves to templates in its turn, this goes with the last caller.
+    """
     import inspect
 
-    from pipeline import render_long, render_short
-    from pipeline.render_short import _kit_asset_for
+    from pipeline import render_long
 
-    assert "card_asset_for" in inspect.getsource(_kit_asset_for)
     assert "card_asset_for" in inspect.getsource(render_long.render_long)
-    # and neither reimplements the blank lookup beside it
-    assert "KIT_TAG_BLANKS.get" not in inspect.getsource(render_short._kit_asset_for)
+    assert "KIT_TAG_BLANKS.get" not in inspect.getsource(render_long.render_long)
+
+
+def test_the_short_no_longer_resolves_card_tags_at_all():
+    """The tag grammar reached the visual layer; now nothing does."""
+    import inspect
+
+    from pipeline import render_short
+
+    src = inspect.getsource(render_short)
+    assert "card_asset_for" not in src
+    assert "KIT_TAG" not in src

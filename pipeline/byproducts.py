@@ -422,14 +422,35 @@ def _headline_metric(data) -> str:
 
 HOLD_SAMPLE_FPS = 2.0
 HOLD_STILL_DELTA = 2.0      # mean |delta| below this: the frame did not change
+HOLD_SCALE = "96:171"
+
+# Measuring a BOILED render needs different numbers, and both of the defaults
+# above are wrong for one — not by a little.
+#
+# * Scale. A boil moves the line 2-3%. On a 1920-tall frame squashed to 171
+#   rows that is well under a pixel, so a frame that is visibly redrawing
+#   seven times a second measures as perfectly still.
+# * Rate. 2fps against a 7fps boil aliases: 0.5s is 3.5 boil frames, so every
+#   other sample pair lands on the same frame of the three and reads as a
+#   hold that does not exist.
+#
+# The old renderer moved by cutting and sliding whole elements, which those
+# defaults see fine. They are kept for it. Anything drawn against the DENNIS
+# kit measures with these instead.
+BOIL_SAMPLE_FPS = 5.0
+BOIL_SCALE = "270:480"
 
 
 def held_spans(video: Path, *, sample_fps: float = HOLD_SAMPLE_FPS,
-               still_delta: float = HOLD_STILL_DELTA) -> list[tuple[float, float]]:
+               still_delta: float = HOLD_STILL_DELTA,
+               scale: str = HOLD_SCALE) -> list[tuple[float, float]]:
     """`(start, end)` for every span the composition holds unchanged.
 
     Reproduce by hand with:
         ffmpeg -i in.mp4 -vf "fps=2,scale=96:171,format=gray" -f image2 out/%04d.pgm
+
+    For a render whose motion is a boil rather than a cut, pass
+    `sample_fps=BOIL_SAMPLE_FPS, scale=BOIL_SCALE` — see the note above.
     """
     import tempfile
 
@@ -441,7 +462,7 @@ def held_spans(video: Path, *, sample_fps: float = HOLD_SAMPLE_FPS,
     with tempfile.TemporaryDirectory(prefix="holds_") as td:
         out = Path(td)
         run_ffmpeg(["-i", str(video),
-                    "-vf", f"fps={sample_fps},scale=96:171,format=gray",
+                    "-vf", f"fps={sample_fps},scale={scale},format=gray",
                     "-f", "image2", str(out / "%05d.pgm")])
         frames = sorted(out.glob("*.pgm"))
         if len(frames) < 2:
