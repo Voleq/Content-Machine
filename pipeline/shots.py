@@ -43,10 +43,15 @@ class TemplateError(RuntimeError):
 # with nothing in it — a format quietly one shot shorter than it says it is.
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
-FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes"})
+FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "chapters",
+                         "notes"})
+CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
+CHAPTER_DIR = Path("templates/chapters")
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
-                       "repeat", "stagger_s", "focus"})
+                       "repeat", "stagger_s", "focus",
+                       # set by chapter expansion, never authored
+                       "_chapter", "_chapter_n"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
 MARK_KEYS = frozenset({"kind", "target", "name"})
@@ -183,6 +188,8 @@ class Shot:
     # read as motion at all. Something entering is what the ceiling rule
     # actually asks for.
     stagger_s: float = 0.0
+    chapter: str = ""            # which chapter type this shot came from
+    chapter_n: int = 0           # and which chapter of the video
     # Move in on this slot of the plate, so it fills the frame rather than
     # sitting in a wide shot with a box round it.
     focus: str | None = None
@@ -242,12 +249,52 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
     return tuple(out)
 
 
-def parse_format(raw: dict, source: Path | None = None) -> Format:
+def _chapter_shots(names: list[str], fmt_name: str,
+                   root: Path | str = ".") -> list[dict]:
+    """Every chapter's shots, in order, with ids that say where they came from.
+
+    An id like `ch3-the-event-dive-in` is how a manifest, a contact sheet cell
+    and an invariant failure all name the same frame — with a chapter used
+    twice, bare shot ids would collide silently.
+    """
+    out: list[dict] = []
+    for n, cname in enumerate(names, 1):
+        path = Path(root) / CHAPTER_DIR / f"{cname}.json"
+        if not path.exists():
+            raise TemplateError(
+                f"{fmt_name}: no chapter type {cname!r} at {path}. A chapter "
+                f"type is a JSON file; adding one is authoring a file.")
+        try:
+            craw = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise TemplateError(f"{path} is not valid JSON: {exc}") from exc
+        _reject_unknown(craw, CHAPTER_KEYS, f"chapter {cname}")
+        for j, sh in enumerate(craw.get("shots") or ()):
+            sh = dict(sh)
+            sh["id"] = f"ch{n}-{cname}-{sh['id']}"
+            sh["_chapter"] = cname
+            sh["_chapter_n"] = n
+            # The chapter's first shot anchors to the chapter's first
+            # sentence, so nine chapters give nine points where the cut is
+            # pinned to the audio rather than interpolated.
+            if j == 0 and "anchor" not in sh:
+                sh["anchor"] = f"ch{n}"
+            out.append(sh)
+    return out
+
+
+def parse_format(raw: dict, source: Path | None = None,
+                 root: Path | str = ".") -> Format:
     _reject_unknown(raw, FORMAT_KEYS, "template")
     try:
         name = raw["format"]
         frame = (int(raw["frame"]["w"]), int(raw["frame"]["h"]))
-        shots_raw = raw["shots"]
+        # A format lists SHOTS or CHAPTERS. A chapter is a named small shot
+        # list of its own, so nine picks become thirty-eight shots and nobody
+        # authors them one at a time.
+        shots_raw = raw.get("shots")
+        if shots_raw is None:
+            shots_raw = _chapter_shots(raw["chapters"], name, root)
     except KeyError as exc:
         raise TemplateError(f"template missing {exc}") from exc
     if not shots_raw:
@@ -317,6 +364,7 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             enter=s.get("enter"), lit=s.get("lit"),
             anchor=s.get("anchor"), stagger_s=float(s.get("stagger_s", 0.0)),
             focus=s.get("focus"),
+            chapter=s.get("_chapter", ""), chapter_n=int(s.get("_chapter_n", 0)),
             max_hold_s=float(s.get("max_hold_s", 8.0)),
             captions=bool(s.get("captions", True)),
             notes=s.get("notes", "")))
@@ -352,7 +400,7 @@ def load_format(name: str, root: Path | str = ".") -> Format:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise TemplateError(f"{path} is not valid JSON: {exc}") from exc
-    return parse_format(raw, source=path)
+    return parse_format(raw, source=path, root=root)
 
 
 def _sub(value: str | None, n: int) -> str | None:
@@ -388,8 +436,11 @@ def expand_sequences(fmt: Format, items_for) -> Format:
             continue
         items = list(items_for(rep.src) or [])[:max(rep.max, 1)]
         if not items:
-            # No items, no shots. The caller's prune reports the drop.
-            out.append(shot)
+            # Nothing to step through. The repeat comes OFF — left on, it
+            # reaches the compositor as an unexpanded sequence and is taken
+            # for a spatial one. The shot keeps its plate; the caller's prune
+            # drops it if that leaves nothing.
+            out.append(replace(shot, repeat=None))
             continue
         for i in range(1, len(items) + 1):
             # A sequence that names a concept places that card, one per step.
@@ -508,16 +559,17 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         spans.append(Span(shot=s, start=start, end=end,
                           anchored=at[i] is not None))
 
-    # A shot with no plate has no boil under it: once its type has drawn on,
-    # the frame is genuinely motionless, and its ceiling is therefore a limit
-    # on the SPAN and not just on the gap between layer edges. Cap it and hand
-    # the time to the next shot, which has a plate and can hold it.
+    # max_hold_s is a CEILING ON THE SPAN, for every shot.
     #
-    # A shot with a plate is exempt because its plate is redrawn seven times a
-    # second for as long as it is on screen. That is the whole reason the kit
-    # boils, and it is why only the bare shots need this.
+    # It used to apply only to bare-ground shots, on the reasoning that a
+    # plate boils and therefore never sits still. That is true of a dense
+    # plate and false of a sparse one: a chapter stinger is two words and two
+    # rules, and its boil moves too little ink to read as anything. Given an
+    # equal share of a 190-second runtime it held for fifteen seconds.
+    #
+    # So the ceiling binds the span, and the excess goes to the next shot.
     for i, sp in enumerate(spans):
-        if sp.shot.plate or sp.dur <= sp.shot.max_hold_s:
+        if sp.dur <= sp.shot.max_hold_s:
             continue
         capped = sp.start + sp.shot.max_hold_s
         spans[i] = Span(sp.shot, sp.start, capped, sp.anchored)
@@ -532,7 +584,31 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         if spans[i].end > spans[i + 1].start:
             spans[i] = Span(spans[i].shot, spans[i].start,
                             spans[i + 1].start, spans[i].anchored)
+    # Capping every span leaves a shortfall when the ceilings sum to less than
+    # the runtime. Pinning the tail to the audio dumped all of it on the last
+    # shot — sixteen seconds on a sign-off. Spread it instead, so every shot
+    # runs a little over its ceiling rather than one running four times it.
     if spans:
-        spans[-1] = Span(spans[-1].shot, min(spans[-1].start, duration - MIN_SHOT_S),
+        used = spans[-1].end
+        short = duration - used
+        if short > 0.05:
+            # Only shots with a plate take the remainder. A bare-ground shot
+            # is genuinely motionless once its type has drawn on, so
+            # extending it is the one thing the ceiling exists to prevent —
+            # the slack goes to frames where something is still happening.
+            takers = [i for i, sp in enumerate(spans) if sp.shot.plate]
+            if takers:
+                share = short / len(takers)
+                moved: list[Span] = []
+                shift = 0.0
+                for i, sp in enumerate(spans):
+                    start = sp.start + shift
+                    if i in set(takers):
+                        shift += share
+                    moved.append(Span(sp.shot, start, sp.end + shift,
+                                      sp.anchored))
+                spans = moved
+        spans[-1] = Span(spans[-1].shot,
+                         min(spans[-1].start, duration - MIN_SHOT_S),
                          duration, spans[-1].anchored)
     return spans

@@ -1,0 +1,36 @@
+{
+  "format": "long",
+  "aspect": "16:9",
+  "frame": {
+    "w": 1920,
+    "h": 1080
+  },
+  "notes": [
+    "THE UNIT IS THE CHAPTER. The director picks nine chapter types; each one",
+    "expands to its own small shot list from templates/chapters/. Nobody",
+    "authors 270 shots.",
+    "",
+    "THE ROOM IS A LOBBY. A chapter opens in the room, DIVES INTO THE MONITOR",
+    "where the substance happens, and surfaces back to close before the next",
+    "stinger. dive-in and dive-out run once or twice per chapter across nine",
+    "chapters, which makes them the most-used motion in the format.",
+    "",
+    "Pacing is 4-8s per shot and the host is present far more than in a short \u2014",
+    "NOT the 1.5-3s cutting the old long used, which is what made it read as a",
+    "collage.",
+    "",
+    "Clutter states are pinned to lived-in here. Advancing them across the",
+    "video, with the light, the clock and the evidence wall, is Stage 3b."
+  ],
+  "chapters": [
+    "cold-open",
+    "how-we-got-here",
+    "the-unit",
+    "the-event",
+    "the-mechanism",
+    "the-numbers",
+    "valuation",
+    "both-hands",
+    "the-close"
+  ]
+}

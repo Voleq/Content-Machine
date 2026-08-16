@@ -94,11 +94,16 @@ def test_the_sample_is_not_mostly_a_still_frame(sample):
 
 @pytest.mark.parametrize("sample", _samples(), ids=lambda p: p.stem)
 def test_the_sample_is_the_shape_its_format_is(sample):
+    """Whatever aspect its own template declares. The LONG is 16:9."""
+    import json
     out = subprocess.run(
         ["ffprobe", "-v", "error", "-select_streams", "v:0",
          "-show_entries", "stream=width,height", "-of", "csv=p=0:nk=1",
          str(sample)], capture_output=True, text=True).stdout.strip()
-    assert out.startswith("1080,1920"), f"{sample.name} is {out}, not 9:16"
+    man = sample.with_suffix(".manifest.json")
+    frame = json.loads(man.read_text(encoding="utf-8"))["frame"]
+    assert out.startswith(f"{frame['w']},{frame['h']}"), (
+        f"{sample.name} is {out}, not {frame['w']}x{frame['h']}")
 
 
 @pytest.mark.parametrize("sample", _samples(), ids=lambda p: p.stem)

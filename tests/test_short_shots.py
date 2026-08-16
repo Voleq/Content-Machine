@@ -44,6 +44,8 @@ class StubResolver:
         # Text of the SHAPE the format actually puts there. A stub that
         # returns thirteen characters for the compare plate's "vs" marker
         # fails a geometry check that real content would pass.
+        if src == "numbers.header":
+            return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
         leaf = src.rsplit(".", 1)[-1]
         if leaf in ("versus", "reported", "expected", "latest", "label"):
             return "vs" if leaf == "versus" else "3.4%"
@@ -258,6 +260,7 @@ def test_a_bare_shot_never_outruns_its_own_ceiling(fmt, kit):
         for span in spans:
             if span.shot.plate:
                 continue
+            # A bare shot never takes the spread, so its ceiling is exact.
             assert span.dur <= span.shot.max_hold_s + 1e-6, (
                 f"{span.shot.id} runs {span.dur:.2f}s on bare ground, over "
                 f"its {span.shot.max_hold_s}s ceiling, at {duration}s runtime")

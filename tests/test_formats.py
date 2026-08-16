@@ -34,6 +34,8 @@ class StubResolver:
         # Text of the SHAPE the format actually puts there. A stub that
         # returns thirteen characters for the compare plate's "vs" marker
         # fails a geometry check that real content would pass.
+        if src == "numbers.header":
+            return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
         leaf = src.rsplit(".", 1)[-1]
         if leaf in ("versus", "reported", "expected", "latest", "label"):
             return "vs" if leaf == "versus" else "3.4%"
@@ -136,9 +138,11 @@ def test_the_composition_satisfies_every_invariant(name):
 def test_a_bare_shot_never_outruns_its_ceiling(name):
     fmt = _cut(name)
     for duration in (40.0, 70.0, 120.0):
-        for span in resolve_spans(fmt, _words(duration), duration, {}):
+        spans = resolve_spans(fmt, _words(duration), duration, {})
+        for span in spans:
             if span.shot.plate or span.shot.repeat:
                 continue
+            # A bare shot never takes the spread, so its ceiling is exact.
             assert span.dur <= span.shot.max_hold_s + 1e-6, (
                 f"{name}/{span.shot.id} runs {span.dur:.1f}s on bare ground")
 
@@ -198,6 +202,45 @@ def test_a_repeat_missing_its_source_is_refused():
         parse_format(raw)
 
 
+def test_real_media_may_only_arrive_inside_a_container():
+    """THE PORTAL RULE, enforced in the compositor rather than asked for.
+
+    Pexels, memes and EDGAR screenshots never appear as a raw cutaway — they
+    arrive inside a filing-on-screen, a print-on-desk, a pinned-item or a
+    projection wall. "B-roll looks imported" was a diagnosis on the format
+    that got scrapped, and a convention nobody checks is how it got there.
+    """
+    raw = {"format": "x", "frame": {"w": 1920, "h": 1080},
+           "shots": [{"id": "raw", "plate": "room-wide-16--lived-in",
+                      "bind": {"screen": "media.pexels"}}]}
+    fmt = parse_format(raw)
+    spans = resolve_spans(fmt, _words(10.0), 10.0, {})
+    with pytest.raises(TemplateError, match="not a container"):
+        build_layers(fmt, spans, StubResolver(), kit_for("marker"), "marker")
+
+
+def test_a_container_takes_media_in_its_own_media_slot():
+    raw = {"format": "x", "frame": {"w": 1920, "h": 1080},
+           "shots": [{"id": "wrong-slot", "plate": "filing-on-screen",
+                      "bind": {"figure": "media.pexels"}}]}
+    fmt = parse_format(raw)
+    spans = resolve_spans(fmt, _words(10.0), 10.0, {})
+    with pytest.raises(TemplateError, match="whose media slot is"):
+        build_layers(fmt, spans, StubResolver(), kit_for("marker"), "marker")
+
+
+def test_the_long_is_chapters_that_expand():
+    """Nine picks become thirty-eight shots; nobody authors them."""
+    raw = json.loads(Path("templates/shots/long.json").read_text(
+        encoding="utf-8"))
+    assert len(raw["chapters"]) == 9 and "shots" not in raw
+    fmt = load_format("long")
+    assert len(fmt) > 30
+    assert len({s.chapter_n for s in fmt.shots}) == 9
+    dives = [s for s in fmt.shots if s.plate in ("dive-in", "dive-out")]
+    assert len(dives) >= 10, "the dive is the format's most-used motion"
+
+
 # ---------------------------------------------------------------------------
 # The engine carries the formats without knowing about them
 # ---------------------------------------------------------------------------
@@ -240,4 +283,5 @@ def test_the_template_is_a_file_not_code(name):
     raw = json.loads(Path(f"templates/shots/{name}.json").read_text(
         encoding="utf-8"))
     assert raw["format"] == name
-    assert raw["shots"]
+    # A format lists shots, or chapter types that expand to them.
+    assert raw.get("shots") or raw.get("chapters")

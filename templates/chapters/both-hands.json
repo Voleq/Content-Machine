@@ -1,0 +1,60 @@
+{
+  "chapter": "both-hands",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room-wide-16--lived-in",
+      "host": {
+        "pose": "gesture-both-hands-open-weighing",
+        "slot": "figure"
+      },
+      "max_hold_s": 7,
+      "captions": true,
+      "text": [
+        {
+          "name": "lede",
+          "src": "chapter.line.0",
+          "size_fh": 0.055,
+          "align": "top",
+          "max_lines": 3
+        }
+      ]
+    },
+    {
+      "id": "the-weighing",
+      "plate": "compare-plate",
+      "max_hold_s": 8,
+      "captions": true,
+      "stagger_s": 1.0,
+      "text": [
+        {
+          "name": "bull",
+          "src": "chapter.line.1",
+          "size_fh": 0.042,
+          "slot": "left",
+          "max_lines": 5
+        },
+        {
+          "name": "bear",
+          "src": "chapter.line.2",
+          "size_fh": 0.042,
+          "slot": "right",
+          "max_lines": 5
+        }
+      ],
+      "notes": "The gap slot holds eight characters \u2014 a marker, not a clause. Left unbound rather than crammed."
+    },
+    {
+      "id": "surface",
+      "plate": "room-side-16--lived-in",
+      "host": {
+        "pose": "crouching",
+        "slot": "figure-seated"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "Back in the room to close the chapter before the next stinger.",
+      "text": []
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "chapter": "the-numbers",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room-wide-16--lived-in",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "max_hold_s": 7,
+      "captions": true,
+      "text": [
+        {
+          "name": "lede",
+          "src": "chapter.line.0",
+          "size_fh": 0.055,
+          "align": "top",
+          "max_lines": 3
+        }
+      ]
+    },
+    {
+      "id": "dive-in",
+      "plate": "dive-in",
+      "max_hold_s": 3,
+      "captions": true,
+      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
+    },
+    {
+      "id": "the-sheet",
+      "plate": "sheet-wide",
+      "max_hold_s": 6,
+      "captions": true,
+      "bind": {
+        "row-1": "numbers.header",
+        "row-2": "numbers.row.0",
+        "row-3": "?numbers.row.1",
+        "row-4": "?numbers.row.2",
+        "row-5": "?numbers.row.3",
+        "row-6": "?numbers.row.4"
+      },
+      "lit": "row-$n+1",
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-$n+1"
+        }
+      ],
+      "focus": "row-$n+1",
+      "repeat": {
+        "src": "script.numbers",
+        "max": 4,
+        "arrange": "sequence",
+        "lit": "row-$n+1",
+        "focus": "row-$n+1"
+      },
+      "notes": "Band 1 is the period header; metric N is row N+1. Binding only the header rendered an empty sheet with a ruled grid and nothing in it."
+    },
+    {
+      "id": "dive-out",
+      "plate": "dive-out",
+      "max_hold_s": 3,
+      "captions": true,
+      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
+    },
+    {
+      "id": "surface",
+      "plate": "room-side-16--lived-in",
+      "host": {
+        "pose": "seated-talking",
+        "slot": "figure-seated"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "Back in the room to close the chapter before the next stinger."
+    }
+  ]
+}

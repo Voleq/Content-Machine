@@ -62,6 +62,15 @@ class ShortResolver:
         self._images: dict[str, Path | list[Path] | None] = {}
         self._fracs: dict[str, tuple[float, float, float, float]] = {}
 
+    @property
+    def rows(self):
+        """The metric rows, from whichever script this is.
+
+        A SHORT carries them on the script. A LONG does not — its numbers
+        come from the data export — so this is read through, not reached for.
+        """
+        return list(getattr(self.script, "numbers", []) or [])
+
     # -- text -------------------------------------------------------------
     def text_for(self, src: str) -> str | None:
         parts = src.split(".")
@@ -91,6 +100,8 @@ class ShortResolver:
         parts = src.split(".")
         if parts[0] != "script" or len(parts) != 2:
             return None
+        if parts[1] == "numbers":
+            return [r.label for r in self.rows] or None
         got = getattr(self.script, parts[1], None)
         if isinstance(got, list) and got:
             return [str(x) for x in got]
@@ -103,7 +114,7 @@ class ShortResolver:
         every band on the sheet is type this puts there.
         """
         from pipeline.models import MetricKind
-        rows = self.script.numbers
+        rows = self.rows
         field = "row"
         if rest and not rest[0].isdigit():
             field, rest = rest[0], rest[1:]
@@ -111,7 +122,7 @@ class ShortResolver:
         # The column header. Without it five figures in a row are one long
         # number, and there is nothing to say which year is which.
         if field == "header":
-            years = list(self.script.years)
+            years = list(getattr(self.script, "years", []) or [])
             return ("\t" + "\t".join(years)) if years else None
 
         if not rest or not rest[0].isdigit():
@@ -130,21 +141,23 @@ class ShortResolver:
         # a stock is one reading and the date it was taken, and the two do
         # not share a row format because they are not the same kind of fact.
         if r.measured is MetricKind.STOCK:
-            asat = self.script.years[-1] if self.script.years else "latest"
+            years = list(getattr(self.script, "years", []) or [])
+            asat = years[-1] if years else "latest"
             return f"{r.label}\t{r.values[-1]}\tat {asat}"
         return f"{r.label}\t" + "\t".join(r.values)
 
     def _compare(self, which: str) -> str | None:
         """The two multiples in CHEAP OR TRAP, heavy against light."""
-        rows = self.script.numbers
+        rows = self.rows
         if which == "versus":
             return "vs"
         # EARNINGS and MACRO put the print against consensus. Both are their
         # own fields when the script carries them.
         if which == "reported":
-            return self.script.reported or (rows[0].values[-1] if rows else None)
+            return (getattr(self.script, "reported", None)
+                    or (rows[0].values[-1] if rows else None))
         if which == "expected":
-            return self.script.expected
+            return getattr(self.script, "expected", None)
         pick = None
         for r in rows:
             lab = r.label.lower()
@@ -283,6 +296,40 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
         out["statement"] = script.headlines[0].text
     if script.cheap_or_trap:
         out["priced"] = script.cheap_or_trap
+    return out
+
+
+def cap_one_shots(spans, kit, register):
+    """A transition may not outlive its own strip.
+
+    dive-in is ten frames at 12fps — 0.83s — and then it has nothing left to
+    play. Given an equal share of the runtime it holds its last frame for
+    another three seconds, which is a freeze in the middle of the format's
+    most-used motion. The span is cut to the strip and the time handed to the
+    shot that follows, where something is actually happening.
+
+    Done here rather than in the span resolver because it needs the kit: how
+    long a strip runs is a fact about the asset, not about the template.
+    """
+    from pipeline.shots import Span
+    out = list(spans)
+    for i, sp in enumerate(out):
+        if not sp.shot.plate:
+            continue
+        try:
+            e = kit.concept(sp.shot.plate, register)
+        except KitError:
+            continue
+        if e.loops or e.playback != "one-shot":
+            continue
+        strip = e.cycle_s
+        if strip <= 0 or sp.dur <= strip + 1e-6:
+            continue
+        cut = sp.start + strip
+        out[i] = Span(sp.shot, sp.start, cut, sp.anchored)
+        if i + 1 < len(out):
+            nxt = out[i + 1]
+            out[i + 1] = Span(nxt.shot, cut, nxt.end, nxt.anchored)
     return out
 
 
@@ -603,10 +650,11 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
 # Entry point
 # ---------------------------------------------------------------------------
 
-def render_short(script: ShortScript, tts, workspace: Path, settings, *,
+def render_short(script, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
                  out_name: str = "short_final.mp4",
-                 format_name: str = "short") -> tuple[Path, Path]:
+                 format_name: str = "short",
+                 resolver=None, anchors=None) -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
 
     Interpolated word timings must never be the master clock of a published
@@ -634,28 +682,38 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
     if duration <= 0:
         raise RenderError("the audio has no duration; there is no clock to cut to")
 
+    # Prices before the resolver: the resolver holds them, and a resolver
+    # built with None leaves THE MOVE's chart slot unfilled.
+    # `get_price_history` never raises — worst case is a labelled synthetic
+    # series — so the slot is always fillable.
+    if prices is None:
+        from pipeline.prices import get_price_history
+        prices = get_price_history(getattr(script, "ticker", ""), settings)
+
+    handle0 = getattr(settings, "brand_handle", "") or ""
+    if resolver is None:
+        resolver = ShortResolver(script=script, workdir=workdir,
+                                 settings=settings, prices=prices,
+                                 handle=handle0)
+    else:
+        resolver.workdir, resolver.prices = workdir, prices
+        resolver.handle = resolver.handle or handle0
+
     # A shot the script carries no words for is DROPPED, not rendered blank.
     # THE TURN is one sentence on bare ground; with no sentence it is a held
     # empty frame, which is the exact failure this rewrite exists to remove.
     # A sequence repeat becomes one shot per item BEFORE anything is timed:
     # how many numbers beats a video has is a fact about its script.
-    probe = resolver_probe(script, settings)
+    probe = resolver if resolver is not None else resolver_probe(script, settings)
     fmt = expand_sequences(fmt, probe.list_for)
     fmt, dropped = prune_empty_shots(fmt, probe)
 
-    spans = resolve_spans(fmt, words, duration, build_anchors(script))
+    spans = resolve_spans(fmt, words, duration,
+                          anchors if anchors is not None
+                          else build_anchors(script))
+    spans = cap_one_shots(spans, kit, register)
 
-    # THE MOVE binds the chart, and a slot with no value is a drawn, empty
-    # box. `get_price_history` never raises — worst case is a labelled
-    # synthetic series — so the slot is always fillable and a caller that
-    # forgot to pass prices does not turn into a hole in the video.
-    if prices is None:
-        from pipeline.prices import get_price_history
-        prices = get_price_history(script.ticker, settings)
 
-    handle = getattr(settings, "brand_handle", "") or ""
-    resolver = ShortResolver(script=script, workdir=workdir, settings=settings,
-                             prices=prices, handle=handle)
 
     result = build_layers(fmt, spans, resolver, kit, register)
 
@@ -706,7 +764,12 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
         # told across four shots because four cards cannot share a frame
         # legibly — so a nine-beat format cutting to fourteen shots is the
         # design working, not drift.
-        "beats": len(load_format(format_name)),
+        # A chapter-based format's beats are its CHAPTERS; a shot-based
+        # one's are its authored shots. Reporting post-expansion shots as
+        # beats made the long look like 38 ideas instead of nine.
+        "beats": (len({sh.chapter_n for sh in load_format(format_name).shots
+                       if sh.chapter_n})
+                  or len(load_format(format_name))),
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "register": register,

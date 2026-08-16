@@ -51,6 +51,24 @@ FOCUS_MAX_SCALE = 1.14
 # catches.
 SLOT_TYPE_FLOOR_FH = 0.025
 
+# THE PORTAL RULE. Real media — Pexels, memes, EDGAR screenshots — never
+# appears as a raw cutaway. It arrives inside a container that makes it a
+# thing in the room: a filing ON a screen, a print ON the desk, an item
+# PINNED to the wall, a still thrown at the projection wall.
+#
+# This is enforced here rather than asked for in a prompt, because "b-roll
+# looks imported" was a diagnosis on the format that got scrapped, and a
+# convention nobody checks is how it got there.
+MEDIA_PREFIX = "media."
+PORTAL_CONTAINERS = {
+    "filing-on-screen": ("screen",),
+    "print-on-desk": ("image",),
+    "pinned-item": ("image",),
+    "projection-wall-16": ("projection",),
+    "monitor": ("screen",),
+    "cu-page": ("page",),
+}
+
 
 @dataclass
 class Layer:
@@ -212,6 +230,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     for span in spans:
         shot = span.shot
         t0, t1 = span.start, span.end
+        # A resolver may need to know which shot it is answering for — the
+        # LONG serves a different chapter's words per shot. Optional, so a
+        # resolver that does not care implements nothing.
+        begin = getattr(resolver, "begin_shot", None)
+        if begin is not None:
+            begin(shot)
 
         # -- the ground. Every frame has paper under it; kit plates are
         #    transparent PNGs and would composite onto nothing otherwise.
@@ -300,6 +324,22 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     slot=slot, z=20))
                 continue
 
+            # The portal rule, checked before anything is placed.
+            if src.startswith(MEDIA_PREFIX):
+                allowed = PORTAL_CONTAINERS.get(shot.plate or "")
+                if allowed is None:
+                    raise TemplateError(
+                        f"{fmt.name}/{shot.id}: binds real media {src!r} on "
+                        f"plate {shot.plate!r}, which is not a container. "
+                        f"Media arrives inside one of "
+                        f"{sorted(PORTAL_CONTAINERS)} — never as a raw "
+                        f"cutaway.")
+                if slot not in allowed:
+                    raise TemplateError(
+                        f"{fmt.name}/{shot.id}: binds real media {src!r} to "
+                        f"slot {slot!r} of {shot.plate}, whose media slot is "
+                        f"{allowed[0]!r}.")
+
             img = resolver.image_for(src)
             if img is None:
                 txt = resolver.text_for(src)
@@ -335,7 +375,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 path=img, slot=slot, z=20))
 
         # -- a repeated concept: N instances of one card, from a list
-        if shot.repeat:
+        if shot.repeat and shot.repeat.spatial:
             rep = shot.repeat
             items = []
             getter = getattr(resolver, "list_for", None)

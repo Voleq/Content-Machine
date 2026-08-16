@@ -1,0 +1,622 @@
+{
+ "ticker": "EXMPL",
+ "format": "long",
+ "beats": 9,
+ "shots_count": 41,
+ "anchored_shots": 9,
+ "register": "marker",
+ "duration_s": 190.45,
+ "frame": {
+  "w": 1920,
+  "h": 1080
+ },
+ "shots": [
+  {
+   "id": "ch1-cold-open-stinger",
+   "plate": "chapter-stinger",
+   "start_s": 0.0,
+   "end_s": 4.256,
+   "anchored": true,
+   "max_hold_s": 4.0,
+   "layers": [
+    "ch1-cold-open-stinger:ground",
+    "ch1-cold-open-stinger:plate:chapter-stinger",
+    "ch1-cold-open-stinger:text:chapter-number",
+    "ch1-cold-open-stinger:text:chapter-title"
+   ]
+  },
+  {
+   "id": "ch1-cold-open-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 4.256,
+   "end_s": 11.512,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch1-cold-open-open:ground",
+    "ch1-cold-open-open:plate:room-wide-16--lived-in",
+    "ch1-cold-open-open:host:talking-to-camera",
+    "ch1-cold-open-open:panel:hook",
+    "ch1-cold-open-open:text:hook"
+   ]
+  },
+  {
+   "id": "ch1-cold-open-the-question",
+   "plate": "question-card",
+   "start_s": 11.512,
+   "end_s": 17.768,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch1-cold-open-the-question:ground",
+    "ch1-cold-open-the-question:plate:question-card",
+    "ch1-cold-open-the-question:text:question"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 17.768,
+   "end_s": 25.024,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch2-how-we-got-here-open:ground",
+    "ch2-how-we-got-here-open:plate:room-wide-16--lived-in",
+    "ch2-how-we-got-here-open:host:talking-at-screen",
+    "ch2-how-we-got-here-open:panel:lede",
+    "ch2-how-we-got-here-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-dive-in",
+   "plate": "dive-in",
+   "start_s": 25.024,
+   "end_s": 25.857,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch2-how-we-got-here-dive-in:ground",
+    "ch2-how-we-got-here-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-the-history",
+   "plate": "sheet-wide",
+   "start_s": 25.857,
+   "end_s": 35.536,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch2-how-we-got-here-the-history:ground",
+    "ch2-how-we-got-here-the-history:plate:sheet-wide",
+    "ch2-how-we-got-here-the-history:fill:row-1",
+    "ch2-how-we-got-here-the-history:panel:history",
+    "ch2-how-we-got-here-the-history:text:history"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-dive-out",
+   "plate": "dive-out",
+   "start_s": 35.536,
+   "end_s": 36.37,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch2-how-we-got-here-dive-out:ground",
+    "ch2-how-we-got-here-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 36.37,
+   "end_s": 45.048,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch2-how-we-got-here-surface:ground",
+    "ch2-how-we-got-here-surface:plate:room-side-16--lived-in",
+    "ch2-how-we-got-here-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch3-the-unit-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 45.048,
+   "end_s": 52.304,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch3-the-unit-open:ground",
+    "ch3-the-unit-open:plate:room-wide-16--lived-in",
+    "ch3-the-unit-open:host:at-the-whiteboard",
+    "ch3-the-unit-open:panel:lede",
+    "ch3-the-unit-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch3-the-unit-dive-in",
+   "plate": "dive-in",
+   "start_s": 52.304,
+   "end_s": 53.138,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch3-the-unit-dive-in:ground",
+    "ch3-the-unit-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch3-the-unit-the-fraction",
+   "plate": "big-fraction",
+   "start_s": 53.138,
+   "end_s": 62.816,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch3-the-unit-the-fraction:ground",
+    "ch3-the-unit-the-fraction:plate:big-fraction",
+    "ch3-the-unit-the-fraction:text:numerator",
+    "ch3-the-unit-the-fraction:text:denominator"
+   ]
+  },
+  {
+   "id": "ch3-the-unit-dive-out",
+   "plate": "dive-out",
+   "start_s": 62.816,
+   "end_s": 63.65,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch3-the-unit-dive-out:ground",
+    "ch3-the-unit-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch3-the-unit-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 63.65,
+   "end_s": 72.328,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch3-the-unit-surface:ground",
+    "ch3-the-unit-surface:plate:room-side-16--lived-in",
+    "ch3-the-unit-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch4-the-event-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 72.328,
+   "end_s": 79.584,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch4-the-event-open:ground",
+    "ch4-the-event-open:plate:room-wide-16--lived-in",
+    "ch4-the-event-open:host:talking-at-screen",
+    "ch4-the-event-open:panel:lede",
+    "ch4-the-event-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch4-the-event-dive-in",
+   "plate": "dive-in",
+   "start_s": 79.584,
+   "end_s": 80.418,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch4-the-event-dive-in:ground",
+    "ch4-the-event-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch4-the-event-the-filing",
+   "plate": "filing-on-screen",
+   "start_s": 80.418,
+   "end_s": 88.207,
+   "anchored": false,
+   "max_hold_s": 8.0,
+   "layers": [
+    "ch4-the-event-the-filing:ground",
+    "ch4-the-event-the-filing:plate:filing-on-screen",
+    "ch4-the-event-the-filing:fill:screen"
+   ]
+  },
+  {
+   "id": "ch4-the-event-dive-out",
+   "plate": "dive-out",
+   "start_s": 88.207,
+   "end_s": 89.04,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch4-the-event-dive-out:ground",
+    "ch4-the-event-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch4-the-event-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 89.04,
+   "end_s": 96.658,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch4-the-event-surface:ground",
+    "ch4-the-event-surface:plate:room-side-16--lived-in",
+    "ch4-the-event-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch5-the-mechanism-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 96.658,
+   "end_s": 100.358,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch5-the-mechanism-open:ground",
+    "ch5-the-mechanism-open:plate:room-wide-16--lived-in",
+    "ch5-the-mechanism-open:host:at-the-whiteboard",
+    "ch5-the-mechanism-open:panel:lede",
+    "ch5-the-mechanism-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch5-the-mechanism-dive-in",
+   "plate": "dive-in",
+   "start_s": 100.358,
+   "end_s": 101.191,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch5-the-mechanism-dive-in:ground",
+    "ch5-the-mechanism-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch5-the-mechanism-the-chain",
+   "plate": "chain-of-three",
+   "start_s": 101.191,
+   "end_s": 107.758,
+   "anchored": false,
+   "max_hold_s": 8.0,
+   "layers": [
+    "ch5-the-mechanism-the-chain:ground",
+    "ch5-the-mechanism-the-chain:plate:chain-of-three",
+    "ch5-the-mechanism-the-chain:fill:text-1",
+    "ch5-the-mechanism-the-chain:fill:text-2",
+    "ch5-the-mechanism-the-chain:fill:text-3"
+   ]
+  },
+  {
+   "id": "ch5-the-mechanism-dive-out",
+   "plate": "dive-out",
+   "start_s": 107.758,
+   "end_s": 108.592,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch5-the-mechanism-dive-out:ground",
+    "ch5-the-mechanism-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch5-the-mechanism-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 108.592,
+   "end_s": 115.159,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch5-the-mechanism-surface:ground",
+    "ch5-the-mechanism-surface:plate:room-side-16--lived-in",
+    "ch5-the-mechanism-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 115.159,
+   "end_s": 117.645,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch6-the-numbers-open:ground",
+    "ch6-the-numbers-open:plate:room-wide-16--lived-in",
+    "ch6-the-numbers-open:host:pointing-at-sheet",
+    "ch6-the-numbers-open:panel:lede",
+    "ch6-the-numbers-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-dive-in",
+   "plate": "dive-in",
+   "start_s": 117.645,
+   "end_s": 118.478,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch6-the-numbers-dive-in:ground",
+    "ch6-the-numbers-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-the-sheet-1",
+   "plate": "sheet-wide",
+   "start_s": 118.478,
+   "end_s": 122.617,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-the-numbers-the-sheet-1:ground",
+    "ch6-the-numbers-the-sheet-1:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-1:fill:row-1",
+    "ch6-the-numbers-the-sheet-1:fill:row-2",
+    "ch6-the-numbers-the-sheet-1:fill:row-3",
+    "ch6-the-numbers-the-sheet-1:fill:row-4",
+    "ch6-the-numbers-the-sheet-1:fill:row-5",
+    "ch6-the-numbers-the-sheet-1:fill:row-6",
+    "ch6-the-numbers-the-sheet-1:mark:scribble"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-the-sheet-2",
+   "plate": "sheet-wide",
+   "start_s": 122.617,
+   "end_s": 125.103,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-the-numbers-the-sheet-2:ground",
+    "ch6-the-numbers-the-sheet-2:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-2:fill:row-1",
+    "ch6-the-numbers-the-sheet-2:fill:row-2",
+    "ch6-the-numbers-the-sheet-2:fill:row-3",
+    "ch6-the-numbers-the-sheet-2:fill:row-4",
+    "ch6-the-numbers-the-sheet-2:fill:row-5",
+    "ch6-the-numbers-the-sheet-2:fill:row-6",
+    "ch6-the-numbers-the-sheet-2:mark:scribble"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-the-sheet-3",
+   "plate": "sheet-wide",
+   "start_s": 125.103,
+   "end_s": 127.589,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-the-numbers-the-sheet-3:ground",
+    "ch6-the-numbers-the-sheet-3:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-3:fill:row-1",
+    "ch6-the-numbers-the-sheet-3:fill:row-2",
+    "ch6-the-numbers-the-sheet-3:fill:row-3",
+    "ch6-the-numbers-the-sheet-3:fill:row-4",
+    "ch6-the-numbers-the-sheet-3:fill:row-5",
+    "ch6-the-numbers-the-sheet-3:fill:row-6",
+    "ch6-the-numbers-the-sheet-3:mark:scribble"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-the-sheet-4",
+   "plate": "sheet-wide",
+   "start_s": 127.589,
+   "end_s": 130.075,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-the-numbers-the-sheet-4:ground",
+    "ch6-the-numbers-the-sheet-4:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-4:fill:row-1",
+    "ch6-the-numbers-the-sheet-4:fill:row-2",
+    "ch6-the-numbers-the-sheet-4:fill:row-3",
+    "ch6-the-numbers-the-sheet-4:fill:row-4",
+    "ch6-the-numbers-the-sheet-4:fill:row-5",
+    "ch6-the-numbers-the-sheet-4:fill:row-6",
+    "ch6-the-numbers-the-sheet-4:mark:scribble"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-dive-out",
+   "plate": "dive-out",
+   "start_s": 130.075,
+   "end_s": 130.908,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch6-the-numbers-dive-out:ground",
+    "ch6-the-numbers-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch6-the-numbers-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 130.908,
+   "end_s": 135.047,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-the-numbers-surface:ground",
+    "ch6-the-numbers-surface:plate:room-side-16--lived-in",
+    "ch6-the-numbers-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch7-valuation-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 135.047,
+   "end_s": 139.071,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch7-valuation-open:ground",
+    "ch7-valuation-open:plate:room-wide-16--lived-in",
+    "ch7-valuation-open:host:talking-at-screen",
+    "ch7-valuation-open:panel:lede",
+    "ch7-valuation-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch7-valuation-dive-in",
+   "plate": "dive-in",
+   "start_s": 139.071,
+   "end_s": 139.905,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch7-valuation-dive-in:ground",
+    "ch7-valuation-dive-in:plate:dive-in"
+   ]
+  },
+  {
+   "id": "ch7-valuation-the-comps",
+   "plate": "comps-table",
+   "start_s": 139.905,
+   "end_s": 147.121,
+   "anchored": false,
+   "max_hold_s": 8.0,
+   "layers": [
+    "ch7-valuation-the-comps:ground",
+    "ch7-valuation-the-comps:plate:comps-table",
+    "ch7-valuation-the-comps:fill:header",
+    "ch7-valuation-the-comps:fill:row-1",
+    "ch7-valuation-the-comps:fill:row-2",
+    "ch7-valuation-the-comps:fill:row-3",
+    "ch7-valuation-the-comps:fill:row-4",
+    "ch7-valuation-the-comps:fill:row-5",
+    "ch7-valuation-the-comps:panel:comps-read",
+    "ch7-valuation-the-comps:text:comps-read"
+   ]
+  },
+  {
+   "id": "ch7-valuation-dive-out",
+   "plate": "dive-out",
+   "start_s": 147.121,
+   "end_s": 147.954,
+   "anchored": false,
+   "max_hold_s": 3.0,
+   "layers": [
+    "ch7-valuation-dive-out:ground",
+    "ch7-valuation-dive-out:plate:dive-out"
+   ]
+  },
+  {
+   "id": "ch7-valuation-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 147.954,
+   "end_s": 155.17,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch7-valuation-surface:ground",
+    "ch7-valuation-surface:plate:room-side-16--lived-in",
+    "ch7-valuation-surface:host:seated-talking"
+   ]
+  },
+  {
+   "id": "ch8-both-hands-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 155.17,
+   "end_s": 162.426,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch8-both-hands-open:ground",
+    "ch8-both-hands-open:plate:room-wide-16--lived-in",
+    "ch8-both-hands-open:host:gesture-both-hands-open-weighing",
+    "ch8-both-hands-open:panel:lede",
+    "ch8-both-hands-open:text:lede"
+   ]
+  },
+  {
+   "id": "ch8-both-hands-the-weighing",
+   "plate": "compare-plate",
+   "start_s": 162.426,
+   "end_s": 170.682,
+   "anchored": false,
+   "max_hold_s": 8.0,
+   "layers": [
+    "ch8-both-hands-the-weighing:ground",
+    "ch8-both-hands-the-weighing:plate:compare-plate",
+    "ch8-both-hands-the-weighing:text:bull",
+    "ch8-both-hands-the-weighing:text:bear"
+   ]
+  },
+  {
+   "id": "ch8-both-hands-surface",
+   "plate": "room-side-16--lived-in",
+   "start_s": 170.682,
+   "end_s": 176.938,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch8-both-hands-surface:ground",
+    "ch8-both-hands-surface:plate:room-side-16--lived-in",
+    "ch8-both-hands-surface:host:crouching"
+   ]
+  },
+  {
+   "id": "ch9-the-close-open",
+   "plate": "room-wide-16--lived-in",
+   "start_s": 176.938,
+   "end_s": 184.194,
+   "anchored": true,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch9-the-close-open:ground",
+    "ch9-the-close-open:plate:room-wide-16--lived-in",
+    "ch9-the-close-open:host:talking-to-camera",
+    "ch9-the-close-open:panel:payoff",
+    "ch9-the-close-open:text:payoff"
+   ]
+  },
+  {
+   "id": "ch9-the-close-sign-off",
+   "plate": "closing-plate-16",
+   "start_s": 184.194,
+   "end_s": 190.45,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch9-the-close-sign-off:ground",
+    "ch9-the-close-sign-off:plate:closing-plate-16",
+    "ch9-the-close-sign-off:host:sitting-with-mug",
+    "ch9-the-close-sign-off:text:sign-off"
+   ]
+  }
+ ],
+ "layers": 168,
+ "kit_assets_used": [
+  "at-the-whiteboard--marker",
+  "big-fraction--marker",
+  "chain-of-three--marker",
+  "chapter-stinger--marker",
+  "closing-plate-16--marker",
+  "compare-plate--marker",
+  "comps-table--marker",
+  "crouching--marker",
+  "dive-in--marker",
+  "dive-out--marker",
+  "filing-on-screen--marker",
+  "gesture-both-hands-open-weighing--marker",
+  "pointing-at-sheet--marker",
+  "question-card--marker",
+  "room-side-16--lived-in--marker",
+  "room-wide-16--lived-in--marker",
+  "seated-talking--marker",
+  "sheet-wide--marker",
+  "sitting-with-mug--marker",
+  "talking-at-screen--marker",
+  "talking-to-camera--marker"
+ ],
+ "kit_reach": "Kit: 21 entries in marker, 21 concepts, 58 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "text_overflow": {},
+ "longest_layer_hold_s": 0.833
+}

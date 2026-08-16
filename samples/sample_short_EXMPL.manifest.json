@@ -15,7 +15,7 @@
    "id": "cold-open",
    "plate": "room-wide",
    "start_s": 0.0,
-   "end_s": 3.584,
+   "end_s": 5.015,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -29,8 +29,8 @@
   {
    "id": "the-move",
    "plate": "screen-full",
-   "start_s": 3.584,
-   "end_s": 7.168,
+   "start_s": 5.015,
+   "end_s": 10.03,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -46,8 +46,8 @@
   {
    "id": "the-news",
    "plate": "desk-top-down",
-   "start_s": 7.168,
-   "end_s": 10.752,
+   "start_s": 10.03,
+   "end_s": 15.045,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -61,8 +61,8 @@
   {
    "id": "the-turn",
    "plate": null,
-   "start_s": 10.752,
-   "end_s": 15.752,
+   "start_s": 15.045,
+   "end_s": 20.045,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
@@ -73,8 +73,8 @@
   {
    "id": "numbers-1",
    "plate": "sheet-tall",
-   "start_s": 15.752,
-   "end_s": 26.697,
+   "start_s": 20.045,
+   "end_s": 26.476,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -92,8 +92,8 @@
   {
    "id": "numbers-2",
    "plate": "sheet-tall",
-   "start_s": 26.697,
-   "end_s": 34.67,
+   "start_s": 26.476,
+   "end_s": 32.907,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -111,8 +111,8 @@
   {
    "id": "numbers-3",
    "plate": "sheet-tall",
-   "start_s": 34.67,
-   "end_s": 42.643,
+   "start_s": 32.907,
+   "end_s": 39.338,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -130,8 +130,8 @@
   {
    "id": "numbers-4",
    "plate": "sheet-tall",
-   "start_s": 42.643,
-   "end_s": 50.616,
+   "start_s": 39.338,
+   "end_s": 45.769,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -149,8 +149,8 @@
   {
    "id": "the-sheet",
    "plate": "sheet-tall",
-   "start_s": 50.616,
-   "end_s": 58.589,
+   "start_s": 45.769,
+   "end_s": 52.201,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -168,8 +168,8 @@
   {
    "id": "cheap-or-trap",
    "plate": "compare-plate",
-   "start_s": 58.589,
-   "end_s": 64.675,
+   "start_s": 52.201,
+   "end_s": 58.632,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
@@ -185,8 +185,8 @@
   {
    "id": "payoff",
    "plate": "room-wide",
-   "start_s": 64.675,
-   "end_s": 68.085,
+   "start_s": 58.632,
+   "end_s": 66.063,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -200,7 +200,7 @@
   {
    "id": "close",
    "plate": "room-wide",
-   "start_s": 68.085,
+   "start_s": 66.063,
    "end_s": 71.494,
    "anchored": false,
    "max_hold_s": 4.0,

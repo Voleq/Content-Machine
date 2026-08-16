@@ -15,7 +15,7 @@
    "id": "open",
    "plate": "room-wide",
    "start_s": 0.0,
-   "end_s": 7.454,
+   "end_s": 7.346,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -29,8 +29,8 @@
   {
    "id": "the-print",
    "plate": "desk-top-down",
-   "start_s": 7.454,
-   "end_s": 14.907,
+   "start_s": 7.346,
+   "end_s": 14.692,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -44,8 +44,8 @@
   {
    "id": "vs-expected",
    "plate": "compare-plate",
-   "start_s": 14.907,
-   "end_s": 22.361,
+   "start_s": 14.692,
+   "end_s": 21.037,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -61,8 +61,8 @@
   {
    "id": "the-verdict",
    "plate": "stamp",
-   "start_s": 22.361,
-   "end_s": 29.814,
+   "start_s": 21.037,
+   "end_s": 26.383,
    "anchored": false,
    "max_hold_s": 4.0,
    "layers": [
@@ -74,8 +74,8 @@
   {
    "id": "line-moved-1",
    "plate": "sheet-tall",
-   "start_s": 29.814,
-   "end_s": 37.268,
+   "start_s": 26.383,
+   "end_s": 32.729,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -90,8 +90,8 @@
   {
    "id": "line-moved-2",
    "plate": "sheet-tall",
-   "start_s": 37.268,
-   "end_s": 44.721,
+   "start_s": 32.729,
+   "end_s": 39.075,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -106,8 +106,8 @@
   {
    "id": "guidance",
    "plate": "card-guidance",
-   "start_s": 44.721,
-   "end_s": 52.175,
+   "start_s": 39.075,
+   "end_s": 45.421,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -122,8 +122,8 @@
   {
    "id": "the-reaction",
    "plate": "screen-full",
-   "start_s": 52.175,
-   "end_s": 59.628,
+   "start_s": 45.421,
+   "end_s": 52.766,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -137,8 +137,8 @@
   {
    "id": "so-what",
    "plate": "room-wide",
-   "start_s": 59.628,
-   "end_s": 62.043,
+   "start_s": 52.766,
+   "end_s": 59.112,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
@@ -152,7 +152,7 @@
   {
    "id": "close",
    "plate": "room-wide",
-   "start_s": 62.043,
+   "start_s": 59.112,
    "end_s": 64.458,
    "anchored": false,
    "max_hold_s": 4.0,

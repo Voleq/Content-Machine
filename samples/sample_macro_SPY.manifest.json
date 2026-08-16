@@ -30,7 +30,7 @@
    "id": "the-print",
    "plate": "screen-full",
    "start_s": 5.247,
-   "end_s": 10.494,
+   "end_s": 10.247,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -45,8 +45,8 @@
   {
    "id": "vs-expected",
    "plate": "desk-top-down",
-   "start_s": 10.494,
-   "end_s": 15.741,
+   "start_s": 10.247,
+   "end_s": 15.247,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -63,7 +63,7 @@
   {
    "id": "the-statement",
    "plate": "desk-top-down",
-   "start_s": 15.741,
+   "start_s": 15.247,
    "end_s": 20.988,
    "anchored": false,
    "max_hold_s": 6.0,
