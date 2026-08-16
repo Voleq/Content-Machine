@@ -11,3 +11,10 @@ assets/ballpoint/*.png filter=lfs diff=lfs merge=lfs -text
 assets/grease-pencil/*.png filter=lfs diff=lfs merge=lfs -text
 assets/cut-paper/*.png filter=lfs diff=lfs merge=lfs -text
 assets/light/*.png filter=lfs diff=lfs merge=lfs -text
+
+# Sample renders and their contact sheets. Every stage re-renders these — a
+# 42MB mp4 per stage is not something to keep in the pack file. Existing
+# history stays as it is: rewriting it to migrate them is what destroyed the
+# merge-base once already, and the win is not worth the second attempt.
+samples/*.mp4 filter=lfs diff=lfs merge=lfs -text
+samples/evidence/*.png filter=lfs diff=lfs merge=lfs -text
