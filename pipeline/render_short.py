@@ -22,7 +22,8 @@ from PIL import Image, ImageDraw
 
 from pipeline import marks as mk
 from pipeline.compose import (BuildResult, Layer, build_layers,
-                              check_invariants, held_layer_spans)
+                              check_budgets, check_invariants,
+                              held_layer_spans)
 from pipeline.kit_manifest import KitError, kit_for, pick_register
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
@@ -101,10 +102,18 @@ class ShortResolver:
         The plate draws no rows — group C interiors are empty for code — so
         every band on the sheet is type this puts there.
         """
+        from pipeline.models import MetricKind
         rows = self.script.numbers
         field = "row"
         if rest and not rest[0].isdigit():
             field, rest = rest[0], rest[1:]
+
+        # The column header. Without it five figures in a row are one long
+        # number, and there is nothing to say which year is which.
+        if field == "header":
+            years = list(self.script.years)
+            return ("\t" + "\t".join(years)) if years else None
+
         if not rest or not rest[0].isdigit():
             return None
         i = int(rest[0])
@@ -115,7 +124,15 @@ class ShortResolver:
             return r.label
         if field == "latest":
             return r.values[-1]
-        return f"{r.label}   " + "   ".join(r.values)
+
+        # Tab-separated: the renderer lays these out as COLUMNS on one line,
+        # so a figure sits under its year. A flow is a series across periods;
+        # a stock is one reading and the date it was taken, and the two do
+        # not share a row format because they are not the same kind of fact.
+        if r.measured is MetricKind.STOCK:
+            asat = self.script.years[-1] if self.script.years else "latest"
+            return f"{r.label}\t{r.values[-1]}\tat {asat}"
+        return f"{r.label}\t" + "\t".join(r.values)
 
     def _compare(self, which: str) -> str | None:
         """The two multiples in CHEAP OR TRAP, heavy against light."""
@@ -176,8 +193,9 @@ class ShortResolver:
             for i in range(BOIL_FRAMES):
                 out = self.workdir / f"chart_price_f{i + 1:02d}.png"
                 path, meta = render_marker_price_chart(
-                    self.prices, out, self.settings, size=(872, 1712),
-                    move_text="", seed=f"boil{i}", ring=False)
+                    _legible(self.prices), out, self.settings,
+                    size=(872, 1712), move_text="", seed=f"boil{i}",
+                    ring=False)
                 paths.append(path)
         except Exception:                                    # noqa: BLE001
             return None
@@ -185,12 +203,43 @@ class ShortResolver:
         # near it. The chart reports where it actually drew that point, so
         # the mark is placed from the drawing rather than from a second
         # guess at the same arithmetic.
+        # The ring goes on the EXTREME point, which is the one the shot is
+        # about — not on the last one, which is merely where the line stops
+        # and is often sitting on the axis.
         cw, ch = meta["size"]
-        lx, ly = meta["last_point"]
-        rx, ry = 0.11, 0.11 * cw / ch
+        x0, y0, x1, y1 = meta["plot_box"]
+        closes = list(_legible(self.prices).closes)
+        lo, hi = min(closes), max(closes)
+        i = closes.index(hi if abs(hi - closes[0]) >= abs(lo - closes[0]) else lo)
+        px = x0 + (x1 - x0) * (i / max(len(closes) - 1, 1))
+        py = y1 - (y1 - y0) * ((closes[i] - lo) / (hi - lo) if hi > lo else 0.5)
+        rx, ry = 0.09, 0.09 * cw / ch
         self._fracs["chart.extreme_candle"] = (
-            lx / cw - rx, ly / ch - ry, rx * 2, ry * 2)
+            max(0.0, px / cw - rx), max(0.0, py / ch - ry), rx * 2, ry * 2)
         return paths
+
+
+# A 66-second chart showing every daily close reads as an audio waveform, not
+# as a price. The shape of the move is the point; the tick detail is noise at
+# this size, so the series is thinned to about this many points for drawing.
+CHART_MAX_POINTS = 60
+
+
+def _legible(series):
+    """The same series, thinned so its SHAPE is what reads.
+
+    Drawn, not resampled cleverly: every nth close, with the last one kept so
+    the line still ends where the move ended.
+    """
+    closes = list(series.closes)
+    if len(closes) <= CHART_MAX_POINTS:
+        return series
+    from dataclasses import replace
+    step = len(closes) / CHART_MAX_POINTS
+    idx = sorted({min(int(i * step), len(closes) - 1)
+                  for i in range(CHART_MAX_POINTS)} | {len(closes) - 1})
+    return replace(series, closes=[closes[i] for i in idx],
+                   dates=[series.dates[i] for i in idx])
 
 
 def build_anchors(script: ShortScript) -> dict[str, str]:
@@ -354,6 +403,61 @@ def _boil_offset(layer: Layer, t: float) -> tuple[int, int]:
     return (r.randint(-1, 1), r.randint(-1, 1))
 
 
+def _draw_columns(canvas: Image.Image, layer: Layer, dx: int, dy: int,
+                  ink, lost: dict[str, int] | None) -> None:
+    """A sheet row: label on the left, figures in fixed columns, ONE line.
+
+    Wrapping a five-year series across two lines destroys the column
+    relationship that is the whole point of the row, so this never wraps. If
+    the series will not fit it drops the OLDEST period and says how many it
+    dropped — fewer years, legibly, beats five years in a heap.
+    """
+    from PIL import ImageDraw
+    d = ImageDraw.Draw(canvas)
+    parts = layer.text.split("\t")
+    label, values = parts[0], [v for v in parts[1:] if v != ""]
+    colour = ink if layer.lit else mk.MUTED
+    dropped = 0
+
+    while True:
+        n = max(len(values), 1)
+        label_w = int(layer.w * (0.34 if n > 2 else 0.42))
+        col_w = (layer.w - label_w) // n
+        # A sheet reads as a table only if its rows share a type size. A
+        # stock row has three columns where a flow has six, so left alone it
+        # never needs to shrink and ends up shouting over the rows around it.
+        # The starting size is scaled by column count so every row lands at
+        # roughly the same place.
+        size = max(int(layer.h * 0.42 * (0.72 if n <= 3 else 1.0)), 10)
+        font = mk.load_font(mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT, size)
+        while size > 10:
+            font = mk.load_font(mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT, size)
+            widest = max([d.textlength(label, font=font) / max(label_w, 1)]
+                         + [d.textlength(v, font=font) / max(col_w - 6, 1)
+                            for v in values] or [0])
+            if widest <= 1.0:
+                break
+            size -= 1
+        if size > 10 or len(values) <= 2:
+            break
+        values = values[1:]          # drop the oldest period, never wrap
+        dropped += 1
+
+    asc, desc = font.getmetrics()
+    y = layer.y + dy + max((layer.h - (asc + desc)) // 2, 0)
+    if label:
+        d.text((layer.x + dx, y), label, font=font, fill=colour)
+    for i, v in enumerate(values):
+        n = max(len(values), 1)
+        label_w = int(layer.w * (0.34 if n > 2 else 0.42))
+        col_w = (layer.w - label_w) // n
+        right = layer.x + dx + label_w + col_w * (i + 1) - 4
+        d.text((right - d.textlength(v, font=font), y), v, font=font,
+               fill=colour)
+    if dropped and lost is not None:
+        lost[layer.name] = dropped
+
+
 def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
                 register: str, resolver: ShortResolver,
                 lost: dict[str, int] | None = None) -> None:
@@ -361,6 +465,17 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
 
     if layer.kind == "ground":
         canvas.paste(mk.PAPER, (0, 0, canvas.width, canvas.height))
+        return
+
+    if layer.kind == "panel":
+        # Paper, with a drawn edge. Type over a drawing needs a surface, and
+        # in this kit a surface is a torn sheet, not a rounded rectangle.
+        rng = mk.rng_for(layer.name, _boil_index(layer, t))
+        d = ImageDraw.Draw(canvas)
+        box = (layer.x, layer.y, layer.x + layer.w, layer.y + layer.h)
+        d.rectangle(box, fill=mk.PAPER)
+        mk.drawn_rect(d, box, rng, width=max(3, canvas.width // 320),
+                      color=ink, jitter=1.8, overshoot=0.01)
         return
 
     if layer.kind in ("plate", "host", "enter"):
@@ -379,6 +494,9 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
             return
         if layer.text:
             dx, dy = _boil_offset(layer, t)
+            if "\t" in layer.text:
+                _draw_columns(canvas, layer, dx, dy, ink, lost)
+                return
             # How many lines the SLOT holds, not a guess. A kit slot is a
             # declared box of a known height; hardcoding two lines lost the
             # tail of every row that needed three.
@@ -411,7 +529,7 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
             font_name=DISPLAY_FONT if big else BODY_FONT,
             size_px=max(int(layer.size_fh * canvas.height), 12),
             color=colour, max_lines=layer.max_lines,
-            halign="center", valign="top", reveal=reveal,
+            halign=layer.halign, valign="top", reveal=reveal,
             min_px=_type_floor(canvas))
         if dropped and lost is not None:
             lost[layer.name] = dropped
@@ -556,6 +674,15 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
         raise RenderError(
             "the composition breaks its own invariants:\n  "
             + "\n  ".join(problems[:20]))
+
+    # A line that does not fit is a script the renderer cannot express. It
+    # stops here, named, before a frame is drawn — not silently shortened on
+    # the way to the screen.
+    over = check_budgets(fmt, result)
+    if over:
+        raise RenderError(
+            "the script does not fit the shots it is written for:\n  "
+            + "\n  ".join(over))
 
     silent = workdir / "video_silent.mp4"
     render_frames(result, register, resolver, duration, silent, settings)

@@ -46,12 +46,13 @@ class TemplateError(RuntimeError):
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "notes"})
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
-                       "repeat", "stagger_s"})
+                       "repeat", "stagger_s", "focus"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
 MARK_KEYS = frozenset({"kind", "target", "name"})
 REPEAT_KEYS = frozenset({"concept", "src", "max", "bind", "arrange",
-                         "stagger_s", "lit"})
+                         "stagger_s", "lit", "connector", "within",
+                         "focus"})
 
 
 def _reject_unknown(obj: dict, allowed: frozenset, where: str) -> None:
@@ -127,6 +128,22 @@ class RepeatSpec:
     arrange: str = "grid"
     stagger_s: float = 0.5
     lit: str | None = None         # sequence only: which slot each step lights
+    # A mark drawn in the GAP between consecutive cards. The arrows are what
+    # make a chain read as a chain rather than as unrelated notes.
+    connector: str | None = None
+    # Arrange inside this slot of the shot's own plate rather than across the
+    # bare frame. Cards on the desk are in the room; cards centred on paper
+    # are nowhere.
+    within: str | None = None
+    # Set by expansion, never authored: which single item of the list this
+    # expanded shot places. A sequence of CARDS is one card per beat, full
+    # size — three in a column measure 33px type, under the readability
+    # floor, so a chain of three at 9:16 has to be told over time.
+    only: int | None = None
+    # Which slot each step moves in on. Four steps that differ only by which
+    # row carries a box are one shot with extra runtime — the composition has
+    # to change, not just the highlight.
+    focus: str | None = None
 
     @property
     def spatial(self) -> bool:
@@ -166,6 +183,9 @@ class Shot:
     # read as motion at all. Something entering is what the ceiling rule
     # actually asks for.
     stagger_s: float = 0.0
+    # Move in on this slot of the plate, so it fills the frame rather than
+    # sitting in a wide shot with a box round it.
+    focus: str | None = None
     max_hold_s: float = 8.0
     captions: bool = True
     notes: str = ""
@@ -276,7 +296,10 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
                     bind=dict(rep_raw.get("bind") or {}),
                     arrange=rep_raw.get("arrange", "grid"),
                     stagger_s=float(rep_raw.get("stagger_s", 0.5)),
-                    lit=rep_raw.get("lit"))
+                    lit=rep_raw.get("lit"),
+                    connector=rep_raw.get("connector"),
+                    within=rep_raw.get("within"),
+                    focus=rep_raw.get("focus"))
             except KeyError as exc:
                 raise TemplateError(f"{where} repeat missing {exc}") from exc
             if repeat.spatial and not repeat.concept:
@@ -293,6 +316,7 @@ def parse_format(raw: dict, source: Path | None = None) -> Format:
             marks=marks, host=host, repeat=repeat,
             enter=s.get("enter"), lit=s.get("lit"),
             anchor=s.get("anchor"), stagger_s=float(s.get("stagger_s", 0.0)),
+            focus=s.get("focus"),
             max_hold_s=float(s.get("max_hold_s", 8.0)),
             captions=bool(s.get("captions", True)),
             notes=s.get("notes", "")))
@@ -332,8 +356,14 @@ def load_format(name: str, root: Path | str = ".") -> Format:
 
 
 def _sub(value: str | None, n: int) -> str | None:
-    """`$n` is the 1-based step of a sequence repeat."""
-    return None if value is None else value.replace("$n", str(n))
+    """`$n` is the 1-based step of a sequence repeat; `$n+1` is the next.
+
+    The offset form exists because the sheet's first band is the year header,
+    so metric N lives in row N+1.
+    """
+    if value is None:
+        return None
+    return value.replace("$n+1", str(n + 1)).replace("$n", str(n))
 
 
 def expand_sequences(fmt: Format, items_for) -> Format:
@@ -362,11 +392,17 @@ def expand_sequences(fmt: Format, items_for) -> Format:
             out.append(shot)
             continue
         for i in range(1, len(items) + 1):
+            # A sequence that names a concept places that card, one per step.
+            # A sequence that does not reuses the shot's own plate and only
+            # advances which slot is lit.
+            step = (replace(rep, arrange="grid", only=i - 1)
+                    if rep.concept else None)
             out.append(replace(
                 shot,
                 id=f"{shot.id}-{i}",
-                repeat=None,
+                repeat=step,
                 lit=_sub(rep.lit, i),
+                focus=_sub(rep.focus, i),
                 anchor=shot.anchor if i == 1 else None,
                 marks=tuple(replace(m, target=_sub(m.target, i),
                                     name=_sub(m.name, i) or m.kind)

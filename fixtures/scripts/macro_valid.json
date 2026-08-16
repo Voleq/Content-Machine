@@ -7,8 +7,8 @@
   "chart_style": "clean",
   "headlines": [
     {
-      "text": "CPI comes in at 3.4% vs 3.1% expected",
-      "meaning": "One hot print against a cooling two-year trend — a wiggle, not a reversal."
+      "text": "CPI 3.4% vs 3.1% expected",
+      "meaning": "A wiggle against a cooling trend"
     }
   ],
   "years": [
@@ -43,14 +43,14 @@
   "reported": "3.4%",
   "expected": "3.1%",
   "mechanism": [
-    "Rates stay higher",
-    "Refinancing gets dearer",
+    "Rates stay high",
+    "Credit dearer",
     "Hiring stops"
   ],
   "consequences": [
     "Mortgage holders",
     "Small caps",
-    "Anyone refinancing in 2027",
-    "The regional banks"
+    "2027 refinancers",
+    "Regional banks"
   ]
 }

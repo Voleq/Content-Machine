@@ -28,6 +28,29 @@ from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
 # is a frozen photograph with a live plate nowhere in it.
 BOIL_FPS = 7
 
+# Moving in on a slot: how much of the frame height it should come to fill,
+# and how far the plate may be enlarged doing it. Past about 2.4x the kit's
+# 2x delivery starts to soften, which is the real ceiling here.
+FOCUS_FILL = 0.30
+# A sheet row spans the plate's full width, so any real blow-up cuts the
+# labels off both sides — "Revenue" rendered as "ue". The push-in stays
+# gentle and the PAN does the work: the lit row moves to the middle of the
+# frame, which is the change a viewer reads between steps.
+FOCUS_MAX_SCALE = 1.14
+
+# Two different floors, because they answer different questions.
+#
+# MIN_TYPE_FH (3.5%) is the AUTHORED floor: a template may not ask for prose
+# smaller than this, and the parser refuses it.
+#
+# This one is for type whose size comes from a KIT SLOT rather than from the
+# template — a sheet row band, a card label. Those are short strings read in
+# context, not prose, and the kit's own geometry sets them: a six-band sheet
+# gives 57px rows, which is legible. What is NOT legible is a card label at
+# 33px because four cards were arranged where two fit, and that is what this
+# catches.
+SLOT_TYPE_FLOOR_FH = 0.025
+
 
 @dataclass
 class Layer:
@@ -61,6 +84,8 @@ class Layer:
     boil_fps: int = 0            # redraw rate for code-drawn ink
     lit: bool = True             # a ghosted row is present but pushed back
     max_lines: int = 3           # the template's line budget, not a default
+    halign: str = "center"       # the template's alignment, not a default
+    panel: bool = False          # paper drawn under type that sits on artwork
     z: int = 0
 
     @property
@@ -133,15 +158,25 @@ def _slot_in_frame(entry: Entry, slot: str, placed: tuple[int, int, int, int]
             int(round(sw * k)), int(round(sh * k)))
 
 
-def _arrange(n: int, how: str, frame: tuple[int, int]
+def _arrange(n: int, how: str, frame: tuple[int, int],
+             box: tuple[int, int, int, int] | None = None
              ) -> list[tuple[int, int, int, int]]:
-    """`n` cells filling the middle of the frame, as (x, y, w, h).
+    """`n` cells filling `box`, or the middle of the frame if none is given.
 
     Kept deliberately dumb: a grid, a row or a column, with a margin. Cards
     are centred inside their cell by the caller, so a cell being wider than
     the card it holds is fine and no card is ever stretched.
+
+    Passing a box is how cards land ON something — the desk, the sheet —
+    rather than floating on bare paper in the middle of the frame.
     """
-    fw, fh = frame
+    if box is not None:
+        ox, oy, fw, fh = box
+        margin = 0.03
+    else:
+        ox, oy = 0, 0
+        fw, fh = frame
+        margin = None
     if n <= 0:
         return []
     if how == "row":
@@ -151,14 +186,17 @@ def _arrange(n: int, how: str, frame: tuple[int, int]
     else:
         cols = 1 if n == 1 else 2
         rows = (n + cols - 1) // cols
-    mx, my = int(fw * 0.06), int(fh * 0.16)
+    if margin is None:
+        mx, my = int(fw * 0.04), int(fh * 0.08)
+    else:
+        mx, my = int(fw * margin), int(fh * margin)
     gx, gy = int(fw * 0.03), int(fh * 0.02)
     cw = (fw - 2 * mx - gx * (cols - 1)) // cols
     ch = (fh - 2 * my - gy * (rows - 1)) // rows
     out = []
     for i in range(n):
         r, c = divmod(i, cols)
-        out.append((mx + c * (cw + gx), my + r * (ch + gy), cw, ch))
+        out.append((ox + mx + c * (cw + gx), oy + my + r * (ch + gy), cw, ch))
     return out
 
 
@@ -209,6 +247,19 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     f"{fmt.name}/{shot.id}: plate {shot.plate!r} — {exc}") from exc
             w, h, _ = _fit_into(entry, frame)
             placed = ((fw - w) // 2, (fh - h) // 2, w, h)
+            # Moving in on a slot: scale the plate so that slot fills a real
+            # share of the frame, and centre it there. Without this a walk
+            # down a list is one wide shot with a rectangle migrating down it,
+            # which a viewer reads as a single held composition.
+            if shot.focus and shot.focus in entry.slots:
+                sx, sy, sw, sh = entry.slot_px(shot.focus)
+                k = min((fh * FOCUS_FILL) / max(sh, 1), FOCUS_MAX_SCALE)
+                k = max(k, 1.0)
+                nw, nh = int(w * k), int(h * k)
+                cx = int((sx + sw / 2) * (nw / entry.delivered[0]))
+                cy = int((sy + sh / 2) * (nh / entry.delivered[1]))
+                placed = (fw // 2 - cx, fh // 2 - cy, nw, nh)
+                w, h = nw, nh
             layers.append(Layer(
                 name=f"{shot.id}:plate:{shot.plate}", kind="plate",
                 shot_id=shot.id, t_start=t0, t_end=t1,
@@ -293,9 +344,14 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             if not items:
                 unfilled.append(f"{shot.id}.repeat <- {rep.src}")
             items = items[:max(rep.max, 1)]
+            if rep.only is not None:
+                items = items[rep.only:rep.only + 1]
             rent = kit.concept(rep.concept, register)
+            within = None
+            if rep.within and entry is not None and rep.within in entry.slots:
+                within = _slot_in_frame(entry, rep.within, placed)
             for idx, (bx, by, bw, bh) in enumerate(
-                    _arrange(len(items), rep.arrange, frame)):
+                    _arrange(len(items), rep.arrange, frame, within)):
                 k = min(bw / rent.delivered[0], bh / rent.delivered[1])
                 cw, ch = int(rent.delivered[0] * k), int(rent.delivered[1] * k)
                 cx, cy = bx + (bw - cw) // 2, by + (bh - ch) // 2
@@ -309,6 +365,23 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     x=cx, y=cy, w=cw, h=ch,
                     frames=rent.paths, fps=rent.fps, loops=rent.loops,
                     entry_key=rent.key, concept=rent.concept, z=15))
+                # The arrows BETWEEN the cards are what makes a chain a
+                # chain. Drawn in the gap after each card except the last —
+                # inside every card, they connect nothing and three panels
+                # read as three unrelated notes.
+                if rep.connector and idx + 1 < len(items) and rep.arrange in ("column", "row"):
+                    if rep.arrange == "column":
+                        gx0, gy0 = cx + cw // 2 - int(cw * 0.10), cy + ch
+                        gw, gh = int(cw * 0.20), max(by + bh - (cy + ch), 12)
+                    else:
+                        gx0, gy0 = cx + cw, cy + ch // 2 - int(ch * 0.08)
+                        gw, gh = max(bx + bw - (cx + cw), 12), int(ch * 0.16)
+                    layers.append(Layer(
+                        name=f"{shot.id}:link:{idx}", kind="mark",
+                        shot_id=shot.id, t_start=enter_at, t_end=t1,
+                        x=gx0, y=gy0, w=gw, h=gh,
+                        slot=rep.connector, boil_fps=BOIL_FPS, z=26))
+
                 for slot_name, expr in (rep.bind or {}).items():
                     if slot_name not in rent.slots:
                         continue
@@ -401,14 +474,27 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 else:
                     by = int(float(spec.align) * fh) - bh // 2
                 bx = (int(fw * 0.08), by, bw, bh)
+            # Type free-placed over artwork needs its own paper. The room is
+            # a drawing of a room: a line set at the top of it lands across
+            # the window, the shelf and the clock, and no amount of sizing
+            # fixes that. A slot-bound line needs nothing — the plate already
+            # left that box empty for it.
+            needs_panel = spec.slot is None and entry is not None
+            if needs_panel:
+                layers.append(Layer(
+                    name=f"{shot.id}:panel:{spec.name}", kind="panel",
+                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    x=bx[0] - int(fw * 0.03), y=bx[1] - int(fh * 0.012),
+                    w=bx[2] + int(fw * 0.06), h=bx[3] + int(fh * 0.024),
+                    boil_fps=BOIL_FPS, z=55))
             layers.append(Layer(
                 name=f"{shot.id}:text:{spec.name}", kind="text",
                 shot_id=shot.id,
                 t_start=t0, t_end=t1,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3],
                 size_fh=spec.size_fh, text=body, reveal_s=spec.draw_on_s,
-                slot=spec.color, boil_fps=BOIL_FPS,
-                max_lines=spec.max_lines, z=60))
+                slot=spec.color, boil_fps=BOIL_FPS, halign=spec.halign,
+                max_lines=spec.max_lines, panel=needs_panel, z=60))
 
         # -- marks land after the thing they mark
         for m in shot.marks:
@@ -547,6 +633,23 @@ def check_invariants(fmt: Format, result: BuildResult,
         for miss in sorted(want - got):
             problems.append(f"{miss}: host missing from a shot they are in")
 
+    # 5b. A slot whose natural type size is under the floor. The box exists
+    #     and the words fit it, but nobody can read them on a phone — which
+    #     is a geometry problem in the arrangement, not in the script.
+    for l in result.layers:
+        if l.kind != "fill" or not l.text:
+            continue
+        # A two-letter marker like "vs" sits in a deliberately tiny slot and
+        # is legible there; the floor is about words you have to READ.
+        if len(l.text) <= 6:
+            continue
+        natural = int(l.h * (0.42 if "\t" in l.text else 0.34))
+        if natural and natural < fh * SLOT_TYPE_FLOOR_FH:
+            problems.append(
+                f"{l.name}: its slot gives {natural}px type, under the "
+                f"{int(fh * SLOT_TYPE_FLOOR_FH)}px slot floor — too many "
+                f"placed where fewer fit")
+
     # 5. Nothing renders below 3.5% of frame height.
     for l in result.layers:
         if l.kind == "text" and 0 < l.size_fh < MIN_TYPE_FH:
@@ -575,6 +678,48 @@ def check_invariants(fmt: Format, result: BuildResult,
     for u in result.unfilled:
         problems.append(f"unfilled slot: {u}")
 
+    return problems
+
+
+BUDGETS_PATH = Path("templates/budgets.json")
+
+
+def check_budgets(fmt: Format, result: BuildResult,
+                  root: Path | str = ".") -> list[str]:
+    """Every line that will not fit the box the template puts it in.
+
+    Shrink-then-cut was the wrong contract. Type that does not fit is a script
+    the renderer cannot express, and the operator has to know that BEFORE the
+    encode, not discover a sentence ending mid-word in the output. So this
+    runs on the layer list and its findings block the render.
+
+    The budgets are measured, not guessed: `templates/budgets.json` is
+    produced by running the real fitter against the real templates, and
+    `tests/test_budgets.py` fails if the two ever disagree.
+    """
+    path = Path(root) / BUDGETS_PATH
+    if not path.exists():
+        return []
+    import json
+    budgets = json.loads(path.read_text(encoding="utf-8")).get("formats", {})
+    mine = budgets.get(fmt.name)
+    if not mine:
+        return []
+
+    problems: list[str] = []
+    for l in result.layers:
+        if l.kind not in ("text", "fill") or not l.text:
+            continue
+        dest = l.name.split(":", 1)[1]
+        budget = mine.get(dest)
+        if budget is None:
+            continue
+        n = len(l.text)
+        if n > budget:
+            problems.append(
+                f"{l.shot_id}: {dest} holds {budget} characters and was given "
+                f"{n} — {n - budget} would be cut. Shorten the script, or "
+                f"change the shot.")
     return problems
 
 

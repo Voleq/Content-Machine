@@ -9,9 +9,11 @@
     "Nine shots. No ticker, no company \u2014 the subject is a print and what it",
     "does to people.",
     "",
-    "'Who it hits' is four to five consequence cards in ONE beat. Every other",
-    "shot in every format so far places one plate; this one places a list.",
-    "See `repeat` below and the Stage 2 report."
+    "THE ROOM IS THE SPINE. Open in the room, dive to the monitor for the",
+    "print, back to the desk for consensus and the statement, to the sheet",
+    "for the mechanism, the monitor for what is priced, and close in the",
+    "room. Nothing in this format sits on bare paper: type on nothing was",
+    "how the scrapped format looked, arriving by a different route."
   ],
   "shots": [
     {
@@ -37,36 +39,71 @@
     },
     {
       "id": "the-print",
-      "plate": "number-full",
+      "plate": "screen-full",
       "anchor": "print",
       "captions": false,
       "max_hold_s": 5,
       "bind": {
-        "label": "numbers.label.0",
-        "figure": "numbers.latest.0"
+        "screen": "plate.number-full"
       },
-      "notes": "The number, full frame. Label above it, figure filling the plate.",
-      "stagger_s": 0.9
+      "notes": "The dive. The print is ON the monitor, full bleed \u2014 the room's screen, not a card on paper.",
+      "enter": "ink-wipe",
+      "text": [
+        {
+          "name": "print-label",
+          "src": "numbers.label.0",
+          "size_fh": 0.045,
+          "slot": "screen.label",
+          "max_lines": 1
+        },
+        {
+          "name": "print-figure",
+          "src": "numbers.latest.0",
+          "size_fh": 0.14,
+          "slot": "screen.figure",
+          "max_lines": 1
+        }
+      ]
     },
     {
       "id": "vs-expected",
-      "plate": "compare-plate",
+      "plate": "desk-top-down",
       "anchor": "expected",
       "max_hold_s": 5,
       "bind": {
-        "left": "compare.reported",
-        "right": "compare.expected",
-        "gap": "compare.versus"
+        "pages": "plate.compare-plate"
       },
       "text": [
         {
+          "name": "reported",
+          "src": "compare.reported",
+          "size_fh": 0.05,
+          "slot": "pages.left",
+          "max_lines": 1
+        },
+        {
+          "name": "expected",
+          "src": "compare.expected",
+          "size_fh": 0.05,
+          "slot": "pages.right",
+          "max_lines": 1
+        },
+        {
+          "name": "versus",
+          "src": "compare.versus",
+          "size_fh": 0.04,
+          "slot": "pages.gap",
+          "max_lines": 1
+        },
+        {
           "name": "gap-read",
           "src": "script.move_summary",
-          "size_fh": 0.04,
-          "align": "0.78",
+          "size_fh": 0.038,
+          "align": "0.80",
           "max_lines": 3
         }
-      ]
+      ],
+      "notes": "Printed against consensus, on the desk. Surfaces, not cards in space."
     },
     {
       "id": "the-statement",
@@ -82,14 +119,16 @@
           "src": "script.headlines.0.text",
           "size_fh": 0.042,
           "slot": "page.headline",
-          "max_lines": 3
+          "max_lines": 3,
+          "halign": "left"
         },
         {
           "name": "the-clause",
           "src": "script.headlines.0.meaning",
           "size_fh": 0.036,
           "slot": "page.body-3-circled",
-          "max_lines": 4
+          "max_lines": 4,
+          "halign": "left"
         }
       ],
       "marks": [
@@ -99,14 +138,14 @@
           "name": "clause-ring"
         }
       ],
-      "notes": "The institutional page with one clause circled \u2014 the clause slot is declared by the plate, and the ring lands on it."
+      "notes": "The institutional page on the desk. Left-aligned and dense so it reads as a document; the ring goes round the clause slot the plate declares."
     },
     {
       "id": "the-mechanism",
-      "plate": null,
+      "plate": "desk-top-down",
       "anchor": "mechanism",
       "max_hold_s": 6,
-      "notes": "Rate to credit to hiring. chain-of-three is delivered 16:9 only (1440x720): fitted into a 9:16 frame its text slots are 187px wide and no readable size fits a word like 'Refinancing' in one. Three stacked cards, each arriving on its own beat, is the same chain in the aspect this format actually is.",
+      "notes": "Rate to credit to hiring, one card per beat on the desk. Three cards in a column measure 33px type against a 67px floor \u2014 a chain of three tall cards does not fit 9:16 in space, so it is told over time. The arrow on each card but the last is what carries it forward.",
       "repeat": {
         "concept": "card-consequence-b",
         "src": "script.mechanism",
@@ -115,27 +154,28 @@
           "label": "$item",
           "mark": "$mark:arrow-down"
         },
-        "arrange": "column",
-        "stagger_s": 0.9
+        "arrange": "sequence",
+        "stagger_s": 0.9,
+        "connector": null
       }
     },
     {
       "id": "who-it-hits",
-      "plate": null,
+      "plate": "at-the-sheet",
       "anchor": "consequences",
       "max_hold_s": 7,
       "repeat": {
         "concept": "card-consequence",
         "src": "script.consequences",
-        "max": 5,
+        "max": 4,
         "bind": {
           "label": "$item",
           "mark": "$mark:arrow-down"
         },
-        "arrange": "grid",
+        "arrange": "sequence",
         "stagger_s": 0.5
       },
-      "notes": "Four to five cards, entering one at a time. The stagger is what keeps a seven-second beat from being a held frame."
+      "notes": "One consequence per beat, pinned on the sheet. A 2x2 grid measures 47px type, still under the floor; four in a row is worse."
     },
     {
       "id": "whats-priced",
@@ -157,20 +197,25 @@
     },
     {
       "id": "so-what",
-      "plate": null,
+      "plate": "room-wide",
       "anchor": "conclusion",
-      "captions": false,
+      "captions": true,
       "max_hold_s": 5,
       "text": [
         {
           "name": "so-what",
           "src": "script.conclusion",
-          "size_fh": 0.075,
-          "align": "center",
-          "max_lines": 5,
+          "size_fh": 0.06,
+          "align": "top",
+          "max_lines": 4,
           "draw_on_s": 0.5
         }
-      ]
+      ],
+      "host": {
+        "pose": "talking-to-camera",
+        "slot": "figure"
+      },
+      "notes": "The payoff, said to camera. Only THE TURN earns a bare frame."
     },
     {
       "id": "close",

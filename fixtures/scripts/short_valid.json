@@ -7,28 +7,82 @@
   "headlines": [
     {
       "text": "EXMPL announces AI partnership",
-      "meaning": "A press release, not a purchase order — no revenue attached."
+      "meaning": "A partnership headline, not a purchase order"
     },
     {
       "text": "Squeeze chatter on retail forums",
       "meaning": "11% of the float is short. The crowd noticed and piled in."
     }
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
-  "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]},
-    {"label": "Free cash flow", "values": ["$12M", "-$2M", "-$6M", "-$11M", "-$15M"]},
-    {"label": "Shares out", "values": ["298M", "315M", "330M", "346M", "365M"]}
+  "years": [
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
   ],
-  "numbers_comment": "Revenue has flatlined for three years while losses widen and the share count grows six percent a year. The business is going sideways; the stock is going vertical.",
-  "cheap_or_trap": "Eleven times earnings looks cheap. It only is if revenue stops sliding, and it has not stopped sliding.",
+  "numbers": [
+    {
+      "label": "Revenue",
+      "values": [
+        "$400M",
+        "$452M",
+        "$471M",
+        "$491M",
+        "$496M"
+      ]
+    },
+    {
+      "label": "Net income",
+      "values": [
+        "-$8M",
+        "-$25M",
+        "-$49M",
+        "-$70M",
+        "-$89M"
+      ]
+    },
+    {
+      "label": "Free cash flow",
+      "values": [
+        "$12M",
+        "-$2M",
+        "-$6M",
+        "-$11M",
+        "-$15M"
+      ]
+    },
+    {
+      "label": "Shares out",
+      "values": [
+        "298M",
+        "315M",
+        "330M",
+        "346M",
+        "365M"
+      ]
+    }
+  ],
+  "numbers_comment": "Revenue flat three years, losses widening, share count up six percent a year. Business sideways; stock vertical.",
+  "cheap_or_trap": "Cheap only counts if the sliding stops.",
   "turn_line": "A press release, not a purchase order.",
   "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
-  "meme": {"key": "fomo-stages-wish-i-bought-doodle", "anchor_word": "vertical"},
+  "meme": {
+    "key": "fomo-stages-wish-i-bought-doodle",
+    "anchor_word": "vertical"
+  },
   "broll": null,
   "annotations": [
-    {"target": "chart", "anchor_word": "today", "note": "this candle"},
-    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
+    {
+      "target": "chart",
+      "anchor_word": "today",
+      "note": "this candle"
+    },
+    {
+      "target": "numbers",
+      "row_index": 1,
+      "anchor_word": "wider",
+      "note": "every year"
+    }
   ]
 }

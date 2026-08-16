@@ -41,7 +41,13 @@ class StubResolver:
         self.chart = chart
 
     def text_for(self, src: str) -> str | None:
-        return f"words for {src.rsplit('.', 1)[-1]}"
+        # Text of the SHAPE the format actually puts there. A stub that
+        # returns thirteen characters for the compare plate's "vs" marker
+        # fails a geometry check that real content would pass.
+        leaf = src.rsplit(".", 1)[-1]
+        if leaf in ("versus", "reported", "expected", "latest", "label"):
+            return "vs" if leaf == "versus" else "3.4%"
+        return f"words for {leaf}"
 
     def image_for(self, src: str):
         return self.chart if src == "chart.price" else None

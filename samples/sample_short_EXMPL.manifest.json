@@ -1,8 +1,8 @@
 {
  "ticker": "EXMPL",
  "format": "short",
- "anchored_shots": 3,
- "register": "marker",
+ "anchored_shots": 4,
+ "register": "ballpoint",
  "duration_s": 71.494,
  "frame": {
   "w": 1080,
@@ -20,6 +20,7 @@
     "cold-open:ground",
     "cold-open:plate:room-wide",
     "cold-open:host:talking-at-screen",
+    "cold-open:panel:hook",
     "cold-open:text:hook"
    ]
   },
@@ -35,6 +36,7 @@
     "the-move:enter:ink-wipe",
     "the-move:plate:screen-full",
     "the-move:fill:screen",
+    "the-move:panel:move-summary",
     "the-move:text:move-summary",
     "the-move:mark:extreme-ring"
    ]
@@ -70,7 +72,7 @@
    "id": "numbers-1",
    "plate": "sheet-tall",
    "start_s": 15.752,
-   "end_s": 26.158,
+   "end_s": 26.697,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -80,6 +82,7 @@
     "numbers-1:fill:row-2",
     "numbers-1:fill:row-3",
     "numbers-1:fill:row-4",
+    "numbers-1:fill:row-5",
     "numbers-1:host:pointing-at-sheet",
     "numbers-1:mark:scribble"
    ]
@@ -87,8 +90,8 @@
   {
    "id": "numbers-2",
    "plate": "sheet-tall",
-   "start_s": 26.158,
-   "end_s": 33.862,
+   "start_s": 26.697,
+   "end_s": 34.67,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -98,6 +101,7 @@
     "numbers-2:fill:row-2",
     "numbers-2:fill:row-3",
     "numbers-2:fill:row-4",
+    "numbers-2:fill:row-5",
     "numbers-2:host:pointing-at-sheet",
     "numbers-2:mark:scribble"
    ]
@@ -105,8 +109,8 @@
   {
    "id": "numbers-3",
    "plate": "sheet-tall",
-   "start_s": 33.862,
-   "end_s": 41.565,
+   "start_s": 34.67,
+   "end_s": 42.643,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -116,6 +120,7 @@
     "numbers-3:fill:row-2",
     "numbers-3:fill:row-3",
     "numbers-3:fill:row-4",
+    "numbers-3:fill:row-5",
     "numbers-3:host:pointing-at-sheet",
     "numbers-3:mark:scribble"
    ]
@@ -123,8 +128,8 @@
   {
    "id": "numbers-4",
    "plate": "sheet-tall",
-   "start_s": 41.565,
-   "end_s": 49.268,
+   "start_s": 42.643,
+   "end_s": 50.616,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -134,6 +139,7 @@
     "numbers-4:fill:row-2",
     "numbers-4:fill:row-3",
     "numbers-4:fill:row-4",
+    "numbers-4:fill:row-5",
     "numbers-4:host:pointing-at-sheet",
     "numbers-4:mark:scribble"
    ]
@@ -141,8 +147,8 @@
   {
    "id": "the-sheet",
    "plate": "sheet-tall",
-   "start_s": 49.268,
-   "end_s": 56.972,
+   "start_s": 50.616,
+   "end_s": 58.589,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -152,15 +158,17 @@
     "the-sheet:fill:row-2",
     "the-sheet:fill:row-3",
     "the-sheet:fill:row-4",
+    "the-sheet:fill:row-5",
+    "the-sheet:panel:numbers-comment",
     "the-sheet:text:numbers-comment"
    ]
   },
   {
    "id": "cheap-or-trap",
    "plate": "compare-plate",
-   "start_s": 56.972,
+   "start_s": 58.589,
    "end_s": 64.675,
-   "anchored": false,
+   "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
     "cheap-or-trap:ground",
@@ -168,6 +176,7 @@
     "cheap-or-trap:fill:left",
     "cheap-or-trap:fill:right",
     "cheap-or-trap:fill:gap",
+    "cheap-or-trap:panel:cheap-or-trap",
     "cheap-or-trap:text:cheap-or-trap"
    ]
   },
@@ -182,6 +191,7 @@
     "payoff:ground",
     "payoff:plate:room-wide",
     "payoff:host:talking-to-camera",
+    "payoff:panel:conclusion",
     "payoff:text:conclusion"
    ]
   },
@@ -196,41 +206,28 @@
     "close:ground",
     "close:plate:room-wide",
     "close:host:sitting-with-mug",
+    "close:panel:handle",
     "close:text:handle"
    ]
   }
  ],
- "layers": 70,
+ "layers": 81,
  "kit_assets_used": [
-  "compare-plate--marker",
-  "desk-top-down--marker",
-  "ink-wipe--marker",
-  "page-corporate--marker",
-  "pointing-at-sheet--marker",
-  "room-wide--marker",
-  "screen-full--marker",
-  "sheet-tall--marker",
-  "sitting-with-mug--marker",
-  "talking-at-screen--marker",
-  "talking-to-camera--marker"
+  "compare-plate--ballpoint",
+  "desk-top-down--ballpoint",
+  "ink-wipe--ballpoint",
+  "page-corporate--ballpoint",
+  "pointing-at-sheet--ballpoint",
+  "room-wide--ballpoint",
+  "screen-full--ballpoint",
+  "sheet-tall--ballpoint",
+  "sitting-with-mug--ballpoint",
+  "talking-at-screen--ballpoint",
+  "talking-to-camera--ballpoint"
  ],
- "kit_reach": "Kit: 11 entries in marker, 11 concepts, 21 animated layers",
+ "kit_reach": "Kit: 11 entries in ballpoint, 11 concepts, 21 animated layers",
  "skipped": [],
  "dropped_shots": [],
- "text_overflow": {
-  "the-news:text:meaning": 9,
-  "numbers-1:fill:row-2": 5,
-  "numbers-1:fill:row-3": 5,
-  "numbers-2:fill:row-2": 5,
-  "numbers-2:fill:row-3": 5,
-  "numbers-3:fill:row-2": 5,
-  "numbers-3:fill:row-3": 5,
-  "numbers-4:fill:row-2": 5,
-  "numbers-4:fill:row-3": 5,
-  "the-sheet:fill:row-2": 5,
-  "the-sheet:fill:row-3": 5,
-  "the-sheet:text:numbers-comment": 37,
-  "cheap-or-trap:text:cheap-or-trap": 52
- },
+ "text_overflow": {},
  "longest_layer_hold_s": 0.0
 }

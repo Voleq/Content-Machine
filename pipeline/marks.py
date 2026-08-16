@@ -201,6 +201,13 @@ def fit_lines(draw, text: str, font_name: str, box_w: int, box_h: int,
     # in a box that holds one. 38% still clears the 3.5%-of-frame-height rule
     # for every size any template asks for.
     floor = min_px if min_px is not None else max(12, int(size_px * 0.38))
+    # The floor limits how far type may SHRINK. It must never raise the ask:
+    # a 26px label in a small slot was being drawn at the 67px readability
+    # floor because the loop below could not run at all, which made the type
+    # two and a half times its box and truncated every card in the chain.
+    # Type that is too small for the frame is a geometry problem to report,
+    # not something to fix by drawing it bigger than the box that holds it.
+    floor = min(floor, int(size_px))
     size = int(size_px)
     while size >= floor:
         font = load_font(font_name, size)

@@ -8,7 +8,7 @@
   "headlines": [
     {
       "text": "EXMPL beats Q3, raises full-year guidance",
-      "meaning": "Beat the lowered estimate; the raise is small but real."
+      "meaning": "A beat on cost cuts, not on demand"
     }
   ],
   "years": [
@@ -40,7 +40,7 @@
       ]
     }
   ],
-  "numbers_comment": "One beat against a lowered bar. Revenue is still flat over five years and the company still loses money — the guide is the only thing that actually moved.",
+  "numbers_comment": "A beat on cost control, not on demand. Guidance is the part that moves the multiple, and it moved the wrong way.",
   "conclusion": "Signal, but a quiet one. A good quarter, leaning against five flat years.",
   "meme": null,
   "broll": null,
@@ -54,5 +54,5 @@
   "reported": "$1.42",
   "expected": "$1.28",
   "verdict": "Beat, and it did not matter.",
-  "guidance": "Next quarter guided below the street."
+  "guidance": "Guided below the street"
 }

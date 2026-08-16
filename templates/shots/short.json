@@ -128,26 +128,27 @@
       "anchor": "numbers",
       "max_hold_s": 5,
       "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
+        "row-1": "numbers.header",
+        "row-2": "numbers.row.0",
+        "row-3": "?numbers.row.1",
+        "row-4": "?numbers.row.2",
+        "row-5": "?numbers.row.3",
+        "row-6": "?numbers.row.4"
       },
       "marks": [
         {
           "kind": "scribble",
-          "target": "row-$n"
+          "target": "row-$n+1"
         }
       ],
       "repeat": {
         "src": "script.numbers",
         "max": 4,
         "arrange": "sequence",
-        "lit": "row-$n"
+        "lit": "row-$n+1",
+        "focus": "row-$n+1"
       },
-      "notes": "One row per shot: all rows visible, one lit, the rest ghosted. Written once \u2014 the script's row count decides how many beats there are. This is the same repeat MACRO uses to place a list of cards, over time instead of over the frame."
+      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot \u2014 four steps that differ only by which row carries a rectangle are one shot with extra runtime. Band 1 is the year header, so metric N is row N+1."
     },
     {
       "id": "the-sheet",
@@ -155,12 +156,12 @@
       "anchor": "numbers_comment",
       "max_hold_s": 5,
       "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
+        "row-1": "numbers.header",
+        "row-2": "numbers.row.0",
+        "row-3": "?numbers.row.1",
+        "row-4": "?numbers.row.2",
+        "row-5": "?numbers.row.3",
+        "row-6": "?numbers.row.4"
       },
       "text": [
         {
@@ -171,7 +172,7 @@
           "max_lines": 6
         }
       ],
-      "notes": "Every row lit, the comment beneath.",
+      "notes": "Pull back: every row lit, the header above them, the comment beneath.",
       "lit": "all"
     },
     {

@@ -232,6 +232,34 @@ class Headline(BaseModel):
     meaning: str = Field(min_length=1, max_length=240)  # what it actually means
 
 
+class MetricKind(str, Enum):
+    """Whether a metric is measured OVER a period or AT a date.
+
+    Revenue and net income accumulate across a year; shares outstanding and
+    total debt are a reading taken on one day. Rendering them identically
+    makes them indistinguishable, and the writer inherits the confusion —
+    "revenue has flatlined for three years" under a row of five values that
+    might be either.
+
+    They do not share a row format. A FLOW row is a series under FY column
+    headers. A STOCK row is one figure with the date it was taken.
+    """
+
+    FLOW = "flow"     # measured over a period: revenue, income, cash flow
+    STOCK = "stock"   # measured at a date: shares out, debt, cash, book value
+
+
+# Metrics whose name gives their kind away. The writer may state `kind`
+# explicitly; this is what is inferred when they do not, so existing scripts
+# keep working and get the right rendering anyway.
+# Order matters: "free cash flow" contains "cash" and is emphatically a
+# flow, so the flow words are checked first.
+_FLOW_HINTS = ("revenue", "sales", "income", "profit", "loss", "margin",
+               "ebitda", "eps", "flow", "capex", "opex", "spend", "buyback")
+_STOCK_HINTS = ("shares", "share count", "debt", "cash", "book value",
+                "equity", "assets", "inventory", "backlog", "headcount")
+
+
 class NumberRow(BaseModel):
     """One metric row on the numbers sheet — MULTI-YEAR, oldest -> newest."""
 
@@ -239,6 +267,19 @@ class NumberRow(BaseModel):
 
     label: str = Field(min_length=1, max_length=40)
     values: list[str] = Field(min_length=2, max_length=6)
+    # A period measure or a point-in-time one. Inferred from the label when
+    # the script does not say, so nothing already written breaks.
+    kind: MetricKind | None = None
+
+    @property
+    def measured(self) -> MetricKind:
+        if self.kind is not None:
+            return self.kind
+        lab = self.label.lower()
+        if any(h in lab for h in _FLOW_HINTS):
+            return MetricKind.FLOW
+        return (MetricKind.STOCK
+                if any(h in lab for h in _STOCK_HINTS) else MetricKind.FLOW)
 
     @field_validator("values")
     @classmethod

@@ -2,7 +2,7 @@
  "ticker": "EXMPL",
  "format": "earnings",
  "anchored_shots": 2,
- "register": "ballpoint",
+ "register": "marker",
  "duration_s": 64.458,
  "frame": {
   "w": 1080,
@@ -20,6 +20,7 @@
     "open:ground",
     "open:plate:room-wide",
     "open:host:talking-at-screen",
+    "open:panel:hook",
     "open:text:hook"
    ]
   },
@@ -51,6 +52,7 @@
     "vs-expected:fill:left",
     "vs-expected:fill:right",
     "vs-expected:fill:gap",
+    "vs-expected:panel:gap-read",
     "vs-expected:text:gap-read"
    ]
   },
@@ -109,7 +111,9 @@
    "layers": [
     "guidance:ground",
     "guidance:plate:card-guidance",
-    "guidance:fill:label",
+    "guidance:panel:guidance-line",
+    "guidance:text:guidance-line",
+    "guidance:panel:guidance-read",
     "guidance:text:guidance-read"
    ]
   },
@@ -130,13 +134,16 @@
   },
   {
    "id": "so-what",
-   "plate": null,
+   "plate": "room-wide",
    "start_s": 59.628,
    "end_s": 62.043,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
     "so-what:ground",
+    "so-what:plate:room-wide",
+    "so-what:host:talking-to-camera",
+    "so-what:panel:so-what",
     "so-what:text:so-what"
    ]
   },
@@ -151,34 +158,30 @@
     "close:ground",
     "close:plate:room-wide",
     "close:host:sitting-with-mug",
+    "close:panel:handle",
     "close:text:handle"
    ]
   }
  ],
- "layers": 45,
+ "layers": 53,
  "kit_assets_used": [
-  "card-guidance--ballpoint",
-  "compare-plate--ballpoint",
-  "desk-top-down--ballpoint",
-  "ink-wipe--ballpoint",
-  "page-corporate--ballpoint",
-  "pointing-at-sheet--ballpoint",
-  "room-wide--ballpoint",
-  "screen-full--ballpoint",
-  "sheet-tall--ballpoint",
-  "sitting-with-mug--ballpoint",
-  "stamp--ballpoint",
-  "talking-at-screen--ballpoint"
+  "card-guidance--marker",
+  "compare-plate--marker",
+  "desk-top-down--marker",
+  "ink-wipe--marker",
+  "page-corporate--marker",
+  "pointing-at-sheet--marker",
+  "room-wide--marker",
+  "screen-full--marker",
+  "sheet-tall--marker",
+  "sitting-with-mug--marker",
+  "stamp--marker",
+  "talking-at-screen--marker",
+  "talking-to-camera--marker"
  ],
- "kit_reach": "Kit: 12 entries in ballpoint, 12 concepts, 16 animated layers",
+ "kit_reach": "Kit: 13 entries in marker, 13 concepts, 18 animated layers",
  "skipped": [],
  "dropped_shots": [],
- "text_overflow": {
-  "the-print:text:meaning": 9,
-  "line-moved-1:fill:row-2": 5,
-  "line-moved-2:fill:row-2": 5,
-  "guidance:fill:label": 16,
-  "guidance:text:guidance-read": 20
- },
+ "text_overflow": {},
  "longest_layer_hold_s": 0.0
 }
