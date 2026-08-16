@@ -96,6 +96,38 @@ def test_the_script_model_asks_for_more_than_the_frame_can_show(frozen):
         f"form has landed, update this test. Currently: {over}")
 
 
+def test_every_committed_fixture_fits_the_shot_it_feeds(frozen):
+    """The blocking check, run over the fixtures instead of over a render.
+
+    Overflow raises before the encoder, so a fixture that does not fit fails
+    a render test somewhere far away with a message about characters. Three
+    fixtures were over budget and were found one render at a time; this finds
+    all of them at once, in a second, and names the file to edit.
+
+    A budget is a contract on the WRITING, and a fixture is writing.
+    """
+    dests = {"short": ("text:headline", "text:meaning"),
+             "earnings": ("text:headline", "text:meaning"),
+             "macro": ("text:statement-head", "text:the-clause")}
+    over = []
+    for path in sorted(Path("fixtures/scripts").glob("*.json")):
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue                      # a deliberately malformed fixture
+        head = (raw.get("headlines") or [None])[0]
+        if not head:
+            continue
+        for fmt, (d_text, d_meaning) in dests.items():
+            for key, dest in (("text", d_text), ("meaning", d_meaning)):
+                budget = frozen["formats"][fmt].get(dest)
+                n = len(head.get(key) or "")
+                if budget and n > budget:
+                    over.append(f"{path.name}.headlines[0].{key}: {n} "
+                                f"characters, {fmt}/{dest} holds {budget}")
+    assert over == [], "\n  ".join([""] + over)
+
+
 def test_a_budget_is_reachable_for_every_authored_text(frozen):
     """Every place a template puts words has a measured budget.
 

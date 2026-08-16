@@ -35,7 +35,7 @@
    "max_hold_s": 6.0,
    "layers": [
     "the-move:ground",
-    "the-move:enter:ink-wipe",
+    "the-move:enter:underline-swipe",
     "the-move:plate:screen-full",
     "the-move:fill:screen",
     "the-move:panel:move-summary",
@@ -54,7 +54,9 @@
     "the-news:ground",
     "the-news:plate:desk-top-down",
     "the-news:fill:pages",
+    "the-news:panel:headline",
     "the-news:text:headline",
+    "the-news:panel:meaning",
     "the-news:text:meaning"
    ]
   },
@@ -85,7 +87,6 @@
     "numbers-1:fill:row-3",
     "numbers-1:fill:row-4",
     "numbers-1:fill:row-5",
-    "numbers-1:host:pointing-at-sheet",
     "numbers-1:mark:scribble"
    ]
   },
@@ -104,7 +105,6 @@
     "numbers-2:fill:row-3",
     "numbers-2:fill:row-4",
     "numbers-2:fill:row-5",
-    "numbers-2:host:pointing-at-sheet",
     "numbers-2:mark:scribble"
    ]
   },
@@ -123,7 +123,6 @@
     "numbers-3:fill:row-3",
     "numbers-3:fill:row-4",
     "numbers-3:fill:row-5",
-    "numbers-3:host:pointing-at-sheet",
     "numbers-3:mark:scribble"
    ]
   },
@@ -142,7 +141,6 @@
     "numbers-4:fill:row-3",
     "numbers-4:fill:row-4",
     "numbers-4:fill:row-5",
-    "numbers-4:host:pointing-at-sheet",
     "numbers-4:mark:scribble"
    ]
   },
@@ -213,21 +211,20 @@
    ]
   }
  ],
- "layers": 81,
+ "layers": 79,
  "kit_assets_used": [
   "compare-plate--ballpoint",
   "desk-top-down--ballpoint",
-  "ink-wipe--ballpoint",
   "page-corporate--ballpoint",
-  "pointing-at-sheet--ballpoint",
   "room-wide--ballpoint",
   "screen-full--ballpoint",
   "sheet-tall--ballpoint",
   "sitting-with-mug--ballpoint",
   "talking-at-screen--ballpoint",
-  "talking-to-camera--ballpoint"
+  "talking-to-camera--ballpoint",
+  "underline-swipe--ballpoint"
  ],
- "kit_reach": "Kit: 11 entries in ballpoint, 11 concepts, 21 animated layers",
+ "kit_reach": "Kit: 10 entries in ballpoint, 10 concepts, 17 animated layers",
  "skipped": [],
  "dropped_shots": [],
  "text_overflow": {},

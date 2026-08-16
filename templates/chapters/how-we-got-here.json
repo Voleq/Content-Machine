@@ -54,14 +54,16 @@
     },
     {
       "id": "surface",
-      "plate": "room-side-16--lived-in",
-      "host": {
-        "pose": "seated-talking",
-        "slot": "figure-seated"
-      },
+      "plate": "evidence-wall-empty",
       "max_hold_s": 6,
       "captions": true,
-      "notes": "Back in the room to close the chapter before the next stinger."
+      "notes": "The wall, which progression re-points at empty / half / full. Three pins go up over the chapter's own words, staggered, so the shot has something entering rather than being nine empty boxes for nine seconds. It declares NO figure slot, so the host does not stand here - a host bound to pin-1 renders at pin size, floating in a hole.",
+      "bind": {
+        "pin-1": "chapter.phrase.0",
+        "pin-2": "chapter.phrase.1",
+        "pin-3": "chapter.phrase.2"
+      },
+      "stagger_s": 0.9
     }
   ]
 }

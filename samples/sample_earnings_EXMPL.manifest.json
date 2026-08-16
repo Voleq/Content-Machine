@@ -37,7 +37,9 @@
     "the-print:ground",
     "the-print:plate:desk-top-down",
     "the-print:fill:pages",
+    "the-print:panel:headline",
     "the-print:text:headline",
+    "the-print:panel:meaning",
     "the-print:text:meaning"
    ]
   },
@@ -128,7 +130,7 @@
    "max_hold_s": 6.0,
    "layers": [
     "the-reaction:ground",
-    "the-reaction:enter:ink-wipe",
+    "the-reaction:enter:underline-swipe",
     "the-reaction:plate:screen-full",
     "the-reaction:fill:screen",
     "the-reaction:mark:extreme-ring"
@@ -165,12 +167,11 @@
    ]
   }
  ],
- "layers": 53,
+ "layers": 55,
  "kit_assets_used": [
   "card-guidance--marker",
   "compare-plate--marker",
   "desk-top-down--marker",
-  "ink-wipe--marker",
   "page-corporate--marker",
   "pointing-at-sheet--marker",
   "room-wide--marker",
@@ -179,7 +180,8 @@
   "sitting-with-mug--marker",
   "stamp--marker",
   "talking-at-screen--marker",
-  "talking-to-camera--marker"
+  "talking-to-camera--marker",
+  "underline-swipe--marker"
  ],
  "kit_reach": "Kit: 13 entries in marker, 13 concepts, 18 animated layers",
  "skipped": [],

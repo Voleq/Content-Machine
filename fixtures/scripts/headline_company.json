@@ -6,18 +6,50 @@
   "move_summary": "AI partnership announced · no terms disclosed",
   "chart_style": "marker",
   "headlines": [
-    {"text": "EXMPL announces AI partnership", "meaning": "A letter of intent, not a contract — no revenue, no timeline attached."}
+    {
+      "text": "EXMPL announces AI partnership",
+      "meaning": "A letter of intent, not a contract. No revenue."
+    }
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": [
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+  ],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]}
+    {
+      "label": "Revenue",
+      "values": [
+        "$400M",
+        "$452M",
+        "$471M",
+        "$491M",
+        "$496M"
+      ]
+    },
+    {
+      "label": "Net income",
+      "values": [
+        "-$8M",
+        "-$25M",
+        "-$49M",
+        "-$70M",
+        "-$89M"
+      ]
+    }
   ],
   "numbers_comment": "Revenue has been flat for three years and losses keep widening. A partnership with no terms doesn't touch either line.",
   "conclusion": "Priced in, and then some. A partnership to explore, stapled to five years of flat.",
   "meme": null,
   "broll": null,
   "annotations": [
-    {"target": "numbers", "row_index": 1, "anchor_word": "wider", "note": "every year"}
+    {
+      "target": "numbers",
+      "row_index": 1,
+      "anchor_word": "wider",
+      "note": "every year"
+    }
   ]
 }

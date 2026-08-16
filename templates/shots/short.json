@@ -20,8 +20,15 @@
     "motion; ink-wipe is the kit's 9:16 transition. See the Stage 1 report.",
     "",
     "Shot 4 names no plate. There is no statement plate in the delivery, and",
-    "the shot is one sentence on bare ground \u2014 'this shot is allowed to be",
-    "empty; that is its job'. A null plate is the ground and nothing else."
+    "the shot is one sentence on bare ground — 'this shot is allowed to be",
+    "empty; that is its job'. A null plate is the ground and nothing else.",
+    "",
+    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
+    "and two of those in a paper-white video reads as a different show",
+    "interrupting — it also makes the transition the loudest thing in a",
+    "format built on restraint. underline-swipe is a stroke, not a wall.",
+    "Full coverage is reserved for a chapter boundary in the LONG, where",
+    "a hard reset is the point."
   ],
   "shots": [
     {
@@ -49,7 +56,7 @@
     {
       "id": "the-move",
       "plate": "screen-full",
-      "enter": "ink-wipe",
+      "enter": "underline-swipe",
       "anchor": "move",
       "max_hold_s": 6,
       "bind": {
@@ -85,20 +92,20 @@
         {
           "name": "headline",
           "src": "script.headlines.0.text",
-          "size_fh": 0.045,
-          "slot": "page.headline",
-          "max_lines": 3
+          "size_fh": 0.05,
+          "align": "0.30",
+          "max_lines": 2
         },
         {
           "name": "meaning",
           "src": "script.headlines.0.meaning",
-          "size_fh": 0.036,
-          "slot": "page.body-1",
-          "max_lines": 4,
+          "size_fh": 0.04,
+          "align": "0.60",
+          "max_lines": 3,
           "color": "red"
         }
       ],
-      "notes": "Desk from above with the page in the pages slot. Host absent."
+      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent."
     },
     {
       "id": "the-turn",
@@ -121,10 +128,6 @@
     {
       "id": "numbers",
       "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
-      },
       "anchor": "numbers",
       "max_hold_s": 5,
       "bind": {
@@ -148,7 +151,7 @@
         "lit": "row-$n+1",
         "focus": "row-$n+1"
       },
-      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot \u2014 four steps that differ only by which row carries a rectangle are one shot with extra runtime. Band 1 is the year header, so metric N is row N+1."
+      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot — four steps that differ only by which row carries a rectangle are one shot with extra runtime. Band 1 is the year header, so metric N is row N+1. NO HOST. The walk pushes in and pans so the lit row lands in the middle of the frame, which makes the sheet full-bleed and carries the plate's figure slot off the bottom edge with it. Left where the slot puts him, 13% of him is on screen; clamped back into frame he stands across two rows of the table. There is no room for a figure in front of a wall-sized sheet, so he is not in these four - he returns at the payoff."
     },
     {
       "id": "the-sheet",

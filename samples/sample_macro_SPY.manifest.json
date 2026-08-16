@@ -35,7 +35,7 @@
    "max_hold_s": 5.0,
    "layers": [
     "the-print:ground",
-    "the-print:enter:ink-wipe",
+    "the-print:enter:underline-swipe",
     "the-print:plate:screen-full",
     "the-print:fill:screen",
     "the-print:text:print-label",
@@ -71,7 +71,9 @@
     "the-statement:ground",
     "the-statement:plate:desk-top-down",
     "the-statement:fill:pages",
+    "the-statement:panel:statement-head",
     "the-statement:text:statement-head",
+    "the-statement:panel:the-clause",
     "the-statement:text:the-clause",
     "the-statement:mark:clause-ring"
    ]
@@ -190,7 +192,7 @@
    "max_hold_s": 6.0,
    "layers": [
     "whats-priced:ground",
-    "whats-priced:enter:ink-wipe",
+    "whats-priced:enter:underline-swipe",
     "whats-priced:plate:screen-full",
     "whats-priced:fill:screen",
     "whats-priced:mark:extreme-ring"
@@ -227,21 +229,21 @@
    ]
   }
  ],
- "layers": 75,
+ "layers": 77,
  "kit_assets_used": [
   "at-the-sheet--marker",
   "card-consequence--marker",
   "card-consequence-b--marker",
   "compare-plate--marker",
   "desk-top-down--marker",
-  "ink-wipe--marker",
   "number-full--marker",
   "page-institutional--marker",
   "room-wide--marker",
   "screen-full--marker",
   "sitting-with-mug--marker",
   "talking-at-screen--marker",
-  "talking-to-camera--marker"
+  "talking-to-camera--marker",
+  "underline-swipe--marker"
  ],
  "kit_reach": "Kit: 13 entries in marker, 13 concepts, 30 animated layers",
  "skipped": [],

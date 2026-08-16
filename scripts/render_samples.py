@@ -74,11 +74,14 @@ def render_short_sample() -> Path:
     return render_vertical_sample("short")
 
 
-def render_long_sample() -> Path:
-    from pipeline.broll import ContentManager
+def _long_inputs():
+    """Script, workspace and data export for the deep-dive fixture.
+
+    Shared by both long renderers so the two are driven by identical inputs
+    and any difference between them is the composition, not the fixture.
+    """
     from pipeline.company_data import load_company_data
     from pipeline.parser_long import parse_long_script
-    from pipeline.render_long import render_long
 
     settings = _settings()
     # a denser, purpose-built deep-dive that showcases the kit (charts,
@@ -109,6 +112,14 @@ def render_long_sample() -> Path:
         img.save(shot)
     tts = TTSEngine(settings).synthesize(script.narration, "long")
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")
+    return settings, script, ws, data, tts
+
+
+def render_long_sample() -> Path:
+    from pipeline.broll import ContentManager
+    from pipeline.render_long import render_long
+
+    settings, script, ws, data, tts = _long_inputs()
     t0 = time.time()
     out, manifest = render_long(script, tts, ws, settings,
                                 content=ContentManager(settings),
@@ -122,12 +133,34 @@ def render_long_sample() -> Path:
     return dest
 
 
+def render_long_shots_sample() -> Path:
+    """The LONG through the shot engine — nine chapters, one compositor."""
+    from pipeline.broll import ContentManager
+    from pipeline.render_long_shots import render_long_shots
+
+    settings, script, ws, data, tts = _long_inputs()
+    t0 = time.time()
+    out, manifest = render_long_shots(script, tts, ws, settings,
+                                      content=ContentManager(settings),
+                                      company_data=data,
+                                      out_name="long_shots_final.mp4")
+    print(f"  rendered in {time.time() - t0:.0f}s")
+    SAMPLES.mkdir(exist_ok=True)
+    dest = SAMPLES / "sample_long_shots_EXMPL.mp4"
+    shutil.copy(out, dest)
+    shutil.copy(manifest, SAMPLES / "sample_long_shots_EXMPL.manifest.json")
+    return dest
+
+
 if __name__ == "__main__":
     what = sys.argv[1] if len(sys.argv) > 1 else "all"
     for name in VERTICAL_SAMPLES:
         if what in (name, "vertical", "all"):
             print(f"{name.upper()} sample:")
             print(" ->", render_vertical_sample(name))
-    if what in ("long", "all"):
-        print("LONG sample:")
+    if what in ("long-shots", "all"):
+        print("LONG sample (shot engine):")
+        print(" ->", render_long_shots_sample())
+    if what == "long":
+        print("LONG sample (old renderer):")
         print(" ->", render_long_sample())

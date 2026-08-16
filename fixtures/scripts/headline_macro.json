@@ -6,17 +6,38 @@
   "move_summary": "CPI 3.4% vs 3.1% expected",
   "chart_style": "clean",
   "headlines": [
-    {"text": "CPI comes in at 3.4% vs 3.1% expected", "meaning": "One hot print against a cooling two-year trend — a wiggle, not a reversal."}
+    {
+      "text": "CPI comes in at 3.4% vs 3.1% expected",
+      "meaning": "One hot print against a cooling trend."
+    }
   ],
-  "years": ["Q1", "Q2", "Q3", "Q4"],
+  "years": [
+    "Q1",
+    "Q2",
+    "Q3",
+    "Q4"
+  ],
   "numbers": [
-    {"label": "CPI YoY", "values": ["3.7%", "3.2%", "3.1%", "3.4%"]}
+    {
+      "label": "CPI YoY",
+      "values": [
+        "3.7%",
+        "3.2%",
+        "3.1%",
+        "3.4%"
+      ]
+    }
   ],
   "numbers_comment": "Inflation has cooled from 3.7% to the low threes over the past year; the 3.4% print is a bump within that, not a new direction.",
   "conclusion": "Noise for your portfolio, homework for the Fed.",
   "meme": null,
   "broll": null,
   "annotations": [
-    {"target": "numbers", "row_index": 0, "anchor_word": "wiggle", "note": "not a reversal"}
+    {
+      "target": "numbers",
+      "row_index": 0,
+      "anchor_word": "wiggle",
+      "note": "not a reversal"
+    }
   ]
 }

@@ -21,7 +21,8 @@
           "slot": "chapter-title",
           "max_lines": 2
         }
-      ]
+      ],
+      "notes": "The chapter card. The boundary transition onto it comes from the format, so this file works wherever it is picked."
     },
     {
       "id": "open",

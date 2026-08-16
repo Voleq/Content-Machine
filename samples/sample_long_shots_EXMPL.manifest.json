@@ -20,7 +20,9 @@
    "max_hold_s": 4.0,
    "layers": [
     "ch1-cold-open-stinger:ground",
+    "ch1-cold-open-stinger:enter:ink-wipe-16",
     "ch1-cold-open-stinger:plate:chapter-stinger",
+    "ch1-cold-open-stinger:light:light-daylight",
     "ch1-cold-open-stinger:text:chapter-number",
     "ch1-cold-open-stinger:text:chapter-title"
    ]
@@ -34,7 +36,12 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch1-cold-open-open:ground",
-    "ch1-cold-open-open:plate:room-wide-16--lived-in",
+    "ch1-cold-open-open:plate:room-wide-16--tidy",
+    "ch1-cold-open-open:light:light-daylight",
+    "ch1-cold-open-open:clock",
+    "ch1-cold-open-open:amb:loop-steam",
+    "ch1-cold-open-open:amb:loop-cursor",
+    "ch1-cold-open-open:amb:loop-second-hand",
     "ch1-cold-open-open:host:talking-to-camera",
     "ch1-cold-open-open:panel:hook",
     "ch1-cold-open-open:text:hook"
@@ -50,6 +57,7 @@
    "layers": [
     "ch1-cold-open-the-question:ground",
     "ch1-cold-open-the-question:plate:question-card",
+    "ch1-cold-open-the-question:light:light-daylight",
     "ch1-cold-open-the-question:text:question"
    ]
   },
@@ -62,7 +70,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch2-how-we-got-here-open:ground",
-    "ch2-how-we-got-here-open:plate:room-wide-16--lived-in",
+    "ch2-how-we-got-here-open:enter:ink-wipe-16",
+    "ch2-how-we-got-here-open:plate:room-wide-16--tidy",
+    "ch2-how-we-got-here-open:light:light-daylight",
+    "ch2-how-we-got-here-open:clock",
+    "ch2-how-we-got-here-open:amb:loop-steam",
+    "ch2-how-we-got-here-open:amb:loop-cursor",
+    "ch2-how-we-got-here-open:amb:loop-second-hand",
     "ch2-how-we-got-here-open:host:talking-at-screen",
     "ch2-how-we-got-here-open:panel:lede",
     "ch2-how-we-got-here-open:text:lede"
@@ -77,7 +91,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch2-how-we-got-here-dive-in:ground",
-    "ch2-how-we-got-here-dive-in:plate:dive-in"
+    "ch2-how-we-got-here-dive-in:plate:dive-in",
+    "ch2-how-we-got-here-dive-in:light:light-daylight",
+    "ch2-how-we-got-here-dive-in:clock"
    ]
   },
   {
@@ -90,6 +106,7 @@
    "layers": [
     "ch2-how-we-got-here-the-history:ground",
     "ch2-how-we-got-here-the-history:plate:sheet-wide",
+    "ch2-how-we-got-here-the-history:light:light-daylight",
     "ch2-how-we-got-here-the-history:fill:row-1",
     "ch2-how-we-got-here-the-history:panel:history",
     "ch2-how-we-got-here-the-history:text:history"
@@ -104,20 +121,25 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch2-how-we-got-here-dive-out:ground",
-    "ch2-how-we-got-here-dive-out:plate:dive-out"
+    "ch2-how-we-got-here-dive-out:plate:dive-out",
+    "ch2-how-we-got-here-dive-out:light:light-daylight",
+    "ch2-how-we-got-here-dive-out:clock"
    ]
   },
   {
    "id": "ch2-how-we-got-here-surface",
-   "plate": "room-side-16--lived-in",
+   "plate": "evidence-wall-empty",
    "start_s": 36.37,
    "end_s": 45.048,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
     "ch2-how-we-got-here-surface:ground",
-    "ch2-how-we-got-here-surface:plate:room-side-16--lived-in",
-    "ch2-how-we-got-here-surface:host:seated-talking"
+    "ch2-how-we-got-here-surface:plate:evidence-wall-empty",
+    "ch2-how-we-got-here-surface:light:light-daylight",
+    "ch2-how-we-got-here-surface:fill:pin-1",
+    "ch2-how-we-got-here-surface:fill:pin-2",
+    "ch2-how-we-got-here-surface:fill:pin-3"
    ]
   },
   {
@@ -129,7 +151,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch3-the-unit-open:ground",
-    "ch3-the-unit-open:plate:room-wide-16--lived-in",
+    "ch3-the-unit-open:enter:ink-wipe-16",
+    "ch3-the-unit-open:plate:room-wide-16--tidy",
+    "ch3-the-unit-open:light:light-daylight",
+    "ch3-the-unit-open:clock",
+    "ch3-the-unit-open:amb:loop-steam",
+    "ch3-the-unit-open:amb:loop-cursor",
+    "ch3-the-unit-open:amb:loop-second-hand",
     "ch3-the-unit-open:host:at-the-whiteboard",
     "ch3-the-unit-open:panel:lede",
     "ch3-the-unit-open:text:lede"
@@ -144,7 +172,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch3-the-unit-dive-in:ground",
-    "ch3-the-unit-dive-in:plate:dive-in"
+    "ch3-the-unit-dive-in:plate:dive-in",
+    "ch3-the-unit-dive-in:light:light-daylight",
+    "ch3-the-unit-dive-in:clock"
    ]
   },
   {
@@ -157,6 +187,7 @@
    "layers": [
     "ch3-the-unit-the-fraction:ground",
     "ch3-the-unit-the-fraction:plate:big-fraction",
+    "ch3-the-unit-the-fraction:light:light-daylight",
     "ch3-the-unit-the-fraction:text:numerator",
     "ch3-the-unit-the-fraction:text:denominator"
    ]
@@ -170,7 +201,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch3-the-unit-dive-out:ground",
-    "ch3-the-unit-dive-out:plate:dive-out"
+    "ch3-the-unit-dive-out:plate:dive-out",
+    "ch3-the-unit-dive-out:light:light-daylight",
+    "ch3-the-unit-dive-out:clock"
    ]
   },
   {
@@ -182,7 +215,12 @@
    "max_hold_s": 6.0,
    "layers": [
     "ch3-the-unit-surface:ground",
-    "ch3-the-unit-surface:plate:room-side-16--lived-in",
+    "ch3-the-unit-surface:plate:room-side-16--tidy",
+    "ch3-the-unit-surface:light:light-afternoon",
+    "ch3-the-unit-surface:clock",
+    "ch3-the-unit-surface:amb:loop-steam",
+    "ch3-the-unit-surface:amb:loop-cursor",
+    "ch3-the-unit-surface:amb:loop-second-hand",
     "ch3-the-unit-surface:host:seated-talking"
    ]
   },
@@ -195,7 +233,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch4-the-event-open:ground",
-    "ch4-the-event-open:plate:room-wide-16--lived-in",
+    "ch4-the-event-open:enter:ink-wipe-16",
+    "ch4-the-event-open:plate:room-wide-16--tidy",
+    "ch4-the-event-open:light:light-afternoon",
+    "ch4-the-event-open:clock",
+    "ch4-the-event-open:amb:loop-steam",
+    "ch4-the-event-open:amb:loop-cursor",
+    "ch4-the-event-open:amb:loop-second-hand",
     "ch4-the-event-open:host:talking-at-screen",
     "ch4-the-event-open:panel:lede",
     "ch4-the-event-open:text:lede"
@@ -210,7 +254,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch4-the-event-dive-in:ground",
-    "ch4-the-event-dive-in:plate:dive-in"
+    "ch4-the-event-dive-in:plate:dive-in",
+    "ch4-the-event-dive-in:light:light-afternoon",
+    "ch4-the-event-dive-in:clock"
    ]
   },
   {
@@ -223,6 +269,7 @@
    "layers": [
     "ch4-the-event-the-filing:ground",
     "ch4-the-event-the-filing:plate:filing-on-screen",
+    "ch4-the-event-the-filing:light:light-afternoon",
     "ch4-the-event-the-filing:fill:screen"
    ]
   },
@@ -235,7 +282,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch4-the-event-dive-out:ground",
-    "ch4-the-event-dive-out:plate:dive-out"
+    "ch4-the-event-dive-out:plate:dive-out",
+    "ch4-the-event-dive-out:light:light-afternoon",
+    "ch4-the-event-dive-out:clock"
    ]
   },
   {
@@ -248,6 +297,11 @@
    "layers": [
     "ch4-the-event-surface:ground",
     "ch4-the-event-surface:plate:room-side-16--lived-in",
+    "ch4-the-event-surface:light:light-afternoon",
+    "ch4-the-event-surface:clock",
+    "ch4-the-event-surface:amb:loop-steam",
+    "ch4-the-event-surface:amb:loop-cursor",
+    "ch4-the-event-surface:amb:loop-second-hand",
     "ch4-the-event-surface:host:seated-talking"
    ]
   },
@@ -260,7 +314,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch5-the-mechanism-open:ground",
+    "ch5-the-mechanism-open:enter:ink-wipe-16",
     "ch5-the-mechanism-open:plate:room-wide-16--lived-in",
+    "ch5-the-mechanism-open:light:light-afternoon",
+    "ch5-the-mechanism-open:clock",
+    "ch5-the-mechanism-open:amb:loop-steam",
+    "ch5-the-mechanism-open:amb:loop-cursor",
+    "ch5-the-mechanism-open:amb:loop-second-hand",
     "ch5-the-mechanism-open:host:at-the-whiteboard",
     "ch5-the-mechanism-open:panel:lede",
     "ch5-the-mechanism-open:text:lede"
@@ -275,7 +335,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch5-the-mechanism-dive-in:ground",
-    "ch5-the-mechanism-dive-in:plate:dive-in"
+    "ch5-the-mechanism-dive-in:plate:dive-in",
+    "ch5-the-mechanism-dive-in:light:light-afternoon",
+    "ch5-the-mechanism-dive-in:clock"
    ]
   },
   {
@@ -288,6 +350,7 @@
    "layers": [
     "ch5-the-mechanism-the-chain:ground",
     "ch5-the-mechanism-the-chain:plate:chain-of-three",
+    "ch5-the-mechanism-the-chain:light:light-afternoon",
     "ch5-the-mechanism-the-chain:fill:text-1",
     "ch5-the-mechanism-the-chain:fill:text-2",
     "ch5-the-mechanism-the-chain:fill:text-3"
@@ -302,7 +365,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch5-the-mechanism-dive-out:ground",
-    "ch5-the-mechanism-dive-out:plate:dive-out"
+    "ch5-the-mechanism-dive-out:plate:dive-out",
+    "ch5-the-mechanism-dive-out:light:light-afternoon",
+    "ch5-the-mechanism-dive-out:clock"
    ]
   },
   {
@@ -315,6 +380,11 @@
    "layers": [
     "ch5-the-mechanism-surface:ground",
     "ch5-the-mechanism-surface:plate:room-side-16--lived-in",
+    "ch5-the-mechanism-surface:light:light-afternoon",
+    "ch5-the-mechanism-surface:clock",
+    "ch5-the-mechanism-surface:amb:loop-steam",
+    "ch5-the-mechanism-surface:amb:loop-cursor",
+    "ch5-the-mechanism-surface:amb:loop-second-hand",
     "ch5-the-mechanism-surface:host:seated-talking"
    ]
   },
@@ -327,7 +397,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch6-the-numbers-open:ground",
+    "ch6-the-numbers-open:enter:ink-wipe-16",
     "ch6-the-numbers-open:plate:room-wide-16--lived-in",
+    "ch6-the-numbers-open:light:light-afternoon",
+    "ch6-the-numbers-open:clock",
+    "ch6-the-numbers-open:amb:loop-steam",
+    "ch6-the-numbers-open:amb:loop-cursor",
+    "ch6-the-numbers-open:amb:loop-second-hand",
     "ch6-the-numbers-open:host:pointing-at-sheet",
     "ch6-the-numbers-open:panel:lede",
     "ch6-the-numbers-open:text:lede"
@@ -342,7 +418,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch6-the-numbers-dive-in:ground",
-    "ch6-the-numbers-dive-in:plate:dive-in"
+    "ch6-the-numbers-dive-in:plate:dive-in",
+    "ch6-the-numbers-dive-in:light:light-afternoon",
+    "ch6-the-numbers-dive-in:clock"
    ]
   },
   {
@@ -355,6 +433,7 @@
    "layers": [
     "ch6-the-numbers-the-sheet-1:ground",
     "ch6-the-numbers-the-sheet-1:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-1:light:light-afternoon",
     "ch6-the-numbers-the-sheet-1:fill:row-1",
     "ch6-the-numbers-the-sheet-1:fill:row-2",
     "ch6-the-numbers-the-sheet-1:fill:row-3",
@@ -374,6 +453,7 @@
    "layers": [
     "ch6-the-numbers-the-sheet-2:ground",
     "ch6-the-numbers-the-sheet-2:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-2:light:light-dusk",
     "ch6-the-numbers-the-sheet-2:fill:row-1",
     "ch6-the-numbers-the-sheet-2:fill:row-2",
     "ch6-the-numbers-the-sheet-2:fill:row-3",
@@ -393,6 +473,7 @@
    "layers": [
     "ch6-the-numbers-the-sheet-3:ground",
     "ch6-the-numbers-the-sheet-3:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-3:light:light-dusk",
     "ch6-the-numbers-the-sheet-3:fill:row-1",
     "ch6-the-numbers-the-sheet-3:fill:row-2",
     "ch6-the-numbers-the-sheet-3:fill:row-3",
@@ -412,6 +493,7 @@
    "layers": [
     "ch6-the-numbers-the-sheet-4:ground",
     "ch6-the-numbers-the-sheet-4:plate:sheet-wide",
+    "ch6-the-numbers-the-sheet-4:light:light-dusk",
     "ch6-the-numbers-the-sheet-4:fill:row-1",
     "ch6-the-numbers-the-sheet-4:fill:row-2",
     "ch6-the-numbers-the-sheet-4:fill:row-3",
@@ -430,7 +512,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch6-the-numbers-dive-out:ground",
-    "ch6-the-numbers-dive-out:plate:dive-out"
+    "ch6-the-numbers-dive-out:plate:dive-out",
+    "ch6-the-numbers-dive-out:light:light-dusk",
+    "ch6-the-numbers-dive-out:clock"
    ]
   },
   {
@@ -443,6 +527,11 @@
    "layers": [
     "ch6-the-numbers-surface:ground",
     "ch6-the-numbers-surface:plate:room-side-16--lived-in",
+    "ch6-the-numbers-surface:light:light-dusk",
+    "ch6-the-numbers-surface:clock",
+    "ch6-the-numbers-surface:amb:loop-steam",
+    "ch6-the-numbers-surface:amb:loop-cursor",
+    "ch6-the-numbers-surface:amb:loop-second-hand",
     "ch6-the-numbers-surface:host:seated-talking"
    ]
   },
@@ -455,7 +544,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch7-valuation-open:ground",
+    "ch7-valuation-open:enter:ink-wipe-16",
     "ch7-valuation-open:plate:room-wide-16--lived-in",
+    "ch7-valuation-open:light:light-dusk",
+    "ch7-valuation-open:clock",
+    "ch7-valuation-open:amb:loop-steam",
+    "ch7-valuation-open:amb:loop-cursor",
+    "ch7-valuation-open:amb:loop-second-hand",
     "ch7-valuation-open:host:talking-at-screen",
     "ch7-valuation-open:panel:lede",
     "ch7-valuation-open:text:lede"
@@ -470,7 +565,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch7-valuation-dive-in:ground",
-    "ch7-valuation-dive-in:plate:dive-in"
+    "ch7-valuation-dive-in:plate:dive-in",
+    "ch7-valuation-dive-in:light:light-dusk",
+    "ch7-valuation-dive-in:clock"
    ]
   },
   {
@@ -483,6 +580,7 @@
    "layers": [
     "ch7-valuation-the-comps:ground",
     "ch7-valuation-the-comps:plate:comps-table",
+    "ch7-valuation-the-comps:light:light-dusk",
     "ch7-valuation-the-comps:fill:header",
     "ch7-valuation-the-comps:fill:row-1",
     "ch7-valuation-the-comps:fill:row-2",
@@ -502,7 +600,9 @@
    "max_hold_s": 3.0,
    "layers": [
     "ch7-valuation-dive-out:ground",
-    "ch7-valuation-dive-out:plate:dive-out"
+    "ch7-valuation-dive-out:plate:dive-out",
+    "ch7-valuation-dive-out:light:light-dusk",
+    "ch7-valuation-dive-out:clock"
    ]
   },
   {
@@ -514,7 +614,12 @@
    "max_hold_s": 6.0,
    "layers": [
     "ch7-valuation-surface:ground",
-    "ch7-valuation-surface:plate:room-side-16--lived-in",
+    "ch7-valuation-surface:plate:room-side-16--3am",
+    "ch7-valuation-surface:light:light-dusk",
+    "ch7-valuation-surface:clock",
+    "ch7-valuation-surface:amb:loop-steam",
+    "ch7-valuation-surface:amb:loop-cursor",
+    "ch7-valuation-surface:amb:loop-second-hand",
     "ch7-valuation-surface:host:seated-talking"
    ]
   },
@@ -527,7 +632,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch8-both-hands-open:ground",
-    "ch8-both-hands-open:plate:room-wide-16--lived-in",
+    "ch8-both-hands-open:enter:ink-wipe-16",
+    "ch8-both-hands-open:plate:room-wide-16--3am",
+    "ch8-both-hands-open:light:light-dusk",
+    "ch8-both-hands-open:clock",
+    "ch8-both-hands-open:amb:loop-steam",
+    "ch8-both-hands-open:amb:loop-cursor",
+    "ch8-both-hands-open:amb:loop-second-hand",
     "ch8-both-hands-open:host:gesture-both-hands-open-weighing",
     "ch8-both-hands-open:panel:lede",
     "ch8-both-hands-open:text:lede"
@@ -543,6 +654,7 @@
    "layers": [
     "ch8-both-hands-the-weighing:ground",
     "ch8-both-hands-the-weighing:plate:compare-plate",
+    "ch8-both-hands-the-weighing:light:light-3am",
     "ch8-both-hands-the-weighing:text:bull",
     "ch8-both-hands-the-weighing:text:bear"
    ]
@@ -556,7 +668,12 @@
    "max_hold_s": 6.0,
    "layers": [
     "ch8-both-hands-surface:ground",
-    "ch8-both-hands-surface:plate:room-side-16--lived-in",
+    "ch8-both-hands-surface:plate:room-side-16--3am",
+    "ch8-both-hands-surface:light:light-3am",
+    "ch8-both-hands-surface:clock",
+    "ch8-both-hands-surface:amb:loop-steam",
+    "ch8-both-hands-surface:amb:loop-cursor",
+    "ch8-both-hands-surface:amb:loop-second-hand",
     "ch8-both-hands-surface:host:crouching"
    ]
   },
@@ -569,7 +686,13 @@
    "max_hold_s": 7.0,
    "layers": [
     "ch9-the-close-open:ground",
-    "ch9-the-close-open:plate:room-wide-16--lived-in",
+    "ch9-the-close-open:enter:ink-wipe-16",
+    "ch9-the-close-open:plate:room-wide-16--3am",
+    "ch9-the-close-open:light:light-3am",
+    "ch9-the-close-open:clock",
+    "ch9-the-close-open:amb:loop-steam",
+    "ch9-the-close-open:amb:loop-cursor",
+    "ch9-the-close-open:amb:loop-second-hand",
     "ch9-the-close-open:host:talking-to-camera",
     "ch9-the-close-open:panel:payoff",
     "ch9-the-close-open:text:payoff"
@@ -585,12 +708,14 @@
    "layers": [
     "ch9-the-close-sign-off:ground",
     "ch9-the-close-sign-off:plate:closing-plate-16",
+    "ch9-the-close-sign-off:light:light-3am",
+    "ch9-the-close-sign-off:clock",
     "ch9-the-close-sign-off:host:sitting-with-mug",
     "ch9-the-close-sign-off:text:sign-off"
    ]
   }
  ],
- "layers": 168,
+ "layers": 293,
  "kit_assets_used": [
   "at-the-whiteboard--marker",
   "big-fraction--marker",
@@ -602,21 +727,34 @@
   "crouching--marker",
   "dive-in--marker",
   "dive-out--marker",
+  "evidence-wall-empty--marker",
   "filing-on-screen--marker",
   "gesture-both-hands-open-weighing--marker",
+  "ink-wipe-16--marker",
+  "light-3am",
+  "light-afternoon",
+  "light-daylight",
+  "light-dusk",
+  "loop-cursor--marker",
+  "loop-second-hand--marker",
+  "loop-steam--marker",
   "pointing-at-sheet--marker",
   "question-card--marker",
+  "room-side-16--3am--marker",
   "room-side-16--lived-in--marker",
+  "room-side-16--tidy--marker",
+  "room-wide-16--3am--marker",
   "room-wide-16--lived-in--marker",
+  "room-wide-16--tidy--marker",
   "seated-talking--marker",
   "sheet-wide--marker",
   "sitting-with-mug--marker",
   "talking-at-screen--marker",
   "talking-to-camera--marker"
  ],
- "kit_reach": "Kit: 21 entries in marker, 21 concepts, 58 animated layers",
+ "kit_reach": "Kit: 34 entries in marker, 34 concepts, 152 animated layers",
  "skipped": [],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 0.833
+ "longest_layer_hold_s": 0.0
 }

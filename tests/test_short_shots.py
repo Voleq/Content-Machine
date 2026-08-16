@@ -24,9 +24,10 @@ from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
                             load_format, parse_format, resolve_spans,
                             TemplateError)
 
-# Shots the host appears in, from the format spec: 1, 5-8, 11, 12.
-SPEC_HOST_SHOTS = {"cold-open", "numbers-1", "numbers-2", "numbers-3",
-                   "numbers-4", "payoff", "close"}
+# Shots the host appears in. The spec said 1, 5-8, 11, 12; 5-8 are the
+# numbers walk, and the push-in that makes the walk a composition change also
+# leaves no room for a figure — see the note on the `numbers` shot.
+SPEC_HOST_SHOTS = {"cold-open", "payoff", "close"}
 
 
 class FakeWord:

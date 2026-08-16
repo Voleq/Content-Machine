@@ -23,13 +23,16 @@
       "text:guidance-line": 44,
       "text:guidance-read": 130,
       "text:handle": 66,
-      "text:headline": 48,
+      "text:headline": 44,
       "text:hook": 66,
-      "text:meaning": 48,
+      "text:meaning": 66,
       "text:so-what": 88
     },
     "long": {
       "fill:header": 224,
+      "fill:pin-1": 22,
+      "fill:pin-2": 34,
+      "fill:pin-3": 20,
       "fill:row-1": 152,
       "fill:row-2": 152,
       "fill:row-3": 152,
@@ -65,8 +68,8 @@
       "text:print-label": 8,
       "text:reported": 8,
       "text:so-what": 88,
-      "text:statement-head": 28,
-      "text:the-clause": 40,
+      "text:statement-head": 44,
+      "text:the-clause": 66,
       "text:versus": 8
     },
     "short": {
@@ -83,9 +86,9 @@
       "text:cheap-or-trap": 44,
       "text:conclusion": 110,
       "text:handle": 66,
-      "text:headline": 36,
+      "text:headline": 44,
       "text:hook": 66,
-      "text:meaning": 48,
+      "text:meaning": 66,
       "text:move-summary": 66,
       "text:numbers-comment": 130,
       "text:turn": 66

@@ -7,12 +7,19 @@
   },
   "notes": [
     "Ten shots. Same engine as the SHORT, same audio clock, same register",
-    "rule \u2014 this file is the whole of the difference between the two formats.",
+    "rule — this file is the whole of the difference between the two formats.",
     "",
     "The verdict is a stamp with one text slot, and it is the only shot in any",
     "format so far that is a card alone on the ground. The two 'line that",
     "moved' shots use the sheet the way the SHORT's numbers shots do: every",
-    "row visible, one lit, the rest ghosted back."
+    "row visible, one lit, the rest ghosted back.",
+    "",
+    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
+    "and two of those in a paper-white video reads as a different show",
+    "interrupting — it also makes the transition the loudest thing in a",
+    "format built on restraint. underline-swipe is a stroke, not a wall.",
+    "Full coverage is reserved for a chapter boundary in the LONG, where",
+    "a hard reset is the point."
   ],
   "shots": [
     {
@@ -48,19 +55,19 @@
         {
           "name": "headline",
           "src": "script.headlines.0.text",
-          "size_fh": 0.045,
-          "slot": "page.headline",
-          "max_lines": 4
+          "size_fh": 0.05,
+          "align": "0.30",
+          "max_lines": 2
         },
         {
           "name": "meaning",
           "src": "script.headlines.0.meaning",
-          "size_fh": 0.036,
-          "slot": "page.body-1",
-          "max_lines": 4
+          "size_fh": 0.04,
+          "align": "0.60",
+          "max_lines": 3
         }
       ],
-      "notes": "The filing on the desk. Host absent \u2014 the page is the subject."
+      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent — the page is the subject."
     },
     {
       "id": "vs-expected",
@@ -165,12 +172,12 @@
           "max_lines": 6
         }
       ],
-      "notes": "What they said about next quarter. card-guidance's own label slot renders 35px type at frame scale \u2014 a marker slot, not a text slot \u2014 so the phrase is set beside the card rather than crammed into it."
+      "notes": "What they said about next quarter. card-guidance's own label slot renders 35px type at frame scale — a marker slot, not a text slot — so the phrase is set beside the card rather than crammed into it."
     },
     {
       "id": "the-reaction",
       "plate": "screen-full",
-      "enter": "ink-wipe",
+      "enter": "underline-swipe",
       "anchor": "move",
       "max_hold_s": 6,
       "bind": {

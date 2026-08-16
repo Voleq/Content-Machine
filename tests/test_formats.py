@@ -229,6 +229,183 @@ def test_a_container_takes_media_in_its_own_media_slot():
         build_layers(fmt, spans, StubResolver(), kit_for("marker"), "marker")
 
 
+def test_a_box_too_short_for_its_lines_is_a_composition_failure():
+    """THE NEWS shipped three lines of type through the bottom of a slot.
+
+    `page.headline` is 825x171 on a 1080-wide page, and that page was nested
+    into a desk shot at 74%, so the box was 123px tall in frame. Three lines
+    at the 3.5% readability floor is 237px. The fitter could not shrink below
+    the floor, so it drew all three — 114px past the box, straight over the
+    red annotation in the slot below — and reported nothing lost, because
+    every word had made it onto one of the three lines.
+
+    It is pure geometry, so it is answerable before a render, with no script.
+    """
+    raw = {"format": "x", "frame": {"w": 1080, "h": 1920},
+           "shots": [{"id": "a", "plate": "desk-top-down",
+                      "bind": {"pages": "plate.page-corporate"},
+                      "text": [{"name": "headline", "src": "script.hook",
+                                "size_fh": 0.045, "slot": "page.headline",
+                                "max_lines": 3}]}]}
+    fmt = parse_format(raw)
+    spans = resolve_spans(fmt, _words(10.0), 10.0, {})
+    result = build_layers(fmt, spans, StubResolver(), kit_for("marker"),
+                          "marker")
+    problems = check_invariants(fmt, result)
+    assert any("holds 1 at the" in p for p in problems), problems
+
+
+def test_two_blocks_of_free_placed_type_may_not_overlap():
+    """`align` is a fraction of frame height, and two chosen by hand meet."""
+    raw = {"format": "x", "frame": {"w": 1080, "h": 1920},
+           "shots": [{"id": "a", "plate": "room-wide",
+                      "text": [{"name": "one", "src": "script.hook",
+                                "size_fh": 0.05, "align": "0.40"},
+                               {"name": "two", "src": "script.conclusion",
+                                "size_fh": 0.05, "align": "0.44"}]}]}
+    fmt = parse_format(raw)
+    spans = resolve_spans(fmt, _words(10.0), 10.0, {})
+    result = build_layers(fmt, spans, StubResolver(), kit_for("marker"),
+                          "marker")
+    assert any("overlap" in p for p in check_invariants(fmt, result))
+
+
+def test_a_free_placed_box_holds_the_lines_it_promises():
+    """The box and the fitter have to use the same leading.
+
+    `size * lines * 1.25` was 13% short of `(asc + desc) * 1.18` for Inter,
+    so every free-placed block in every format was given a box that could not
+    hold its own line count, and the fitter drew the type smaller than the
+    template asked without saying so.
+    """
+    from pipeline import marks as mk
+    for name in FORMATS:
+        fmt = _cut(name)
+        spans = resolve_spans(fmt, _words(60.0), 60.0, {})
+        result = build_layers(fmt, spans, StubResolver(), kit_for("marker"),
+                              "marker", progression=fmt.progression)
+        for l in result.layers:
+            if l.kind != "text" or not l.panel:
+                continue
+            need = mk.block_height(mk.face_for(l.size_fh),
+                                   int(l.size_fh * result.frame[1]),
+                                   l.max_lines)
+            assert l.h >= need, (
+                f"{name}/{l.name}: box {l.h}px for {l.max_lines} lines that "
+                f"measure {need}px")
+
+
+class SheetResolver(StubResolver):
+    """Rows the shape a real company sheet has: five periods and a stock."""
+
+    ROWS = ["Revenue\t$400M\t$452M\t$471M\t$491M\t$496M",
+            "Net income\t-$8M\t-$25M\t-$49M\t-$70M\t-$89M",
+            "Free cash flow\t$12M\t-$2M\t-$6M\t-$11M\t-$15M",
+            "Shares out\t365M\tat 2025"]
+
+    def text_for(self, src: str) -> str | None:
+        if src == "numbers.header":
+            return "$M\t2021\t2022\t2023\t2024\t2025"
+        if src.startswith("numbers.row"):
+            i = int(src.rsplit(".", 1)[-1])
+            return self.ROWS[i] if i < len(self.ROWS) else None
+        return super().text_for(src)
+
+
+def _sheet_rows(shot_id: str = "numbers-1"):
+    fmt = _cut("short")
+    spans = resolve_spans(fmt, _words(71.5), 71.5, {})
+    result = build_layers(fmt, spans, SheetResolver(), kit_for("marker"),
+                          "marker")
+    return [l for l in result.layers
+            if l.shot_id == shot_id and l.kind == "fill" and "\t" in l.text]
+
+
+def test_every_row_of_a_sheet_is_set_at_one_size():
+    """A stock row has one figure where a flow has five, so left to itself it
+    never shrinks and comes out half again as big as the table it is in."""
+    rows = _sheet_rows()
+    assert len(rows) >= 4
+    assert len({l.type_px for l in rows}) == 1, {
+        l.name: l.type_px for l in rows}
+
+
+def test_every_row_of_a_sheet_shows_the_same_periods():
+    """Dropping the oldest period is right for one row and a disaster for
+    five: Revenue kept three years, free cash flow two, and the header still
+    said five. Columns that do not line up are worse than small type."""
+    rows = _sheet_rows()
+    series = [len(l.text.split("\t")) - 1 for l in rows
+              if not l.text.startswith("Shares out")]
+    assert len(set(series)) == 1, {
+        l.name: l.text for l in rows}
+
+
+def test_a_sheet_row_is_legible():
+    """The row that reaches the frame, measured with the renderer's fitter.
+
+    The old check estimated `band_height * 0.42` and got 81px for a row that
+    actually set at 33px — 1.7% of frame height, half the floor the rule
+    exists to enforce, on a format cut for a phone.
+    """
+    from pipeline.compose import SLOT_TYPE_FLOOR_FH, _row_size
+    for l in _sheet_rows():
+        size = _row_size(l, 1920)
+        assert size >= SLOT_TYPE_FLOOR_FH * 1920, (
+            f"{l.name} sets at {size}px, under the "
+            f"{int(SLOT_TYPE_FLOOR_FH * 1920)}px slot floor")
+
+
+def test_the_host_is_not_mostly_off_the_frame():
+    """A figure slot belongs to the plate, and a focus push moves the plate.
+
+    In the numbers walk the host stood at y=1832 in a 1920 frame — 13% of him
+    on screen — and how much was clipped changed with which row was lit.
+    """
+    for name in FORMATS:
+        fmt = _cut(name)
+        spans = resolve_spans(fmt, _words(70.0), 70.0, {})
+        result = build_layers(fmt, spans, StubResolver(), kit_for("marker"),
+                              "marker", progression=fmt.progression)
+        fw, fh = result.frame
+        for l in result.layers:
+            if l.kind != "host":
+                continue
+            assert l.x >= 0 and l.y >= 0 and l.x + l.w <= fw and l.y + l.h <= fh, (
+                f"{name}/{l.name} at ({l.x},{l.y}) {l.w}x{l.h} in {fw}x{fh}")
+
+
+def test_full_coverage_is_reserved_for_the_chapter_boundary():
+    """The black wipe is a chapter device, not a beat device.
+
+    A full-coverage wipe every four seconds is a slideshow, so the verticals
+    cut on underline-swipe and the long spends ink-wipe-16 once per chapter.
+    The boundary is applied by the expansion rather than authored into nine
+    chapter files: the same rule written nine times is the drift a template
+    engine exists to remove, and a chapter type does not know what format it
+    was picked into.
+    """
+    long_fmt = load_format("long")
+    starts = {f"ch{n}": None for n in range(1, 10)}
+    for shot in long_fmt.shots:
+        key = f"ch{shot.chapter_n}"
+        if key in starts and starts[key] is None:
+            starts[key] = shot
+    assert all(s is not None and s.enter == "ink-wipe-16"
+               for s in starts.values()), {
+        k: (s.id, s.enter) for k, s in starts.items()}
+    covering = [s.id for s in long_fmt.shots if s.enter == "ink-wipe-16"]
+    assert len(covering) == 9, f"{len(covering)} wipes for nine chapters"
+
+    for name in FORMATS:
+        if name == "long":
+            continue
+        for shot in _cut(name):
+            assert not (shot.enter or "").startswith("ink-wipe"), (
+                f"{name}/{shot.id} cuts on {shot.enter!r} — full coverage "
+                f"between beats is the slideshow that got cut")
+
+
 def test_the_long_is_chapters_that_expand():
     """Nine picks become thirty-eight shots; nobody authors them."""
     raw = json.loads(Path("templates/shots/long.json").read_text(

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Protocol, Sequence
 
 from pipeline.kit_manifest import AMBIENT_REPLACING, Entry, Kit, KitError
+from pipeline.marks import LINE_LEADING, block_height, face_for
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
                             TemplateError)
 
@@ -103,6 +104,7 @@ class Layer:
     lit: bool = True             # a ghosted row is present but pushed back
     max_lines: int = 3           # the template's line budget, not a default
     halign: str = "center"       # the template's alignment, not a default
+    type_px: int = 0             # a size the whole group agreed on, if any
     panel: bool = False          # paper drawn under type that sits on artwork
     z: int = 0
 
@@ -219,8 +221,15 @@ def _arrange(n: int, how: str, frame: tuple[int, int],
 
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
-                 kit: Kit, register: str) -> BuildResult:
-    """Turn the template and the script into the ordered layer list."""
+                 kit: Kit, register: str, *,
+                 progression: bool = False) -> BuildResult:
+    """Turn the template and the script into the ordered layer list.
+
+    `progression` advances the room across the runtime — light, clutter, the
+    wall and the clock. It is off by default because a 70-second SHORT has
+    nowhere to travel; the LONG turns it on.
+    """
+    from pipeline import progression as prog
     frame = fmt.frame
     fw, fh = frame
     layers: list[Layer] = []
@@ -236,6 +245,10 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         begin = getattr(resolver, "begin_shot", None)
         if begin is not None:
             begin(shot)
+
+        # Where this shot sits in the video decides the state of the room.
+        total = spans[-1].end if spans else 1.0
+        state = prog.at(((t0 + t1) / 2) / total if total else 0.0)
 
         # -- the ground. Every frame has paper under it; kit plates are
         #    transparent PNGs and would composite onto nothing otherwise.
@@ -264,11 +277,13 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
+            plate_name = (prog.restate(shot.plate, state)
+                          if progression else shot.plate)
             try:
-                entry = kit.concept(shot.plate, register)
+                entry = kit.concept(plate_name, register)
             except KitError as exc:
                 raise TemplateError(
-                    f"{fmt.name}/{shot.id}: plate {shot.plate!r} — {exc}") from exc
+                    f"{fmt.name}/{shot.id}: plate {plate_name!r} — {exc}") from exc
             w, h, _ = _fit_into(entry, frame)
             placed = ((fw - w) // 2, (fh - h) // 2, w, h)
             # Moving in on a slot: scale the plate so that slot fills a real
@@ -285,11 +300,54 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 placed = (fw // 2 - cx, fh // 2 - cy, nw, nh)
                 w, h = nw, nh
             layers.append(Layer(
-                name=f"{shot.id}:plate:{shot.plate}", kind="plate",
+                name=f"{shot.id}:plate:{plate_name}", kind="plate",
                 shot_id=shot.id, t_start=t0, t_end=t1,
                 x=placed[0], y=placed[1], w=w, h=h,
                 frames=entry.paths, fps=entry.fps, loops=entry.loops,
                 entry_key=entry.key, concept=entry.concept, z=10))
+
+        # -- LIGHT, above the plate and below anything code draws.
+        #
+        # The room is lit; the numbers are not. Light sits at z=11 — over the
+        # plate and the host, who are both in the room and should be — and
+        # under every fill, panel, line of type and mark, which are data and
+        # must never be tinted.
+        if progression and entry is not None and kit.has(state.light, register):
+            lent = kit.concept(state.light, register)
+            if abs(lent.delivered[0] / lent.delivered[1] - fw / fh) < 0.05:
+                layers.append(Layer(
+                    name=f"{shot.id}:light:{state.light}", kind="light",
+                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    x=0, y=0, w=fw, h=fh,
+                    frames=lent.paths, fps=lent.fps, loops=lent.loops,
+                    entry_key=lent.key, concept=lent.concept, z=11))
+
+        # -- THE CLOCK. Its face is a slot; the hands are drawn to the hour
+        #    the light is telling, so the window and the clock agree.
+        if progression and entry is not None and "clock-face" in entry.slots:
+            cb = _slot_in_frame(entry, "clock-face", placed)
+            layers.append(Layer(
+                name=f"{shot.id}:clock", kind="clock", shot_id=shot.id,
+                t_start=t0, t_end=t1, x=cb[0], y=cb[1], w=cb[2], h=cb[3],
+                size_fh=state.hour, boil_fps=BOIL_FPS, z=12))
+
+        # -- AMBIENT. Steam off the mug, the cursor, the second hand: these
+        #    run continuously under every room shot and are what keeps a
+        #    held wide shot alive. Only the ADDITIVE ones — see progression.
+        if progression and entry is not None and shot.plate and \
+                shot.plate.startswith(("room-", "at-the-", "desk-")):
+            for amb in prog.AMBIENT_ADDITIVE_USED:
+                if not kit.has(amb, register):
+                    continue
+                aent = kit.concept(amb, register)
+                fx, fy, fwr, fhr = prog.AMBIENT_PLACEMENT[amb]
+                layers.append(Layer(
+                    name=f"{shot.id}:amb:{amb}", kind="plate",
+                    shot_id=shot.id, t_start=t0, t_end=t1,
+                    x=int(fw * fx), y=int(fh * fy),
+                    w=int(fw * fwr), h=int(fh * fhr),
+                    frames=aent.paths, fps=aent.fps, loops=aent.loops,
+                    entry_key=aent.key, concept=aent.concept, z=13))
 
         # -- slot fills: charts, nested plates, row content
         for fill_index, (slot, src) in enumerate(shot.bind.items()):
@@ -469,6 +527,18 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 k = min(fw / hent.delivered[0], fh * 0.55 / hent.delivered[1])
                 dw, dh = (int(hent.delivered[0] * k), int(hent.delivered[1] * k))
                 hx, hy = (fw - dw) // 2, fh - dh
+            # THE HOST IS A SUBJECT AND HAS TO BE SEEN. A figure slot belongs
+            # to the plate, and a plate that is pushed in on a row carries the
+            # slot off the bottom with it: in the numbers walk the host stood
+            # at y=1832 in a 1920 frame — 13% of him on screen, reading as a
+            # smudge at the edge — and the amount clipped changed shot to
+            # shot with which row was lit. Clamped into the frame, he stands
+            # at the bottom of it instead, which is where a figure in front
+            # of a wall-sized sheet belongs.
+            if dh > fh:
+                dw, dh = int(dw * fh / dh), fh
+            hy = min(max(hy, 0), fh - dh)
+            hx = min(max(hx, 0), max(fw - dw, 0))
             layers.append(Layer(
                 name=f"{shot.id}:host:{shot.host.pose}", kind="host",
                 shot_id=shot.id, t_start=t0, t_end=t1,
@@ -504,7 +574,8 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                           int(fw * 0.84), int(fh * 0.2))
             else:
                 bw = int(fw * 0.84)
-                bh = int(size_px * spec.max_lines * 1.25)
+                bh = block_height(face_for(spec.size_fh), size_px,
+                                  spec.max_lines)
                 if spec.align == "top":
                     by = int(fh * 0.06)
                 elif spec.align == "center":
@@ -527,9 +598,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 # as a declared box with nothing in it.
                 from pipeline import marks as _mk
                 _tw, th = _mk.measure_block(
-                    body, bx, font_name=(_mk.DISPLAY_FONT
-                                         if spec.size_fh >= 0.06
-                                         else _mk.BODY_FONT),
+                    body, bx, font_name=face_for(spec.size_fh),
                     size_px=int(spec.size_fh * fh),
                     max_lines=spec.max_lines)
                 th = min(max(th, int(spec.size_fh * fh)), bx[3])
@@ -600,8 +669,89 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3], slot=m.kind,
                 boil_fps=BOIL_FPS, z=70))
 
+    _agree_on_a_sheet(layers, fh)
     return BuildResult(layers=layers, spans=list(spans), register=register,
                        frame=frame, unfilled=unfilled, skipped=skipped)
+
+
+def _row_size(l: Layer, fh: int) -> int:
+    """The size a sheet row actually sets at, by the renderer's own fitter."""
+    from PIL import Image, ImageDraw
+    from pipeline import marks as _mk
+    parts = l.text.split("\t")
+    size, _kept, _drop = _mk.fit_columns(
+        ImageDraw.Draw(Image.new("L", (8, 8))), parts[0],
+        [v for v in parts[1:] if v], l.w, l.h,
+        font_name=_mk.DISPLAY_FONT if l.lit else _mk.BODY_FONT,
+        start_px=l.type_px, min_px=int(SLOT_TYPE_FLOOR_FH * fh))
+    return size
+
+
+def _agree_on_a_sheet(layers: list[Layer], fh: int) -> None:
+    """One type size and one set of periods for every row of a sheet.
+
+    Two faults, one cause: a row sized on its own knows nothing about the
+    rows above it.
+
+    THE SIZE. A stock row has a single figure where a flow has five, so it
+    never has to shrink and comes out half again as big — "Shares out" was
+    shouting over the table it is a row of. The rows are measured together
+    and the smallest size wins.
+
+    THE PERIODS. `fit_columns` gives up the oldest period rather than set a
+    row below the legibility floor, which is the right policy for one row and
+    a disaster for five: Revenue kept three years, Free cash flow kept two,
+    and the header still said five. Columns that do not line up are worse
+    than small type. So the DROP is decided for the sheet — the most periods
+    every series row can show — and every row shows the same ones.
+
+    Both answers come from the same `fit_columns` the renderer draws with,
+    called once more here, so neither can drift from what lands on the frame.
+    """
+    from PIL import Image, ImageDraw
+    from pipeline import marks as _mk
+    d = ImageDraw.Draw(Image.new("L", (8, 8)))
+    floor = int(SLOT_TYPE_FLOOR_FH * fh)
+    rows: dict[tuple[str, int], list[Layer]] = {}
+    for l in layers:
+        if l.kind == "fill" and "\t" in (l.text or "") and l.h:
+            rows.setdefault((l.shot_id, l.h), []).append(l)
+
+    for group in rows.values():
+        if len(group) < 2:
+            continue
+        parsed = [(l, l.text.split("\t")[0],
+                   [v for v in l.text.split("\t")[1:] if v]) for l in group]
+        widest = max(len(v) for _l, _lab, v in parsed)
+        if widest < 2:
+            continue
+
+        def _measure(keep: int) -> tuple[int, bool]:
+            sizes, clean = [], True
+            for l, lab, vals in parsed:
+                # A stock row is one reading and a date, not a series: it
+                # shares the SIZE but has no periods to give up.
+                use = vals[-keep:] if len(vals) == widest else vals
+                size, _kept, dropped = _mk.fit_columns(
+                    d, lab, use, l.w, l.h, min_px=floor,
+                    font_name=_mk.DISPLAY_FONT if l.lit else _mk.BODY_FONT)
+                sizes.append(size)
+                clean = clean and not dropped
+            return min(sizes), clean
+
+        keep = widest
+        while keep > 2:
+            size, clean = _measure(keep)
+            if clean and size >= floor:
+                break
+            keep -= 1
+        else:
+            size, _clean = _measure(keep)
+
+        for l, lab, vals in parsed:
+            if len(vals) == widest and keep < widest:
+                l.text = "\t".join([lab] + vals[-keep:])
+            l.type_px = size
 
 
 # ---------------------------------------------------------------------------
@@ -695,12 +845,97 @@ def check_invariants(fmt: Format, result: BuildResult,
         # is legible there; the floor is about words you have to READ.
         if len(l.text) <= 6:
             continue
-        natural = int(l.h * (0.42 if "\t" in l.text else 0.34))
+        # A tabbed row is MEASURED with the fitter, not estimated from the
+        # band height. `h * 0.42` said 81px while the row actually set at
+        # 33px, so the floor this rule exists to enforce was never tested
+        # against the number that reaches the frame.
+        if "\t" in l.text:
+            natural = _row_size(l, fh)
+        else:
+            natural = int(l.h * 0.34)
         if natural and natural < fh * SLOT_TYPE_FLOOR_FH:
             problems.append(
                 f"{l.name}: its slot gives {natural}px type, under the "
                 f"{int(fh * SLOT_TYPE_FLOOR_FH)}px slot floor — too many "
                 f"placed where fewer fit")
+
+    # 4b. The host is not mostly off the frame.
+    #
+    #     A figure slot belongs to the PLATE, and a focus push moves the plate.
+    #     Nothing else notices: the layer exists, the invariants above are all
+    #     satisfied, and the host is drawn — 87% of him past the bottom edge.
+    for l in result.layers:
+        if l.kind != "host" or not (l.w and l.h):
+            continue
+        vis_w = max(min(l.x + l.w, result.frame[0]) - max(l.x, 0), 0)
+        vis_h = max(min(l.y + l.h, fh) - max(l.y, 0), 0)
+        seen = (vis_w * vis_h) / float(l.w * l.h)
+        if seen < 0.75:
+            problems.append(
+                f"{l.name}: {seen:.0%} of the host is on screen — the rest is "
+                f"past the frame edge, drawn and not seen")
+        # And he does not stand on the data. Clamping him into the frame is
+        # only half the rule: pushed in on a sheet there is nowhere for a
+        # figure that is not over a row, and the answer is that he is not in
+        # that shot, not that he is drawn across the numbers.
+        for o in result.for_shot(l.shot_id):
+            if o.kind not in ("fill", "text") or not o.text:
+                continue
+            ox = min(l.x + l.w, o.x + o.w) - max(l.x, o.x)
+            oy = min(l.y + l.h, o.y + o.h) - max(l.y, o.y)
+            if ox > 0 and oy > 0 and (ox * oy) > 0.20 * o.w * o.h:
+                problems.append(
+                    f"{l.name} stands over {o.name} — the host is drawn "
+                    f"across {(ox * oy) / (o.w * o.h):.0%} of it")
+
+    # 5c. A text box that cannot hold the lines it promises, at the smallest
+    #     size those lines are allowed to be.
+    #
+    #     This is pure geometry and needs no words: LINE_LEADING * the
+    #     readability floor is the height of one line, and a box shorter than
+    #     that holds nothing readable however short the script is. The fitter
+    #     shrinks type to fit, but it stops at the floor — below that it draws
+    #     THROUGH the bottom of the box rather than under it, and says nothing,
+    #     because the words all fitted the line count it was given.
+    #
+    #     THE NEWS shipped this way: a headline slot 123px tall in frame,
+    #     asked for three lines, drew three lines of 67px type 237px tall
+    #     straight over the red annotation in the slot below it. Nothing in
+    #     the suite could see it, because no characters were lost.
+    for l in result.layers:
+        if l.kind != "text" or not l.h:
+            continue
+        line_h = MIN_TYPE_FH * fh * LINE_LEADING
+        holds = int(l.h / line_h)
+        if holds < 1:
+            problems.append(
+                f"{l.name}: its box is {l.h}px tall and one line at the "
+                f"{MIN_TYPE_FH:.1%} floor is {int(line_h)}px — no readable "
+                f"type fits it at all")
+        elif holds < l.max_lines:
+            problems.append(
+                f"{l.name}: asks for {l.max_lines} lines in a {l.h}px box "
+                f"that holds {holds} at the {MIN_TYPE_FH:.1%} floor — the "
+                f"rest draws through whatever is under it")
+
+    # 5d. Two blocks of type in one shot may not overlap.
+    #
+    #     Slot-bound type cannot collide, because the plate authored the
+    #     slots apart. FREE-PLACED type can: `align` is a fraction of frame
+    #     height and two of them chosen by hand will eventually meet. The
+    #     boxes are known before the render, so the collision is too.
+    for sp in result.spans:
+        blocks = [l for l in result.layers
+                  if l.shot_id == sp.shot.id and l.kind in ("text", "panel")]
+        for i, a in enumerate(blocks):
+            for b in blocks[i + 1:]:
+                if a.name.split(":")[-1] == b.name.split(":")[-1]:
+                    continue        # a panel and the type it sits under
+                if (a.x < b.x + b.w and b.x < a.x + a.w
+                        and a.y < b.y + b.h and b.y < a.y + a.h):
+                    problems.append(
+                        f"{a.name} and {b.name} overlap — two blocks of type "
+                        f"in one shot, drawn over each other")
 
     # 5. Nothing renders below 3.5% of frame height.
     for l in result.layers:
@@ -721,7 +956,7 @@ def check_invariants(fmt: Format, result: BuildResult,
         if not got:
             problems.append(f"{sp.shot.id}: names plate "
                             f"{sp.shot.plate!r} but no plate layer exists")
-        elif got[0].concept != sp.shot.plate:
+        elif not _same_plate(got[0].concept, sp.shot.plate):
             problems.append(
                 f"{sp.shot.id}: names plate {sp.shot.plate!r} but reached "
                 f"{got[0].concept!r}")
@@ -733,7 +968,7 @@ def check_invariants(fmt: Format, result: BuildResult,
     return problems
 
 
-BUDGETS_PATH = Path("templates/budgets.json")
+BUDGETS_PATH = Path("templates") / "budgets.json"
 
 
 def check_budgets(fmt: Format, result: BuildResult,
@@ -773,6 +1008,24 @@ def check_budgets(fmt: Format, result: BuildResult,
                 f"{n} — {n - budget} would be cut. Shorten the script, or "
                 f"change the shot.")
     return problems
+
+
+def _same_plate(reached: str, named: str) -> bool:
+    """Whether a shot got the plate it asked for, allowing for progression.
+
+    A template names `room-wide-16--lived-in`; three-quarters through the
+    video progression re-points it at `room-wide-16--3am`. That is the device
+    working, not the wrong plate — so the FAMILY has to match and the state
+    is free. `evidence-wall-half` for `evidence-wall-empty` likewise.
+    """
+    if reached == named:
+        return True
+    if "--" in reached and "--" in named:
+        return reached.rpartition("--")[0] == named.rpartition("--")[0]
+    for stem in ("evidence-wall-",):
+        if reached.startswith(stem) and named.startswith(stem):
+            return True
+    return False
 
 
 def held_layer_spans(result: BuildResult) -> list[tuple[float, float, str]]:

@@ -14,6 +14,7 @@ disk on the way past.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,15 +34,55 @@ from pipeline.shots import (Format, expand_sequences, load_format,
 FPS = 30
 # The kit boils at three frames, 7fps. Code-drawn artwork matches it.
 BOIL_FRAMES = 3
-# The SHORT's host shots, from its spec: 1, 5-8, 11, 12. Kept as the written
-# statement of that rule; the renderer reads the template, and
-# tests/test_short_shots.py asserts the two agree.
-HOST_SHOTS = ("cold-open", "numbers-1", "numbers-2", "numbers-3", "numbers-4",
-              "payoff", "close")
+# The SHORT's host shots. The spec said 1, 5-8, 11, 12; 5-8 are the numbers
+# walk, and the walk pushes in until the sheet is full-bleed and the plate's
+# figure slot is off the bottom of the frame. A figure clamped back in stands
+# on the numbers. So the host is out of the walk and the spec is amended here
+# rather than in a comment that disagrees with the template.
+# tests/test_short_shots.py asserts this and the template agree.
+HOST_SHOTS = ("cold-open", "payoff", "close")
 
 # One definition, in marks, so the fitter and the budget measurement agree.
 BODY_FONT = mk.BODY_FONT
 DISPLAY_FONT = mk.DISPLAY_FONT
+
+_FIGURE = re.compile(r"^(-?)([$€£]?)([\d.,]+)([KMBT]?)(%?)$")
+
+
+def _unit_of(rows) -> str:
+    """The unit every flow row on this sheet shares, or "".
+
+    "$400M" is five characters where "400" is three, and a sheet row is
+    1003px wide holding a label and five figures: at five characters each,
+    nothing fits above the legibility floor and the row sets at 33px. The
+    currency and the magnitude are the same on every row of a company sheet,
+    so they are said ONCE, in the header's empty label cell, and the columns
+    carry the number.
+
+    Returns "" unless every figure agrees — a mixed sheet keeps its units in
+    the figures, where an ambiguous column would otherwise be a wrong one.
+    """
+    from pipeline.models import MetricKind
+    seen = set()
+    for r in rows:
+        if r.measured is not MetricKind.FLOW:
+            continue
+        for v in r.values:
+            m = _FIGURE.match(str(v).strip())
+            if not m:
+                return ""
+            seen.add(m.group(2) + m.group(4) + m.group(5))
+    return seen.pop() if len(seen) == 1 else ""
+
+
+def _bare(value: str, unit: str) -> str:
+    """A figure with the sheet's shared unit taken off the front and back."""
+    if not unit:
+        return value
+    m = _FIGURE.match(str(value).strip())
+    if not m or m.group(2) + m.group(4) + m.group(5) != unit:
+        return value
+    return f"{m.group(1)}{m.group(3)}"
 
 
 # ---------------------------------------------------------------------------
@@ -120,10 +161,11 @@ class ShortResolver:
             field, rest = rest[0], rest[1:]
 
         # The column header. Without it five figures in a row are one long
-        # number, and there is nothing to say which year is which.
+        # number, and there is nothing to say which year is which. Its label
+        # cell is empty, so the sheet's shared unit goes there.
         if field == "header":
             years = list(getattr(self.script, "years", []) or [])
-            return ("\t" + "\t".join(years)) if years else None
+            return (f"{_unit_of(rows)}\t" + "\t".join(years)) if years else None
 
         if not rest or not rest[0].isdigit():
             return None
@@ -144,7 +186,8 @@ class ShortResolver:
             years = list(getattr(self.script, "years", []) or [])
             asat = years[-1] if years else "latest"
             return f"{r.label}\t{r.values[-1]}\tat {asat}"
-        return f"{r.label}\t" + "\t".join(r.values)
+        unit = _unit_of(rows)
+        return f"{r.label}\t" + "\t".join(_bare(v, unit) for v in r.values)
 
     def _compare(self, which: str) -> str | None:
         """The two multiples in CHEAP OR TRAP, heavy against light."""
@@ -429,6 +472,18 @@ def _type_floor(canvas: Image.Image) -> int:
     return max(12, int(MIN_TYPE_FH * canvas.height))
 
 
+def _slot_floor(canvas: Image.Image) -> int:
+    """The floor for type whose size comes from a KIT SLOT, not a template.
+
+    A sheet row band or a card label is a short string read in context, not
+    prose, and the kit's own geometry sets it. Holding those to the authored
+    prose floor makes a five-year row give up three years to buy 20px it did
+    not need — see `_agree_on_a_sheet`.
+    """
+    from pipeline.compose import SLOT_TYPE_FLOOR_FH
+    return max(12, int(SLOT_TYPE_FLOOR_FH * canvas.height))
+
+
 def _boil_index(layer: Layer, t: float) -> int:
     """Which redraw of a code-drawn layer is showing at `t`."""
     if not layer.boil_fps:
@@ -464,40 +519,26 @@ def _draw_columns(canvas: Image.Image, layer: Layer, dx: int, dy: int,
     parts = layer.text.split("\t")
     label, values = parts[0], [v for v in parts[1:] if v != ""]
     colour = ink if layer.lit else mk.MUTED
-    dropped = 0
+    face = mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT
 
-    while True:
-        n = max(len(values), 1)
-        label_w = int(layer.w * (0.34 if n > 2 else 0.42))
-        col_w = (layer.w - label_w) // n
-        # A sheet reads as a table only if its rows share a type size. A
-        # stock row has three columns where a flow has six, so left alone it
-        # never needs to shrink and ends up shouting over the rows around it.
-        # The starting size is scaled by column count so every row lands at
-        # roughly the same place.
-        size = max(int(layer.h * 0.42 * (0.72 if n <= 3 else 1.0)), 10)
-        font = mk.load_font(mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT, size)
-        while size > 10:
-            font = mk.load_font(mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT, size)
-            widest = max([d.textlength(label, font=font) / max(label_w, 1)]
-                         + [d.textlength(v, font=font) / max(col_w - 6, 1)
-                            for v in values] or [0])
-            if widest <= 1.0:
-                break
-            size -= 1
-        if size > 10 or len(values) <= 2:
-            break
-        values = values[1:]          # drop the oldest period, never wrap
-        dropped += 1
+    # `type_px` is the size the WHOLE SHEET agreed on, measured at build
+    # time. A stock row has one column where a flow has five, so sized on its
+    # own it never has to shrink and ends up half again as big as the rows
+    # around it — which is what "Shares out" was doing to a table it is
+    # supposed to be a row of.
+    size, values, dropped = mk.fit_columns(
+        d, label, values, layer.w, layer.h, font_name=face,
+        start_px=layer.type_px, min_px=_slot_floor(canvas))
+    font = mk.load_font(face, size)
 
     asc, desc = font.getmetrics()
     y = layer.y + dy + max((layer.h - (asc + desc)) // 2, 0)
+    label_w, col_w = mk.column_widths(
+        layer.w, len(values),
+        d.textlength(label, font=font) if label else 0.0)
     if label:
         d.text((layer.x + dx, y), label, font=font, fill=colour)
     for i, v in enumerate(values):
-        n = max(len(values), 1)
-        label_w = int(layer.w * (0.34 if n > 2 else 0.42))
-        col_w = (layer.w - label_w) // n
         right = layer.x + dx + label_w + col_w * (i + 1) - 4
         d.text((right - d.textlength(v, font=font), y), v, font=font,
                fill=colour)
@@ -523,6 +564,41 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         d.rectangle(box, fill=mk.PAPER)
         mk.drawn_rect(d, box, rng, width=max(3, canvas.width // 320),
                       color=ink, jitter=1.8, overshoot=0.01)
+        return
+
+    if layer.kind == "light":
+        # A wash MULTIPLIES. Composited normally it would paint over the ink
+        # instead of falling on it, and the room would go flat rather than
+        # dim. Alpha is respected so the untouched parts of the overlay leave
+        # the paper alone.
+        im = cache.get(_frame_for(layer, t), layer.w, layer.h)
+        base = canvas.crop((layer.x, layer.y,
+                            layer.x + layer.w, layer.y + layer.h)).convert("RGB")
+        from PIL import ImageChops
+        wash = Image.alpha_composite(
+            Image.new("RGBA", im.size, (255, 255, 255, 255)), im).convert("RGB")
+        canvas.paste(ImageChops.multiply(base, wash).convert("RGBA"),
+                     (layer.x, layer.y))
+        return
+
+    if layer.kind == "clock":
+        # The hands read the same hour the light does. A clock disagreeing
+        # with the window is worse than no clock at all.
+        from pipeline.progression import clock_hands
+        import math
+        rng = mk.rng_for(layer.name, _boil_index(layer, t))
+        d = ImageDraw.Draw(canvas)
+        cx, cy = layer.x + layer.w / 2, layer.y + layer.h / 2
+        r = min(layer.w, layer.h) / 2
+        for ang, length, width in zip(clock_hands(layer.size_fh),
+                                      (r * 0.52, r * 0.80),
+                                      (max(3, int(r * 0.13)),
+                                       max(2, int(r * 0.09)))):
+            a = math.radians(ang - 90)
+            mk.marker_stroke(d, [(cx, cy),
+                                 (cx + math.cos(a) * length,
+                                  cy + math.sin(a) * length)],
+                             rng, width=width, color=ink, jitter=1.0, passes=2)
         return
 
     if layer.kind in ("plate", "host", "enter"):
@@ -568,12 +644,11 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         reveal = 1.0
         if layer.reveal_s > 0:
             reveal = mk.ease_out(min((t - layer.t_start) / layer.reveal_s, 1.0))
-        big = layer.size_fh >= 0.06
         dx, dy = _boil_offset(layer, t)
         *_box, dropped = mk.draw_block(
             canvas, layer.text,
             (layer.x + dx, layer.y + dy, layer.w, layer.h),
-            font_name=DISPLAY_FONT if big else BODY_FONT,
+            font_name=mk.face_for(layer.size_fh),
             size_px=max(int(layer.size_fh * canvas.height), 12),
             color=colour, max_lines=layer.max_lines,
             halign=layer.halign, valign="top", reveal=reveal,
@@ -676,6 +751,14 @@ def render_short(script, tts, workspace: Path, settings, *,
     # carry three formats instead of one — there is no per-format branch
     # anywhere below, and a fourth format is a JSON file and this argument.
     fmt: Format = load_format(format_name)
+    # BEATS and SHOTS are different counts and both matter. A beat is an idea
+    # the format has; a shot is a frame. A chapter-based format's beats are
+    # its CHAPTERS; a shot-based one's are the shots it was authored with,
+    # before a repeat expands them. Counted here, off the format actually
+    # being rendered — re-reading the file at manifest time is a second parse
+    # that can disagree with the first.
+    n_beats = (len({sh.chapter_n for sh in fmt.shots if sh.chapter_n})
+               or len(fmt))
 
     words = list(getattr(tts, "words", []) or [])
     duration = float(getattr(tts, "duration_s", 0.0) or 0.0)
@@ -715,7 +798,10 @@ def render_short(script, tts, workspace: Path, settings, *,
 
 
 
-    result = build_layers(fmt, spans, resolver, kit, register)
+    # The LONG travels: light, clutter, the wall and the clock advance across
+    # it. A 70-second vertical has nowhere to go, and says so in its template.
+    result = build_layers(fmt, spans, resolver, kit, register,
+                          progression=fmt.progression)
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
@@ -759,17 +845,12 @@ def render_short(script, tts, workspace: Path, settings, *,
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "format": fmt.name,
-        # BEATS and SHOTS are different counts and both matter. A beat is an
-        # idea the format has; a shot is a frame. "Who it hits" is one beat
-        # told across four shots because four cards cannot share a frame
-        # legibly — so a nine-beat format cutting to fourteen shots is the
-        # design working, not drift.
-        # A chapter-based format's beats are its CHAPTERS; a shot-based
-        # one's are its authored shots. Reporting post-expansion shots as
-        # beats made the long look like 38 ideas instead of nine.
-        "beats": (len({sh.chapter_n for sh in load_format(format_name).shots
-                       if sh.chapter_n})
-                  or len(load_format(format_name))),
+        # "Who it hits" is one beat told across four shots because four cards
+        # cannot share a frame legibly — so a nine-beat format cutting to
+        # fourteen shots is the design working, not drift. Reporting
+        # post-expansion shots as beats made the long look like 38 ideas
+        # instead of nine.
+        "beats": n_beats,
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "register": register,

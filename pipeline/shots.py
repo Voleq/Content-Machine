@@ -44,7 +44,7 @@ class TemplateError(RuntimeError):
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "chapters",
-                         "notes"})
+                         "chapter_enter", "progression", "notes"})
 CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
 CHAPTER_DIR = Path("templates/chapters")
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
@@ -215,6 +215,12 @@ class Format:
     frame: tuple[int, int]
     shots: tuple[Shot, ...]
     source: Path | None = None
+    # Whether the room advances across the runtime — light, clutter, the
+    # wall, the clock. Declared by the template, because it is a property of
+    # the format and not of the frame: a future 16:9 format that is ninety
+    # seconds long has nowhere to travel, and guessing from the aspect ratio
+    # would switch four devices on for it in silence.
+    progression: bool = False
 
     def __len__(self) -> int:
         return len(self.shots)
@@ -250,12 +256,19 @@ def _text_specs(raw: Any, where: str) -> tuple[TextSpec, ...]:
 
 
 def _chapter_shots(names: list[str], fmt_name: str,
-                   root: Path | str = ".") -> list[dict]:
+                   root: Path | str = ".", *,
+                   boundary: str | None = None) -> list[dict]:
     """Every chapter's shots, in order, with ids that say where they came from.
 
     An id like `ch3-the-event-dive-in` is how a manifest, a contact sheet cell
     and an invariant failure all name the same frame — with a chapter used
     twice, bare shot ids would collide silently.
+
+    `boundary` is the transition the format puts at the top of every chapter.
+    It is applied HERE, once, rather than authored into nine chapter files:
+    the same rule written nine times is the drift that a template engine is
+    supposed to remove, and a chapter type does not know it is a chapter of
+    a long — the same file has to work wherever it is picked.
     """
     out: list[dict] = []
     for n, cname in enumerate(names, 1):
@@ -279,6 +292,8 @@ def _chapter_shots(names: list[str], fmt_name: str,
             # pinned to the audio rather than interpolated.
             if j == 0 and "anchor" not in sh:
                 sh["anchor"] = f"ch{n}"
+            if j == 0 and boundary and "enter" not in sh:
+                sh["enter"] = boundary
             out.append(sh)
     return out
 
@@ -294,7 +309,8 @@ def parse_format(raw: dict, source: Path | None = None,
         # authors them one at a time.
         shots_raw = raw.get("shots")
         if shots_raw is None:
-            shots_raw = _chapter_shots(raw["chapters"], name, root)
+            shots_raw = _chapter_shots(raw["chapters"], name, root,
+                                       boundary=raw.get("chapter_enter"))
     except KeyError as exc:
         raise TemplateError(f"template missing {exc}") from exc
     if not shots_raw:
@@ -370,7 +386,8 @@ def parse_format(raw: dict, source: Path | None = None,
             notes=s.get("notes", "")))
 
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
-                 shots=tuple(shots), source=source)
+                 shots=tuple(shots), source=source,
+                 progression=bool(raw.get("progression", False)))
 
     for sh in fmt.shots:
         if not (sh.plate or sh.text or sh.bind or sh.repeat or sh.host):
