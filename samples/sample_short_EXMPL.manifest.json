@@ -1,6 +1,8 @@
 {
  "ticker": "EXMPL",
  "format": "short",
+ "beats": 9,
+ "shots_count": 12,
  "anchored_shots": 4,
  "register": "ballpoint",
  "duration_s": 71.494,

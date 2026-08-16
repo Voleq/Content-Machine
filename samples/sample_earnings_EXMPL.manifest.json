@@ -1,6 +1,8 @@
 {
  "ticker": "EXMPL",
  "format": "earnings",
+ "beats": 10,
+ "shots_count": 10,
  "anchored_shots": 2,
  "register": "marker",
  "duration_s": 64.458,

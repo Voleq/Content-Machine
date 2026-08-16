@@ -701,6 +701,13 @@ def render_short(script: ShortScript, tts, workspace: Path, settings, *,
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "format": fmt.name,
+        # BEATS and SHOTS are different counts and both matter. A beat is an
+        # idea the format has; a shot is a frame. "Who it hits" is one beat
+        # told across four shots because four cards cannot share a frame
+        # legibly — so a nine-beat format cutting to fourteen shots is the
+        # design working, not drift.
+        "beats": len(load_format(format_name)),
+        "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "register": register,
         "duration_s": round(duration, 3),

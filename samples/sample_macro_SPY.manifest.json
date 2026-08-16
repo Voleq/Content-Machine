@@ -1,6 +1,8 @@
 {
  "ticker": "SPY",
  "format": "macro",
+ "beats": 9,
+ "shots_count": 14,
  "anchored_shots": 2,
  "register": "marker",
  "duration_s": 66.316,

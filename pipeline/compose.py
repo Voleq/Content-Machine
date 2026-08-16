@@ -481,11 +481,23 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # left that box empty for it.
             needs_panel = spec.slot is None and entry is not None
             if needs_panel:
+                # Size the paper to the LINES ACTUALLY DRAWN, not to the box
+                # they were allowed. A three-line budget holding one line left
+                # two lines of empty paper under it, which is the same fault
+                # as a declared box with nothing in it.
+                from pipeline import marks as _mk
+                _tw, th = _mk.measure_block(
+                    body, bx, font_name=(_mk.DISPLAY_FONT
+                                         if spec.size_fh >= 0.06
+                                         else _mk.BODY_FONT),
+                    size_px=int(spec.size_fh * fh),
+                    max_lines=spec.max_lines)
+                th = min(max(th, int(spec.size_fh * fh)), bx[3])
                 layers.append(Layer(
                     name=f"{shot.id}:panel:{spec.name}", kind="panel",
                     shot_id=shot.id, t_start=t0, t_end=t1,
                     x=bx[0] - int(fw * 0.03), y=bx[1] - int(fh * 0.012),
-                    w=bx[2] + int(fw * 0.06), h=bx[3] + int(fh * 0.024),
+                    w=bx[2] + int(fw * 0.06), h=th + int(fh * 0.024),
                     boil_fps=BOIL_FPS, z=55))
             layers.append(Layer(
                 name=f"{shot.id}:text:{spec.name}", kind="text",

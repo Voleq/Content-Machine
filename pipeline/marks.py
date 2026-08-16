@@ -293,6 +293,7 @@ def draw_block(img, text: str, box: tuple[int, int, int, int], *,
 def measure_block(text: str, box: tuple[int, int, int, int], *,
                   font_name: str, size_px: int,
                   max_lines: int = 3) -> tuple[int, int]:
+    """`(w, h)` the type will occupy. Same fitter, so the same answer."""
     """`(w, h)` the type will occupy, without drawing it."""
     from PIL import Image
     d = ImageDraw.Draw(Image.new("L", (8, 8)))
