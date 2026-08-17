@@ -369,14 +369,39 @@ def test_prune_keeps_what_the_current_render_needs(tmp_path, settings):
 
 
 # ------------------------------------------------- equivalence + resume
+#
+# These four renders are the whole cost of this module: 561 seconds, of which
+# 561 are ffmpeg. Long enough that `pytest tests/` looked like it had hung,
+# and a suite that looks hung is a suite nobody runs to the end — which is
+# how two red tests sat unnoticed through Stage 3a.
+#
+# The subject here is SEGMENTATION — that the two paths agree, that the cache
+# is keyed on content, that a wiped render dir resumes. None of that is a
+# property of how long the narration is. So they run on the first two
+# paragraphs of the fixture rather than all six: same beats, same boundaries,
+# same code, a third of the audio.
+
+
+@pytest.fixture(scope="module")
+def short_long_text() -> str:
+    """The deep-dive fixture, trimmed to the length these tests need.
+
+    Whole paragraphs, so the tag grammar and the beat structure survive — a
+    truncation mid-sentence would change what is being tested rather than
+    how much of it there is.
+    """
+    full = (Path("fixtures/scripts/long_valid.txt")
+            .read_text(encoding="utf-8"))
+    paras = [p for p in full.split("\n\n") if p.strip()]
+    return "\n\n".join(paras[:2])
 
 
 @pytest.fixture()
-def rendered_both(settings, workspace, long_valid_text):
+def rendered_both(settings, workspace, short_long_text):
     """The fixture LONG rendered twice: segmented and single-graph."""
     from PIL import Image
 
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    script, _ = parse_long_script(short_long_text, "EXMPL", settings)
     tts = TTSEngine(settings).synthesize(script.narration, "long")
 
     out = {}
@@ -413,14 +438,14 @@ def test_both_paths_agree_on_the_fixture(rendered_both):
 
 
 def test_a_segmented_render_resumes_after_a_wipe(settings, workspace,
-                                                 long_valid_text):
+                                                 short_long_text):
     """The machine is a daily driver: losing the workspace mid-job must cost
     the segments in flight, not the whole render."""
     import shutil as _sh
 
     from PIL import Image
 
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    script, _ = parse_long_script(short_long_text, "EXMPL", settings)
     Image.new("RGB", (1200, 700), (242, 242, 239)).save(
         workspace / "income_statement.png")
     tts = TTSEngine(settings).synthesize(script.narration, "long")

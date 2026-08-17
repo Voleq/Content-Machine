@@ -23,10 +23,22 @@ from pipeline.marks import LINE_LEADING, block_height, face_for
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
                             TemplateError)
 
-# Code-drawn ink is redrawn at the kit's own boil rate. The delivery boils
-# every plate at 7fps on the principle that the drawing is made again each
-# frame; type and marks this code draws follow the same rule, or a bare shot
-# is a frozen photograph with a live plate nowhere in it.
+# THE DRAWN WORLD BOILS; TYPE AND DATA NEVER DO.
+#
+# The delivery boils every plate at 7fps on the principle that the drawing is
+# made again each frame, and code-drawn MARKS follow it — a ring, an arrow, a
+# connector, the clock's hands are drawings, and a drawing that sits still
+# next to a boiling plate is the thing that reads as pasted on.
+#
+#   BOIL    plates, room, props, host, marks, transitions
+#   NEVER   figures, labels, headers, captions, quotes, any code-drawn text,
+#           and any rule or box framing it
+#
+# Type was boiling too, and it was wrong: a number that moves three times a
+# second cannot be read, which is the whole job of a number. The two-pixel
+# re-placement that reads as "the same hand" on a scribble reads as a
+# vibrating figure on a sheet row. `check_invariants` refuses a text-bearing
+# layer that carries a boil rate, so this cannot come back by accident.
 BOIL_FPS = 7
 
 # Moving in on a slot: how much of the frame height it should come to fill,
@@ -116,10 +128,12 @@ class Layer:
     def moves(self) -> bool:
         """Whether this layer is redrawing rather than sitting there.
 
-        A boil plate at 7fps and a host loop at 12 both move. So does ink this
-        code draws, because it boils on the same principle: the drawing is
-        made again each frame rather than transformed. That is what stops a
-        bare shot — one sentence on paper — from being a held photograph.
+        A boil plate at 7fps and a host loop at 12 both move. So does a MARK
+        this code draws, on the same principle: the drawing is made again
+        each frame rather than transformed. Type does not — a bare shot of
+        one sentence on paper is genuinely a held frame now, and its
+        `max_hold_s` is what keeps it short rather than a wobble that made
+        the measurement look better than the video.
         """
         return bool((self.loops and self.frames) or self.boil_fps)
 
@@ -410,7 +424,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     shot_id=shot.id, t_start=fill_t0, t_end=t1,
                     x=box[0] if box else 0, y=box[1] if box else 0,
                     w=box[2] if box else fw, h=box[3] if box else fh,
-                    slot=slot, text=txt, boil_fps=BOIL_FPS,
+                    slot=slot, text=txt,
                     lit=shot.lit in (None, "all", slot), z=20))
                 continue
             # A resolver may hand back a SEQUENCE instead of one file: an
@@ -507,8 +521,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                         name=f"{shot.id}:repeat:{slot_name}:{idx}", kind="fill",
                         shot_id=shot.id, t_start=enter_at, t_end=t1,
                         x=bx[0], y=bx[1], w=bx[2], h=bx[3],
-                        slot=slot_name, text=str(value), boil_fps=BOIL_FPS,
-                        z=25))
+                        slot=slot_name, text=str(value), z=25))
 
         # -- the host, in the plate's figure slot
         if shot.host:
@@ -607,14 +620,14 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     shot_id=shot.id, t_start=t0, t_end=t1,
                     x=bx[0] - int(fw * 0.03), y=bx[1] - int(fh * 0.012),
                     w=bx[2] + int(fw * 0.06), h=th + int(fh * 0.024),
-                    boil_fps=BOIL_FPS, z=55))
+                    z=55))
             layers.append(Layer(
                 name=f"{shot.id}:text:{spec.name}", kind="text",
                 shot_id=shot.id,
                 t_start=t0, t_end=t1,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3],
                 size_fh=spec.size_fh, text=body, reveal_s=spec.draw_on_s,
-                slot=spec.color, boil_fps=BOIL_FPS, halign=spec.halign,
+                slot=spec.color, halign=spec.halign,
                 max_lines=spec.max_lines, panel=needs_panel, z=60))
 
         # -- marks land after the thing they mark
@@ -887,6 +900,23 @@ def check_invariants(fmt: Format, result: BuildResult,
                 problems.append(
                     f"{l.name} stands over {o.name} — the host is drawn "
                     f"across {(ox * oy) / (o.w * o.h):.0%} of it")
+
+    # 4c. THE DRAWN WORLD BOILS; TYPE AND DATA NEVER DO.
+    #
+    #     A number that moves three times a second cannot be read, which is
+    #     the whole job of a number. The wobble that reads as "the same hand"
+    #     on a ring reads as a vibrating figure on a sheet row — and it was
+    #     on every row, every label, every caption and every panel edge.
+    #
+    #     Checked on the layer list, so it is answered before a frame is
+    #     drawn and cannot come back as a default somebody re-adds.
+    for l in result.layers:
+        if not l.boil_fps:
+            continue
+        if l.text or l.kind in ("text", "panel", "caption"):
+            problems.append(
+                f"{l.name}: carries type and a {l.boil_fps}fps boil — the "
+                f"drawn world boils, type and data never do")
 
     # 5c. A text box that cannot hold the lines it promises, at the smallest
     #     size those lines are allowed to be.

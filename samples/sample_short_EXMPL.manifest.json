@@ -228,5 +228,5 @@
  "skipped": [],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 0.0
+ "longest_layer_hold_s": 5.0
 }

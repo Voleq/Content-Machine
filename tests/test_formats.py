@@ -229,6 +229,44 @@ def test_a_container_takes_media_in_its_own_media_slot():
         build_layers(fmt, spans, StubResolver(), kit_for("marker"), "marker")
 
 
+@pytest.mark.parametrize("name", FORMATS)
+def test_type_and_data_never_boil(name):
+    """THE RULE: the drawn world boils; type and data never do.
+
+    BOIL   plates, room, props, host, marks, transitions
+    NEVER  figures, labels, headers, captions, quotes, any code-drawn text,
+           and any rule or box framing it
+
+    A number that moves three times a second cannot be read, which is the
+    whole job of a number. Every sheet row, card label, caption and panel
+    edge carried a 7fps re-placement, and it was called twice before it was
+    believed. Asserted on the layer list, so it is answered before a frame is
+    drawn and cannot return as a default somebody re-adds.
+    """
+    fmt = _cut(name)
+    for duration in (45.0, 190.0):
+        spans = resolve_spans(fmt, _words(duration), duration, {})
+        result = build_layers(fmt, spans, SheetResolver(), kit_for("marker"),
+                              "marker", progression=fmt.progression)
+        for l in result.layers:
+            if l.text or l.kind in ("text", "panel", "caption"):
+                assert not l.boil_fps, (
+                    f"{name}/{l.name} ({l.kind}) carries type and a "
+                    f"{l.boil_fps}fps boil")
+        # and the ones that SHOULD move still do — losing the boil on marks
+        # would be the opposite mistake and just as invisible in a manifest.
+        marks = [l for l in result.layers if l.kind == "mark"]
+        assert all(l.boil_fps for l in marks), [l.name for l in marks
+                                                if not l.boil_fps]
+
+
+def test_the_re_placement_helper_is_gone_not_zeroed():
+    """`_boil_offset` nudged type by a pixel on a seed that changed at the
+    boil rate. A knob at zero is a knob somebody turns back up."""
+    from pipeline import render_short as rs
+    assert not hasattr(rs, "_boil_offset")
+
+
 def test_a_box_too_short_for_its_lines_is_a_composition_failure():
     """THE NEWS shipped three lines of type through the bottom of a slot.
 

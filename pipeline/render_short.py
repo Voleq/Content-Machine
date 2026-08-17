@@ -485,24 +485,16 @@ def _slot_floor(canvas: Image.Image) -> int:
 
 
 def _boil_index(layer: Layer, t: float) -> int:
-    """Which redraw of a code-drawn layer is showing at `t`."""
+    """Which redraw of a code-drawn MARK is showing at `t`.
+
+    Marks only. Type used to come through here too — re-PLACED by a pixel or
+    two rather than re-drawn, because a font cannot be redrawn stroke by
+    stroke — and on a figure that reads as vibration, not as a hand. The
+    re-placement helper is gone rather than left as a knob at zero.
+    """
     if not layer.boil_fps:
         return 0
     return int((t - layer.t_start) * layer.boil_fps)
-
-
-def _boil_offset(layer: Layer, t: float) -> tuple[int, int]:
-    """The wobble for this redraw.
-
-    The kit's plates boil because each frame is drawn again with a moved seed,
-    so the line lands 2-3% differently. Type cannot be re-drawn stroke by
-    stroke through a font, so it is re-placed instead: a pixel or two, on a
-    seed that changes at the boil rate. It reads as the same hand.
-    """
-    if not layer.boil_fps:
-        return (0, 0)
-    r = mk.rng_for(layer.name, _boil_index(layer, t))
-    return (r.randint(-1, 1), r.randint(-1, 1))
 
 
 def _draw_columns(canvas: Image.Image, layer: Layer, dx: int, dy: int,
@@ -558,7 +550,10 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
     if layer.kind == "panel":
         # Paper, with a drawn edge. Type over a drawing needs a surface, and
         # in this kit a surface is a torn sheet, not a rounded rectangle.
-        rng = mk.rng_for(layer.name, _boil_index(layer, t))
+        # ONE seed for the whole shot: the panel is the box framing type, and
+        # a box that redraws three times a second is the same unreadability
+        # as type that does.
+        rng = mk.rng_for(layer.name)
         d = ImageDraw.Draw(canvas)
         box = (layer.x, layer.y, layer.x + layer.w, layer.y + layer.h)
         d.rectangle(box, fill=mk.PAPER)
@@ -616,7 +611,9 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
             canvas.alpha_composite(im, (layer.x, layer.y))
             return
         if layer.text:
-            dx, dy = _boil_offset(layer, t)
+            # Data does not boil. `dx, dy` stay for the drawing helpers'
+            # signatures; they are zero and the row is placed once.
+            dx = dy = 0
             if "\t" in layer.text:
                 _draw_columns(canvas, layer, dx, dy, ink, lost)
                 return
@@ -644,10 +641,9 @@ def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
         reveal = 1.0
         if layer.reveal_s > 0:
             reveal = mk.ease_out(min((t - layer.t_start) / layer.reveal_s, 1.0))
-        dx, dy = _boil_offset(layer, t)
         *_box, dropped = mk.draw_block(
             canvas, layer.text,
-            (layer.x + dx, layer.y + dy, layer.w, layer.h),
+            (layer.x, layer.y, layer.w, layer.h),
             font_name=mk.face_for(layer.size_fh),
             size_px=max(int(layer.size_fh * canvas.height), 12),
             color=colour, max_lines=layer.max_lines,
