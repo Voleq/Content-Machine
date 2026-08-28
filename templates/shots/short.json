@@ -1,0 +1,242 @@
+{
+  "format": "short",
+  "aspect": "9:16",
+  "frame": {
+    "w": 1080,
+    "h": 1920
+  },
+  "notes": [
+    "Twelve shots. The template fixes space and order; the audio clock fixes",
+    "duration. Positions and type sizes are fractions of FRAME HEIGHT, so one",
+    "template holds at any delivery resolution.",
+    "",
+    "The host appears in 1, 5-8, 11 and 12 and nowhere else. Large type and",
+    "the caption band never coexist: a shot carrying type at 6.5% of frame",
+    "height or more sets captions false, and the parser refuses the template",
+    "if it does not.",
+    "",
+    "Shot 2 enters on ink-wipe rather than dive-in. dive-in is delivered 16:9",
+    "only (group D, 1920x1080) because the dive is the LONG's lobby-to-monitor",
+    "motion; ink-wipe is the kit's 9:16 transition. See the Stage 1 report.",
+    "",
+    "Shot 4 names no plate. There is no statement plate in the delivery, and",
+    "the shot is one sentence on bare ground — 'this shot is allowed to be",
+    "empty; that is its job'. A null plate is the ground and nothing else.",
+    "",
+    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
+    "and two of those in a paper-white video reads as a different show",
+    "interrupting — it also makes the transition the loudest thing in a",
+    "format built on restraint. underline-swipe is a stroke, not a wall.",
+    "Full coverage is reserved for a chapter boundary in the LONG, where",
+    "a hard reset is the point."
+  ],
+  "shots": [
+    {
+      "id": "cold-open",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-at-screen",
+        "slot": "figure"
+      },
+      "anchor": "hook",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "hook",
+          "src": "script.hook_text",
+          "size_fh": 0.085,
+          "align": "top",
+          "max_lines": 3,
+          "draw_on_s": 0.6
+        }
+      ],
+      "notes": "Room-wide with the host talking at the screen. The hook draws on."
+    },
+    {
+      "id": "the-move",
+      "plate": "screen-full",
+      "enter": "underline-swipe",
+      "anchor": "move",
+      "max_hold_s": 6,
+      "bind": {
+        "screen": "chart.price"
+      },
+      "marks": [
+        {
+          "kind": "ring",
+          "target": "chart.extreme_candle",
+          "name": "extreme-ring"
+        }
+      ],
+      "text": [
+        {
+          "name": "move-summary",
+          "src": "script.move_summary",
+          "size_fh": 0.04,
+          "align": "0.70",
+          "max_lines": 3
+        }
+      ],
+      "notes": "Chart full bleed in the screen slot. The ring lands on the extreme candle, never on a label."
+    },
+    {
+      "id": "the-news",
+      "plate": "desk-top-down",
+      "anchor": "headline",
+      "max_hold_s": 6,
+      "bind": {
+        "pages": "plate.page-corporate"
+      },
+      "text": [
+        {
+          "name": "headline",
+          "src": "script.headlines.0.text",
+          "size_fh": 0.05,
+          "align": "0.30",
+          "max_lines": 2
+        },
+        {
+          "name": "meaning",
+          "src": "script.headlines.0.meaning",
+          "size_fh": 0.04,
+          "align": "0.60",
+          "max_lines": 3,
+          "color": "red"
+        }
+      ],
+      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent."
+    },
+    {
+      "id": "the-turn",
+      "plate": null,
+      "anchor": "turn",
+      "captions": false,
+      "max_hold_s": 5,
+      "text": [
+        {
+          "name": "turn",
+          "src": "script.turn_line",
+          "size_fh": 0.09,
+          "align": "center",
+          "max_lines": 3,
+          "draw_on_s": 0.5
+        }
+      ],
+      "notes": "One sentence, centred, bare. Allowed to be empty; that is its job."
+    },
+    {
+      "id": "numbers",
+      "plate": "sheet-tall",
+      "anchor": "numbers",
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.header",
+        "row-2": "numbers.row.0",
+        "row-3": "?numbers.row.1",
+        "row-4": "?numbers.row.2",
+        "row-5": "?numbers.row.3",
+        "row-6": "?numbers.row.4"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-$n+1"
+        }
+      ],
+      "repeat": {
+        "src": "script.numbers",
+        "max": 4,
+        "arrange": "sequence",
+        "lit": "row-$n+1",
+        "focus": "row-$n+1"
+      },
+      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot — four steps that differ only by which row carries a rectangle are one shot with extra runtime. Band 1 is the year header, so metric N is row N+1. NO HOST. The walk pushes in and pans so the lit row lands in the middle of the frame, which makes the sheet full-bleed and carries the plate's figure slot off the bottom edge with it. Left where the slot puts him, 13% of him is on screen; clamped back into frame he stands across two rows of the table. There is no room for a figure in front of a wall-sized sheet, so he is not in these four - he returns at the payoff."
+    },
+    {
+      "id": "the-sheet",
+      "plate": "sheet-tall",
+      "anchor": "numbers_comment",
+      "max_hold_s": 5,
+      "bind": {
+        "row-1": "numbers.header",
+        "row-2": "numbers.row.0",
+        "row-3": "?numbers.row.1",
+        "row-4": "?numbers.row.2",
+        "row-5": "?numbers.row.3",
+        "row-6": "?numbers.row.4"
+      },
+      "text": [
+        {
+          "name": "numbers-comment",
+          "src": "script.numbers_comment",
+          "size_fh": 0.038,
+          "align": "0.74",
+          "max_lines": 6
+        }
+      ],
+      "notes": "Pull back: every row lit, the header above them, the comment beneath.",
+      "lit": "all"
+    },
+    {
+      "id": "cheap-or-trap",
+      "plate": "compare-plate",
+      "anchor": "cheap_or_trap",
+      "max_hold_s": 5,
+      "bind": {
+        "left": "compare.heavy",
+        "right": "compare.light",
+        "gap": "compare.versus"
+      },
+      "text": [
+        {
+          "name": "cheap-or-trap",
+          "src": "script.cheap_or_trap",
+          "size_fh": 0.04,
+          "align": "0.78",
+          "max_lines": 2
+        }
+      ],
+      "notes": "Two multiples, heavy against light. Two lines of type at most."
+    },
+    {
+      "id": "payoff",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-to-camera",
+        "slot": "figure"
+      },
+      "anchor": "conclusion",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "conclusion",
+          "src": "script.conclusion",
+          "size_fh": 0.07,
+          "align": "top",
+          "max_lines": 5,
+          "draw_on_s": 0.5
+        }
+      ]
+    },
+    {
+      "id": "close",
+      "plate": "room-wide",
+      "host": {
+        "pose": "sitting-with-mug",
+        "slot": "figure"
+      },
+      "max_hold_s": 4,
+      "text": [
+        {
+          "name": "handle",
+          "src": "channel.handle",
+          "size_fh": 0.045,
+          "align": "0.82"
+        }
+      ],
+      "notes": "Sitting with the mug, the handle, out."
+    }
+  ]
+}

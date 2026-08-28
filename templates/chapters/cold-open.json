@@ -1,0 +1,62 @@
+{
+  "chapter": "cold-open",
+  "shots": [
+    {
+      "id": "stinger",
+      "plate": "chapter-stinger",
+      "max_hold_s": 4,
+      "captions": false,
+      "text": [
+        {
+          "name": "chapter-number",
+          "src": "chapter.number",
+          "size_fh": 0.07,
+          "slot": "chapter-number",
+          "max_lines": 1
+        },
+        {
+          "name": "chapter-title",
+          "src": "chapter.title",
+          "size_fh": 0.075,
+          "slot": "chapter-title",
+          "max_lines": 2
+        }
+      ],
+      "notes": "The chapter card. The boundary transition onto it comes from the format, so this file works wherever it is picked."
+    },
+    {
+      "id": "open",
+      "plate": "room-wide-16--lived-in",
+      "host": {
+        "pose": "talking-to-camera",
+        "slot": "figure"
+      },
+      "max_hold_s": 7,
+      "captions": true,
+      "text": [
+        {
+          "name": "hook",
+          "src": "chapter.line.0",
+          "size_fh": 0.058,
+          "align": "top",
+          "max_lines": 3
+        }
+      ]
+    },
+    {
+      "id": "the-question",
+      "plate": "question-card",
+      "max_hold_s": 6,
+      "captions": true,
+      "text": [
+        {
+          "name": "question",
+          "src": "chapter.line.1",
+          "size_fh": 0.05,
+          "slot": "question",
+          "max_lines": 3
+        }
+      ]
+    }
+  ]
+}

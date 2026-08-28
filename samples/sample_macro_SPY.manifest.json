@@ -1,0 +1,253 @@
+{
+ "ticker": "SPY",
+ "format": "macro",
+ "beats": 9,
+ "shots_count": 14,
+ "anchored_shots": 2,
+ "register": "marker",
+ "duration_s": 66.316,
+ "frame": {
+  "w": 1080,
+  "h": 1920
+ },
+ "shots": [
+  {
+   "id": "open",
+   "plate": "room-wide",
+   "start_s": 0.0,
+   "end_s": 5.247,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "open:ground",
+    "open:plate:room-wide",
+    "open:host:talking-at-screen",
+    "open:panel:hook",
+    "open:text:hook"
+   ]
+  },
+  {
+   "id": "the-print",
+   "plate": "screen-full",
+   "start_s": 5.247,
+   "end_s": 10.247,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "the-print:ground",
+    "the-print:enter:underline-swipe",
+    "the-print:plate:screen-full",
+    "the-print:fill:screen",
+    "the-print:text:print-label",
+    "the-print:text:print-figure"
+   ]
+  },
+  {
+   "id": "vs-expected",
+   "plate": "desk-top-down",
+   "start_s": 10.247,
+   "end_s": 15.247,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "vs-expected:ground",
+    "vs-expected:plate:desk-top-down",
+    "vs-expected:fill:pages",
+    "vs-expected:text:reported",
+    "vs-expected:text:expected",
+    "vs-expected:text:versus",
+    "vs-expected:panel:gap-read",
+    "vs-expected:text:gap-read"
+   ]
+  },
+  {
+   "id": "the-statement",
+   "plate": "desk-top-down",
+   "start_s": 15.247,
+   "end_s": 20.988,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-statement:ground",
+    "the-statement:plate:desk-top-down",
+    "the-statement:fill:pages",
+    "the-statement:panel:statement-head",
+    "the-statement:text:statement-head",
+    "the-statement:panel:the-clause",
+    "the-statement:text:the-clause",
+    "the-statement:mark:clause-ring"
+   ]
+  },
+  {
+   "id": "the-mechanism-1",
+   "plate": "desk-top-down",
+   "start_s": 20.988,
+   "end_s": 26.235,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-mechanism-1:ground",
+    "the-mechanism-1:plate:desk-top-down",
+    "the-mechanism-1:repeat:card-consequence-b:0",
+    "the-mechanism-1:repeat:label:0",
+    "the-mechanism-1:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "the-mechanism-2",
+   "plate": "desk-top-down",
+   "start_s": 26.235,
+   "end_s": 31.482,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-mechanism-2:ground",
+    "the-mechanism-2:plate:desk-top-down",
+    "the-mechanism-2:repeat:card-consequence-b:0",
+    "the-mechanism-2:repeat:label:0",
+    "the-mechanism-2:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "the-mechanism-3",
+   "plate": "desk-top-down",
+   "start_s": 31.482,
+   "end_s": 36.729,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-mechanism-3:ground",
+    "the-mechanism-3:plate:desk-top-down",
+    "the-mechanism-3:repeat:card-consequence-b:0",
+    "the-mechanism-3:repeat:label:0",
+    "the-mechanism-3:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "who-it-hits-1",
+   "plate": "at-the-sheet",
+   "start_s": 36.729,
+   "end_s": 41.976,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "who-it-hits-1:ground",
+    "who-it-hits-1:plate:at-the-sheet",
+    "who-it-hits-1:repeat:card-consequence:0",
+    "who-it-hits-1:repeat:label:0",
+    "who-it-hits-1:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "who-it-hits-2",
+   "plate": "at-the-sheet",
+   "start_s": 41.976,
+   "end_s": 47.223,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "who-it-hits-2:ground",
+    "who-it-hits-2:plate:at-the-sheet",
+    "who-it-hits-2:repeat:card-consequence:0",
+    "who-it-hits-2:repeat:label:0",
+    "who-it-hits-2:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "who-it-hits-3",
+   "plate": "at-the-sheet",
+   "start_s": 47.223,
+   "end_s": 52.47,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "who-it-hits-3:ground",
+    "who-it-hits-3:plate:at-the-sheet",
+    "who-it-hits-3:repeat:card-consequence:0",
+    "who-it-hits-3:repeat:label:0",
+    "who-it-hits-3:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "who-it-hits-4",
+   "plate": "at-the-sheet",
+   "start_s": 52.47,
+   "end_s": 57.717,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "who-it-hits-4:ground",
+    "who-it-hits-4:plate:at-the-sheet",
+    "who-it-hits-4:repeat:card-consequence:0",
+    "who-it-hits-4:repeat:label:0",
+    "who-it-hits-4:repeat:mark:0"
+   ]
+  },
+  {
+   "id": "whats-priced",
+   "plate": "screen-full",
+   "start_s": 57.717,
+   "end_s": 62.964,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "whats-priced:ground",
+    "whats-priced:enter:underline-swipe",
+    "whats-priced:plate:screen-full",
+    "whats-priced:fill:screen",
+    "whats-priced:mark:extreme-ring"
+   ]
+  },
+  {
+   "id": "so-what",
+   "plate": "room-wide",
+   "start_s": 62.964,
+   "end_s": 64.64,
+   "anchored": true,
+   "max_hold_s": 5.0,
+   "layers": [
+    "so-what:ground",
+    "so-what:plate:room-wide",
+    "so-what:host:talking-to-camera",
+    "so-what:panel:so-what",
+    "so-what:text:so-what"
+   ]
+  },
+  {
+   "id": "close",
+   "plate": "room-wide",
+   "start_s": 64.64,
+   "end_s": 66.316,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "close:ground",
+    "close:plate:room-wide",
+    "close:host:sitting-with-mug",
+    "close:panel:handle",
+    "close:text:handle"
+   ]
+  }
+ ],
+ "layers": 77,
+ "kit_assets_used": [
+  "at-the-sheet--marker",
+  "card-consequence--marker",
+  "card-consequence-b--marker",
+  "compare-plate--marker",
+  "desk-top-down--marker",
+  "number-full--marker",
+  "page-institutional--marker",
+  "room-wide--marker",
+  "screen-full--marker",
+  "sitting-with-mug--marker",
+  "talking-at-screen--marker",
+  "talking-to-camera--marker",
+  "underline-swipe--marker"
+ ],
+ "kit_reach": "Kit: 13 entries in marker, 13 concepts, 30 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "text_overflow": {},
+ "longest_layer_hold_s": 0.0
+}

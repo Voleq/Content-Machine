@@ -1,0 +1,235 @@
+{
+  "format": "earnings",
+  "aspect": "9:16",
+  "frame": {
+    "w": 1080,
+    "h": 1920
+  },
+  "notes": [
+    "Ten shots. Same engine as the SHORT, same audio clock, same register",
+    "rule — this file is the whole of the difference between the two formats.",
+    "",
+    "The verdict is a stamp with one text slot, and it is the only shot in any",
+    "format so far that is a card alone on the ground. The two 'line that",
+    "moved' shots use the sheet the way the SHORT's numbers shots do: every",
+    "row visible, one lit, the rest ghosted back.",
+    "",
+    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
+    "and two of those in a paper-white video reads as a different show",
+    "interrupting — it also makes the transition the loudest thing in a",
+    "format built on restraint. underline-swipe is a stroke, not a wall.",
+    "Full coverage is reserved for a chapter boundary in the LONG, where",
+    "a hard reset is the point."
+  ],
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room-wide",
+      "host": {
+        "pose": "talking-at-screen",
+        "slot": "figure"
+      },
+      "anchor": "hook",
+      "captions": false,
+      "max_hold_s": 6,
+      "text": [
+        {
+          "name": "hook",
+          "src": "script.hook_text",
+          "size_fh": 0.085,
+          "align": "top",
+          "max_lines": 3,
+          "draw_on_s": 0.6
+        }
+      ]
+    },
+    {
+      "id": "the-print",
+      "plate": "desk-top-down",
+      "anchor": "headline",
+      "max_hold_s": 6,
+      "bind": {
+        "pages": "plate.page-corporate"
+      },
+      "text": [
+        {
+          "name": "headline",
+          "src": "script.headlines.0.text",
+          "size_fh": 0.05,
+          "align": "0.30",
+          "max_lines": 2
+        },
+        {
+          "name": "meaning",
+          "src": "script.headlines.0.meaning",
+          "size_fh": 0.04,
+          "align": "0.60",
+          "max_lines": 3
+        }
+      ],
+      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent — the page is the subject."
+    },
+    {
+      "id": "vs-expected",
+      "plate": "compare-plate",
+      "anchor": "expected",
+      "max_hold_s": 5,
+      "bind": {
+        "left": "compare.reported",
+        "right": "compare.expected",
+        "gap": "compare.versus"
+      },
+      "text": [
+        {
+          "name": "gap-read",
+          "src": "script.move_summary",
+          "size_fh": 0.04,
+          "align": "0.78",
+          "max_lines": 3
+        }
+      ],
+      "notes": "Printed against expected. The gap slot carries the word between them.",
+      "stagger_s": 0.8
+    },
+    {
+      "id": "the-verdict",
+      "plate": "stamp",
+      "anchor": "verdict",
+      "captions": false,
+      "max_hold_s": 4,
+      "bind": {
+        "stamp-text": "script.verdict"
+      },
+      "notes": "A card alone on the ground. One word or one clause, stamped."
+    },
+    {
+      "id": "line-moved-1",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "anchor": "numbers",
+      "max_hold_s": 5,
+      "lit": "row-1",
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-1"
+        }
+      ]
+    },
+    {
+      "id": "line-moved-2",
+      "plate": "sheet-tall",
+      "host": {
+        "pose": "pointing-at-sheet",
+        "slot": "figure"
+      },
+      "max_hold_s": 5,
+      "lit": "row-2",
+      "bind": {
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4",
+        "row-6": "?numbers.row.5"
+      },
+      "marks": [
+        {
+          "kind": "scribble",
+          "target": "row-2"
+        }
+      ]
+    },
+    {
+      "id": "guidance",
+      "plate": "card-guidance",
+      "anchor": "guidance",
+      "max_hold_s": 5,
+      "text": [
+        {
+          "name": "guidance-line",
+          "src": "script.guidance",
+          "size_fh": 0.055,
+          "align": "0.30",
+          "max_lines": 2
+        },
+        {
+          "name": "guidance-read",
+          "src": "script.numbers_comment",
+          "size_fh": 0.038,
+          "align": "0.76",
+          "max_lines": 6
+        }
+      ],
+      "notes": "What they said about next quarter. card-guidance's own label slot renders 35px type at frame scale — a marker slot, not a text slot — so the phrase is set beside the card rather than crammed into it."
+    },
+    {
+      "id": "the-reaction",
+      "plate": "screen-full",
+      "enter": "underline-swipe",
+      "anchor": "move",
+      "max_hold_s": 6,
+      "bind": {
+        "screen": "chart.price"
+      },
+      "marks": [
+        {
+          "kind": "ring",
+          "target": "chart.extreme_candle",
+          "name": "extreme-ring"
+        }
+      ],
+      "notes": "What the tape did with it. Chart full bleed."
+    },
+    {
+      "id": "so-what",
+      "plate": "room-wide",
+      "anchor": "conclusion",
+      "captions": true,
+      "max_hold_s": 5,
+      "text": [
+        {
+          "name": "so-what",
+          "src": "script.conclusion",
+          "size_fh": 0.06,
+          "align": "top",
+          "max_lines": 4,
+          "draw_on_s": 0.5
+        }
+      ],
+      "notes": "Said to camera, in the room. Not a caption on paper.",
+      "host": {
+        "pose": "talking-to-camera",
+        "slot": "figure"
+      }
+    },
+    {
+      "id": "close",
+      "plate": "room-wide",
+      "host": {
+        "pose": "sitting-with-mug",
+        "slot": "figure"
+      },
+      "max_hold_s": 4,
+      "text": [
+        {
+          "name": "handle",
+          "src": "channel.handle",
+          "size_fh": 0.045,
+          "align": "0.82"
+        }
+      ]
+    }
+  ]
+}

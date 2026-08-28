@@ -1,0 +1,191 @@
+{
+ "ticker": "EXMPL",
+ "format": "earnings",
+ "beats": 10,
+ "shots_count": 10,
+ "anchored_shots": 2,
+ "register": "marker",
+ "duration_s": 64.458,
+ "frame": {
+  "w": 1080,
+  "h": 1920
+ },
+ "shots": [
+  {
+   "id": "open",
+   "plate": "room-wide",
+   "start_s": 0.0,
+   "end_s": 7.346,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "open:ground",
+    "open:plate:room-wide",
+    "open:host:talking-at-screen",
+    "open:panel:hook",
+    "open:text:hook"
+   ]
+  },
+  {
+   "id": "the-print",
+   "plate": "desk-top-down",
+   "start_s": 7.346,
+   "end_s": 14.692,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-print:ground",
+    "the-print:plate:desk-top-down",
+    "the-print:fill:pages",
+    "the-print:panel:headline",
+    "the-print:text:headline",
+    "the-print:panel:meaning",
+    "the-print:text:meaning"
+   ]
+  },
+  {
+   "id": "vs-expected",
+   "plate": "compare-plate",
+   "start_s": 14.692,
+   "end_s": 21.037,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "vs-expected:ground",
+    "vs-expected:plate:compare-plate",
+    "vs-expected:fill:left",
+    "vs-expected:fill:right",
+    "vs-expected:fill:gap",
+    "vs-expected:panel:gap-read",
+    "vs-expected:text:gap-read"
+   ]
+  },
+  {
+   "id": "the-verdict",
+   "plate": "stamp",
+   "start_s": 21.037,
+   "end_s": 26.383,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "the-verdict:ground",
+    "the-verdict:plate:stamp",
+    "the-verdict:fill:stamp-text"
+   ]
+  },
+  {
+   "id": "line-moved-1",
+   "plate": "sheet-tall",
+   "start_s": 26.383,
+   "end_s": 32.729,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "line-moved-1:ground",
+    "line-moved-1:plate:sheet-tall",
+    "line-moved-1:fill:row-1",
+    "line-moved-1:fill:row-2",
+    "line-moved-1:host:pointing-at-sheet",
+    "line-moved-1:mark:scribble"
+   ]
+  },
+  {
+   "id": "line-moved-2",
+   "plate": "sheet-tall",
+   "start_s": 32.729,
+   "end_s": 39.075,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "line-moved-2:ground",
+    "line-moved-2:plate:sheet-tall",
+    "line-moved-2:fill:row-1",
+    "line-moved-2:fill:row-2",
+    "line-moved-2:host:pointing-at-sheet",
+    "line-moved-2:mark:scribble"
+   ]
+  },
+  {
+   "id": "guidance",
+   "plate": "card-guidance",
+   "start_s": 39.075,
+   "end_s": 45.421,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "guidance:ground",
+    "guidance:plate:card-guidance",
+    "guidance:panel:guidance-line",
+    "guidance:text:guidance-line",
+    "guidance:panel:guidance-read",
+    "guidance:text:guidance-read"
+   ]
+  },
+  {
+   "id": "the-reaction",
+   "plate": "screen-full",
+   "start_s": 45.421,
+   "end_s": 52.766,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "the-reaction:ground",
+    "the-reaction:enter:underline-swipe",
+    "the-reaction:plate:screen-full",
+    "the-reaction:fill:screen",
+    "the-reaction:mark:extreme-ring"
+   ]
+  },
+  {
+   "id": "so-what",
+   "plate": "room-wide",
+   "start_s": 52.766,
+   "end_s": 59.112,
+   "anchored": true,
+   "max_hold_s": 5.0,
+   "layers": [
+    "so-what:ground",
+    "so-what:plate:room-wide",
+    "so-what:host:talking-to-camera",
+    "so-what:panel:so-what",
+    "so-what:text:so-what"
+   ]
+  },
+  {
+   "id": "close",
+   "plate": "room-wide",
+   "start_s": 59.112,
+   "end_s": 64.458,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "close:ground",
+    "close:plate:room-wide",
+    "close:host:sitting-with-mug",
+    "close:panel:handle",
+    "close:text:handle"
+   ]
+  }
+ ],
+ "layers": 55,
+ "kit_assets_used": [
+  "card-guidance--marker",
+  "compare-plate--marker",
+  "desk-top-down--marker",
+  "page-corporate--marker",
+  "pointing-at-sheet--marker",
+  "room-wide--marker",
+  "screen-full--marker",
+  "sheet-tall--marker",
+  "sitting-with-mug--marker",
+  "stamp--marker",
+  "talking-at-screen--marker",
+  "talking-to-camera--marker",
+  "underline-swipe--marker"
+ ],
+ "kit_reach": "Kit: 13 entries in marker, 13 concepts, 18 animated layers",
+ "skipped": [],
+ "dropped_shots": [],
+ "text_overflow": {},
+ "longest_layer_hold_s": 0.0
+}

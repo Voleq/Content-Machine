@@ -1,0 +1,58 @@
+{
+  "ticker": "EXMPL",
+  "format": "short",
+  "hook_text": "EXMPL beat and raised. The five-year chart didn't notice.",
+  "audio_script": "EXMPL reported third quarter earnings and beat the estimate, and management raised the full-year guide, which is genuinely the good news, so let me give it its moment. Earnings per share came in two cents ahead. Revenue grew a little. The guide went up. Now the part everyone skips on beat-and-raise days. A beat is against the estimate, not against reality, and the estimate is a number analysts lowered three times this year so it could be beaten. But here is what I actually want to know. Does one print change the trajectory, or just the week? Revenue went four hundred million to four ninety six in five years, and one good quarter does not un-flatten that line. Losses [SCRIBBLE: circle -> Net income] are still losses, narrower this quarter, still losses. I have bought a beat-and-raise before and watched it give the whole move back by Friday; the account went to zero anyway. In fairness, a raised guide is a real signal, small but real. Signal, but a quiet one. A good quarter, leaning against five flat years.",
+  "move_summary": "Q3 beat · guide raised · EPS +2c",
+  "chart_style": "clean",
+  "headlines": [
+    {
+      "text": "EXMPL beats Q3, raises full-year guidance",
+      "meaning": "A beat on cost cuts, not on demand"
+    }
+  ],
+  "years": [
+    "2021",
+    "2022",
+    "2023",
+    "2024",
+    "2025"
+  ],
+  "numbers": [
+    {
+      "label": "Revenue",
+      "values": [
+        "$400M",
+        "$452M",
+        "$471M",
+        "$491M",
+        "$496M"
+      ]
+    },
+    {
+      "label": "Net income",
+      "values": [
+        "-$8M",
+        "-$25M",
+        "-$49M",
+        "-$70M",
+        "-$89M"
+      ]
+    }
+  ],
+  "numbers_comment": "A beat on cost control, not on demand. Guidance is the part that moves the multiple, and it moved the wrong way.",
+  "conclusion": "Signal, but a quiet one. A good quarter, leaning against five flat years.",
+  "meme": null,
+  "broll": null,
+  "annotations": [
+    {
+      "target": "chart",
+      "anchor_word": "beat",
+      "note": "vs lowered est"
+    }
+  ],
+  "reported": "$1.42",
+  "expected": "$1.28",
+  "verdict": "Beat, and it did not matter.",
+  "guidance": "Guided below the street"
+}

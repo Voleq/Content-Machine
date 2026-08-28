@@ -232,6 +232,34 @@ class Headline(BaseModel):
     meaning: str = Field(min_length=1, max_length=240)  # what it actually means
 
 
+class MetricKind(str, Enum):
+    """Whether a metric is measured OVER a period or AT a date.
+
+    Revenue and net income accumulate across a year; shares outstanding and
+    total debt are a reading taken on one day. Rendering them identically
+    makes them indistinguishable, and the writer inherits the confusion —
+    "revenue has flatlined for three years" under a row of five values that
+    might be either.
+
+    They do not share a row format. A FLOW row is a series under FY column
+    headers. A STOCK row is one figure with the date it was taken.
+    """
+
+    FLOW = "flow"     # measured over a period: revenue, income, cash flow
+    STOCK = "stock"   # measured at a date: shares out, debt, cash, book value
+
+
+# Metrics whose name gives their kind away. The writer may state `kind`
+# explicitly; this is what is inferred when they do not, so existing scripts
+# keep working and get the right rendering anyway.
+# Order matters: "free cash flow" contains "cash" and is emphatically a
+# flow, so the flow words are checked first.
+_FLOW_HINTS = ("revenue", "sales", "income", "profit", "loss", "margin",
+               "ebitda", "eps", "flow", "capex", "opex", "spend", "buyback")
+_STOCK_HINTS = ("shares", "share count", "debt", "cash", "book value",
+                "equity", "assets", "inventory", "backlog", "headcount")
+
+
 class NumberRow(BaseModel):
     """One metric row on the numbers sheet — MULTI-YEAR, oldest -> newest."""
 
@@ -239,6 +267,19 @@ class NumberRow(BaseModel):
 
     label: str = Field(min_length=1, max_length=40)
     values: list[str] = Field(min_length=2, max_length=6)
+    # A period measure or a point-in-time one. Inferred from the label when
+    # the script does not say, so nothing already written breaks.
+    kind: MetricKind | None = None
+
+    @property
+    def measured(self) -> MetricKind:
+        if self.kind is not None:
+            return self.kind
+        lab = self.label.lower()
+        if any(h in lab for h in _FLOW_HINTS):
+            return MetricKind.FLOW
+        return (MetricKind.STOCK
+                if any(h in lab for h in _STOCK_HINTS) else MetricKind.FLOW)
 
     @field_validator("values")
     @classmethod
@@ -291,6 +332,23 @@ class ShortScript(BaseModel):
     # on screen ~4-5s so it can actually be read. Optional so scripts written
     # against the four-beat format still parse.
     cheap_or_trap: str | None = Field(default=None, max_length=260)
+    # THE TURN: the one sentence the whole short pivots on, alone on the
+    # frame at 9% of frame height. It has its own field because the shot has
+    # its own slot in the template — under the form the writing prompt
+    # becomes, every shot is a field and this is that shot's. Optional so
+    # scripts written before the turn existed still parse; the renderer skips
+    # the shot when it is absent rather than drawing an empty frame.
+    turn_line: str | None = Field(default=None, max_length=120)
+    # EARNINGS and MACRO fields. Optional so a plain SHORT still parses, and
+    # so a script that fills none of them simply loses those shots rather
+    # than rendering them empty. Under the form the writing prompt becomes,
+    # each of these is one field of one shot.
+    verdict: str | None = Field(default=None, max_length=60)      # the stamp
+    guidance: str | None = Field(default=None, max_length=140)
+    expected: str | None = Field(default=None, max_length=60)     # consensus
+    reported: str | None = Field(default=None, max_length=60)     # the print
+    mechanism: list[str] = Field(default_factory=list, max_length=3)
+    consequences: list[str] = Field(default_factory=list, max_length=5)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
     # The chart the short opens on, and holds from the stage open to the gut
     # check — one of the longest single holds in the video.

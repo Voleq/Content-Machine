@@ -320,9 +320,12 @@ def test_a_short_proof_accepts_draft_audio(settings, tmp_path, short_valid_json)
     tts = TTSResult(audio_path=tmp_path / "a.m4a", words=[], duration_s=10.0,
                     chars=10, cached=False, cost_usd=0.0, tier="local",
                     draft=True)
-    with pytest.raises(Exception) as e:
-        render_short(script, tts, tmp_path, settings, proof=True)
-    assert "draft audio" not in str(e.value)
+    # It renders. Under the old renderer this raised for an unrelated reason
+    # and the test only checked the reason was not the draft gate; the shot
+    # templates removed that failure, so the proof now produces the thing it
+    # exists to produce.
+    out, manifest = render_short(script, tts, tmp_path, settings, proof=True)
+    assert out.exists() and manifest.exists()
 
 
 def test_the_operator_is_told_what_they_are_listening_to():

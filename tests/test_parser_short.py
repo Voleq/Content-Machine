@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from pipeline.models import ChartStyle, TagType
@@ -289,10 +291,13 @@ def test_warning_on_word_count(short_valid_json, settings):
 
 
 def test_warning_on_thin_history(short_valid_json, settings):
-    raw = short_valid_json.replace(
-        '{"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]}',
-        '{"label": "Revenue", "values": ["$491M", "$496M"]}',
-    )
+    # Edited through JSON, not through a string match on the fixture's
+    # formatting — the literal broke the moment the fixture was re-indented.
+    data = json.loads(short_valid_json)
+    for row in data["numbers"]:
+        if row["label"] == "Revenue":
+            row["values"] = ["$491M", "$496M"]
+    raw = json.dumps(data)
     _, warnings = parse_short_script(raw, settings)
     assert any("fewer than 3 years" in w for w in warnings)
 

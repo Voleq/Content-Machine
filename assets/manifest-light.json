@@ -1,0 +1,189 @@
+{
+  "registers": [
+    "marker",
+    "ballpoint",
+    "grease-pencil",
+    "cut-paper"
+  ],
+  "palette": {
+    "paper": "#f2f2ef",
+    "card": "#faf9f6",
+    "cardLine": "#e2dfd5",
+    "ink": "#232326",
+    "inkBallpoint": "#2b3242",
+    "inkGrease": "#2a2724",
+    "cutShadow": "#cdc9be",
+    "muted": "#8f8c83",
+    "red": "#ff5247",
+    "green": "#2fd576",
+    "world": {
+      "postIt": "#e8d98a",
+      "mug": "#c98b52",
+      "can": "#7b9aa8",
+      "curtain": "#d8cfc0",
+      "plant": "#a8845c"
+    }
+  },
+  "note": "Slots are x/y/w/h in the asset’s own canvas coordinates, origin top-left; multiply by delivered/canvas to reach pixels. No text, number or datum is drawn in any asset. BOIL: every plate that was previously one static PNG is delivered as 3 genuinely redrawn frames at 7fps (playback \"boil\") — the drawing is made again with a moved seed, so each frame’s line lands 2-3% differently; nothing is transformed and no slot moves between frames. Slot names and x/y/w/h are identical across all four registers and across every frame and clutter state — only the mark-making differs, so a register or a state can be swapped with no recalculation. WORLD PALETTE (post-it #e8d98a, mug #c98b52, can #7b9aa8, curtain #d8cfc0, plant #a8845c) appears only on physical objects in the room, never on a chart, table, card, number, label or plate interior. The plant is brown because it is dying, which keeps green meaning an up move and nothing else. GROUP F containers draw no data: frame, axis furniture, rules and header only, with empty interiors for code. GROUP AMB are the five ambient loops that run continuously under everything (steam, plant, curtain, cursor, second hand); loop-plant and loop-curtain REPLACE the plate’s drawn plant and curtain rather than overlaying them. The evidence wall declares the same nine pin slots in all three states. sheet-wide returns eight row bands; comps-table returns row AND column bands. Group M (light) is register-agnostic and delivered once: composite above the plate and below anything code draws, so ink stays ink. Group ID (avatars, banners) exists once, in marker: the channel has one identity.",
+  "fps": 12,
+  "assets": [
+    {
+      "key": "light-daylight",
+      "concept": "light-daylight",
+      "group": "M",
+      "register": "light",
+      "canvas": {
+        "w": 1920,
+        "h": 1080
+      },
+      "delivered": {
+        "w": 3840,
+        "h": 2160
+      },
+      "background": "transparent",
+      "frames": 3,
+      "fps": 7,
+      "playback": "boil",
+      "files": [
+        "light-daylight_f01.png",
+        "light-daylight_f02.png",
+        "light-daylight_f03.png"
+      ],
+      "slots": [],
+      "dir": "assets/light/",
+      "svgDir": "assets/light-svg/",
+      "svg": [
+        "light-daylight_f01.svg",
+        "light-daylight_f02.svg",
+        "light-daylight_f03.svg"
+      ]
+    },
+    {
+      "key": "light-afternoon",
+      "concept": "light-afternoon",
+      "group": "M",
+      "register": "light",
+      "canvas": {
+        "w": 1920,
+        "h": 1080
+      },
+      "delivered": {
+        "w": 3840,
+        "h": 2160
+      },
+      "background": "transparent",
+      "frames": 3,
+      "fps": 7,
+      "playback": "boil",
+      "files": [
+        "light-afternoon_f01.png",
+        "light-afternoon_f02.png",
+        "light-afternoon_f03.png"
+      ],
+      "slots": [],
+      "dir": "assets/light/",
+      "svgDir": "assets/light-svg/",
+      "svg": [
+        "light-afternoon_f01.svg",
+        "light-afternoon_f02.svg",
+        "light-afternoon_f03.svg"
+      ]
+    },
+    {
+      "key": "light-dusk",
+      "concept": "light-dusk",
+      "group": "M",
+      "register": "light",
+      "canvas": {
+        "w": 1920,
+        "h": 1080
+      },
+      "delivered": {
+        "w": 3840,
+        "h": 2160
+      },
+      "background": "transparent",
+      "frames": 3,
+      "fps": 7,
+      "playback": "boil",
+      "files": [
+        "light-dusk_f01.png",
+        "light-dusk_f02.png",
+        "light-dusk_f03.png"
+      ],
+      "slots": [],
+      "dir": "assets/light/",
+      "svgDir": "assets/light-svg/",
+      "svg": [
+        "light-dusk_f01.svg",
+        "light-dusk_f02.svg",
+        "light-dusk_f03.svg"
+      ]
+    },
+    {
+      "key": "light-3am",
+      "concept": "light-3am",
+      "group": "M",
+      "register": "light",
+      "canvas": {
+        "w": 1920,
+        "h": 1080
+      },
+      "delivered": {
+        "w": 3840,
+        "h": 2160
+      },
+      "background": "transparent",
+      "frames": 3,
+      "fps": 7,
+      "playback": "boil",
+      "files": [
+        "light-3am_f01.png",
+        "light-3am_f02.png",
+        "light-3am_f03.png"
+      ],
+      "slots": [],
+      "dir": "assets/light/",
+      "svgDir": "assets/light-svg/",
+      "svg": [
+        "light-3am_f01.svg",
+        "light-3am_f02.svg",
+        "light-3am_f03.svg"
+      ]
+    }
+  ],
+  "groups": {
+    "A": "room angles 16:9, three clutter states",
+    "B": "surfaces",
+    "C": "data plates",
+    "D": "the dive",
+    "E": "media and filings + the cut",
+    "F": "data display containers (no data drawn)",
+    "G": "the host: poses, idles, faces, gestures",
+    "H": "close-ups",
+    "I": "chapter stinger",
+    "J": "the open loop",
+    "K": "thumbnails",
+    "L": "closing plate",
+    "M": "light overlays (register-agnostic, once)",
+    "AMB": "ambient loops",
+    "ID": "channel identity"
+  },
+  "counts": {
+    "entries": 4,
+    "frames": 12
+  },
+  "files": {
+    "png": "assets/<register>/<name>.png",
+    "svg": "assets/<register>-svg/<name>.svg",
+    "numbering": "single-frame assets have no suffix; multi-frame assets are _f01.._fNN in playback order",
+    "registers": [
+      "marker",
+      "ballpoint",
+      "grease-pencil",
+      "cut-paper",
+      "light"
+    ],
+    "note": "light is group M — register-agnostic, delivered once, not per register"
+  }
+}

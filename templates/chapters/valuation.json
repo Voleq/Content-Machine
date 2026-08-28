@@ -1,0 +1,73 @@
+{
+  "chapter": "valuation",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room-wide-16--lived-in",
+      "host": {
+        "pose": "talking-at-screen",
+        "slot": "figure"
+      },
+      "max_hold_s": 7,
+      "captions": true,
+      "text": [
+        {
+          "name": "lede",
+          "src": "chapter.line.0",
+          "size_fh": 0.055,
+          "align": "top",
+          "max_lines": 3
+        }
+      ]
+    },
+    {
+      "id": "dive-in",
+      "plate": "dive-in",
+      "max_hold_s": 3,
+      "captions": true,
+      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
+    },
+    {
+      "id": "the-comps",
+      "plate": "comps-table",
+      "max_hold_s": 8,
+      "captions": true,
+      "bind": {
+        "header": "numbers.header",
+        "row-1": "numbers.row.0",
+        "row-2": "?numbers.row.1",
+        "row-3": "?numbers.row.2",
+        "row-4": "?numbers.row.3",
+        "row-5": "?numbers.row.4"
+      },
+      "text": [
+        {
+          "name": "comps-read",
+          "src": "chapter.line.1",
+          "size_fh": 0.042,
+          "align": "0.86",
+          "max_lines": 2
+        }
+      ],
+      "notes": "Binding only the header rendered a ruled grid with nothing in it \u2014 the same empty-table fault the numbers chapter had."
+    },
+    {
+      "id": "dive-out",
+      "plate": "dive-out",
+      "max_hold_s": 3,
+      "captions": true,
+      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
+    },
+    {
+      "id": "surface",
+      "plate": "room-side-16--lived-in",
+      "host": {
+        "pose": "seated-talking",
+        "slot": "figure-seated"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "Back in the room to close the chapter before the next stinger."
+    }
+  ]
+}

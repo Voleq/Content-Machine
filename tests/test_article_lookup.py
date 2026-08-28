@@ -184,88 +184,12 @@ def test_a_workspace_with_no_export_is_a_miss_not_a_crash(tmp_path):
 # End to end: a bare tag, a real export, a manifest that says what happened.
 # --------------------------------------------------------------------------
 
-def test_a_bare_tag_resolves_off_the_workspaces_own_export(tmp_path_factory):
-    """The whole point of the feature, on the real reader and a real workbook.
-
-    MOCK_MODE never fetches anybody's website, so the screenshot itself does
-    not happen here — the beat falls back to the headline card, silently,
-    which is the specified behaviour. What is asserted is the resolution: the
-    manifest records the URL and that nobody pasted it.
-    """
-    import json
-    import shutil
-
-    from config import Settings
-    from pipeline.parser_short import parse_short_script
-    from pipeline.render_short import render_short
-    from pipeline.tts import TTSEngine
-
-    root = Path(__file__).resolve().parents[1]
-    export = root / "fixtures" / "company_data" / "dennis_data.xlsx"
-    raw = json.loads((root / "fixtures" / "scripts" / "short_valid.json")
-                     .read_text(encoding="utf-8"))
-    raw["audio_script"] = "[SHOW ARTICLE] " + raw["audio_script"]
-    # The writer's paraphrase of a story the export actually carries.
-    raw["headlines"][0]["text"] = "EXMPL unveils next-gen routing platform"
-
-    tmp = tmp_path_factory.mktemp("article_e2e")
-    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
-                        cache_dir=tmp / "cache", state_dir=tmp / "state",
-                        short_width=540, short_height=960, _env_file=None)
-    settings.ensure_runtime_dirs()
-    script, _ = parse_short_script(json.dumps(raw), settings)
-    assert [e for e in script.inline_events if e.type.value == "SHOW ARTICLE"], \
-        "the bare tag has to survive the parser to reach the renderer"
-
-    tts = TTSEngine(settings).synthesize(script.audio_script, "short",
-                                         events=script.inline_events)
-    ws = settings.workspace_dir / "EXMPL" / "article"
-    ws.mkdir(parents=True)
-    shutil.copy(export, ws / "dennis_data.xlsx")
-    out, manifest_path = render_short(script, tts, ws, settings)
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-
-    assert len(manifest["articles"]) == 1, manifest["articles"]
-    got = manifest["articles"][0]
-    assert got["resolved"] == "auto", "nobody pasted this URL"
-    assert got["value"] == "", "the tag carried no payload"
-    assert got["url"] == "https://example.com/news/routing-platform"
-    assert out.exists() and out.stat().st_size > 0
-
-
-def test_an_export_with_no_matching_story_records_nothing(tmp_path_factory):
-    """A headline the export does not carry must not screenshot the nearest row."""
-    import json
-    import shutil
-
-    from config import Settings
-    from pipeline.parser_short import parse_short_script
-    from pipeline.render_short import render_short
-    from pipeline.tts import TTSEngine
-
-    root = Path(__file__).resolve().parents[1]
-    raw = json.loads((root / "fixtures" / "scripts" / "short_valid.json")
-                     .read_text(encoding="utf-8"))
-    raw["audio_script"] = "[SHOW ARTICLE] " + raw["audio_script"]
-    raw["headlines"] = [
-        {"text": "Auditor resigns citing scope limitation",
-         "meaning": "Nobody signed the numbers."},
-    ]
-
-    tmp = tmp_path_factory.mktemp("article_miss")
-    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
-                        cache_dir=tmp / "cache", state_dir=tmp / "state",
-                        short_width=540, short_height=960, _env_file=None)
-    settings.ensure_runtime_dirs()
-    script, _ = parse_short_script(json.dumps(raw), settings)
-    tts = TTSEngine(settings).synthesize(script.audio_script, "short",
-                                         events=script.inline_events)
-    ws = settings.workspace_dir / "EXMPL" / "article"
-    ws.mkdir(parents=True)
-    shutil.copy(root / "fixtures" / "company_data" / "dennis_data.xlsx",
-                ws / "dennis_data.xlsx")
-    out, manifest_path = render_short(script, tts, ws, settings)
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert manifest["articles"] == [], \
-        "a wrong screenshot is a false citation, not a near miss"
-    assert out.exists()
+# The two render-integration tests that lived here are gone with the tag
+# model. They asserted that a [SHOW ARTICLE] tag reached the renderer and was
+# recorded in the render manifest — scene selection from the script, which is
+# exactly what the shot templates removed. There is no article cutaway among
+# the twelve shots, so there is nothing for the renderer to record.
+#
+# The resolution logic above is untouched and still covered: article_lookup
+# still resolves a tag to a story off the workspace export. What changed is
+# that nothing in the SHORT's visual layer consumes the result.
