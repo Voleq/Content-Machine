@@ -1,0 +1,67 @@
+peers — the complex
+===================
+
+USE WHEN
+  The beat is "it did not move alone". A single ticker's move is an event; the
+  same move across four tickers is a repricing of the whole complex, and that
+  is a different claim. Use it the moment the voice-over names other companies
+  — naming them and not showing them makes the audience take your word for it.
+
+  Do NOT use it to compare a company to its peers on fundamentals. That is
+  figures/compare-side (two things, one metric) or tables/numbers-sheet (one
+  thing, six periods). This plate holds one moment across several names.
+
+MEMBERS
+  peer-strip-16x9   five rows. 24 slots.
+  peer-strip-9x16   four rows. 20 slots. Portrait cannot hold five rows at a
+                    legible move size — cut rows, never columns.
+
+SLOTS
+  unit           the moment, once ("the memory complex · today"). Never repeat
+                 "today" in the rows.
+  head-move      heading over the move column.
+  head-fwd       heading over the multiple column.
+  ticker-N       row N's ticker. Row 1 is THE SUBJECT — its role is
+                 tickerSubject (structure); rows 2+ are otherParty. So the row
+                 you are in is legible with no highlight, which is what keeps
+                 band-N free for the row the voice-over is actually on.
+  move-N         today's move. The largest figure on the plate: it is the beat.
+                 Authored in `down`, because a strip is called for when a
+                 complex moves together and that move is almost always red. A
+                 green row is a role override on the shot:
+                   boxes["move-2"] = { …rect, role: "moveUp" }
+  fwd-N          forward multiple, in otherParty — it is the market's opinion,
+                 not a fact about the company. Second-largest figure.
+  bars           REGION, one column wide, spanning every row. The move as a
+                 shape as well as a figure:
+                   SERIES.rowBars({ box: slots.bars, values, rows })
+                 One scale shared across the rows — that shared scale is the
+                 point, and the renderer places the zero rule from the domain,
+                 so when every move is red zero lands on the right-hand edge and
+                 every bar runs left from it. Pass null for a row you have no
+                 figure for; it draws nothing and the row keeps its rail.
+  caption        one line at the foot. What the strip means, not what it says.
+  band-N         row highlight. Composite overlays/row-band here.
+
+SEQUENCE
+  1  unit
+  2  head-move, head-fwd
+  3  tickers, top to bottom — the subject first
+  4  bars, top to bottom, from the zero rule outward
+  5  moves, top to bottom
+  6  multiples, top to bottom
+  7  band-N on the row the voice-over is on, one at a time
+
+TRAPS
+  * Two figure columns, never three. A strip carrying only the move is a fact
+    with no consequence; a strip carrying three figures is a table, and a
+    table is a different plate with a different job.
+  * A row with no figure stays EMPTY. Do not write "—" or "n/a", and do not
+    invent a move because the row looks unfinished — put the slot in the
+    shot's needs[] and let the audit carry it. An empty cell means NO DATA.
+  * No ground2 panel behind the rows. row-band is ground2, and a ground2 band
+    on a ground2 panel is the invisible-highlight defect this library has
+    already shipped once. The strip stands on rules.
+  * The subject is row 1. Not row 3 because that is where it sorts by size.
+  * Never order rows by the size of the move. It reads as a ranking, which is
+    a claim the plate has not earned. Subject first, then the complex.

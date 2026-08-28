@@ -1,0 +1,69 @@
+cycles — the same metric at two moments
+=======================================
+
+USE WHEN
+  The claim is about a number's HISTORY rather than its level. "Three years ago
+  that margin was seven percent" is this plate. "The margin is fifty-six
+  percent" is figures/big-number.
+
+  It is the plate for arguing cyclicality, and that is why it exists: then → now
+  is not a trajectory, it is two anchors with a trough between them. An arrow
+  from one figure to the other would be making the bull case by accident.
+
+MEMBERS
+  cycle-frame-16x9   figures stack down the left, the path stands beside them.
+  cycle-frame-9x16   figures side by side, the path full-width beneath them,
+                     tied to it by a drop line each so the eye reads
+                     then → down → now.
+
+SLOTS
+  unit         the frame, once ("for 8x to be real · gross margin").
+  metric       the metric's name. One line, ruled under.
+  then-date    the earlier moment ("FY21"). Courier, small.
+  then-value   the earlier figure, in otherParty — the past is the other party.
+               0.68 the size of `now`.
+  now-date     the later moment ("LTM").
+  now-value    the figure under discussion. The largest thing on the plate, in
+               structure, because it is the subject.
+  path         REGION. Not decoration and not an arrow: the intervening
+               periods. Draw with
+                 SERIES.cycleArc({ box: slots.path, values, pal })
+               and it returns { points, trough } so the label goes on real
+               coordinates. The region IS the plot area — first and last points
+               sit on the axis ends, under head-1 and head-6 and under the two
+               figures above.
+  head-1..6    the six periods, named along the baseline, oldest left. Half the
+               claim: "three years ago" is only legible if the axis says which
+               three years.
+  trough       REGION. The low point's own figure, in `down`, called out just
+               above its ring. Region because only the data knows where the
+               minimum sits — each asset's manifest carries a troughCallout box
+               for the worked series; box it on the x cycleArc returns, never on
+               the middle of the band.
+  caption      the sentence the two figures make together.
+
+SEQUENCE
+  1  unit
+  2  metric, and its rule
+  3  then-date, then-value — and the otherParty rule under it
+  4  now-date, now-value — and the structure rule under it
+  5  the periods along the baseline
+  6  the path — drawn left to right, at the speed of the fall
+  7  trough, and hold. It is the last thing on screen and the whole argument.
+
+TRAPS
+  * Pick `then` so the trough is BETWEEN the moments. If `then` is itself the
+    minimum, the trough label is redundant and the frame has lost the fall that
+    made it worth drawing — step back a period.
+  * Three sizes, three colours, three jobs: now, then, trough. Do not emphasise
+    anything else on the plate. There is no attention mark here and no
+    annotation — the trough ring already is one.
+  * One colour for the whole path. Colouring the fall in `down` and the
+    recovery in `up` makes the frame argue for the recovery.
+  * The band is a plot area, not a panel: a faint tint, gridlines, an L-axis and
+    named periods. A path over a hatched slab with a box round it is a slab with
+    a line on it — a path needs a plane to be read against.
+  * Six periods, as everywhere else. A three-point path is a triangle, not a
+    cycle.
+  * If the operator has no series, do not ship the plate with an empty band.
+    Cut to figures/compare-side and say the two numbers plainly.

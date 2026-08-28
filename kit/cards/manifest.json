@@ -1,0 +1,716 @@
+{
+ "family": "cards",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "assets": {
+  "cards/definition-16x9": {
+   "author": "definitionCard",
+   "seed": 3,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "definition-16x9_f01.svg",
+     "png": "definition-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "definition-16x9_f02.svg",
+     "png": "definition-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "definition-16x9.png",
+    "svg": "definition-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 260,
+     "y": 318,
+     "w": 1400,
+     "h": 32
+    },
+    "term": {
+     "align": "left",
+     "role": "term",
+     "x": 260,
+     "y": 364,
+     "w": 1400,
+     "h": 88
+    },
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 260,
+     "y": 486,
+     "w": 1400,
+     "h": 139
+    },
+    "example": {
+     "align": "left",
+     "role": "example",
+     "x": 260,
+     "y": 656,
+     "w": 1400,
+     "h": 30
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "definition-card",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "term": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxChars": 24
+    },
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 40,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 4,
+     "maxCharsPerLine": 46
+    },
+    "example": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "cards/definition-9x16": {
+   "author": "definitionCard",
+   "seed": 3,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "definition-9x16_f01.svg",
+     "png": "definition-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "definition-9x16_f02.svg",
+     "png": "definition-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "definition-9x16.png",
+    "svg": "definition-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 90,
+     "y": 615,
+     "w": 900,
+     "h": 32
+    },
+    "term": {
+     "align": "left",
+     "role": "term",
+     "x": 90,
+     "y": 671,
+     "w": 900,
+     "h": 93
+    },
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 90,
+     "y": 824,
+     "w": 900,
+     "h": 255
+    },
+    "example": {
+     "align": "left",
+     "role": "example",
+     "x": 90,
+     "y": 1133,
+     "w": 900,
+     "h": 30
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "definition-card",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "term": {
+     "font": "Archivo Narrow",
+     "size": 80,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxChars": 20
+    },
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 44,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 5,
+     "maxCharsPerLine": 25
+    },
+    "example": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "cards/quote-pull-16x9": {
+   "author": "quotePull",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "quote-pull-16x9_f01.svg",
+     "png": "quote-pull-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "quote-pull-16x9_f02.svg",
+     "png": "quote-pull-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "quote-pull-16x9.png",
+    "svg": "quote-pull-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 300,
+     "y": 250,
+     "w": 1400,
+     "h": 400
+    },
+    "attribution": {
+     "align": "left",
+     "role": "attribution",
+     "x": 300,
+     "y": 716,
+     "w": 1400,
+     "h": 80
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 300,
+     "y": 810,
+     "w": 1400,
+     "h": 60
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "quote-mark-1",
+     "x": 142,
+     "y": 276,
+     "w": 66,
+     "h": 136
+    },
+    {
+     "label": "quote-mark-2",
+     "x": 204,
+     "y": 276,
+     "w": 66,
+     "h": 136
+    }
+   ],
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "quote-pull",
+   "typeRoles": {
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 500,
+     "colour": "structure",
+     "maxLines": 4,
+     "maxCharsPerLine": 40
+    },
+    "attribution": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "cards/quote-pull-9x16": {
+   "author": "quotePull",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "quote-pull-9x16_f01.svg",
+     "png": "quote-pull-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "quote-pull-9x16_f02.svg",
+     "png": "quote-pull-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "quote-pull-9x16.png",
+    "svg": "quote-pull-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 140,
+     "y": 520,
+     "w": 860,
+     "h": 560
+    },
+    "attribution": {
+     "align": "left",
+     "role": "attribution",
+     "x": 140,
+     "y": 1156,
+     "w": 860,
+     "h": 90
+    },
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 140,
+     "y": 1262,
+     "w": 860,
+     "h": 60
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "quote-mark-1",
+     "x": 12,
+     "y": 536,
+     "w": 66,
+     "h": 136
+    },
+    {
+     "label": "quote-mark-2",
+     "x": 56,
+     "y": 536,
+     "w": 66,
+     "h": 136
+    }
+   ],
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "quote-pull",
+   "typeRoles": {
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 54,
+     "weight": 500,
+     "colour": "structure",
+     "maxLines": 4,
+     "maxCharsPerLine": 26
+    },
+    "attribution": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "cards/criteria-16x9": {
+   "author": "criteriaCard",
+   "seed": 1,
+   "surface": "legal-pad",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "criteria-16x9_f01.svg",
+     "png": "criteria-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "criteria-16x9_f02.svg",
+     "png": "criteria-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "criteria-16x9.png",
+    "svg": "criteria-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 240,
+     "y": 170,
+     "w": 1440,
+     "h": 150
+    },
+    "check-1": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 240,
+     "y": 370,
+     "w": 78,
+     "h": 78
+    },
+    "row-1": {
+     "align": "left",
+     "role": "row",
+     "x": 360,
+     "y": 366,
+     "w": 1320,
+     "h": 140
+    },
+    "check-2": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 240,
+     "y": 560,
+     "w": 78,
+     "h": 78
+    },
+    "row-2": {
+     "align": "left",
+     "role": "row",
+     "x": 360,
+     "y": 556,
+     "w": 1320,
+     "h": 140
+    },
+    "check-3": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 240,
+     "y": 750,
+     "w": 78,
+     "h": 78
+    },
+    "row-3": {
+     "align": "left",
+     "role": "row",
+     "x": 360,
+     "y": 746,
+     "w": 1320,
+     "h": 140
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 240,
+     "y": 940,
+     "w": 1440,
+     "h": 64
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "criteria-card",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 60,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 34
+    },
+    "row": {
+     "font": "Archivo Narrow",
+     "size": 40,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 42
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "cards/criteria-9x16": {
+   "author": "criteriaCard",
+   "seed": 1,
+   "surface": "legal-pad",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "criteria-9x16_f01.svg",
+     "png": "criteria-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "criteria-9x16_f02.svg",
+     "png": "criteria-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "criteria-9x16.png",
+    "svg": "criteria-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 90,
+     "y": 400,
+     "w": 900,
+     "h": 200
+    },
+    "check-1": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 90,
+     "y": 660,
+     "w": 70,
+     "h": 70
+    },
+    "row-1": {
+     "align": "left",
+     "role": "row",
+     "x": 196,
+     "y": 656,
+     "w": 794,
+     "h": 220
+    },
+    "check-2": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 90,
+     "y": 960,
+     "w": 70,
+     "h": 70
+    },
+    "row-2": {
+     "align": "left",
+     "role": "row",
+     "x": 196,
+     "y": 956,
+     "w": 794,
+     "h": 220
+    },
+    "check-3": {
+     "role": "check",
+     "note": "true/false mark drawn by code inside the box",
+     "x": 90,
+     "y": 1260,
+     "w": 70,
+     "h": 70
+    },
+    "row-3": {
+     "align": "left",
+     "role": "row",
+     "x": 196,
+     "y": 1256,
+     "w": 794,
+     "h": 220
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 90,
+     "y": 1720,
+     "w": 900,
+     "h": 64
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "criteria-card",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 52,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 24
+    },
+    "row": {
+     "font": "Archivo Narrow",
+     "size": 36,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 26
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  }
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

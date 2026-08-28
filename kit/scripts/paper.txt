@@ -1,0 +1,34 @@
+paper — headline bands
+======================
+
+USE WHEN
+  A section opens, or a claim needs stating in words before it is shown in
+  numbers. This is the family that carries titles; nothing else does.
+
+MEMBERS
+  headline-band-t1   the plain band. Default.
+  headline-band-t2   heavier treatment. For a section opener.
+  headline-band-t3   the loudest. Once per video — the thesis.
+
+  All three in both aspects.
+
+SLOTS
+  kicker     section or segment name. Short, above.
+  headline   the claim. One sentence, no full stop. The maxChars limit is
+             real: past it, the line hits the rule below.
+  sub        the qualifier or the source. Optional on t1, usually populated
+             on t2 and t3.
+
+SEQUENCE
+  1  kicker
+  2  headline, on its own beat, and hold — this is a reading frame
+  3  sub
+
+  A band composited over a room plate wants wide-tight or desk-front; the
+  full wide angle has no clear top third.
+
+TRAPS
+  * Escalating treatments across a video (t1, t2, t3) reads as a build. Do
+    not use t3 early and then step down.
+  * A headline is not a sentence from the voiceover. If the reader can read
+    it while hearing the same words, one of the two is redundant.

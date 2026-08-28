@@ -1,0 +1,6086 @@
+{
+ "family": "tables",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "sparkNote": "the -spark variants are not the plain sheet with a column bolted on: the sparkline column takes real width, so figures and labels are re-sized to what is left and labels must be abbreviated",
+ "assets": {
+  "tables/numbers-sheet-6r-16x9": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-6r-16x9.svg",
+     "png": "numbers-sheet-6r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-6r-16x9.png",
+    "svg": "numbers-sheet-6r-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 112
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 307,
+     "w": 479,
+     "h": 79
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 307,
+     "w": 181,
+     "h": 79
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 406,
+     "w": 1744,
+     "h": 112
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 423,
+     "w": 479,
+     "h": 79
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 423,
+     "w": 181,
+     "h": 79
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 522,
+     "w": 1744,
+     "h": 112
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 539,
+     "w": 479,
+     "h": 79
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 539,
+     "w": 181,
+     "h": 79
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 638,
+     "w": 1744,
+     "h": 112
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 655,
+     "w": 479,
+     "h": 79
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 655,
+     "w": 181,
+     "h": 79
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 754,
+     "w": 1744,
+     "h": 112
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 771,
+     "w": 479,
+     "h": 79
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 771,
+     "w": 181,
+     "h": 79
+    },
+    "band-6": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 870,
+     "w": 1744,
+     "h": 112
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 887,
+     "w": 479,
+     "h": 79
+    },
+    "cell-6-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    },
+    "cell-6-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    },
+    "cell-6-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    },
+    "cell-6-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    },
+    "cell-6-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    },
+    "cell-6-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 887,
+     "w": 181,
+     "h": 79
+    }
+   },
+   "aspect": "16x9",
+   "rows": 6,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-4r-9x16": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-4r-9x16.svg",
+     "png": "numbers-sheet-4r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-4r-9x16.png",
+    "svg": "numbers-sheet-4r-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 314
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 479,
+     "w": 210,
+     "h": 216
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 748,
+     "w": 1044,
+     "h": 314
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 797,
+     "w": 210,
+     "h": 216
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1066,
+     "w": 1044,
+     "h": 314
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1115,
+     "w": 210,
+     "h": 216
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1384,
+     "w": 1044,
+     "h": 314
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1433,
+     "w": 210,
+     "h": 216
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    }
+   },
+   "aspect": "9x16",
+   "rows": 4,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   }
+  },
+  "tables/numbers-sheet-6r-spark-16x9": {
+   "author": "numbersSheet",
+   "seed": 5,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-6r-spark-16x9.svg",
+     "png": "numbers-sheet-6r-spark-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-6r-spark-16x9.png",
+    "svg": "numbers-sheet-6r-spark-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1448,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 502,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 681,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 859,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1038,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1217,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1395,
+     "y": 192,
+     "w": 163,
+     "h": 54
+    },
+    "head-spark": {
+     "align": "left",
+     "role": "period",
+     "x": 1596,
+     "y": 192,
+     "w": 198,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 112
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 307,
+     "w": 350,
+     "h": 79
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 307,
+     "w": 163,
+     "h": 79
+    },
+    "spark-1": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 311,
+     "w": 198,
+     "h": 70
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 406,
+     "w": 1744,
+     "h": 112
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 423,
+     "w": 350,
+     "h": 79
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 423,
+     "w": 163,
+     "h": 79
+    },
+    "spark-2": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 427,
+     "w": 198,
+     "h": 70
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 522,
+     "w": 1744,
+     "h": 112
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 539,
+     "w": 350,
+     "h": 79
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 539,
+     "w": 163,
+     "h": 79
+    },
+    "spark-3": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 543,
+     "w": 198,
+     "h": 70
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 638,
+     "w": 1744,
+     "h": 112
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 655,
+     "w": 350,
+     "h": 79
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 655,
+     "w": 163,
+     "h": 79
+    },
+    "spark-4": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 659,
+     "w": 198,
+     "h": 70
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 754,
+     "w": 1744,
+     "h": 112
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 771,
+     "w": 350,
+     "h": 79
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 771,
+     "w": 163,
+     "h": 79
+    },
+    "spark-5": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 775,
+     "w": 198,
+     "h": 70
+    },
+    "band-6": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 870,
+     "w": 1744,
+     "h": 112
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 887,
+     "w": 350,
+     "h": 79
+    },
+    "cell-6-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 502,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "cell-6-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 681,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "cell-6-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 859,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "cell-6-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1038,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "cell-6-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1217,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "cell-6-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1395,
+     "y": 887,
+     "w": 163,
+     "h": 79
+    },
+    "spark-6": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 1596,
+     "y": 891,
+     "w": 198,
+     "h": 70
+    }
+   },
+   "aspect": "16x9",
+   "rows": 6,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet-spark",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 21
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 38,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-4r-spark-9x16": {
+   "author": "numbersSheet",
+   "seed": 5,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-4r-spark-9x16.svg",
+     "png": "numbers-sheet-4r-spark-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-4r-spark-9x16.png",
+    "svg": "numbers-sheet-4r-spark-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 817,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 211,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 321,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 432,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 542,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 652,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 763,
+     "y": 324,
+     "w": 94,
+     "h": 58
+    },
+    "head-spark": {
+     "align": "left",
+     "role": "period",
+     "x": 887,
+     "y": 324,
+     "w": 139,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 314
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 479,
+     "w": 129,
+     "h": 216
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 211,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 321,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 432,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 542,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 652,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 763,
+     "y": 479,
+     "w": 94,
+     "h": 216
+    },
+    "spark-1": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 887,
+     "y": 492,
+     "w": 139,
+     "h": 191
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 748,
+     "w": 1044,
+     "h": 314
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 797,
+     "w": 129,
+     "h": 216
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 211,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 321,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 432,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 542,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 652,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 763,
+     "y": 797,
+     "w": 94,
+     "h": 216
+    },
+    "spark-2": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 887,
+     "y": 810,
+     "w": 139,
+     "h": 191
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1066,
+     "w": 1044,
+     "h": 314
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1115,
+     "w": 129,
+     "h": 216
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 211,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 321,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 432,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 542,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 652,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 763,
+     "y": 1115,
+     "w": 94,
+     "h": 216
+    },
+    "spark-3": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 887,
+     "y": 1128,
+     "w": 139,
+     "h": 191
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1384,
+     "w": 1044,
+     "h": 314
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1433,
+     "w": 129,
+     "h": 216
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 211,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 321,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 432,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 542,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 652,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 763,
+     "y": 1433,
+     "w": 94,
+     "h": 216
+    },
+    "spark-4": {
+     "role": "spark",
+     "region": true,
+     "renderer": "series.sparkBars",
+     "note": "the row's own six values as a shape. The plate draws nothing here — engine/series.js draws it from the data",
+     "x": 887,
+     "y": 1446,
+     "w": 139,
+     "h": 191
+    }
+   },
+   "aspect": "9x16",
+   "rows": 4,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet-spark",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 11
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   }
+  },
+  "tables/cash-flow-16x9": {
+   "author": "cashFlow",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "cash-flow-16x9.svg",
+     "png": "cash-flow-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "cash-flow-16x9.png",
+    "svg": "cash-flow-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 78,
+     "w": 1684,
+     "h": 40
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 697,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 882,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1067,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1253,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1438,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1623,
+     "y": 148,
+     "w": 173,
+     "h": 44
+    },
+    "group-1": {
+     "align": "left",
+     "role": "group",
+     "x": 118,
+     "y": 228,
+     "w": 553,
+     "h": 49
+    },
+    "band-1-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 279,
+     "w": 1736,
+     "h": 45
+    },
+    "label-1-1": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 283,
+     "w": 521,
+     "h": 38
+    },
+    "cell-1-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 283,
+     "w": 173,
+     "h": 38
+    },
+    "band-1-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 329,
+     "w": 1736,
+     "h": 45
+    },
+    "label-1-2": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 333,
+     "w": 521,
+     "h": 38
+    },
+    "cell-1-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "cell-1-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 333,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 383,
+     "w": 521,
+     "h": 38
+    },
+    "subtotal-1-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 697,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-1-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 882,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-1-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1067,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-1-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1253,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-1-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1438,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-1-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1623,
+     "y": 383,
+     "w": 173,
+     "h": 38
+    },
+    "group-2": {
+     "align": "left",
+     "role": "group",
+     "x": 118,
+     "y": 446,
+     "w": 553,
+     "h": 49
+    },
+    "band-2-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 497,
+     "w": 1736,
+     "h": 45
+    },
+    "label-2-1": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 501,
+     "w": 521,
+     "h": 38
+    },
+    "cell-2-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 501,
+     "w": 173,
+     "h": 38
+    },
+    "band-2-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 547,
+     "w": 1736,
+     "h": 45
+    },
+    "label-2-2": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 551,
+     "w": 521,
+     "h": 38
+    },
+    "cell-2-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "cell-2-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 551,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 601,
+     "w": 521,
+     "h": 38
+    },
+    "subtotal-2-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 697,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-2-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 882,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-2-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1067,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-2-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1253,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-2-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1438,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-2-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1623,
+     "y": 601,
+     "w": 173,
+     "h": 38
+    },
+    "group-3": {
+     "align": "left",
+     "role": "group",
+     "x": 118,
+     "y": 663,
+     "w": 553,
+     "h": 49
+    },
+    "band-3-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 715,
+     "w": 1736,
+     "h": 45
+    },
+    "label-3-1": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 719,
+     "w": 521,
+     "h": 38
+    },
+    "cell-3-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 719,
+     "w": 173,
+     "h": 38
+    },
+    "band-3-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 92,
+     "y": 764,
+     "w": 1736,
+     "h": 45
+    },
+    "label-3-2": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 768,
+     "w": 521,
+     "h": 38
+    },
+    "cell-3-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 697,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 882,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1067,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1253,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1438,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "cell-3-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1623,
+     "y": 768,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 144,
+     "y": 819,
+     "w": 521,
+     "h": 38
+    },
+    "subtotal-3-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 697,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-3-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 882,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-3-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1067,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-3-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1253,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-3-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1438,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "subtotal-3-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 1623,
+     "y": 819,
+     "w": 173,
+     "h": 38
+    },
+    "total-label": {
+     "align": "left",
+     "role": "group",
+     "x": 118,
+     "y": 889,
+     "w": 553,
+     "h": 44
+    },
+    "total-1": {
+     "align": "right",
+     "role": "total",
+     "x": 697,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    },
+    "total-2": {
+     "align": "right",
+     "role": "total",
+     "x": 882,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    },
+    "total-3": {
+     "align": "right",
+     "role": "total",
+     "x": 1067,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    },
+    "total-4": {
+     "align": "right",
+     "role": "total",
+     "x": 1253,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    },
+    "total-5": {
+     "align": "right",
+     "role": "total",
+     "x": 1438,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    },
+    "total-6": {
+     "align": "right",
+     "role": "total",
+     "x": 1623,
+     "y": 889,
+     "w": 173,
+     "h": 44
+    }
+   },
+   "aspect": "16x9",
+   "family": "tables",
+   "type": "cash-flow-summary",
+   "columns": 6,
+   "blocks": 3,
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 600,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "group": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": ".08em",
+     "transform": "uppercase",
+     "maxChars": 24
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 25,
+     "weight": 400,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "subtotal": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "total": {
+     "font": "Courier Prime",
+     "size": 36,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/cash-flow-9x16": {
+   "author": "cashFlow",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "cash-flow-9x16.svg",
+     "png": "cash-flow-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "cash-flow-9x16.png",
+    "svg": "cash-flow-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 180,
+     "w": 984,
+     "h": 40
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 349,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 464,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 579,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 694,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 808,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 923,
+     "y": 280,
+     "w": 103,
+     "h": 48
+    },
+    "group-1": {
+     "align": "left",
+     "role": "group",
+     "x": 48,
+     "y": 368,
+     "w": 275,
+     "h": 72
+    },
+    "band-1-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 442,
+     "w": 1036,
+     "h": 68
+    },
+    "label-1-1": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 449,
+     "w": 255,
+     "h": 55
+    },
+    "cell-1-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 449,
+     "w": 103,
+     "h": 55
+    },
+    "band-1-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 514,
+     "w": 1036,
+     "h": 68
+    },
+    "label-1-2": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 520,
+     "w": 255,
+     "h": 55
+    },
+    "cell-1-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 520,
+     "w": 103,
+     "h": 55
+    },
+    "band-1-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 586,
+     "w": 1036,
+     "h": 68
+    },
+    "label-1-3": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 592,
+     "w": 255,
+     "h": 55
+    },
+    "cell-1-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "cell-1-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 592,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 666,
+     "w": 255,
+     "h": 55
+    },
+    "subtotal-1-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 349,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-1-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 464,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-1-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 579,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-1-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 694,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-1-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 808,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-1-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 923,
+     "y": 666,
+     "w": 103,
+     "h": 55
+    },
+    "group-2": {
+     "align": "left",
+     "role": "group",
+     "x": 48,
+     "y": 757,
+     "w": 275,
+     "h": 72
+    },
+    "band-2-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 831,
+     "w": 1036,
+     "h": 68
+    },
+    "label-2-1": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 838,
+     "w": 255,
+     "h": 55
+    },
+    "cell-2-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 838,
+     "w": 103,
+     "h": 55
+    },
+    "band-2-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 903,
+     "w": 1036,
+     "h": 68
+    },
+    "label-2-2": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 910,
+     "w": 255,
+     "h": 55
+    },
+    "cell-2-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 910,
+     "w": 103,
+     "h": 55
+    },
+    "band-2-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 975,
+     "w": 1036,
+     "h": 68
+    },
+    "label-2-3": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 982,
+     "w": 255,
+     "h": 55
+    },
+    "cell-2-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "cell-2-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 982,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 1055,
+     "w": 255,
+     "h": 55
+    },
+    "subtotal-2-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 349,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-2-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 464,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-2-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 579,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-2-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 694,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-2-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 808,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-2-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 923,
+     "y": 1055,
+     "w": 103,
+     "h": 55
+    },
+    "group-3": {
+     "align": "left",
+     "role": "group",
+     "x": 48,
+     "y": 1147,
+     "w": 275,
+     "h": 72
+    },
+    "band-3-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 1221,
+     "w": 1036,
+     "h": 68
+    },
+    "label-3-1": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 1227,
+     "w": 255,
+     "h": 55
+    },
+    "cell-3-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 1227,
+     "w": 103,
+     "h": 55
+    },
+    "band-3-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 1293,
+     "w": 1036,
+     "h": 68
+    },
+    "label-3-2": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 1299,
+     "w": 255,
+     "h": 55
+    },
+    "cell-3-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 1299,
+     "w": 103,
+     "h": 55
+    },
+    "band-3-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 22,
+     "y": 1364,
+     "w": 1036,
+     "h": 68
+    },
+    "label-3-3": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 1371,
+     "w": 255,
+     "h": 55
+    },
+    "cell-3-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 349,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 464,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 579,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 694,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 808,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "cell-3-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 923,
+     "y": 1371,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 66,
+     "y": 1444,
+     "w": 255,
+     "h": 55
+    },
+    "subtotal-3-1": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 349,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-3-2": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 464,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-3-3": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 579,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-3-4": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 694,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-3-5": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 808,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "subtotal-3-6": {
+     "align": "right",
+     "role": "subtotal",
+     "x": 923,
+     "y": 1444,
+     "w": 103,
+     "h": 55
+    },
+    "total-label": {
+     "align": "left",
+     "role": "group",
+     "x": 48,
+     "y": 1548,
+     "w": 275,
+     "h": 65
+    },
+    "total-1": {
+     "align": "right",
+     "role": "total",
+     "x": 349,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    },
+    "total-2": {
+     "align": "right",
+     "role": "total",
+     "x": 464,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    },
+    "total-3": {
+     "align": "right",
+     "role": "total",
+     "x": 579,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    },
+    "total-4": {
+     "align": "right",
+     "role": "total",
+     "x": 694,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    },
+    "total-5": {
+     "align": "right",
+     "role": "total",
+     "x": 808,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    },
+    "total-6": {
+     "align": "right",
+     "role": "total",
+     "x": 923,
+     "y": 1548,
+     "w": 103,
+     "h": 65
+    }
+   },
+   "aspect": "9x16",
+   "family": "tables",
+   "type": "cash-flow-summary",
+   "columns": 6,
+   "blocks": 3,
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 600,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "group": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": ".08em",
+     "transform": "uppercase",
+     "maxChars": 24
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "maxChars": 22
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 32,
+     "weight": 400,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "subtotal": {
+     "font": "Courier Prime",
+     "size": 32,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "total": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-3r-16x9": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-3r-16x9.svg",
+     "png": "numbers-sheet-3r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-3r-16x9.png",
+    "svg": "numbers-sheet-3r-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 228
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 325,
+     "w": 479,
+     "h": 158
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 522,
+     "w": 1744,
+     "h": 228
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 557,
+     "w": 479,
+     "h": 158
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 754,
+     "w": 1744,
+     "h": 228
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 789,
+     "w": 479,
+     "h": 158
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    }
+   },
+   "aspect": "16x9",
+   "rows": 3,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-3r-9x16": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-3r-9x16.svg",
+     "png": "numbers-sheet-3r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-3r-9x16.png",
+    "svg": "numbers-sheet-3r-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 420
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 496,
+     "w": 210,
+     "h": 288
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 854,
+     "w": 1044,
+     "h": 420
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 920,
+     "w": 210,
+     "h": 288
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1278,
+     "w": 1044,
+     "h": 420
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1344,
+     "w": 210,
+     "h": 288
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    }
+   },
+   "aspect": "9x16",
+   "rows": 3,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   }
+  },
+  "tables/numbers-sheet-4r-16x9": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-4r-16x9.svg",
+     "png": "numbers-sheet-4r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-4r-16x9.png",
+    "svg": "numbers-sheet-4r-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 170
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 316,
+     "w": 479,
+     "h": 118
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 464,
+     "w": 1744,
+     "h": 170
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 490,
+     "w": 479,
+     "h": 118
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 638,
+     "w": 1744,
+     "h": 170
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 664,
+     "w": 479,
+     "h": 118
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 812,
+     "w": 1744,
+     "h": 170
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 838,
+     "w": 479,
+     "h": 118
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    }
+   },
+   "aspect": "16x9",
+   "rows": 4,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-5r-16x9": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-5r-16x9.svg",
+     "png": "numbers-sheet-5r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-5r-16x9.png",
+    "svg": "numbers-sheet-5r-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 135
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 310,
+     "w": 479,
+     "h": 95
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 429,
+     "w": 1744,
+     "h": 135
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 449,
+     "w": 479,
+     "h": 95
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 568,
+     "w": 1744,
+     "h": 135
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 589,
+     "w": 479,
+     "h": 95
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 708,
+     "w": 1744,
+     "h": 135
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 728,
+     "w": 479,
+     "h": 95
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 847,
+     "w": 1744,
+     "h": 135
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 867,
+     "w": 479,
+     "h": 95
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    }
+   },
+   "aspect": "16x9",
+   "rows": 5,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   }
+  },
+  "tables/numbers-sheet-5r-9x16": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-5r-9x16.svg",
+     "png": "numbers-sheet-5r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-5r-9x16.png",
+    "svg": "numbers-sheet-5r-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 250
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 469,
+     "w": 210,
+     "h": 173
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 684,
+     "w": 1044,
+     "h": 250
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 723,
+     "w": 210,
+     "h": 173
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 939,
+     "w": 1044,
+     "h": 250
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 978,
+     "w": 210,
+     "h": 173
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1193,
+     "w": 1044,
+     "h": 250
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1232,
+     "w": 210,
+     "h": 173
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1448,
+     "w": 1044,
+     "h": 250
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1486,
+     "w": 210,
+     "h": 173
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    }
+   },
+   "aspect": "9x16",
+   "rows": 5,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   }
+  },
+  "tables/numbers-sheet-6r-9x16": {
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-6r-9x16.svg",
+     "png": "numbers-sheet-6r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-6r-9x16.png",
+    "svg": "numbers-sheet-6r-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 208
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 462,
+     "w": 210,
+     "h": 144
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 462,
+     "w": 109,
+     "h": 144
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 642,
+     "w": 1044,
+     "h": 208
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 674,
+     "w": 210,
+     "h": 144
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 674,
+     "w": 109,
+     "h": 144
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 854,
+     "w": 1044,
+     "h": 208
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 886,
+     "w": 210,
+     "h": 144
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 886,
+     "w": 109,
+     "h": 144
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1066,
+     "w": 1044,
+     "h": 208
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1098,
+     "w": 210,
+     "h": 144
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1098,
+     "w": 109,
+     "h": 144
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1278,
+     "w": 1044,
+     "h": 208
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1310,
+     "w": 210,
+     "h": 144
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "band-6": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1490,
+     "w": 1044,
+     "h": 208
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1522,
+     "w": 210,
+     "h": 144
+    },
+    "cell-6-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    }
+   },
+   "aspect": "9x16",
+   "rows": 6,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   }
+  }
+ },
+ "rowCounts": "3, 4, 5 and 6 rows in both aspects, six periods throughout. A four-row script has something to use in 16:9 and a three-row short has something at all — the first batch shipped only 6r-16x9 and 4r-9x16, which left both of those with nothing.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

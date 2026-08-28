@@ -1,0 +1,51 @@
+charts — the shape
+==================
+
+USE WHEN
+  The reader already accepts the numbers and now needs their shape. Always
+  after a table of the same series, never before.
+
+MEMBERS
+  line-6y      six periods, points labelled. The default series chart.
+  bars-6y      six periods, bars. Use when the periods are independent
+               quantities rather than a path — a bar invites comparison
+               between periods, a line asserts continuity.
+  line-dense   many observations, four period heads, three marks. Use for a
+               price or a daily series where individual points are not the
+               point.
+
+  All three in both aspects.
+
+SLOTS
+  unit         units line
+  plot-area    the drawing area. No text. Use it to place a host so he never
+               overlaps the plot, and to bound any annotation.
+  y-1..y-5     y-axis labels, bottom to top (line-dense has four)
+  head-1..6    period labels, oldest left
+  point-N / bar-N    the mark's own position, per period. This is where a
+               value marker, dot or cap goes — not the number.
+  value-N      the number for period N, positioned clear of the mark.
+  line-dense instead of point/value:
+    mark-high  the peak. Label it with the value and the date.
+    mark-low   the trough.
+    mark-last  the latest observation. Always populated; it is the "and now"
+               of the sentence.
+
+SEQUENCE
+  1  unit
+  2  y labels, then head labels — the frame before the data
+  3  points or bars, oldest to newest, one period per beat if the voiceover
+     is walking the series; all at once if it is not
+  4  value-N only for the periods being spoken about. Six labelled values is
+     a table with extra steps.
+  For line-dense: the series, then mark-last, then whichever of
+  mark-high / mark-low the argument needs. Rarely both.
+
+TRAPS
+  * dataPolicy in the manifest: the plate draws the axis furniture and the
+    plot area, not the series. The series is composited into plot-area. Do
+    not expect a chart plate to know its own data.
+  * The subject's own series is structure (#242A31), not neutral data. Peers
+    and consensus are the other party (#6A5C8B). If the subject's line is
+    coloured like everyone else's, the frame has no subject.
+  * A single period in attention. Not the whole series.

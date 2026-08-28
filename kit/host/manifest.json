@@ -1,0 +1,1553 @@
+{
+ "family": "host",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "alpha cut-out figure, placed on a room host-anchor by height with the floor line pinned",
+ "assets": {
+  "host/leaning-on-desk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "leaning-on-desk_f01.svg",
+     "png": "leaning-on-desk_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "leaning-on-desk_f02.svg",
+     "png": "leaning-on-desk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "leaning-on-desk.png",
+    "svg": "leaning-on-desk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 587,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 522,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "leaning-on-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/leaning-on-desk-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "leaning-on-desk-talk.png",
+    "svg": "leaning-on-desk-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 587,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 522,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "leaning-on-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "leaning-on-desk-talk_f01.svg",
+     "png": "leaning-on-desk-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "leaning-on-desk-talk_f02.svg",
+     "png": "leaning-on-desk-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/leaning-on-desk-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "leaning-on-desk-idle.png",
+    "svg": "leaning-on-desk-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 587,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 522,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "leaning-on-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "leaning-on-desk-idle_f01.svg",
+     "png": "leaning-on-desk-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "leaning-on-desk-idle_f02.svg",
+     "png": "leaning-on-desk-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  },
+  "host/hands-in-pockets": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "hands-in-pockets_f01.svg",
+     "png": "hands-in-pockets_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "hands-in-pockets_f02.svg",
+     "png": "hands-in-pockets_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "hands-in-pockets.png",
+    "svg": "hands-in-pockets.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 527,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 461,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "hands-in-pockets",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/hands-in-pockets-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "hands-in-pockets-talk.png",
+    "svg": "hands-in-pockets-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 527,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 461,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "hands-in-pockets",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "hands-in-pockets-talk_f01.svg",
+     "png": "hands-in-pockets-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "hands-in-pockets-talk_f02.svg",
+     "png": "hands-in-pockets-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/hands-in-pockets-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "hands-in-pockets-idle.png",
+    "svg": "hands-in-pockets-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 527,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 461,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "hands-in-pockets",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "hands-in-pockets-idle_f01.svg",
+     "png": "hands-in-pockets-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "hands-in-pockets-idle_f02.svg",
+     "png": "hands-in-pockets-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  },
+  "host/holding-a-page": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "holding-a-page_f01.svg",
+     "png": "holding-a-page_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "holding-a-page_f02.svg",
+     "png": "holding-a-page_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "holding-a-page.png",
+    "svg": "holding-a-page.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 536,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 471,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "page",
+     "x": 361,
+     "y": 890,
+     "w": 385,
+     "h": 315
+    }
+   ],
+   "family": "host",
+   "pose": "holding-a-page",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/holding-a-page-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "holding-a-page-talk.png",
+    "svg": "holding-a-page-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 536,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 471,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "page",
+     "x": 361,
+     "y": 890,
+     "w": 385,
+     "h": 315
+    }
+   ],
+   "family": "host",
+   "pose": "holding-a-page",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "holding-a-page-talk_f01.svg",
+     "png": "holding-a-page-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "holding-a-page-talk_f02.svg",
+     "png": "holding-a-page-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/holding-a-page-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "holding-a-page-idle.png",
+    "svg": "holding-a-page-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 536,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 471,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "page",
+     "x": 361,
+     "y": 890,
+     "w": 385,
+     "h": 315
+    }
+   ],
+   "family": "host",
+   "pose": "holding-a-page",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "holding-a-page-idle_f01.svg",
+     "png": "holding-a-page-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "holding-a-page-idle_f02.svg",
+     "png": "holding-a-page-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  },
+  "host/pointing-down-at-desk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "pointing-down-at-desk_f01.svg",
+     "png": "pointing-down-at-desk_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "pointing-down-at-desk_f02.svg",
+     "png": "pointing-down-at-desk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "pointing-down-at-desk.png",
+    "svg": "pointing-down-at-desk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 581,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 516,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "pointing-down-at-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/pointing-down-at-desk-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "pointing-down-at-desk-talk.png",
+    "svg": "pointing-down-at-desk-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 581,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 516,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "pointing-down-at-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "pointing-down-at-desk-talk_f01.svg",
+     "png": "pointing-down-at-desk-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "pointing-down-at-desk-talk_f02.svg",
+     "png": "pointing-down-at-desk-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/pointing-down-at-desk-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "pointing-down-at-desk-idle.png",
+    "svg": "pointing-down-at-desk-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 581,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 516,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "pointing-down-at-desk",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "pointing-down-at-desk-idle_f01.svg",
+     "png": "pointing-down-at-desk-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "pointing-down-at-desk-idle_f02.svg",
+     "png": "pointing-down-at-desk-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  },
+  "host/head-in-hands": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "head-in-hands_f01.svg",
+     "png": "head-in-hands_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "head-in-hands_f02.svg",
+     "png": "head-in-hands_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "head-in-hands.png",
+    "svg": "head-in-hands.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 603,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 538,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "head-in-hands",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/head-in-hands-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "head-in-hands-talk.png",
+    "svg": "head-in-hands-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 603,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 538,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "head-in-hands",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "head-in-hands-talk_f01.svg",
+     "png": "head-in-hands-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "head-in-hands-talk_f02.svg",
+     "png": "head-in-hands-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/head-in-hands-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "head-in-hands-idle.png",
+    "svg": "head-in-hands-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 603,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 538,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 233,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "head-in-hands",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "head-in-hands-idle_f01.svg",
+     "png": "head-in-hands-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "head-in-hands-idle_f02.svg",
+     "png": "head-in-hands-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  },
+  "host/walking-out-of-frame": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "walking-out-of-frame_f01.svg",
+     "png": "walking-out-of-frame_f01.png",
+     "boil": 1,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "walking-out-of-frame_f02.svg",
+     "png": "walking-out-of-frame_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ],
+   "files": {
+    "png": "walking-out-of-frame.png",
+    "svg": "walking-out-of-frame.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 614,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 549,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 298,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "walking-out-of-frame",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   }
+  },
+  "host/walking-out-of-frame-talk": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "walking-out-of-frame-talk.png",
+    "svg": "walking-out-of-frame-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 614,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 549,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 298,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "walking-out-of-frame",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 8,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "walking-out-of-frame-talk_f01.svg",
+     "png": "walking-out-of-frame-talk_f01.png",
+     "boil": 1,
+     "mouthOpen": true,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "walking-out-of-frame-talk_f02.svg",
+     "png": "walking-out-of-frame-talk_f02.png",
+     "boil": 2,
+     "mouthOpen": false,
+     "bob": 0
+    }
+   ]
+  },
+  "host/walking-out-of-frame-idle": {
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "files": {
+    "png": "walking-out-of-frame-idle.png",
+    "svg": "walking-out-of-frame-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 614,
+     "y": 576,
+     "w": 46,
+     "h": 30
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 549,
+     "y": 436,
+     "w": 176,
+     "h": 194
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
+     "x": 298,
+     "y": 418,
+     "w": 614,
+     "h": 1323
+    }
+   },
+   "family": "host",
+   "pose": "walking-out-of-frame",
+   "aspect": "9x16",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "shirt",
+   "floorLineY": 1728,
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "frameCount": 2,
+   "playback": "loop",
+   "fps": 4,
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "walking-out-of-frame-idle_f01.svg",
+     "png": "walking-out-of-frame-idle_f01.png",
+     "boil": 3,
+     "mouthOpen": false,
+     "bob": 0
+    },
+    {
+     "tag": "_f02",
+     "svg": "walking-out-of-frame-idle_f02.svg",
+     "png": "walking-out-of-frame-idle_f02.png",
+     "boil": 4,
+     "mouthOpen": false,
+     "bob": 3
+    }
+   ]
+  }
+ },
+ "anchorContract": "a room's host-anchor region gives the target HEIGHT: scale this plate so (floorLineY - slots.figure.y) equals that height, then sit floorLineY on the region's bottom edge. Never scale to the anchor's width.",
+ "tone": "The cut-out is NOT lit to match the room. He is the highest-contrast object in any frame he is in — his material hatch and the neutral ink pass on each part's turned side sit above the room's heaviest furniture, and his contact pool is small and tight. An earlier revision tinted him from the room's two sources and that is exactly what put him at the same value as the desk behind him.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "wardrobe": {
+  "outfits": [
+   "shirt",
+   "cardigan",
+   "rolled",
+   "jumper",
+   "gilet"
+  ],
+  "shipped": "shirt",
+  "render": "BUILD.drawWith(item, outfit)",
+  "rule": "every frame of one episode uses the SAME outfit; all five keep a mid-to-dark torso and the darkest cloth at the trousers, varying hue and detail rather than value"
+ },
+ "head": "The head carries the heaviest outline on the plate, with a jaw shadow and a turned plane on the skull. With the shirt and trousers fixed but the head still cream on a cream wall, the eye landed on his chest instead of his face.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}
