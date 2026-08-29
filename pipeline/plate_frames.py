@@ -368,6 +368,23 @@ def fit_into(img, box_w: int, box_h: int):
                        max(int(img.height * ratio), 1)), Image.LANCZOS)
 
 
+def _resize_to(img, width: int | None, height: int | None):
+    """Resize to a target width or height, preserving aspect."""
+    from PIL import Image
+
+    if not width and not height:
+        return img
+    if width and height:
+        w, h = width, height
+    elif width:
+        w = width
+        h = max(int(round(img.height * (width / img.width))), 1)
+    else:
+        h = height
+        w = max(int(round(img.width * (height / img.height))), 1)
+    return img.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
+
+
 def cover_into(img, box_w: int, box_h: int):
     """Fill a box completely, cropping the overflow — for foreign media."""
     from PIL import Image
