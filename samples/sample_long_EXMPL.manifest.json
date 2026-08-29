@@ -533,11 +533,11 @@
         "tag": "PLATE",
         "values": {
           "kicker": "BOTH TRUE",
-          "statement-1": "Forty percent of revenue is contracted for three years, and churn is falling.",
-          "detail-1": "The new CFO stopped buying growth in March.",
+          "statement-1": "Forty percent of revenue is contracted.",
+          "detail-1": "Churn is falling, and the new CFO stopped buying growth in March.",
           "mark-1": "up",
-          "statement-2": "One point four billion of debt against four hundred million of cash.",
-          "detail-2": "Share count up six percent a year while they wait.",
+          "statement-2": "One point four billion of debt.",
+          "detail-2": "Four hundred million of cash, and share count up six percent a year.",
           "mark-2": "down",
           "caption": "Both of these are true at the same time"
         }
@@ -590,8 +590,8 @@
           "numerator-label": "EV/Sales today",
           "denominator": "2%",
           "denominator-label": "LTM revenue growth",
-          "result": "14% for ten years",
-          "caption": "A perpetuity gut-check, not a fair value"
+          "result": "14%/yr",
+          "caption": "Ten years of that, and it is a gut-check, not a fair value"
         }
       },
       "fallback": false
@@ -622,7 +622,7 @@
           "then-date": "FY21",
           "now-value": "7.8x",
           "now-date": "today",
-          "trough": "3.1x at FY23",
+          "trough": "3.1x",
           "head-1": "FY21",
           "head-2": "FY22",
           "head-3": "FY23",
@@ -1102,7 +1102,7 @@
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 37,
+  "segment_cache_hits": 40,
   "segment_failures": [],
   "layers": [
     {

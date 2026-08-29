@@ -579,3 +579,43 @@ def test_the_committed_fixtures_fit_the_plates_they_name(settings):
                     problems.append(f"{path.name}: {w}")
     assert seen, "no [PLATE] tags found in the fixtures at all"
     assert problems == [], "\n".join(problems)
+
+
+def test_a_positive_figure_never_draws_in_the_fall_colour(settings):
+    """Red means down. It does not get to mean it about a number that rose.
+
+    `peers/peer-strip` declares a role PAIR — `move` in `down` beside `moveUp`
+    in `up` — and the renderer took the base role every time, so a gross
+    margin of 60 drew in the same red as a cash burn of −14. The value's sign
+    is the only thing a pair like that can be keyed on.
+    """
+    from pipeline.plate_frames import type_role
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("peers/peer-strip-16x9")
+    slot = plate.slots["move-1"]
+
+    assert type_role(plate, slot, "60")["colour"] == "up"
+    assert type_role(plate, slot, "7.8")["colour"] == "up"
+    assert type_role(plate, slot, "-14")["colour"] == "down"
+    # Not a figure at all: the base role, never a guess.
+    assert type_role(plate, slot, "n/a")["colour"] == "down"
+
+
+def test_a_data_region_nobody_filled_is_reported(settings):
+    """An unfilled `bars` leaves the plate's own placeholder lengths on screen.
+
+    Worse than an empty box, because invented bar lengths read as data. The
+    unfilled report covers renderer regions for that reason, not only text.
+    """
+    from pipeline.plate_frames import unfilled_slots
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("peers/peer-strip-16x9")
+    assert "bars" in unfilled_slots(plate, {"ticker-1": "EV/S"})
+    assert "bars" not in unfilled_slots(plate, {"bars": "90,55,10,5,95"})
+    # A reserved AREA is not something a script fills.
+    room = reg.get("room/wide-16x9")
+    assert "host-anchor" not in unfilled_slots(room, {})

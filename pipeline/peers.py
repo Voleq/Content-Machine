@@ -134,11 +134,34 @@ def strip_values(data, *, ticker: str, aspect: str = "16x9",
         "head-fwd": "PCTILE",
         "caption": str(chosen.get("read") or ""),
     }
+    bars: list[str] = []
     for i, row in enumerate(rows[:n], start=1):
         values[f"ticker-{i}"] = _short(row.get("metric"), 7)
         values[f"move-{i}"] = _fmt(row.get("subject"))
         values[f"fwd-{i}"] = _pct(row.get("percentile"))
+        bars.append(_bar(row.get("percentile")))
+
+    # THE BARS ARE THE PERCENTILES, not the subject figures beside them.
+    #
+    # The plate's `bars` region draws the `move` column when nobody says
+    # otherwise, which is right on the movers strip this plate was drawn for:
+    # five tickers, one unit, five price moves. Here every row is a different
+    # metric — a multiple, a margin, a growth rate — and a bar chart across
+    # those has no common axis to be long or short against. It came out as
+    # four blobs where the widest was a 60% margin and the 90th-percentile
+    # valuation was a smudge. A percentile is 0 to 100 for every row, which is
+    # the whole reason the export carries it.
+    if any(b for b in bars):
+        values["bars"] = ",".join(bars)
     return values
+
+
+def _bar(value) -> str:
+    """A percentile as a bar length, or empty when there is none."""
+    try:
+        return f"{float(value):g}"
+    except (TypeError, ValueError):
+        return ""
 
 
 def _fmt(value) -> str:
@@ -164,16 +187,18 @@ def render(reg: Registry, data, settings, *, ticker: str,
     plate: Plate = reg.require(key)
     img = render_still(plate, values, settings, reg)
 
-    # The bars are DATA and the plate reserves the column for them. The zero
-    # rule is placed from the domain, so when every move is red zero lands on
-    # the right-hand edge and every bar runs left from it — which is the shape
-    # the beat has, and which the plate cannot know.
+    # The bars are DATA and the plate reserves the column for them. They are
+    # the PERCENTILES the rows already carry, on one 0-to-100 axis — see
+    # `strip_values`. Reading the `move` column instead put a 60% margin and a
+    # 7.8x multiple on the same axis, and the widest bar on the strip was
+    # whichever row happened to be quoted in the largest units.
     area = plot_area(plate, "bars")
     if area is not None:
         n = ROWS.get(aspect, 5)
+        written = [v for v in str(values.get("bars", "")).split(",") if v != ""]
         series: list[float | None] = []
-        for i in range(1, n + 1):
-            raw = values.get(f"move-{i}", "")
+        for i in range(n):
+            raw = written[i] if i < len(written) else ""
             try:
                 series.append(float(str(raw).replace(",", "").replace("%", "")))
             except ValueError:

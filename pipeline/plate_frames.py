@@ -123,9 +123,33 @@ def _load(settings: Settings, family: str, weight: int, size: int):
     return font
 
 
-def type_role(plate: Plate, slot: Slot) -> dict:
-    """The plate's declared type for this slot's role, or an empty dict."""
-    return plate.type_roles.get(slot.role, {}) or {}
+def type_role(plate: Plate, slot: Slot, value: str = "") -> dict:
+    """The plate's declared type for this slot's role, or an empty dict.
+
+    A plate may declare a role PAIR — `move` in ``down`` beside `moveUp` in
+    ``up`` — and then the value's sign chooses, because that is the only thing
+    a pair like that can mean. The renderer was always taking the base role,
+    so on the peer strip a positive figure drew in the fall colour: gross
+    margin of 60 in red. Red means down and nothing else, and it does not get
+    to mean it about a number that went up.
+    """
+    roles = plate.type_roles or {}
+    up = roles.get(f"{slot.role}Up")
+    if up and _positive(value):
+        return up or {}
+    return roles.get(slot.role, {}) or {}
+
+
+def _positive(value: str) -> bool:
+    """Whether a written figure reads as a rise. Unparseable is not a rise."""
+    text = str(value or "").strip()
+    if not text:
+        return False
+    cleaned = "".join(c for c in text if c.isdigit() or c in ".-+")
+    try:
+        return float(cleaned) > 0
+    except ValueError:
+        return False
 
 
 def _wrap_to(draw, text: str, font, max_w: int) -> list[str]:
@@ -223,7 +247,7 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     if not text:
         return warnings
 
-    tr = type_role(plate, slot)
+    tr = type_role(plate, slot, text)
     transform = str(tr.get("transform", "")).lower()
     if transform == "uppercase":
         text = text.upper()
@@ -388,15 +412,24 @@ def render_still(plate: Plate, values: dict[str, str] | None,
 
 
 def unfilled_slots(plate: Plate, values: dict[str, str] | None) -> list[str]:
-    """The TEXT boxes this plate declares that `values` leaves empty.
+    """What this plate declares that `values` leaves empty.
 
     An empty cell in this library means NO DATA, and that is information — so
-    this reports rather than fails. Regions are excluded: a ``host-anchor`` or a
-    ``plot-area`` is not a box anyone types into.
+    this reports rather than fails.
+
+    Two kinds count. A TEXT box with nothing in it, and a slot with a
+    ``renderer`` that was handed no figures: `peers/peer-strip`'s bars are
+    drawn into the plate as placeholder lengths, so a strip whose bars nobody
+    filled ships four bars of invented data rather than an empty box — the
+    worse of the two failures, and the one that looks most like a design
+    choice. Reserved AREAS are excluded: a ``host-anchor`` is not something a
+    script fills.
     """
     values = values or {}
+    def empty(name: str) -> bool:
+        return not str(values.get(name) or "").strip()
     return sorted(n for n, s in plate.slots.items()
-                  if s.is_text and not str(values.get(n) or "").strip())
+                  if (s.is_text or s.renderer) and empty(n))
 
 
 def render_clip(plate: Plate, values: dict[str, str] | None, duration_s: float,
