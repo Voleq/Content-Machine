@@ -6,18 +6,52 @@
   "move_summary": "Q3 beat · guide raised · EPS +2c",
   "chart_style": "clean",
   "headlines": [
-    {"text": "EXMPL beats Q3, raises full-year guidance", "meaning": "Beat the lowered estimate; the raise is small but real."}
+    {
+      "text": "EXMPL beats Q3, raises full-year guidance",
+      "meaning": "Beat the lowered estimate; the raise is small but real."
+    }
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": [
+    "FY21",
+    "FY22",
+    "FY23",
+    "FY24",
+    "FY25",
+    "LTM"
+  ],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]}
+    {
+      "label": "Revenue",
+      "values": [
+        "",
+        "$400M",
+        "$452M",
+        "$471M",
+        "$491M",
+        "$496M"
+      ]
+    },
+    {
+      "label": "Net income",
+      "values": [
+        "",
+        "-$8M",
+        "-$25M",
+        "-$49M",
+        "-$70M",
+        "-$89M"
+      ]
+    }
   ],
   "numbers_comment": "One beat against a lowered bar. Revenue is still flat over five years and the company still loses money — the guide is the only thing that actually moved.",
   "conclusion": "Signal, but a quiet one. A good quarter, leaning against five flat years.",
   "meme": null,
   "broll": null,
   "annotations": [
-    {"target": "chart", "anchor_word": "beat", "note": "vs lowered est"}
+    {
+      "target": "chart",
+      "anchor_word": "beat",
+      "note": "vs lowered est"
+    }
   ]
 }

@@ -4,8 +4,8 @@
  "beats": 9,
  "shots_count": 12,
  "anchored_shots": 4,
- "register": "ballpoint",
- "duration_s": 71.494,
+ "register": "grease-pencil",
+ "duration_s": 71.865,
  "frame": {
   "w": 1080,
   "h": 1920
@@ -15,7 +15,7 @@
    "id": "cold-open",
    "plate": "room-wide",
    "start_s": 0.0,
-   "end_s": 5.015,
+   "end_s": 5.05,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -29,8 +29,8 @@
   {
    "id": "the-move",
    "plate": "screen-full",
-   "start_s": 5.015,
-   "end_s": 10.03,
+   "start_s": 5.05,
+   "end_s": 10.101,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -46,8 +46,8 @@
   {
    "id": "the-news",
    "plate": "desk-top-down",
-   "start_s": 10.03,
-   "end_s": 15.045,
+   "start_s": 10.101,
+   "end_s": 15.151,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -63,8 +63,8 @@
   {
    "id": "the-turn",
    "plate": null,
-   "start_s": 15.045,
-   "end_s": 20.045,
+   "start_s": 15.151,
+   "end_s": 20.151,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
@@ -75,8 +75,8 @@
   {
    "id": "numbers-1",
    "plate": "sheet-tall",
-   "start_s": 20.045,
-   "end_s": 26.476,
+   "start_s": 20.151,
+   "end_s": 26.615,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -93,8 +93,8 @@
   {
    "id": "numbers-2",
    "plate": "sheet-tall",
-   "start_s": 26.476,
-   "end_s": 32.907,
+   "start_s": 26.615,
+   "end_s": 33.079,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -111,8 +111,8 @@
   {
    "id": "numbers-3",
    "plate": "sheet-tall",
-   "start_s": 32.907,
-   "end_s": 39.338,
+   "start_s": 33.079,
+   "end_s": 39.544,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -129,8 +129,8 @@
   {
    "id": "numbers-4",
    "plate": "sheet-tall",
-   "start_s": 39.338,
-   "end_s": 45.769,
+   "start_s": 39.544,
+   "end_s": 46.008,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -147,8 +147,8 @@
   {
    "id": "the-sheet",
    "plate": "sheet-tall",
-   "start_s": 45.769,
-   "end_s": 52.201,
+   "start_s": 46.008,
+   "end_s": 52.472,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -166,8 +166,8 @@
   {
    "id": "cheap-or-trap",
    "plate": "compare-plate",
-   "start_s": 52.201,
-   "end_s": 58.632,
+   "start_s": 52.472,
+   "end_s": 58.936,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
@@ -183,8 +183,8 @@
   {
    "id": "payoff",
    "plate": "room-wide",
-   "start_s": 58.632,
-   "end_s": 66.063,
+   "start_s": 58.936,
+   "end_s": 66.401,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -198,8 +198,8 @@
   {
    "id": "close",
    "plate": "room-wide",
-   "start_s": 66.063,
-   "end_s": 71.494,
+   "start_s": 66.401,
+   "end_s": 71.865,
    "anchored": false,
    "max_hold_s": 4.0,
    "layers": [
@@ -213,18 +213,18 @@
  ],
  "layers": 79,
  "kit_assets_used": [
-  "compare-plate--ballpoint",
-  "desk-top-down--ballpoint",
-  "page-corporate--ballpoint",
-  "room-wide--ballpoint",
-  "screen-full--ballpoint",
-  "sheet-tall--ballpoint",
-  "sitting-with-mug--ballpoint",
-  "talking-at-screen--ballpoint",
-  "talking-to-camera--ballpoint",
-  "underline-swipe--ballpoint"
+  "compare-plate--grease-pencil",
+  "desk-top-down--grease-pencil",
+  "page-corporate--grease-pencil",
+  "room-wide--grease-pencil",
+  "screen-full--grease-pencil",
+  "sheet-tall--grease-pencil",
+  "sitting-with-mug--grease-pencil",
+  "talking-at-screen--grease-pencil",
+  "talking-to-camera--grease-pencil",
+  "underline-swipe--grease-pencil"
  ],
- "kit_reach": "Kit: 10 entries in ballpoint, 10 concepts, 17 animated layers",
+ "kit_reach": "Kit: 10 entries in grease-pencil, 10 concepts, 17 animated layers",
  "skipped": [],
  "dropped_shots": [],
  "text_overflow": {},

@@ -290,10 +290,10 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
         "headlines": [
             {"text": "EXMPL beats and raises", "meaning": "Actual numbers, not vibes."},
         ],
-        "years": ["2023", "2024", "2025"],
+        "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
         "numbers": [
-            {"label": "FCF", "values": ["$195M", "$228M", "$262M"]},
-            {"label": "Shares out", "values": ["199M", "194M", "190M"]},
+            {"label": "FCF", "values": ["", "", "", "$195M", "$228M", "$262M"]},
+            {"label": "Shares out", "values": ["", "", "", "199M", "194M", "190M"]},
         ],
         "numbers_comment": "Cash up, share count down. The rarest chart.",
         "conclusion": "Signal. I hate that it works.",

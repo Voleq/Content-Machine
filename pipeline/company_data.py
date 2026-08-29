@@ -923,11 +923,13 @@ def prepare_screenshot(src: Path, dest: Path, settings: Settings) -> Path:
     """Full-frame designed filing card: the screenshot fitted sharp over a
     blurred, brand-tinted cover of itself (never a letterboxed black frame),
     a subtle border, and the generic '10-K' chip. Deterministic output."""
-    from pipeline.rasters import cover_fill_frame
+    from pipeline.rasters import cover_fill_frame, role
 
     W, H = settings.long_resolution
     margin = int(H * 0.05)
-    canvas = cover_fill_frame(src, W, H, keep_min=1.1)  # always contain-on-fill
+    canvas = cover_fill_frame(src, W, H, keep_min=1.1,   # always contain-on-fill
+                              ground=role(settings, "ground"),
+                              line=role(settings, "structure"))
     d = ImageDraw.Draw(canvas)
 
     # generic source chip — "the filing", never the vendor

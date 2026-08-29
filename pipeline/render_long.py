@@ -247,7 +247,6 @@ def render_long(
         log.warning("tag: [%s] at char %d draws nothing — %s",
                     e.type.value, e.char_offset, reason or "unmapped tag type")
     cues = build_long_timeline(script, tts.words, duration)
-    doodle_cues = [c for c in cues if c.kind is CueKind.DOODLE]
     scribble_cues = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     chapter_warnings: list[str] = []
     chapters = _chapter_plan(script, duration, chapter_warnings.append)
@@ -361,7 +360,7 @@ def render_long(
     def _plate_art(seg, seg_i: int, value: str):
         """(path, is_video, (w, h), frame plan, key) for one [PLATE] beat."""
         from pipeline.plate_frames import (
-            frame_indices, render_still, unfilled_slots,
+            frame_indices, render_frame, render_still, unfilled_slots,
         )
 
         plate = reg.get(value)
@@ -380,19 +379,26 @@ def render_long(
         if not plate.animated:
             dest = rdir / f"plate_{seg_i}_{plate.name[:24]}.png"
             img = render_still(plate, values, settings, reg).convert("RGBA")
+            if img.size != (W, H):
+                img = img.resize((W, H), Image.LANCZOS)
             img.save(dest)
             return dest, False, img.size, (), plate.key
 
-        # A two-frame boil for the length of the beat. The base file is frame
-        # one byte for byte, so entering the loop from the still is silent.
+        # A two-frame boil, encoded ONCE at its own rate. Walking the beat's
+        # whole frame plan and encoding every output frame turned a two-frame
+        # loop into 240 frames of 4K RGBA — a 172 MB clip for eight seconds of
+        # a drawing that has two states. The plate is also brought down to the
+        # OUTPUT size here rather than in the encoder, which is where the bytes
+        # actually went.
         span = max(seg.end - seg.start, playback_seconds(plate))
         plan = frame_indices(plate, span, fps)
-        seq = render_clip(plate, values, span, settings, reg,
-                          rdir / f"plate_{seg_i}_{plate.name[:24]}", fps=fps)
+        frames = []
+        for idx in range(plate.frame_count):
+            img = render_frame(plate, idx, values, settings, reg)
+            frames.append(img.resize((W, H), Image.LANCZOS))
         dest = rdir / f"plate_{seg_i}_{plate.name[:24]}.mov"
-        frames_to_alpha_clip(
-            [Image.open(f) for f in sorted(seq.glob("f*.png"))], fps, dest)
-        return dest, True, plate.pixel_size, tuple(plan), plate.key
+        frames_to_alpha_clip(frames, max(plate.fps or 2, 1), dest)
+        return dest, True, (W, H), tuple(plan), plate.key
 
     def _plate_still(seg, seg_i: int, value: str) -> Path:
         return _plate_art(seg, seg_i, value)[0]
@@ -480,10 +486,19 @@ def render_long(
         role_name = "panel" if panel else "beat"
         room = _room_plate(role_name if panel else "talk",
                            seed=f"{script.ticker}|{seg_i % 3}")
+        # He is composited per output frame, so he is loaded at the size he
+        # will be SHOWN at rather than at his delivered 2160x3840. Without
+        # this every frame of every host beat is a 4K RGBA resize.
+        shot_probe = pick_shot(reg, role_name, seg_i, used=host_used)
+        target_h = H
+        if room is not None and shot_probe is not None:
+            placed_probe = place_on_room(room, shot_probe)
+            if placed_probe is not None:
+                target_h = max(int(placed_probe.height * (W / room.delivered[0])), 1)
         motion: dict = {}
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
-            reg=reg, settings=settings, fps=fps,
+            reg=reg, settings=settings, fps=fps, display_h=target_h,
             role=role_name, shot_index=seg_i, used=host_used, report=motion,
         )
         if built is None:
@@ -518,18 +533,26 @@ def render_long(
         )
 
     def _scaled_overlay_chain(bg_i: int, fg_i: int, x: int, y: int,
-                              w: int, h: int, seg_len: float, tail: str) -> str:
+                              w: int, h: int, seg_len: float, tail: str, *,
+                              loop: bool = False) -> str:
         """As `_overlay_chain`, but the layer is scaled into its box first.
 
-        Plates are rendered at their own canvas size; the scale happens in the
-        graph rather than by re-rendering every frame at the display size.
+        `loop` is what a BOIL needs. A two-frame loop is encoded once at its
+        own 2fps and then repeated for the beat; cloning its last frame instead
+        — which is what `tpad` does — freezes the drawing after half a second,
+        and a frozen plate beside a boiling room is the exact thing the boil
+        exists to prevent.
         """
+        fg = (f"[{fg_i}:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,"
+              f"trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,scale={w}:{h}[hfg];"
+              if loop else
+              f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+              f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
+              f"trim=0:{seg_len:.4f},scale={w}:{h}[hfg];")
         return (
             f"[{bg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
             f"scale={W}:{H}[hbg];"
-            f"[{fg_i}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
-            f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
-            f"trim=0:{seg_len:.4f},scale={w}:{h}[hfg];"
+            + fg +
             f"[hbg][hfg]overlay={x}:{y}:eof_action=repeat"
             f"{tail}"
         )
@@ -726,7 +749,7 @@ def render_long(
                 bg_i = _still_input(bg)
                 fg_i = _add_input(["-i", str(art)])
                 chain = _scaled_overlay_chain(bg_i, fg_i, ex, ey, ew, eh,
-                                              seg_len, tail)
+                                              seg_len, tail, loop=True)
                 seg_animation = {"asset": key, "frames": len(plan),
                                  "distinct": len(set(plan))}
             else:
@@ -752,7 +775,9 @@ def render_long(
                 visual = content.resolve_meme(value)
                 if visual.key not in meme_frame_cache:
                     dest = rdir / f"meme_frame_{len(meme_frame_cache)}.png"
-                    cover_fill_frame(visual.path, W, H, keep_min=1.1).save(dest)
+                    cover_fill_frame(visual.path, W, H, keep_min=1.1,
+                                     ground=role(settings, "ground"),
+                                     line=role(settings, "structure")).save(dest)
                     meme_frame_cache[visual.key] = dest
                 still = meme_frame_cache[visual.key]
             # A chart is a PLATE with a path drawn in it, so it plays as a
@@ -911,34 +936,13 @@ def render_long(
                     is_video=True, name=f"glitch@{seg.start:.2f}",
                 ))
 
-    # hand-drawn overlays (TOP layer, riding over whatever segment shows):
-    # [DOODLE] boils in a corner, [SCRIBBLE] draws a mark + target callout
-    doodle_slots = [(px(1180), px(140)), (px(120), px(150)),
-                    (px(1180), px(560)), (px(120), px(560))]
-    prev_doodle_key: str | None = None
-    for k, c in enumerate(doodle_cues):
-        visual = content.resolve_doodle(c.payload["value"])
-        if visual is None:
-            log.warning("doodle %r not resolved — skipped", c.payload["value"])
-            continue
-        # the same doodle can't ride two beats in a row (§variety) — a repeat
-        # reads as a stuck frame; drop the adjacent duplicate
-        if visual.key == prev_doodle_key:
-            log.warning("doodle %r repeats back-to-back — skipped", visual.key)
-            continue
-        prev_doodle_key = visual.key
-        hold = float(c.payload.get("hold", 2.0))
-        clip, (cw, ch) = doodle_clip(
-            visual.path, rdir / f"doodle_{k}.mov",
-            display_w=px(520), duration_s=hold + 0.2, fps=fps,
-            seed=f"{script.ticker}|doodle|{k}",
-        )
-        sx, sy = doodle_slots[k % len(doodle_slots)]
-        layers.append(OverlayLayer(
-            path=clip, x=min(sx, W - cw), y=min(sy, H - ch),
-            t_start=c.t, t_end=min(c.t + hold, duration),
-            is_video=True, name=f"doodle_{k}_{visual.key[:16]}",
-        ))
+    # Annotations (TOP layer, riding over whatever segment shows).
+    #
+    # An annotation is drawn in ATTENTION and therefore SPENDS the frame's one
+    # attention, which is why there is one family and no separate doodle layer.
+    # [DOODLE] used to put a second procedural drawing in a corner on top of
+    # whatever was already there — a second visual language, competing with the
+    # thing it was meant to punctuate.
     for k, c in enumerate(scribble_cues):
         parsed = parse_scribble_payload(c.payload["value"])
         if parsed is None:
@@ -946,10 +950,16 @@ def render_long(
         style, target = parsed
         hold = float(c.payload.get("hold", 2.0))
         sw, sh = px(700), px(460)
-        frames = scribble_callout_frames(
-            settings, sw, sh, style=style.value, target=target,
-            fps=fps, hold_seconds=hold, seed=f"{script.ticker}|scr|{k}",
-        )
+        # The mark draws itself on, in attention, over the current frame. It is
+        # placed centrally here because the LONG has no word-level geometry to
+        # solve against — solve_mark does that where a slot box is known.
+        frames = mark_frames(settings, sw, sh, style=style.value, fps=fps,
+                             draw_seconds=min(hold, 0.5),
+                             seed=f"{script.ticker}|scr|{k}")
+        if not frames:
+            continue
+        hold_frames = max(int(hold * fps) - len(frames), 0)
+        frames = frames + [frames[-1]] * hold_frames
         clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_{k}.mov")
         layers.append(OverlayLayer(
             path=clip, x=int((W - sw) / 2), y=int((H - sh) / 2),

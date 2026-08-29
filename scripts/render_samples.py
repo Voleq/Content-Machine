@@ -85,7 +85,11 @@ def _long_inputs():
 
     settings = _settings()
     # a denser, purpose-built deep-dive that showcases the kit (charts,
-    # doodles, scribbles, memes); long_valid.txt stays the parser fixture
+    # The sample and the parser fixture are the same script now. They diverged
+    # so the sample could exercise tags the parser fixture did not carry, and
+    # then the sample kept exercising tags that no longer exist — which is how
+    # `scripts/render_samples.py long` was the last thing in the repo still
+    # emitting [DOODLE].
     raw = (ROOT / "fixtures" / "scripts" / "long_sample.txt").read_text(encoding="utf-8")
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     for w in warnings:
@@ -96,19 +100,35 @@ def _long_inputs():
     shutil.copy(ROOT / "fixtures" / "company_data" / "dennis_data.xlsx",
                 ws / "dennis_data.xlsx")
     data = load_company_data(ws)
-    # the fixture references one filing screenshot — synthesize it (the
-    # renderer adds the generic "FROM THE 10-K" chip; no vendor anywhere)
-    shot = ws / "income_statement.png"
-    if not shot.exists():
-        from PIL import Image, ImageDraw
-        img = Image.new("RGB", (1600, 900), (16, 20, 28))
+    # The fixture quotes two filings and shows both — synthesise them. They are
+    # deliberately flat grey documents: a filing screenshot is FOREIGN MEDIA,
+    # and the point of the frames/ family is that it can carry something that
+    # was not drawn by this engine without destroying the surface around it.
+    from PIL import Image, ImageDraw
+
+    _shots = {
+        "income_statement.png": [
+            "EXMPL — Income Statement (mock screenshot)",
+            "Revenue TTM            496,000,000   (+1.0% YoY)",
+            "Net income TTM         -89,000,000   (margin -18%)",
+        ],
+        "risk_factors.png": [
+            "EXMPL — Item 1A, Risk Factors (mock screenshot)",
+            "Our credit agreement contains a covenant tested on",
+            "trailing twelve-month adjusted EBITDA, and we may not",
+            "remain in compliance.",
+        ],
+    }
+    for name, lines in _shots.items():
+        shot = ws / name
+        if shot.exists():
+            continue
+        img = Image.new("RGB", (1600, 900), (238, 236, 231))
         d = ImageDraw.Draw(img)
         for y in range(80, 860, 52):
-            d.line([40, y, 1560, y], fill=(46, 54, 66), width=1)
-        d.text((60, 30), "EXMPL — Income Statement (mock screenshot)",
-               fill=(210, 214, 220))
-        d.text((60, 120), "Revenue TTM            496,000,000   (+1.0% YoY)", fill=(210, 214, 220))
-        d.text((60, 172), "Net income TTM         -89,000,000   (margin -18%)", fill=(235, 90, 90))
+            d.line([40, y, 1560, y], fill=(206, 202, 192), width=1)
+        for i, line in enumerate(lines):
+            d.text((60, 30 + i * 52), line, fill=(42, 44, 48))
         img.save(shot)
     tts = TTSEngine(settings).synthesize(script.narration, "long")
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")

@@ -310,3 +310,50 @@ def render_series(reg: Registry, plate: Plate, values: list[float | None],
         draw_line(img, area, values, reg.colour(role), seed=seed or plate.key,
                   domain=domain)
     return img
+
+
+def render_price_plate(reg: Registry, series, out: Path, settings: Settings, *,
+                       aspect: str = "9x16", slot_values: dict[str, str] | None = None,
+                       seed: str = "price") -> tuple[Path, dict]:
+    """A price series into `charts/line-dense`, and where it drew its points.
+
+    `line-dense` is the plate for this: many observations, four period heads,
+    three marks — for a daily series where the individual points are not the
+    point. What comes back is the path plus the plot box in DELIVERED pixels,
+    so a mark can be placed from where the line actually went rather than from
+    a second guess at the same arithmetic.
+    """
+    from pipeline.plate_frames import render_still
+
+    key = reg.aspect_key("charts/line-dense", aspect)
+    if key is None:
+        raise PlateMissing("charts/line-dense is not in the registry")
+    plate = reg.require(key)
+    values = dict(slot_values or {})
+    img = render_still(plate, values, settings, reg)
+    area = plot_area(plate)
+    closes = [float(c) for c in series.closes]
+
+    if area is not None and len(closes) >= 2:
+        lo, hi = _domain(closes)
+        span = hi - lo or 1.0
+        n = max(len(closes) - 1, 1)
+        px = [area.point(i / n, (v - lo) / span) for i, v in enumerate(closes)]
+        rng = random.Random(seed)
+        d = ImageDraw.Draw(img)
+        # The subject's own series is `structure`. A price line is not a
+        # direction — the move is the direction, and it is stated in type.
+        colour = reg.colour("structure")
+        for pass_width, alpha in ((8, 90), (6, 255)):
+            for a, b in zip(px, px[1:]):
+                d.line(_wobble(a, b, rng), fill=(*colour, alpha),
+                       width=pass_width, joint="curve")
+
+    img.convert("RGBA").save(out)
+    box = ((area.x, area.y, area.x + area.w, area.y + area.h) if area
+           else (0, 0, img.width, img.height))
+    return out, {"size": img.size, "plot_box": box, "plate": plate.key}
+
+
+class PlateMissing(RuntimeError):
+    """The plate this renderer needs is not in the registry."""

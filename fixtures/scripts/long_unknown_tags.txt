@@ -1,10 +1,4 @@
-This narration exercises the tokenizer's edge cases. [CAMERA: slow push-in] Unknown tag types are stripped, never spoken. [CLIP: flying_toasters] Unknown clip payloads are kept as events for the validator. [STAMP: OVERVALUED] The retired verdict grammar is just another unknown type now. [SOUND: airhorn_extreme] Unknown sounds warn and get skipped. [CHART: mystery_metric] Unknown chart metrics warn and get skipped. [MEME: obscure-meme-nobody-indexed] Unindexed memes warn and fall through to providers. [SHOW FILING: missing_file.png] A missing screenshot must block the run. [ASSET: revenue-flywheel] A bespoke asset with no file must block until the operator drops it in. The narration itself keeps going like nothing happened, because the voice never reads a bracket.
+This narration exercises the tokenizer's edge cases. [CAMERA: slow push-in] Unknown tag types are stripped, never spoken. [CLIP: flying_toasters] Unknown clip payloads are kept as events for the validator. [STAMP: OVERVALUED] The retired verdict grammar is just another unknown type now. [ASSET: revenue-flywheel] So is the retired bespoke-asset grammar — it is gone, and a script that still carries one loses the tag rather than blocking a render on a file nobody is going to draw. [SOUND: airhorn_extreme] Unknown sounds warn and get skipped. [CHART: mystery_metric] Unknown chart metrics warn and get skipped. [MEME: obscure-meme-nobody-indexed] Unindexed memes warn and fall through to providers. [SHOW FILING: missing_file.png] A missing screenshot must block the run. [PLATE: not-a-real-plate | unit=$M] An unknown plate must block: a name that resolves to nothing draws nothing, and an empty area on screen looks like a design choice. [PLATE: numbers-sheet-4r-16x9 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=1,2,3,4,5] A row that is shorter than its header must block too, because it puts every figure under the wrong year. [PLATE: numbers-sheet-4r-16x9 | unit=$M | nonesuch=x | label-1=Revenue | row-1=1,2,3,4,5,6] And so must a slot the plate does not declare, because the text goes nowhere. The narration itself keeps going like nothing happened, because the voice never reads a bracket.
 
-=== ASSET PROMPTS ===
---- ASSET: revenue-flywheel ---
-Design a clean 16:9 diagram titled "How EXMPL makes money" for a dark-themed
-finance video (background #12151C, ink #E8EAF0, accent #FFCD3C). Show a
-four-node flywheel: depots pay subscriptions -> software routes trucks ->
-routing data improves the product -> better product signs more depots.
-Flat vector style, no gradients, DejaVu Sans, generous spacing, no logos,
-no watermark. Export as PNG, 1920x1080.
+=== CHAPTERS ===
+00:00 cold-open | the edge cases

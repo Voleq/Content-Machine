@@ -18,8 +18,9 @@ def test_short_script_valid(short_valid_json: str):
     assert script.ticker == "EXMPL"
     assert len(script.headlines) == 2
     assert len(script.numbers) == 4
-    assert all(len(r.values) == 5 for r in script.numbers), "multi-year rows"
-    assert script.years == ["2021", "2022", "2023", "2024", "2025"]
+    assert all(len(r.values) == 6 for r in script.numbers), \
+        "six periods: four fiscal years, the last full year, LTM"
+    assert script.years == ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"]
     assert script.meme is not None and script.meme.key == "fomo-stages-wish-i-bought-doodle"
     assert script.missing_anchor_words() == []
     assert "noise" in script.conclusion.lower()
@@ -49,7 +50,7 @@ def test_short_script_rejects_four_headlines(fixtures_dir):
 
 def test_short_script_requires_multi_year_numbers(short_valid_json: str):
     raw = json.loads(short_valid_json)
-    raw["numbers"] = [{"label": "Revenue", "values": ["$496M"]}]  # single year
+    raw["numbers"] = [{"label": "Revenue", "values": ["", "", "", "", "", "$496M"]}]  # single year
     with pytest.raises(ValidationError):
         ShortScript.model_validate(raw)
 

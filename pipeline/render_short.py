@@ -228,6 +228,31 @@ class ShortResolver:
         self._images[src] = out
         return out
 
+    def _chart_labels(self) -> dict[str, str]:
+        """The period heads and the three marks the dense chart declares.
+
+        Read off the series the caller supplied — the renderer never computes a
+        figure, so these are the dates and closes it was handed, formatted.
+        """
+        if self.prices is None:
+            return {}
+        closes = list(self.prices.closes)
+        dates = list(getattr(self.prices, "dates", []) or [])
+        if not closes:
+            return {}
+        lo, hi = min(closes), max(closes)
+        out: dict[str, str] = {
+            "mark-high": f"{hi:,.2f}"[:7],
+            "mark-low": f"{lo:,.2f}"[:7],
+            "mark-last": f"{closes[-1]:,.2f}"[:7],
+        }
+        # Four heads on this plate, evenly spaced across the series.
+        for i in range(4):
+            j = min(int(i * (len(dates) - 1) / 3), len(dates) - 1) if dates else 0
+            if dates:
+                out[f"head-{i + 1}"] = str(dates[j])[-5:]
+        return out
+
     def frac_box_for(self, src: str) -> tuple[float, float, float, float] | None:
         """A mark target inside an image, as fractions of that image."""
         self.image_for("chart.price")
@@ -243,15 +268,18 @@ class ShortResolver:
         """
         if self.prices is None:
             return None
-        from pipeline.chart import render_marker_price_chart
+        from pipeline.chart import render_price_plate
+        from pipeline.plates import load_plates
+
+        reg = load_plates(self.settings.assets_dir)
         paths = []
         try:
             for i in range(BOIL_FRAMES):
                 out = self.workdir / f"chart_price_f{i + 1:02d}.png"
-                path, meta = render_marker_price_chart(
-                    _legible(self.prices), out, self.settings,
-                    size=(872, 1712), move_text="", seed=f"boil{i}",
-                    ring=False)
+                path, meta = render_price_plate(
+                    reg, _legible(self.prices), out, self.settings,
+                    aspect="9x16", seed=f"boil{i}",
+                    slot_values=self._chart_labels())
                 paths.append(path)
         except Exception:                                    # noqa: BLE001
             return None

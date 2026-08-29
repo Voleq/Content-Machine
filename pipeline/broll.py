@@ -465,7 +465,10 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     from pipeline.rasters import cover_fill_frame
 
     W, H = settings.long_resolution
-    frame = cover_fill_frame(src, W, H)
+    from pipeline.rasters import role
+
+    frame = cover_fill_frame(src, W, H, ground=role(settings, "ground"),
+                             line=role(settings, "structure"))
     dest.parent.mkdir(parents=True, exist_ok=True)
     frame.save(dest, format="PNG")
     return dest
@@ -739,16 +742,48 @@ class ContentManager:
             if not values or all(v is None for v in values):
                 log.warning("chart metric %r has no history — filler", metric)
                 return self.filler_image(metric, "chart")
-            from pipeline.chart import render_metric_chart
+            from pipeline.chart import render_series
+            from pipeline.plates import PERIOD_COUNT, load_plates
+
+            # SIX PERIODS. Four fiscal years, the last full year, LTM. A shorter
+            # history is padded at the FRONT with empty periods rather than
+            # squeezed into fewer columns: the plate is authored six wide, and
+            # an empty cell means NO DATA, which is information — a missing
+            # column is a lie about which year each figure belongs to.
+            years = ([""] * max(PERIOD_COUNT - len(years), 0) + years)[-PERIOD_COUNT:]
+            values = ([None] * max(PERIOD_COUNT - len(values), 0)
+                      + list(values))[-PERIOD_COUNT:]
 
             label = metric.replace("_", " ").capitalize()
             h = hashlib.sha256(
-                json.dumps([metric, years, values]).encode()
+                json.dumps([metric, years, [str(v) for v in values]]).encode()
             ).hexdigest()[:20]
             out = self.settings.cache_dir / "charts" / f"{h}.png"
             if not out.exists():
-                render_metric_chart(label, years, values, out, self.settings,
-                                    size=self.settings.long_resolution)
+                out.parent.mkdir(parents=True, exist_ok=True)
+                reg = load_plates(self.settings.assets_dir)
+                aspect = ("9x16" if self.settings.long_resolution[0]
+                          < self.settings.long_resolution[1] else "16x9")
+                plate = reg.require(reg.aspect_key("charts/line-6y", aspect))
+                # The axis labels ARE the scale, so they are written from the
+                # same numbers the path is drawn from. Five gridlines, evenly
+                # spaced across the series' own range.
+                present = [float(v) for v in values if v is not None]
+                lo, hi = (min(present), max(present)) if present else (0.0, 1.0)
+                slot_values = {"unit": label}
+                for i, y in enumerate(years, start=1):
+                    slot_values[f"head-{i}"] = str(y)
+                for i in range(5):
+                    slot_values[f"y-{i + 1}"] = f"{lo + (hi - lo) * i / 4:,.0f}"
+                for i, v in enumerate(values, start=1):
+                    if v is not None:
+                        slot_values[f"value-{i}"] = f"{float(v):,.0f}"
+                img = render_series(reg, plate,
+                                    [None if v is None else float(v) for v in values],
+                                    self.settings, slot_values=slot_values,
+                                    seed=f"{metric}|{h}")
+                img.convert("RGB").resize(
+                    tuple(self.settings.long_resolution)).save(out)
             return Visual(key=metric, kind="chart", path=out, is_video=False,
                           source="generated", attribution="")
         except (OSError, RenderError) as e:

@@ -5,15 +5,42 @@
   "audio_script": "This script is invalid because its annotation points at numbers row nine and the sheet only has two rows. The parser must reject it with a message about row_index.",
   "move_summary": "+10% today",
   "headlines": [
-    {"text": "Some headline", "meaning": "Some meaning."}
+    {
+      "text": "Some headline",
+      "meaning": "Some meaning."
+    }
   ],
   "numbers": [
-    {"label": "Revenue", "values": ["$1M", "$2M"]},
-    {"label": "FCF", "values": ["$1M", "$2M"]}
+    {
+      "label": "Revenue",
+      "values": [
+        "",
+        "",
+        "",
+        "",
+        "$1M",
+        "$2M"
+      ]
+    },
+    {
+      "label": "FCF",
+      "values": [
+        "",
+        "",
+        "",
+        "",
+        "$1M",
+        "$2M"
+      ]
+    }
   ],
   "numbers_comment": "Irrelevant.",
   "conclusion": "Noise.",
   "annotations": [
-    {"target": "numbers", "row_index": 9, "anchor_word": "revenue"}
+    {
+      "target": "numbers",
+      "row_index": 9,
+      "anchor_word": "revenue"
+    }
   ]
 }

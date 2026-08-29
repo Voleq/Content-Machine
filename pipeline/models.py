@@ -302,9 +302,18 @@ class NumberRow(BaseModel):
     @field_validator("values")
     @classmethod
     def _non_empty_values(cls, v: list[str]) -> list[str]:
+        """An empty cell is allowed; an empty ROW is not.
+
+        AN EMPTY CELL MEANS NO DATA, and that is information — a company with
+        four years of history under a six-period header has two empty columns,
+        and writing something in them would be inventing a figure. What is
+        never meaningful is a row with no figures at all: that is a label with
+        nothing after it, and it draws as a label with nothing after it.
+        """
         cleaned = [x.strip() for x in v]
-        if any(not x for x in cleaned):
-            raise ValueError("values contains an empty entry")
+        if not any(cleaned):
+            raise ValueError("values are all empty — a row with no figures is "
+                             "a label with nothing after it")
         return cleaned
 
 

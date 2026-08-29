@@ -2,16 +2,46 @@
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "Up 29% today. The business is not.",
-  "audio_script": "EXMPL is up twenty nine percent today, on five times average volume. [DOODLE: crash] The news is a press release, not a purchase order. Gut check, from the actual filings. Revenue is flat for five years while losses got [SCRIBBLE: circle -> Net income] wider every single year. My own account went from twenty five k to zero, so I know a value trap when I see one. The chart went vertical. The business went sideways. Noise. Set a reminder for the next filing.",
+  "audio_script": "EXMPL is up twenty nine percent today, on five times average volume. [PLATE: hook-card-t2 | ticker=EXMPL | move=+29% | hook=a press release, not a purchase order | sub=on five times volume] The news is a press release, not a purchase order. Gut check, from the actual filings. Revenue is flat for five years while losses got [SCRIBBLE: scrawl-oval-tight -> Net income] wider every single year. My own account went from twenty five k to zero, so I know a value trap when I see one. The chart went vertical. The business went sideways. Noise. Set a reminder for the next filing.",
   "move_summary": "+29% today · 5x average volume",
   "chart_style": "marker",
   "headlines": [
-    {"text": "EXMPL announces AI partnership", "meaning": "A press release, not a purchase order."}
+    {
+      "text": "EXMPL announces AI partnership",
+      "meaning": "A press release, not a purchase order."
+    }
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": [
+    "FY21",
+    "FY22",
+    "FY23",
+    "FY24",
+    "FY25",
+    "LTM"
+  ],
   "numbers": [
-    {"label": "Revenue", "values": ["$400M", "$452M", "$471M", "$491M", "$496M"]},
-    {"label": "Net income", "values": ["-$8M", "-$25M", "-$49M", "-$70M", "-$89M"]}
+    {
+      "label": "Revenue",
+      "values": [
+        "",
+        "$400M",
+        "$452M",
+        "$471M",
+        "$491M",
+        "$496M"
+      ]
+    },
+    {
+      "label": "Net income",
+      "values": [
+        "",
+        "-$8M",
+        "-$25M",
+        "-$49M",
+        "-$70M",
+        "-$89M"
+      ]
+    }
   ],
   "numbers_comment": "Flat revenue, widening losses, five years running.",
   "conclusion": "Noise. Set a reminder for the next filing.",

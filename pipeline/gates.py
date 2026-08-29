@@ -500,6 +500,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
        reports rather than blocks — but a plate filling none of its slots is a
        bordered rectangle nobody meant to ship.
     """
+    from pipeline.models import TagType
     from pipeline.plate_tags import check_bound
     from pipeline.plates import PlateError, load_plates, load_variant_ledger
 

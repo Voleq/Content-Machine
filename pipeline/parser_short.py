@@ -315,12 +315,12 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f"audio_script is {script.word_count} words (target ~180–210 for "
             f"60–75s) — pacing may be off"
         )
-    year_counts = {len(row.values) for row in script.numbers}
-    if script.years and max(year_counts) != len(script.years):
-        warnings.append(
-            f"years has {len(script.years)} labels but the widest numbers row "
-            f"has {max(year_counts)} values — the sheet will align right"
-        )
+    # Every row is six wide — the model enforces that — so what matters here is
+    # how many of those six carry a FIGURE. An empty cell means NO DATA and is
+    # legitimate; three empty cells in a row of six is a series too short to
+    # show direction, which is a different thing and worth saying.
+    year_counts = {sum(1 for v in row.values if str(v).strip())
+                   for row in script.numbers}
     if any(c < 3 for c in year_counts):
         warnings.append(
             "some numbers rows carry fewer than 3 years — direction is the "
