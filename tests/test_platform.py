@@ -584,75 +584,7 @@ def test_the_encoding_guard_actually_catches_something(tmp_path):
     assert len(found) == 1 and found[0].endswith("read_text()"), found
 
 
-def test_the_kit_export_cannot_recreate_an_illegal_name():
-    """Renaming the folder is not enough — the export script made it, and
-    would make it again on the next run."""
-    from scripts.export_design_kit import merge_path, safe_name, safe_segment
-
-    # The abbreviation that produced `con/`: spelled out the way the design
-    # document's own section label writes it, not mechanically mangled — in
-    # whatever case the id happens to use.
-    assert safe_name(merge_path("restyle", "con/alert")) == "restyle/concepts/alert"
-    assert safe_segment("CON") == safe_segment("Con") == "concepts"
-
-    # Everything else Windows refuses is escaped rather than shipped.
-    for bad in ("nul", "NUL", "Aux", "prn", "com1", "lpt9", "nul.png",
-                "trailing.", "trailing ", " leading", 'quote"pipe|star*', "a:b"):
-        assert _windows_objection(safe_segment(bad)) is None, \
-            f"{bad!r} survived sanitisation as {safe_segment(bad)!r}"
-
-    # …and a name that is already fine is left exactly alone.
-    for good in ("restyle", "concepts", "hype-vs-reality", "f01", "obj-laptop_b"):
-        assert safe_segment(good) == good
-
-
-def test_the_kit_ingest_refuses_a_path_windows_cannot_create():
-    """The ingest writes assets/kit/ now, so the guard has to live there too.
-
-    A delivery is somebody else's export. `restyle/con/` arrived that way the
-    first time and took eighteen frames down with it, silently, because the
-    Linux tree still looked clean.
-    """
-    from scripts.ingest_kit import unportable
-
-    for bad in ("restyle/con/alert.png", "a/NUL.png", "a/com1/x.png",
-                "trailing./x.png", "a/b /x.png", 'quote"pipe|.png', "a:b/x.png"):
-        assert unportable(bad) is not None, f"{bad!r} was accepted"
-
-    for good in ("restyle/concepts/alert.png", "mascot/deadpan.png",
-                 "shorts/dennis-vs-numbers/numbers-raining_f01.png",
-                 "blanks/big-number-blank.png"):
-        assert unportable(good) is None, f"{good!r} was rejected"
-
-
-def test_the_shipped_kit_is_portable():
-    """Every frame the registry declares, checked against the same rule."""
-    import json
-
-    from scripts.ingest_kit import unportable
-
-    registry = ROOT / "assets" / "kit" / "kit-registry.json"
-    if not registry.exists():
-        pytest.skip("kit not ingested")
-    data = json.loads(registry.read_text(encoding="utf-8"))
-    offenders = [
-        f"{key} -> {frame}: {why}"
-        for key, entry in data["assets"].items()
-        for frame in entry["frames"]
-        if (why := unportable(frame)) is not None
-    ]
-    assert not offenders, "\n  ".join(["unportable frame paths:"] + offenders)
-
-
-# --------------------------------------------------------------------------
-# deploy/bootstrap.sh — the two properties that made a clean install fail
-# --------------------------------------------------------------------------
-# Both defects below survived for one reason: bootstrap had only ever been
-# re-run over a tree that already worked, and an idempotent re-run passes
-# whether or not either is fixed. Only a genuinely empty destination showed
-# them, and nobody was testing that. These are the cheap structural halves of
-# that test — they cannot prove an install works, but they do fail the moment
-# the shape that broke it comes back.
+# --------------------------------------------------------------- bootstrap
 
 BOOTSTRAP = ROOT / "deploy" / "bootstrap.sh"
 
@@ -713,3 +645,26 @@ def test_the_optional_voice_step_cannot_abort_the_install():
     ]
     assert not offenders, (
         "the optional voice step aborts the install:\n  " + "\n  ".join(offenders))
+
+
+def test_the_materialised_kit_is_portable():
+    """Every filename the registry names must be creatable on Windows.
+
+    The engine writes these rather than an exporter, so the names come from
+    `engine/build.js` keys — but a key with a colon or a reserved stem in it
+    would still land as a file, and the render box is Windows.
+    """
+    from config import Settings
+    from pipeline.plates import load_plates
+
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    reserved = {"con", "prn", "aux", "nul",
+                *(f"com{i}" for i in range(1, 10)),
+                *(f"lpt{i}" for i in range(1, 10))}
+    illegal = set('<>:"|?*') | {chr(c) for c in range(32)}
+    for plate in reg.assets.values():
+        for name in [plate.files_png] + [f.png for f in plate.frames]:
+            stem = name.split(".")[0].lower()
+            assert stem not in reserved, f"{name} is a reserved device name"
+            assert not (illegal & set(name)), f"{name} has an illegal character"
+            assert name == name.strip(" ."), f"{name} has a trailing space or dot"

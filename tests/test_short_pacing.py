@@ -310,14 +310,16 @@ def overlay(kind: CueKind, t: float, value: str = "crash") -> Cue:
     return Cue(t=t, kind=kind, payload={"value": value, "hold": 2.0})
 
 
-def test_a_doodle_is_a_punctuation_beat():
-    """The band's definition says "a reaction, a transformation, a doodle
-    riding over the frame". The counter read `class`, doodles never had one,
-    and the warning told the writer to add reactions — so a writer who added
-    five doodles watched the number stay where it was."""
+def test_an_annotation_is_a_punctuation_beat():
+    """An annotation rides over the frame and punctuates it.
+
+    The counter used to read `class`, which overlays never carried, so the
+    warning told a writer to add reactions while five annotations they had
+    already added left the number where it was.
+    """
     bare, warn_bare = plan_short_pacing(skeleton() + [punct(20.0)], DURATION)
     doodled, warn_doodled = plan_short_pacing(
-        skeleton() + [punct(20.0)] + [overlay(CueKind.PLATE, 8.0 + i * 6)
+        skeleton() + [punct(20.0)] + [overlay(CueKind.SCRIBBLE, 8.0 + i * 6)
                                       for i in range(5)], DURATION)
 
     def punct_count(warnings):
@@ -363,7 +365,7 @@ def test_a_meme_counts_once_however_it_was_asked_for():
 def test_the_overlays_are_counted_but_never_moved():
     """Each one is anchored to the word it fires on, which is the whole job.
     The pacing pass must not reschedule one."""
-    doodles = [overlay(CueKind.PLATE, 20.05), overlay(CueKind.PLATE, 20.10)]
-    out, _ = plan_short_pacing(skeleton() + [data(20.0)] + doodles, DURATION)
-    placed = sorted(c.t for c in out if c.kind is CueKind.PLATE)
+    marks = [overlay(CueKind.SCRIBBLE, 20.05), overlay(CueKind.SCRIBBLE, 20.10)]
+    out, _ = plan_short_pacing(skeleton() + [data(20.0)] + marks, DURATION)
+    placed = sorted(c.t for c in out if c.kind is CueKind.SCRIBBLE)
     assert placed == [20.05, 20.10], placed

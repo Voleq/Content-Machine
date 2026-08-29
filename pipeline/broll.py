@@ -739,8 +739,9 @@ class ContentManager:
                     render_price_plate(reg, series, tmp, self.settings,
                                        aspect="9x16" if H > W else "16x9",
                                        seed=f"price|{ticker}")
-                    from PIL import Image as _Image
-                    _Image.open(tmp).convert("RGB").resize((W, H)).save(out)
+                    from PIL import Image
+
+                    Image.open(tmp).convert("RGB").resize((W, H)).save(out)
                     tmp.unlink(missing_ok=True)
                 return Visual(key=metric, kind="chart", path=out, is_video=False,
                               source="generated", attribution="")

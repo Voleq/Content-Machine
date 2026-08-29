@@ -170,18 +170,27 @@ def test_the_cover_is_paper_not_a_dark_photo(settings, workspace, long_valid_tex
 
 
 def test_no_gold_anywhere_on_the_cover(settings, workspace, long_valid_text):
-    """`GOLD` is an alias of RED now, but the point is that the accent is the
-    kit's, so nothing on the cover may sit outside the palette."""
+    """Nothing on the cover may sit outside the kit's eight roles.
+
+    The old cover accented in a gold that is not in this palette, which said
+    nothing at all because it was on every thumbnail.
+    """
     from PIL import Image
 
     from pipeline.parser_long import parse_long_script
-    from pipeline.rasters import GREEN, INK, MUTED, RED
+    from pipeline.plates import PALETTE_ROLES, load_plates
     from pipeline.workspace import Workspace
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
     out = make_thumbnail(script, Workspace(settings, "EXMPL", "2026-07-01"), settings)
     img = Image.open(out).convert("RGB")
-    allowed = (RED, GREEN, INK, MUTED)
+    reg = load_plates(settings.assets_dir)
+    # Plus the two CHARACTER colours: skin and hair are the host's own, and
+    # deliberately not a ninth and tenth data role.
+    allowed = tuple(reg.colour(r) for r in PALETTE_ROLES) + (
+        (221, 183, 148), (122, 102, 80),
+        (124, 139, 98), (181, 116, 90), (46, 55, 66),   # set: foliage, terracotta, screen
+    )
     # Saturated pixels have to be a kit colour. The old gold (#c8a24a) is
     # saturated and would fail; paper, ink and greys are not saturated.
     bad = 0
@@ -232,19 +241,23 @@ def test_the_leading_figure_is_pulled_out_of_a_move_summary():
     assert split_metric("no numbers here") == ("", "no numbers here")
 
 
-def test_green_means_up_and_only_up():
+def test_green_means_up_and_only_up(settings):
     """Red for a bad number, green for an up-move, ink for everything else.
 
     Without the move/metric distinction green either never appears — and the
     rule is decoration — or it lands on any positive figure and stops meaning
     direction.
     """
-    from pipeline.rasters import GREEN, INK, RED
+    from pipeline.plates import load_plates
     from pipeline.thumbnail import metric_colour
 
-    assert metric_colour("-18%") == RED
-    assert metric_colour("-18%", is_move=True) == RED
-    assert metric_colour("+29%", is_move=True) == GREEN
-    assert metric_colour("+5%") == INK, "a positive metric is not an up-move"
-    assert metric_colour("22x") == INK
-    assert metric_colour("n/a") == INK
+    reg = load_plates(settings.assets_dir)
+    down, up, structure = (reg.colour("down"), reg.colour("up"),
+                           reg.colour("structure"))
+    assert metric_colour(settings, "-18%") == down
+    assert metric_colour(settings, "-18%", is_move=True) == down
+    assert metric_colour(settings, "+29%", is_move=True) == up
+    assert metric_colour(settings, "+5%") == structure, \
+        "a positive metric is not an up-move"
+    assert metric_colour(settings, "22x") == structure
+    assert metric_colour(settings, "n/a") == structure

@@ -21,7 +21,12 @@ RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed
 Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register]
 The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider. [MEME: harold-quick-flip-became-bagholder]
 The industry is two giants and a coupon. [CLIP: boardroom_suits] Pricing power is a memoir title.
-Bull case: sticky contracts. Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing."""
+Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | statement-1=Forty percent of revenue is contracted. | mark-1=up | statement-2=One point four billion of debt. | mark-2=down] Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing.
+
+=== CHAPTERS ==="""  + """
+00:00 cold-open | nobody cares anymore
+00:06 the-numbers | five years of them
+00:14 bull-vs-bear | both of these are true"""
 
 
 @pytest.fixture(scope="module")
@@ -210,19 +215,6 @@ def test_host_holds_the_untagged_stretches(rendered):
     # host beats are numbered sequentially so the renderer can vary the shot
     variants = [h["variant"] for h in hosts]
     assert len(set(variants)) == len(variants)
-
-
-def test_design_system_furniture_present_and_clear(rendered):
-    """Chapter stingers exist; the brand strip moved to the TOP so it can't
-    collide with the bottom caption band."""
-    settings, script, tts, out, manifest = rendered
-    names = {l["name"] for l in manifest["layers"]}
-    assert any(n.startswith("chapter_") for n in names), "chapter stingers ride the acts"
-    lt = next(l for l in manifest["layers"] if l["name"] == "lower_third")
-    H = manifest["resolution"][1]
-    assert lt["y"] < H * 0.25, "the brand strip sits at the top, clear of captions"
-
-
 def test_draft_reuses_cached_tts_and_is_smaller(rendered):
     settings, script, tts, out, manifest = rendered
     engine = TTSEngine(settings)
@@ -290,69 +282,6 @@ def test_screengrab_and_marker_chart_segments(rendered_doodles):
     charts = [s for s in segs if s["kind"] == "chart"]
     assert len(charts) >= 2
     assert all(c["source"] == "generated" for c in charts)
-
-
-def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
-    """§variety B2: an adjacent duplicate doodle reads as a stuck frame — the
-    renderer drops the repeat, so only one of two identical adjacent doodles
-    reaches the composite."""
-    from config import Settings
-
-    tmp = tmp_path_factory.mktemp("long_dupe_doodle")
-    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
-                        cache_dir=tmp / "cache", state_dir=tmp / "state",
-                        long_width=640, long_height=360, _env_file=None)
-    settings.ensure_runtime_dirs()
-    raw = ("EXMPL is down and forgotten. [DOODLE: shrug] I start reading here. "
-           "[DOODLE: shrug] Still reading, calmly. [CLIP: tumbleweed] "
-           "See you at the next filing.")
-    script, _ = parse_long_script(raw, "EXMPL", settings)
-    ws = settings.workspace_dir / "EXMPL" / "test"
-    ws.mkdir(parents=True)
-    tts = TTSEngine(settings).synthesize(script.narration, "long")
-    _, manifest = render_long(script, tts, ws, settings,
-                              content=ContentManager(settings))
-    layers = json.loads(manifest.read_text(encoding="utf-8"))["layers"]
-    shrug_layers = [l for l in layers if l["name"].startswith("doodle_")
-                    and "shrug" in l["name"]]
-    assert len(shrug_layers) == 1, "the back-to-back duplicate doodle was dropped"
-
-
-def test_doodle_and_scribble_overlays_present(rendered_doodles):
-    settings, script, tts, out, manifest = rendered_doodles
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
-    cues = build_long_timeline(script, tts.words, tts.duration_s)
-    doodles = [c for c in cues if c.kind is CueKind.PLATE]
-    scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
-    assert doodles and scribbles
-    # every overlay cue time reached the compositing filtergraph
-    for c in doodles + scribbles:
-        assert f"between(t,{c.t:.4f}" in filter_text
-    # overlays never became concat segments (they ride on top)
-    assert not any(s["kind"] in ("doodle", "scribble") for s in manifest["segments"])
-
-
-def test_the_chapter_stinger_is_an_opaque_card(rendered):
-    """A section divider interrupts. It does not wash over the cut.
-
-    It was `(*BG, 235)` — 92% opaque — so for its whole 0.9s the frame
-    underneath printed through it: "02 / what they do." landed on top of
-    "EXMPL dispatch dashboard" at 35s of the sample, both large, neither
-    readable. Asserted on the PNG the renderer composites rather than on a
-    video frame, because that is where the decision lives.
-    """
-    from PIL import Image
-
-    settings, script, tts, out, manifest = rendered
-    rdir = out.parent / "render_long"
-    cards = sorted(rdir.glob("chapter_*.png"))
-    assert cards, "no chapter stinger was drawn"
-    for card in cards:
-        alpha = Image.open(card).convert("RGBA").getchannel("A")
-        assert alpha.getextrema() == (255, 255), \
-            f"{card.name} is translucent — the cut under it shows through"
-
-
 def test_the_stinger_sits_above_its_own_transition_strip(rendered):
     """z-order is list order, and the ink wipe belongs behind the divider.
 
@@ -370,19 +299,51 @@ def test_the_stinger_sits_above_its_own_transition_strip(rendered):
         assert names.index(f"chapter_{k}") > i, \
             f"{name} is composited over chapter_{k}"
 
+# --------------------------------------------------------------------------
+# The room, the host and the chapter openers — the three things the new kit
+# put in place of the design-system furniture the old renderer drew itself.
+# --------------------------------------------------------------------------
 
-def test_no_host_beat_places_a_card_that_keeps_its_furniture(rendered):
-    """The duplicated disclaimer, asserted on what the render CHOSE.
 
-    Five of the twenty banked host keys carry the chip and the disclaimer
-    painted in and cannot be stripped; `chapters/short-interest/
-    dennis-eyes-the-squeeze` was on screen at 60s of the sample with the line
-    printed twice. The manifest records every shot the rig used.
+def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
+    """Not a separate stinger family, and no ordinal anywhere.
+
+    The old card printed "01"…"14" into the artwork, which is why a chapter
+    could not be moved, repeated or cut without the card lying about it.
     """
-    from pipeline.kit import load_kit
+    settings, script, tts, out, manifest = rendered
+    stingers = manifest["stingers"]
+    assert stingers, "no chapter openers were drawn"
+    for st in stingers:
+        assert st["title"], "an opener with no title"
+        assert st["type"], "an opener with no type"
+        assert "n" not in st, "a chapter opener carries an ordinal"
+    assert manifest["chapter_warnings"] == []
+
+
+def test_every_on_screen_title_is_one_the_director_wrote(rendered, long_valid_text):
+    """The failure this replaced put six generic section names on screen
+    regardless of what the sections actually were."""
+    settings, script, tts, out, manifest = rendered
+    written = {(c.type, c.title) for c in script.chapter_list}
+    for st in manifest["stingers"]:
+        assert (st["type"], st["title"]) in written, \
+            f"{st['title']!r} is on screen and not in the trailer"
+
+
+def test_the_host_is_placed_and_lip_synced(rendered):
+    settings, script, tts, out, manifest = rendered
+    motion = manifest.get("host_motion") or []
+    assert motion, "no host beat reported any motion"
+    assert all(m["pose"].startswith("host/") for m in motion)
+    assert any(m["spoke"] for m in motion), "the host never opened his mouth"
+
+
+def test_the_plates_are_the_ones_the_script_named(rendered, long_valid_text):
+    """The renderer never picks a plate."""
+    from pipeline.models import TagType
 
     settings, script, tts, out, manifest = rendered
-    stuck = load_kit(settings.assets_dir).furniture_stuck()
-    used = {m["shot"] for m in manifest.get("host_motion", [])}
-    assert used, "no host shot was recorded"
-    assert not (used & stuck), f"placed with baked furniture: {sorted(used & stuck)}"
+    named = {e.payload for e in script.events_of(TagType.PLATE)}
+    drawn = {s["value"] for s in manifest["segments"] if s["kind"] == "plate"}
+    assert drawn <= named, f"the renderer drew a plate nobody named: {drawn - named}"
