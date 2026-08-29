@@ -629,6 +629,7 @@
           "head-4": "FY24",
           "head-5": "FY25",
           "head-6": "LTM",
+          "path": "14.2,9.1,3.1,4.8,6.2,7.8",
           "caption": "It has been cheaper than this, twice"
         }
       },
@@ -729,17 +730,17 @@
     {
       "kind": "img",
       "start": 37.4079,
-      "end": 42.5,
+      "end": 42.4079,
       "value": "EXMPL data center server racks",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0921,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 42.5,
-      "end": 47.5,
+      "start": 42.4079,
+      "end": 47.4079,
       "value": "EXMPL dispatch dashboard",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
@@ -748,12 +749,12 @@
     },
     {
       "kind": "host",
-      "start": 47.5,
+      "start": 47.4079,
       "end": 50.3199,
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.8199,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.8199,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.8199,trim=0:2.8199,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.9120,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9120,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9120,trim=0:2.9120,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -824,9 +825,18 @@
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "chart",
+      "kind": "host",
       "start": 93.7996,
-      "end": 100.7996,
+      "end": 97.5,
+      "attribution": "",
+      "variant": 7,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.7004,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.7004,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.7004,trim=0:3.7004,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "chart",
+      "start": 97.5,
+      "end": 104.5,
       "value": "revenue",
       "source": "generated",
       "attribution": "",
@@ -835,8 +845,8 @@
     },
     {
       "kind": "filing",
-      "start": 100.7996,
-      "end": 106.7996,
+      "start": 104.5,
+      "end": 110.5,
       "value": "income_statement.png",
       "attribution": "",
       "layout": "cutaway-full",
@@ -844,8 +854,8 @@
     },
     {
       "kind": "clip",
-      "start": 106.7996,
-      "end": 111.7996,
+      "start": 110.5,
+      "end": 115.5,
       "value": "hamster_wheel",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -853,9 +863,18 @@
       "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
+      "kind": "host",
+      "start": 115.5,
+      "end": 117.5,
+      "attribution": "",
+      "variant": 8,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
       "kind": "plate",
-      "start": 111.7996,
-      "end": 118.7996,
+      "start": 117.5,
+      "end": 124.5,
       "value": "structure/row-spotlight-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -863,8 +882,8 @@
     },
     {
       "kind": "plate",
-      "start": 118.7996,
-      "end": 125.7996,
+      "start": 124.5,
+      "end": 131.5,
       "value": "figures/big-number-l2-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -872,12 +891,12 @@
     },
     {
       "kind": "host",
-      "start": 125.7996,
+      "start": 131.5,
       "end": 135.9587,
       "attribution": "",
-      "variant": 7,
+      "variant": 9,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.1591,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1591,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1591,trim=0:10.1591,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:4.4587,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.4587,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.4587,trim=0:4.4587,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
@@ -890,9 +909,18 @@
       "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "plate",
+      "kind": "host",
       "start": 140.9587,
-      "end": 147.9587,
+      "end": 142.5,
+      "attribution": "",
+      "variant": 10,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:1.5413,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.5413,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.5413,trim=0:1.5413,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 142.5,
+      "end": 149.5,
       "value": "peers/peer-strip-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -900,8 +928,8 @@
     },
     {
       "kind": "plate",
-      "start": 147.9587,
-      "end": 154.9587,
+      "start": 149.5,
+      "end": 156.5,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -914,8 +942,8 @@
     },
     {
       "kind": "plate",
-      "start": 154.9587,
-      "end": 161.9587,
+      "start": 156.5,
+      "end": 163.5,
       "value": "structure/timeline-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -923,8 +951,8 @@
     },
     {
       "kind": "plate",
-      "start": 161.9587,
-      "end": 168.9587,
+      "start": 163.5,
+      "end": 170.5,
       "value": "structure/unit-ladder-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -932,17 +960,17 @@
     },
     {
       "kind": "host",
-      "start": 168.9587,
-      "end": 171.4276,
+      "start": 170.5,
+      "end": 172.5,
       "attribution": "",
-      "variant": 8,
+      "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.4689,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.4689,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.4689,trim=0:2.4689,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 171.4276,
-      "end": 178.4276,
+      "start": 172.5,
+      "end": 179.5,
       "value": "tables/cash-flow-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -950,12 +978,12 @@
     },
     {
       "kind": "host",
-      "start": 178.4276,
+      "start": 179.5,
       "end": 182.2395,
       "attribution": "",
-      "variant": 9,
+      "variant": 12,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.8119,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.8119,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.8119,trim=0:3.8119,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.7395,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7395,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7395,trim=0:2.7395,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -967,23 +995,23 @@
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "host",
-      "start": 189.2395,
-      "end": 192.5,
-      "attribution": "",
-      "variant": 10,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:3.2605,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2605,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2605,trim=0:3.2605,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
       "kind": "clip",
-      "start": 192.5,
-      "end": 197.5,
+      "start": 189.2395,
+      "end": 194.2395,
       "value": "growing_plant",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
       "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 194.2395,
+      "end": 197.5,
+      "attribution": "",
+      "variant": 13,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.2605,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2605,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2605,trim=0:3.2605,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
@@ -1023,9 +1051,18 @@
       "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "plate",
+      "kind": "host",
       "start": 220.5,
-      "end": 227.5,
+      "end": 222.5,
+      "attribution": "",
+      "variant": 14,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 222.5,
+      "end": 229.5,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -1037,18 +1074,9 @@
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "host",
-      "start": 227.5,
-      "end": 232.5,
-      "attribution": "",
-      "variant": 11,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
       "kind": "plate",
-      "start": 232.5,
-      "end": 239.5,
+      "start": 229.5,
+      "end": 236.5,
       "value": "structure/closing-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -1056,25 +1084,25 @@
     },
     {
       "kind": "host",
-      "start": 239.5,
-      "end": 248.0169955,
+      "start": 236.5,
+      "end": 246.5169955,
       "attribution": "",
-      "variant": 12,
+      "variant": 15,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.5170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.5170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.5170,trim=0:8.5170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 248.0169955,
+      "start": 246.5169955,
       "end": 256.533991,
       "attribution": "",
-      "variant": 13,
+      "variant": 16,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.5170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.5170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.5170,trim=0:8.5170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 40,
+  "segment_cache_hits": 11,
   "segment_failures": [],
   "layers": [
     {
@@ -1093,36 +1121,71 @@
     },
     {
       "name": "chapter_2",
-      "t_start": 42.5,
-      "t_end": 44.1,
+      "t_start": 29.1348,
+      "t_end": 30.7348,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_3",
-      "t_start": 93.7996,
-      "t_end": 95.39959999999999,
+      "t_start": 57.3199,
+      "t_end": 58.9199,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_4",
-      "t_start": 192.5,
-      "t_end": 194.1,
+      "t_start": 97.5,
+      "t_end": 99.1,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_5",
-      "t_start": 232.5,
-      "t_end": 234.1,
+      "t_start": 115.5,
+      "t_end": 117.1,
       "x": 0,
       "y": 0
     },
     {
-      "name": "glitch@100.80",
-      "t_start": 100.7996,
-      "t_end": 101.2996,
+      "name": "chapter_6",
+      "t_start": 140.9587,
+      "t_end": 142.5587,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_7",
+      "t_start": 170.5,
+      "t_end": 172.1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_8",
+      "t_start": 197.5,
+      "t_end": 199.1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_9",
+      "t_start": 220.5,
+      "t_end": 222.1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_10",
+      "t_start": 246.5169955,
+      "t_end": 248.1169955,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "glitch@104.50",
+      "t_start": 104.5,
+      "t_end": 105.0,
       "x": 0,
       "y": 0
     },
@@ -1199,28 +1262,29 @@
   ],
   "segment_warnings": [
     "visual cue at 84.39s deferred to 86.80s \u2014 the previous visual was still being read",
-    "visual cue at 87.19s deferred to 93.80s \u2014 the previous visual was still being read",
-    "visual cue at 87.19s deferred to 100.80s \u2014 the previous visual was still being read",
-    "visual cue at 104.07s deferred to 106.80s \u2014 the previous visual was still being read",
-    "visual cue at 104.07s deferred to 111.80s \u2014 the previous visual was still being read",
-    "visual cue at 107.88s deferred to 118.80s \u2014 the previous visual was still being read",
-    "visual cue at 145.68s deferred to 147.96s \u2014 the previous visual was still being read",
-    "visual cue at 152.22s deferred to 154.96s \u2014 the previous visual was still being read",
-    "visual cue at 157.89s deferred to 161.96s \u2014 the previous visual was still being read",
-    "visual cue at 182.24s deferred to 192.50s \u2014 the previous visual was still being read",
+    "visual cue at 87.19s deferred to 97.50s \u2014 the previous visual was still being read",
+    "visual cue at 87.19s deferred to 104.50s \u2014 the previous visual was still being read",
+    "visual cue at 104.07s deferred to 110.50s \u2014 the previous visual was still being read",
+    "visual cue at 104.07s deferred to 117.50s \u2014 the previous visual was still being read",
+    "visual cue at 107.88s deferred to 124.50s \u2014 the previous visual was still being read",
+    "visual cue at 139.85s deferred to 142.50s \u2014 the previous visual was still being read",
+    "visual cue at 145.68s deferred to 149.50s \u2014 the previous visual was still being read",
+    "visual cue at 152.22s deferred to 156.50s \u2014 the previous visual was still being read",
+    "visual cue at 157.89s deferred to 163.50s \u2014 the previous visual was still being read",
+    "visual cue at 182.24s deferred to 189.24s \u2014 the previous visual was still being read",
     "visual cue at 184.11s deferred to 197.50s \u2014 the previous visual was still being read",
     "visual cue at 185.74s deferred to 200.50s \u2014 the previous visual was still being read",
     "visual cue at 198.42s deferred to 207.50s \u2014 the previous visual was still being read",
     "visual cue at 210.63s deferred to 214.50s \u2014 the previous visual was still being read",
-    "visual cue at 210.63s deferred to 220.50s \u2014 the previous visual was still being read",
-    "visual cue at 229.14s deferred to 232.50s \u2014 the previous visual was still being read",
-    "adjacent img cuts at 37.41s/42.50s \u2014 same visual type back-to-back",
+    "visual cue at 210.63s deferred to 222.50s \u2014 the previous visual was still being read",
+    "adjacent img cuts at 37.41s/42.41s \u2014 same visual type back-to-back",
     "adjacent plate cuts at 79.80s/86.80s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 111.80s/118.80s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 140.96s/147.96s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 147.96s/154.96s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 154.96s/161.96s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 200.50s/207.50s \u2014 same visual type back-to-back"
+    "adjacent plate cuts at 117.50s/124.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 142.50s/149.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 149.50s/156.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 156.50s/163.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 200.50s/207.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 222.50s/229.50s \u2014 same visual type back-to-back"
   ],
   "chapter_warnings": [],
   "chapters": [
@@ -1230,47 +1294,47 @@
       "type": "cold-open"
     },
     {
-      "t": 40.0,
+      "t": 25.0,
       "title": "what they actually sell",
       "type": "how-the-money-is-made"
     },
     {
-      "t": 90.0,
+      "t": 55.0,
       "title": "six years, one direction",
       "type": "the-numbers"
     },
     {
-      "t": 190.0,
+      "t": 95.0,
       "title": "it did not move alone",
       "type": "sector-comps"
     },
     {
-      "t": 230.0,
+      "t": 115.0,
       "title": "eleven quarters, one sentence",
       "type": "management"
     },
     {
-      "t": 270.0,
+      "t": 140.0,
       "title": "where the cash went",
       "type": "capital-allocation"
     },
     {
-      "t": 320.0,
+      "t": 170.0,
       "title": "both of these are true",
       "type": "bull-vs-bear"
     },
     {
-      "t": 360.0,
+      "t": 195.0,
       "title": "what you'd have to believe",
       "type": "valuation"
     },
     {
-      "t": 410.0,
+      "t": 220.0,
       "title": "the covenant, four hundred pages in",
       "type": "risk"
     },
     {
-      "t": 450.0,
+      "t": 245.0,
       "title": "the close",
       "type": "resigned-close"
     }
@@ -1285,31 +1349,61 @@
     {
       "type": "how-the-money-is-made",
       "title": "what they actually sell",
-      "script_t": 40.0,
-      "t": 42.5
+      "script_t": 25.0,
+      "t": 29.13
     },
     {
       "type": "the-numbers",
       "title": "six years, one direction",
-      "script_t": 90.0,
-      "t": 93.8
+      "script_t": 55.0,
+      "t": 57.32
     },
     {
       "type": "sector-comps",
       "title": "it did not move alone",
-      "script_t": 190.0,
-      "t": 192.5
+      "script_t": 95.0,
+      "t": 97.5
     },
     {
       "type": "management",
       "title": "eleven quarters, one sentence",
-      "script_t": 230.0,
-      "t": 232.5
+      "script_t": 115.0,
+      "t": 115.5
+    },
+    {
+      "type": "capital-allocation",
+      "title": "where the cash went",
+      "script_t": 140.0,
+      "t": 140.96
+    },
+    {
+      "type": "bull-vs-bear",
+      "title": "both of these are true",
+      "script_t": 170.0,
+      "t": 170.5
+    },
+    {
+      "type": "valuation",
+      "title": "what you'd have to believe",
+      "script_t": 195.0,
+      "t": 197.5
+    },
+    {
+      "type": "risk",
+      "title": "the covenant, four hundred pages in",
+      "script_t": 220.0,
+      "t": 220.5
+    },
+    {
+      "type": "resigned-close",
+      "title": "the close",
+      "script_t": 245.0,
+      "t": 246.52
     }
   ],
   "transitions": [],
   "animated_segments": 3,
-  "longest_host_beat_s": 10.16,
+  "longest_host_beat_s": 10.02,
   "host_motion": [
     {
       "segment": 0,
@@ -1375,46 +1469,64 @@
       "has_idle": true
     },
     {
-      "segment": 20,
-      "pose": "host/holding-a-page",
-      "spoke": true,
-      "talk_frames": 152,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
-    },
-    {
-      "segment": 26,
-      "pose": "host/holding-a-page",
-      "spoke": true,
-      "talk_frames": 36,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
-    },
-    {
-      "segment": 28,
-      "pose": "host/hands-in-pockets",
-      "spoke": true,
-      "talk_frames": 56,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
-    },
-    {
-      "segment": 30,
+      "segment": 15,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 49,
+      "talk_frames": 55,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
     },
     {
-      "segment": 37,
+      "segment": 19,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 76,
+      "talk_frames": 30,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 22,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 67,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 24,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 23,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 29,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 30,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 31,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 42,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 34,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 49,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1423,16 +1535,25 @@
       "segment": 39,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 128,
+      "talk_frames": 30,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
     },
     {
-      "segment": 40,
+      "segment": 42,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 150,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 43,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 128,
+      "talk_frames": 150,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1440,7 +1561,7 @@
   ],
   "blinks": 0,
   "shots_with_blink": 0,
-  "shots_with_idle": 14,
+  "shots_with_idle": 17,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",

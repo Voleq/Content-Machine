@@ -4,8 +4,8 @@
  "beats": 9,
  "shots_count": 41,
  "anchored_shots": 9,
- "register": "marker",
- "duration_s": 190.45,
+ "register": "cut-paper",
+ "duration_s": 256.534,
  "frame": {
   "w": 1920,
   "h": 1080
@@ -15,7 +15,7 @@
    "id": "ch1-cold-open-stinger",
    "plate": "chapter-stinger",
    "start_s": 0.0,
-   "end_s": 4.256,
+   "end_s": 4.72,
    "anchored": true,
    "max_hold_s": 4.0,
    "layers": [
@@ -30,8 +30,8 @@
   {
    "id": "ch1-cold-open-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 4.256,
-   "end_s": 11.512,
+   "start_s": 4.72,
+   "end_s": 12.441,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -50,8 +50,8 @@
   {
    "id": "ch1-cold-open-the-question",
    "plate": "question-card",
-   "start_s": 11.512,
-   "end_s": 17.768,
+   "start_s": 12.441,
+   "end_s": 19.161,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -64,8 +64,8 @@
   {
    "id": "ch2-how-we-got-here-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 17.768,
-   "end_s": 25.024,
+   "start_s": 19.161,
+   "end_s": 26.881,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -85,8 +85,8 @@
   {
    "id": "ch2-how-we-got-here-dive-in",
    "plate": "dive-in",
-   "start_s": 25.024,
-   "end_s": 25.857,
+   "start_s": 26.881,
+   "end_s": 27.715,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -99,8 +99,8 @@
   {
    "id": "ch2-how-we-got-here-the-history",
    "plate": "sheet-wide",
-   "start_s": 25.857,
-   "end_s": 35.536,
+   "start_s": 27.715,
+   "end_s": 38.322,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -115,8 +115,8 @@
   {
    "id": "ch2-how-we-got-here-dive-out",
    "plate": "dive-out",
-   "start_s": 35.536,
-   "end_s": 36.37,
+   "start_s": 38.322,
+   "end_s": 39.155,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -129,8 +129,8 @@
   {
    "id": "ch2-how-we-got-here-surface",
    "plate": "evidence-wall-empty",
-   "start_s": 36.37,
-   "end_s": 45.048,
+   "start_s": 39.155,
+   "end_s": 48.763,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -145,8 +145,8 @@
   {
    "id": "ch3-the-unit-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 45.048,
-   "end_s": 52.304,
+   "start_s": 48.763,
+   "end_s": 56.483,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -166,8 +166,8 @@
   {
    "id": "ch3-the-unit-dive-in",
    "plate": "dive-in",
-   "start_s": 52.304,
-   "end_s": 53.138,
+   "start_s": 56.483,
+   "end_s": 57.316,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -180,8 +180,8 @@
   {
    "id": "ch3-the-unit-the-fraction",
    "plate": "big-fraction",
-   "start_s": 53.138,
-   "end_s": 62.816,
+   "start_s": 57.316,
+   "end_s": 67.924,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -195,8 +195,8 @@
   {
    "id": "ch3-the-unit-dive-out",
    "plate": "dive-out",
-   "start_s": 62.816,
-   "end_s": 63.65,
+   "start_s": 67.924,
+   "end_s": 68.757,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -209,14 +209,14 @@
   {
    "id": "ch3-the-unit-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 63.65,
-   "end_s": 72.328,
+   "start_s": 68.757,
+   "end_s": 78.364,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
     "ch3-the-unit-surface:ground",
     "ch3-the-unit-surface:plate:room-side-16--tidy",
-    "ch3-the-unit-surface:light:light-afternoon",
+    "ch3-the-unit-surface:light:light-daylight",
     "ch3-the-unit-surface:clock",
     "ch3-the-unit-surface:amb:loop-steam",
     "ch3-the-unit-surface:amb:loop-cursor",
@@ -227,15 +227,15 @@
   {
    "id": "ch4-the-event-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 72.328,
-   "end_s": 79.584,
+   "start_s": 78.364,
+   "end_s": 86.085,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
     "ch4-the-event-open:ground",
     "ch4-the-event-open:enter:ink-wipe-16",
     "ch4-the-event-open:plate:room-wide-16--tidy",
-    "ch4-the-event-open:light:light-afternoon",
+    "ch4-the-event-open:light:light-daylight",
     "ch4-the-event-open:clock",
     "ch4-the-event-open:amb:loop-steam",
     "ch4-the-event-open:amb:loop-cursor",
@@ -248,22 +248,22 @@
   {
    "id": "ch4-the-event-dive-in",
    "plate": "dive-in",
-   "start_s": 79.584,
-   "end_s": 80.418,
+   "start_s": 86.085,
+   "end_s": 86.918,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
     "ch4-the-event-dive-in:ground",
     "ch4-the-event-dive-in:plate:dive-in",
-    "ch4-the-event-dive-in:light:light-afternoon",
+    "ch4-the-event-dive-in:light:light-daylight",
     "ch4-the-event-dive-in:clock"
    ]
   },
   {
    "id": "ch4-the-event-the-filing",
    "plate": "filing-on-screen",
-   "start_s": 80.418,
-   "end_s": 88.207,
+   "start_s": 86.918,
+   "end_s": 98.525,
    "anchored": false,
    "max_hold_s": 8.0,
    "layers": [
@@ -276,8 +276,8 @@
   {
    "id": "ch4-the-event-dive-out",
    "plate": "dive-out",
-   "start_s": 88.207,
-   "end_s": 89.04,
+   "start_s": 98.525,
+   "end_s": 99.359,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -290,8 +290,8 @@
   {
    "id": "ch4-the-event-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 89.04,
-   "end_s": 96.658,
+   "start_s": 99.359,
+   "end_s": 108.966,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -308,8 +308,8 @@
   {
    "id": "ch5-the-mechanism-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 96.658,
-   "end_s": 100.358,
+   "start_s": 108.966,
+   "end_s": 116.686,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -329,8 +329,8 @@
   {
    "id": "ch5-the-mechanism-dive-in",
    "plate": "dive-in",
-   "start_s": 100.358,
-   "end_s": 101.191,
+   "start_s": 116.686,
+   "end_s": 117.52,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -343,8 +343,8 @@
   {
    "id": "ch5-the-mechanism-the-chain",
    "plate": "chain-of-three",
-   "start_s": 101.191,
-   "end_s": 107.758,
+   "start_s": 117.52,
+   "end_s": 129.127,
    "anchored": false,
    "max_hold_s": 8.0,
    "layers": [
@@ -359,8 +359,8 @@
   {
    "id": "ch5-the-mechanism-dive-out",
    "plate": "dive-out",
-   "start_s": 107.758,
-   "end_s": 108.592,
+   "start_s": 129.127,
+   "end_s": 129.96,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -373,8 +373,8 @@
   {
    "id": "ch5-the-mechanism-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 108.592,
-   "end_s": 115.159,
+   "start_s": 129.96,
+   "end_s": 139.568,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -391,8 +391,8 @@
   {
    "id": "ch6-the-numbers-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 115.159,
-   "end_s": 117.645,
+   "start_s": 139.568,
+   "end_s": 147.288,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -412,8 +412,8 @@
   {
    "id": "ch6-the-numbers-dive-in",
    "plate": "dive-in",
-   "start_s": 117.645,
-   "end_s": 118.478,
+   "start_s": 147.288,
+   "end_s": 148.122,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -426,8 +426,8 @@
   {
    "id": "ch6-the-numbers-the-sheet-1",
    "plate": "sheet-wide",
-   "start_s": 118.478,
-   "end_s": 122.617,
+   "start_s": 148.122,
+   "end_s": 157.729,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -446,14 +446,14 @@
   {
    "id": "ch6-the-numbers-the-sheet-2",
    "plate": "sheet-wide",
-   "start_s": 122.617,
-   "end_s": 125.103,
+   "start_s": 157.729,
+   "end_s": 164.449,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
     "ch6-the-numbers-the-sheet-2:ground",
     "ch6-the-numbers-the-sheet-2:plate:sheet-wide",
-    "ch6-the-numbers-the-sheet-2:light:light-dusk",
+    "ch6-the-numbers-the-sheet-2:light:light-afternoon",
     "ch6-the-numbers-the-sheet-2:fill:row-1",
     "ch6-the-numbers-the-sheet-2:fill:row-2",
     "ch6-the-numbers-the-sheet-2:fill:row-3",
@@ -466,8 +466,8 @@
   {
    "id": "ch6-the-numbers-the-sheet-3",
    "plate": "sheet-wide",
-   "start_s": 125.103,
-   "end_s": 127.589,
+   "start_s": 164.449,
+   "end_s": 171.17,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -486,8 +486,8 @@
   {
    "id": "ch6-the-numbers-the-sheet-4",
    "plate": "sheet-wide",
-   "start_s": 127.589,
-   "end_s": 130.075,
+   "start_s": 171.17,
+   "end_s": 177.89,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -506,8 +506,8 @@
   {
    "id": "ch6-the-numbers-dive-out",
    "plate": "dive-out",
-   "start_s": 130.075,
-   "end_s": 130.908,
+   "start_s": 177.89,
+   "end_s": 178.723,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -520,8 +520,8 @@
   {
    "id": "ch6-the-numbers-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 130.908,
-   "end_s": 135.047,
+   "start_s": 178.723,
+   "end_s": 188.331,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -538,8 +538,8 @@
   {
    "id": "ch7-valuation-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 135.047,
-   "end_s": 139.071,
+   "start_s": 188.331,
+   "end_s": 196.051,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -559,8 +559,8 @@
   {
    "id": "ch7-valuation-dive-in",
    "plate": "dive-in",
-   "start_s": 139.071,
-   "end_s": 139.905,
+   "start_s": 196.051,
+   "end_s": 196.884,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -573,8 +573,8 @@
   {
    "id": "ch7-valuation-the-comps",
    "plate": "comps-table",
-   "start_s": 139.905,
-   "end_s": 147.121,
+   "start_s": 196.884,
+   "end_s": 208.492,
    "anchored": false,
    "max_hold_s": 8.0,
    "layers": [
@@ -594,8 +594,8 @@
   {
    "id": "ch7-valuation-dive-out",
    "plate": "dive-out",
-   "start_s": 147.121,
-   "end_s": 147.954,
+   "start_s": 208.492,
+   "end_s": 209.325,
    "anchored": false,
    "max_hold_s": 3.0,
    "layers": [
@@ -608,8 +608,8 @@
   {
    "id": "ch7-valuation-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 147.954,
-   "end_s": 155.17,
+   "start_s": 209.325,
+   "end_s": 218.932,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -626,15 +626,15 @@
   {
    "id": "ch8-both-hands-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 155.17,
-   "end_s": 162.426,
+   "start_s": 218.932,
+   "end_s": 226.653,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
     "ch8-both-hands-open:ground",
     "ch8-both-hands-open:enter:ink-wipe-16",
     "ch8-both-hands-open:plate:room-wide-16--3am",
-    "ch8-both-hands-open:light:light-dusk",
+    "ch8-both-hands-open:light:light-3am",
     "ch8-both-hands-open:clock",
     "ch8-both-hands-open:amb:loop-steam",
     "ch8-both-hands-open:amb:loop-cursor",
@@ -647,8 +647,8 @@
   {
    "id": "ch8-both-hands-the-weighing",
    "plate": "compare-plate",
-   "start_s": 162.426,
-   "end_s": 170.682,
+   "start_s": 226.653,
+   "end_s": 235.373,
    "anchored": false,
    "max_hold_s": 8.0,
    "layers": [
@@ -662,8 +662,8 @@
   {
    "id": "ch8-both-hands-surface",
    "plate": "room-side-16--lived-in",
-   "start_s": 170.682,
-   "end_s": 176.938,
+   "start_s": 235.373,
+   "end_s": 242.093,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -680,8 +680,8 @@
   {
    "id": "ch9-the-close-open",
    "plate": "room-wide-16--lived-in",
-   "start_s": 176.938,
-   "end_s": 184.194,
+   "start_s": 242.093,
+   "end_s": 249.814,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -701,8 +701,8 @@
   {
    "id": "ch9-the-close-sign-off",
    "plate": "closing-plate-16",
-   "start_s": 184.194,
-   "end_s": 190.45,
+   "start_s": 249.814,
+   "end_s": 256.534,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
@@ -717,42 +717,42 @@
  ],
  "layers": 293,
  "kit_assets_used": [
-  "at-the-whiteboard--marker",
-  "big-fraction--marker",
-  "chain-of-three--marker",
-  "chapter-stinger--marker",
-  "closing-plate-16--marker",
-  "compare-plate--marker",
-  "comps-table--marker",
-  "crouching--marker",
-  "dive-in--marker",
-  "dive-out--marker",
-  "evidence-wall-empty--marker",
-  "filing-on-screen--marker",
-  "gesture-both-hands-open-weighing--marker",
-  "ink-wipe-16--marker",
+  "at-the-whiteboard--cut-paper",
+  "big-fraction--cut-paper",
+  "chain-of-three--cut-paper",
+  "chapter-stinger--cut-paper",
+  "closing-plate-16--cut-paper",
+  "compare-plate--cut-paper",
+  "comps-table--cut-paper",
+  "crouching--cut-paper",
+  "dive-in--cut-paper",
+  "dive-out--cut-paper",
+  "evidence-wall-empty--cut-paper",
+  "filing-on-screen--cut-paper",
+  "gesture-both-hands-open-weighing--cut-paper",
+  "ink-wipe-16--cut-paper",
   "light-3am",
   "light-afternoon",
   "light-daylight",
   "light-dusk",
-  "loop-cursor--marker",
-  "loop-second-hand--marker",
-  "loop-steam--marker",
-  "pointing-at-sheet--marker",
-  "question-card--marker",
-  "room-side-16--3am--marker",
-  "room-side-16--lived-in--marker",
-  "room-side-16--tidy--marker",
-  "room-wide-16--3am--marker",
-  "room-wide-16--lived-in--marker",
-  "room-wide-16--tidy--marker",
-  "seated-talking--marker",
-  "sheet-wide--marker",
-  "sitting-with-mug--marker",
-  "talking-at-screen--marker",
-  "talking-to-camera--marker"
+  "loop-cursor--cut-paper",
+  "loop-second-hand--cut-paper",
+  "loop-steam--cut-paper",
+  "pointing-at-sheet--cut-paper",
+  "question-card--cut-paper",
+  "room-side-16--3am--cut-paper",
+  "room-side-16--lived-in--cut-paper",
+  "room-side-16--tidy--cut-paper",
+  "room-wide-16--3am--cut-paper",
+  "room-wide-16--lived-in--cut-paper",
+  "room-wide-16--tidy--cut-paper",
+  "seated-talking--cut-paper",
+  "sheet-wide--cut-paper",
+  "sitting-with-mug--cut-paper",
+  "talking-at-screen--cut-paper",
+  "talking-to-camera--cut-paper"
  ],
- "kit_reach": "Kit: 34 entries in marker, 34 concepts, 152 animated layers",
+ "kit_reach": "Kit: 34 entries in cut-paper, 34 concepts, 152 animated layers",
  "skipped": [],
  "dropped_shots": [],
  "text_overflow": {},
