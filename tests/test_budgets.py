@@ -30,6 +30,28 @@ def frozen() -> dict:
     return json.loads(BUDGETS.read_text(encoding="utf-8"))
 
 
+def test_the_faces_the_budgets_were_measured_in_are_the_faces_that_draw():
+    """Which font file each face resolves to, pinned.
+
+    The re-measurement below is slow — it probes every destination in every
+    format — so when it fails it fails as one line about drift with no cause
+    in it. This is the cause, checked in a millisecond: the two faces are
+    named as Inter, Inter is not vendored, and both fall through to a
+    substitute. That substitute was once "whichever file sorts first in
+    assets/fonts", which meant adding a font to that directory restyled every
+    short in the repo and invalidated the committed budgets without touching
+    a line of the fitter.
+    """
+    from pipeline.marks import BODY_FONT, DISPLAY_FONT, font_file
+
+    for face in (BODY_FONT, DISPLAY_FONT):
+        got = font_file(face)
+        assert got is not None, f"{face} resolves to nothing at all"
+        assert got.name == "DejaVuSans-Bold.ttf", (
+            f"{face} now draws from {got.name}; templates/budgets.json was "
+            "measured in DejaVuSans-Bold. Re-measure before changing this.")
+
+
 def test_the_committed_budgets_match_the_fitter(frozen):
     """Re-measure and compare. This is the whole anti-drift device.
 
