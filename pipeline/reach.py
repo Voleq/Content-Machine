@@ -67,15 +67,12 @@ def _events(script) -> list:
 
 
 def _is_beat_family(family: str) -> bool:
-    """True for a family the SHORT BEAT LIBRARY is drawn from.
+    """True for a family whose plates carry a figure as their whole point.
 
-    Read off the tag routing rather than off a list of folder names, so a
-    shorts family added to `[PROP]` counts as a beat the day it is routed.
+    Read off the registry's own families rather than a list of folder names, so
+    a kit that adds one counts it the day it lands.
     """
-    from pipeline.models import KIT_TAG_FAMILIES, TagType
-
-    return (family.startswith("shorts/")
-            and family in KIT_TAG_FAMILIES[TagType.PROP])
+    return family in ("figures", "tables", "charts", "cycles", "peers")
 
 
 @dataclass(frozen=True)
@@ -122,7 +119,7 @@ def rendered_reach(kit_keys, kit) -> Reach:
     return Reach(
         keys=keys,
         scenes=tuple(k for k in keys if _is_beat_family(k.rsplit("/", 1)[0])),
-        total=len(kit),
+        total=len(reg),
     )
 
 
@@ -133,33 +130,37 @@ def script_reach(script, settings) -> Reach:
     first, then the parameterised blank — so a `[TERM]` with no drawing counts
     as the asset that will actually be placed rather than as nothing.
     """
-    from pipeline.kit import card_asset_for, load_kit
-    from pipeline.models import KIT_TAG_FAMILIES
+    from pipeline.models import TagType
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import PlateError, load_plates
 
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return Reach()
     keys: set[str] = set()
     scenes: set[str] = set()
     drawn: set[str] = set()
     for event in _events(script):
-        if event.type not in KIT_TAG_FAMILIES:
+        if event.type is not TagType.PLATE:
             continue
-        asset, _blank = card_asset_for(kit, event.type, event.payload)
-        if asset is None:
+        fill = build_fill(reg, event.payload)
+        if not fill.ok or not fill.key:
             continue
-        keys.add(asset.key)
-        if _is_beat_family(asset.family):
-            scenes.add(asset.key)
-            # The figures the writer handed this drawing — `[PROP: crushed-flat
-            # = -41%]` and the named form both land in `values`, and a bare
-            # payload with no `=` hands it nothing.
-            drawn |= _figures(*(str(v) for v in (event.values or {}).values()))
+        plate = reg.require(fill.key)
+        keys.add(plate.key)
+        if _is_beat_family(plate.family):
+            scenes.add(plate.key)
+            # The figures the director wrote into this plate. Every word on
+            # screen is in `values`, so this is the whole set.
+            drawn |= _figures(*(str(v) for v in fill.values.values()))
 
     return Reach(
         keys=tuple(sorted(keys)),
         scenes=tuple(sorted(scenes)),
         undrawn=tuple(_undrawn_beats(script, drawn)),
         data_beats=len(_figure_beats(script)),
-        total=len(kit),
+        total=len(reg),
     )
 
 

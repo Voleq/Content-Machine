@@ -485,274 +485,127 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
 # Kit doctor.
 # --------------------------------------------------------------------------
 
-
 def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
-    """What the kit could not answer, and what nothing has ever asked for.
+    """What the kit could not answer, and what it is never asked for.
 
-    Three reports, and the second and third are the ones that grow the
-    library:
+    Three questions, and the gap list is the input to the next design batch:
 
-    1. **Unresolved tag keys** — a script named artwork that does not exist.
-       For a card tag that means the blank layout carries the beat; for
-       anything else the beat is lost.
-    2. **Assets never used across recent renders** — the honest inverse. It
-       turns "the library feels thin" into a list of drawings that exist and
-       have never been on screen, which is a different problem with a
-       different fix.
-    3. **PNGs with no registry entry** — the shape that let twenty contact
-       sheets become addressable assets.
-
-    This is how the library grows from real gaps rather than guesses: the
-    unresolved list says what to draw next, the unused list says what to stop
-    drawing, and the unregistered list says what was delivered wrong.
+    1. **Unresolved plate names** — a `[PLATE]` the director wrote that does not
+       resolve. Every one is a beat that would draw an empty frame.
+    2. **Plates never reached** across recent renders. Not "unused this video" —
+       one script touching six plates says nothing, six weeks of them says
+       plenty.
+    3. **Slots a script left unfilled.** A plate with an empty box renders as a
+       blank area, and an empty cell in this library means NO DATA, so this
+       reports rather than blocks — but a plate filling none of its slots is a
+       bordered rectangle nobody meant to ship.
     """
-    from pipeline.kit import load_kit, load_variant_ledger
-    from pipeline.models import KIT_TAG_BLANKS, KIT_TAG_FAMILIES
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import PlateError, load_plates, load_variant_ledger
 
-    kit = load_kit(settings.assets_dir)
     findings: list[Finding] = []
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError as exc:
+        return [Finding(gate="kit", severity="block", message=str(exc))], {
+            "used": [], "unresolved_keys": [], "never_used": [],
+            "never_used_count": 0, "unfilled": [], "kit_size": 0,
+        }
+
     used: set[str] = set()
     unresolved: list[str] = []
+    unfilled: list[str] = []
 
     events = list(getattr(script, "events", [])
                   or getattr(script, "inline_events", []))
     for e in events:
-        families = KIT_TAG_FAMILIES.get(e.type)
-        if families is None:
+        if e.type is not TagType.PLATE:
             continue
-        asset = kit.resolve_asset(families, e.payload, placeable=True)
-        if asset is not None:
-            used.add(asset.key)
+        fill = build_fill(reg, e.payload)
+        if not fill.ok:
+            unresolved.append(f"[PLATE: {fill.name}]")
+            for problem in fill.problems:
+                findings.append(Finding(gate="kit", severity="block",
+                                        message=problem))
             continue
-        # Artwork exists for this beat and cannot be placed: every card that
-        # answers the key keeps baked furniture the frame draws itself. That is
-        # not "worth drawing if it recurs" — the beat has nowhere to go, and a
-        # silent fallback to a stuck card is how the disclaimer reached the
-        # sample twice. It blocks, and it names the beat.
-        blocked = kit.resolve_asset(families, e.payload)
-        if blocked is not None:
-            findings.append(Finding(
-                gate="kit", severity="block",
-                message=(f"[{e.type.value}: {e.payload}] has no eligible card: "
-                         f"{blocked.key} carries the ticker chip and disclaimer "
-                         f"painted into it and the strip cannot lift them, so "
-                         f"placing it prints both twice. Artwork owed — the "
-                         f"same card without the frame furniture "
-                         f"(`/kit doctor` lists the batch).")))
-            continue
-        unresolved.append(f"[{e.type.value}: {e.payload}]")
-        blank = KIT_TAG_BLANKS.get(e.type)
-        if blank and blank in kit:
-            findings.append(Finding(
-                gate="kit", severity="warn",
-                message=(f"[{e.type.value}: {e.payload}] has no named artwork "
-                         f"in {' / '.join(families)} — the blank layout will "
-                         f"carry it. Worth drawing if it recurs.")))
-        else:
-            findings.append(Finding(
-                gate="kit", severity="warn",
-                message=(f"[{e.type.value}: {e.payload}] is not in "
-                         f"{' / '.join(families)} — the beat will be skipped")))
+        used.add(fill.key)
+        for w in fill.warnings:
+            unfilled.append(w)
+            findings.append(Finding(gate="kit", severity="warn", message=w))
 
-    # Never used, across THIS script and the recent-render ledger. One script
-    # touching six assets says nothing; six weeks of them says plenty.
     ledger = load_variant_ledger(settings)
     ever_used = used | ledger.all_used()
-    # Only independently pickable assets count. `family()` already hides
-    # aliases and -talk twins, and neither is a drawing anybody could have
-    # used on its own — counting them would inflate the gap.
-    pickable = [k for f in kit.families() for k in kit.family(f)]
-    never_used = [k for k in pickable if k not in ever_used]
-
-    unregistered = [p for p in kit.verify() if "no registry entry" in p]
-    for p in unregistered:
-        findings.append(Finding(
-            gate="kit", severity="warn",
-            message=f"{p} — it is not addressable and never will be"))
-
-    stuck = sorted(kit.furniture_stuck())
-    if stuck:
-        drawings = _furniture_work_order(kit)
-        findings.append(Finding(
-            gate="kit", severity="warn",
-            message=(f"{sum(len(v) for v in drawings.values())} chapter "
-                     f"drawing(s) carry the ticker chip and disclaimer painted "
-                     f"in, and the strip cannot lift them — they are OUT of "
-                     f"selection until Design redraws them, so the rotation is "
-                     f"that much shorter. `/kit doctor` lists the batch by "
-                     f"family. e.g. {', '.join(stuck[:3])}")))
+    never_used = [k for k in reg.keys() if k not in ever_used]
 
     return findings, {
         "used": sorted(used),
         "unresolved_keys": unresolved,
         "never_used": sorted(never_used),
         "never_used_count": len(never_used),
-        "unregistered_pngs": unregistered,
-        "aliases": len(kit.aliases()),
-        "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
-        "furniture_stuck": stuck,
-        "furniture_work_order": _furniture_work_order(kit),
-        "missing_micro_motion": _shots_without_micro_motion(kit),
-        "byproduct_shortfall": _byproduct_shortfall(kit),
-        "kit_size": len(kit),
+        "unfilled": unfilled,
+        "kit_size": len(reg),
+        "outfit": reg.outfit,
     }
-
-
-def _byproduct_shortfall(kit) -> list[str]:
-    """By-product layouts the channel asks for and the kit cannot supply.
-
-    Counted off the registry rather than off a render, so it is answerable
-    before anybody waits twelve minutes for one.
-    """
-    from pipeline.byproducts import BYPRODUCT_FAMILIES
-
-    out: list[str] = []
-    for label, (families, _cap, wanted) in BYPRODUCT_FAMILIES.items():
-        if wanted is None:
-            continue
-        found = sum(len(kit.family(fam)) for fam in families)
-        if found < wanted:
-            out.append(f"{label}: {found} of {wanted} layout(s) in "
-                       f"{', '.join(families)} — {wanted - found} short")
-    return out
-
-
-def _shots_without_micro_motion(kit) -> dict[str, list[str]]:
-    """Host shots with no `-blink` / `-idle` strip, by suffix.
-
-    The renderer schedules blinks and idles the moment the strips exist and
-    boils silently until then, which is the right failure mode and also an
-    invisible one — a face that never blinks looks like a rendering choice
-    rather than like missing artwork. This is the list that turns it back
-    into a line item.
-    """
-    from pipeline.host import HOST_BANKS
-
-    out: dict[str, list[str]] = {"-blink": [], "-idle": []}
-    for key in sorted({k for bank in HOST_BANKS.values() for k in bank}):
-        if kit.get(key) is None:
-            continue
-        for suffix in out:
-            if kit.micro_motion(key, suffix) is None:
-                out[suffix].append(key)
-    return out
-
-
-FURNITURE_ASK = ("the same card, no ticker chip, no disclaimer line, "
-                 "everything else byte-identical")
-
-
-def _furniture_work_order(kit) -> dict[str, list[str]]:
-    """The Design deliverable: stuck DRAWINGS by chapter family.
-
-    Grouped and de-twinned on purpose. The stuck set counts every registered
-    frame, so a shot appears four times over (itself plus its `-talk`, `-blink`
-    and `-idle` strips) — Design redraws one card and its strips follow, so a
-    work order that listed all four would overstate the ask by three.
-
-    This is the actual fix. Filtering the cards out of selection only stops
-    them shipping in the meantime, and it costs the rotation every one of them.
-    """
-    order: dict[str, list[str]] = {}
-    for key in sorted(kit.furniture_stuck()):
-        asset = kit.get(key)
-        if asset is None:
-            continue
-        leaf = key.rsplit("/", 1)[-1]
-        if any(leaf.endswith(s) for s in ("-talk", *kit.MICRO_SUFFIXES)):
-            continue
-        order.setdefault(asset.family, []).append(key)
-    return order
 
 
 def kit_doctor_text(settings: Settings, script=None) -> str:
     """The `/kit doctor` report, as text.
 
-    Callable with no script — the library-level half (never used, unregistered
-    PNGs, dead flaps) does not need one, and that is the half an operator
-    actually goes looking for.
+    Callable with no script — the library half (never reached) does not need
+    one, and that is the half an operator actually goes looking for. THE GAP
+    LIST IS THE INPUT TO THE NEXT DESIGN BATCH: what was asked for and missing,
+    and what has been drawn and never used.
     """
-    from pipeline.kit import load_kit
+    from pipeline.plates import PlateError, load_plates
 
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError as exc:
+        return f"KIT DOCTOR — the kit is not ingested.\n  {exc}"
+
     findings, stats = kit_doctor(script or _EmptyScript(), settings)
 
-    lines = [f"KIT DOCTOR — {stats['kit_size']} registered assets, "
-             f"{stats['aliases']} aliases"]
+    lines = [f"KIT DOCTOR — {stats['kit_size']} plates, "
+             f"outfit {stats.get('outfit') or '?'}"]
 
     unresolved = stats["unresolved_keys"]
     lines.append("")
-    lines.append(f"Unresolved tag keys ({len(unresolved)}):")
+    lines.append(f"Unresolved plate names ({len(unresolved)}):")
     lines += [f"  {k}" for k in unresolved[:20]] or ["  none"]
+
+    unfilled = stats.get("unfilled") or []
+    lines.append("")
+    lines.append(f"Slots a script left unfilled ({len(unfilled)}):")
+    lines += [f"  {u}" for u in unfilled[:20]] or ["  none"]
 
     never = stats["never_used"]
     lines.append("")
-    lines.append(f"Never used in a recent render ({len(never)} of "
+    lines.append(f"Never reached in a recent render ({len(never)} of "
                  f"{stats['kit_size']}):")
     if never:
         by_family: dict[str, int] = {}
         for key in never:
-            asset = kit.get(key)
-            if asset is not None:
-                by_family[asset.family] = by_family.get(asset.family, 0) + 1
-        for family, n in sorted(by_family.items(), key=lambda kv: -kv[1])[:15]:
-            total = len(kit.family(family)) or n
+            plate = reg.get(key)
+            if plate is not None:
+                by_family[plate.family] = by_family.get(plate.family, 0) + 1
+        for family, n in sorted(by_family.items(), key=lambda kv: -kv[1]):
+            total = len(reg.family(family)) or n
             lines.append(f"  {family}: {n} of {total}")
+        lines.append("")
+        lines.append("  A family that is never reached is either artwork the "
+                     "writing prompt does not offer, or artwork the format "
+                     "does not need. Both are worth knowing before the next "
+                     "batch is commissioned.")
     else:
         lines.append("  none")
 
-    unreg = stats["unregistered_pngs"]
-    lines.append("")
-    lines.append(f"PNGs with no registry entry ({len(unreg)}):")
-    lines += [f"  {p}" for p in unreg[:20]] or ["  none"]
-
-    dead = stats["dead_mouth_flaps"]
-    if dead:
+    problems = reg.verify()
+    if problems:
         lines.append("")
-        lines.append("Artwork owed — a -talk twin identical to its base, so "
-                     "the mouth flap animates nothing:")
-        lines += [f"  {k}" for k in dead]
+        lines.append(f"Files the registry names and disk does not have "
+                     f"({len(problems)}):")
+        lines += [f"  {p}" for p in problems[:10]]
 
-    covers = stats.get("byproduct_shortfall") or []
-    if covers:
-        lines.append("")
-        lines.append("Artwork owed — by-product layouts the kit cannot fill:")
-        lines += [f"  {line}" for line in covers]
-
-    micro = stats.get("missing_micro_motion") or {}
-    if any(micro.values()):
-        lines.append("")
-        lines.append("Artwork owed — host shots that cannot blink or settle "
-                     "because no strip is registered beside them:")
-        for suffix, keys in micro.items():
-            if not keys:
-                continue
-            lines.append(f"  {suffix}: {len(keys)} shot(s) — "
-                         f"{', '.join(k.rsplit('/', 1)[-1] for k in keys[:4])}"
-                         f"{', ...' if len(keys) > 4 else ''}")
-        lines.append("  (drop `<shot>-blink` / `<shot>-idle` into the delivery "
-                     "and re-run ingest — no code change is needed)")
-
-    order = stats.get("furniture_work_order") or {}
-    if order:
-        total = sum(len(v) for v in order.values())
-        lines.append("")
-        lines.append(f"ARTWORK OWED — {total} chapter drawing(s) in "
-                     f"{len(order)} families, listed in full because this is "
-                     f"the deliverable:")
-        lines.append(f"  Ask, for every key below: {FURNITURE_ASK}.")
-        lines.append("  Until then each one is OUT of long-form and short-form "
-                     "selection — the frame draws the chip and the disclaimer, "
-                     "so a card that keeps its own prints both twice.")
-        for family, keys in sorted(order.items()):
-            pool = len(kit.family(family))
-            lines.append(f"  {family} — {len(keys)} of {pool} drawing(s):")
-            lines += [f"      {k.rsplit('/', 1)[-1]}" for k in keys]
-
-    if findings:
-        lines.append("")
-        lines.append("Findings:")
-        lines += [f"  {f.render()}" for f in findings[:20]]
     return "\n".join(lines)
 
 

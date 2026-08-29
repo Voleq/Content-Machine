@@ -167,34 +167,20 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     is a legitimate choice on some drawings and this is the person who can
     say so.
     """
-    from pipeline.kit import load_kit
-    from pipeline.kit_frames import bind_slot_values
-    from pipeline.models import KIT_TAG_FAMILIES, KIT_TAG_BLANKS
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import PlateError, load_plates
 
     out: list[str] = []
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return out
     for e in script.inline_events:
-        families = KIT_TAG_FAMILIES.get(e.type)
-        if not families or not len(kit):
+        if e.type is not TagType.PLATE:
             continue
-        asset = kit.resolve_asset(families, e.payload)
-        if asset is not None:
-            for w in bind_slot_values(asset, e.values)[1]:
-                out.append(f"[{e.type.value}: {e.payload}] — {w}")
-            continue
-        blank = KIT_TAG_BLANKS.get(e.type)
-        if blank and blank in kit:
-            out.append(
-                f'[{e.type.value}: {e.payload}] has no named artwork — the '
-                f'blank layout will be filled with your text instead')
-        else:
-            options = ", ".join(
-                n.rsplit("/", 1)[-1]
-                for fam in families for n in kit.family(fam)[:6])
-            out.append(
-                f'[{e.type.value}: {e.payload}] is not in '
-                f'{" / ".join(families)} — the beat will be skipped. '
-                f"Available: {options}…")
+        fill = build_fill(reg, e.payload, aspect="9x16")
+        out.extend(fill.problems)
+        out.extend(fill.warnings)
 
     if not script.delivery_events():
         out.append(

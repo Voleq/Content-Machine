@@ -12,7 +12,6 @@ render — every failure path degrades to a deterministic filler.
                             own site (og:image, real mode) -> filler card
     [MEME: key]             owned meme library -> providers (pipeline.memes)
     [CHART: metric]         auto-generated channel-style chart (pipeline.chart)
-    [ASSET: slug]           assets/custom/<slug>.* (validated pre-render)
 
 `[SHOW FILING: file]` stays with the renderer (workspace screenshots,
 normalized + generically labelled by pipeline.company_data).
@@ -757,26 +756,6 @@ class ContentManager:
             return self.filler_image(metric, "chart")
 
     # ------------------------------------------------------------ assets
-    def resolve_asset(self, slug: str) -> Visual:
-        """[ASSET: slug] -> assets/custom/<slug>.* (validated pre-render;
-        if it vanished since, degrade to the filler card, never abort)."""
-        custom = self.settings.assets_dir / "custom"
-        hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
-        images = [p for p in hits if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")]
-        if not images:
-            log.warning("custom asset %r missing at render time — filler", slug)
-            return self.filler_image(slug, "asset")
-        src = images[0]
-        stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
-        norm = self.settings.cache_dir / "custom" / f"{slug}_{stamp}.png"
-        if not norm.exists():
-            normalize_image(src, norm, self.settings)
-        return Visual(key=slug, kind="asset", path=norm, is_video=False,
-                      source="local", attribution="")
-
-    # ------------------------------------------------------- screengrabs
-    _CLIP_SUFFIXES = (".mp4", ".mov", ".mkv", ".webm")
-
     def resolve_screengrab(self, slug: str) -> Visual:
         """[SCREENGRAB: slug] -> assets/custom/<slug>.* — an operator-
         supplied real screenshot or short screen-record (broker app, P&L,
@@ -823,18 +802,6 @@ class ContentManager:
         return dest
 
     # ------------------------------------------------------------- doodles
-    def resolve_doodle(self, key: str) -> Visual | None:
-        """[DOODLE: key] -> a crude hand-drawn overlay from the owned
-        library. Local-only; a miss returns None (renderer logs + skips)."""
-        from pipeline.doodles import DoodleLibrary
-
-        path = DoodleLibrary(self.settings).resolve(key)
-        if path is None:
-            return None
-        return Visual(key=key, kind="doodle", path=path, is_video=False,
-                      source="local", attribution="")
-
-    # ---------------------------------------------------------- dispatch
     def resolve_visual(self, kind: str, value: str, *, ticker: str = "",
                        company_data=None, website: str = "",
                        choice: int = 0, style: str = "clean") -> Visual:
@@ -850,8 +817,6 @@ class ContentManager:
                                       company_data=company_data, style=style)
         if kind == "screengrab":
             return self.resolve_screengrab(value)
-        if kind == "asset":
-            return self.resolve_asset(value)
         raise ValueError(f"unknown visual kind {kind!r}")
 
     def plan(self, script, *, company_data=None,
@@ -876,8 +841,6 @@ class ContentManager:
                 kind = "chart"
             elif e.type is TagType.SCREENGRAB:
                 kind = "screengrab"
-            elif e.type is TagType.ASSET:
-                kind = "asset"
             else:
                 continue
             style = e.style or "clean"

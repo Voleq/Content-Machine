@@ -512,6 +512,70 @@ class Registry:
         return problems
 
 
+class VariantLedger:
+    """Which plates recent videos already reached.
+
+    Deterministic selection keeps a single video from repeating itself, but the
+    channel publishes daily and nothing stopped two consecutive uploads from
+    opening on the same angle. This biases selection away from what was used
+    recently, and it is what `/kit doctor` diffs the library against to answer
+    "what have we drawn and never reached" — the input to the next design
+    batch.
+
+    Stored as plain JSON in the state dir; a corrupt or missing file simply
+    means no history, never an error.
+    """
+
+    def __init__(self, path: Path, keep: int = 6):
+        self.path = Path(path)
+        self.keep = keep
+        self._recent: dict[str, list[str]] = {}
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                self._recent = {k: list(v) for k, v in data.items()
+                                if isinstance(v, list)}
+        except (OSError, ValueError):
+            pass
+
+    def recent(self, prefix: str) -> list[str]:
+        return list(self._recent.get(prefix, []))
+
+    def all_used(self) -> set[str]:
+        """Every plate key any recent render reached."""
+        return {name for names in self._recent.values() for name in names}
+
+    def unused(self, prefix: str, options: list[str]) -> list[str]:
+        """The options this family has not shown recently.
+
+        Falls back to the full list once everything has been used — a family
+        smaller than the history window must still return something.
+        """
+        recent = set(self._recent.get(prefix, []))
+        fresh = [n for n in options if n not in recent]
+        return fresh or list(options)
+
+    def record(self, prefix: str, name: str) -> None:
+        seen = [n for n in self._recent.get(prefix, []) if n != name]
+        seen.append(name)
+        self._recent[prefix] = seen[-self.keep:]
+
+    def save(self) -> None:
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps(self._recent, indent=1, sort_keys=True),
+                                 encoding="utf-8")
+        except OSError as e:
+            log.warning("could not persist the variant ledger (%s)", e)
+
+
+def load_variant_ledger(settings) -> VariantLedger:
+    """The ledger for this install. Its filename is unchanged on purpose: the
+    history of what recent renders reached is still useful across the kit
+    swap, even though none of the old keys resolve any more."""
+    return VariantLedger(Path(settings.state_dir) / "kit_variants.json")
+
+
 _CACHE: dict[Path, Registry] = {}
 
 
