@@ -19,7 +19,7 @@ def test_parse_new_tags(long_doodles_text, settings):
     revenue_chart = next(e for e in charts if e.payload == "revenue")
     assert revenue_chart.style == ""  # clean default
     # doodles, scribbles, screengrab
-    assert [e.payload for e in script.events_of(TagType.DOODLE)] == \
+    assert [e.payload for e in script.events_of(TagType.PLATE)] == \
         ["impact-pow", "face-down"]
     assert len(script.events_of(TagType.SCRIBBLE)) == 2
     assert script.screengrab_slugs() == ["broker-pnl"]
@@ -272,7 +272,7 @@ def test_bad_asset_slug_skipped(settings):
     script, warnings = parse_long_script(
         "Words. [ASSET: Totally Bad Slug!!] More words.", "EXMPL", settings,
     )
-    assert script.events_of(TagType.ASSET) == []
+    assert script.events_of(TagType.PLATE) == []
     assert any("not kebab-case" in w for w in warnings)
 
 
@@ -293,8 +293,8 @@ def test_an_undrawn_card_key_renders_on_the_blank_layout(settings):
     from pipeline.models import TagType
 
     kit = load_kit(settings.assets_dir)
-    for tag, key in ((TagType.BIGNUM, "goodwill"), (TagType.BIGNUM, "organic"),
-                     (TagType.TERM, "roic"), (TagType.TERM, "reverse-dcf")):
+    for tag, key in ((TagType.PLATE, "goodwill"), (TagType.PLATE, "organic"),
+                     (TagType.PLATE, "roic"), (TagType.PLATE, "reverse-dcf")):
         asset, is_blank = card_asset_for(kit, tag, key)
         assert asset is not None, f"[{tag.value}: {key}] resolves to nothing"
         assert is_blank, f"[{tag.value}: {key}] unexpectedly has drawn artwork"

@@ -20,6 +20,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pipeline.plates import PERIOD_COUNT
+
 # Fixed SFX taxonomy (assets/sfx/<key>.wav). Unknown keys are skipped+warned.
 SFX_KEYS = (
     "windows_error",
@@ -335,6 +337,13 @@ class CutawayTag(BaseModel):
 class ShortScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    # SIX PERIODS, ALWAYS — four fiscal years, the last full year, LTM. Every
+    # table and every time-series chart in the kit is authored six wide, and a
+    # five-period script does not draw a narrower sheet: it draws a six-column
+    # plate with LTM empty, which is the column the argument usually turns on.
+    # Validated below rather than left to the renderer, because by then the
+    # only evidence is a blank last column that looks like a design choice.
+
     ticker: str = Field(min_length=1, max_length=15)
     format: Literal["short"]
     hook_text: str = Field(min_length=1, max_length=90)   # mute-safe cold open
@@ -366,6 +375,23 @@ class ShortScript(BaseModel):
     mechanism: list[str] = Field(default_factory=list, max_length=3)
     consequences: list[str] = Field(default_factory=list, max_length=5)
     conclusion: str = Field(min_length=1, max_length=220)  # noise vs signal, free text
+
+    @model_validator(mode="after")
+    def _six_periods(self):
+        """Every row is as wide as the header, and the header is six wide."""
+        if self.years and len(self.years) != PERIOD_COUNT:
+            raise ValueError(
+                f"`years` has {len(self.years)} periods and every table and "
+                f"time-series plate in the kit is authored for {PERIOD_COUNT} — "
+                f"four fiscal years, the last full year and LTM. Dropping to "
+                f"five drops LTM.")
+        for row in self.numbers:
+            if self.years and len(row.values) != len(self.years):
+                raise ValueError(
+                    f"row {row.label!r} has {len(row.values)} figures against "
+                    f"{len(self.years)} period heads — a row that does not "
+                    f"match its header puts every figure under the wrong year.")
+        return self
     # The chart the short opens on, and holds from the stage open to the gut
     # check — one of the longest single holds in the video.
     #

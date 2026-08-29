@@ -135,7 +135,6 @@ def script_reach(script, settings) -> Reach:
     as the asset that will actually be placed rather than as nothing.
     """
     from pipeline.models import TagType
-    from pipeline.plate_tags import build_fill
     from pipeline.plates import PlateError, load_plates
 
     try:
@@ -148,16 +147,15 @@ def script_reach(script, settings) -> Reach:
     for event in _events(script):
         if event.type is not TagType.PLATE:
             continue
-        fill = build_fill(reg, event.payload)
-        if not fill.ok or not fill.key:
+        plate = reg.get(event.payload)
+        if plate is None:
             continue
-        plate = reg.require(fill.key)
         keys.add(plate.key)
         if _is_beat_family(plate.family):
             scenes.add(plate.key)
             # The figures the director wrote into this plate. Every word on
             # screen is in `values`, so this is the whole set.
-            drawn |= _figures(*(str(v) for v in fill.values.values()))
+            drawn |= _figures(*(str(v) for v in (event.values or {}).values()))
 
     return Reach(
         keys=tuple(sorted(keys)),

@@ -24,7 +24,7 @@ def test_inline_doodle_and_scribble_stripped_and_anchored(short_doodles_json, se
     assert [e.payload for e in scribbles] == ["circle -> Net income"]
     # offsets index the CLEAN audio_script (the word right after each tag)
     for e in doodles + scribbles:
-        assert e.type in (TagType.DOODLE, TagType.SCRIBBLE)
+        assert e.type in (TagType.PLATE, TagType.SCRIBBLE)
         assert 0 <= e.char_offset <= len(script.audio_script)
     after = script.audio_script[doodles[0].char_offset:].lstrip()
     assert after.startswith("The news")
@@ -124,7 +124,7 @@ def test_the_short_grammar_keeps_evidence_tags_and_strips_them_from_the_text(set
         _short_with("Here is a clip tag [CLIP: dumpster_fire] that belongs "
                     "now. [PROP: crushed-flat] Noise."), settings)
     assert "[CLIP" not in script.audio_script and "[PROP" not in script.audio_script
-    assert [e.type for e in script.inline_events] == [TagType.CLIP, TagType.PROP]
+    assert [e.type for e in script.inline_events] == [TagType.CLIP, TagType.PLATE]
     assert [e.payload for e in script.inline_events] == \
         ["dumpster_fire", "crushed-flat"]
 
@@ -346,13 +346,13 @@ def test_other_tags_still_need_a_key(settings, short_valid_json):
     import json
 
     before, _ = parse_short_script(short_valid_json, settings)
-    named = len([e for e in before.inline_events if e.type is TagType.PROP])
+    named = len([e for e in before.inline_events if e.type is TagType.PLATE])
 
     data = json.loads(short_valid_json)
     data["audio_script"] = "[PROP] " + data["audio_script"]
     script, warnings = parse_short_script(json.dumps(data), settings)
     assert len([e for e in script.inline_events
-                if e.type is TagType.PROP]) == named, "the keyless tag survived"
+                if e.type is TagType.PLATE]) == named, "the keyless tag survived"
     assert any("carries no key" in w for w in warnings)
 
 
@@ -386,7 +386,7 @@ def test_a_thin_script_is_warned_about_and_the_beats_are_named(
     a feeling about the videos rather than a number on the report.
     """
     script, warnings = parse_short_script(_thin(short_valid_json), settings)
-    assert not [e for e in script.inline_events if e.type is TagType.PROP]
+    assert not [e for e in script.inline_events if e.type is TagType.PLATE]
     reach = [w for w in warnings if "beat-library scene" in w]
     assert len(reach) == 1, warnings
     assert "the floor is 4" in reach[0]
@@ -422,7 +422,7 @@ def test_a_script_that_draws_its_beats_is_not_warned(settings, short_valid_json)
     )
     script, warnings = parse_short_script(raw, settings)
     assert len([e for e in script.inline_events
-                if e.type is TagType.PROP]) == 4
+                if e.type is TagType.PLATE]) == 4
     assert not [w for w in warnings if "beat-library scene" in w], warnings
 
 

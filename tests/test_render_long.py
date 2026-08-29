@@ -322,7 +322,7 @@ def test_doodle_and_scribble_overlays_present(rendered_doodles):
     settings, script, tts, out, manifest = rendered_doodles
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
     cues = build_long_timeline(script, tts.words, tts.duration_s)
-    doodles = [c for c in cues if c.kind is CueKind.DOODLE]
+    doodles = [c for c in cues if c.kind is CueKind.PLATE]
     scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     assert doodles and scribbles
     # every overlay cue time reached the compositing filtergraph

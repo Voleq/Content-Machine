@@ -158,7 +158,7 @@ def test_kit_doctor_reports_unresolved_keys_and_unused_artwork(
     from pipeline.parser_long import parse_long_script
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.PROP, payload="not-a-real-prop",
+    script.events.append(TagEvent(type=TagType.PLATE, payload="not-a-real-prop",
                                   char_offset=0, raw_offset=0))
     findings, stats = kit_doctor(script, settings)
     assert any("not-a-real-prop" in f.message for f in findings)
@@ -177,7 +177,7 @@ def test_the_kit_doctor_falls_through_to_a_blank_layout_rather_than_nothing(
     from pipeline.parser_long import parse_long_script
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.TERM, payload="owner earnings",
+    script.events.append(TagEvent(type=TagType.PLATE, payload="owner earnings",
                                   char_offset=0, raw_offset=0))
     findings, _ = kit_doctor(script, settings)
     hit = next(f for f in findings if "owner earnings" in f.message)

@@ -500,7 +500,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
        reports rather than blocks — but a plate filling none of its slots is a
        bordered rectangle nobody meant to ship.
     """
-    from pipeline.plate_tags import build_fill
+    from pipeline.plate_tags import check_bound
     from pipeline.plates import PlateError, load_plates, load_variant_ledger
 
     findings: list[Finding] = []
@@ -521,7 +521,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     for e in events:
         if e.type is not TagType.PLATE:
             continue
-        fill = build_fill(reg, e.payload)
+        fill = check_bound(reg, e.payload, e.values)
         if not fill.ok:
             unresolved.append(f"[PLATE: {fill.name}]")
             for problem in fill.problems:

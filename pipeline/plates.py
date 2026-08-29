@@ -74,6 +74,13 @@ CHAPTER_TYPES = (
 # on.
 PERIOD_COUNT = 6
 
+# Slot roles that reserve an area for DATA rather than for words. The plate
+# draws the furniture around them and knows nothing about numbers; series.py
+# and pipeline.chart fill them.
+DATA_REGION_ROLES = frozenset({"plot-area", "bars", "path", "spark",
+                               "host-anchor", "media", "figure", "head",
+                               "mouth"})
+
 
 class PlateError(RuntimeError):
     """A plate is missing, unknown, or the registry disagrees with the disk."""
@@ -109,12 +116,17 @@ class Slot:
     def is_text(self) -> bool:
         """Whether anything typed goes here.
 
-        A region (``host-anchor``, ``plot-area``, ``figure``) reserves space for
-        something composited into it. A slot carrying an ``overlay`` is a row
-        highlight: naming it lights the band, it never takes words. Both were
-        text boxes for one revision, which put a literal "1" over a lit row.
+        A region reserves space for something composited into it —
+        ``host-anchor`` for the host, ``plot-area``/``bars``/``path`` for a data
+        series. A slot carrying an ``overlay`` is a row highlight: naming it
+        lights the band, it never takes words.
+
+        Both of those were text boxes for one revision, which put a literal "1"
+        over a lit row and counted a chart's plot area as copy somebody had
+        forgotten to write.
         """
-        return not self.region and not self.renderer and not self.overlay
+        return (not self.region and not self.renderer and not self.overlay
+                and self.role not in DATA_REGION_ROLES)
 
     @property
     def is_band(self) -> bool:

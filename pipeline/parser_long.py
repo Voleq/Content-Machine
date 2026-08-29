@@ -49,7 +49,7 @@ from pipeline.models import (
     TagType,
     parse_scribble_payload,
 )
-from pipeline.plate_tags import build_fill
+from pipeline.plate_tags import build_fill, check_bound
 from pipeline.plates import CHAPTER_TYPES, load_plates
 from pipeline.tagging import parse_chart_payload, tokenize_tags
 
@@ -396,13 +396,13 @@ def validate_long_script(
                     f"data — the chart will fall back to a filler card"
                 )
         elif e.type is TagType.PLATE:
-            # Parsed once already; re-checked here because approval is the last
-            # point at which a bad plate costs nothing. An unknown plate draws
-            # nothing, and an empty area on screen looks like a design choice.
-            fill = build_fill(reg, e.payload)
-            if not fill.ok:
-                for problem in fill.problems:
-                    blocking.append(problem)
+            # Re-checked here because approval is the last point at which a bad
+            # plate costs nothing — but against the BOUND values, not the raw
+            # payload. The parser has already replaced the payload with the
+            # registry key, so re-parsing finds a name with no assignments.
+            fill = check_bound(reg, e.payload, e.values)
+            blocking.extend(fill.problems)
+            warnings.extend(fill.warnings)
         elif e.type is TagType.SCRIBBLE:
             parsed = parse_scribble_payload(e.payload)
             if parsed is not None and f"annotations/{parsed[0].value}" not in reg:

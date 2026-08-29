@@ -34,14 +34,14 @@ DURATION = 75.0
 
 def data(t: float, value: str = "big-number", tag: str = "BIGNUM") -> Cue:
     lo, hi = SHORT_DATA_HOLD_S
-    return Cue(t=t, kind=CueKind.BIGNUM,
+    return Cue(t=t, kind=CueKind.PLATE,
                payload={"value": value, "tag": tag, "class": "data",
                         "hold": lo, "min_hold": lo, "max_hold": hi})
 
 
 def punct(t: float, value: str = "crushed-flat") -> Cue:
     lo, hi = SHORT_PUNCT_HOLD_S
-    return Cue(t=t, kind=CueKind.PROP,
+    return Cue(t=t, kind=CueKind.PLATE,
                payload={"value": value, "tag": "PROP", "class": "punct",
                         "hold": lo, "min_hold": lo, "max_hold": hi})
 
@@ -317,7 +317,7 @@ def test_a_doodle_is_a_punctuation_beat():
     five doodles watched the number stay where it was."""
     bare, warn_bare = plan_short_pacing(skeleton() + [punct(20.0)], DURATION)
     doodled, warn_doodled = plan_short_pacing(
-        skeleton() + [punct(20.0)] + [overlay(CueKind.DOODLE, 8.0 + i * 6)
+        skeleton() + [punct(20.0)] + [overlay(CueKind.PLATE, 8.0 + i * 6)
                                       for i in range(5)], DURATION)
 
     def punct_count(warnings):
@@ -363,7 +363,7 @@ def test_a_meme_counts_once_however_it_was_asked_for():
 def test_the_overlays_are_counted_but_never_moved():
     """Each one is anchored to the word it fires on, which is the whole job.
     The pacing pass must not reschedule one."""
-    doodles = [overlay(CueKind.DOODLE, 20.05), overlay(CueKind.DOODLE, 20.10)]
+    doodles = [overlay(CueKind.PLATE, 20.05), overlay(CueKind.PLATE, 20.10)]
     out, _ = plan_short_pacing(skeleton() + [data(20.0)] + doodles, DURATION)
-    placed = sorted(c.t for c in out if c.kind is CueKind.DOODLE)
+    placed = sorted(c.t for c in out if c.kind is CueKind.PLATE)
     assert placed == [20.05, 20.10], placed

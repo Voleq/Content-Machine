@@ -180,6 +180,236 @@ The reference script said exactly that and showed nothing, which asks the
 audience to take your word for the most checkable claim in the video."""
 
 
+EXPRESSIVITY_AND_PACING = """\
+Expressivity tags — inline, sparing, and never on every sentence:
+  [BEAT]  a held pause before a punchline or a number lands
+  [SIGH]  weary resignation; at most once or twice in a whole script
+  [FLAT]  deadpan delivery of something that should sound dramatic
+  [DRY]   the joke that is not signposted as a joke
+  Four or five across a short, a dozen or so across a long. Tagging every
+  sentence flattens the effect and reads as a tic.
+
+Pacing:
+  - Every chapter OPENS and CLOSES on the host's face. He introduces the
+    evidence and he reacts to it; cutting straight from one chart to the next
+    loses the person the viewer is actually watching.
+  - A readable asset — a table, a filing quote, a chart worth studying —
+    holds 6-8 seconds. Long enough to read it twice. Do not stack two
+    readable things back to back.
+  - The rhythm is: he says it, you show it, he reacts. Not: montage.
+"""
+
+
+def chart_metrics_line(data: CompanyData) -> str:
+    """Only metrics with a real multi-year series in THIS data (+ price)."""
+    return ", ".join(data.available_chart_metrics())
+
+
+def _pct(v) -> str:
+    """A stored fraction (0.074) rendered as a percent (7.4%); n/a when absent."""
+    return f"{v * 100:.1f}%" if isinstance(v, (int, float)) else "n/a"
+
+
+def _ordinal(n: int) -> str:
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def valuation_data_block(data: CompanyData) -> str:
+    """The reverse-DCF figures for the MANDATORY valuation beat — a perpetuity
+    gut-check ("priced for X, has delivered Y"), never a fair value. Exact
+    numbers so the writer can cite them instead of guessing."""
+    v = data.valuation or {}
+    keys = ("implied_growth", "wacc", "hist_fcf_cagr", "rev_cagr", "priced_vs_delivered")
+    if not any(v.get(k) is not None for k in keys) and not v.get("reverse_dcf_read"):
+        return ("(no reverse-DCF in this export — keep the valuation beat qualitative: "
+                "what the current price assumes vs what the business has delivered)")
+    lines = [
+        'Reverse-DCF — a perpetuity gut-check ("priced for X, has delivered Y"), NOT a fair value:',
+        f"  Implied growth priced into today's price (perpetual FCF growth): {_pct(v.get('implied_growth'))}",
+        f"  Discount rate used (WACC): {_pct(v.get('wacc'))}",
+        f"  Historical FCF CAGR, 4y — what it has ACTUALLY delivered: {_pct(v.get('hist_fcf_cagr'))}",
+        f"  Revenue CAGR, 4y: {_pct(v.get('rev_cagr'))}",
+        f"  Priced-for minus delivered (FCF), in growth points: {_pct(v.get('priced_vs_delivered'))}",
+    ]
+    read = v.get("reverse_dcf_read")
+    if read:
+        lines.append(f"  Read (verdict): {read}")
+    return "\n".join(lines)
+
+
+def peer_percentiles_block(data: CompanyData) -> str:
+    """Where THIS ticker ranks within its peer set, metric by metric — the
+    "90th percentile on price, 20th on margins" read the valuation beat folds
+    in. `percentile` is a 0–1 fraction; `direction` says which way is good."""
+    pcts = data.peer_percentiles or []
+    if not pcts:
+        return "(no peer-percentile block in this export)"
+    lines: list[str] = []
+    for p in pcts:
+        metric = p.get("metric")
+        if not metric:
+            continue
+        pct = p.get("percentile")
+        rank = f"{_ordinal(round(pct * 100))} pctile" if isinstance(pct, (int, float)) else "pctile n/a"
+        subj, med = p.get("subject"), p.get("median")
+        detail = f"subject {subj} vs peer median {med}" if subj is not None and med is not None else ""
+        direction = p.get("direction")
+        higher = f"higher is {direction}" if direction else ""
+        read = p.get("read")
+        bits = [b for b in (rank, detail, higher, read) if b]
+        lines.append(f"  {metric}: " + " — ".join(bits))
+    return "\n".join(lines) if lines else "(no peer-percentile block in this export)"
+
+
+def filing_quotes_block(workspace: Path) -> str:
+    """Auto-extracted 10-K quotes for the smoking-gun walk (task 5), read from
+    the workspace manifest the auto-filings step writes AFTER the angle is
+    picked. Each line gives the verbatim quote, its section, the one-line why,
+    and the exact [SHOW FILING: file] to flash it. Empty until the angle step
+    has run (or when nothing was found — then the walk is simply skipped)."""
+    from pipeline.filings import load_manifest
+
+    shots = load_manifest(workspace).get("shots", [])
+    if not shots:
+        return ("(no auto-extracted filing quotes for this angle yet — they are pulled "
+                "after you pick an angle; skip the smoking-gun walk if none appear)")
+    lines: list[str] = []
+    for s in shots:
+        quote = (s.get("quote") or "").strip()
+        section = s.get("section") or ""
+        why = s.get("why") or ""
+        name = s.get("name") or ""
+        head = f'  - "{quote}"'
+        if section:
+            head += f" ({section})"
+        lines.append(head)
+        if why:
+            lines.append(f"      why: {why}")
+        if name:
+            lines.append(f"      flash: [SHOW FILING: {name}]")
+    return "\n".join(lines)
+
+
+def screenshots_line(workspace: Path) -> str:
+    shots = list_screenshots(workspace)
+    return ", ".join(shots) if shots else "(none uploaded — upload filing PNGs first)"
+
+
+# --------------------------------------------------------------------------
+# What this channel has already said about the ticker.
+# --------------------------------------------------------------------------
+# The loop used to be: remember -> notify -> forget. `ThesisBook` recorded a
+# thesis when a video shipped, `update_warranted` told the operator the numbers
+# had moved and dropped it in the idea queue — and then the writing prompt was
+# byte-identical to a first-time one. The bot knew, and never told the writer.
+
+
+def _days_since(stamp: str) -> int | None:
+    """Whole days between an ISO stamp and today, or None if unparseable."""
+    from datetime import datetime, timezone
+
+    for text in (stamp or "",):
+        try:
+            when = datetime.fromisoformat(text)
+        except ValueError:
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max((datetime.now(timezone.utc) - when).days, 0)
+    return None
+
+
+def _moves_since(thesis) -> list[str]:
+    """The last check's material moves, rendered.
+
+    Through `Move.render()` rather than a second formatter: it already says
+    "gross_margin ↓12% (74.4 → 65.2)", and two formatters for one fact is how
+    the report and the notification end up disagreeing about the same number.
+    The stored rows carry a cached `change` that `Move` computes itself, so
+    unknown keys are dropped rather than passed to the constructor.
+    """
+    from pipeline.standing import Move
+
+    known = {f for f in Move.__dataclass_fields__}
+    out: list[str] = []
+    for row in getattr(thesis, "last_moves", None) or []:
+        try:
+            out.append(Move(**{k: v for k, v in row.items() if k in known}).render())
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def prior_coverage(settings: Settings, ticker: str) -> str:
+    """What this channel already said about `ticker`, for the next writer.
+
+    Returns "" when there is no thesis on file — an update prompt filled for a
+    name we have never covered has nothing to say, and saying nothing is
+    better than a heading over an empty block.
+
+    A thesis recorded before the record was widened carries only a summary. It
+    still renders, and the block states which fields are ABSENT: a writer told
+    "the conclusion is not on file" writes around it, while a writer told
+    nothing invents a conclusion that was never made and grades the channel
+    against a claim it never put on screen.
+    """
+    from pipeline.standing import ThesisBook
+
+    try:
+        thesis = ThesisBook(settings).get(ticker)
+    except Exception:  # noqa: BLE001 — a thin record never blocks a prompt
+        thesis = None
+    if thesis is None:
+        return ""
+
+    fmt = (thesis.fmt or "").upper()
+    when = thesis.workdate or (thesis.recorded_at or "")[:10] or "date not recorded"
+    # Off the workdate where there is one, because that is the date shown and
+    # a stamp that disagrees with the date beside it reads as a bug.
+    age = _days_since(thesis.workdate) or _days_since(thesis.recorded_at)
+    ago = {None: "", 0: " — today", 1: " — yesterday"}.get(age, f" — {age} days ago")
+    shipped = when + (f" ({fmt})" if fmt else "") + ago
+
+    lines = [f"PRIOR COVERAGE — this channel has already made a video about "
+             f"{ticker.upper()}. This is what it said.",
+             f"  Shipped: {shipped}"]
+    if thesis.summary:
+        lines.append(f"  The angle: {thesis.summary}")
+    if thesis.hook:
+        lines.append(f'  It opened on: "{thesis.hook}"')
+    if thesis.conclusion:
+        lines.append(f'  It concluded, VERBATIM: "{thesis.conclusion}"')
+    if thesis.claims:
+        lines.append("  It asserted:")
+        lines += [f"    - {c}" for c in thesis.claims]
+
+    status = thesis.status or "intact"
+    checked = (thesis.checked_at or "")[:10]
+    lines.append(f"  Thesis status: {status}"
+                 + (f" (last checked {checked})" if checked else ""))
+
+    moves = _moves_since(thesis)
+    if moves:
+        lines.append("  What has moved since:")
+        lines += [f"    - {m}" for m in moves]
+    else:
+        lines.append("  What has moved since: nothing material at the last check.")
+
+    absent = [name for name, value in (("the hook", thesis.hook),
+                                       ("the conclusion", thesis.conclusion),
+                                       ("the specific claims", thesis.claims))
+              if not value]
+    if absent:
+        lines.append(
+            "  NOT ON FILE: " + ", ".join(absent) + ". That video shipped "
+            "before those were recorded — do NOT invent them. Grade only what "
+            "is written above, and say plainly that the rest is not on record.")
+    return "\n".join(lines)
+
 def fill_prompt(
     fmt: str,
     ticker: str,

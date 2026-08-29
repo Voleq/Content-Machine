@@ -337,6 +337,31 @@ def _warn_unfilled(plate: Plate, fill: PlateFill) -> None:
             f"text slots empty")
 
 
+def check_bound(reg: Registry, key: str, values: dict[str, str], *,
+                chapter_type: str = "") -> PlateFill:
+    """Re-check a tag that has ALREADY been resolved into slot values.
+
+    The approval pass runs after the parser, and the parser has replaced the
+    payload with the registry key — so re-parsing it there finds a name and no
+    assignments, and every plate in the script gets reported as filling none of
+    its slots. That warning was on every beat of a perfectly good script, which
+    is how a validation layer teaches people to ignore it.
+    """
+    fill = PlateFill(key=key, name=key.split("/", 1)[-1], values=dict(values))
+    plate = reg.get(key)
+    if plate is None:
+        fill.problems.append(f"[PLATE: {fill.name}] is not a plate in the kit")
+        return fill
+    if chapter_type and not reg.chapter_allows(chapter_type, key):
+        fill.problems.append(
+            f"[PLATE: {fill.name}] is not available to a {chapter_type} chapter")
+    unknown = sorted(set(values) - set(plate.slots))
+    for name in unknown:
+        fill.problems.append(f"[PLATE: {fill.name}] has no slot {name!r}")
+    _warn_unfilled(plate, fill)
+    return fill
+
+
 def catalogue(reg: Registry, *, aspect: str = "", chapter_type: str = "") -> list[str]:
     """The plate catalogue, generated from the manifests.
 

@@ -256,7 +256,7 @@ def test_short_inline_doodle_scribble_cues(short_doodles_json):
     duration = 55.0
     words = mock_words(script.audio_script, duration)
     cues = build_short_timeline(script, words, duration)
-    doodles = [c for c in cues if c.kind is CueKind.DOODLE]
+    doodles = [c for c in cues if c.kind is CueKind.PLATE]
     scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
     assert len(doodles) == 1 and doodles[0].payload["value"] == "crash"
     assert len(scribbles) == 1 and scribbles[0].payload["value"] == "circle -> Net income"
@@ -272,7 +272,7 @@ def test_long_overlays_do_not_claim_segments(long_doodles_text, settings):
     words = mock_words(script.narration, duration)
     cues = build_long_timeline(script, words, duration)
     # doodle/scribble cues exist on the timeline...
-    assert any(c.kind is CueKind.DOODLE for c in cues)
+    assert any(c.kind is CueKind.PLATE for c in cues)
     assert any(c.kind is CueKind.SCRIBBLE for c in cues)
     assert any(c.kind is CueKind.SCREENGRAB for c in cues)
     # ...but only real visuals claim segments (overlays ride on top)
@@ -430,7 +430,7 @@ def test_holds_are_deliberate_not_machine_gun():
         seg = next(s for s in segments if s.kind == kind.value)
         assert seg.length == pytest.approx(hold)
         assert seg.length >= 3.0, f"{kind.value} still machine-guns"
-    assert DEFAULT_HOLDS[CueKind.ASSET] >= DEFAULT_HOLDS[CueKind.MEME] * 2
+    assert DEFAULT_HOLDS[CueKind.PLATE] >= DEFAULT_HOLDS[CueKind.MEME] * 2
 
 
 # ------------------------------------------------------ scene-variety planner
