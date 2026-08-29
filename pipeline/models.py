@@ -518,12 +518,46 @@ class Chapter(BaseModel):
         return " ".join(v.split())
 
 
+class ScriptConfession(BaseModel):
+    """What this video admitted, declared rather than detected.
+
+    The ledger's whole purpose is that the same admission cannot be reused, and
+    that only works if the bot knows which sentences were the admission. Six
+    kinds of confession, phrased six hundred ways, are not reliably findable in
+    prose — so the writer names it in a trailer, the way they name the
+    chapters. A video with nothing to confess writes no block, and the ledger
+    records that too: "roughly one video in three" is a question about the
+    videos that did not carry one.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str
+    text: str = Field(min_length=1, max_length=600)
+
+    @field_validator("kind")
+    @classmethod
+    def _known_kind(cls, v: str) -> str:
+        from pipeline.standing import CONFESSION_KINDS
+
+        got = str(v or "").strip().lower().replace(" ", "-")
+        if got not in CONFESSION_KINDS:
+            raise ValueError(
+                f"{v!r} is not one of the six kinds: "
+                f"{', '.join(CONFESSION_KINDS)}")
+        return got
+
+
 class LongScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ticker: str = Field(min_length=1, max_length=15)
     narration: str = Field(min_length=1)  # clean, tag-free — goes to TTS
     events: list[TagEvent] = Field(default_factory=list)
+    # The `=== CONFESSION ===` trailer, when the video carries one. Optional:
+    # roughly one video in three does, and a mandatory confession is the rule
+    # the bible deleted.
+    confession: ScriptConfession | None = None
     # The `=== CHAPTERS ===` trailer, parsed: a type and a display title per
     # chapter. Metadata for YouTube AND the source of every on-screen chapter
     # title, so the two can no longer disagree — which they did, silently,

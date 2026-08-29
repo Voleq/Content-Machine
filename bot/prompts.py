@@ -36,6 +36,47 @@ def voice_bible(settings: Settings) -> str:
     return f.read_text(encoding="utf-8").strip() if f.exists() else "(voice bible missing)"
 
 
+def confession_ledger(settings: Settings) -> str:
+    """What he has already admitted to, and whether one is due.
+
+    The bible deletes "exactly one honest confession per video" — a mandatory
+    confession turns a character trait into a segment, and twenty videos in it
+    is the same story with the noun swapped. What replaces it is roughly one
+    video in three, varying the kind, and a ledger so the same admission cannot
+    be reused. This is the ledger, read out: a repetition rule the writer has
+    to remember will fail, so the writer is handed the record instead.
+    """
+    from pipeline.standing import CONFESSION_KINDS, ConfessionLedger
+
+    try:
+        led = ConfessionLedger(settings)
+        recent = led.confessions(6)
+        since = led.videos_since_last()
+        due = led.due()
+    except Exception:                              # noqa: BLE001 — never fatal
+        return "(confession ledger unreadable — write one only if the video earns it)"
+
+    lines = [f"  The six kinds: {', '.join(CONFESSION_KINDS)}."]
+    if not recent:
+        lines.append("  Nothing recorded yet. Roughly one video in three carries "
+                     "a confession; this one may or may not be it.")
+    else:
+        lines.append(
+            f"  {since} video(s) since the last one." +
+            ("  ONE IS DUE — write it only if the material earns it, and pick a "
+             "kind that is not at the top of this list."
+             if due else
+             "  One is NOT due. Write one only if it is genuinely the best "
+             "line available."))
+        lines.append("  Already used, newest first — do not tell any of these again:")
+        for c in recent:
+            where = f"{c.ticker}" + (f", {c.workdate}" if c.workdate else "")
+            lines.append(f"    - [{c.kind}] ({where}) {c.text}")
+    lines.append("  Declare it in a `=== CONFESSION ===` trailer as "
+                 "`kind | the admission`, once, or leave the block out.")
+    return "\n".join(lines)
+
+
 def meme_catalog(settings: Settings) -> str:
     """Every meme key + its 'use when' — the full catalog (capped in use)."""
     idx = MemeLibrary(settings).index()
@@ -482,6 +523,7 @@ def fill_prompt(
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
+        r["{{confession_ledger}}"] = confession_ledger(settings)
     elif fmt == "update":
         # An update is a LONG in every mechanical sense — same tag grammar,
         # same parser, same renderer, same validation — so it takes the long
@@ -504,6 +546,7 @@ def fill_prompt(
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
+        r["{{confession_ledger}}"] = confession_ledger(settings)
     elif fmt == "headline":
         r["{{headline}}"] = headline.strip() or "(no headline text supplied)"
         r["{{article_summary}}"] = article_summary.strip() or (

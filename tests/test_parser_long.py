@@ -268,3 +268,48 @@ def test_the_short_no_longer_resolves_card_tags_at_all():
     src = inspect.getsource(render_short)
     assert "card_asset_for" not in src
     assert "KIT_TAG" not in src
+
+
+def test_the_confession_trailer_is_parsed_and_never_spoken(settings,
+                                                           long_valid_text):
+    """Declared rather than detected.
+
+    Six kinds of admission phrased six hundred ways are not reliably findable
+    in prose, and a ledger that cannot say which sentences were the confession
+    cannot stop one being told twice. So the writer names it, the way they
+    name the chapters — and like the chapter trailer, it is metadata and the
+    voice never reads it.
+    """
+    from pipeline.parser_long import parse_long_script
+
+    # The committed fixture carries one, so strip it to get the other case.
+    bare = long_valid_text.split("=== CONFESSION ===")[0]
+    plain, _ = parse_long_script(bare, "EXMPL", settings)
+    assert plain.confession is None
+
+    said = ("I bought it at nineteen. It is four. I have had a lot of time to "
+            "think about that.")
+    with_block = f"{bare}\n\n=== CONFESSION ===\nfinancial | {said}\n"
+    script, _ = parse_long_script(with_block, "EXMPL", settings)
+    assert script.confession is not None
+    assert script.confession.kind == "financial"
+    assert script.confession.text == said
+    assert "nineteen" not in script.narration
+
+
+def test_a_malformed_confession_warns_and_is_dropped(settings, long_valid_text):
+    """Never fatal. The confession is texture; the video is the deliverable,
+    and losing a render over a mistyped trailer would be the bookkeeping
+    deciding what ships."""
+    from pipeline.parser_long import parse_long_script
+
+    bare = long_valid_text.split("=== CONFESSION ===")[0]
+    bad = f"{bare}\n\n=== CONFESSION ===\nsad | nothing in particular\n"
+    script, warnings = parse_long_script(bad, "EXMPL", settings)
+    assert script.confession is None
+    assert any("confession" in w for w in warnings)
+
+    shapeless = f"{bare}\n\n=== CONFESSION ===\nI lost money again\n"
+    script, warnings = parse_long_script(shapeless, "EXMPL", settings)
+    assert script.confession is None
+    assert any("kind | the admission" in w for w in warnings)

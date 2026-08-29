@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import asdict, dataclass, field
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
@@ -37,6 +38,7 @@ from config import Settings
 log = logging.getLogger(__name__)
 
 THESES_FILE = "theses.json"
+CONFESSIONS_FILE = "confessions.json"
 QUEUE_FILE = "idea_queue.json"
 BATCH_FILE = "batch.json"
 
@@ -155,6 +157,137 @@ class Thesis:
 
     def to_json(self) -> dict:
         return asdict(self)
+
+
+# --------------------------------------------------------------------------
+# The confession ledger.
+# --------------------------------------------------------------------------
+
+# The six kinds. The bible deletes "exactly one honest confession per video" —
+# a mandatory confession turns a character trait into a segment, and twenty
+# videos in it is the same story with the noun swapped — and replaces it with
+# roughly one video in three, varying the kind.
+CONFESSION_KINDS: tuple[str, ...] = (
+    "financial",        # he lost money, specifically: how much and roughly when
+    "epistemic",        # he does not understand something, mid-explanation
+    "right-no-help",    # he called it and made nothing
+    "lazy-lucky",       # he skipped one out of laziness and got away with it
+    "no-view",          # he has nothing, and says so rather than manufacturing
+    "exposed",          # he owns it, says so, notes it is not relevant, continues
+)
+
+# One video in how many carries one. "Roughly", so this is what `due` measures
+# against and not a quota anything enforces.
+CONFESSION_EVERY = 3
+
+
+@dataclass
+class Confession:
+    """One video's admission — or the record that it made none.
+
+    An entry with an empty `kind` is a video that carried no confession, and
+    those are the reason the ledger can answer "is one due". A ledger holding
+    only the confessions can say what has been used; it cannot say how long it
+    has been, which is the half of the rule that decides whether to write one.
+    """
+
+    ticker: str = ""
+    kind: str = ""
+    text: str = ""
+    fmt: str = ""
+    workdate: str = ""
+    recorded_at: str = ""
+
+    def to_json(self) -> dict:
+        return asdict(self)
+
+
+def _normalise(text: str) -> str:
+    """Down to words, for comparing two admissions rather than two spellings."""
+    return " ".join(re.findall(r"[a-z0-9]+", str(text or "").lower()))
+
+
+class ConfessionLedger:
+    """What he has already admitted to, so he cannot admit to it again.
+
+    Kept the way the thesis book is kept: plain JSON under `state/`, appended
+    at ship time, best-effort. The bible's reasoning is the design note — "a
+    repetition rule someone has to remember will fail; a ledger makes it
+    impossible" — so the enforcement is the record, and the check against it
+    is a warning rather than a block. A writer who genuinely means to return
+    to an old loss should be able to; they should just have to mean it.
+    """
+
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        self.path = settings.state_dir / CONFESSIONS_FILE
+
+    def _all(self) -> list[dict]:
+        rows = _read(self.path, [])
+        return rows if isinstance(rows, list) else []
+
+    def entries(self) -> list[Confession]:
+        """Every video, newest first — the ones with a confession and without."""
+        known = {f for f in Confession.__dataclass_fields__}
+        out = [Confession(**{k: v for k, v in row.items() if k in known})
+               for row in self._all() if isinstance(row, dict)]
+        return sorted(out, key=lambda c: c.recorded_at, reverse=True)
+
+    def confessions(self, limit: int = 0) -> list[Confession]:
+        """Only the entries that carried one, newest first."""
+        got = [c for c in self.entries() if c.kind and c.text]
+        return got[:limit] if limit else got
+
+    def note(self, ticker: str, *, kind: str = "", text: str = "",
+             fmt: str = "", workdate: str = "") -> Confession:
+        """Record what this video did, INCLUDING when it confessed nothing."""
+        c = Confession(ticker=(ticker or "").upper(), kind=(kind or "").strip(),
+                       text=" ".join(str(text or "").split()), fmt=fmt,
+                       workdate=workdate, recorded_at=_now().isoformat())
+        rows = self._all()
+        rows.append(c.to_json())
+        _write(self.path, rows)
+        if c.kind:
+            log.info("confession recorded for %s (%s)", c.ticker, c.kind)
+        return c
+
+    def videos_since_last(self) -> int:
+        """How many videos have shipped without one. Unbounded if never."""
+        n = 0
+        for c in self.entries():                     # newest first
+            if c.kind and c.text:
+                return n
+            n += 1
+        return n
+
+    def due(self) -> bool:
+        """Whether one is warranted. Roughly one video in three."""
+        return self.videos_since_last() >= CONFESSION_EVERY - 1
+
+    def kinds_recently(self, limit: int = 6) -> list[str]:
+        """The kinds most recently used, newest first — what to vary from."""
+        return [c.kind for c in self.confessions(limit)]
+
+    def repeats(self, text: str, *, overlap: float = 0.6) -> list[Confession]:
+        """Recorded confessions this text is a re-telling of.
+
+        Word overlap against the ledger's own wording, not an exact match: the
+        thing the ledger exists to stop is the same admission with the nouns
+        moved, and "I bought it at nineteen, it is four" coming back as "I paid
+        nineteen for it and it is four now" is the same story.
+        """
+        want = set(_normalise(text).split())
+        if not want:
+            return []
+        hits = []
+        for c in self.confessions():
+            had = set(_normalise(c.text).split())
+            if not had:
+                continue
+            shared = len(want & had) / len(had)
+            if shared >= overlap:
+                hits.append(c)
+        return hits
 
 
 class ThesisBook:

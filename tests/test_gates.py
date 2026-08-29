@@ -124,6 +124,105 @@ def test_the_linter_never_counts_jokes():
     assert voice_lint("Revenue rose. Costs rose more. That is the whole story.") == []
 
 
+def test_a_construction_used_twice_is_flagged_on_the_second():
+    """"One reframe, one simile chain, one bathos drop, one fake-out. Maximum."
+
+    The first use is the licence and the second is the finding — the bible's
+    own account of the failure is that no individual one was bad and the
+    fourth was tired. So the message carries the line of the first, because a
+    writer cannot fix a repeat they cannot see the original of.
+    """
+    once = "That's not capital return, it's topping up the bath with the plug out."
+    assert voice_lint(once) == []
+
+    twice = once + "\nAnd that is not a business, it's a subscription to being poorer."
+    out = voice_lint(twice)
+    assert len(out) == 1 and out[0].line == 2
+    assert "one reframe per script" in out[0].message
+    assert "line 1" in out[0].message
+    assert out[0].severity == "warn"
+
+
+def test_the_fake_out_is_recognised_through_its_beat():
+    """Its shape is a concession, a beat, then one short clause.
+
+    Which means it cannot be found in `script.narration` at all — the
+    tokenizer takes every bracket out of what the voice reads, `[BEAT]`
+    included. `delivery_text` is what puts the pacing marks back.
+    """
+    one = "That defence is real. [BEAT] It's also been four years."
+    assert voice_lint(one) == []
+    out = voice_lint(one + "\nThe bull case holds. [BEAT] It has also been four years.")
+    assert len(out) == 1 and "fake-out" in out[0].message
+
+
+def test_bathos_is_not_matched_and_that_is_deliberate():
+    """The one construction of the four with no surface form.
+
+    A grand setup deflated by something mundane has no lexical marker, and an
+    approximation of it would fire on ordinary sentences — which is how a
+    check gets switched off, taking the three accurate ones with it.
+    """
+    from pipeline.gates import _CONSTRUCTIONS
+
+    assert {name for name, _, _ in _CONSTRUCTIONS} == {"reframe", "simile",
+                                                       "fake-out"}
+    bathos = ("The whole thesis rests on a refinancing in March. There is a "
+              "calendar reminder for it. The reminder says lol.\n"
+              "Everything depends on the covenant test in the fourth quarter. "
+              "There is a second reminder. It says the same thing.")
+    assert voice_lint(bathos) == []
+
+
+def test_twenty_seconds_without_a_turn_is_flagged():
+    """The retention rule, in the only unit a writer can act on: seconds."""
+    straight = (
+        "The company operates a network of regional distribution depots across "
+        "eleven states and licenses dispatch software to the operators who run "
+        "them, charging per seat per month on annual contracts that renew in the "
+        "first quarter and carry a three percent uplift built into the renewal "
+        "schedule, which the filing describes at length in a section on revenue "
+        "recognition that also covers the treatment of implementation fees and "
+        "the amortisation of contract acquisition costs over an estimated "
+        "customer life of four years and a bit.")
+    out = voice_lint(straight)
+    assert len(out) == 1 and "no turn in it" in out[0].message
+    assert out[0].severity == "warn"
+
+    # A turn EARLY in a long sentence ends the run there rather than at the
+    # full stop. Counting by sentence would charge the forty words after "you"
+    # to the stretch before it and report a stretch nobody spoke: here the run
+    # that remains is the one AFTER the turn, and it is shorter.
+    turned = straight.replace("charging per seat per month",
+                              "you pay per seat per month")
+    after = voice_lint(turned)
+    assert len(after) == 1
+    assert after[0].excerpt.startswith("pay per seat")
+    assert float(after[0].message.split("about ")[1].split(" ")[0]) < \
+        float(out[0].message.split("about ")[1].split(" ")[0])
+
+    # Turns in both halves, and there is nothing to report.
+    broken = turned.replace("which the filing describes",
+                            "and I will spare you the rest, which the filing describes")
+    assert voice_lint(broken) == [], [f.message for f in voice_lint(broken)]
+
+
+def test_the_committed_long_fixture_passes_the_v2_linter(settings, long_valid_text):
+    """A check that fires on good writing gets switched off. This is the proof.
+
+    Both new rules are structural, which is exactly the kind that cries wolf,
+    so they are run against the script the repo holds up as the register done
+    properly.
+    """
+    from pipeline.gates import delivery_text
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    text = delivery_text(script)
+    assert "[BEAT]" in text, "the pacing marks did not survive into the lint"
+    assert voice_lint(text) == [], [f.message for f in voice_lint(text)]
+
+
 # --------------------------------------------------------------- freshness
 
 
@@ -147,6 +246,112 @@ def test_stale_data_can_be_made_blocking():
 
 def test_a_missing_as_of_date_is_flagged():
     assert check_freshness("", Settings(_env_file=None))
+
+
+# ------------------------------------------------ figures that reach the screen
+
+
+def _long(text, settings):
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    return script
+
+
+def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
+                                                            long_valid_text):
+    """The asymmetry is the point, not an inconsistency.
+
+    A spoken figure is a sentence a viewer hears once and a linter can misread.
+    A figure in a `[PLATE]` slot is a number the director typed, held on screen
+    for six seconds, and screenshotted by anyone who disagrees with it. The
+    voice gets to be as confident as v2 asks precisely because these were
+    verified before anything rendered.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    invented = long_valid_text.replace("row-1=400,452,471,491,496,496",
+                                       "row-1=400,452,471,491,496,720")
+    out = onscreen_fact_check(_long(invented, settings), data)
+    assert out and all(f.severity == "block" for f in out)
+    assert "720" in out[0].message
+
+    spoken = fact_check("Revenue was seven hundred and twenty million.", data)
+    assert spoken and all(f.severity == "warn" for f in spoken)
+
+
+def test_a_real_figure_under_the_wrong_year_is_caught(settings, data,
+                                                      long_valid_text):
+    """The failure a membership test cannot see.
+
+    Every number here is in the series — two of them are just in each other's
+    columns, which is a table that lies about which year each figure belongs
+    to. Six cells under six period heads against a six-period history is a
+    column-by-column comparison or it is nothing.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    swapped = long_valid_text.replace("row-1=400,452,471,491,496,496",
+                                      "row-1=452,400,471,491,496,496")
+    out = onscreen_fact_check(_long(swapped, settings), data)
+    assert len(out) == 2
+    assert "in that column" in out[0].message
+
+
+def test_the_committed_fixture_agrees_with_its_own_data(settings, data,
+                                                        long_valid_text):
+    """Every on-screen figure in the exemplary script, against the sheet.
+
+    It did not, when this gate was written: the four-row sheet, the row
+    spotlight, the unit ladder and the cash-flow statement all carried figures
+    nobody had reconciled against `fixtures/company_data`, and the video
+    rendered clean for as long as nothing checked.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    out = onscreen_fact_check(_long(long_valid_text, settings), data)
+    assert out == [], [f"{f.excerpt} -> {f.message}" for f in out]
+
+
+def test_a_negative_cell_is_read_as_negative(settings, data):
+    """`extract_numbers` is built for prose and returns the magnitude.
+
+    It reads "-8" as eight, so a loss compared clean against a profit and
+    every negative row on every sheet went through. A cell is not a sentence.
+    """
+    from pipeline.gates import _cell_value
+
+    assert _cell_value("-8") == -8.0
+    assert _cell_value("(8)") == -8.0          # accountants' parentheses
+    assert _cell_value("-1.4B") == -1.4e9
+    assert _cell_value("") is None             # an empty cell means NO DATA
+    assert _cell_value("n/a") is None
+
+
+def test_the_unit_is_read_from_the_kicker_as_well_as_the_slot(settings):
+    """`row-spotlight` carries it as "NET INCOME, $M"; the sheet has a slot.
+
+    Reading only `unit` compared millions against dollars on every spotlight
+    in the library, and blocked every correct one.
+    """
+    from pipeline.gates import _declared_unit
+
+    assert _declared_unit({"unit": "$M"}) == 1e6
+    assert _declared_unit({"kicker": "NET INCOME, $M"}) == 1e6
+    assert _declared_unit({"kicker": "FROM THE HIGH"}) is None
+
+
+def test_cash_the_balance_is_not_matched_by_cash_the_flow(settings, data):
+    """A blocking gate must never block a correct sheet.
+
+    The bare word "cash" is inside "free cash flow", "cash from operations",
+    "cash used investing" and "net change in cash". Matching a flow against a
+    balance would fail every cash-flow statement in the library.
+    """
+    from pipeline.gates import _METRIC_WORDS
+
+    assert "cash" not in _METRIC_WORDS["cash"]
+    assert all("cash" != w for w in _METRIC_WORDS["cash"])
 
 
 # ------------------------------------------------------------- kit doctor

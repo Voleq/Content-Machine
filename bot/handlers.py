@@ -1491,8 +1491,26 @@ class BotCore:
             ThesisBook(self.settings).record(
                 job.ticker, summary, data, workdate=job.workdate, fmt=fmt,
                 **said)
+            self._note_confession(job, script, fmt)
         except Exception as e:  # noqa: BLE001 - never fail a shipped video
             log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
+
+    def _note_confession(self, job: JobRecord, script, fmt: str) -> None:
+        """Add this video to the confession ledger — including a silent one.
+
+        EVERY shipped video is noted, not only the ones that confessed. "Roughly
+        one video in three" is a question about the two that did not, and a
+        ledger holding only the admissions can say what has been used but not
+        how long it has been, which is the half that decides whether to write
+        one at all.
+        """
+        from pipeline.standing import ConfessionLedger
+
+        said = getattr(script, "confession", None)
+        ConfessionLedger(self.settings).note(
+            job.ticker, fmt=fmt, workdate=job.workdate,
+            kind=getattr(said, "kind", "") or "",
+            text=getattr(said, "text", "") or "")
 
     # --------------------------------------------- standing state (P3.3)
     def queue_text(self, limit: int = 10) -> Reply:

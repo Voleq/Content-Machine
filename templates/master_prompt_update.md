@@ -102,10 +102,19 @@ This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to y
 ## OUTPUT
 The narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin on the claim.
 
-Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener, so write titles a viewer reads mid-video — short, lowercase, in voice.
+Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.
+
+**CHAPTER TITLES CARRY THE VOICE.** Every one appears on screen. "The number that fell ninety percent." "Six dollars and what's left of it." Those are punchlines. Writing them as topics — "was I right" — wastes a free joke each. A line without the `type |` prefix is not a chapter and is dropped.
 
 === CHAPTERS ===
-00:00 What I said
-mm:ss What actually happened
-mm:ss Was I right
-mm:ss What would have to be true now
+00:00 cold-open | what I said, and what it is worth now
+mm:ss how-we-got-here | the part I got right
+mm:ss the-numbers | and the part I did not
+mm:ss guidance-estimates | what would have to be true now
+mm:ss resigned-close | marking it
+
+Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line, `kind | the admission`, using one of the six kinds. Leave the block out when there is nothing to admit.
+
+An update is the format where a confession is most likely to be earned — "I was wrong" is the premise, not an aside — but "most likely" is still not "always", and the ledger below says what has already been used.
+
+{{confession_ledger}}

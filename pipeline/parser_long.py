@@ -95,6 +95,14 @@ def normalize_slug(payload: str) -> str:
     return payload.strip().lower().replace(" ", "-")
 
 
+# The optional `=== CONFESSION ===` trailer: `kind | the admission`, one line.
+# Declared rather than detected, because six kinds of admission phrased six
+# hundred ways are not reliably findable in prose, and a ledger that cannot say
+# which sentences were the confession cannot stop one being told twice.
+_CONFESSION_TRAILER_RE = re.compile(r"^\s*=+\s*CONFESSION\s*=+\s*$",
+                                    re.IGNORECASE | re.MULTILINE)
+
+
 def _split_chapters_trailer(raw: str) -> tuple[str, str]:
     """Cut the `=== CHAPTERS ===` trailer off the narration.
 
@@ -104,6 +112,42 @@ def _split_chapters_trailer(raw: str) -> tuple[str, str]:
     if not m:
         return raw, ""
     return raw[: m.start()], raw[m.end():].strip()
+
+
+def _split_confession_trailer(raw: str) -> tuple[str, str]:
+    """Cut the `=== CONFESSION ===` trailer off. Never spoken."""
+    m = _CONFESSION_TRAILER_RE.search(raw)
+    if not m:
+        return raw, ""
+    return raw[: m.start()], raw[m.end():].strip()
+
+
+def parse_confession(text: str) -> tuple[object | None, list[str]]:
+    """`kind | the admission` -> a ScriptConfession. Returns (it, warnings).
+
+    A malformed block warns and is dropped rather than failing the parse. The
+    confession is texture; the video is the deliverable, and losing a render
+    over a mistyped trailer would be the bookkeeping deciding what ships.
+    """
+    from pipeline.models import ScriptConfession
+    from pipeline.standing import CONFESSION_KINDS
+
+    body = (text or "").strip()
+    if not body:
+        return None, []
+    line = next((ln.strip() for ln in body.splitlines()
+                 if ln.strip() and not ln.strip().startswith("#")), "")
+    if "|" not in line:
+        return None, [f"confession {line!r} is not `kind | the admission` — "
+                      f"dropped. The six kinds are {', '.join(CONFESSION_KINDS)}"]
+    kind, _, said = line.partition("|")
+    try:
+        return ScriptConfession(kind=kind.strip(), text=said.strip()), []
+    except Exception as exc:                       # noqa: BLE001 — never fatal
+        first = str(exc).splitlines()
+        detail = next((ln.strip() for ln in first if "Value error" in ln),
+                      str(exc).strip())
+        return None, [f"confession dropped: {detail}"]
 
 
 # `[mm:ss] type | Display Title` — the timestamp is optional (YouTube wants it,
@@ -161,6 +205,11 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
         raise LongScriptError("Empty message — expected the tagged LONG narration.")
 
     raw, chapters = _split_chapters_trailer(raw)
+    # The confession block may sit before or after the chapter trailer, so it
+    # is cut from both halves rather than from a position.
+    raw, confession_text = _split_confession_trailer(raw)
+    chapters, more = _split_confession_trailer(chapters)
+    confession_text = confession_text or more
     raw = _strip_hook_options(raw)
     if not raw.strip():
         raise LongScriptError("Narration is empty (only a chapter trailer was sent).")
@@ -232,8 +281,12 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             "chapter opener will be missing its title, and the openers are the "
             "only place a title appears on screen")
 
+    confession, confession_warnings = parse_confession(confession_text)
+    warnings.extend(confession_warnings)
+
     script = LongScript(ticker=ticker, narration=narration, events=events,
-                        chapter_list=chapter_list, chapters=chapters)
+                        chapter_list=chapter_list, chapters=chapters,
+                        confession=confession)
 
     if script.word_count < 800:
         warnings.append(

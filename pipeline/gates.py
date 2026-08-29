@@ -219,15 +219,40 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
 # Metric -> the words a script uses for it. Only metrics with an unambiguous
 # spoken name are checked; a vague one would produce noise, and a noisy gate
 # gets ignored, which is worse than no gate.
+# The key on the LEFT is the field the export actually carries, and getting
+# that wrong is silent: `_series_for` returns nothing for a name the sheet does
+# not use, and a metric with no series is skipped rather than reported. "Free
+# cash flow" was checked against `free_cash_flow` for as long as the sheet has
+# called it `fcf`, so the most quoted line in a cash-flow chapter went through
+# unexamined.
+#
+# The list is longer than the spoken check strictly needs because the ON-SCREEN
+# check reads row labels off a numbers sheet, and a sheet's rows are the
+# export's own rows: gross profit, operating income, EBITDA, stock comp. A
+# metric missing here is a row nothing verifies.
 _METRIC_WORDS = {
     "revenue": ("revenue", "sales", "top line"),
+    "gross_profit": ("gross profit",),
+    "operating_income": ("operating income", "operating profit", "ebit"),
+    "ebitda": ("ebitda",),
     "net_income": ("net income", "bottom line", "earnings"),
-    "free_cash_flow": ("free cash flow", "fcf"),
-    "shares_outstanding": ("share count", "shares outstanding", "diluted shares"),
+    "fcf": ("free cash flow", "fcf"),
+    "operating_cf": ("cash from operations", "operating cash flow"),
+    "capex": ("capex", "capital expenditure"),
+    "sbc": ("stock comp", "stock-based compensation", "share-based comp"),
+    "diluted_shares": ("share count", "shares outstanding", "diluted shares"),
     "total_debt": ("total debt", "debt load"),
-    "cash": ("cash", "cash on hand", "cash balance"),
+    "net_debt": ("net debt",),
+    "total_equity": ("total equity", "book value"),
+    # NOT a bare "cash": that word is in "free cash flow", "cash from
+    # operations", "cash used investing" and "net change in cash", and this
+    # entry is the BALANCE. Matching a flow against a balance blocks a correct
+    # sheet, which is the one thing a blocking gate must never do.
+    "cash": ("cash on hand", "cash balance", "cash and equivalents",
+             "cash and cash equivalents"),
     "gross_margin": ("gross margin",),
     "operating_margin": ("operating margin",),
+    "net_margin": ("net margin",),
 }
 
 # Spoken figures are rounded ("four hundred million" for 400.2M), so a claim
@@ -264,6 +289,34 @@ def _series_for(data, field_name: str) -> list[float]:
         if isinstance(latest, (int, float)):
             values.append(float(latest))
     return values
+
+
+def _history_for(data, field_name: str) -> list[float]:
+    """The ordered history series alone — no dashboard value appended.
+
+    `_series_for` is a bag of everything the export knows about a metric, which
+    is the right shape for "is this figure real" and the wrong one for "is this
+    figure in the right column".
+    """
+    if data is None:
+        return []
+    getter = getattr(data, "history_for", None)
+    series = None
+    if callable(getter):
+        try:
+            series = getter(field_name)
+        except Exception:                          # noqa: BLE001
+            series = None
+    if series is None:
+        hist = getattr(data, "history", None)
+        if hasattr(hist, "get"):
+            series = hist.get(field_name)
+        elif hasattr(data, "get"):
+            series = (data.get("history") or {}).get(field_name)
+    if not isinstance(series, (list, tuple)):
+        return []
+    return [float(v) for v in series if isinstance(v, (int, float))] \
+        if all(isinstance(v, (int, float)) for v in series) else []
 
 
 def _matches(value: float, known: list[float]) -> bool:
@@ -330,10 +383,143 @@ _VENDORS = ("refinitiv", "lseg", "eikon", "bloomberg terminal", "capital iq",
             "factset")
 
 
+# --------------------------------------------------------------------------
+# The two v2 rules that are checkable.
+#
+# "No construction twice in one script. One reframe, one simile chain, one
+# bathos drop, one fake-out. Maximum. ... This is checkable by the voice
+# linter: pattern-match the construction and flag the repeat."
+#
+# Three of the four have a surface form precise enough to match. BATHOS DOES
+# NOT, and it is deliberately absent rather than approximated: its signature is
+# a grand setup deflated by something mundane, which has no lexical marker at
+# all, and a fuzzy matcher for it would fire on ordinary sentences. A check
+# that cries wolf gets switched off, and takes the three accurate ones with it.
+_CONSTRUCTIONS: tuple[tuple[str, str, "re.Pattern[str]"], ...] = (
+    ("reframe", "that's not X, it's Y",
+     re.compile(r"\bth(?:at|is|at's|is's|ese|ose)?\s*(?:'s|is|isn't|is not|"
+                r"was|wasn't)?\s*n(?:o|ot)\b[^.?!]{2,60}?[,;]\s*"
+                r"(?:it|that|this)\s*(?:'s|is|was)\b", re.I)),
+    ("simile", "a flat simile",
+     re.compile(r"\b(?:like|as if)\s+(?:a|an|the|it|you|they|somebody|"
+                r"someone|watching)\b", re.I)),
+    ("fake-out", "the sincere fake-out",
+     re.compile(r"\[BEAT\]\s*(?:it|that|and it|but it)\s*(?:'s|is|has|"
+                r"was)\s+(?:also|still|been)\b", re.I)),
+)
+
+# A TURN, for the twenty-second rule. Not "anything interesting happened" —
+# the four things the bible names: an aside, a number anchored, a mode shift,
+# a question. A bare figure is not one of them: this register states figures
+# continuously, so counting them as turns would mean the check never fires,
+# which is the same as not having it. What makes an anchored number a turn is
+# the anchor, and the anchor is addressed to somebody.
+_TURN = re.compile(r"[?]|\[(?:BEAT|SIGH|DRY|FLAT)\]|"
+                   r"\b(?:i|i'm|i've|i'd|i'll|me|my|you|you're|you've|you'd|"
+                   r"you'll|your|we|we're|us|our)\b", re.I)
+
+# Seconds of unbroken exposition before it is worth saying so. The bible says
+# "about twenty", and about is the operative word — 24 gives a long sentence
+# room to finish rather than flagging the one that runs two words over.
+UNBROKEN_LIMIT_S = 24.0
+
+# Spoken words per second. The read is slow and the number only has to be
+# right enough to turn a word count into "about twenty seconds".
+SPOKEN_WPS = 2.4
+
+def _unbroken_runs(narration: str) -> list[tuple[int, float, str]]:
+    """Stretches with no turn in them: (line, seconds, opening words).
+
+    Counted word by word rather than sentence by sentence. A turn three words
+    into a forty-word sentence ends the run there — attributing the rest of
+    that sentence to the stretch before it reports a stretch that was never
+    spoken, and the number in the message has to be one the writer can hear.
+    """
+    runs: list[tuple[int, float, str]] = []
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        run: list[str] = []
+        for word in line.split():
+            run.append(word)
+            if not _TURN.search(word):
+                continue
+            # The turn's own word ends the run and does not start the next.
+            secs = (len(run) - 1) / SPOKEN_WPS
+            if secs > UNBROKEN_LIMIT_S:
+                runs.append((lineno, secs, " ".join(run[:12])))
+            run = []
+        if len(run) / SPOKEN_WPS > UNBROKEN_LIMIT_S:
+            runs.append((lineno, len(run) / SPOKEN_WPS, " ".join(run[:12])))
+    return runs
+
+
+def delivery_text(script) -> str:
+    """The narration with its PACING marks put back where the writer wrote them.
+
+    `script.narration` is what the voice reads, so the tokenizer has taken
+    every bracket out of it — including `[BEAT]`, `[SIGH]`, `[DRY]` and
+    `[FLAT]`, which are not visuals but punctuation the writer placed. Linting
+    the stripped text makes a beat invisible, so a stretch broken by one reads
+    as unbroken and the sincere fake-out — whose whole shape is a concession, a
+    beat, then a short clause — cannot be recognised at all.
+
+    Not the RAW script: that carries `[PLATE]` payloads full of prose, and a
+    caption reading "like a memoir title" is not a simile Dennis spoke.
+    """
+    narration = getattr(script, "narration", None) or getattr(
+        script, "audio_script", "")
+    marks = {"BEAT", "SIGH", "DRY", "FLAT"}
+    events = [e for e in (getattr(script, "events", None) or [])
+              if str(getattr(getattr(e, "type", None), "value", "")).upper() in marks]
+    if not events:
+        return narration
+    out = []
+    at = 0
+    for e in sorted(events, key=lambda e: getattr(e, "char_offset", 0)):
+        cut = max(0, min(int(getattr(e, "char_offset", 0)), len(narration)))
+        if cut < at:
+            continue
+        out.append(narration[at:cut])
+        out.append(f" [{str(e.type.value).upper()}] ")
+        at = cut
+    out.append(narration[at:])
+    return "".join(out)
+
+
 def voice_lint(narration: str) -> list[Finding]:
     """Flags what the bible forbids. Never a joke quota — density is the
-    writer's call and a linter that policed it would flatten the voice."""
+    writer's call and a linter that policed it would flatten the voice.
+
+    Two of the flags are structural rather than lexical, and they are the two
+    the bible asks for by name: a construction used twice in one script, and a
+    stretch of explanation with no turn in it. Both are warnings. The first
+    repeat of a good construction is not a defect that should stop a render —
+    it is the thing the writer should go and fix, and saying which line it was
+    is the whole use of saying it at all.
+    """
     findings: list[Finding] = []
+
+    # A construction used a second time. The FIRST is the licence; the second
+    # is the finding, and it carries both line numbers so the writer can see
+    # what it is repeating rather than hunting for it.
+    for name, described, pattern in _CONSTRUCTIONS:
+        hits = [(n, ln) for n, ln in enumerate(narration.splitlines(), 1)
+                if pattern.search(ln)]
+        for lineno, line in hits[1:]:
+            findings.append(Finding(
+                gate="voice", severity="warn", line=lineno,
+                message=(f"{described} again — one {name} per script. "
+                         f"The first is on line {hits[0][0]}; no individual "
+                         f"one is bad, the repeat is what reads as tired"),
+                excerpt=line.strip()[:140]))
+
+    for lineno, secs, opening in _unbroken_runs(narration):
+        findings.append(Finding(
+            gate="voice", severity="warn", line=lineno,
+            message=(f"about {secs:.0f} seconds of explanation with no turn in "
+                     f"it — an aside, a number anchored, a mode shift or a "
+                     f"question, roughly every twenty"),
+            excerpt=opening.strip()[:140]))
+
     for lineno, line in enumerate(narration.splitlines(), 1):
         low = line.lower()
         for word in _HYPE:
@@ -360,6 +546,217 @@ def voice_lint(narration: str) -> list[Finding]:
                 message="exclamation mark — the register is flat",
                 excerpt=line.strip()[:140]))
     return findings
+
+
+# --------------------------------------------------------------------------
+# Figures that reach the screen.
+# --------------------------------------------------------------------------
+
+# What a plate's `unit=` slot means as a multiplier. The director writes `400`
+# under `unit=$M`, and the export holds 400,000,000; comparing those raw
+# rejects every correct sheet in the library.
+_UNIT_SCALE: tuple[tuple[str, float], ...] = (
+    ("$b", 1e9), ("bn", 1e9), ("billion", 1e9),
+    ("$m", 1e6), ("mm", 1e6), ("million", 1e6),
+    ("$k", 1e3), ("thousand", 1e3),
+)
+
+
+def _declared_unit(values: dict[str, str]) -> float | None:
+    """The multiplier the plate declares, or None when it declares none.
+
+    Looked for in `unit` AND `kicker`, because the kit puts it in both:
+    `tables/numbers-sheet` has a `unit` slot reading "$M", and
+    `structure/row-spotlight` carries it in the kicker as "NET INCOME, $M".
+    Reading only `unit` made every spotlight compare millions against dollars,
+    and every correct one of them blocked.
+    """
+    for slot in ("unit", "kicker", "head-move"):
+        low = str(values.get(slot) or "").strip().lower()
+        for token, mult in _UNIT_SCALE:
+            if token in low:
+                return mult
+    return None
+
+
+# The families a numbers plate uses for its rows, and where each finds its
+# label. Read off the slot names the FILL produced rather than off the plate,
+# because what is being checked is what the director actually wrote.
+_ROW_STEMS = ("cell", "row", "subtotal", "total")
+
+
+def _row_figures(values: dict[str, str]) -> list[tuple[str, list[str]]]:
+    """(label, its figures) for every labelled row the director filled.
+
+    Row keys are whatever sits between the stem and the final column index, so
+    one rule covers all three shapes the library uses: `cell-3-1 … cell-3-6`
+    under `label-3` on a plain sheet, `cell-2-1-1 … cell-2-1-6` under
+    `label-2-1` on a grouped cash-flow statement, and a single unindexed row's
+    `cell-1 … cell-6` under `label`. Subtotals and the total line are rows too
+    — "cash from operations" is the most quoted line on a cash-flow sheet, and
+    it is a subtotal.
+    """
+    rows: dict[tuple[str, str], list[tuple[int, str]]] = {}
+    labels: dict[tuple[str, str], str] = {}
+    for name, raw in values.items():
+        parts = name.split("-")
+        stem, rest = parts[0], parts[1:]
+        if stem == "label":
+            labels[("cell", "-".join(rest))] = str(raw)
+            continue
+        if stem not in _ROW_STEMS:
+            continue
+        if rest and rest[0] == "label":
+            labels[(stem, "-".join(rest[1:]))] = str(raw)
+            continue
+        if not rest or not rest[-1].isdigit():
+            continue
+        rows.setdefault((stem, "-".join(rest[:-1])), []).append(
+            (int(rest[-1]), str(raw)))
+
+    out = []
+    for (stem, key), cells in rows.items():
+        label = (labels.get((stem, key)) or labels.get((stem, ""))
+                 or labels.get(("cell", key)) or "")
+        if label:
+            out.append((label, [v for _, v in sorted(cells)]))
+    return out
+
+
+def _cell_value(raw: str) -> float | None:
+    """A plate cell as a signed number, or None when it holds no figure.
+
+    NOT `extract_numbers`, which is built for prose and returns the magnitude:
+    it reads "-8" as eight, so a loss compared clean against a profit and every
+    negative row on every sheet passed. A cell is not a sentence — it is a
+    figure the director typed, and it is read as one.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None                     # an empty cell means NO DATA
+    cleaned = (text.replace(",", "").replace("$", "").replace("%", "")
+                   .replace("\u2212", "-").replace("\u2013", "-").strip())
+    mult = 1.0
+    if cleaned[-1:].lower() in "kmbt":
+        mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
+        cleaned = cleaned[:-1]
+    if cleaned.startswith("(") and cleaned.endswith(")"):
+        cleaned = "-" + cleaned[1:-1]   # accountants' parentheses are a minus
+    try:
+        return float(cleaned) * mult
+    except ValueError:
+        return None
+
+
+def onscreen_fact_check(script, data) -> list[Finding]:
+    """Figures written into a plate, checked against the export. BLOCKING.
+
+    "The register is sharper and more confident than v1, which raises what an
+    error costs. A dry channel that gets a number wrong looks careless; a
+    sharp one that gets a number wrong looks like it was never checking."
+
+    So this blocks where the spoken check warns, and the asymmetry is the
+    point rather than an inconsistency: a spoken figure is a sentence a viewer
+    hears once and a linter can misread, while a figure in a `[PLATE]` slot is
+    a number the director typed, held on screen for six seconds, and
+    screenshotted by anyone who disagrees with it. The voice gets to be as
+    confident as it likes precisely because these were verified before
+    anything rendered.
+    """
+    findings: list[Finding] = []
+    if data is None:
+        return findings
+    known = {m: _series_for(data, m) for m in _METRIC_WORDS}
+
+    for event in getattr(script, "events", None) or []:
+        values = dict(getattr(event, "values", None) or {})
+        if not values:
+            continue
+        declared = _declared_unit(values)
+        scale = declared if declared is not None else 1.0
+        for label, figures in _row_figures(values):
+            low = str(label).lower()
+            metric = next((m for m, words in _METRIC_WORDS.items()
+                           if any(w in low for w in words)), "")
+            series = known.get(metric) or []
+            if not metric or not series:
+                continue
+
+            # POSITION MATTERS ON A SHEET. Six cells under six period heads
+            # against a six-period history is a column-by-column comparison,
+            # and only that catches a figure put under the wrong year — a
+            # membership test passes every one of those, because the number is
+            # in the series, just not there. Where the lengths disagree the
+            # test falls back to membership rather than guessing an alignment.
+            history = _history_for(data, metric)
+            aligned = history if len(history) == len(figures) else []
+
+            for i, figure in enumerate(figures):
+                stated = _cell_value(figure)
+                if stated is None:
+                    continue            # an empty cell means NO DATA
+                stated *= scale
+                if aligned:
+                    want = aligned[i]
+                    # With a unit declared the comparison is exact. Without
+                    # one the plate has not said what "212" means, so the
+                    # scale-tolerant test is the only honest one — still
+                    # against THAT column, which is the half that matters.
+                    hit = (abs(stated - want) <= max(abs(want) * _TOLERANCE, 1e-9)
+                           if declared is not None else _matches(stated, [want]))
+                    if hit:
+                        continue
+                    expected = f"{want:,.0f} in that column"
+                else:
+                    if _matches(stated, series):
+                        continue
+                    expected = ", ".join(f"{v:,.0f}" for v in series[:6])
+                findings.append(Finding(
+                    gate="fact-check", severity="block",
+                    message=(f"“{figure}” is on screen for {metric} and the "
+                             f"data has {expected} — a figure that reaches the "
+                             f"frame is verified before anything renders"),
+                    excerpt=f"{label}: {', '.join(figures)}"[:140]))
+    return findings
+
+
+# --------------------------------------------------------------------------
+# The confession ledger, checked.
+# --------------------------------------------------------------------------
+
+
+def confession_lint(script, settings: Settings) -> list[Finding]:
+    """The same admission, told twice.
+
+    "A repetition rule someone has to remember will fail; a ledger makes it
+    impossible." The ledger is the mechanism and this is the reading of it: a
+    warning, naming the video the story was already told in, so a writer who
+    genuinely means to return to an old loss can — they just have to mean it.
+
+    Nothing here asks for a confession. Roughly one video in three carries one
+    and the writing prompt is where that gets said; a gate that nagged for one
+    every time would rebuild the rule the bible deleted.
+    """
+    said = getattr(script, "confession", None)
+    if said is None or not getattr(said, "text", ""):
+        return []
+    from pipeline.standing import ConfessionLedger
+
+    try:
+        prior = ConfessionLedger(settings).repeats(said.text)
+    except Exception as exc:                       # noqa: BLE001 — never fatal
+        log.debug("confession ledger unreadable (%s)", exc)
+        return []
+    out: list[Finding] = []
+    for c in prior:
+        where = c.ticker or "a previous video"
+        when = f" on {c.workdate}" if c.workdate else ""
+        out.append(Finding(
+            gate="confession", severity="warn",
+            message=(f"this admission was already made about {where}{when} — "
+                     f"the ledger exists so the same story is not told twice"),
+            excerpt=c.text[:140]))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -678,7 +1075,9 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
     report.findings += fact_check(narration, data)
-    report.findings += voice_lint(narration)
+    report.findings += onscreen_fact_check(script, data)
+    report.findings += voice_lint(delivery_text(script))
+    report.findings += confession_lint(script, settings)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
     report.findings += check_audio(settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)
