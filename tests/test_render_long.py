@@ -619,3 +619,52 @@ def test_a_data_region_nobody_filled_is_reported(settings):
     # A reserved AREA is not something a script fills.
     room = reg.get("room/wide-16x9")
     assert "host-anchor" not in unfilled_slots(room, {})
+
+
+def test_a_mark_solves_onto_the_type_not_onto_the_slot(settings):
+    """`unit-ladder`'s value column is a third of the sheet wide.
+
+    Its figures are right-aligned three characters into it, so a strike solved
+    onto the slot RECTANGLE runs from the row labels to past the plate's edge
+    and crosses out the row below the one it names. `solve_mark`'s own
+    docstring says the mark goes on the type; it can only do that if it is
+    handed the type's box.
+    """
+    from pipeline.plate_frames import drawn_box
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    fill = build_fill(reg, "unit-ladder-16x9 | step-2-label=Sales and marketing"
+                           " | step-2-value=-212")
+    plate = reg.get(fill.key)
+    slot = plate.slots["step-2-value"]
+    ink = drawn_box(plate, slot, fill.values["step-2-value"], settings, reg)
+    assert ink is not None
+
+    x, y, w, h = ink
+    sx, sy, sw, sh = slot.scaled()
+    assert w < sw * 0.6, f"the ink is {w}px in a {sw}px column — not measured"
+    assert h < sh * 0.8, f"the ink is {h}px in a {sh}px row — not measured"
+    # And inside the slot it belongs to, on the right because the slot is.
+    assert sx <= x and x + w <= sx + sw + 1
+    assert sy <= y and y + h <= sy + sh + 1
+    assert x + w > sx + sw * 0.5, "a right-aligned figure drew on the left"
+
+
+def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
+    """No ink, no box — and the caller falls back to a centred mark.
+
+    An empty cell means NO DATA in this library, so a mark aimed at one has
+    nothing to sit on. Returning a box anyway would put a strike through a
+    space and read as a crossed-out figure.
+    """
+    from pipeline.plate_frames import drawn_box
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("structure/unit-ladder-16x9")
+    slot = plate.slots["step-2-value"]
+    assert drawn_box(plate, slot, "", settings, reg) is None
+    assert drawn_box(plate, slot, "   ", settings, reg) is None
+    assert drawn_box(plate, slot, "-212", settings, reg) is not None

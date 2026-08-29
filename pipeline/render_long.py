@@ -87,7 +87,7 @@ from pipeline.models import (
     TTSResult,
     parse_scribble_payload,
 )
-from pipeline.plate_frames import playback_seconds, render_clip
+from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
 from pipeline.plates import load_plates
 from pipeline.rasters import (
     build_phrase_ass,
@@ -969,16 +969,81 @@ def render_long(
     # [DOODLE] used to put a second procedural drawing in a corner on top of
     # whatever was already there — a second visual language, competing with the
     # thing it was meant to punctuate.
+    # A MARK GOES ON WHAT IT NAMES.
+    #
+    # `[SCRIBBLE: strike-out -> 212]` names its target, and where the beat
+    # underneath is a plate the kit knows exactly which box holds "212" — the
+    # director wrote it into that slot. This was drawn dead centre at a fixed
+    # 700x460 regardless, so a bracket meant for one percentile row landed
+    # across the middle of the strip, over three other rows and the figures
+    # beside them. A plate still is drawn at the full frame, so a slot's box
+    # maps onto the frame by one ratio.
+    plate_beats = [
+        (s.start, s.end, reg.get(str(s.payload.get("value") or "")),
+         dict(s.payload.get("values") or {}))
+        for s in segments
+        if s.kind == "plate" and s.payload.get("layout") != "two-shot"
+    ]
+
+    def _target_box(t: float, target: str) -> tuple[int, int, int, int] | None:
+        """The frame box holding `target` at time `t`, or None."""
+        want = " ".join(str(target).split()).lower()
+        if not want:
+            return None
+        for start, end, plate, values in plate_beats:
+            if plate is None or not (start <= t < end):
+                continue
+            k = W / max(plate.delivered[0], 1)
+            # An exact value first: on a timeline with six cells reading
+            # "Durable growth", a substring match would take whichever the
+            # director happened to write first.
+            for match_exact in (True, False):
+                for name, value in values.items():
+                    slot = plate.slots.get(name)
+                    if slot is None or not slot.is_text:
+                        continue
+                    got = " ".join(str(value).split()).lower()
+                    hit = (got == want) if match_exact else (got and want in got)
+                    if not hit:
+                        continue
+                    ink = drawn_box(plate, slot, str(value), settings, reg)
+                    if ink is None:
+                        continue
+                    x, y, bw, bh = ink
+                    return (int(x * k), int(y * k),
+                            max(int(bw * k), 1), max(int(bh * k), 1))
+        return None
+
     for k, c in enumerate(scribble_cues):
         parsed = parse_scribble_payload(c.payload["value"])
         if parsed is None:
             continue
         style, target = parsed
         hold = float(c.payload.get("hold", 2.0))
-        sw, sh = px(700), px(460)
-        # The mark draws itself on, in attention, over the current frame. It is
-        # placed centrally here because the LONG has no word-level geometry to
-        # solve against — solve_mark does that where a slot box is known.
+
+        placed = None
+        box = _target_box(c.t, target)
+        if box is not None:
+            solved = solve_mark(settings, style.value, box)
+            if solved is not None:
+                (mx, my, mw, mh), mark_warnings = solved
+                for warn in mark_warnings:
+                    log.warning("scribble %r: %s", target, warn)
+                # A mark draws outside what it wraps, so a solved canvas larger
+                # than the frame is expected. Several times the frame is not:
+                # that is a target so small the mark blew up around it, and a
+                # centred mark is better than a 40-megapixel stroke.
+                if 0 < mw <= W * 3 and 0 < mh <= H * 3:
+                    placed = (mx, my, mw, mh)
+        if placed is None:
+            if box is None:
+                log.info("scribble %r: nothing on screen carries it — centred",
+                         target)
+            placed = (int((W - px(700)) / 2), int((H - px(460)) / 2),
+                      px(700), px(460))
+        mx, my, sw, sh = placed
+
+        # The mark draws itself on, in attention, over the current frame.
         frames = mark_frames(settings, sw, sh, style=style.value, fps=fps,
                              draw_seconds=min(hold, 0.5),
                              seed=f"{script.ticker}|scr|{k}")
@@ -988,7 +1053,7 @@ def render_long(
         frames = frames + [frames[-1]] * hold_frames
         clip = frames_to_alpha_clip(frames, fps, rdir / f"scribble_{k}.mov")
         layers.append(OverlayLayer(
-            path=clip, x=int((W - sw) / 2), y=int((H - sh) / 2),
+            path=clip, x=mx, y=my,
             t_start=c.t, t_end=min(c.t + hold + 0.5, duration),
             is_video=True, hold=True, name=f"scribble_{k}",
         ))

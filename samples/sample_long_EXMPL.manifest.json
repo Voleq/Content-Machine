@@ -310,6 +310,7 @@
           "unit": "EXMPL against its peer set",
           "head-move": "SUBJECT",
           "head-fwd": "PCTILE",
+          "bars": "90,55,10,5,95",
           "ticker-1": "EV/S",
           "move-1": "7.8",
           "fwd-1": "90th",
@@ -322,7 +323,10 @@
           "ticker-4": "FCF M",
           "move-4": "-14",
           "fwd-4": "5th",
-          "caption": "expensive, average, slow, burning"
+          "ticker-5": "ND/EBTD",
+          "move-5": "-1.0",
+          "fwd-5": "95th",
+          "caption": "expensive, average, slow, burning, levered"
         }
       },
       "fallback": false
@@ -1102,7 +1106,7 @@
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 40,
+  "segment_cache_hits": 44,
   "segment_failures": [],
   "layers": [
     {

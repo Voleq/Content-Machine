@@ -411,6 +411,34 @@ def render_still(plate: Plate, values: dict[str, str] | None,
     return render_frame(plate, 0, values, settings, reg)
 
 
+def drawn_box(plate: Plate, slot: Slot, value: str, settings: Settings,
+              reg: Registry) -> tuple[int, int, int, int] | None:
+    """The box the TYPE occupies in a slot, in delivered pixels. None if empty.
+
+    A MARK GOES ON THE TYPE, NOT ON THE SLOT RECTANGLE — `solve_mark` says so
+    and then can only work with the box it is handed. `unit-ladder`'s value
+    column is a third of the sheet wide and its figures are right-aligned
+    three characters into it, so a strike solved onto the rectangle runs from
+    the labels to past the plate's edge and crosses out the row below.
+
+    Measured by drawing rather than by re-deriving the fit, so it cannot drift
+    from what `fill_slot` actually puts down.
+    """
+    from PIL import Image
+
+    scale = max(int(plate.export_scale or 1), 1)
+    w, h = slot.w * scale, slot.h * scale
+    if w <= 0 or h <= 0 or not str(value or "").strip():
+        return None
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    fill_slot(img, plate, slot, value, settings, reg, origin=(0, 0))
+    ink = img.getbbox()
+    if ink is None:
+        return None
+    return (slot.x * scale + ink[0], slot.y * scale + ink[1],
+            max(ink[2] - ink[0], 1), max(ink[3] - ink[1], 1))
+
+
 def unfilled_slots(plate: Plate, values: dict[str, str] | None) -> list[str]:
     """What this plate declares that `values` leaves empty.
 
