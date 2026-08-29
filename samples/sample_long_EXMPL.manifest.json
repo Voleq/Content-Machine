@@ -11,7 +11,7 @@
   ],
   "cues": [
     {
-      "t": 8.8617,
+      "t": 8.8564,
       "kind": "clip",
       "payload": {
         "order": 0,
@@ -22,7 +22,7 @@
       "fallback": false
     },
     {
-      "t": 13.2175,
+      "t": 13.2096,
       "kind": "plate",
       "payload": {
         "order": 1,
@@ -38,7 +38,7 @@
       "fallback": false
     },
     {
-      "t": 37.4079,
+      "t": 37.3854,
       "kind": "img",
       "payload": {
         "order": 3,
@@ -49,7 +49,7 @@
       "fallback": false
     },
     {
-      "t": 41.9971,
+      "t": 41.9718,
       "kind": "img",
       "payload": {
         "order": 4,
@@ -60,7 +60,7 @@
       "fallback": false
     },
     {
-      "t": 50.3199,
+      "t": 50.2895,
       "kind": "plate",
       "payload": {
         "order": 5,
@@ -76,7 +76,7 @@
       "fallback": false
     },
     {
-      "t": 60.4316,
+      "t": 60.3951,
       "kind": "plate",
       "payload": {
         "order": 6,
@@ -99,7 +99,7 @@
       "fallback": false
     },
     {
-      "t": 65.6431,
+      "t": 65.6034,
       "kind": "scribble",
       "payload": {
         "order": 7,
@@ -111,7 +111,7 @@
       "fallback": false
     },
     {
-      "t": 79.7996,
+      "t": 79.7513,
       "kind": "plate",
       "payload": {
         "order": 8,
@@ -127,39 +127,39 @@
           "head-6": "LTM",
           "label-1": "Revenue",
           "cell-1-1": "400",
-          "cell-1-2": "431",
-          "cell-1-3": "458",
-          "cell-1-4": "472",
-          "cell-1-5": "486",
+          "cell-1-2": "452",
+          "cell-1-3": "471",
+          "cell-1-4": "491",
+          "cell-1-5": "496",
           "cell-1-6": "496",
           "label-2": "Gross profit",
-          "cell-2-1": "268",
-          "cell-2-2": "281",
-          "cell-2-3": "289",
-          "cell-2-4": "292",
-          "cell-2-5": "296",
-          "cell-2-6": "297",
+          "cell-2-1": "252",
+          "cell-2-2": "280",
+          "cell-2-3": "287",
+          "cell-2-4": "290",
+          "cell-2-5": "288",
+          "cell-2-6": "288",
           "label-3": "Operating income",
           "cell-3-1": "-8",
-          "cell-3-2": "-25",
-          "cell-3-3": "-49",
-          "cell-3-4": "-70",
-          "cell-3-5": "-89",
-          "cell-3-6": "-94",
+          "cell-3-2": "-23",
+          "cell-3-3": "-38",
+          "cell-3-4": "-49",
+          "cell-3-5": "-60",
+          "cell-3-6": "-60",
           "label-4": "Free cash flow",
           "cell-4-1": "12",
-          "cell-4-2": "-3",
-          "cell-4-3": "-31",
-          "cell-4-4": "-52",
-          "cell-4-5": "-68",
-          "cell-4-6": "-71",
+          "cell-4-2": "-2",
+          "cell-4-3": "-6",
+          "cell-4-4": "-11",
+          "cell-4-5": "-15",
+          "cell-4-6": "-15",
           "band-3": "3"
         }
       },
       "fallback": false
     },
     {
-      "t": 84.3887,
+      "t": 84.3377,
       "kind": "plate",
       "payload": {
         "order": 9,
@@ -179,17 +179,17 @@
           "y-4": "375",
           "y-5": "500",
           "value-1": "400",
-          "value-2": "431",
-          "value-3": "458",
-          "value-4": "472",
-          "value-5": "486",
+          "value-2": "452",
+          "value-3": "471",
+          "value-4": "491",
+          "value-5": "496",
           "value-6": "496"
         }
       },
       "fallback": false
     },
     {
-      "t": 87.1889,
+      "t": 87.1361,
       "kind": "chart",
       "payload": {
         "order": 10,
@@ -200,7 +200,7 @@
       "fallback": false
     },
     {
-      "t": 87.1889,
+      "t": 87.1361,
       "kind": "filing",
       "payload": {
         "order": 11,
@@ -211,7 +211,7 @@
       "fallback": false
     },
     {
-      "t": 96.5228,
+      "t": 96.4644,
       "kind": "sound",
       "payload": {
         "order": 12,
@@ -222,7 +222,7 @@
       "fallback": false
     },
     {
-      "t": 104.0678,
+      "t": 104.0048,
       "kind": "clip",
       "payload": {
         "order": 14,
@@ -233,15 +233,15 @@
       "fallback": false
     },
     {
-      "t": 104.0678,
+      "t": 104.0048,
       "kind": "plate",
       "payload": {
         "order": 15,
         "value": "structure/row-spotlight-16x9",
         "tag": "PLATE",
         "values": {
-          "kicker": "OPERATING INCOME, $M",
-          "label": "Operating income",
+          "kicker": "NET INCOME, $M",
+          "label": "Net income",
           "head-1": "FY21",
           "head-2": "FY22",
           "head-3": "FY23",
@@ -253,18 +253,18 @@
           "cell-3": "-49",
           "cell-4": "-70",
           "cell-5": "-89",
-          "cell-6": "-94",
+          "cell-6": "-89",
           "caption": "Every year, wider"
         }
       },
       "fallback": false
     },
     {
-      "t": 104.0678,
+      "t": 104.0048,
       "kind": "scribble",
       "payload": {
         "order": 16,
-        "value": "underline-tight -> -94",
+        "value": "underline-tight -> -89",
         "tag": "SCRIBBLE",
         "values": {},
         "hold": 2.0
@@ -272,7 +272,7 @@
       "fallback": false
     },
     {
-      "t": 107.8791,
+      "t": 107.8138,
       "kind": "plate",
       "payload": {
         "order": 17,
@@ -280,7 +280,7 @@
         "tag": "PLATE",
         "values": {
           "kicker": "GROSS MARGIN",
-          "value": "60%",
+          "value": "58%",
           "label": "on the LTM",
           "detail": "a real software margin, priced like a reseller",
           "caption": "From the filing"
@@ -289,7 +289,7 @@
       "fallback": false
     },
     {
-      "t": 135.9587,
+      "t": 136.3428,
       "kind": "clip",
       "payload": {
         "order": 20,
@@ -300,7 +300,7 @@
       "fallback": false
     },
     {
-      "t": 139.8478,
+      "t": 140.2295,
       "kind": "plate",
       "payload": {
         "order": 22,
@@ -332,7 +332,7 @@
       "fallback": false
     },
     {
-      "t": 144.7482,
+      "t": 145.1269,
       "kind": "scribble",
       "payload": {
         "order": 23,
@@ -344,7 +344,7 @@
       "fallback": false
     },
     {
-      "t": 145.6816,
+      "t": 146.0597,
       "kind": "plate",
       "payload": {
         "order": 24,
@@ -359,7 +359,7 @@
       "fallback": false
     },
     {
-      "t": 152.2153,
+      "t": 152.5895,
       "kind": "plate",
       "payload": {
         "order": 25,
@@ -385,7 +385,7 @@
       "fallback": false
     },
     {
-      "t": 152.2153,
+      "t": 152.5895,
       "kind": "scribble",
       "payload": {
         "order": 26,
@@ -397,7 +397,7 @@
       "fallback": false
     },
     {
-      "t": 157.8934,
+      "t": 158.2642,
       "kind": "plate",
       "payload": {
         "order": 27,
@@ -406,26 +406,26 @@
         "values": {
           "kicker": "FY25, $M",
           "top-label": "Revenue",
-          "top-value": "486",
+          "top-value": "496",
           "step-1-label": "Cost of revenue",
-          "step-1-value": "-190",
+          "step-1-value": "-208",
           "step-2-label": "Sales and marketing",
           "step-2-value": "-212",
           "step-3-label": "R&D",
-          "step-3-value": "-118",
+          "step-3-value": "-80",
           "step-4-label": "G&A",
-          "step-4-value": "-55",
+          "step-4-value": "-40",
           "step-5-label": "Other",
-          "step-5-value": "-20",
+          "step-5-value": "-16",
           "out-label": "Operating income",
-          "out-value": "-89",
+          "out-value": "-60",
           "band-2": "2"
         }
       },
       "fallback": false
     },
     {
-      "t": 164.9717,
+      "t": 165.0272,
       "kind": "scribble",
       "payload": {
         "order": 28,
@@ -437,7 +437,7 @@
       "fallback": false
     },
     {
-      "t": 171.4276,
+      "t": 171.4793,
       "kind": "plate",
       "payload": {
         "order": 29,
@@ -458,29 +458,29 @@
           "cell-1-1-3": "-49",
           "cell-1-1-4": "-70",
           "cell-1-1-5": "-89",
-          "cell-1-1-6": "-94",
+          "cell-1-1-6": "-89",
           "label-1-2": "Working capital",
-          "cell-1-2-1": "4",
-          "cell-1-2-2": "-6",
-          "cell-1-2-3": "-11",
-          "cell-1-2-4": "-14",
-          "cell-1-2-5": "-9",
-          "cell-1-2-6": "-12",
+          "cell-1-2-1": "23",
+          "cell-1-2-2": "27",
+          "cell-1-2-3": "46",
+          "cell-1-2-4": "62",
+          "cell-1-2-5": "80",
+          "cell-1-2-6": "80",
           "subtotal-label-1": "Cash from operations",
-          "subtotal-1-1": "-4",
-          "subtotal-1-2": "-31",
-          "subtotal-1-3": "-60",
-          "subtotal-1-4": "-84",
-          "subtotal-1-5": "-98",
-          "subtotal-1-6": "-106",
+          "subtotal-1-1": "15",
+          "subtotal-1-2": "2",
+          "subtotal-1-3": "-3",
+          "subtotal-1-4": "-8",
+          "subtotal-1-5": "-9",
+          "subtotal-1-6": "-9",
           "group-2": "Investing",
           "label-2-1": "Capex",
-          "cell-2-1-1": "-9",
-          "cell-2-1-2": "-11",
-          "cell-2-1-3": "-13",
-          "cell-2-1-4": "-14",
-          "cell-2-1-5": "-16",
-          "cell-2-1-6": "-17",
+          "cell-2-1-1": "-3",
+          "cell-2-1-2": "-4",
+          "cell-2-1-3": "-3",
+          "cell-2-1-4": "-3",
+          "cell-2-1-5": "-6",
+          "cell-2-1-6": "-6",
           "label-2-2": "Acquisitions",
           "cell-2-2-1": "0",
           "cell-2-2-2": "-40",
@@ -489,12 +489,12 @@
           "cell-2-2-5": "0",
           "cell-2-2-6": "0",
           "subtotal-label-2": "Cash used investing",
-          "subtotal-2-1": "-9",
-          "subtotal-2-2": "-51",
-          "subtotal-2-3": "-13",
-          "subtotal-2-4": "-14",
-          "subtotal-2-5": "-16",
-          "subtotal-2-6": "-17",
+          "subtotal-2-1": "-3",
+          "subtotal-2-2": "-44",
+          "subtotal-2-3": "-3",
+          "subtotal-2-4": "-3",
+          "subtotal-2-5": "-6",
+          "subtotal-2-6": "-6",
           "group-3": "Financing",
           "label-3-1": "Equity issued",
           "cell-3-1-1": "0",
@@ -518,18 +518,18 @@
           "subtotal-3-5": "125",
           "subtotal-3-6": "40",
           "total-label": "Net change in cash",
-          "total-1": "7",
-          "total-2": "18",
-          "total-3": "107",
-          "total-4": "82",
-          "total-5": "11",
-          "total-6": "-83"
+          "total-1": "32",
+          "total-2": "58",
+          "total-3": "177",
+          "total-4": "169",
+          "total-5": "110",
+          "total-6": "25"
         }
       },
       "fallback": false
     },
     {
-      "t": 182.2395,
+      "t": 182.2845,
       "kind": "plate",
       "payload": {
         "order": 30,
@@ -549,7 +549,7 @@
       "fallback": false
     },
     {
-      "t": 182.2395,
+      "t": 182.2845,
       "kind": "clip",
       "payload": {
         "order": 31,
@@ -560,7 +560,7 @@
       "fallback": false
     },
     {
-      "t": 184.1062,
+      "t": 184.1502,
       "kind": "meme",
       "payload": {
         "order": 32,
@@ -571,7 +571,7 @@
       "fallback": false
     },
     {
-      "t": 184.1062,
+      "t": 184.1502,
       "kind": "sound",
       "payload": {
         "order": 33,
@@ -582,7 +582,7 @@
       "fallback": false
     },
     {
-      "t": 185.7397,
+      "t": 185.7826,
       "kind": "plate",
       "payload": {
         "order": 34,
@@ -601,7 +601,7 @@
       "fallback": false
     },
     {
-      "t": 192.1179,
+      "t": 192.1569,
       "kind": "scribble",
       "payload": {
         "order": 35,
@@ -613,7 +613,7 @@
       "fallback": false
     },
     {
-      "t": 198.4183,
+      "t": 198.4535,
       "kind": "plate",
       "payload": {
         "order": 36,
@@ -640,7 +640,7 @@
       "fallback": false
     },
     {
-      "t": 210.6302,
+      "t": 210.658,
       "kind": "filing",
       "payload": {
         "order": 37,
@@ -651,7 +651,7 @@
       "fallback": false
     },
     {
-      "t": 210.6302,
+      "t": 210.658,
       "kind": "plate",
       "payload": {
         "order": 38,
@@ -666,7 +666,7 @@
       "fallback": false
     },
     {
-      "t": 229.1425,
+      "t": 229.1591,
       "kind": "plate",
       "payload": {
         "order": 40,
@@ -688,16 +688,16 @@
     {
       "kind": "host",
       "start": 0.0,
-      "end": 8.8617,
+      "end": 8.8564,
       "attribution": "",
       "variant": 0,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.8617,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8617,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8617,trim=0:8.8617,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.8564,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8564,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8564,trim=0:8.8564,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 8.8617,
-      "end": 13.8617,
+      "start": 8.8564,
+      "end": 13.8564,
       "value": "tumbleweed",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -706,8 +706,8 @@
     },
     {
       "kind": "plate",
-      "start": 13.8617,
-      "end": 20.8617,
+      "start": 13.8564,
+      "end": 20.8564,
       "value": "figures/big-number-l1-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -715,26 +715,26 @@
     },
     {
       "kind": "host",
-      "start": 20.8617,
-      "end": 29.1348,
+      "start": 20.8564,
+      "end": 29.1209,
       "attribution": "",
       "variant": 1,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.2731,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2731,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2731,trim=0:8.2731,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 29.1348,
-      "end": 37.4079,
+      "start": 29.1209,
+      "end": 37.3854,
       "attribution": "",
       "variant": 2,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.2731,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2731,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2731,trim=0:8.2731,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 37.4079,
-      "end": 42.4079,
+      "start": 37.3854,
+      "end": 42.3854,
       "value": "EXMPL data center server racks",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
@@ -743,8 +743,8 @@
     },
     {
       "kind": "img",
-      "start": 42.4079,
-      "end": 47.4079,
+      "start": 42.3854,
+      "end": 47.3854,
       "value": "EXMPL dispatch dashboard",
       "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
@@ -753,17 +753,17 @@
     },
     {
       "kind": "host",
-      "start": 47.4079,
-      "end": 50.3199,
+      "start": 47.3854,
+      "end": 50.2895,
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.9120,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9120,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9120,trim=0:2.9120,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.9041,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9041,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9041,trim=0:2.9041,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 50.3199,
-      "end": 57.3199,
+      "start": 50.2895,
+      "end": 57.2895,
       "value": "cards/definition-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -776,17 +776,17 @@
     },
     {
       "kind": "host",
-      "start": 57.3199,
-      "end": 60.4316,
+      "start": 57.2895,
+      "end": 60.3951,
       "attribution": "",
       "variant": 4,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.1117,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.1117,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.1117,trim=0:3.1117,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.1056,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.1056,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.1056,trim=0:3.1056,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 60.4316,
-      "end": 67.4316,
+      "start": 60.3951,
+      "end": 67.3951,
       "value": "structure/flow-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -794,26 +794,26 @@
     },
     {
       "kind": "host",
-      "start": 67.4316,
-      "end": 73.6156,
+      "start": 67.3951,
+      "end": 73.5732,
       "attribution": "",
       "variant": 5,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.1840,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1840,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1840,trim=0:6.1840,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 73.6156,
-      "end": 79.7996,
+      "start": 73.5732,
+      "end": 79.7513,
       "attribution": "",
       "variant": 6,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.1840,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1840,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1840,trim=0:6.1840,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 79.7996,
-      "end": 86.7996,
+      "start": 79.7513,
+      "end": 86.7513,
       "value": "tables/numbers-sheet-4r-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -821,8 +821,8 @@
     },
     {
       "kind": "plate",
-      "start": 86.7996,
-      "end": 93.7996,
+      "start": 86.7513,
+      "end": 93.7513,
       "value": "charts/line-6y-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -830,12 +830,12 @@
     },
     {
       "kind": "host",
-      "start": 93.7996,
+      "start": 93.7513,
       "end": 97.5,
       "attribution": "",
       "variant": 7,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.7004,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.7004,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.7004,trim=0:3.7004,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.7487,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.7487,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.7487,trim=0:3.7487,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
@@ -896,30 +896,21 @@
     {
       "kind": "host",
       "start": 131.5,
-      "end": 135.9587,
+      "end": 136.3428,
       "attribution": "",
       "variant": 9,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:4.4587,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.4587,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.4587,trim=0:4.4587,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:4.8428,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.8428,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.8428,trim=0:4.8428,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 135.9587,
-      "end": 140.9587,
+      "start": 136.3428,
+      "end": 142.5,
       "value": "boardroom_suits",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "host",
-      "start": 140.9587,
-      "end": 142.5,
-      "attribution": "",
-      "variant": 10,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:1.5413,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.5413,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.5413,trim=0:1.5413,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:6.1572,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:6.1572,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1572,trim=0:6.1572,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -967,7 +958,7 @@
       "start": 170.5,
       "end": 172.5,
       "attribution": "",
-      "variant": 11,
+      "variant": 10,
       "layout": "host-full",
       "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
@@ -983,16 +974,16 @@
     {
       "kind": "host",
       "start": 179.5,
-      "end": 182.2395,
+      "end": 182.2845,
       "attribution": "",
-      "variant": 12,
+      "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.7395,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7395,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7395,trim=0:2.7395,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.7845,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7845,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7845,trim=0:2.7845,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
-      "start": 182.2395,
-      "end": 189.2395,
+      "start": 182.2845,
+      "end": 189.2845,
       "value": "structure/both-true-16x9",
       "attribution": "",
       "layout": "two-shot",
@@ -1000,8 +991,8 @@
     },
     {
       "kind": "clip",
-      "start": 189.2395,
-      "end": 194.2395,
+      "start": 189.2845,
+      "end": 194.2845,
       "value": "growing_plant",
       "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
@@ -1010,12 +1001,12 @@
     },
     {
       "kind": "host",
-      "start": 194.2395,
+      "start": 194.2845,
       "end": 197.5,
       "attribution": "",
-      "variant": 13,
+      "variant": 12,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.2605,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2605,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2605,trim=0:3.2605,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.2155,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2155,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2155,trim=0:3.2155,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
@@ -1059,7 +1050,7 @@
       "start": 220.5,
       "end": 222.5,
       "attribution": "",
-      "variant": 14,
+      "variant": 13,
       "layout": "host-full",
       "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
@@ -1091,7 +1082,7 @@
       "start": 236.5,
       "end": 246.5169955,
       "attribution": "",
-      "variant": 15,
+      "variant": 14,
       "layout": "host-full",
       "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
@@ -1100,13 +1091,13 @@
       "start": 246.5169955,
       "end": 256.533991,
       "attribution": "",
-      "variant": 16,
+      "variant": 15,
       "layout": "host-full",
       "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 44,
+  "segment_cache_hits": 10,
   "segment_failures": [],
   "layers": [
     {
@@ -1118,22 +1109,22 @@
     },
     {
       "name": "chapter_1",
-      "t_start": 8.8617,
-      "t_end": 10.4617,
+      "t_start": 8.8564,
+      "t_end": 10.4564,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_2",
-      "t_start": 29.1348,
-      "t_end": 30.7348,
+      "t_start": 29.1209,
+      "t_end": 30.7209,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_3",
-      "t_start": 57.3199,
-      "t_end": 58.9199,
+      "t_start": 57.2895,
+      "t_end": 58.8895,
       "x": 0,
       "y": 0
     },
@@ -1153,8 +1144,8 @@
     },
     {
       "name": "chapter_6",
-      "t_start": 140.9587,
-      "t_end": 142.5587,
+      "t_start": 142.5,
+      "t_end": 144.1,
       "x": 0,
       "y": 0
     },
@@ -1202,43 +1193,43 @@
     },
     {
       "name": "scribble_0",
-      "t_start": 65.6431,
-      "t_end": 68.1431,
+      "t_start": 65.6034,
+      "t_end": 68.1034,
       "x": 1082,
       "y": 442
     },
     {
       "name": "scribble_1",
-      "t_start": 104.0678,
-      "t_end": 106.5678,
+      "t_start": 104.0048,
+      "t_end": 106.5048,
       "x": 610,
       "y": 310
     },
     {
       "name": "scribble_2",
-      "t_start": 144.7482,
-      "t_end": 147.2482,
+      "t_start": 145.1269,
+      "t_end": 147.6269,
       "x": 1209,
       "y": 548
     },
     {
       "name": "scribble_3",
-      "t_start": 152.2153,
-      "t_end": 154.7153,
+      "t_start": 152.5895,
+      "t_end": 155.0895,
       "x": 170,
       "y": 345
     },
     {
       "name": "scribble_4",
-      "t_start": 164.9717,
-      "t_end": 167.4717,
+      "t_start": 165.0272,
+      "t_end": 167.5272,
       "x": 992,
       "y": 481
     },
     {
       "name": "scribble_5",
-      "t_start": 192.1179,
-      "t_end": 194.6179,
+      "t_start": 192.1569,
+      "t_end": 194.6569,
       "x": 610,
       "y": 310
     },
@@ -1265,24 +1256,24 @@
     }
   ],
   "segment_warnings": [
-    "visual cue at 84.39s deferred to 86.80s \u2014 the previous visual was still being read",
-    "visual cue at 87.19s deferred to 97.50s \u2014 the previous visual was still being read",
-    "visual cue at 87.19s deferred to 104.50s \u2014 the previous visual was still being read",
-    "visual cue at 104.07s deferred to 110.50s \u2014 the previous visual was still being read",
-    "visual cue at 104.07s deferred to 117.50s \u2014 the previous visual was still being read",
-    "visual cue at 107.88s deferred to 124.50s \u2014 the previous visual was still being read",
-    "visual cue at 139.85s deferred to 142.50s \u2014 the previous visual was still being read",
-    "visual cue at 145.68s deferred to 149.50s \u2014 the previous visual was still being read",
-    "visual cue at 152.22s deferred to 156.50s \u2014 the previous visual was still being read",
-    "visual cue at 157.89s deferred to 163.50s \u2014 the previous visual was still being read",
-    "visual cue at 182.24s deferred to 189.24s \u2014 the previous visual was still being read",
-    "visual cue at 184.11s deferred to 197.50s \u2014 the previous visual was still being read",
-    "visual cue at 185.74s deferred to 200.50s \u2014 the previous visual was still being read",
-    "visual cue at 198.42s deferred to 207.50s \u2014 the previous visual was still being read",
-    "visual cue at 210.63s deferred to 214.50s \u2014 the previous visual was still being read",
-    "visual cue at 210.63s deferred to 222.50s \u2014 the previous visual was still being read",
-    "adjacent img cuts at 37.41s/42.41s \u2014 same visual type back-to-back",
-    "adjacent plate cuts at 79.80s/86.80s \u2014 same visual type back-to-back",
+    "visual cue at 84.34s deferred to 86.75s \u2014 the previous visual was still being read",
+    "visual cue at 87.14s deferred to 97.50s \u2014 the previous visual was still being read",
+    "visual cue at 87.14s deferred to 104.50s \u2014 the previous visual was still being read",
+    "visual cue at 104.00s deferred to 110.50s \u2014 the previous visual was still being read",
+    "visual cue at 104.00s deferred to 117.50s \u2014 the previous visual was still being read",
+    "visual cue at 107.81s deferred to 124.50s \u2014 the previous visual was still being read",
+    "visual cue at 140.23s deferred to 142.50s \u2014 the previous visual was still being read",
+    "visual cue at 146.06s deferred to 149.50s \u2014 the previous visual was still being read",
+    "visual cue at 152.59s deferred to 156.50s \u2014 the previous visual was still being read",
+    "visual cue at 158.26s deferred to 163.50s \u2014 the previous visual was still being read",
+    "visual cue at 182.28s deferred to 189.28s \u2014 the previous visual was still being read",
+    "visual cue at 184.15s deferred to 197.50s \u2014 the previous visual was still being read",
+    "visual cue at 185.78s deferred to 200.50s \u2014 the previous visual was still being read",
+    "visual cue at 198.45s deferred to 207.50s \u2014 the previous visual was still being read",
+    "visual cue at 210.66s deferred to 214.50s \u2014 the previous visual was still being read",
+    "visual cue at 210.66s deferred to 222.50s \u2014 the previous visual was still being read",
+    "adjacent img cuts at 37.39s/42.39s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 79.75s/86.75s \u2014 same visual type back-to-back",
     "adjacent plate cuts at 117.50s/124.50s \u2014 same visual type back-to-back",
     "adjacent plate cuts at 142.50s/149.50s \u2014 same visual type back-to-back",
     "adjacent plate cuts at 149.50s/156.50s \u2014 same visual type back-to-back",
@@ -1380,13 +1371,13 @@
       "type": "how-the-money-is-made",
       "title": "what they actually sell",
       "script_t": 25.0,
-      "t": 29.13
+      "t": 29.12
     },
     {
       "type": "the-numbers",
       "title": "six years, one direction",
       "script_t": 55.0,
-      "t": 57.32
+      "t": 57.29
     },
     {
       "type": "sector-comps",
@@ -1404,7 +1395,7 @@
       "type": "capital-allocation",
       "title": "where the cash went",
       "script_t": 140.0,
-      "t": 140.96
+      "t": 142.5
     },
     {
       "type": "bull-vs-bear",
@@ -1448,7 +1439,7 @@
       "segment": 3,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 125,
+      "talk_frames": 124,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1475,7 +1466,7 @@
       "segment": 9,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 47,
+      "talk_frames": 46,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1484,7 +1475,7 @@
       "segment": 11,
       "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 95,
+      "talk_frames": 93,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1493,7 +1484,7 @@
       "segment": 12,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 93,
+      "talk_frames": 90,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1502,7 +1493,7 @@
       "segment": 15,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 55,
+      "talk_frames": 56,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1520,22 +1511,40 @@
       "segment": 22,
       "pose": "host/hands-in-pockets",
       "spoke": true,
-      "talk_frames": 67,
+      "talk_frames": 73,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
     },
     {
-      "segment": 24,
+      "segment": 28,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 30,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 30,
       "pose": "host/leaning-on-desk",
       "spoke": true,
-      "talk_frames": 23,
+      "talk_frames": 42,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
     },
     {
-      "segment": 29,
+      "segment": 33,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 48,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 38,
       "pose": "host/holding-a-page",
       "spoke": true,
       "talk_frames": 30,
@@ -1544,28 +1553,10 @@
       "has_idle": true
     },
     {
-      "segment": 31,
-      "pose": "host/hands-in-pockets",
+      "segment": 41,
+      "pose": "host/holding-a-page",
       "spoke": true,
-      "talk_frames": 42,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
-    },
-    {
-      "segment": 34,
-      "pose": "host/hands-in-pockets",
-      "spoke": true,
-      "talk_frames": 49,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
-    },
-    {
-      "segment": 39,
-      "pose": "host/leaning-on-desk",
-      "spoke": true,
-      "talk_frames": 30,
+      "talk_frames": 150,
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
@@ -1578,20 +1569,11 @@
       "idle_frames": 0,
       "has_talk": true,
       "has_idle": true
-    },
-    {
-      "segment": 43,
-      "pose": "host/hands-in-pockets",
-      "spoke": true,
-      "talk_frames": 150,
-      "idle_frames": 0,
-      "has_talk": true,
-      "has_idle": true
     }
   ],
   "blinks": 0,
   "shots_with_blink": 0,
-  "shots_with_idle": 17,
+  "shots_with_idle": 16,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
