@@ -34,8 +34,6 @@ Auto-extracted filing quotes (the receipts for the smoking-gun walk, when presen
 Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}
 
-Owned doodles — [DOODLE: key] (crude hand-drawn overlays; punctuation only):
-{{doodle_catalog}}
 
 Owned memes — [MEME: key] (HARD CAP 1–2 per video):
 {{meme_catalog}}
@@ -47,8 +45,7 @@ Uploaded filing screenshots — [SHOW FILING: file] by EXACT filename:
 {{available_screenshots}}
 
 Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these; anything else must be an [ASSET] with a design prompt:
-{{kit_catalog}}
+
 
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
@@ -127,59 +124,77 @@ Chosen: <the number you'll write with>
 Then write the script using that hook as its first line.
 
 ## TAG GRAMMAR (only these; exact syntax; place inline, immediately before the word it should hit)
+
+### [PLATE] — you name the plate and write what goes on it
+The kit is a library of drawn plates. YOU choose which one and YOU write every
+word and figure on it. The renderer puts your text in the declared slots and
+does nothing else — it never picks a plate for you and it never works out a
+number.
+
+```
+[PLATE: numbers-sheet-4r-16x9 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM
+  | label-1=Revenue | row-1=5.6,9.8,6.1,6.7,7.4,13.2 | band=2 ]
+```
+
+* `name` is a plate from the catalogue below. Nothing else resolves.
+* `slot=value` fills one slot. A slot name taken verbatim keeps its commas, so
+  `body=Margins fell, and stayed there` is one value.
+* `head=a,b,c,d,e,f` fills `head-1`…`head-6`; `row-3=…` fills that row's cells;
+  `band=2` lights row 2 (a band takes the row NUMBER, never words).
+* **SIX PERIODS, ALWAYS**: four fiscal years, the last full year, LTM. Every
+  table and every time-series chart is authored six wide. Do not drop to five —
+  an empty cell is information, a missing column is a lie about which year each
+  figure belongs to.
+* A row whose length does not match the header is REJECTED, as is an unknown
+  plate name, an undeclared slot, and a plate this chapter's type may not use.
+
+### everything else
 [IMG: query]            real imagery of operations / facilities / people (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        real imagery of the product itself
 [MEME: key]             from the meme catalog above. HARD CAP: 1–2 per video.
 [CLIP: key]             ironic stock footage; key from the b-roll palette above ([BROLL: key] also accepted)
-[CHART: metric]         auto chart; metric from the chartable list. Add `style=marker` for the crude napkin chart, e.g. [CHART: price style=marker]
-[SHOW FILING: file.png] full-screen data flash from the uploaded screenshots; labelled generically ("from the 10-K")
-[SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks like [ASSET] until the file exists.
+[CHART: metric]         a data path drawn into a charts/ plate; metric from the chartable list
+[SHOW FILING: file.png] a filing screenshot, framed. REACH FOR THIS WHENEVER YOU QUOTE A FILING — if the line is "it's in the risk factors, and it names a person", show the risk factor.
+[SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks until the file exists.
 [SOUND: key]            key ∈ windows_error · cash_register · record_scratch · sad_trombone · camera_shutter · vine_boom · coffee_slurp · keyboard_clack · paper_rustle · buzzer · ding
-                        Use SPARSELY — a few per video at most. The deadpan set (coffee_slurp, keyboard_clack, paper_rustle, buzzer, ding) is the room he's sitting in, dry and undramatic; it punctuates, it never announces.
-[DOODLE: key]           EXTRA punctuation only — a doodle from the catalog, over the current media. Never the main visual of a cut.
-[SCRIBBLE: style -> target]                   a drawn mark + target callout over whatever media is on screen
-                                              styles: {{scribble_styles}}
-[ASSET: slug]           a bespoke designed visual — ONLY when nothing above fits (see BESPOKE ASSETS)
-[TERM: key = definition]  the owned "word of the day" card — use it for the ONE framework you teach (roic · owner-earnings · fcf-yield · reverse-dcf · …)
-[BIGNUM: key = figure]  the owned single-stat card, for the one number a chapter turns on
-[TABLE: kind]           a strict readable table from the owned kit (pl · comps · segments · maturities). 6 rows, 4 columns — held ~8s, so write narration over it
-[PROP: key = value]     a generic object cutaway when no real photo fits (warehouse · servers · van · laptop · safe · scales · calendar · …)
-
-WRITE THE VALUE INTO THE CARD. Most owned artwork has a box waiting for a figure, and a key on its own renders that box EMPTY — or worse, ships the layout's own placeholder copy. Three forms:
-  [PROP: crushed-flat = -41%]                             one slot, one value
-  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]   name each slot when there is more than one
-  [PROP: numbers-raining = -8%, -12%, -3%]                a bare list fills them in order
-[TERM] and [BIGNUM] fall through to a blank layout when nothing is drawn for your key, and the text after the `=` is what gets composited into it — so an unlisted term still gets a proper card.
-[ALERT: kind]           a lower-third interjection over whatever is on screen (correction · fact-check · definition · disclosure · developing · flag). Holds 3–4s, never longer
+                        Use SPARSELY. The deadpan set (coffee_slurp, keyboard_clack, paper_rustle, buzzer, ding) is the room he's sitting in; it punctuates, it never announces.
+[SCRIBBLE: mark -> target]  a drawn annotation over whatever is on screen
+                            marks: {{scribble_styles}}
+                            An annotation is drawn in ATTENTION and SPENDS the frame's one attention.
+                            A plate that already carries an attention mark cannot also be annotated.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
 [BEAT]                  a deliberate pause. The single most useful tool you have: deadpan lands on timing, and a beat before the flat turn is what makes it a joke rather than a sentence.
 [SIGH]                  an audible exhale before a line he resents having to say
 [FLAT]                  hold the whole read flatter than baseline
 [DRY]                   same, drier
-Use them SPARINGLY — a [BEAT] on every line is a stutter, not a rhythm. Note they change what gets generated, so they must be written NOW: adding one after the audio exists means paying for the generation twice.
+Use them SPARINGLY — a [BEAT] on every line is a stutter, not a rhythm. They change what gets generated, so they must be written NOW: adding one after the audio exists means paying for the generation twice.
+
+{{tagging_density}}
+
+## THE PLATE CATALOGUE — every plate you may name
+Names resolve without the family prefix. `-16x9` is this format; the `-9x16`
+half is the vertical re-author and is not available here.
+
+{{plate_catalogue}}
+
+## CHAPTER TYPES — the sixteen, and what each may reach for
+A chapter is a TYPE plus a TITLE. The type decides which plates the chapter may
+use; the title is free text and is the only thing that reaches the screen. The
+same type may appear twice in one video under different titles.
+
+{{chapter_types}}
 
 ## DIRECTION RULES — DENNIS IS ON SCREEN; EVIDENCE IS THE CUTAWAY
 This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidence, and comes back. **Untagged narration IS the host** — the renderer puts him on screen and lip-syncs him to your words. You are not filling dead air; you are choosing the few moments worth leaving his face for.
 
 - **Every chapter OPENS and CLOSES on Dennis talking.** Start each chapter with untagged narration (he sets it up), and end it untagged (he lands it) before the next chapter's opener. Never begin or end a chapter on a cutaway.
 - **DELIBERATE PACING — do NOT tag every sentence.** A visual tag means "leave the host and hold this on screen long enough to read it." Roughly ONE cutaway per idea, not per sentence: 2–5 sentences of host, then the evidence, then back. A chart, a table or a diagram needs five to eight seconds of narration over it — write that narration. If a tag has one clause behind it, you have made a flash card, not a cut.
-- **Nothing flashes by.** Data has to stay up long enough for a viewer to actually read it. When you tag a [CHART], [SHOW FILING] or [ASSET], keep talking about it — the renderer holds the visual for as long as your words about it last.
-- Alternate the KIND of evidence across a chapter (real photo → chart → filing → diagram → table), and never reuse the same doodle or meme.
-- [DOODLE]/[SCRIBBLE] are the comedy layer that rides OVER whatever is on screen — including over the host. They punctuate a flat aside; they are never the reason to cut.
-- Use ONLY keys from the catalogs above. Every visual tag key must exist there or it is flagged before render. Irony lands on the exact word: "a [CLIP: clown] visionary CEO".
-- **Real photographs and screenshots run RAW and full-frame** — no stylization, no filter, no frame. A real warehouse should look like a real warehouse.
-
-## BESPOKE ASSETS (rare — the catalogs and real content serve most videos)
-Request a custom asset ONLY for a diagram that cannot be photographed, charted or found — the explanatory drawing that makes a mechanism click. Never for something a real photo or a [CHART] already covers. When you do:
-1. Put [ASSET: kebab-case-slug] inline where it should appear.
-2. AFTER the narration, append a trailer in exactly this shape:
-
-=== ASSET PROMPTS ===
---- ASSET: kebab-case-slug ---
-<a fully self-contained, ready-to-paste Claude Design prompt: 16:9 1920x1080 PNG, LIGHT theme — paper #f2f2ef, ink #232326, red #ff5247 for down/emphasis, green #2fd576 for up ONLY; hand-drawn marker line with a slight wobble, generous white space, headline in Shantell Sans, labels in Space Grotesk, figures in Space Mono; no logos, no watermark, no gradients, no drop shadows — describe the diagram completely and label every element.>
-
-The pipeline BLOCKS the render until the operator pastes that prompt into Claude Design and drops the export into assets/custom/<slug>.png.
+- **Nothing flashes by.** Data has to stay up long enough for a viewer to actually read it. When you tag a [PLATE], [CHART] or [SHOW FILING], keep talking about it — the renderer holds the visual for as long as your words about it last.
+- Alternate the KIND of evidence across a chapter (real photo → chart → filing → structure plate → table), and never reuse the same meme.
+- [SCRIBBLE] rides OVER whatever is on screen — including over the host. It punctuates a flat aside; it is never the reason to cut.
+- Use ONLY names from the catalogues above. Every visual tag is validated before render. Irony lands on the exact word: "a [CLIP: clown] visionary CEO".
+- **Foreign media is COMPOSITED INSIDE A DRAWN FRAME** — a photograph, a clip or a filing screenshot lands inside frames/media-frame or frames/capture-frame, with its caption and source in their slots. Full-frame raw media destroys the drawn surface the rest of the video is built on; the treatments rotate so consecutive ones differ.
 
 ## RULES
 - Multi-year first: growth rates, margin direction, share count, debt — the history table is the spine of the numbers chapter.
@@ -189,8 +204,8 @@ The pipeline BLOCKS the render until the operator pastes that prompt into Claude
   - Fold in the striking peer percentiles where they sharpen it ("90th percentile on price, 20th on margins").
   - Answer "is it priced in?" explicitly against that number — the question is never "good or bad", it's "better or worse than what the price already assumes".
   - Honest both ways: a cheap-looking name can still be a value trap; a dear one can still be worth it. Describe what the price assumes — do not issue a call.
-- At least: one [IMG]/[PRODUCT] on what they do, one [CHART] on the defining metric, one [SHOW FILING] on the single ugliest (or most impressive) real figure.
-- 1–2 [MEME] tags MAXIMUM; zero is fine. Doodles/scribbles are uncapped but never wallpaper — punctuate, don't spam, and never repeat one.
+- At least: one [IMG]/[PRODUCT] on what they do, one [CHART] on the defining metric, and a [SHOW FILING] on every filing you quote.
+- 1–2 [MEME] tags MAXIMUM; zero is fine. Scribbles are uncapped but never wallpaper — and one per frame, because a mark spends the frame's one attention.
 - Let the numbers pick the tone. A genuinely good business gets grudging respect — the irony aims at the market's neglect, not the company.
 - Short sentences. Deadpan reads better clipped. No hype adjectives, no "folks", no exclamation marks.
 - NEVER name any data vendor, terminal, or data product — it would be spoken and captioned. "The filing", "the 10-K", "the numbers" are the only sources on screen.
@@ -199,12 +214,20 @@ The pipeline BLOCKS the render until the operator pastes that prompt into Claude
 ## OUTPUT
 First the `=== HOOK OPTIONS ===` block, then the narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin the script at the chosen hook.
 
-After the narration, append a `=== CHAPTERS ===` trailer the operator can paste straight into YouTube as chapters — one `mm:ss Title` per line, one line per chapter, in order (first line must be `00:00`; the rest are approximate and the operator adjusts). This trailer is metadata: it is split off and never spoken. Then append the `=== ASSET PROMPTS ===` trailer ONLY if you used [ASSET] tags (chapters before assets).
+After the narration, append a `=== CHAPTERS ===` trailer — one line per chapter,
+in order, in the shape `mm:ss type | Title`. The timestamp is for YouTube (first
+line `00:00`; the rest approximate, the operator adjusts). This trailer is
+metadata and is never spoken.
 
-**These titles go ON SCREEN.** The renderer draws each one as a full-frame section stinger at the first real cut at or after its timestamp, so write them as titles a viewer reads mid-video, not as index entries: short, lowercase, in voice. Every chapter needs a title — a bare timestamp gets a generic one and a warning. Without a usable trailer the video falls back to six generic section names that will not match your cut.
+**The TYPE decides which plates that chapter may use.** It must be one of the
+sixteen listed above. **The TITLE goes ON SCREEN** — the renderer draws a
+chapter opener as the room with your title in its title slot, so write titles a
+viewer reads mid-video, not index entries: short, lowercase, in voice. A type
+may repeat under different titles; nothing is numbered.
 
 === CHAPTERS ===
-00:00 Cold open — <the reframe>
-mm:ss <Chapter title>
-mm:ss What you're paying for
-mm:ss The close
+00:00 cold-open | the reframe
+mm:ss how-the-money-is-made | what they actually sell
+mm:ss the-numbers | six years, one direction
+mm:ss valuation | what you're paying for
+mm:ss resigned-close | the close

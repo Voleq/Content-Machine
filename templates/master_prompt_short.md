@@ -29,8 +29,6 @@ Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut che
 Chartable metrics present in THIS data — every `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
 ## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
-Owned doodles — [DOODLE: key] (crude hand-drawn overlays; punctuation only):
-{{doodle_catalog}}
 
 Owned memes — [MEME: key] (optional, at most one):
 {{meme_catalog}}
@@ -39,8 +37,10 @@ Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
 {{broll_palette}}
 
 Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these; anything else must be an [ASSET] with a design prompt:
-{{kit_catalog}}
+Pick from these. Nothing else resolves:
+{{plate_catalogue}}
+
+{{tagging_density}}
 
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
@@ -70,11 +70,19 @@ Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws
 Place a tag immediately before the word it should hit. The parser strips every tag out before anything is spoken or counted, and fires it on that word. Three kinds:
 
 **Evidence — takes the frame for a beat.** Dennis cuts away to it and comes back.
-- `[PROP: key = value]` — anything in the beat library or the prop/concept lists above. This is the main one: the beat library is 51 drawings built for exactly this, many animated, most with a box waiting for a figure. Name the situation, not the picture — and **always give the figure**, or the drawing renders with an empty box in it:
-  - `[PROP: crushed-flat = -41%]` — one slot, one value.
-  - `[PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]` — name each slot when the asset has more than one. The catalogue lists the names.
-  - `[PROP: numbers-raining = -8%, -12%, -3%]` — a bare list fills the slots in order.
-- `[BIGNUM: key = value]` / `[TERM: key]` — a one-number card or an explainer card. If nothing is drawn for your key, the blank layout gets filled with your text — so an unlisted term still gets a proper card.
+### [PLATE] — you name the plate and write what goes on it
+The kit is a library of drawn plates. YOU choose which one and YOU write every
+word and figure on it. The renderer puts your text in the declared slots and
+does nothing else — it never picks a plate and it never works out a number.
+
+```
+[PLATE: hook-card-t1 | ticker=EXMPL | move=+29% | hook=a plateau in a costume | sub=five years of drift]
+[PLATE: numbers-sheet-3r-9x16 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=400,412,441,468,479,496]
+```
+
+SIX PERIODS, ALWAYS: four fiscal years, the last full year, LTM. A row whose
+length does not match the header is rejected, as is an unknown plate, an
+undeclared slot, and a plate this chapter's type may not use.
 - `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
 - `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
@@ -84,9 +92,7 @@ Place a tag immediately before the word it should hit. The parser strips every t
 Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are never cut short. Punctuation beats (a prop, a meme, a reaction) run 0.6–2 seconds over the frame. **Never put two data beats back to back** — with nothing between them the second one doesn't get read, and the renderer will move it.
 
 **Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
-- `[DOODLE: key]` — e.g. "...from twenty-five k to zero. [DOODLE: scribble-explosion]"
 - `[SCRIBBLE: style -> target]` — a drawn mark plus the target as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
-- `[ALERT: key]` — a lower-third interjection mid-frame.
 
 **Delivery — never reaches the screen, only the voice.** `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short. Write them NOW — they change what gets generated, so adding one later means paying for the voice twice.
 
@@ -96,10 +102,10 @@ Budget: roughly 22–30 visual events across the whole short. Two layers, and th
 
 Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
 
-**If a beat has a figure in it and no `[PROP]`, the renderer draws the desk. The desk is not a beat.** The beat library exists so that every number you say out loud has a drawing built to carry it — a figure that went the wrong way, a document, a thing becoming another thing. Reach for a DIFFERENT one each time: four distinct beat-library scenes is the floor for a short with four data beats, not the target, and repeating one drawing twice reads as a template. At least one of them should be animated, and at most one should be a 9:16 full-height scene.
+**If a beat has a figure in it and no `[PLATE]`, the renderer draws the room. The room is not a beat.** Every number you say out loud needs a plate built to carry it. Reach for a DIFFERENT one each time — repeating one plate twice reads as a template.
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[PLATE]`/`[SCRIBBLE]` tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
@@ -126,7 +132,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
   "move_summary": "<how much / how active>",
   "chart_style": "marker",
   "headlines": [
@@ -153,7 +159,7 @@ Note how each fact is taught straight, then undercut flat; the hook is front-loa
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "EXMPL is up 29% today. The business is not.",
-  "audio_script": "EXMPL is up twenty nine percent today on five times average volume, so the internet has decided it is a technology company again. [DOODLE: stick-staring-at-crash] The news is an AI partnership, which is a press release, not a purchase order. No revenue attached. Plus a squeeze, because eleven percent of the float was short. But here is the part nobody screenshots. Revenue went four hundred million to four ninety six in five years. That is not growth, that is a plateau in a costume. Losses got wider [SCRIBBLE: circle -> Net income] every year. Free cash flow went negative and stayed there, which means you pay them to own it. On the peer sheet it is ninetieth percentile on price and twentieth on margins, dear and mediocre in the same breath. I know a value trap; my own account went from twenty five k to zero dollars. In fairness, there is enough cash on the balance sheet to survive being wrong for a while, which is the nicest thing I can say and I am reaching. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
+  "audio_script": "EXMPL is up twenty nine percent today on five times average volume, so the internet has decided it is a technology company again. The news is an AI partnership, which is a press release, not a purchase order. No revenue attached. Plus a squeeze, because eleven percent of the float was short. But here is the part nobody screenshots. Revenue went four hundred million to four ninety six in five years. That is not growth, that is a plateau in a costume. Losses got wider [SCRIBBLE: scrawl-oval-tight -> Net income] every year. Free cash flow went negative and stayed there, which means you pay them to own it. On the peer sheet it is ninetieth percentile on price and twentieth on margins, dear and mediocre in the same breath. I know a value trap; my own account went from twenty five k to zero dollars. In fairness, there is enough cash on the balance sheet to survive being wrong for a while, which is the nicest thing I can say and I am reaching. The chart went vertical. The business went sideways. Noise. A press release and a squeeze, stapled to five years of drift.",
   "move_summary": "+29% today · 5× average volume",
   "chart_style": "marker",
   "headlines": [

@@ -40,8 +40,6 @@ Peer percentiles (OPTIONAL — where this ticker ranks vs peers; the gut check m
 Chartable metrics present in THIS data — every company/earnings `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
 ## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
-Owned doodles — [DOODLE: key] (crude hand-drawn overlays; punctuation only):
-{{doodle_catalog}}
 
 Owned memes — [MEME: key] (optional, at most one):
 {{meme_catalog}}
@@ -50,8 +48,10 @@ Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
 {{broll_palette}}
 
 Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these; anything else must be an [ASSET] with a design prompt:
-{{kit_catalog}}
+Pick from these. Nothing else resolves:
+{{plate_catalogue}}
+
+{{tagging_density}}
 
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
@@ -78,14 +78,13 @@ The beats are fixed; the runtime goes to keeping the viewer, never more talking:
 
 ## PUNCTUATING WITH HAND-DRAWN MARKS
 Place inline in `audio_script`, immediately before the word they hit; the parser strips them (never spoken) and fires them on that word:
-- `[DOODLE: key]` — a crude doodle over the current frame. e.g. "...a press release, not a purchase order. [DOODLE: shrug]"
 - `[SCRIBBLE: style -> target]` — a drawn mark + the target text as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
 You may also place DELIVERY DIRECTION inline — `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. These never reach the screen; they reach the voice. A [BEAT] before the payoff is what turns a sentence into a joke. Use them sparingly, and write them NOW — they change what gets generated, so adding one later means paying twice.
 
 Keep it to ~1–3 inline marks. They ride on the fixed beats; they don't replace the JSON `annotations`.
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — inline `[DOODLE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — inline `[PLATE]`/`[SCRIBBLE]` tags are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
 4. `numbers`: 1–6 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. One extra row is fine IF it changes the read; don't pad.
@@ -113,7 +112,7 @@ THEN, as the final block, the strict JSON object below — keys exactly as shown
   "ticker": "{{ticker}}",
   "format": "short",
   "hook_text": "<= 90 chars, mute-safe>",
-  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [DOODLE:]/[SCRIBBLE:] inline>",
+  "audio_script": "<180-210 spoken words, <= 1400 chars, one mid-point re-hook, ends with the conclusion verbatim; may embed [PLATE:]/[SCRIBBLE:] inline>",
   "move_summary": "<one line of news context>",
   "chart_style": "clean",
   "headlines": [

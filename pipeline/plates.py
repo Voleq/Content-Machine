@@ -415,6 +415,21 @@ class Registry:
         """The types this kit carries curation for, in the fixed canonical order."""
         return tuple(c for c in CHAPTER_TYPES if c in self._chapter_types)
 
+    def universal_plates(self) -> tuple[str, ...]:
+        """Every plate available to EVERY chapter type.
+
+        Titles, the set, the host, marks, row highlights and framed foreign
+        media belong to every chapter, so they are declared once rather than
+        repeated sixteen times.
+        """
+        out: set[str] = set()
+        for key in self.assets:
+            for pre in self._universal:
+                if key == pre or key.startswith(pre):
+                    out.add(key)
+                    break
+        return tuple(sorted(out))
+
     def chapter_purpose(self, ctype: str) -> str:
         return (self._chapter_types.get(ctype) or {}).get("purpose", "")
 
