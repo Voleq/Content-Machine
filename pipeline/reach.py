@@ -1,10 +1,14 @@
-"""How much of the design kit a script actually reaches.
+"""How much of the plate library a script actually reaches.
 
-The kit is 442 addressable assets. The showcase short reaches 17 of them, five
-families, one beat-library scene — and it did that for months without anybody
-noticing, because the number existed only inside `kit_assets_used` in a render
-manifest nobody opens. Nothing measured it before the render, nothing printed
-it after, so "the library feels unused" stayed a feeling.
+The library is 113 plates. A script that names six of them will look like the
+last script that named six of them, and it did that for months without anybody
+noticing, because the number existed only inside a render manifest nobody
+opens. Nothing measured it before the render, nothing printed it after, so "the
+library feels unused" stayed a feeling.
+
+The COUNT comes off the registry, so it follows the kit rather than a figure
+typed here. The floor stays, because the floor is the number that says whether
+this video will look like the last one.
 
 This is the measurement, in one place, read by two callers that used to have no
 way of asking the question at all:
@@ -101,12 +105,12 @@ class Reach:
     def line(self) -> str:
         """The one line the approval report carries."""
         scenes = len(self.scenes)
-        return (f"Kit: {len(self.keys)} of {self.total} assets · "
+        return (f"Kit: {len(self.keys)} of {self.total} plates · "
                 f"{len(self.families)} families · "
-                f"{scenes} beat-library scene{'' if scenes == 1 else 's'}")
+                f"{scenes} data plate{'' if scenes == 1 else 's'}")
 
 
-def rendered_reach(kit_keys, kit) -> Reach:
+def rendered_reach(kit_keys, reg) -> Reach:
     """The reach of a FINISHED render, off the manifest's `kit_assets_used`.
 
     The same line in the same shape as the script's, so the two are readable
