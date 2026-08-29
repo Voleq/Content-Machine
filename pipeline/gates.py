@@ -537,6 +537,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     ledger = load_variant_ledger(settings)
     ever_used = used | ledger.all_used()
     never_used = [k for k in reg.keys() if k not in ever_used]
+    renders_seen = len(ledger.recent("render"))
 
     return findings, {
         "used": sorted(used),
@@ -546,6 +547,7 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "unfilled": unfilled,
         "kit_size": len(reg),
         "outfit": reg.outfit,
+        "renders_seen": renders_seen,
     }
 
 
@@ -581,8 +583,13 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
 
     never = stats["never_used"]
     lines.append("")
+    seen = stats.get("renders_seen", 0)
     lines.append(f"Never reached in a recent render ({len(never)} of "
                  f"{stats['kit_size']}):")
+    if not seen:
+        lines.append("  (the render ledger is empty — nothing has been "
+                     "recorded yet, so this list is the whole library rather "
+                     "than a gap)")
     if never:
         by_family: dict[str, int] = {}
         for key in never:

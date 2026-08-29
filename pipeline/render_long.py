@@ -297,6 +297,7 @@ def render_long(
     inputs: list[str] = []
     lines: list[str] = []
     seg_meta: list[dict] = []
+    plates_used: set[str] = set()
 
     # THE ROOM IS THE BOTTOM LAYER OF EVERY SHOT. It replaces the designed
     # filler backdrop, which existed because the old kit shipped no set: a beat
@@ -322,6 +323,7 @@ def render_long(
             if not dest.exists():
                 Image.new("RGB", (W, H), role(settings, "ground")).save(dest)
             return dest
+        plates_used.add(plate.key)
         key = (plate.key, "")
         if key not in room_cache:
             dest = rdir / f"room_{plate.name}.png"
@@ -370,6 +372,7 @@ def render_long(
                         "room instead", value)
             return _room_still(seg_i), False, None, (), None
 
+        plates_used.add(plate.key)
         values = dict(seg.payload.get("values") or {})
         # An empty cell means NO DATA in this library, so this reports rather
         # than substitutes. Inventing a figure is the one thing forbidden here.
@@ -451,6 +454,7 @@ def render_long(
         frame = _frame_plate(kind)
         if frame is None:
             return media_path
+        plates_used.add(frame.key)
         try:
             media = Image.open(media_path).convert("RGBA")
         except Exception as exc:  # noqa: BLE001 — never fatal
@@ -517,6 +521,7 @@ def render_long(
             return None
         if motion:
             host_motion.append({"segment": seg_i, **motion})
+            plates_used.add(motion.get("pose", ""))
             host_used[motion.get("pose", "")] = (
                 host_used.get(motion.get("pose", ""), 0) + 1)
 
@@ -1135,6 +1140,11 @@ def render_long(
         # be six hardcoded titles spaced evenly, and every test passed.
         "chapters": [{"t": round(t, 2), "title": ti, "type": ct}
                      for t, ti, ct in chapters],
+        # WHAT THIS RENDER ACTUALLY REACHED. The doctor diffs the library
+        # against this across recent renders to answer "what have we drawn and
+        # never used" — which is the gap list the next design batch is drawn
+        # from, and it is worth nothing if nobody writes the numerator down.
+        "plates_used": sorted(plates_used),
         "stingers": stinger_meta,
         "transitions": transition_meta,
         # The motion that reached the cut. Zero here means the long is back to

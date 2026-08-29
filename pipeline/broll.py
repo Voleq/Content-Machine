@@ -40,6 +40,23 @@ from pipeline.render_common import RenderError, ffprobe_duration, run_ffmpeg
 
 log = logging.getLogger(__name__)
 
+
+def _compact(value: float) -> str:
+    """`400000000` -> `400M`.
+
+    Every figure slot in the kit declares a `maxChars`, and it is a HARD limit:
+    over it the line collides with rules drawn in ink. A raw `{:,.0f}` on a
+    revenue figure is eleven characters against a seven-character axis label,
+    which is how a chart came out with every gridline overset.
+    """
+    n = float(value)
+    for cut, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if abs(n) >= cut:
+            scaled = n / cut
+            return (f"{scaled:.0f}{suffix}" if abs(scaled) >= 10
+                    else f"{scaled:.1f}{suffix}".replace(".0", ""))
+    return f"{n:,.0f}"
+
 # ---------------------------------------------------------------------------
 # The vetted palette: key -> pre-tested Pexels video query. The preferred
 # [CLIP] vocabulary; unknown payloads fall through as raw queries (warned
@@ -685,6 +702,10 @@ class ContentManager:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)
 
+    @staticmethod
+    def _compact_number(value: float) -> str:
+        return _compact(value)
+
     def filler_image(self, query: str, kind: str = "img") -> Visual:
         from PIL import Image, ImageDraw
 
@@ -785,10 +806,10 @@ class ContentManager:
                 for i, y in enumerate(years, start=1):
                     slot_values[f"head-{i}"] = str(y)
                 for i in range(5):
-                    slot_values[f"y-{i + 1}"] = f"{lo + (hi - lo) * i / 4:,.0f}"
+                    slot_values[f"y-{i + 1}"] = _compact(lo + (hi - lo) * i / 4)
                 for i, v in enumerate(values, start=1):
                     if v is not None:
-                        slot_values[f"value-{i}"] = f"{float(v):,.0f}"
+                        slot_values[f"value-{i}"] = _compact(float(v))
                 img = render_series(reg, plate,
                                     [None if v is None else float(v) for v in values],
                                     self.settings, slot_values=slot_values,
