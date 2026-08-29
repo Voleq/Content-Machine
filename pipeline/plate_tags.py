@@ -29,8 +29,10 @@ the expansion cannot invent a slot that is not there:
     label-3=Revenue    ->  label-3          (already a slot name — verbatim)
     body=Margins fell, and stayed there     (verbatim: commas are content)
 
-A key that IS a declared slot name is always taken verbatim, which is what keeps
-a comma inside prose from being read as a list separator.
+A key that names a declared slot the plate SETS TYPE IN is taken verbatim, which
+is what keeps a comma inside prose from being read as a list separator. A key
+naming a slot that takes no type — a plot area, a spark, a path — is read as the
+series of figures the renderer draws through, and checked against the header.
 """
 
 from __future__ import annotations
@@ -38,7 +40,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from pipeline.plates import DATA_REGION_ROLES, PERIOD_COUNT, Plate, Registry
+from pipeline.plates import PERIOD_COUNT, Plate, Registry
 
 # `[PLATE: name | k=v | k=v]`. The parts split on `|`; the first is the plate
 # name, the rest are assignments. Newlines inside the tag are folded, so a
@@ -193,9 +195,12 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                 f"[PLATE: {name}] has a part with no `slot=value`: {raw!r}")
             continue
 
-        # 1. An exact slot name is taken VERBATIM. This is what lets prose keep
-        #    its commas — `body=Margins fell, and stayed there` is one value.
-        if k in plate.slots:
+        named = plate.slots.get(k)
+
+        # 1. An exact slot name that TAKES TYPE is taken VERBATIM. This is what
+        #    lets prose keep its commas — `body=Margins fell, and stayed there`
+        #    is one value.
+        if named is not None and named.is_text:
             fill.values[k] = raw
             if k == "head":
                 header_len = len([v for v in raw.split(",")])
@@ -209,13 +214,24 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
         #    shape rather than type. The director still writes every one of
         #    them — this is not the renderer computing a series, it is the
         #    renderer being handed one.
-        region = plate.slots.get(k)
-        if region is not None and region.role in DATA_REGION_ROLES:
+        #
+        #    This has to come AFTER the verbatim branch and be reachable from
+        #    it: `path` is a slot name, so a branch that took every slot name
+        #    verbatim swallowed the series and none of the checks below ever
+        #    ran — a five-figure path against a six-period header validated
+        #    clean and drew a line one period short.
+        region = named
+        if region is not None and not region.is_band:
             vals = [v.strip() for v in raw.split(",")]
             if len(vals) < 2:
+                # Covers both shapes of this mistake: a one-point series, and a
+                # value written to a slot that takes no type and has no
+                # renderer either. The kit's own note on the slot says which.
+                detail = f" The kit says: {region.note}." if region.note else ""
                 fill.problems.append(
-                    f"[PLATE: {name}] {k}= needs at least two figures to draw "
-                    f"a path")
+                    f"[PLATE: {name}] {k}= is not a text slot — it takes the "
+                    f"figures a renderer draws through, and {raw!r} is not a "
+                    f"series.{detail}")
                 continue
             if header_len and len(vals) != header_len:
                 fill.problems.append(
@@ -223,6 +239,11 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                     f"{header_len} period heads")
                 continue
             fill.values[k] = ",".join(vals)
+            continue
+
+        # 2b. A band slot named directly just lights, like `band=N` below.
+        if region is not None:
+            fill.values[k] = raw
             continue
 
         # 3. `band=N` lights row N. A band is not a text box — it is the row

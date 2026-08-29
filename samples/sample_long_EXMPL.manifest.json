@@ -1102,7 +1102,7 @@
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 11,
+  "segment_cache_hits": 27,
   "segment_failures": [],
   "layers": [
     {
@@ -1338,6 +1338,32 @@
       "title": "the close",
       "type": "resigned-close"
     }
+  ],
+  "plates_used": [
+    "cards/definition-16x9",
+    "cards/quote-pull-16x9",
+    "charts/line-6y-16x9",
+    "cycles/cycle-frame-16x9",
+    "figures/big-fraction-16x9",
+    "figures/big-number-l1-16x9",
+    "figures/big-number-l2-16x9",
+    "frames/media-frame-t1-16x9",
+    "frames/media-frame-t2-16x9",
+    "frames/media-frame-t3-16x9",
+    "host/hands-in-pockets",
+    "host/holding-a-page",
+    "host/leaning-on-desk",
+    "peers/peer-strip-16x9",
+    "room/desk-corner-16x9",
+    "room/desk-front-16x9",
+    "structure/both-true-16x9",
+    "structure/closing-16x9",
+    "structure/flow-16x9",
+    "structure/row-spotlight-16x9",
+    "structure/timeline-16x9",
+    "structure/unit-ladder-16x9",
+    "tables/cash-flow-16x9",
+    "tables/numbers-sheet-4r-16x9"
   ],
   "stingers": [
     {

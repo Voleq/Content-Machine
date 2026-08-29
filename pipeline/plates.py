@@ -74,14 +74,6 @@ CHAPTER_TYPES = (
 # on.
 PERIOD_COUNT = 6
 
-# Slot roles that reserve an area for DATA rather than for words. The plate
-# draws the furniture around them and knows nothing about numbers; series.py
-# and pipeline.chart fill them.
-DATA_REGION_ROLES = frozenset({"plot-area", "bars", "path", "spark",
-                               "host-anchor", "media", "figure", "head",
-                               "mouth"})
-
-
 class PlateError(RuntimeError):
     """A plate is missing, unknown, or the registry disagrees with the disk."""
 
@@ -104,6 +96,7 @@ class Slot:
     region: bool = False          # a reserved area, not a text box
     overlay: str = ""             # the plate composited into it (band-N)
     renderer: str = ""            # a data region series.py fills
+    sets_type: bool = False       # the plate declares a typeRole for its role
     export_scale: int = 2
     note: str = ""
 
@@ -114,35 +107,45 @@ class Slot:
 
     @property
     def is_text(self) -> bool:
-        """Whether anything typed goes here.
+        """Whether anything typed goes here — asked of the KIT, not of Python.
 
-        A region reserves space for something composited into it —
-        ``host-anchor`` for the host, ``plot-area``/``bars``/``path`` for a data
-        series. A slot carrying an ``overlay`` is a row highlight: naming it
-        lights the band, it never takes words.
+        A slot takes type when its plate declares a ``typeRoles`` entry for its
+        role: that entry is the face, size, weight, colour role and character
+        limit the type is set in, so a slot with no entry has nothing to be set
+        in and takes no words. A ``renderer`` slot is a series drawn as a
+        shape; an ``overlay`` slot is a row highlight that lights when named.
 
-        Both of those were text boxes for one revision, which put a literal "1"
-        over a lit row and counted a chart's plot area as copy somebody had
-        forgotten to write.
+        This used to be a list of role names kept in Python, and the list was
+        wrong in the expensive direction: ``figure`` names the host's body on
+        the eighteen room angles AND the number in every table cell, so 395
+        figure slots — every cell of every sheet, every big number, every
+        fraction — were classified as reserved area and silently drew nothing.
+        A sheet came out with its headers, its row labels, its bands and no
+        numbers, which is the one thing a numbers sheet is for.
+
+        A kit is free to invent a role this code has never heard of. It cannot
+        be free to have its type quietly dropped for having done so.
         """
-        return (not self.region and not self.renderer and not self.overlay
-                and self.role not in DATA_REGION_ROLES)
+        return self.sets_type and not self.renderer and not self.overlay
 
     @property
     def is_band(self) -> bool:
         return bool(self.overlay)
 
     @classmethod
-    def from_registry(cls, name: str, raw: dict, export_scale: int) -> "Slot":
+    def from_registry(cls, name: str, raw: dict, export_scale: int,
+                      type_roles: dict | None = None) -> "Slot":
+        role = str(raw.get("role", ""))
         return cls(
             name=name,
             x=int(raw["x"]), y=int(raw["y"]),
             w=int(raw["w"]), h=int(raw["h"]),
-            role=str(raw.get("role", "")),
+            role=role,
             align=str(raw.get("align", "left")),
             region=bool(raw.get("region", False)),
             overlay=str(raw.get("overlay", "")),
             renderer=str(raw.get("renderer", "")),
+            sets_type=bool((type_roles or {}).get(role)),
             export_scale=export_scale,
             note=str(raw.get("note", "")),
         )
@@ -296,7 +299,10 @@ class Registry:
             for f in e.get("frames", [])
         )
         files = e.get("files") or {}
-        slots = {n: Slot.from_registry(n, s, scale)
+        # The typeRoles table goes in with the slots: whether a slot takes type
+        # is the kit's answer, and the kit gives it here.
+        type_roles = e.get("typeRoles") or {}
+        slots = {n: Slot.from_registry(n, s, scale, type_roles)
                  for n, s in (e.get("slots") or {}).items()}
 
         # The purpose is looked up by key first and then by the aspect-free

@@ -155,6 +155,26 @@ def _draw_tracked(draw, xy, text: str, font, fill, tracking_px: float) -> None:
         x += draw.textlength(ch, font=font) + tracking_px
 
 
+# A face's visible extent, measured once per size on a reference that carries
+# a cap, an x-height and a descender. NOT `ascent + descent`: that is the em
+# box, which stands taller than any glyph by the internal leading, and a slot
+# box in the manifest is drawn around the type as it appears. On
+# `cards/definition-16x9` the gap is 218px of em box against 133px of ink in a
+# 176px slot — enough to shrink a declared 76pt term to 58pt to "fit" a box it
+# already sat inside. Every single-line slot in the library was doing it.
+#
+# Measured on a fixed reference rather than on the string, so "Revenue" and
+# "Margin (%)" sit on the same baseline. A per-string bbox would centre each
+# cell on its own ink and stagger a table row by the height of a descender.
+_INK_REF = "Hg"
+
+
+def _ink_extent(font) -> tuple[int, int]:
+    """`(top offset, height)` of one line of this face, in pixels."""
+    _, top, _, bottom = font.getbbox(_INK_REF)
+    return top, max(bottom - top, 1)
+
+
 def _tracked_width(draw, text: str, font, tracking_px: float) -> float:
     w = draw.textlength(text, font=font)
     return w + tracking_px * max(len(text) - 1, 0) if tracking_px > 0 else w
@@ -169,6 +189,21 @@ def _em(value, size: int) -> float:
         return float(s[:-2]) * size if s.endswith("em") else float(s)
     except ValueError:
         return 0.0
+
+
+def _in_last_column(plate: Plate, slot: Slot) -> bool:
+    """Whether this slot is the rightmost of its row or header family.
+
+    `cell-2-6` against `cell-2-1 … cell-2-6`, `head-6` against `head-1 … head-6`.
+    Read off the slots the plate declares rather than off PERIOD_COUNT, because
+    `charts/line-dense` is authored four heads wide on purpose.
+    """
+    stem, _, tail = slot.name.rpartition("-")
+    if not stem or not tail.isdigit():
+        return False
+    peers = [int(n.rpartition("-")[2]) for n in plate.slots
+             if n.rpartition("-")[0] == stem and n.rpartition("-")[2].isdigit()]
+    return bool(peers) and int(tail) == max(peers)
 
 
 def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
@@ -212,6 +247,11 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     draw = ImageDraw.Draw(img)
     family = tr.get("font", "Courier Prime")
     weight = int(tr.get("weight", 400) or 400)
+    # Ten sheets set their last column heavier: LTM is the column the argument
+    # usually turns on, and the kit says so in the typeRole rather than leaving
+    # it to a renderer to decide what to emphasise.
+    if tr.get("lastColumnWeight") and _in_last_column(plate, slot):
+        weight = int(tr["lastColumnWeight"])
     colour_role = tr.get("colour", "structure")
     try:
         rgb = reg.colour(colour_role)
@@ -233,7 +273,9 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
         widest = max(_tracked_width(draw, ln, font, tracking_px) for ln in lines)
         ascent, descent = font.getmetrics()
         line_h = int((ascent + descent) * 1.06)
-        fits = widest <= bw and line_h * len(lines) <= bh and len(lines) <= max_lines
+        _, ink_h = _ink_extent(font)
+        block_h = (len(lines) - 1) * line_h + ink_h
+        fits = widest <= bw and block_h <= bh and len(lines) <= max_lines
         if fits or size <= _MIN_PT:
             if step and declared:
                 warnings.append(
@@ -246,15 +288,19 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     tracking_px = _em(tr.get("tracking"), size)
     ascent, descent = font.getmetrics()
     line_h = int((ascent + descent) * 1.06)
-    block_h = line_h * len(lines)
+    ink_top, ink_h = _ink_extent(font)
+    block_h = (len(lines) - 1) * line_h + ink_h
 
+    # `y` is where PIL starts the em box; the ink starts `ink_top` below it.
+    # Aligning the box instead of the ink hangs type off the top of its slot
+    # by the internal leading, which on a big figure is a visible drop.
     valign = str(tr.get("valign", "middle")).lower()
     if valign == "top":
-        y = y0
+        y = y0 - ink_top
     elif valign == "bottom":
-        y = y0 + bh - block_h
+        y = y0 + bh - block_h - ink_top
     else:
-        y = y0 + (bh - block_h) // 2
+        y = y0 + (bh - block_h) // 2 - ink_top
 
     for line in lines:
         lw = _tracked_width(draw, line, font, tracking_px)

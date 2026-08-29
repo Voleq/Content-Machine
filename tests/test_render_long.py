@@ -347,3 +347,190 @@ def test_the_plates_are_the_ones_the_script_named(rendered, long_valid_text):
     named = {e.payload for e in script.events_of(TagType.PLATE)}
     drawn = {s["value"] for s in manifest["segments"] if s["kind"] == "plate"}
     assert drawn <= named, f"the renderer drew a plate nobody named: {drawn - named}"
+
+
+def test_a_declared_type_size_is_honoured_when_the_value_fits(settings):
+    """The kit reserved that column at that size; the renderer keeps it.
+
+    `fill_slot` shrinks a value that will not fit and warns when it does. The
+    warning is only worth reading if it is rare, and it was not: the fit test
+    measured the font's em box, which stands taller than any glyph by the
+    internal leading, against a slot box drawn around the ink. Short values in
+    roomy slots came out one to four steps down — `cards/definition-16x9`
+    setting a fourteen-character term at 58pt in a box that holds 76 — and
+    every plate in the render logged a line about it.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    # Four faces, four sizes, four families: a period head, a percentile
+    # column head, a display term, and a table header.
+    cases = [
+        ("cycles/cycle-frame-16x9", "head-1", "2021"),
+        ("peers/peer-strip-16x9", "head-fwd", "PCTILE"),
+        ("cards/definition-16x9", "term", "Free cash flow"),
+        ("tables/numbers-sheet-4r-16x9", "head-1", "FY21"),
+    ]
+    for key, slot_name, value in cases:
+        plate = reg.get(key)
+        assert plate is not None, key
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        warnings = fill_slot(img, plate, plate.slots[slot_name], value,
+                             settings, reg)
+        assert warnings == [], (
+            f"{key} {slot_name}: {value!r} fits the slot the kit drew for it, "
+            f"and the renderer set it smaller anyway — {warnings}")
+
+
+def test_type_sits_on_its_ink_rather_than_hanging_off_the_leading(settings):
+    """Two things at once, because they constrain each other.
+
+    A line is centred on the type's visible extent rather than on the em box,
+    which carries the internal leading above the cap and below the descender —
+    centring the box drops the line below the middle of its slot.
+
+    And that extent is measured on a fixed reference, not on the string. A
+    per-string bbox would centre every cell on its own ink, so "Revenue" and
+    "Margin (%)" would sit at different heights in the same table row. Both
+    are placement bugs that no exception reports.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("cards/definition-16x9")
+    slot = plate.slots["term"]
+    scale = max(int(plate.export_scale or 1), 1)
+
+    def drawn(text: str):
+        img = Image.new("RGBA", ((slot.x + slot.w + 8) * scale,
+                                 (slot.y + slot.h + 8) * scale), (0, 0, 0, 0))
+        fill_slot(img, plate, slot, text, settings, reg)
+        box = img.crop((slot.x * scale, slot.y * scale,
+                        (slot.x + slot.w) * scale, (slot.y + slot.h) * scale))
+        ink = box.getbbox()
+        assert ink is not None, f"nothing was drawn for {text!r}"
+        return box, ink
+
+    # A cap and a descender: this line fills the reference band, so it is the
+    # one that should come out centred.
+    box, ink = drawn("Paying down debt")
+    above, below = ink[1], box.height - ink[3]
+    assert abs(above - below) <= max(4, box.height * 0.06), (
+        f"the line sits {above}px from the top of its slot and {below}px from "
+        f"the bottom — centred on the em box, not on the type")
+
+    # Same slot, a line with no descender at all. It must not float upward to
+    # re-centre itself: the cap heights have to agree, or a table row staggers.
+    _, no_desc = drawn("Free cash flow")
+    assert abs(no_desc[1] - ink[1]) <= 2, (
+        f"a line without a descender starts {no_desc[1]}px down and one with "
+        f"a descender starts {ink[1]}px down — the row would stagger")
+
+
+SHEET = ("numbers-sheet-4r-16x9 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM"
+         " | label-1=Revenue | row-1=400,431,458,472,486,496"
+         " | label-2=Gross profit | row-2=268,281,289,292,296,297"
+         " | label-3=Operating income | row-3=-8,-25,-49,-70,-89,-94"
+         " | label-4=Free cash flow | row-4=12,-3,-31,-52,-68,-71 | band=3")
+
+
+def test_every_value_the_director_writes_lands_on_the_plate(settings):
+    """Box by box: the slot the tag names is different with the value in it.
+
+    The check the render was missing. A four-row sheet came out with its
+    period heads, its row labels and its row band drawn and *every one of its
+    twenty-four figures absent* — because `Slot.is_text` was a list of role
+    names in Python, and `figure` names both the host's body on a room angle
+    and the number in a table cell. Nothing raised: the fill resolved clean,
+    validation passed, the manifest reported the plate drawn, and the frame
+    was a sheet with no numbers on it.
+
+    So this compares the filled plate against the bare one inside each named
+    slot's own box. A value that reaches no pixels is a value that is not on
+    screen, whatever the manifest says.
+    """
+    from pipeline.plate_frames import render_frame
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    fill = build_fill(reg, SHEET)
+    assert fill.problems == [], fill.problems
+
+    plate = reg.get(fill.key)
+    bare = render_frame(plate, 0, None, settings, reg)
+    full = render_frame(plate, 0, fill.values, settings, reg)
+    scale = max(int(plate.export_scale or 1), 1)
+
+    missing = []
+    for name in sorted(fill.values):
+        slot = plate.slots[name]
+        if not slot.is_text:
+            continue                      # a band lights, it takes no words
+        box = (slot.x * scale, slot.y * scale,
+               (slot.x + slot.w) * scale, (slot.y + slot.h) * scale)
+        if full.crop(box).tobytes() == bare.crop(box).tobytes():
+            missing.append(f"{name}={fill.values[name]!r}")
+    assert missing == [], (
+        f"{len(missing)} of {len(fill.values)} values on {plate.key} drew "
+        f"nothing at all: {', '.join(missing)}")
+
+
+def test_whether_a_slot_takes_type_is_the_kit_s_answer(settings):
+    """`figure` is a table cell here and the host's body there.
+
+    Both are called `figure` by the kit, and no list of role names in Python
+    can be right about both. The plate's own `typeRoles` table is what says
+    which: a slot whose role has an entry is set in that face at that size, a
+    slot whose role has none has nothing to be set in.
+    """
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+
+    cell = reg.get("tables/numbers-sheet-4r-16x9").slots["cell-1-1"]
+    body = reg.get("host/leaning-on-desk").slots["figure"]
+    assert cell.role == body.role == "figure"
+    assert cell.is_text, "a table cell takes the figure the director wrote"
+    assert not body.is_text, "the host's body is not a text box"
+
+    # And the three kinds of slot that are never type, whatever they are called.
+    assert not reg.get("charts/line-6y-16x9").slots["plot-area"].is_text
+    assert not reg.get("cycles/cycle-frame-16x9").slots["path"].is_text
+    assert not reg.get("tables/numbers-sheet-4r-16x9").slots["band-1"].is_text
+
+
+def test_the_last_column_is_set_in_the_weight_the_kit_asked_for(settings):
+    """Ten sheets declare `lastColumnWeight`; LTM is what the argument turns on.
+
+    Checked as ink rather than as a font object, because the failure being
+    guarded is the renderer reading the field and then not using it.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("tables/numbers-sheet-3r-16x9")
+    assert plate.type_roles["figure"].get("lastColumnWeight")
+
+    def ink(slot_name: str) -> int:
+        slot = plate.slots[slot_name]
+        scale = max(int(plate.export_scale or 1), 1)
+        img = Image.new("RGBA", ((slot.x + slot.w + 8) * scale,
+                                 (slot.y + slot.h + 8) * scale), (0, 0, 0, 0))
+        fill_slot(img, plate, slot, "888", settings, reg)
+        return sum(1 for px in img.getdata() if px[3] > 0)
+
+    cols = sorted(n for n in plate.slots if n.startswith("cell-1-"))
+    first, last = ink(cols[0]), ink(cols[-1])
+    assert last > first, (
+        f"the same figure covers {last}px in {cols[-1]} and {first}px in "
+        f"{cols[0]} — the last column is not being set heavier")
