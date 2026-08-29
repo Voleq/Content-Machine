@@ -645,6 +645,15 @@ def render_long(
         base.save(dest)
         return dest, ex, ey
 
+    # Where each beat's evidence actually landed in the frame. A plate in a
+    # two-shot is not drawn at the full frame — it is shrunk into the room's
+    # evidence column beside the host — so anything that has to line up with a
+    # slot on it (an annotation solved onto a figure) needs this rect and not
+    # the frame's. Recorded rather than recomputed, because `_fit_evidence`
+    # and `_panel_plate` both depend on which room angle and which host shot
+    # the seed picked.
+    panel_rects: dict[int, tuple[int, int, int, int]] = {}
+
     def _panel_frame(still: Path, seg_i: int, dest: Path, *,
                      two_shot: bool = True) -> Path:
         """The two-shot, as ONE composition: the room, the evidence, Dennis."""
@@ -653,6 +662,7 @@ def render_long(
                                two_shot=two_shot)
         panel = panel.resize((ew, eh), Image.LANCZOS)
         bg, ex, ey = _panel_plate((ew, eh), seg_i, dest, two_shot=two_shot)
+        panel_rects[seg_i] = (ex, ey, ew, eh)
         base = Image.open(bg).convert("RGB")
         base.paste(panel, (ex, ey), panel)
         base.save(dest)
@@ -980,9 +990,9 @@ def render_long(
     # maps onto the frame by one ratio.
     plate_beats = [
         (s.start, s.end, reg.get(str(s.payload.get("value") or "")),
-         dict(s.payload.get("values") or {}))
-        for s in segments
-        if s.kind == "plate" and s.payload.get("layout") != "two-shot"
+         dict(s.payload.get("values") or {}),
+         panel_rects.get(i, (0, 0, W, H)))
+        for i, s in enumerate(segments) if s.kind == "plate"
     ]
 
     def _target_box(t: float, target: str) -> tuple[int, int, int, int] | None:
@@ -990,10 +1000,12 @@ def render_long(
         want = " ".join(str(target).split()).lower()
         if not want:
             return None
-        for start, end, plate, values in plate_beats:
+        for start, end, plate, values, rect in plate_beats:
             if plate is None or not (start <= t < end):
                 continue
-            k = W / max(plate.delivered[0], 1)
+            rx, ry, rw, rh = rect
+            kx = rw / max(plate.delivered[0], 1)
+            ky = rh / max(plate.delivered[1], 1)
             # An exact value first: on a timeline with six cells reading
             # "Durable growth", a substring match would take whichever the
             # director happened to write first.
@@ -1010,8 +1022,8 @@ def render_long(
                     if ink is None:
                         continue
                     x, y, bw, bh = ink
-                    return (int(x * k), int(y * k),
-                            max(int(bw * k), 1), max(int(bh * k), 1))
+                    return (int(rx + x * kx), int(ry + y * ky),
+                            max(int(bw * kx), 1), max(int(bh * ky), 1))
         return None
 
     for k, c in enumerate(scribble_cues):

@@ -499,11 +499,22 @@ def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int]
     if plate.ink_weight:
         solved = plate.ink_weight * sx
         lo, hi = INK_WEIGHT_BAND
-        if not (lo <= solved <= hi):
+        if solved > hi:
             warnings.append(
                 f"{key} solves to a {solved:.1f}-unit stroke against a legible "
-                f"band of {lo}–{hi} — use the "
-                f"{'tight' if solved > hi else 'wide'} mark instead")
+                f"band of {lo}–{hi} — a smear over what it points at. Mark the "
+                f"figure rather than the sentence, or use the tight mark.")
+        elif solved < lo:
+            # Below the floor the advice is NOT "use the wide mark" — this is
+            # usually already the wide one, and what shrank it is the target:
+            # a single figure, or a plate scaled into a two-shot's evidence
+            # column. Naming the cause is the difference between a warning an
+            # operator can act on and one they learn to scroll past.
+            warnings.append(
+                f"{key} solves to a {solved:.1f}-unit stroke against a legible "
+                f"band of {lo}–{hi} — the target is small enough that the mark "
+                f"arrives as a hairline. Mark a wider target, or give the beat "
+                f"the full frame.")
 
     # Place the whole plate so its area slot lands on the target.
     w = int(round(plate.canvas[0] * sx))
