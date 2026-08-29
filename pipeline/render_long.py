@@ -77,6 +77,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import build_host_clip, pick_shot, place_on_room
+from pipeline.chart import draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
     CueKind,
@@ -379,6 +380,11 @@ def render_long(
         if not plate.animated:
             dest = rdir / f"plate_{seg_i}_{plate.name[:24]}.png"
             img = render_still(plate, values, settings, reg).convert("RGBA")
+            # A plate that reserves a data region gets its path drawn through
+            # the figures the DIRECTOR wrote into it. Without this a charts/ or
+            # cycles/ plate is a set of labels around an empty box.
+            if draw_declared(reg, plate, values, img, seed=f"{plate.key}|{seg_i}"):
+                log.debug("%s: drew its declared series", plate.key)
             if img.size != (W, H):
                 img = img.resize((W, H), Image.LANCZOS)
             img.save(dest)
@@ -409,11 +415,17 @@ def render_long(
     # video is built on, and the treatments rotate so consecutive ones differ.
     frame_rotation = FrameRotation()
 
-    def _frame_plate(kind):
-        """The next frames/ plate in the rotation, or None when unavailable."""
+    def _frame_plate(kind, *, needs_media: bool = True):
+        """The next frames/ plate in the rotation, or None when unavailable.
+
+        `needs_media` is True everywhere here: this path always has a real
+        image or clip in hand, so it needs a plate with an aperture. The
+        capture frame is for a document transcribed into slots and has none.
+        """
         from pipeline.media_frames import frame_for
 
-        return frame_for(reg, frame_rotation, aspect, kind=kind)
+        return frame_for(reg, frame_rotation, aspect, kind=kind,
+                         needs_media=needs_media)
 
     def _frame_bg(frame, seg, seg_i: int) -> tuple[Path, tuple[int, int, int, int]]:
         """The empty frame as a background, and the aperture to play inside.
@@ -873,15 +885,24 @@ def render_long(
     # ------------------------------------------------------------ layers
     layers: list[OverlayLayer] = []
 
-    # composed opening title card (a real open, not a lone mascot on a flat
-    # backdrop) — full-frame over the first beat, fading out on its own
-    scenes_dir = settings.assets_dir / "brand" / "scenes"
-    intro_scene = scenes_dir / "at-the-desk-the-setup.png"
+    # The opening title, on the kit's loudest headline band — the one the kit's
+    # own notes reserve for once per video. It used to be a composed card drawn
+    # by rasters.py over a brand scene, which is a second visual language for
+    # the one frame everybody sees first.
+    from pipeline.plate_frames import render_still as _render_still
+
     intro_dur = min(2.6, duration * 0.5)
     intro_path = rdir / "intro_card.png"
-    intro_card(settings, script.ticker, settings.brand_tagline.lower(),
-               width=W, height=H,
-               scene_path=intro_scene if intro_scene.exists() else None).save(intro_path)
+    intro_plate = reg.get(reg.aspect_key("paper/headline-band-t3", aspect) or "")
+    if intro_plate is not None:
+        _render_still(intro_plate, {
+            "kicker": script.ticker.upper(),
+            "headline": (script.chapter_list[0].title if script.chapter_list
+                         else settings.brand_tagline.lower()),
+            "sub": settings.brand_tagline.lower(),
+        }, settings, reg).convert("RGB").resize((W, H), Image.LANCZOS).save(intro_path)
+    else:
+        Image.new("RGB", (W, H), role(settings, "ground")).save(intro_path)
     layers.append(OverlayLayer(
         path=intro_path, x=0, y=0, t_start=0.0, t_end=intro_dur, name="intro_card",
     ))
@@ -970,7 +991,7 @@ def render_long(
     # corner bug: ticker + as-of date (top-right; the as-of stays visible)
     bug_text = script.ticker + (f" · as of {as_of}" if as_of else "")
     bug = simple_text(settings, bug_text, font_size=px(34),
-                      fill=(35, 35, 38, 220), stroke_width=0)
+                      fill=(*role(settings, "structure"), 220), stroke_width=0)
     bug_path = rdir / "corner_bug.png"
     bug.save(bug_path)
     layers.append(OverlayLayer(
@@ -978,10 +999,13 @@ def render_long(
         t_start=0.0, t_end=duration, name="corner_bug",
     ))
 
-    # branded strip: ticker + channel tagline. Persistent, TOP-left — moved
+    # Branded strip: ticker + channel tagline. Persistent, TOP-left — moved
     # off the bottom so it can never clip or stack with the caption band.
-    lt = lower_third(settings, f"${script.ticker}", settings.brand_tagline.lower(),
-                     width=px(560), font_size=px(34))
+    # Plain type on the ground, not a drawn card: the frame under it is already
+    # a drawn room, and a second card on top of it is a second surface.
+    lt = simple_text(settings, f"${script.ticker} · {settings.brand_tagline.lower()}",
+                     font_size=px(34), fill=(*role(settings, "structure"), 220),
+                     stroke_width=0)
     lt_path = rdir / "lower_third.png"
     lt.save(lt_path)
     layers.append(OverlayLayer(
@@ -990,7 +1014,8 @@ def render_long(
     ))
 
     disc = simple_text(settings, settings.disclaimer_text, font_size=px(26),
-                       fill=(143, 140, 131, 235), stroke_width=0)
+                       fill=(*role(settings, "neutral-data"), 235),
+                       stroke_width=0)
     disc_path = rdir / "disclaimer.png"
     disc.save(disc_path)
     layers.append(OverlayLayer(
@@ -1012,7 +1037,7 @@ def render_long(
     # more room than a 9:16 one, so it takes a longer page.
     ass_path = rdir / "captions.ass"
     ass_path.write_text(build_phrase_ass(
-        tts.words, play_res=(W, H), font_size=px(52), margin_v=px(120),
+        tts.words, settings=settings, play_res=(W, H), font_size=px(52), margin_v=px(120),
         margin_h=px(180), max_words=8, max_chars=46, duration=duration,
     ), encoding="utf-8")
 

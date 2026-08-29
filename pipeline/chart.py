@@ -282,6 +282,92 @@ def trough_point(area: PlotArea, values: list[float | None],
     return area.point(index / n, (values[index] - lo) / span)
 
 
+# Which slot family carries the figures a plate's data region draws through,
+# per renderer region. The DIRECTOR writes these — `value=400,431,…` on a line
+# chart, `cell=…` on a row spotlight, `move-N` on a peer strip — so the path is
+# drawn through the numbers that are printed on the plate beside it. Nothing
+# here computes a figure; it reads the ones already on screen.
+SERIES_SLOTS = {
+    "plot-area": ("value", "point", "cell"),
+    "bars": ("move",),
+    "path": ("value", "cell"),
+}
+
+
+def _num(raw: str) -> float | None:
+    """A figure as the director wrote it. None when it is not a number.
+
+    An empty cell means NO DATA and stays None — the path breaks there rather
+    than interpolating, because interpolating invents a figure.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    cleaned = text.replace(",", "").replace("%", "").replace("$", "").replace("x", "")
+    mult = 1.0
+    if cleaned[-1:].lower() in "kmbt":
+        mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
+        cleaned = cleaned[:-1]
+    try:
+        return float(cleaned) * mult
+    except ValueError:
+        return None
+
+
+def declared_series(plate: Plate, values: dict[str, str],
+                    region: str) -> list[float | None]:
+    """The series a data region draws, read off the slots the director filled."""
+    for stem in SERIES_SLOTS.get(region, ()):
+        idx = sorted(
+            (int(n.rsplit("-", 1)[1]), n) for n in plate.slots
+            if n.startswith(f"{stem}-") and n.rsplit("-", 1)[1].isdigit())
+        if not idx:
+            continue
+        series = [_num(values.get(n, "")) for _, n in idx]
+        if any(v is not None for v in series):
+            return series
+    return []
+
+
+def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
+                  *, seed: str = "") -> bool:
+    """Draw a plate's data region from its own slot values. True if it drew.
+
+    This is what makes `[PLATE: line-6y-16x9 | value=400,431,…]` a chart rather
+    than a set of labels around an empty box: the plate reserves the region, the
+    director writes the figures, and the path goes through them.
+    """
+    slot = next((s for s in plate.slots.values()
+                 if s.role in ("plot-area", "bars", "path")), None)
+    if slot is None:
+        return False
+    # A series written straight onto the region wins: some plates reserve a
+    # shape and have no per-period slot for it, because the intervening figures
+    # are a path rather than type.
+    written = values.get(slot.name, "")
+    if written and "," in str(written):
+        series = [_num(v) for v in str(written).split(",")]
+    else:
+        series = declared_series(plate, values, slot.role)
+    if not series or sum(1 for v in series if v is not None) < 2:
+        return False
+    x, y, w, h = slot.scaled()
+    area = PlotArea(x, y, w, h)
+    if slot.role == "bars":
+        neutral = reg.colour("neutral-data")
+        draw_row_bars(img, area, series, lambda v: neutral,
+                      seed=seed or plate.key)
+        return True
+    domain = axis_domain(plate, values)
+    if "bars" in plate.key:
+        draw_bars(img, area, series, reg.direction_colour,
+                  seed=seed or plate.key, domain=domain)
+    else:
+        draw_line(img, area, series, reg.colour("structure"),
+                  seed=seed or plate.key, domain=domain)
+    return True
+
+
 def render_series(reg: Registry, plate: Plate, values: list[float | None],
                   settings: Settings, *, slot_values: dict[str, str] | None = None,
                   subject: bool = True, seed: str = ""):

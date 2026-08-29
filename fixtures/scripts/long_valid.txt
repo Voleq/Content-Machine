@@ -22,7 +22,7 @@ The bull case, honestly stated. [PLATE: both-true-16x9 | kicker=BOTH TRUE | stat
 
 What it's priced at. [PLATE: big-fraction-16x9 | kicker=REVERSE DCF | numerator=7.8x | numerator-label=EV/Sales today | denominator=2% | denominator-label=LTM revenue growth | result=14% for ten years | caption=A perpetuity gut-check, not a fair value] The price assumes fourteen percent growth for ten years. They have delivered two. [SCRIBBLE: scrawl-oval-tight -> 14%] I'm not telling you it's worth less. I'm telling you what you'd have to believe.
 
-[PLATE: cycle-frame-16x9 | metric=EV/Sales | unit=x | then-value=14.2x | then-date=FY21 | now-value=7.8x | now-date=today | trough=3.1x at FY23 | head=FY21,FY22,FY23,FY24,FY25,LTM | caption=It has been cheaper than this, twice] It has been half this price twice in four years, and on better numbers both times.
+[PLATE: cycle-frame-16x9 | metric=EV/Sales | unit=x | then-value=14.2x | then-date=FY21 | now-value=7.8x | now-date=today | trough=3.1x at FY23 | head=FY21,FY22,FY23,FY24,FY25,LTM | path=14.2,9.1,3.1,4.8,6.2,7.8 | caption=It has been cheaper than this, twice] It has been half this price twice in four years, and on better numbers both times.
 
 The risk that actually breaks it is in the filing, and it names a person. [SHOW FILING: risk_factors.png] [PLATE: quote-pull-16x9 | body=Our credit agreement contains a covenant tested on trailing twelve-month adjusted EBITDA, and we may not remain in compliance. | attribution=Item 1A, Risk Factors | source=Form 10-K] Adjusted EBITDA. Tested quarterly. On a business whose adjusted EBITDA is a definition rather than a number. [BEAT] That covenant is the whole thesis, and it's four hundred pages in.
 
@@ -30,12 +30,12 @@ So. A real product, real customers, a real hole, and a clock. [PLATE: closing-16
 
 === CHAPTERS ===
 00:00 cold-open | a body or a bargain
-00:40 how-the-money-is-made | what they actually sell
-01:30 the-numbers | six years, one direction
-03:10 sector-comps | it did not move alone
-03:50 management | eleven quarters, one sentence
-04:30 capital-allocation | where the cash went
-05:20 bull-vs-bear | both of these are true
-06:00 valuation | what you'd have to believe
-06:50 risk | the covenant, four hundred pages in
-07:30 resigned-close | the close
+00:25 how-the-money-is-made | what they actually sell
+00:55 the-numbers | six years, one direction
+01:35 sector-comps | it did not move alone
+01:55 management | eleven quarters, one sentence
+02:20 capital-allocation | where the cash went
+02:50 bull-vs-bear | both of these are true
+03:15 valuation | what you'd have to believe
+03:40 risk | the covenant, four hundred pages in
+04:05 resigned-close | the close

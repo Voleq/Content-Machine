@@ -193,6 +193,18 @@ def _ass_time(t: float) -> str:
     m = int((t % 3600) // 60)
     s = t % 60
     return f"{h}:{m:02d}:{s:05.2f}"
+# Where a caption line may end: on punctuation, not mid-clause.
+_PHRASE_END = re.compile(r"[.!?…]$|[,;:—–]$")
+
+# Function words a line must never end on: a caption ending "of" or "the"
+# leaves the eye hanging for a frame and a half.
+_NEVER_LAST = {
+    "a", "an", "the", "and", "or", "but", "of", "to", "in", "on", "at", "for",
+    "from", "with", "by", "as", "is", "was", "are", "were", "that", "which",
+    "than", "into", "over", "its", "it's", "their", "your", "our", "his",
+}
+
+
 def phrase_pages(
     words: list[WordTimestamp],
     *,

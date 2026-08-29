@@ -190,28 +190,9 @@ def test_chart_price_uses_price_feed(manager):
     chart = manager.resolve_chart("price", ticker="EXMPL")
     assert chart.source == "generated"
     assert chart.path.exists()
-
-
-def test_chart_marker_style_is_distinct(manager):
-    clean = manager.resolve_chart("price", ticker="EXMPL", style="clean")
-    marker = manager.resolve_chart("price", ticker="EXMPL", style="marker")
-    assert clean.path != marker.path, "style is part of the cache key"
-    assert marker.path.exists()
-
-
 def test_chart_unknown_metric_falls_back(manager):
     chart = manager.resolve_chart("mystery_metric", ticker="EXMPL", company_data=None)
     assert chart.source == "filler"
-
-
-# -------------------------------------------------------------- doodles
-def test_resolve_doodle_hit_and_miss(manager):
-    hit = manager.resolve_doodle("crash")  # tag -> stick-umbrella-red-arrows
-    assert hit is not None and hit.kind == "doodle" and hit.source == "local"
-    assert manager.resolve_doodle("nope-not-a-doodle") is None
-
-
-# ----------------------------------------------------------- screengrabs
 def test_screengrab_image_pad_fits(manager, settings):
     from PIL import Image
 
@@ -250,32 +231,6 @@ def test_screengrab_clip_normalized(manager, settings):
                     if s["codec_type"] == "audio"], "audio stripped"
     finally:
         target.unlink()
-
-
-# ------------------------------------------------------------------ assets
-
-
-def test_custom_asset_normalized_or_filler(manager, settings):
-    missing = manager.resolve_asset("never-made-this")
-    assert missing.source == "filler"
-
-    custom = settings.assets_dir / "custom"
-    custom.mkdir(parents=True, exist_ok=True)
-    target = custom / "test-flywheel.png"
-    from PIL import Image
-
-    Image.new("RGB", (800, 600), (40, 44, 52)).save(target)
-    try:
-        asset = manager.resolve_asset("test-flywheel")
-        assert asset.source == "local" and asset.kind == "asset"
-        assert Image.open(asset.path).size == settings.long_resolution
-    finally:
-        target.unlink()
-
-
-# ------------------------------------------------------------- plan + sheet
-
-
 def test_plan_resolves_all_fetchable_kinds(manager, settings, long_valid_text, workspace):
     from pipeline.company_data import load_company_data
     from pipeline.parser_long import parse_long_script

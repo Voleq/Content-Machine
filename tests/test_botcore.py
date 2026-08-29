@@ -56,7 +56,7 @@ def test_upload_xlsx_yields_short_and_long_angle_prompts(core, xlsx_bytes):
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
     # catalogs injected into the SHORT writing prompt (with queries / use-when)
     assert "dumpster_fire — dumpster fire burning night" in short_prompt
-    assert "reactions/deadpan" in short_prompt        # doodle catalog, grouped
+    assert "numbers-sheet" in short_prompt        # doodle catalog, grouped
     assert "harold-quick-flip-became-bagholder" in short_prompt  # meme catalog
     assert "## VOICE BIBLE" in short_prompt and "deadpan" in short_prompt
 
@@ -93,6 +93,7 @@ def test_long_two_step_angle_then_write(core, xlsx_bytes, long_valid_text):
     buf = io.BytesIO()
     Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
     core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
+    core.handle_upload(CHAT, "risk_factors.png", buf.getvalue())
     reply2 = core.intake_script(CHAT, long_valid_text)
     assert "EXMPL — LONG" in reply2.text
     assert not ws.awaiting_angle(), "past the angle stage once a script is on file"
@@ -128,7 +129,7 @@ def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_jso
     reply = core.intake_script(CHAT, short_valid_json)
     assert "EXMPL — SHORT — ready to render" in reply.text
     assert "$" in reply.text and "cap" in reply.text
-    assert "Headlines: 2" in reply.text and "4 rows × 5yr" in reply.text
+    assert "Headlines: 2" in reply.text and "4 rows × 6yr" in reply.text
     assert reply.keyboard is not None
 
     ws = Workspace.latest_for(core.settings, "EXMPL")
@@ -177,50 +178,13 @@ def test_long_intake_blocks_on_missing_screenshot(core, xlsx_bytes, long_valid_t
     buf = io.BytesIO()
     Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
     core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
+    core.handle_upload(CHAT, "risk_factors.png", buf.getvalue())
     reply2 = core.intake_script(CHAT, long_valid_text)
     assert "ready to render" in reply2.text
     assert "Visuals:" in reply2.text
     assert "Memes: 1/2" in reply2.text
-
-
-def test_asset_flow_blocks_saves_prompt_and_accepts_upload(core, xlsx_bytes, fixtures_dir):
-    """The [ASSET] loop: block → paste-ready Claude Design prompt file →
-    operator uploads the export → unblocked."""
-    raw = (fixtures_dir / "scripts" / "long_unknown_tags.txt").read_text(encoding="utf-8")
-    core.new_ticker(CHAT, "EXMPL")
-    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
-    from PIL import Image
-    import io
-    buf = io.BytesIO()
-    Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
-    core.handle_upload(CHAT, "missing_file.png", buf.getvalue())
-
-    reply = core.intake_script(CHAT, raw)
-    assert "BLOCKED" in reply.text
-    assert "revenue-flywheel" in reply.text and "Claude Design" in reply.text
-    prompt_files = [f for f in reply.files if "claude-design" in f.name]
-    assert prompt_files, "the appended prompt must come back as a paste-ready file"
-    assert "flywheel" in prompt_files[0].read_text(encoding="utf-8")
-
-    custom = core.settings.assets_dir / "custom"
-    try:
-        upload = io.BytesIO()
-        Image.new("RGB", (1600, 900), (30, 34, 44)).save(upload, format="PNG")
-        r = core.handle_upload(CHAT, "revenue-flywheel.png", upload.getvalue())
-        assert "custom asset revenue-flywheel" in r.text
-        assert (custom / "revenue-flywheel.png").exists()
-
-        reply2 = core.intake_script(CHAT, raw)
-        assert "revenue-flywheel" not in "\n".join(
-            line for line in reply2.text.splitlines() if line.startswith("⛔")
-        )
-    finally:
-        for p in custom.glob("revenue-flywheel.*"):
-            p.unlink()
-
-
 def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
-    """[SCREENGRAB] blocks like [ASSET]; the operator's capture (image or
+    """[SCREENGRAB] blocks until the operator's capture is there (image or
     a short screen-record) is routed to assets/custom/ by matching slug."""
     import io
 
@@ -262,6 +226,7 @@ def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_
     buf = io.BytesIO()
     Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
     core.handle_upload(CHAT, "income_statement.png", buf.getvalue())
+    core.handle_upload(CHAT, "risk_factors.png", buf.getvalue())
     core.intake_script(CHAT, long_valid_text)
 
     ws = Workspace.latest_for(core.settings, "EXMPL")

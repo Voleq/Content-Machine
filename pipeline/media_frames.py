@@ -80,10 +80,20 @@ class FrameRotation:
 
 
 def frame_for(reg: Registry, rotation: FrameRotation, aspect: str, *,
-              tag: TagType | None = None, kind: CueKind | None = None
-              ) -> Plate | None:
-    """The frame plate this piece of foreign media goes inside."""
+              tag: TagType | None = None, kind: CueKind | None = None,
+              needs_media: bool = False) -> Plate | None:
+    """The frame plate this piece of foreign media goes inside.
+
+    `needs_media` is the distinction that matters. `capture-frame` is for a
+    capture TRANSCRIBED into slots — headline, body, and a mark on the line
+    being pointed at — and it declares no media region at all, because the
+    point of it is that the operator reads the document out rather than
+    photographing it. A caller holding an actual PNG needs a media frame, and
+    asking for a capture frame gets an image with nowhere to go.
+    """
     capture = (tag in CAPTURE_TAGS) if tag is not None else (kind in CAPTURE_KINDS)
+    if capture and needs_media:
+        capture = False
     return rotation.next_plate(reg, aspect, capture=capture)
 
 
@@ -109,45 +119,53 @@ def composite(reg: Registry, frame: Plate, media, settings, *,
     x, y, w, h = region.scaled()
     fitted = cover_into(media.convert("RGBA"), w, h)
 
-    # THE MEDIA GOES UNDER THE FRAME'S INK. The border, the taped corners and
-    # the caption rules are drawn on the plate, and the tape deliberately
-    # overlaps the aperture — so pasting the photograph straight on top covers
-    # the very thing that makes it a frame.
+    # THE MEDIA GOES UNDER THE FRAME'S EDGE. The border and the taped corners
+    # deliberately overlap the aperture, so pasting the photograph flat on top
+    # covers the very thing that makes it a frame.
     #
-    # The plate is a flat PNG with an opaque ground, so there is no ink layer to
-    # sit above: it is recovered by distance from the ground role. That is safe
-    # here rather than clever, because the separation is not marginal — the
-    # aperture interior is 98.5% exactly-ground, the grain sits at 8.5% opacity
-    # and does not reach the threshold, and every mark on the plate is drawn in
-    # structure or attention, both of which are hundreds of units away.
+    # But only the EDGE. The first cut of this recovered "ink" across the whole
+    # aperture by distance from the ground colour, and on the heavier treatments
+    # the aperture interior is NOT empty ground — it is a drawn screen with a
+    # hatch in it, which is exactly what the media is there to replace. The
+    # result was a photograph showing through in thin streaks. So the plate's
+    # ink is put back in a band around the aperture and nowhere else: the border
+    # and the tape survive, the interior belongs to the image.
     out = base.copy()
     out.alpha_composite(fitted, (x, y))
-    ink = _ink_mask(base.crop((x, y, x + w, y + h)), reg)
-    out.paste(base.crop((x, y, x + w, y + h)), (x, y), ink)
+    tile = base.crop((x, y, x + w, y + h))
+    band = max(int(min(w, h) * _EDGE_BAND), 2)
+    out.paste(tile, (x, y), _edge_mask(tile, reg, band))
     return out
 
 
-# How far from the ground colour a pixel has to be to count as ink. Summed
-# absolute RGB difference, so a threshold of 30 is about a 4% step per channel —
-# comfortably above the grain and far below any drawn mark.
+# How far into the aperture the frame's own ink may reach back, as a fraction
+# of the aperture's short side. Wide enough for a drawn border and a taped
+# corner, narrow enough that it never argues with the image.
+_EDGE_BAND = 0.06
+
+# How far from the ground colour a pixel has to be to count as ink. 30 is about
+# a 4% step per channel — comfortably above the paper grain, far below any mark.
 _INK_THRESHOLD = 30
 
 
-def _ink_mask(tile, reg: Registry):
-    """A mask of everything on the plate that is not its own ground."""
-    from PIL import Image
+def _edge_mask(tile, reg: Registry, band: int):
+    """The plate's ink, but only within `band` pixels of the tile's edge."""
+    from PIL import Image, ImageChops, ImageDraw
 
     ground = reg.colour("ground")
     rgb = tile.convert("RGB")
-    # Per-channel absolute difference, summed, thresholded — done with Pillow's
-    # own point/merge rather than numpy so this stays a Pillow-only dependency.
-    bands = []
+    diff = None
     for chan, g in zip(rgb.split(), ground):
-        bands.append(chan.point(lambda v, g=g: abs(v - g)))
-    total = bands[0]
-    for b in bands[1:]:
-        total = Image.blend(total, b, 0.5)      # mean; scaled back below
-    return total.point(lambda v: 255 if v * 3 > _INK_THRESHOLD else 0)
+        d = chan.point(lambda v, g=g: min(abs(v - g) * 3, 255))
+        diff = d if diff is None else ImageChops.lighter(diff, d)
+    ink = diff.point(lambda v: 255 if v > _INK_THRESHOLD else 0)
+
+    edge = Image.new("L", tile.size, 0)
+    d = ImageDraw.Draw(edge)
+    d.rectangle([0, 0, tile.width - 1, tile.height - 1], fill=255)
+    d.rectangle([band, band, tile.width - 1 - band, tile.height - 1 - band],
+                fill=0)
+    return ImageChops.multiply(ink, edge)
 
 
 def aperture(frame: Plate) -> tuple[int, int, int, int] | None:

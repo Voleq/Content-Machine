@@ -38,7 +38,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
-from pipeline.plates import PERIOD_COUNT, Plate, Registry
+from pipeline.plates import DATA_REGION_ROLES, PERIOD_COUNT, Plate, Registry
 
 # `[PLATE: name | k=v | k=v]`. The parts split on `|`; the first is the plate
 # name, the rest are assignments. Newlines inside the tag are folded, so a
@@ -201,7 +201,31 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                 header_len = len([v for v in raw.split(",")])
             continue
 
-        # 2. `band=N` lights row N. A band is not a text box — it is the row
+        # 2. A DATA REGION takes the figures it draws through.
+        #
+        #    `path=14.2,9.1,3.1,4.8,6.2,7.8` on a cycle frame. The plate
+        #    reserves the region and declares which renderer fills it; it has no
+        #    per-period slot for the intervening figures, because they are a
+        #    shape rather than type. The director still writes every one of
+        #    them — this is not the renderer computing a series, it is the
+        #    renderer being handed one.
+        region = plate.slots.get(k)
+        if region is not None and region.role in DATA_REGION_ROLES:
+            vals = [v.strip() for v in raw.split(",")]
+            if len(vals) < 2:
+                fill.problems.append(
+                    f"[PLATE: {name}] {k}= needs at least two figures to draw "
+                    f"a path")
+                continue
+            if header_len and len(vals) != header_len:
+                fill.problems.append(
+                    f"[PLATE: {name}] {k}= has {len(vals)} figures against "
+                    f"{header_len} period heads")
+                continue
+            fill.values[k] = ",".join(vals)
+            continue
+
+        # 3. `band=N` lights row N. A band is not a text box — it is the row
         #    highlight, and the only sanctioned way to emphasise a row — so it
         #    takes the row NUMBER rather than a value. Writing `band-2=1` put a
         #    literal "1" on top of the lit row.
@@ -226,7 +250,7 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                     f"highlight that covers half the sheet highlights nothing")
             continue
 
-        # 3. `row-N` spreads across that row's cells.
+        # 4. `row-N` spreads across that row's cells.
         m = _ROW_RE.match(k)
         if m:
             row = int(m.group(1))
@@ -255,7 +279,7 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                 fill.values[cell] = v
             continue
 
-        # 4. A list across an indexed family: `head=…` -> head-1 … head-N.
+        # 5. A list across an indexed family: `head=…` -> head-1 … head-N.
         family = _indexed_family(plate, k)
         if family:
             vals = [v.strip() for v in raw.split(",")]
@@ -275,7 +299,7 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                         f"last full year and LTM")
             continue
 
-        # 5. Nothing it could be.
+        # 6. Nothing it could be.
         near = _nearest_slot(plate, k)
         fill.problems.append(
             f"[PLATE: {name}] has no slot {k!r}"

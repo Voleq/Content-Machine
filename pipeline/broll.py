@@ -692,12 +692,14 @@ class ContentManager:
         if not path.exists():
             W, H = self.settings.long_resolution
             path.parent.mkdir(parents=True, exist_ok=True)
-            from pipeline.rasters import BG, BORDER, MUTED
+            from pipeline.rasters import role
 
-            img = Image.new("RGB", (W, H), BG)
+            img = Image.new("RGB", (W, H), role(self.settings, "ground"))
             d = ImageDraw.Draw(img)
-            d.rectangle([16, 16, W - 17, H - 17], outline=BORDER, width=3)
-            d.text((W // 8, H // 2), "( imagery unavailable )", fill=MUTED)
+            d.rectangle([16, 16, W - 17, H - 17],
+                        outline=role(self.settings, "second-ground"), width=3)
+            d.text((W // 8, H // 2), "( imagery unavailable )",
+                   fill=role(self.settings, "neutral-data"))
             img.save(path)
         return Visual(key=query, kind=kind, path=path, is_video=False, source="filler")
 
@@ -716,22 +718,30 @@ class ContentManager:
         hash (style included)."""
         try:
             if metric == "price":
-                from pipeline.chart import (
-                    render_marker_price_chart,
-                    render_price_chart,
-                )
+                from pipeline.chart import render_price_plate
+                from pipeline.plates import load_plates
                 from pipeline.prices import get_price_history
 
+                # There is one price chart now, not a clean one and a "marker"
+                # one. The marker variant existed because the branded card was
+                # too clean to sit beside hand-drawn work; the plate IS
+                # hand-drawn, so `style` no longer selects a second look.
                 series = get_price_history(ticker, self.settings)
-                marker = style == "marker"
                 h = hashlib.sha256(
-                    f"price|{style}|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
+                    f"price|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
                 ).hexdigest()[:20]
                 out = self.settings.cache_dir / "charts" / f"{h}.png"
                 if not out.exists():
+                    out.parent.mkdir(parents=True, exist_ok=True)
                     W, H = self.settings.long_resolution
-                    render = render_marker_price_chart if marker else render_price_chart
-                    render(series, out, self.settings, size=(W, H))
+                    reg = load_plates(self.settings.assets_dir)
+                    tmp = out.with_suffix(".plate.png")
+                    render_price_plate(reg, series, tmp, self.settings,
+                                       aspect="9x16" if H > W else "16x9",
+                                       seed=f"price|{ticker}")
+                    from PIL import Image as _Image
+                    _Image.open(tmp).convert("RGB").resize((W, H)).save(out)
+                    tmp.unlink(missing_ok=True)
                 return Visual(key=metric, kind="chart", path=out, is_video=False,
                               source="generated", attribution="")
 
@@ -791,6 +801,10 @@ class ContentManager:
             return self.filler_image(metric, "chart")
 
     # ------------------------------------------------------------ assets
+    # Video containers an operator capture may arrive in. A screen-record is
+    # normally .mp4 or .mov; the other two turn up from screen tools.
+    _CLIP_SUFFIXES = (".mp4", ".mov", ".mkv", ".webm")
+
     def resolve_screengrab(self, slug: str) -> Visual:
         """[SCREENGRAB: slug] -> assets/custom/<slug>.* — an operator-
         supplied real screenshot or short screen-record (broker app, P&L,

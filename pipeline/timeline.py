@@ -241,6 +241,13 @@ _SHORT_NO_CUE_REASONS: dict[TagType, str] = {
     # their own holds — not by the evidence loop.
     **{t: "overlay — cued by its own pass, not the evidence loop"
        for t in OVERLAY_TAG_TYPES},
+    # The SHORT opens on the price chart and holds it from the stage open to
+    # the gut check — one of the longest single holds in the format — so the
+    # chart is a FIXED beat in the template rather than something a tag places.
+    # [CHART] in a short's audio_script is therefore redundant rather than
+    # unsupported, and saying so is more use than drawing a second chart.
+    TagType.CHART: ("the short's chart is a fixed beat held from the open, "
+                    "not a tag-placed cutaway"),
 }
 
 # The fixed beats that are themselves data — they count for adjacency.

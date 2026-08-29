@@ -4,14 +4,14 @@
   "proof": false,
   "audio_tier": "mock",
   "draft_audio": false,
-  "duration": 190.45,
+  "duration": 256.533991,
   "resolution": [
     1920,
     1080
   ],
   "cues": [
     {
-      "t": 8.7993,
+      "t": 8.8617,
       "kind": "clip",
       "payload": {
         "order": 0,
@@ -22,22 +22,26 @@
       "fallback": false
     },
     {
-      "t": 13.124,
-      "kind": "doodle",
+      "t": 13.2175,
+      "kind": "plate",
       "payload": {
         "order": 1,
-        "value": "shrug",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
+        "value": "figures/big-number-l1-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "FROM THE HIGH",
+          "value": "-60%",
+          "label": "and still not obviously cheap",
+          "caption": "EXMPL, close to close"
+        }
       },
       "fallback": false
     },
     {
-      "t": 29.0325,
+      "t": 37.4079,
       "kind": "img",
       "payload": {
-        "order": 2,
+        "order": 3,
         "value": "EXMPL data center server racks",
         "tag": "IMG",
         "values": {}
@@ -45,10 +49,10 @@
       "fallback": false
     },
     {
-      "t": 33.5889,
+      "t": 41.9971,
       "kind": "img",
       "payload": {
-        "order": 3,
+        "order": 4,
         "value": "EXMPL dispatch dashboard",
         "tag": "PRODUCT",
         "values": {}
@@ -56,56 +60,50 @@
       "fallback": false
     },
     {
-      "t": 39.5353,
-      "kind": "img",
-      "payload": {
-        "order": 4,
-        "value": "logistics warehouse interior",
-        "tag": "IMG",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 45.7134,
-      "kind": "img",
+      "t": 50.3199,
+      "kind": "plate",
       "payload": {
         "order": 5,
-        "value": "delivery trucks fleet depot",
-        "tag": "IMG",
-        "values": {}
+        "value": "cards/definition-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE WORD OF THE DAY",
+          "term": "Seat-based SaaS",
+          "body": "You pay per person who logs in, every month, whether or not they log in.",
+          "example": "Four thousand depots, nine seats each, forty dollars a seat."
+        }
       },
       "fallback": false
     },
     {
-      "t": 47.7985,
-      "kind": "doodle",
+      "t": 60.4316,
+      "kind": "plate",
       "payload": {
         "order": 6,
-        "value": "idea",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
+        "value": "structure/flow-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "HOW A DOLLAR ARRIVES",
+          "input": "A depot signs",
+          "box-1": "Seats provisioned",
+          "box-2": "Monthly invoice",
+          "box-3": "Renewal in twelve months",
+          "output": "Or it doesn't",
+          "arrow-1": ".",
+          "arrow-2": ".",
+          "arrow-3": ".",
+          "arrow-4": ".",
+          "caption": "The last box is the only one anybody argues about"
+        }
       },
       "fallback": false
     },
     {
-      "t": 52.7409,
-      "kind": "chart",
-      "payload": {
-        "order": 7,
-        "value": "revenue",
-        "tag": "CHART",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 57.2973,
+      "t": 65.6431,
       "kind": "scribble",
       "payload": {
-        "order": 8,
-        "value": "circle -> the plateau",
+        "order": 7,
+        "value": "scrawl-oval-wide -> Or it doesn't",
         "tag": "SCRIBBLE",
         "values": {},
         "hold": 2.0
@@ -113,30 +111,96 @@
       "fallback": false
     },
     {
-      "t": 63.012,
-      "kind": "doodle",
+      "t": 79.7996,
+      "kind": "plate",
       "payload": {
-        "order": 9,
-        "value": "hype-vs-reality",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
+        "order": 8,
+        "value": "tables/numbers-sheet-4r-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "$M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "label-1": "Revenue",
+          "cell-1-1": "400",
+          "cell-1-2": "431",
+          "cell-1-3": "458",
+          "cell-1-4": "472",
+          "cell-1-5": "486",
+          "cell-1-6": "496",
+          "label-2": "Gross profit",
+          "cell-2-1": "268",
+          "cell-2-2": "281",
+          "cell-2-3": "289",
+          "cell-2-4": "292",
+          "cell-2-5": "296",
+          "cell-2-6": "297",
+          "label-3": "Operating income",
+          "cell-3-1": "-8",
+          "cell-3-2": "-25",
+          "cell-3-3": "-49",
+          "cell-3-4": "-70",
+          "cell-3-5": "-89",
+          "cell-3-6": "-94",
+          "label-4": "Free cash flow",
+          "cell-4-1": "12",
+          "cell-4-2": "-3",
+          "cell-4-3": "-31",
+          "cell-4-4": "-52",
+          "cell-4-5": "-68",
+          "cell-4-6": "-71",
+          "band-3": "3"
+        }
       },
       "fallback": false
     },
     {
-      "t": 66.7189,
-      "kind": "clip",
+      "t": 84.3887,
+      "kind": "plate",
+      "payload": {
+        "order": 9,
+        "value": "charts/line-6y-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "Revenue, $M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "y-1": "0",
+          "y-2": "125",
+          "y-3": "250",
+          "y-4": "375",
+          "y-5": "500",
+          "value-1": "400",
+          "value-2": "431",
+          "value-3": "458",
+          "value-4": "472",
+          "value-5": "486",
+          "value-6": "496"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 87.1889,
+      "kind": "chart",
       "payload": {
         "order": 10,
-        "value": "hamster_wheel",
-        "tag": "CLIP",
+        "value": "revenue",
+        "tag": "CHART",
         "values": {}
       },
       "fallback": false
     },
     {
-      "t": 72.2019,
+      "t": 87.1889,
       "kind": "filing",
       "payload": {
         "order": 11,
@@ -147,22 +211,10 @@
       "fallback": false
     },
     {
-      "t": 81.469,
-      "kind": "scribble",
-      "payload": {
-        "order": 12,
-        "value": "underline -> minus eighty nine",
-        "tag": "SCRIBBLE",
-        "values": {},
-        "hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 81.469,
+      "t": 96.5228,
       "kind": "sound",
       "payload": {
-        "order": 13,
+        "order": 12,
         "value": "windows_error",
         "tag": "SOUND",
         "values": {}
@@ -170,135 +222,49 @@
       "fallback": false
     },
     {
-      "t": 84.5581,
-      "kind": "chart",
+      "t": 104.0678,
+      "kind": "clip",
       "payload": {
         "order": 14,
-        "value": "net_income",
-        "tag": "CHART",
+        "value": "hamster_wheel",
+        "tag": "CLIP",
         "values": {}
       },
       "fallback": false
     },
     {
-      "t": 88.4194,
-      "kind": "doodle",
+      "t": 104.0678,
+      "kind": "plate",
       "payload": {
         "order": 15,
-        "value": "money-printer",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
+        "value": "structure/row-spotlight-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "OPERATING INCOME, $M",
+          "label": "Operating income",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "cell-1": "-8",
+          "cell-2": "-25",
+          "cell-3": "-49",
+          "cell-4": "-70",
+          "cell-5": "-89",
+          "cell-6": "-94",
+          "caption": "Every year, wider"
+        }
       },
       "fallback": false
     },
     {
-      "t": 92.049,
-      "kind": "chart",
-      "payload": {
-        "order": 16,
-        "value": "fcf",
-        "tag": "CHART",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 95.0608,
-      "kind": "clip",
-      "payload": {
-        "order": 17,
-        "value": "printing_money",
-        "tag": "CLIP",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 97.6093,
-      "kind": "doodle",
-      "payload": {
-        "order": 18,
-        "value": "flames",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 99.7716,
-      "kind": "clip",
-      "payload": {
-        "order": 19,
-        "value": "boardroom_suits",
-        "tag": "CLIP",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 105.4091,
-      "kind": "img",
-      "payload": {
-        "order": 20,
-        "value": "corporate office building",
-        "tag": "IMG",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 109.2704,
-      "kind": "sound",
-      "payload": {
-        "order": 21,
-        "value": "sad_trombone",
-        "tag": "SOUND",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 109.2704,
-      "kind": "clip",
-      "payload": {
-        "order": 22,
-        "value": "paper_shredder",
-        "tag": "CLIP",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 112.6684,
-      "kind": "doodle",
-      "payload": {
-        "order": 23,
-        "value": "sweat",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 115.8346,
-      "kind": "filing",
-      "payload": {
-        "order": 24,
-        "value": "income_statement.png",
-        "tag": "SHOW FILING",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 121.1632,
+      "t": 104.0678,
       "kind": "scribble",
       "payload": {
-        "order": 25,
-        "value": "arrow -> the debt",
+        "order": 16,
+        "value": "underline-tight -> -94",
         "tag": "SCRIBBLE",
         "values": {},
         "hold": 2.0
@@ -306,78 +272,283 @@
       "fallback": false
     },
     {
-      "t": 127.1096,
+      "t": 107.8791,
+      "kind": "plate",
+      "payload": {
+        "order": 17,
+        "value": "figures/big-number-l2-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "GROSS MARGIN",
+          "value": "60%",
+          "label": "on the LTM",
+          "detail": "a real software margin, priced like a reseller",
+          "caption": "From the filing"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 135.9587,
       "kind": "clip",
       "payload": {
-        "order": 26,
-        "value": "treadmill_running",
+        "order": 20,
+        "value": "boardroom_suits",
         "tag": "CLIP",
         "values": {}
       },
       "fallback": false
     },
     {
-      "t": 130.3531,
-      "kind": "meme",
+      "t": 139.8478,
+      "kind": "plate",
       "payload": {
-        "order": 27,
-        "value": "harold-quick-flip-became-bagholder",
-        "tag": "MEME",
-        "values": {}
+        "order": 22,
+        "value": "peers/peer-strip-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "EXMPL against its peer set",
+          "head-move": "SUBJECT",
+          "head-fwd": "PCTILE",
+          "ticker-1": "EV/S",
+          "move-1": "7.8",
+          "fwd-1": "90th",
+          "ticker-2": "GM",
+          "move-2": "60",
+          "fwd-2": "55th",
+          "ticker-3": "REV GR",
+          "move-3": "2",
+          "fwd-3": "10th",
+          "ticker-4": "FCF M",
+          "move-4": "-14",
+          "fwd-4": "5th",
+          "caption": "expensive, average, slow, burning"
+        }
       },
       "fallback": false
     },
     {
-      "t": 130.3531,
-      "kind": "sound",
+      "t": 144.7482,
+      "kind": "scribble",
       "payload": {
-        "order": 28,
-        "value": "cash_register",
-        "tag": "SOUND",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 134.6778,
-      "kind": "chart",
-      "payload": {
-        "order": 29,
-        "value": "price",
-        "tag": "CHART",
-        "values": {},
-        "style": "marker"
-      },
-      "fallback": false
-    },
-    {
-      "t": 139.3886,
-      "kind": "clip",
-      "payload": {
-        "order": 30,
-        "value": "casino_roulette",
-        "tag": "CLIP",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 142.7865,
-      "kind": "doodle",
-      "payload": {
-        "order": 31,
-        "value": "face-down",
-        "tag": "DOODLE",
+        "order": 23,
+        "value": "bracket-rows -> 10th",
+        "tag": "SCRIBBLE",
         "values": {},
         "hold": 2.0
       },
       "fallback": false
     },
     {
-      "t": 145.9528,
+      "t": 145.6816,
+      "kind": "plate",
+      "payload": {
+        "order": 24,
+        "value": "cards/quote-pull-16x9",
+        "tag": "PLATE",
+        "values": {
+          "body": "We are managing the business for durable growth rather than for any single quarter's margin.",
+          "attribution": "Chief Executive, Q3 call",
+          "source": "Earnings call transcript"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 152.2153,
+      "kind": "plate",
+      "payload": {
+        "order": 25,
+        "value": "structure/timeline-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE RECORD",
+          "date-1": "FY21",
+          "date-2": "FY22",
+          "date-3": "FY23",
+          "date-4": "FY24",
+          "date-5": "FY25",
+          "date-6": "LTM",
+          "label-1": "Durable growth",
+          "label-2": "Durable growth",
+          "label-3": "Investment year",
+          "label-4": "Investment year",
+          "label-5": "Disciplined",
+          "label-6": "Durable growth",
+          "caption": "Eleven quarters, one sentence"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 152.2153,
+      "kind": "scribble",
+      "payload": {
+        "order": 26,
+        "value": "box-scrawl -> Durable growth",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 157.8934,
+      "kind": "plate",
+      "payload": {
+        "order": 27,
+        "value": "structure/unit-ladder-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "FY25, $M",
+          "top-label": "Revenue",
+          "top-value": "486",
+          "step-1-label": "Cost of revenue",
+          "step-1-value": "-190",
+          "step-2-label": "Sales and marketing",
+          "step-2-value": "-212",
+          "step-3-label": "R&D",
+          "step-3-value": "-118",
+          "step-4-label": "G&A",
+          "step-4-value": "-55",
+          "step-5-label": "Other",
+          "step-5-value": "-20",
+          "out-label": "Operating income",
+          "out-value": "-89",
+          "band-2": "2"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 164.9717,
+      "kind": "scribble",
+      "payload": {
+        "order": 28,
+        "value": "strike-out -> 212",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 171.4276,
+      "kind": "plate",
+      "payload": {
+        "order": 29,
+        "value": "tables/cash-flow-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "$M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "group-1": "Operating",
+          "label-1-1": "Net income",
+          "cell-1-1-1": "-8",
+          "cell-1-1-2": "-25",
+          "cell-1-1-3": "-49",
+          "cell-1-1-4": "-70",
+          "cell-1-1-5": "-89",
+          "cell-1-1-6": "-94",
+          "label-1-2": "Working capital",
+          "cell-1-2-1": "4",
+          "cell-1-2-2": "-6",
+          "cell-1-2-3": "-11",
+          "cell-1-2-4": "-14",
+          "cell-1-2-5": "-9",
+          "cell-1-2-6": "-12",
+          "subtotal-label-1": "Cash from operations",
+          "subtotal-1-1": "-4",
+          "subtotal-1-2": "-31",
+          "subtotal-1-3": "-60",
+          "subtotal-1-4": "-84",
+          "subtotal-1-5": "-98",
+          "subtotal-1-6": "-106",
+          "group-2": "Investing",
+          "label-2-1": "Capex",
+          "cell-2-1-1": "-9",
+          "cell-2-1-2": "-11",
+          "cell-2-1-3": "-13",
+          "cell-2-1-4": "-14",
+          "cell-2-1-5": "-16",
+          "cell-2-1-6": "-17",
+          "label-2-2": "Acquisitions",
+          "cell-2-2-1": "0",
+          "cell-2-2-2": "-40",
+          "cell-2-2-3": "0",
+          "cell-2-2-4": "0",
+          "cell-2-2-5": "0",
+          "cell-2-2-6": "0",
+          "subtotal-label-2": "Cash used investing",
+          "subtotal-2-1": "-9",
+          "subtotal-2-2": "-51",
+          "subtotal-2-3": "-13",
+          "subtotal-2-4": "-14",
+          "subtotal-2-5": "-16",
+          "subtotal-2-6": "-17",
+          "group-3": "Financing",
+          "label-3-1": "Equity issued",
+          "cell-3-1-1": "0",
+          "cell-3-1-2": "60",
+          "cell-3-1-3": "120",
+          "cell-3-1-4": "180",
+          "cell-3-1-5": "95",
+          "cell-3-1-6": "40",
+          "label-3-2": "Debt drawn",
+          "cell-3-2-1": "20",
+          "cell-3-2-2": "40",
+          "cell-3-2-3": "60",
+          "cell-3-2-4": "0",
+          "cell-3-2-5": "30",
+          "cell-3-2-6": "0",
+          "subtotal-label-3": "Cash from financing",
+          "subtotal-3-1": "20",
+          "subtotal-3-2": "100",
+          "subtotal-3-3": "180",
+          "subtotal-3-4": "180",
+          "subtotal-3-5": "125",
+          "subtotal-3-6": "40",
+          "total-label": "Net change in cash",
+          "total-1": "7",
+          "total-2": "18",
+          "total-3": "107",
+          "total-4": "82",
+          "total-5": "11",
+          "total-6": "-83"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 182.2395,
+      "kind": "plate",
+      "payload": {
+        "order": 30,
+        "value": "structure/both-true-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "BOTH TRUE",
+          "statement-1": "Forty percent of revenue is contracted for three years, and churn is falling.",
+          "detail-1": "The new CFO stopped buying growth in March.",
+          "mark-1": "up",
+          "statement-2": "One point four billion of debt against four hundred million of cash.",
+          "detail-2": "Share count up six percent a year while they wait.",
+          "mark-2": "down",
+          "caption": "Both of these are true at the same time"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 182.2395,
       "kind": "clip",
       "payload": {
-        "order": 32,
+        "order": 31,
         "value": "growing_plant",
         "tag": "CLIP",
         "values": {}
@@ -385,59 +556,125 @@
       "fallback": false
     },
     {
-      "t": 156.0694,
-      "kind": "img",
-      "payload": {
-        "order": 33,
-        "value": "EXMPL data center servers",
-        "tag": "IMG",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 163.7148,
-      "kind": "doodle",
-      "payload": {
-        "order": 34,
-        "value": "risk-reward",
-        "tag": "DOODLE",
-        "values": {},
-        "hold": 2.0
-      },
-      "fallback": false
-    },
-    {
-      "t": 166.9583,
-      "kind": "clip",
-      "payload": {
-        "order": 35,
-        "value": "dumpster_fire",
-        "tag": "CLIP",
-        "values": {}
-      },
-      "fallback": false
-    },
-    {
-      "t": 174.5264,
+      "t": 184.1062,
       "kind": "meme",
       "payload": {
-        "order": 36,
-        "value": "portfolio-down-99-percent-20-left",
+        "order": 32,
+        "value": "harold-quick-flip-became-bagholder",
         "tag": "MEME",
         "values": {}
       },
       "fallback": false
     },
     {
-      "t": 188.2727,
-      "kind": "doodle",
+      "t": 184.1062,
+      "kind": "sound",
       "payload": {
-        "order": 37,
-        "value": "bagholder",
-        "tag": "DOODLE",
+        "order": 33,
+        "value": "sad_trombone",
+        "tag": "SOUND",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 185.7397,
+      "kind": "plate",
+      "payload": {
+        "order": 34,
+        "value": "figures/big-fraction-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "REVERSE DCF",
+          "numerator": "7.8x",
+          "numerator-label": "EV/Sales today",
+          "denominator": "2%",
+          "denominator-label": "LTM revenue growth",
+          "result": "14% for ten years",
+          "caption": "A perpetuity gut-check, not a fair value"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 192.1179,
+      "kind": "scribble",
+      "payload": {
+        "order": 35,
+        "value": "scrawl-oval-tight -> 14%",
+        "tag": "SCRIBBLE",
         "values": {},
         "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 198.4183,
+      "kind": "plate",
+      "payload": {
+        "order": 36,
+        "value": "cycles/cycle-frame-16x9",
+        "tag": "PLATE",
+        "values": {
+          "metric": "EV/Sales",
+          "unit": "x",
+          "then-value": "14.2x",
+          "then-date": "FY21",
+          "now-value": "7.8x",
+          "now-date": "today",
+          "trough": "3.1x at FY23",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "caption": "It has been cheaper than this, twice"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 210.6302,
+      "kind": "filing",
+      "payload": {
+        "order": 37,
+        "value": "risk_factors.png",
+        "tag": "SHOW FILING",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 210.6302,
+      "kind": "plate",
+      "payload": {
+        "order": 38,
+        "value": "cards/quote-pull-16x9",
+        "tag": "PLATE",
+        "values": {
+          "body": "Our credit agreement contains a covenant tested on trailing twelve-month adjusted EBITDA, and we may not remain in compliance.",
+          "attribution": "Item 1A, Risk Factors",
+          "source": "Form 10-K"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 229.1425,
+      "kind": "plate",
+      "payload": {
+        "order": 40,
+        "value": "structure/closing-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE CLOSE",
+          "line-1": "The business is better than the chart.",
+          "line-2": "The balance sheet is worse than the story.",
+          "line-3": "You don't have to swing at every pitch.",
+          "date-label": "Next filing",
+          "date": "14 May"
+        }
       },
       "fallback": false
     }
@@ -446,93 +683,150 @@
     {
       "kind": "host",
       "start": 0.0,
-      "end": 8.7993,
+      "end": 8.8617,
       "attribution": "",
       "variant": 0,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.7993,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.7993,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.7993,trim=0:8.7993[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.8617,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8617,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8617,trim=0:8.8617,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 8.7993,
-      "end": 13.7993,
+      "start": 8.8617,
+      "end": 13.8617,
       "value": "tumbleweed",
-      "source": "pexels",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 13.8617,
+      "end": 20.8617,
+      "value": "figures/big-number-l1-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 13.7993,
-      "end": 21.4159,
+      "start": 20.8617,
+      "end": 29.1348,
       "attribution": "",
       "variant": 1,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:7.6166,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.6166,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.6166,trim=0:7.6166[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2731,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2731,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2731,trim=0:8.2731,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 21.4159,
-      "end": 29.0325,
+      "start": 29.1348,
+      "end": 37.4079,
       "attribution": "",
       "variant": 2,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:7.6166,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:7.6166,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=7.6166,trim=0:7.6166[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2731,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2731,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2731,trim=0:8.2731,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 29.0325,
-      "end": 34.24166666666666,
+      "start": 37.4079,
+      "end": 42.5,
       "value": "EXMPL data center server racks",
-      "source": "mock",
+      "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.2092,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.0921,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
-      "start": 34.24166666666666,
-      "end": 39.5353,
+      "start": 42.5,
+      "end": 47.5,
       "value": "EXMPL dispatch dashboard",
-      "source": "mock",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.2936,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "img",
-      "start": 39.5353,
-      "end": 45.7134,
-      "value": "logistics warehouse interior",
-      "source": "mock",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "img",
-      "start": 45.7134,
-      "end": 50.7134,
-      "value": "delivery trucks fleet depot",
-      "source": "mock",
+      "source": "cache",
       "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 50.7134,
-      "end": 52.7409,
+      "start": 47.5,
+      "end": 50.3199,
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.0275,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0275,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0275,trim=0:2.0275[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.8199,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.8199,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.8199,trim=0:2.8199,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 50.3199,
+      "end": 57.3199,
+      "value": "cards/definition-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/definition-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 57.3199,
+      "end": 60.4316,
+      "attribution": "",
+      "variant": 4,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.1117,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.1117,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.1117,trim=0:3.1117,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 60.4316,
+      "end": 67.4316,
+      "value": "structure/flow-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 67.4316,
+      "end": 73.6156,
+      "attribution": "",
+      "variant": 5,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.1840,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1840,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1840,trim=0:6.1840,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 73.6156,
+      "end": 79.7996,
+      "attribution": "",
+      "variant": 6,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.1840,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1840,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1840,trim=0:6.1840,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 79.7996,
+      "end": 86.7996,
+      "value": "tables/numbers-sheet-4r-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 86.7996,
+      "end": 93.7996,
+      "value": "charts/line-6y-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
-      "start": 52.7409,
-      "end": 59.7409,
+      "start": 93.7996,
+      "end": 100.7996,
       "value": "revenue",
       "source": "generated",
       "attribution": "",
@@ -540,134 +834,161 @@
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "host",
-      "start": 59.7409,
-      "end": 66.7189,
-      "attribution": "",
-      "variant": 4,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:6.9780,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.9780,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.9780,trim=0:6.9780[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "clip",
-      "start": 66.7189,
-      "end": 72.2019,
-      "value": "hamster_wheel",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.4830,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.4830,trim=0:5.4830,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
       "kind": "filing",
-      "start": 72.2019,
-      "end": 78.2019,
+      "start": 100.7996,
+      "end": 106.7996,
       "value": "income_statement.png",
       "attribution": "",
       "layout": "cutaway-full",
       "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "host",
-      "start": 78.2019,
-      "end": 84.5581,
-      "attribution": "",
-      "variant": 5,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:6.3562,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.3562,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.3562,trim=0:6.3562[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "kind": "clip",
+      "start": 106.7996,
+      "end": 111.7996,
+      "value": "hamster_wheel",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "chart",
-      "start": 84.5581,
-      "end": 92.049,
-      "value": "net_income",
-      "source": "generated",
-      "attribution": "",
-      "layout": "two-shot",
-      "filter": "[0:v]trim=0:7.4909,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "chart",
-      "start": 92.049,
-      "end": 99.049,
-      "value": "fcf",
-      "source": "generated",
+      "kind": "plate",
+      "start": 111.7996,
+      "end": 118.7996,
+      "value": "structure/row-spotlight-16x9",
       "attribution": "",
       "layout": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "clip",
-      "start": 99.049,
-      "end": 104.049,
-      "value": "printing_money",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "clip",
-      "start": 104.049,
-      "end": 109.049,
-      "value": "boardroom_suits",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "img",
-      "start": 109.049,
-      "end": 114.049,
-      "value": "corporate office building",
-      "source": "mock",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "clip",
-      "start": 114.049,
-      "end": 119.049,
-      "value": "paper_shredder",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "filing",
-      "start": 119.049,
-      "end": 125.049,
-      "value": "income_statement.png",
+      "kind": "plate",
+      "start": 118.7996,
+      "end": 125.7996,
+      "value": "figures/big-number-l2-16x9",
       "attribution": "",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 125.049,
-      "end": 129.46666666666664,
+      "start": 125.7996,
+      "end": 135.9587,
       "attribution": "",
-      "variant": 6,
+      "variant": 7,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:4.4177,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.4177,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.4177,trim=0:4.4177[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.1591,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1591,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1591,trim=0:10.1591,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
-      "start": 129.46666666666664,
-      "end": 134.46666666666664,
-      "value": "treadmill_running",
-      "source": "pexels",
+      "start": 135.9587,
+      "end": 140.9587,
+      "value": "boardroom_suits",
+      "source": "cache",
       "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 140.9587,
+      "end": 147.9587,
+      "value": "peers/peer-strip-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 147.9587,
+      "end": 154.9587,
+      "value": "cards/quote-pull-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/quote-pull-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 154.9587,
+      "end": 161.9587,
+      "value": "structure/timeline-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 161.9587,
+      "end": 168.9587,
+      "value": "structure/unit-ladder-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 168.9587,
+      "end": 171.4276,
+      "attribution": "",
+      "variant": 8,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:2.4689,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.4689,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.4689,trim=0:2.4689,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 171.4276,
+      "end": 178.4276,
+      "value": "tables/cash-flow-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 178.4276,
+      "end": 182.2395,
+      "attribution": "",
+      "variant": 9,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.8119,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.8119,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.8119,trim=0:3.8119,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 182.2395,
+      "end": 189.2395,
+      "value": "structure/both-true-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 189.2395,
+      "end": 192.5,
+      "attribution": "",
+      "variant": 10,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.2605,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2605,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2605,trim=0:3.2605,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 192.5,
+      "end": 197.5,
+      "value": "growing_plant",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
-      "start": 134.46666666666664,
-      "end": 137.46666666666664,
+      "start": 197.5,
+      "end": 200.5,
       "value": "harold-quick-flip-became-bagholder",
       "source": "library",
       "attribution": "owned meme library (harold-quick-flip-became-bagholder)",
@@ -675,113 +996,85 @@
       "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "chart",
-      "start": 137.46666666666664,
-      "end": 144.46666666666664,
-      "value": "price",
-      "source": "generated",
+      "kind": "plate",
+      "start": 200.5,
+      "end": 207.5,
+      "value": "figures/big-fraction-16x9",
       "attribution": "",
       "layout": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "clip",
-      "start": 144.46666666666664,
-      "end": 149.46666666666664,
-      "value": "casino_roulette",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "clip",
-      "start": 149.46666666666664,
-      "end": 154.46666666666664,
-      "value": "growing_plant",
-      "source": "pexels",
-      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "host",
-      "start": 154.46666666666664,
-      "end": 156.0694,
+      "kind": "plate",
+      "start": 207.5,
+      "end": 214.5,
+      "value": "cycles/cycle-frame-16x9",
       "attribution": "",
-      "variant": 7,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:1.6027,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.6027,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.6027,trim=0:1.6027[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "img",
-      "start": 156.0694,
-      "end": 161.0694,
-      "value": "EXMPL data center servers",
-      "source": "mock",
-      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "host",
-      "start": 161.0694,
-      "end": 166.9583,
+      "kind": "filing",
+      "start": 214.5,
+      "end": 220.5,
+      "value": "risk_factors.png",
       "attribution": "",
-      "variant": 8,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:5.8889,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.8889,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.8889,trim=0:5.8889[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "clip",
-      "start": 166.9583,
-      "end": 171.9583,
-      "value": "dumpster_fire",
-      "source": "pexels",
-      "attribution": "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
       "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1920:1080,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
-      "kind": "host",
-      "start": 171.9583,
-      "end": 174.5264,
+      "kind": "plate",
+      "start": 220.5,
+      "end": 227.5,
+      "value": "cards/quote-pull-16x9",
       "attribution": "",
-      "variant": 9,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:2.5681,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.5681,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.5681,trim=0:2.5681[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "meme",
-      "start": 174.5264,
-      "end": 177.5264,
-      "value": "portfolio-down-99-percent-20-left",
-      "source": "library",
-      "attribution": "owned meme library (portfolio-down-99-percent-20-left)",
-      "layout": "cutaway-full",
-      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/quote-pull-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
-      "start": 177.5264,
-      "end": 183.9882,
-      "attribution": "",
-      "variant": 10,
-      "layout": "host-full",
-      "filter": "[0:v]trim=0:6.4618,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.4618,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.4618,trim=0:6.4618[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
-    },
-    {
-      "kind": "host",
-      "start": 183.9882,
-      "end": 190.45,
+      "start": 227.5,
+      "end": 232.5,
       "attribution": "",
       "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.4618,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.4618,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.4618,trim=0:6.4618[hfg];[hbg][hfg]overlay=0:0:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 232.5,
+      "end": 239.5,
+      "value": "structure/closing-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 239.5,
+      "end": 248.0169955,
+      "attribution": "",
+      "variant": 12,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.5170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.5170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.5170,trim=0:8.5170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 248.0169955,
+      "end": 256.533991,
+      "attribution": "",
+      "variant": 13,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.5170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.5170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.5170,trim=0:8.5170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 1,
+  "segment_cache_hits": 40,
   "segment_failures": [],
   "layers": [
     {
@@ -792,413 +1085,366 @@
       "y": 0
     },
     {
-      "name": "transition_1_red-flood",
-      "t_start": 33.99166666666666,
-      "t_end": 34.49166666666666,
-      "x": 0,
-      "y": 0
-    },
-    {
       "name": "chapter_1",
-      "t_start": 34.24166666666666,
-      "t_end": 35.14166666666666,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "transition_2_torn-edge",
-      "t_start": 66.4689,
-      "t_end": 66.9689,
+      "t_start": 8.8617,
+      "t_end": 10.4617,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_2",
-      "t_start": 66.7189,
-      "t_end": 67.61890000000001,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "transition_3_blackout-drop",
-      "t_start": 98.799,
-      "t_end": 99.299,
+      "t_start": 42.5,
+      "t_end": 44.1,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_3",
-      "t_start": 99.049,
-      "t_end": 99.94900000000001,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "transition_4_ink-smear",
-      "t_start": 129.21666666666664,
-      "t_end": 129.71666666666664,
+      "t_start": 93.7996,
+      "t_end": 95.39959999999999,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_4",
-      "t_start": 129.46666666666664,
-      "t_end": 130.36666666666665,
-      "x": 0,
-      "y": 0
-    },
-    {
-      "name": "transition_5_ink-wipe",
-      "t_start": 160.8194,
-      "t_end": 161.3194,
+      "t_start": 192.5,
+      "t_end": 194.1,
       "x": 0,
       "y": 0
     },
     {
       "name": "chapter_5",
-      "t_start": 161.0694,
-      "t_end": 161.9694,
+      "t_start": 232.5,
+      "t_end": 234.1,
       "x": 0,
       "y": 0
     },
     {
-      "name": "glitch@72.20",
-      "t_start": 72.2019,
-      "t_end": 72.7019,
+      "name": "glitch@100.80",
+      "t_start": 100.7996,
+      "t_end": 101.2996,
       "x": 0,
       "y": 0
     },
     {
-      "name": "glitch@119.05",
-      "t_start": 119.049,
-      "t_end": 119.549,
+      "name": "glitch@214.50",
+      "t_start": 214.5,
+      "t_end": 215.0,
       "x": 0,
       "y": 0
-    },
-    {
-      "name": "doodle_0_shrug",
-      "t_start": 13.124,
-      "t_end": 15.124,
-      "x": 1180,
-      "y": 140
-    },
-    {
-      "name": "doodle_1_idea",
-      "t_start": 47.7985,
-      "t_end": 49.7985,
-      "x": 120,
-      "y": 150
-    },
-    {
-      "name": "doodle_2_hype-vs-reality",
-      "t_start": 63.012,
-      "t_end": 65.012,
-      "x": 1180,
-      "y": 560
-    },
-    {
-      "name": "doodle_3_money-printer",
-      "t_start": 88.4194,
-      "t_end": 90.4194,
-      "x": 120,
-      "y": 560
-    },
-    {
-      "name": "doodle_4_flames",
-      "t_start": 97.6093,
-      "t_end": 99.6093,
-      "x": 1180,
-      "y": 140
-    },
-    {
-      "name": "doodle_5_sweat",
-      "t_start": 112.6684,
-      "t_end": 114.6684,
-      "x": 120,
-      "y": 150
-    },
-    {
-      "name": "doodle_6_face-down",
-      "t_start": 142.7865,
-      "t_end": 144.7865,
-      "x": 1180,
-      "y": 560
-    },
-    {
-      "name": "doodle_7_risk-reward",
-      "t_start": 163.7148,
-      "t_end": 165.7148,
-      "x": 120,
-      "y": 560
-    },
-    {
-      "name": "doodle_8_bagholder",
-      "t_start": 188.2727,
-      "t_end": 190.2727,
-      "x": 1180,
-      "y": 140
     },
     {
       "name": "scribble_0",
-      "t_start": 57.2973,
-      "t_end": 59.7973,
+      "t_start": 65.6431,
+      "t_end": 68.1431,
       "x": 610,
       "y": 310
     },
     {
       "name": "scribble_1",
-      "t_start": 81.469,
-      "t_end": 83.969,
+      "t_start": 104.0678,
+      "t_end": 106.5678,
       "x": 610,
       "y": 310
     },
     {
       "name": "scribble_2",
-      "t_start": 121.1632,
-      "t_end": 123.6632,
+      "t_start": 144.7482,
+      "t_end": 147.2482,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_3",
+      "t_start": 152.2153,
+      "t_end": 154.7153,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_4",
+      "t_start": 164.9717,
+      "t_end": 167.4717,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_5",
+      "t_start": 192.1179,
+      "t_end": 194.6179,
       "x": 610,
       "y": 310
     },
     {
       "name": "corner_bug",
       "t_start": 0.0,
-      "t_end": 190.45,
-      "x": 1377,
+      "t_end": 256.533991,
+      "x": 1387,
       "y": 30
     },
     {
       "name": "lower_third",
       "t_start": 0.0,
-      "t_end": 190.45,
+      "t_end": 256.533991,
       "x": 36,
       "y": 30
     },
     {
       "name": "disclaimer",
       "t_start": 0.0,
-      "t_end": 190.45,
+      "t_end": 256.533991,
       "x": 36,
       "y": 1036
     }
   ],
   "segment_warnings": [
-    "visual cue at 95.06s deferred to 99.05s \u2014 the previous visual was still being read",
-    "visual cue at 99.77s deferred to 104.05s \u2014 the previous visual was still being read",
-    "visual cue at 105.41s deferred to 109.05s \u2014 the previous visual was still being read",
-    "visual cue at 109.27s deferred to 114.05s \u2014 the previous visual was still being read",
-    "visual cue at 115.83s deferred to 119.05s \u2014 the previous visual was still being read",
-    "visual cue at 127.11s deferred to 129.47s \u2014 the previous visual was still being read",
-    "visual cue at 130.35s deferred to 134.47s \u2014 the previous visual was still being read",
-    "visual cue at 134.68s deferred to 137.47s \u2014 the previous visual was still being read",
-    "visual cue at 139.39s deferred to 144.47s \u2014 the previous visual was still being read",
-    "visual cue at 145.95s deferred to 149.47s \u2014 the previous visual was still being read",
-    "adjacent img cuts at 29.03s/34.24s \u2014 same visual type back-to-back",
-    "adjacent img cuts at 34.24s/39.54s \u2014 same visual type back-to-back",
-    "adjacent img cuts at 39.54s/45.71s \u2014 same visual type back-to-back",
-    "adjacent chart cuts at 84.56s/92.05s \u2014 same visual type back-to-back",
-    "adjacent clip cuts at 99.05s/104.05s \u2014 same visual type back-to-back",
-    "adjacent clip cuts at 144.47s/149.47s \u2014 same visual type back-to-back"
+    "visual cue at 84.39s deferred to 86.80s \u2014 the previous visual was still being read",
+    "visual cue at 87.19s deferred to 93.80s \u2014 the previous visual was still being read",
+    "visual cue at 87.19s deferred to 100.80s \u2014 the previous visual was still being read",
+    "visual cue at 104.07s deferred to 106.80s \u2014 the previous visual was still being read",
+    "visual cue at 104.07s deferred to 111.80s \u2014 the previous visual was still being read",
+    "visual cue at 107.88s deferred to 118.80s \u2014 the previous visual was still being read",
+    "visual cue at 145.68s deferred to 147.96s \u2014 the previous visual was still being read",
+    "visual cue at 152.22s deferred to 154.96s \u2014 the previous visual was still being read",
+    "visual cue at 157.89s deferred to 161.96s \u2014 the previous visual was still being read",
+    "visual cue at 182.24s deferred to 192.50s \u2014 the previous visual was still being read",
+    "visual cue at 184.11s deferred to 197.50s \u2014 the previous visual was still being read",
+    "visual cue at 185.74s deferred to 200.50s \u2014 the previous visual was still being read",
+    "visual cue at 198.42s deferred to 207.50s \u2014 the previous visual was still being read",
+    "visual cue at 210.63s deferred to 214.50s \u2014 the previous visual was still being read",
+    "visual cue at 210.63s deferred to 220.50s \u2014 the previous visual was still being read",
+    "visual cue at 229.14s deferred to 232.50s \u2014 the previous visual was still being read",
+    "adjacent img cuts at 37.41s/42.50s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 79.80s/86.80s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 111.80s/118.80s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 140.96s/147.96s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 147.96s/154.96s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 154.96s/161.96s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 200.50s/207.50s \u2014 same visual type back-to-back"
   ],
-  "chapter_warnings": [
-    "the script has no usable `=== CHAPTERS ===` trailer \u2014 the stingers fall back to generic section titles, which will not match the cut"
-  ],
+  "chapter_warnings": [],
   "chapters": [
     {
-      "t": 31.74,
-      "title": "what they do"
+      "t": 0.0,
+      "title": "a body or a bargain",
+      "type": "cold-open"
     },
     {
-      "t": 63.48,
-      "title": "the numbers"
+      "t": 40.0,
+      "title": "what they actually sell",
+      "type": "how-the-money-is-made"
     },
     {
-      "t": 95.22,
-      "title": "the industry"
+      "t": 90.0,
+      "title": "six years, one direction",
+      "type": "the-numbers"
     },
     {
-      "t": 126.97,
-      "title": "bull vs bear"
+      "t": 190.0,
+      "title": "it did not move alone",
+      "type": "sector-comps"
     },
     {
-      "t": 158.71,
-      "title": "the close"
+      "t": 230.0,
+      "title": "eleven quarters, one sentence",
+      "type": "management"
+    },
+    {
+      "t": 270.0,
+      "title": "where the cash went",
+      "type": "capital-allocation"
+    },
+    {
+      "t": 320.0,
+      "title": "both of these are true",
+      "type": "bull-vs-bear"
+    },
+    {
+      "t": 360.0,
+      "title": "what you'd have to believe",
+      "type": "valuation"
+    },
+    {
+      "t": 410.0,
+      "title": "the covenant, four hundred pages in",
+      "type": "risk"
+    },
+    {
+      "t": 450.0,
+      "title": "the close",
+      "type": "resigned-close"
     }
   ],
   "stingers": [
     {
-      "n": "02",
-      "title": "what they do",
-      "script_t": 31.74,
-      "t": 34.24
+      "type": "cold-open",
+      "title": "a body or a bargain",
+      "script_t": 0.0,
+      "t": 8.86
     },
     {
-      "n": "03",
-      "title": "the numbers",
-      "script_t": 63.48,
-      "t": 66.72
+      "type": "how-the-money-is-made",
+      "title": "what they actually sell",
+      "script_t": 40.0,
+      "t": 42.5
     },
     {
-      "n": "04",
-      "title": "the industry",
-      "script_t": 95.22,
-      "t": 99.05
+      "type": "the-numbers",
+      "title": "six years, one direction",
+      "script_t": 90.0,
+      "t": 93.8
     },
     {
-      "n": "05",
-      "title": "bull vs bear",
-      "script_t": 126.97,
-      "t": 129.47
+      "type": "sector-comps",
+      "title": "it did not move alone",
+      "script_t": 190.0,
+      "t": 192.5
     },
     {
-      "n": "06",
-      "title": "the close",
-      "script_t": 158.71,
-      "t": 161.07
+      "type": "management",
+      "title": "eleven quarters, one sentence",
+      "script_t": 230.0,
+      "t": 232.5
     }
   ],
-  "transitions": [
-    {
-      "asset": "stings/red-flood",
-      "t": 34.24
-    },
-    {
-      "asset": "stings/torn-edge",
-      "t": 66.72
-    },
-    {
-      "asset": "stings/blackout-drop",
-      "t": 99.05
-    },
-    {
-      "asset": "stings/ink-smear",
-      "t": 129.47
-    },
-    {
-      "asset": "stings/ink-wipe",
-      "t": 161.07
-    }
-  ],
-  "animated_segments": 0,
-  "longest_host_beat_s": 8.8,
+  "transitions": [],
+  "animated_segments": 3,
+  "longest_host_beat_s": 10.16,
   "host_motion": [
     {
       "segment": 0,
-      "shot": "chapters/how-we-got-here/dennis-narrates",
-      "blinks": 1,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 128,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
-    },
-    {
-      "segment": 2,
-      "shot": "chapters/bull-vs-bear/dennis-torn",
-      "blinks": 1,
-      "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
       "segment": 3,
-      "shot": "chapters/cold-open/desk-lean",
-      "blinks": 1,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 125,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 8,
-      "shot": "chapters/valuation/dennis-shrug-value",
-      "blinks": 0,
+      "segment": 4,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 124,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 10,
-      "shot": "chapters/cold-open/desk-lean",
-      "blinks": 2,
+      "segment": 7,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 43,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 13,
-      "shot": "chapters/bull-vs-bear/dennis-both-hands",
-      "blinks": 1,
+      "segment": 9,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 47,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 21,
-      "shot": "chapters/how-we-got-here/dennis-narrates",
-      "blinks": 1,
+      "segment": 11,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 95,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 27,
-      "shot": "chapters/bull-vs-bear/dennis-both-hands",
-      "blinks": 0,
+      "segment": 12,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 93,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 29,
-      "shot": "chapters/valuation/dennis-shrug-value",
-      "blinks": 1,
+      "segment": 20,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 152,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 31,
-      "shot": "chapters/cold-open/desk-lean",
-      "blinks": 0,
+      "segment": 26,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 36,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 2
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 33,
-      "shot": "chapters/valuation/dennis-weighing",
-      "blinks": 1,
+      "segment": 28,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 56,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
+      "has_talk": true,
+      "has_idle": true
     },
     {
-      "segment": 34,
-      "shot": "chapters/bull-vs-bear/dennis-both-hands",
-      "blinks": 1,
+      "segment": 30,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 49,
       "idle_frames": 0,
-      "has_blink": true,
-      "has_idle": true,
-      "idle_cycles": 1
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 37,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 76,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 39,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 128,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 40,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 128,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
     }
   ],
-  "blinks": 10,
-  "shots_with_blink": 12,
-  "shots_with_idle": 12,
+  "blinks": 0,
+  "shots_with_blink": 0,
+  "shots_with_idle": 14,
   "attributions": [
     "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
-    "Video by Alex Mockman on Pexels (https://www.pexels.com/video/mock-dumpster-fire-850001/)",
     "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
-    "owned meme library (harold-quick-flip-became-bagholder)",
-    "owned meme library (portfolio-down-99-percent-20-left)"
+    "owned meme library (harold-quick-flip-became-bagholder)"
   ],
   "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.filter.txt",
   "output": "/home/user/Content-Machine/workspace/EXMPL/sample/long_final.mp4"

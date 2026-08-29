@@ -152,48 +152,18 @@ def test_a_missing_as_of_date_is_flagged():
 # ------------------------------------------------------------- kit doctor
 
 
-def test_kit_doctor_reports_unresolved_keys_and_unused_artwork(
-        long_valid_text, settings):
-    from pipeline.models import TagEvent, TagType
-    from pipeline.parser_long import parse_long_script
-
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.PLATE, payload="not-a-real-prop",
-                                  char_offset=0, raw_offset=0))
-    findings, stats = kit_doctor(script, settings)
-    assert any("not-a-real-prop" in f.message for f in findings)
-    assert "[PROP: not-a-real-prop]" in stats["unresolved_keys"]
-    assert stats["kit_size"] >= 384
-    # the useful half: artwork real scripts never reach for
-    assert stats["never_used"], "the never-used report is the point"
-    assert stats["never_used_count"] == len(stats["never_used"])
-
-
-def test_the_kit_doctor_falls_through_to_a_blank_layout_rather_than_nothing(
-        long_valid_text, settings):
-    """A [TERM] with no named artwork still gets a card — the doctor says so
-    rather than reporting it as a lost beat."""
-    from pipeline.models import TagEvent, TagType
-    from pipeline.parser_long import parse_long_script
-
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.PLATE, payload="owner earnings",
-                                  char_offset=0, raw_offset=0))
-    findings, _ = kit_doctor(script, settings)
-    hit = next(f for f in findings if "owner earnings" in f.message)
-    assert "blank layout will carry it" in hit.message
-
-
 def test_the_kit_doctor_runs_without_a_script(settings):
-    """The library-level half — never used, unregistered PNGs, artwork owed —
-    is what an operator goes looking for, and it needs no script."""
+    """The library half — what has been drawn and never reached — is what an
+    operator goes looking for, and it needs no script."""
     from pipeline.gates import kit_doctor_text
 
     report = kit_doctor_text(settings)
     assert "KIT DOCTOR" in report
-    assert "Never used in a recent render" in report
-    assert "PNGs with no registry entry" in report
-    assert "dennis-reads-proxy-talk" in report, "artwork owed is reported"
+    assert "113 plates" in report
+    assert "Never reached in a recent render" in report
+    # It groups by family, because "eighteen room angles unused" is actionable
+    # and a list of 113 keys is not.
+    assert "room:" in report or "none" in report
 
 
 # ------------------------------------------------------------------ suite
@@ -242,3 +212,27 @@ def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):
     draft = run_gates(script, live, data=data, as_of="2026-07-01",
                       skeptic=False, final=False)
     assert [f.severity for f in draft.findings if f.gate == "audio"] == ["warn"]
+
+
+def test_the_doctor_names_the_gap_list_the_next_batch_is_drawn_from(settings):
+    """Three questions: what was asked for and missing, what was left empty,
+    and what has been drawn and never reached."""
+    from pipeline.gates import kit_doctor_text
+
+    text = kit_doctor_text(settings)
+    assert "Unresolved plate names" in text
+    assert "Slots a script left unfilled" in text
+    assert "Never reached in a recent render" in text
+
+
+def test_an_unknown_plate_blocks_and_is_named(settings):
+    from pipeline.gates import kit_doctor
+    from pipeline.models import TagEvent, TagType
+
+    class _S:
+        events = [TagEvent(type=TagType.PLATE, payload="tables/not-a-plate",
+                           char_offset=0, raw_offset=0)]
+
+    findings, stats = kit_doctor(_S(), settings)
+    assert stats["unresolved_keys"] == ["[PLATE: not-a-plate]"]
+    assert any(f.severity == "block" for f in findings)
