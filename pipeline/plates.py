@@ -107,7 +107,18 @@ class Slot:
 
     @property
     def is_text(self) -> bool:
-        return not self.region and not self.renderer
+        """Whether anything typed goes here.
+
+        A region (``host-anchor``, ``plot-area``, ``figure``) reserves space for
+        something composited into it. A slot carrying an ``overlay`` is a row
+        highlight: naming it lights the band, it never takes words. Both were
+        text boxes for one revision, which put a literal "1" over a lit row.
+        """
+        return not self.region and not self.renderer and not self.overlay
+
+    @property
+    def is_band(self) -> bool:
+        return bool(self.overlay)
 
     @classmethod
     def from_registry(cls, name: str, raw: dict, export_scale: int) -> "Slot":
@@ -399,6 +410,10 @@ class Registry:
         return None
 
     # ------------------------------------------------------------- chapters
+
+    def chapter_types_available(self) -> tuple[str, ...]:
+        """The types this kit carries curation for, in the fixed canonical order."""
+        return tuple(c for c in CHAPTER_TYPES if c in self._chapter_types)
 
     def chapter_purpose(self, ctype: str) -> str:
         return (self._chapter_types.get(ctype) or {}).get("purpose", "")

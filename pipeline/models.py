@@ -46,44 +46,68 @@ SFX_KEYS = (
 
 
 class TagType(str, Enum):
+    # THE PLATE TAG. The director names the plate and writes what goes on it;
+    # the renderer puts that text in the declared slots and does nothing else.
+    # It never picks a plate and it never computes a value — those were the two
+    # halves of the same defect, and they are gone together.
+    PLATE = "PLATE"              # [PLATE: name | slot=value | …]
     IMG = "IMG"                  # real imagery: operations/facilities/people
     PRODUCT = "PRODUCT"          # real imagery: the product itself
     MEME = "MEME"                # owned meme library first (capped per video)
     CLIP = "CLIP"                # ironic stock footage (Pexels palette)
     BROLL = "BROLL"              # alias of CLIP (legacy spelling)
-    CHART = "CHART"              # auto-generated chart in the channel style
+    CHART = "CHART"              # a data path drawn into a charts/ plate
     SHOW_FILING = "SHOW FILING"  # the (unnamed-source) data screenshot
     SHOW_ARTICLE = "SHOW ARTICLE"  # a screenshot of the real article's headline
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
-    ASSET = "ASSET"              # bespoke Claude-Design asset (blocks if missing)
-    DOODLE = "DOODLE"            # crude hand-drawn overlay (owned, top layer)
-    SCRIBBLE = "SCRIBBLE"        # drawn annotation on a number/point (top layer)
-    # design-kit families, resolved by name through pipeline.kit
-    TERM = "TERM"                # the "teach one framework" definition card
-    BIGNUM = "BIGNUM"            # the single-stat card
-    TABLE = "TABLE"              # a strict readable table (P&L, comps, …)
-    PROP = "PROP"                # a generic object cutaway (warehouse, servers…)
-    ALERT = "ALERT"              # mid-frame lower-third interjection (overlay)
+    SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
     # delivery direction — stripped from captions, passed to TTS
     BEAT = "BEAT"                # a deliberate pause
     SIGH = "SIGH"
     FLAT = "FLAT"                # hold the register flatter than baseline
     DRY = "DRY"
 
+    # [ASSET] IS GONE, AND SO ARE THE FAMILY TAGS.
+    #
+    # [ASSET: slug] blocked a render until an operator pasted a prompt into
+    # Claude Design, exported a PNG and uploaded it. A bespoke asset per video
+    # does not scale to daily shorts and it was the slowest step in the loop —
+    # and the whole point of the pivot is that the director picks from a library
+    # that already exists. [SCREENGRAB] stays: that is an operator-supplied
+    # capture of something real, which is a different thing.
+    #
+    # [TERM]/[BIGNUM]/[TABLE]/[PROP]/[ALERT] named a FAMILY and let the renderer
+    # choose inside it. That is the bot picking its own assets, which is the
+    # behaviour being removed. All five are now [PLATE: <name>] against the
+    # cards/, figures/, tables/ and paper/ families, where the director names
+    # the plate and fills its slots.
+    #
+    # [DOODLE] folded into [SCRIBBLE], which resolves to the annotations/ family.
 
-# tag types that claim a visual SEGMENT on the LONG timeline (the base
-# frame). DOODLE and SCRIBBLE are overlays that ride on top of whatever is
-# on screen, so they never claim a segment of their own.
+
+# Tag types that claim a visual SEGMENT on the LONG timeline (the base frame).
+# SCRIBBLE is an overlay that rides on top of whatever is on screen, so it never
+# claims a segment of its own.
 VISUAL_TAG_TYPES = frozenset({
+    TagType.PLATE,
     TagType.IMG, TagType.PRODUCT, TagType.MEME, TagType.CLIP, TagType.BROLL,
     TagType.CHART, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
-    TagType.SCREENGRAB, TagType.ASSET,
-    TagType.TERM, TagType.BIGNUM, TagType.TABLE, TagType.PROP,
+    TagType.SCREENGRAB,
 })
 
-# overlay tag types — composited over the current frame, not a segment.
-OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
+# Foreign media — anything not drawn by the kit's own engine. All four are
+# composited INSIDE a frames/ plate rather than landing full-frame, because a
+# raw photograph over the whole frame destroys the drawn surface the rest of the
+# video is built on. See pipeline.media_frames.
+FOREIGN_MEDIA_TAG_TYPES = frozenset({
+    TagType.CLIP, TagType.BROLL, TagType.IMG, TagType.PRODUCT,
+    TagType.SHOW_ARTICLE, TagType.SHOW_FILING, TagType.SCREENGRAB,
+    TagType.MEME,
+})
+
+# Overlay tag types — composited over the current frame, not a segment.
+OVERLAY_TAG_TYPES = frozenset({TagType.SCRIBBLE})
 
 # Delivery direction. These never reach the screen — they are stripped from
 # the captions and re-inserted into the TTS request, because deadpan comedy
@@ -91,88 +115,79 @@ OVERLAY_TAG_TYPES = frozenset({TagType.DOODLE, TagType.SCRIBBLE, TagType.ALERT})
 DELIVERY_TAG_TYPES = frozenset({TagType.BEAT, TagType.SIGH, TagType.FLAT,
                                 TagType.DRY})
 
-# What a SHORT's `audio_script` may carry inline.
-#
-# It used to be three tags. The prompt documented [BEAT]/[FLAT]/[SIGH]/[DRY]
-# and the parser dropped them on the floor, so TTS got unpaused text and the
-# delivery was flat by omission — the one failure here you cannot see in a
-# frame. And the whole evidence grammar the LONG has was simply unavailable,
-# which is why a short reached six assets out of 384.
+# What a SHORT's `audio_script` may carry inline. The same grammar as the long,
+# minus the tags that need a runtime the short does not have.
 SHORT_TAG_TYPES = frozenset(
     OVERLAY_TAG_TYPES | DELIVERY_TAG_TYPES | {
-        TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
-        TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.PROP,
-        TagType.BIGNUM, TagType.TERM, TagType.MEME, TagType.CLIP,
-        TagType.BROLL,
+        TagType.PLATE, TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
+        TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
+        TagType.BROLL, TagType.CHART,
     })
 
 # Tags that mean something with no payload at all, because the renderer can
 # work out what they point at.
 #
-# `[SHOW ARTICLE]` is the only one so far: the export already carries the news
-# rows the script was written from, and `script.headlines` is the writer's
-# paraphrase of those same rows, so demanding a pasted URL asked the writer to
-# go and find something the pipeline was already holding. It is why the
-# highest-credibility visual in the format was used approximately never.
+# `[SHOW ARTICLE]` is the only one: the export already carries the news rows the
+# script was written from, and `script.headlines` is the writer's paraphrase of
+# those same rows, so demanding a pasted URL asked the writer to go and find
+# something the pipeline was already holding.
 SELF_RESOLVING_TAG_TYPES = frozenset({TagType.SHOW_ARTICLE})
 
 # Tags that claim the SHORT's frame for a beat (as opposed to riding on top of
 # whatever is showing). Delivery tags claim nothing — they are audio.
 SHORT_SEGMENT_TAG_TYPES = frozenset({
-    TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
-    TagType.SCREENGRAB, TagType.PROP, TagType.BIGNUM, TagType.TERM,
-    TagType.MEME, TagType.CLIP, TagType.BROLL,
+    TagType.PLATE, TagType.IMG, TagType.PRODUCT, TagType.SHOW_FILING,
+    TagType.SHOW_ARTICLE, TagType.SCREENGRAB, TagType.MEME, TagType.CLIP,
+    TagType.BROLL, TagType.CHART,
 })
-
-# Kit families each design-kit tag resolves against, in search order.
-#
-# A tuple, not a string: the rebuilt kit spreads one tag's artwork across
-# several folders — an ALERT is a press lower-third, a PROP may be a prop, a
-# concept illustration or an in-joke — and a tag pinned to a single hardcoded
-# folder is how most of the library stayed unreachable.
-KIT_TAG_FAMILIES: dict[TagType, tuple[str, ...]] = {
-    TagType.TERM: ("blanks", "type"),
-    TagType.BIGNUM: ("blanks", "type"),
-    TagType.TABLE: ("chapters/sector-comps", "charts-style"),
-    TagType.PROP: ("props", "concepts", "restyled/concepts", "restyled/injokes",
-                   "shorts/dennis-vs-numbers", "shorts/dennis-vs-numbers-2",
-                   "shorts/transformations", "shorts/transformations-2",
-                   "shorts/vertical-scenes", "shorts/vertical-scenes-2"),
-    TagType.ALERT: ("press",),
-}
-
-# The parameterised layout each card tag falls back to when no named artwork
-# exists for the key. These are the blank layouts the previous kit shipped and
-# nothing ever filled: the slot names are the fields the renderer composites.
-KIT_TAG_BLANKS: dict[TagType, str] = {
-    TagType.TERM: "blanks/term-card-blank",
-    TagType.BIGNUM: "blanks/big-number-blank",
-}
 
 
 class ScribbleStyle(str, Enum):
-    """The `[SCRIBBLE: …]` vocabulary — one member per drawing in ``marks/``.
+    """The `[SCRIBBLE: …]` vocabulary — one member per drawing in ``annotations/``.
 
-    It was three names against twelve marks, so eleven drawings the kit had
-    already shipped were unreachable from a script. The values ARE the mark
-    names: `pipeline.rasters.SCRIBBLE_MARKS` maps each to its artwork and to
-    the procedural stroke that stands in when the kit has not shipped it, and
-    there is no per-mark code path anywhere.
+    The values ARE the plate names: a style resolves straight to
+    ``annotations/<value>`` and there is no per-mark code path anywhere. The old
+    list mapped twelve invented style words onto the retired ``marks/`` family;
+    these ten are what the kit actually ships.
+
+    An annotation is drawn in ATTENTION and therefore SPENDS the frame's one
+    attention. A plate that already carries an attention mark cannot also be
+    annotated — that is why these are a family and not a flag on every plate:
+    the choice has to be made, by someone, once per frame.
     """
 
-    CIRCLE = "circle"
-    OVAL = "oval"
-    BRACKET = "bracket"
-    STAR = "star"
-    QUESTION = "question"
-    CHECK = "check"
-    CROSS_OUT = "cross-out"
-    REDACTION = "redaction"
-    UNDERLINE = "underline"
-    JAB = "jab"
-    ARROW = "arrow"
-    ARROW_DOWN = "arrow-down"
-    ARROW_CURVE_DOWN = "arrow-curve-down"
+    SCRAWL_OVAL_WIDE = "scrawl-oval-wide"
+    SCRAWL_OVAL_TIGHT = "scrawl-oval-tight"
+    UNDERLINE_SWIPE = "underline-swipe"
+    UNDERLINE_TIGHT = "underline-tight"
+    STRIKE_OUT = "strike-out"
+    BOX_SCRAWL = "box-scrawl"
+    BRACKET_ROWS = "bracket-rows"
+    ARROW_ELBOW = "arrow-elbow"
+    CARET_NOTE = "caret-note"
+    TICK_MARKS = "tick-marks"
+
+
+# What a writer is likely to type, mapped to the mark that does that job. A
+# beat lost over a synonym is a silent nothing on screen, which is worse than
+# a rejection — but the plate names stay the vocabulary, so this is a doormat,
+# not a second naming scheme.
+SCRIBBLE_ALIASES: dict[str, str] = {
+    "circle": "scrawl-oval-wide",
+    "oval": "scrawl-oval-wide",
+    "circle-tight": "scrawl-oval-tight",
+    "oval-tight": "scrawl-oval-tight",
+    "underline": "underline-swipe",
+    "cross-out": "strike-out",
+    "strike": "strike-out",
+    "strikethrough": "strike-out",
+    "box": "box-scrawl",
+    "bracket": "bracket-rows",
+    "arrow": "arrow-elbow",
+    "caret": "caret-note",
+    "check": "tick-marks",
+    "ticks": "tick-marks",
+}
 
 
 def parse_scribble_payload(payload: str) -> tuple[ScribbleStyle, str] | None:
@@ -187,6 +202,7 @@ def parse_scribble_payload(payload: str) -> tuple[ScribbleStyle, str] | None:
         return None
     style_raw, target = payload.split("->", 1)
     style_raw = style_raw.strip().lower().replace(" ", "-").replace("_", "-")
+    style_raw = SCRIBBLE_ALIASES.get(style_raw, style_raw)
     target = target.strip()
     if not target:
         return None
@@ -436,16 +452,55 @@ class ShortScript(BaseModel):
 # --------------------------------------------------------------------------
 
 
+class Chapter(BaseModel):
+    """A chapter: a generic TYPE, and a display title the director wrote.
+
+    The type is one of the sixteen and decides which plates the chapter may
+    use. The title is free text and is the ONLY thing that reaches the screen —
+    a chapter opener is the room plate with this string in its title slot.
+
+    A type may appear twice in one video under different titles ("the numbers"
+    before guidance and again after it), so nothing keyed off a type may assume
+    uniqueness, and there is no ordinal anywhere: the old kit baked "01"…"14"
+    into the artwork, which is why a chapter could not be moved, repeated or cut
+    without redrawing it.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    type: str = Field(min_length=1)
+    title: str = Field(min_length=1, max_length=64)
+    start_s: float = Field(default=0.0, ge=0.0)
+
+    @field_validator("type")
+    @classmethod
+    def _known_type(cls, v: str) -> str:
+        from pipeline.plates import CHAPTER_TYPES
+        t = v.strip().lower().replace(" ", "-").replace("_", "-")
+        if t not in CHAPTER_TYPES:
+            raise ValueError(
+                f"{v!r} is not one of the sixteen chapter types: "
+                + ", ".join(CHAPTER_TYPES))
+        return t
+
+    @field_validator("title")
+    @classmethod
+    def _clean_title(cls, v: str) -> str:
+        return " ".join(v.split())
+
+
 class LongScript(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     ticker: str = Field(min_length=1, max_length=15)
     narration: str = Field(min_length=1)  # clean, tag-free — goes to TTS
     events: list[TagEvent] = Field(default_factory=list)
-    # slug -> the self-contained Claude Design prompt the director appended
-    asset_prompts: dict[str, str] = Field(default_factory=dict)
-    # the `=== CHAPTERS ===` trailer (mm:ss Title lines) — YouTube chapter
-    # markers the operator pastes; metadata only, split off so it's never spoken
+    # The `=== CHAPTERS ===` trailer, parsed: a type and a display title per
+    # chapter. Metadata for YouTube AND the source of every on-screen chapter
+    # title, so the two can no longer disagree — which they did, silently,
+    # whenever the fallback list ran.
+    chapter_list: list[Chapter] = Field(default_factory=list)
+    # the raw trailer text, kept for the YouTube description
     chapters: str = ""
 
     @field_validator("ticker")
@@ -467,13 +522,6 @@ class LongScript(BaseModel):
 
     def meme_count(self) -> int:
         return len(self.events_of(TagType.MEME))
-
-    def asset_slugs(self) -> list[str]:
-        seen: list[str] = []
-        for e in self.events_of(TagType.ASSET):
-            if e.payload not in seen:
-                seen.append(e.payload)
-        return seen
 
     def screengrab_slugs(self) -> list[str]:
         seen: list[str] = []
