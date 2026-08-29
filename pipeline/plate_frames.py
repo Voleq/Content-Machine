@@ -262,18 +262,31 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
 
     declared = tr.get("size")
     size = int(int(declared) * scale) if declared else max(int(bh * 0.8), _MIN_PT)
-    max_lines = int(tr.get("maxLines", 1) or 1)
-    wrap = max_lines > 1 or bool(tr.get("maxCharsPerLine"))
+    declared_lines = tr.get("maxLines")
 
     lines = [text]
     for step in range(_FIT_STEPS):
         font = _load(settings, family, weight, size)
         tracking_px = _em(tr.get("tracking"), size)
-        lines = _wrap_to(draw, text, font, bw) if wrap else [text]
-        widest = max(_tracked_width(draw, ln, font, tracking_px) for ln in lines)
         ascent, descent = font.getmetrics()
         line_h = int((ascent + descent) * 1.06)
         _, ink_h = _ink_extent(font)
+
+        # THE BOX HEIGHT IS A DECLARATION TOO.
+        #
+        # `structure/flow-16x9`'s boxes are 256 wide and 216 tall and allow 30
+        # characters — thirty characters of 34pt Archivo do not go on one 256
+        # unit line, and the box is four lines tall because it is meant to
+        # wrap. Requiring an explicit `maxLines` before wrapping read that box
+        # as a single line and shrank a 24-character step to 25pt to make it
+        # one. A box holds as many lines as it has room for, unless the kit
+        # names a smaller number.
+        capacity = max(1, (bh - ink_h) // line_h + 1)
+        max_lines = int(declared_lines) if declared_lines else capacity
+        wrap = max_lines > 1 or bool(tr.get("maxCharsPerLine"))
+
+        lines = _wrap_to(draw, text, font, bw) if wrap else [text]
+        widest = max(_tracked_width(draw, ln, font, tracking_px) for ln in lines)
         block_h = (len(lines) - 1) * line_h + ink_h
         fits = widest <= bw and block_h <= bh and len(lines) <= max_lines
         if fits or size <= _MIN_PT:

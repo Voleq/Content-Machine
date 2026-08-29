@@ -534,3 +534,48 @@ def test_the_last_column_is_set_in_the_weight_the_kit_asked_for(settings):
     assert last > first, (
         f"the same figure covers {last}px in {cols[-1]} and {first}px in "
         f"{cols[0]} — the last column is not being set heavier")
+
+
+def test_the_committed_fixtures_fit_the_plates_they_name(settings):
+    """Every `[PLATE]` in every fixture, against the kit's own limits.
+
+    A `maxChars` is a hard limit — over it the line collides with rules drawn
+    in ink — and a declared size is what the plate reserved the column at.
+    Both were only ever discovered at the end of a four-minute render, as a
+    warning in a log nobody reads twice: a seventeen-character figure in a
+    slot that holds eight, set at 64pt instead of 84 to squeeze it in.
+
+    A budget is a contract on the writing, and a fixture is writing.
+    """
+    import re
+    from pathlib import Path
+
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    tag = re.compile(r"\[PLATE:\s*(.+?)\]", re.DOTALL)
+
+    problems: list[str] = []
+    seen = 0
+    for path in sorted(Path("fixtures/scripts").glob("*.txt")):
+        if "unknown" in path.name:
+            continue                      # deliberately malformed
+        for payload in tag.findall(path.read_text(encoding="utf-8")):
+            fill = build_fill(reg, payload)
+            if not fill.key:
+                continue                  # resolution is its own test
+            seen += 1
+            plate = reg.get(fill.key)
+            img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+            for name, value in fill.values.items():
+                slot = plate.slots.get(name)
+                if slot is None or not slot.is_text:
+                    continue
+                for w in fill_slot(img, plate, slot, value, settings, reg):
+                    problems.append(f"{path.name}: {w}")
+    assert seen, "no [PLATE] tags found in the fixtures at all"
+    assert problems == [], "\n".join(problems)
