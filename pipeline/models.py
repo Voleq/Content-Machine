@@ -421,14 +421,8 @@ class ShortScript(BaseModel):
         script = self.audio_script.lower()
         return [a for a in self.anchor_words() if a.lower() not in script]
 
-    def doodle_events(self) -> list[TagEvent]:
-        return [e for e in self.inline_events if e.type is TagType.DOODLE]
-
     def scribble_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
-
-    def alert_events(self) -> list[TagEvent]:
-        return [e for e in self.inline_events if e.type is TagType.ALERT]
 
     def evidence_events(self) -> list[TagEvent]:
         """Inline tags that claim the frame — the short's own tag grammar.
@@ -597,16 +591,15 @@ class CueKind(str, Enum):
     FILING = "filing"
     ARTICLE = "article"          # a screenshot of the real article's headline
     SCREENGRAB = "screengrab"
-    ASSET = "asset"
-    TERM = "term"                # the framework/definition card
-    BIGNUM = "bignum"            # the single-stat card
-    TABLE = "table"              # a strict readable table
-    PROP = "prop"                # a generic object cutaway
+    # One kind for every plate the director names. There is deliberately not a
+    # kind per family: TERM/BIGNUM/TABLE/PROP were four kinds for four tags that
+    # each let the renderer choose inside a family, and the choosing is what was
+    # removed. A plate cue carries the plate's key and its slot values.
+    PLATE = "plate"
+    CHAPTER = "chapter"          # a chapter opener: the room, with a title
     SOUND = "sound"
     # hand-drawn overlays (both formats) — composited on top, no segment
-    DOODLE = "doodle"
     SCRIBBLE = "scribble"
-    ALERT = "alert"              # lower-third interjection over the frame
 
 
 class Cue(BaseModel):
