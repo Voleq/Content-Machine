@@ -5,10 +5,15 @@ The old renderer chose its own composition from tags in the script and ran to
 fixes space and order, the word timestamps fix duration, and everything here
 is the machinery between those two facts and a file on disk.
 
-The register is picked once from the script sha and every plate in the video
-is drawn in it. Frames are composed in memory and piped straight into the
-encoder — 2,000 uncompressed 1080x1920 frames is not something to put on a
-disk on the way past.
+Every plate comes from the v2 registry and every line of copy goes into a slot
+that plate declares. There is no second kit and no register to pick: the
+renderer places the plate and says what goes in it, and the kit decides the
+face, the size, the weight and the colour role.
+
+Frames are composed in memory and piped straight into the encoder — 2,000
+uncompressed 1080x1920 frames is not something to put on a disk on the way
+past — and the captions are burned after, from the same phrase builder the
+LONG uses.
 """
 
 from __future__ import annotations
@@ -25,7 +30,7 @@ from pipeline import marks as mk
 from pipeline.compose import (BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
                               held_layer_spans)
-from pipeline.kit_manifest import KitError, kit_for, pick_register
+from pipeline.plates import load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
 from pipeline.shots import (Format, expand_sequences, load_format,
@@ -121,6 +126,13 @@ class ShortResolver:
             return self._compare(parts[1])
         if parts[0] == "numbers":
             return self._numbers(parts[1:])
+        if parts[0] == "chart":
+            return self._chart_source(parts[1:])
+        if parts[0] == "headline":
+            # The band's kicker is what KIND of page this is, and the script
+            # carries no source field. Naming it is honest; inventing an
+            # outlet name would be the renderer writing copy.
+            return "THE HEADLINE" if parts[1:] == ["kicker"] else None
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -166,6 +178,18 @@ class ShortResolver:
         if field == "header":
             years = list(getattr(self.script, "years", []) or [])
             return (f"{_unit_of(rows)}\t" + "\t".join(years)) if years else None
+        if field == "years":
+            years = list(getattr(self.script, "years", []) or [])
+            return ",".join(years) if years else None
+        if field == "unit":
+            return _unit_of(rows) or None
+        if field == "headline_figure":
+            return rows[0].values[-1] if rows else None
+        if field == "headline_label":
+            return rows[0].label if rows else None
+        if field == "headline_kicker":
+            years = list(getattr(self.script, "years", []) or [])
+            return (years[-1] if years else None)
 
         if not rest or not rest[0].isdigit():
             return None
@@ -177,6 +201,11 @@ class ShortResolver:
             return r.label
         if field == "latest":
             return r.values[-1]
+        if field == "figures":
+            # A ROW, for the cell expansion — the same comma list a director
+            # writes into a `[PLATE]` tag. The sheet's shared unit is said once
+            # in the unit slot, so the figures themselves are bare.
+            return ",".join(_bare(v, _unit_of(rows)) for v in r.values)
 
         # Tab-separated: the renderer lays these out as COLUMNS on one line,
         # so a figure sits under its year. A flow is a series across periods;
@@ -188,6 +217,38 @@ class ShortResolver:
             return f"{r.label}\t{r.values[-1]}\tat {asat}"
         unit = _unit_of(rows)
         return f"{r.label}\t" + "\t".join(_bare(v, unit) for v in r.values)
+
+    def _chart_source(self, rest: list[str]) -> str | None:
+        """The price chart, as the slots `charts/line-dense` declares.
+
+        The plate reserves a `plot-area` and knows nothing about numbers; the
+        series goes in as figures and the renderer draws a path THROUGH them.
+        That is not the renderer computing anything — it is being handed one.
+        """
+        if not rest or self.prices is None:
+            return None
+        field = rest[0]
+        series = _legible(self.prices)
+        closes = [float(c) for c in getattr(series, "closes", []) or []]
+        if not closes:
+            return None
+        labels = self._chart_labels()
+
+        if field == "unit":
+            return "Close, $"
+        if field == "series":
+            return ",".join(f"{c:.2f}" for c in closes)
+        if field == "heads":
+            got = [labels.get(f"head-{i + 1}") for i in range(4)]
+            return ",".join(g for g in got if g) if any(got) else None
+        if field == "axis":
+            # Four y labels across the range the series actually covers. The
+            # domain comes from the figures, not from a rounded guess at them.
+            lo, hi = min(closes), max(closes)
+            if hi <= lo:
+                return None
+            return ",".join(f"{lo + (hi - lo) * i / 3:.0f}" for i in range(4))
+        return labels.get(f"mark-{field}") or labels.get(field)
 
     def _compare(self, which: str) -> str | None:
         """The two multiples in CHEAP OR TRAP, heavy against light."""
@@ -210,10 +271,15 @@ class ShortResolver:
         pick = pick or (rows[0] if rows else None)
         if pick is None:
             return None
+        if which == "kicker":
+            return "BOTH TRUE"
+        # `structure/both-true` takes two STATEMENTS, not two stacked figures.
+        # The plate wraps them itself in the face it declares, so a newline
+        # here would be a second opinion about the line break.
         if which == "heavy":
-            return f"{pick.label}\n{pick.values[-1]}"
+            return f"{pick.label} is {pick.values[-1]} now."
         if which == "light":
-            return f"{pick.label}\n{pick.values[0]}"
+            return f"It was {pick.values[0]}."
         return None
 
     # -- images -----------------------------------------------------------
@@ -370,40 +436,6 @@ def build_anchors(script: ShortScript) -> dict[str, str]:
     return out
 
 
-def cap_one_shots(spans, kit, register):
-    """A transition may not outlive its own strip.
-
-    dive-in is ten frames at 12fps — 0.83s — and then it has nothing left to
-    play. Given an equal share of the runtime it holds its last frame for
-    another three seconds, which is a freeze in the middle of the format's
-    most-used motion. The span is cut to the strip and the time handed to the
-    shot that follows, where something is actually happening.
-
-    Done here rather than in the span resolver because it needs the kit: how
-    long a strip runs is a fact about the asset, not about the template.
-    """
-    from pipeline.shots import Span
-    out = list(spans)
-    for i, sp in enumerate(out):
-        if not sp.shot.plate:
-            continue
-        try:
-            e = kit.concept(sp.shot.plate, register)
-        except KitError:
-            continue
-        if e.loops or e.playback != "one-shot":
-            continue
-        strip = e.cycle_s
-        if strip <= 0 or sp.dur <= strip + 1e-6:
-            continue
-        cut = sp.start + strip
-        out[i] = Span(sp.shot, sp.start, cut, sp.anchored)
-        if i + 1 < len(out):
-            nxt = out[i + 1]
-            out[i + 1] = Span(nxt.shot, cut, nxt.end, nxt.anchored)
-    return out
-
-
 def resolver_probe(script: ShortScript, settings) -> "ShortResolver":
     """A resolver used only to ask whether a shot has anything to say."""
     return ShortResolver(script=script, workdir=Path("."), settings=settings,
@@ -454,39 +486,172 @@ def prune_empty_shots(fmt: Format, probe: "ShortResolver") -> tuple[Format, list
 # ---------------------------------------------------------------------------
 
 class _Cache:
-    """Resized frames, keyed by path and size. A boil is three images."""
+    """Rendered plate frames, keyed by what makes them different.
 
-    def __init__(self) -> None:
-        self._d: dict[tuple[str, int, int], Image.Image] = {}
+    A plate WITH ITS VALUES IN IT is the unit here, not a PNG: `plate_frames`
+    sets the type into the slots the kit declares, and doing that per output
+    frame would set the same nine lines thirty times a second. Keyed on the
+    plate, which boil frame, and the values — because two shots of one sheet
+    differing only in which row is lit are two different pictures.
+    """
 
-    def get(self, path: Path, w: int, h: int) -> Image.Image:
-        key = (str(path), w, h)
-        hit = self._d.get(key)
+    def __init__(self, settings, reg) -> None:
+        self.settings = settings
+        self.reg = reg
+        self._drawn: dict[tuple, Image.Image] = {}
+        self._sized: dict[tuple, Image.Image] = {}
+
+    def plate(self, key: str, frame_i: int, values: dict[str, str],
+              w: int, h: int) -> Image.Image | None:
+        vkey = tuple(sorted(values.items()))
+        sized_key = (key, frame_i, vkey, w, h)
+        hit = self._sized.get(sized_key)
+        if hit is not None:
+            return hit
+
+        drawn_key = (key, frame_i, vkey)
+        img = self._drawn.get(drawn_key)
+        if img is None:
+            plate = self.reg.get(key)
+            if plate is None:
+                return None
+            from pipeline.plate_frames import render_frame
+            img = render_frame(plate, frame_i, dict(values), self.settings,
+                               self.reg)
+            # A plate that reserves a data region gets its series drawn through
+            # the figures the SCRIPT wrote into it. Without this a charts/ or
+            # cycles/ plate is a set of labels around an empty box.
+            from pipeline.chart import draw_declared
+            draw_declared(self.reg, plate, dict(values), img, seed=key)
+            self._drawn[drawn_key] = img
+        out = img if img.size == (w, h) else img.resize(
+            (max(w, 1), max(h, 1)), Image.LANCZOS)
+        self._sized[sized_key] = out
+        return out
+
+    def file(self, path: Path, w: int, h: int) -> Image.Image:
+        key = ("file", str(path), 0, (), w, h)
+        hit = self._sized.get(key)
         if hit is None:
             im = Image.open(path).convert("RGBA")
             if im.size != (w, h):
                 im = im.resize((max(w, 1), max(h, 1)), Image.LANCZOS)
-            self._d[key] = hit = im
+            self._sized[key] = hit = im
         return hit
 
 
-def _frame_for(layer: Layer, t: float) -> Path:
+def _frame_index(layer: Layer, t: float) -> int:
     """Which frame of an animated layer is showing at `t`.
 
-    fps and playback come from the manifest entry the layer was built from —
-    a boil runs at 7, a host loop at 12, a one-shot plays once at 12 and holds
-    its last frame. Nothing here assumes a rate.
+    fps and playback come from the plate the layer was built from — a room
+    boils at 2, a talk strip runs at 8, an idle at 4. Nothing here assumes a
+    rate, and a static plate has one frame and no clock.
     """
-    if not layer.frames:
-        raise RenderError(f"{layer.name}: animated layer with no frames")
-    if len(layer.frames) == 1 or layer.fps <= 0:
-        return layer.frames[0]
+    if layer.frame_count <= 1 or layer.fps <= 0:
+        return 0
     i = int((t - layer.t_start) * layer.fps)
-    if layer.loops:
-        i %= len(layer.frames)
-    else:
-        i = min(i, len(layer.frames) - 1)
-    return layer.frames[max(i, 0)]
+    return (i % layer.frame_count) if layer.loops \
+        else min(i, layer.frame_count - 1)
+
+
+def _host_strip(reg, layer: Layer, speaking: bool) -> tuple[str, int, bool]:
+    """Which of a pose's three strips plays, and at what rate.
+
+    A hold, a talk and an idle. He talks while there are words under him and
+    idles when there are not — a mouth that keeps moving through silence is
+    the thing that makes a rig look like a puppet rather than a person.
+    """
+    kind = "talk" if speaking else "idle"
+    strip = reg.host_strip(layer.entry_key, kind)
+    if strip is None:
+        return layer.entry_key, layer.fps or 2, True
+    return strip.key, int(strip.fps or 4), True
+
+
+def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
+                *, reg, settings, speaking: bool, lost: dict[str, int]) -> None:
+    """One layer, at one instant, onto the frame."""
+    if layer.kind == "ground":
+        return                                    # the canvas IS the ground
+
+    if layer.kind in ("plate", "fill"):
+        img = cache.plate(layer.entry_key, _frame_index(layer, t),
+                          layer.values, layer.w, layer.h)
+        if img is not None:
+            canvas.alpha_composite(img, (layer.x, layer.y))
+        return
+
+    if layer.kind == "host":
+        key, fps, loops = _host_strip(reg, layer, speaking)
+        shown = Layer(name=layer.name, kind="host", shot_id=layer.shot_id,
+                      t_start=layer.t_start, t_end=layer.t_end,
+                      entry_key=key, frame_count=2, fps=fps, loops=loops)
+        img = cache.plate(key, _frame_index(shown, t), {}, layer.w, layer.h)
+        if img is not None:
+            canvas.alpha_composite(img, (layer.x, layer.y))
+        return
+
+    if layer.kind == "media":
+        if layer.path is None or not Path(layer.path).exists():
+            return
+        from pipeline.plate_frames import cover_into
+        src = Image.open(layer.path).convert("RGBA")
+        canvas.alpha_composite(cover_into(src, layer.w, layer.h),
+                               (layer.x, layer.y))
+        return
+
+    if layer.kind == "text":
+        _draw_text(canvas, layer, settings, reg, lost)
+        return
+
+    if layer.kind == "mark":
+        from pipeline.rasters import fitted_mark, role
+        art = fitted_mark(settings, max(layer.w, 1), max(layer.h, 1),
+                          style=layer.slot or "underline-swipe",
+                          color=role(settings, "attention"))
+        if art is not None:
+            canvas.alpha_composite(art, (layer.x, layer.y))
+        return
+
+    # captions are drawn by the caller, which is the only thing that has the
+    # words and the clock together.
+
+
+def _draw_text(canvas: Image.Image, layer: Layer, settings, reg,
+               lost: dict[str, int]) -> None:
+    """Type with no plate to put it in — a bare shot, or a repeated row.
+
+    Everything else in this renderer sets type into a slot the kit declares,
+    in the face and size the kit declares for it. This is the remainder: a
+    line the format places itself, sized as a fraction of frame height.
+    """
+    from PIL import ImageDraw
+
+    from pipeline import marks as mk
+
+    draw = ImageDraw.Draw(canvas)
+    want = max(int(round(layer.size_fh * canvas.height)), _type_floor(canvas))
+    lines, font, size = mk.fit_lines(
+        draw, layer.text, mk.face_for(layer.size_fh),
+        max(layer.w, 1), max(layer.h, 1),
+        size_px=want, max_lines=layer.max_lines,
+        min_px=_type_floor(canvas))
+    ink = (*reg.colour("structure"), 255)
+    step = int(size * mk.LINE_LEADING)
+    y = layer.y + max((layer.h - step * len(lines)) // 2, 0)
+    for line in lines:
+        w = draw.textlength(line, font=font)
+        if layer.halign == "left":
+            x = layer.x
+        elif layer.halign == "right":
+            x = layer.x + layer.w - w
+        else:
+            x = layer.x + (layer.w - w) / 2
+        draw.text((x, y), line, font=font, fill=ink)
+        y += step
+    shown = " ".join(lines)
+    if len(shown) < len(layer.text.strip()):
+        lost[layer.name] = len(layer.text.strip()) - len(shown)
 
 
 def _type_floor(canvas: Image.Image) -> int:
@@ -500,218 +665,27 @@ def _type_floor(canvas: Image.Image) -> int:
     return max(12, int(MIN_TYPE_FH * canvas.height))
 
 
-def _slot_floor(canvas: Image.Image) -> int:
-    """The floor for type whose size comes from a KIT SLOT, not a template.
+def render_frames(result: BuildResult, resolver, duration: float,
+                  out_video: Path, settings, *, reg, words=()) -> Path:
+    """Compose every frame and pipe it into the encoder.
 
-    A sheet row band or a card label is a short string read in context, not
-    prose, and the kit's own geometry sets it. Holding those to the authored
-    prose floor makes a five-year row give up three years to buy 20px it did
-    not need — see `_agree_on_a_sheet`.
+    Frames are composed in memory and go straight into ffmpeg — 2,000
+    uncompressed 1080x1920 frames is not something to put on a disk on the
+    way past.
     """
-    from pipeline.compose import SLOT_TYPE_FLOOR_FH
-    return max(12, int(SLOT_TYPE_FLOOR_FH * canvas.height))
+    from pipeline.host import speaking_spans
 
-
-def _boil_index(layer: Layer, t: float) -> int:
-    """Which redraw of a code-drawn MARK is showing at `t`.
-
-    Marks only. Type used to come through here too — re-PLACED by a pixel or
-    two rather than re-drawn, because a font cannot be redrawn stroke by
-    stroke — and on a figure that reads as vibration, not as a hand. The
-    re-placement helper is gone rather than left as a knob at zero.
-    """
-    if not layer.boil_fps:
-        return 0
-    return int((t - layer.t_start) * layer.boil_fps)
-
-
-def _draw_columns(canvas: Image.Image, layer: Layer, dx: int, dy: int,
-                  ink, lost: dict[str, int] | None) -> None:
-    """A sheet row: label on the left, figures in fixed columns, ONE line.
-
-    Wrapping a five-year series across two lines destroys the column
-    relationship that is the whole point of the row, so this never wraps. If
-    the series will not fit it drops the OLDEST period and says how many it
-    dropped — fewer years, legibly, beats five years in a heap.
-    """
-    from PIL import ImageDraw
-    d = ImageDraw.Draw(canvas)
-    parts = layer.text.split("\t")
-    label, values = parts[0], [v for v in parts[1:] if v != ""]
-    colour = ink if layer.lit else mk.MUTED
-    face = mk.DISPLAY_FONT if layer.lit else mk.BODY_FONT
-
-    # `type_px` is the size the WHOLE SHEET agreed on, measured at build
-    # time. A stock row has one column where a flow has five, so sized on its
-    # own it never has to shrink and ends up half again as big as the rows
-    # around it — which is what "Shares out" was doing to a table it is
-    # supposed to be a row of.
-    size, values, dropped = mk.fit_columns(
-        d, label, values, layer.w, layer.h, font_name=face,
-        start_px=layer.type_px, min_px=_slot_floor(canvas))
-    font = mk.load_font(face, size)
-
-    asc, desc = font.getmetrics()
-    y = layer.y + dy + max((layer.h - (asc + desc)) // 2, 0)
-    label_w, col_w = mk.column_widths(
-        layer.w, len(values),
-        d.textlength(label, font=font) if label else 0.0)
-    if label:
-        d.text((layer.x + dx, y), label, font=font, fill=colour)
-    for i, v in enumerate(values):
-        right = layer.x + dx + label_w + col_w * (i + 1) - 4
-        d.text((right - d.textlength(v, font=font), y), v, font=font,
-               fill=colour)
-    if dropped and lost is not None:
-        lost[layer.name] = dropped
-
-
-def _draw_layer(canvas: Image.Image, layer: Layer, t: float, cache: _Cache,
-                register: str, resolver: ShortResolver,
-                lost: dict[str, int] | None = None) -> None:
-    ink = mk.INK_FOR_REGISTER.get(register, mk.INK)
-
-    if layer.kind == "ground":
-        canvas.paste(mk.PAPER, (0, 0, canvas.width, canvas.height))
-        return
-
-    if layer.kind == "panel":
-        # Paper, with a drawn edge. Type over a drawing needs a surface, and
-        # in this kit a surface is a torn sheet, not a rounded rectangle.
-        # ONE seed for the whole shot: the panel is the box framing type, and
-        # a box that redraws three times a second is the same unreadability
-        # as type that does.
-        rng = mk.rng_for(layer.name)
-        d = ImageDraw.Draw(canvas)
-        box = (layer.x, layer.y, layer.x + layer.w, layer.y + layer.h)
-        d.rectangle(box, fill=mk.PAPER)
-        mk.drawn_rect(d, box, rng, width=max(3, canvas.width // 320),
-                      color=ink, jitter=1.8, overshoot=0.01)
-        return
-
-    if layer.kind == "light":
-        # A wash MULTIPLIES. Composited normally it would paint over the ink
-        # instead of falling on it, and the room would go flat rather than
-        # dim. Alpha is respected so the untouched parts of the overlay leave
-        # the paper alone.
-        im = cache.get(_frame_for(layer, t), layer.w, layer.h)
-        base = canvas.crop((layer.x, layer.y,
-                            layer.x + layer.w, layer.y + layer.h)).convert("RGB")
-        from PIL import ImageChops
-        wash = Image.alpha_composite(
-            Image.new("RGBA", im.size, (255, 255, 255, 255)), im).convert("RGB")
-        canvas.paste(ImageChops.multiply(base, wash).convert("RGBA"),
-                     (layer.x, layer.y))
-        return
-
-    if layer.kind == "clock":
-        # The hands read the same hour the light does. A clock disagreeing
-        # with the window is worse than no clock at all.
-        from pipeline.progression import clock_hands
-        import math
-        rng = mk.rng_for(layer.name, _boil_index(layer, t))
-        d = ImageDraw.Draw(canvas)
-        cx, cy = layer.x + layer.w / 2, layer.y + layer.h / 2
-        r = min(layer.w, layer.h) / 2
-        for ang, length, width in zip(clock_hands(layer.size_fh),
-                                      (r * 0.52, r * 0.80),
-                                      (max(3, int(r * 0.13)),
-                                       max(2, int(r * 0.09)))):
-            a = math.radians(ang - 90)
-            mk.marker_stroke(d, [(cx, cy),
-                                 (cx + math.cos(a) * length,
-                                  cy + math.sin(a) * length)],
-                             rng, width=width, color=ink, jitter=1.0, passes=2)
-        return
-
-    if layer.kind in ("plate", "host", "enter"):
-        im = cache.get(_frame_for(layer, t), layer.w, layer.h)
-        canvas.alpha_composite(im, (layer.x, layer.y))
-        return
-
-    if layer.kind == "fill":
-        if layer.frames:
-            im = cache.get(_frame_for(layer, t), layer.w, layer.h)
-            canvas.alpha_composite(im, (layer.x, layer.y))
-            return
-        if layer.path is not None:
-            im = cache.get(layer.path, layer.w, layer.h)
-            canvas.alpha_composite(im, (layer.x, layer.y))
-            return
-        if layer.text:
-            # Data does not boil. `dx, dy` stay for the drawing helpers'
-            # signatures; they are zero and the row is placed once.
-            dx = dy = 0
-            if "\t" in layer.text:
-                _draw_columns(canvas, layer, dx, dy, ink, lost)
-                return
-            # How many lines the SLOT holds, not a guess. A kit slot is a
-            # declared box of a known height; hardcoding two lines lost the
-            # tail of every row that needed three.
-            size_px = max(int(layer.h * 0.34), 14)
-            fill_lines = max(1, int(layer.h / (size_px * 1.18)))
-            *_box, dropped = mk.draw_block(
-                canvas, layer.text,
-                (layer.x + dx, layer.y + dy, layer.w, layer.h),
-                font_name=DISPLAY_FONT if layer.lit else BODY_FONT,
-                size_px=size_px,
-                color=ink if layer.lit else mk.MUTED,
-                max_lines=fill_lines, halign="center", valign="center",
-                min_px=_type_floor(canvas))
-            if dropped and lost is not None:
-                lost[layer.name] = dropped
-        return
-
-    if layer.kind == "text":
-        colour = mk.PALETTE.get(layer.slot or "ink", ink)
-        if (layer.slot or "ink") == "ink":
-            colour = ink
-        reveal = 1.0
-        if layer.reveal_s > 0:
-            reveal = mk.ease_out(min((t - layer.t_start) / layer.reveal_s, 1.0))
-        *_box, dropped = mk.draw_block(
-            canvas, layer.text,
-            (layer.x, layer.y, layer.w, layer.h),
-            font_name=mk.face_for(layer.size_fh),
-            size_px=max(int(layer.size_fh * canvas.height), 12),
-            color=colour, max_lines=layer.max_lines,
-            halign=layer.halign, valign="top", reveal=reveal,
-            min_px=_type_floor(canvas))
-        if dropped and lost is not None:
-            lost[layer.name] = dropped
-        return
-
-    if layer.kind == "mark":
-        # Seeded on the boil frame, so the mark is genuinely redrawn rather
-        # than nudged: the same principle the plates were baked on.
-        rng = mk.rng_for(layer.name, _boil_index(layer, t))
-        d = ImageDraw.Draw(canvas)
-        box = (layer.x, layer.y, layer.x + layer.w, layer.y + layer.h)
-        if layer.slot == "ring":
-            mk.scribble_ring(d, box, rng, color=mk.RED,
-                             width=max(4, canvas.width // 200))
-        elif layer.slot == "underline":
-            mk.underline(d, box, rng, color=ink,
-                         width=max(4, canvas.width // 240))
-        elif layer.slot == "arrow-down":
-            mk.arrow_down(d, box, rng, color=mk.RED,
-                          width=max(5, canvas.width // 180))
-        elif layer.slot == "cross":
-            mk.cross(d, box, rng, color=mk.RED,
-                     width=max(5, canvas.width // 180))
-        else:
-            mk.drawn_rect(d, box, rng, width=max(3, canvas.width // 260),
-                          color=ink, jitter=2.0, overshoot=0.02)
-        return
-
-
-def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
-                  duration: float, out_video: Path, settings) -> Path:
-    """Compose every frame and pipe it into the encoder."""
     w, h = result.frame
     n = max(int(round(duration * FPS)), 1)
-    cache = _Cache()
+    cache = _Cache(settings, reg)
     profile = encode_profile(settings, "short")
+    paper = reg.colour("ground")
+
+    # When he is talking, per host layer. Computed once: `speaking_spans` walks
+    # the word list, and doing that per frame is the same answer 2,000 times.
+    speech: dict[str, list[tuple[float, float]]] = {}
+    for l in result.of_kind("host"):
+        speech[l.name] = list(speaking_spans(list(words), l.t_start, l.t_end))
 
     cmd = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
            "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}",
@@ -729,11 +703,13 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
     try:
         for i in range(n):
             t = i / FPS
-            canvas = Image.new("RGBA", (w, h), mk.PAPER)
+            canvas = Image.new("RGBA", (w, h), (*paper, 255))
             for layer in ordered:
-                if layer.t_start - 1e-6 <= t < layer.t_end:
-                    _draw_layer(canvas, layer, t, cache, register, resolver,
-                                lost)
+                if not (layer.t_start - 1e-6 <= t < layer.t_end):
+                    continue
+                talking = any(a <= t < b for a, b in speech.get(layer.name, ()))
+                _draw_layer(canvas, layer, t, cache, reg=reg, settings=settings,
+                            speaking=talking, lost=lost)
             proc.stdin.write(canvas.tobytes())
     finally:
         proc.stdin.close()
@@ -743,8 +719,6 @@ def render_frames(result: BuildResult, register: str, resolver: ShortResolver,
         raise RenderError(f"encode failed ({rc}): {err[-800:]}")
     render_frames.last_text_overflow = dict(lost)     # type: ignore[attr-defined]
     return out_video
-
-
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
@@ -769,8 +743,7 @@ def render_short(script, tts, workspace: Path, settings, *,
     workdir = Path(workspace) / "render_short"
     workdir.mkdir(parents=True, exist_ok=True)
 
-    register = pick_register(script.content_sha())
-    kit = kit_for(register)
+    reg = load_plates(settings.assets_dir)
     # Which template, by name. This is the whole of what the engine needed to
     # carry three formats instead of one — there is no per-format branch
     # anywhere below, and a fourth format is a JSON file and this argument.
@@ -818,14 +791,9 @@ def render_short(script, tts, workspace: Path, settings, *,
     spans = resolve_spans(fmt, words, duration,
                           anchors if anchors is not None
                           else build_anchors(script))
-    spans = cap_one_shots(spans, kit, register)
 
-
-
-    # The LONG travels: light, clutter, the wall and the clock advance across
-    # it. A 70-second vertical has nowhere to go, and says so in its template.
-    result = build_layers(fmt, spans, resolver, kit, register,
-                          progression=fmt.progression)
+    result = build_layers(fmt, spans, resolver, reg,
+                          aspect=fmt.aspect, seed=script.content_sha())
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
@@ -846,15 +814,48 @@ def render_short(script, tts, workspace: Path, settings, *,
     # A line that does not fit is a script the renderer cannot express. It
     # stops here, named, before a frame is drawn — not silently shortened on
     # the way to the screen.
-    over = check_budgets(fmt, result)
+    over = check_budgets(fmt, result, reg)
     if over:
         raise RenderError(
             "the script does not fit the shots it is written for:\n  "
             + "\n  ".join(over))
 
     silent = workdir / "video_silent.mp4"
-    render_frames(result, register, resolver, duration, silent, settings)
+    render_frames(result, resolver, duration, silent, settings, reg=reg,
+                  words=words)
     overflow = getattr(render_frames, "last_text_overflow", {}) or {}
+
+    # Captions are BURNED, not drawn per frame: one phrase at a time, in the
+    # same ink as everything else on the frame, from the same builder the LONG
+    # uses. Drawing them into every one of two thousand frames sets the same
+    # line thirty times a second for no reason.
+    from pipeline.rasters import build_phrase_ass
+
+    W, H = result.frame
+    # ONLY THE SHOTS THAT ASKED FOR THEM. `captions: false` is how a template
+    # says the type on this plate IS the line — the hook card sets its own hook
+    # at 18 characters a line, and a caption of the same sentence underneath is
+    # the same words twice. Burning the whole track ignored the flag, because
+    # the flag lives per shot and a subtitle file does not.
+    bands = [(l.t_start, l.t_end) for l in result.of_kind("caption")]
+    spoken = [w for w in words
+              if any(a <= float(getattr(w, "start", 0.0)) < b for a, b in bands)]
+    ass = workdir / "captions.ass"
+    ass.write_text(build_phrase_ass(
+        spoken, settings=settings, play_res=(W, H),
+        font_size=int(H * 0.030), margin_v=int(H * 0.13),
+        margin_h=int(W * 0.10), max_words=5, max_chars=24,
+        duration=duration), encoding="utf-8")
+    if spoken:
+        burned = workdir / "video_captioned.mp4"
+        # The filter takes a PATH, and a Windows drive letter or a colon in a
+        # workspace name is a filtergraph separator. Escaped the way libavfilter
+        # asks rather than by hoping the path is plain.
+        spec = str(ass).replace("\\", "/").replace(":", "\\:")
+        run_ffmpeg(["-i", str(silent), "-vf", f"ass='{spec}'",
+                    "-c:v", "libx264", "-preset", "medium",
+                    "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
+        silent = burned
 
     out = Path(workspace) / out_name
     audio = getattr(tts, "audio_path", None)
@@ -877,7 +878,7 @@ def render_short(script, tts, workspace: Path, settings, *,
         "beats": n_beats,
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
-        "register": register,
+        "kit": "v2-plates",
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
         "shots": [{
@@ -894,14 +895,11 @@ def render_short(script, tts, workspace: Path, settings, *,
         # emergent accident and a SHORT once reached 4% of its own library;
         # under the templates it is a property of the twelve shots, and it is
         # recorded so it stays visible rather than being rediscovered.
-        "kit_assets_used": sorted({l.entry_key for l in result.layers
-                                   if l.entry_key}),
+        "plates_used": result.plates_used,
         "kit_reach": (
-            f"Kit: {len({l.entry_key for l in result.layers if l.entry_key})} "
-            f"entries in {register}, "
-            f"{len({l.concept for l in result.layers if l.concept})} concepts, "
-            f"{sum(1 for l in result.layers if len(l.frames) > 1)} animated "
-            f"layers"),
+            f"Kit: {len(result.plates_used)} of {len(reg)} plates, "
+            f"{len({l.concept for l in result.layers if l.concept})} families, "
+            f"{sum(1 for l in result.layers if l.moves)} animated layers"),
         "skipped": result.skipped,
         "dropped_shots": dropped,
         # Characters that did not fit even at the readability floor. Non-empty

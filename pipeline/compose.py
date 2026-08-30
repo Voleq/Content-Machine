@@ -257,19 +257,34 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             w, h = _fit(plate, frame)
             placed = ((fw - w) // 2, (fh - h) // 2, w, h)
 
-            # Moving in on a slot: scale the plate so that slot fills a real
-            # share of the frame, and centre it there. Without this a walk
-            # down a list is one wide shot with a rectangle migrating down it,
-            # which a viewer reads as a single held composition.
+            # MOVING IN ON A SLOT — AND NEVER PAST THE EDGES OF WHAT IT
+            # HAS TO SHOW. Without this a walk down a list is one wide shot
+            # with a rectangle migrating down it, which a viewer reads as a
+            # single held composition.
+            #
+            # The zoom is bounded by the frame's WIDTH, not only by the target
+            # height. A vertical sheet's row band is 1044 of 1080 canvas units
+            # wide: scaled until it filled 62% of the frame's height it came
+            # out at 1.4x, and the last three columns of every row went off
+            # the right-hand edge. A row you cannot see the figures on is not
+            # a row anybody moved in on. Where the slot is already full width
+            # the move is a PAN — the composition still changes, and every
+            # figure stays on screen.
             if shot.focus and plate.slot(shot.focus) is not None:
-                _, _, _, sh_px = _slot_in_frame(plate, shot.focus, placed)
-                k = max(min((fh * FOCUS_FILL) / max(sh_px, 1),
-                            FOCUS_MAX_SCALE), 1.0)
+                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, placed)
+                by_height = (fh * FOCUS_FILL) / max(sh_px, 1)
+                by_width = fw / max(sw, 1)
+                k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
                 nw, nh = int(w * k), int(h * k)
-                sx, sy, sw, sh2 = _slot_in_frame(
+                sx, sy, sw, sh_px = _slot_in_frame(
                     plate, shot.focus, ((fw - nw) // 2, (fh - nh) // 2, nw, nh))
-                placed = ((fw - nw) // 2 + (fw // 2 - (sx + sw // 2)),
-                          (fh - nh) // 2 + (fh // 2 - (sy + sh2 // 2)), nw, nh)
+                nx = (fw - nw) // 2 + (fw // 2 - (sx + sw // 2))
+                ny = (fh - nh) // 2 + (fh // 2 - (sy + sh_px // 2))
+                # Never open a gap at an edge: a plate larger than the frame
+                # covers it, and one that is not stays centred on that axis.
+                nx = min(0, max(nx, fw - nw)) if nw >= fw else (fw - nw) // 2
+                ny = min(0, max(ny, fh - nh)) if nh >= fh else (fh - nh) // 2
+                placed = (nx, ny, nw, nh)
                 w, h = nw, nh
 
             # -- what goes in its slots. The renderer draws the plate WITH
@@ -438,6 +453,16 @@ def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
 
     fill = build_fill(reg, " | ".join(parts))
     for problem in fill.problems:
+        # "FILLS NONE OF ITS SLOTS" IS A TAG PROTECTION, NOT A TEMPLATE ONE.
+        #
+        # It exists because a director naming a plate and writing nothing on it
+        # gets an empty rectangle that looks like a design choice. A template
+        # shot is authored as a whole composition: `the-turn` is a room, a host
+        # in close-up and the spoken line, and the room's only text slot is the
+        # chapter-opener title that a SHORT has no use for. Which binds are
+        # required is carried by the `?` prefix and reported through `unfilled`.
+        if "fills none of its" in problem:
+            continue
         raise TemplateError(f"{shot.id}: {problem}")
     return fill.values, unfilled, skipped
 

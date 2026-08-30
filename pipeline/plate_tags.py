@@ -115,6 +115,12 @@ def parse_plate_payload(payload: str) -> tuple[str, list[tuple[str, str]]]:
     return name, assigns
 
 
+def _head_count(plate: Plate) -> int:
+    """How many period heads this plate declares."""
+    return sum(1 for n in plate.slots if _INDEXED_RE.match(n)
+               and _INDEXED_RE.match(n).group(1) == "head")
+
+
 def _column_count(plate: Plate) -> int:
     """How many periods this plate is authored for.
 
@@ -122,9 +128,7 @@ def _column_count(plate: Plate) -> int:
     Read off the declared slots rather than assumed, because `charts/line-dense`
     is deliberately four heads over many observations.
     """
-    heads = sum(1 for n in plate.slots if _INDEXED_RE.match(n)
-                and _INDEXED_RE.match(n).group(1) == "head")
-    return heads or plate.columns or PERIOD_COUNT
+    return _head_count(plate) or plate.columns or PERIOD_COUNT
 
 
 def _indexed_family(plate: Plate, stem: str) -> list[str]:
@@ -233,7 +237,17 @@ def build_fill(reg: Registry, payload: str, *, aspect: str = "",
                     f"figures a renderer draws through, and {raw!r} is not a "
                     f"series.{detail}")
                 continue
-            if header_len and len(vals) != header_len:
+            # THE HEADS ARE NOT ALWAYS ONE PER FIGURE, AND THE PLATE SAYS SO.
+            #
+            # `charts/line-dense` declares `columns: 6` and four heads: the
+            # heads are axis labels spanning the series, not a label per
+            # observation, which is the whole point of a dense chart — sixty
+            # daily closes under four dates. Every per-period plate declares as
+            # many heads as it has columns, so the two agreeing is the signal
+            # that a figure belongs under a head. Checking regardless refused a
+            # 61-point price series for not being six points long.
+            per_period = _head_count(plate) == (plate.columns or PERIOD_COUNT)
+            if per_period and header_len and len(vals) != header_len:
                 fill.problems.append(
                     f"[PLATE: {name}] {k}= has {len(vals)} figures against "
                     f"{header_len} period heads")

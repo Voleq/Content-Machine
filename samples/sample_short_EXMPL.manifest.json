@@ -1,10 +1,10 @@
 {
  "ticker": "EXMPL",
  "format": "short",
- "beats": 9,
+ "beats": 10,
  "shots_count": 12,
  "anchored_shots": 4,
- "register": "grease-pencil",
+ "kit": "v2-plates",
  "duration_s": 71.865,
  "frame": {
   "w": 1080,
@@ -12,221 +12,180 @@
  },
  "shots": [
   {
-   "id": "cold-open",
-   "plate": "room-wide",
+   "id": "hook",
+   "plate": "shorts/hook-card-t1",
    "start_s": 0.0,
-   "end_s": 5.05,
+   "end_s": 5.012,
    "anchored": true,
-   "max_hold_s": 6.0,
+   "max_hold_s": 5.0,
    "layers": [
-    "cold-open:ground",
-    "cold-open:plate:room-wide",
-    "cold-open:host:talking-at-screen",
-    "cold-open:panel:hook",
-    "cold-open:text:hook"
+    "hook:ground",
+    "hook:plate:shorts/hook-card-t1"
    ]
   },
   {
    "id": "the-move",
-   "plate": "screen-full",
-   "start_s": 5.05,
-   "end_s": 10.101,
+   "plate": "charts/line-dense-9x16",
+   "start_s": 5.012,
+   "end_s": 10.023,
    "anchored": false,
-   "max_hold_s": 6.0,
+   "max_hold_s": 5.0,
    "layers": [
     "the-move:ground",
-    "the-move:enter:underline-swipe",
-    "the-move:plate:screen-full",
-    "the-move:fill:screen",
-    "the-move:panel:move-summary",
-    "the-move:text:move-summary",
-    "the-move:mark:extreme-ring"
+    "the-move:plate:charts/line-dense-9x16",
+    "the-move:caption"
    ]
   },
   {
    "id": "the-news",
-   "plate": "desk-top-down",
-   "start_s": 10.101,
-   "end_s": 15.151,
+   "plate": "paper/headline-band-t1-9x16",
+   "start_s": 10.023,
+   "end_s": 15.035,
    "anchored": false,
-   "max_hold_s": 6.0,
+   "max_hold_s": 5.0,
    "layers": [
     "the-news:ground",
-    "the-news:plate:desk-top-down",
-    "the-news:fill:pages",
-    "the-news:panel:headline",
-    "the-news:text:headline",
-    "the-news:panel:meaning",
-    "the-news:text:meaning"
+    "the-news:plate:paper/headline-band-t1-9x16",
+    "the-news:caption"
    ]
   },
   {
    "id": "the-turn",
-   "plate": null,
-   "start_s": 15.151,
-   "end_s": 20.151,
+   "plate": "room/desk-front-9x16",
+   "start_s": 15.035,
+   "end_s": 21.46,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
     "the-turn:ground",
-    "the-turn:text:turn"
+    "the-turn:plate:room/desk-front-9x16",
+    "the-turn:host:close-up",
+    "the-turn:caption"
    ]
   },
   {
    "id": "numbers-1",
-   "plate": "sheet-tall",
-   "start_s": 20.151,
-   "end_s": 26.615,
+   "plate": "tables/numbers-sheet-3r-9x16",
+   "start_s": 21.46,
+   "end_s": 27.886,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "numbers-1:ground",
-    "numbers-1:plate:sheet-tall",
-    "numbers-1:fill:row-1",
-    "numbers-1:fill:row-2",
-    "numbers-1:fill:row-3",
-    "numbers-1:fill:row-4",
-    "numbers-1:fill:row-5",
-    "numbers-1:mark:scribble"
+    "numbers-1:plate:tables/numbers-sheet-3r-9x16",
+    "numbers-1:caption"
    ]
   },
   {
    "id": "numbers-2",
-   "plate": "sheet-tall",
-   "start_s": 26.615,
-   "end_s": 33.079,
+   "plate": "tables/numbers-sheet-3r-9x16",
+   "start_s": 27.886,
+   "end_s": 34.312,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "numbers-2:ground",
-    "numbers-2:plate:sheet-tall",
-    "numbers-2:fill:row-1",
-    "numbers-2:fill:row-2",
-    "numbers-2:fill:row-3",
-    "numbers-2:fill:row-4",
-    "numbers-2:fill:row-5",
-    "numbers-2:mark:scribble"
+    "numbers-2:plate:tables/numbers-sheet-3r-9x16",
+    "numbers-2:caption"
    ]
   },
   {
    "id": "numbers-3",
-   "plate": "sheet-tall",
-   "start_s": 33.079,
-   "end_s": 39.544,
+   "plate": "tables/numbers-sheet-3r-9x16",
+   "start_s": 34.312,
+   "end_s": 40.737,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "numbers-3:ground",
-    "numbers-3:plate:sheet-tall",
-    "numbers-3:fill:row-1",
-    "numbers-3:fill:row-2",
-    "numbers-3:fill:row-3",
-    "numbers-3:fill:row-4",
-    "numbers-3:fill:row-5",
-    "numbers-3:mark:scribble"
-   ]
-  },
-  {
-   "id": "numbers-4",
-   "plate": "sheet-tall",
-   "start_s": 39.544,
-   "end_s": 46.008,
-   "anchored": false,
-   "max_hold_s": 5.0,
-   "layers": [
-    "numbers-4:ground",
-    "numbers-4:plate:sheet-tall",
-    "numbers-4:fill:row-1",
-    "numbers-4:fill:row-2",
-    "numbers-4:fill:row-3",
-    "numbers-4:fill:row-4",
-    "numbers-4:fill:row-5",
-    "numbers-4:mark:scribble"
+    "numbers-3:plate:tables/numbers-sheet-3r-9x16",
+    "numbers-3:caption"
    ]
   },
   {
    "id": "the-sheet",
-   "plate": "sheet-tall",
-   "start_s": 46.008,
-   "end_s": 52.472,
+   "plate": "tables/numbers-sheet-4r-9x16",
+   "start_s": 40.737,
+   "end_s": 47.163,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "the-sheet:ground",
-    "the-sheet:plate:sheet-tall",
-    "the-sheet:fill:row-1",
-    "the-sheet:fill:row-2",
-    "the-sheet:fill:row-3",
-    "the-sheet:fill:row-4",
-    "the-sheet:fill:row-5",
-    "the-sheet:panel:numbers-comment",
-    "the-sheet:text:numbers-comment"
+    "the-sheet:plate:tables/numbers-sheet-4r-9x16",
+    "the-sheet:caption"
+   ]
+  },
+  {
+   "id": "the-comment",
+   "plate": "cards/quote-pull-9x16",
+   "start_s": 47.163,
+   "end_s": 53.588,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "the-comment:ground",
+    "the-comment:plate:cards/quote-pull-9x16",
+    "the-comment:caption"
    ]
   },
   {
    "id": "cheap-or-trap",
-   "plate": "compare-plate",
-   "start_s": 52.472,
-   "end_s": 58.936,
+   "plate": "structure/both-true-9x16",
+   "start_s": 53.588,
+   "end_s": 60.014,
    "anchored": true,
    "max_hold_s": 5.0,
    "layers": [
     "cheap-or-trap:ground",
-    "cheap-or-trap:plate:compare-plate",
-    "cheap-or-trap:fill:left",
-    "cheap-or-trap:fill:right",
-    "cheap-or-trap:fill:gap",
-    "cheap-or-trap:panel:cheap-or-trap",
-    "cheap-or-trap:text:cheap-or-trap"
+    "cheap-or-trap:plate:structure/both-true-9x16",
+    "cheap-or-trap:caption"
    ]
   },
   {
    "id": "payoff",
-   "plate": "room-wide",
-   "start_s": 58.936,
-   "end_s": 66.401,
+   "plate": "figures/big-number-l2-9x16",
+   "start_s": 60.014,
+   "end_s": 66.439,
    "anchored": true,
-   "max_hold_s": 6.0,
+   "max_hold_s": 5.0,
    "layers": [
     "payoff:ground",
-    "payoff:plate:room-wide",
-    "payoff:host:talking-to-camera",
-    "payoff:panel:conclusion",
-    "payoff:text:conclusion"
+    "payoff:plate:figures/big-number-l2-9x16"
    ]
   },
   {
    "id": "close",
-   "plate": "room-wide",
-   "start_s": 66.401,
+   "plate": "structure/closing-9x16",
+   "start_s": 66.439,
    "end_s": 71.865,
    "anchored": false,
    "max_hold_s": 4.0,
    "layers": [
     "close:ground",
-    "close:plate:room-wide",
-    "close:host:sitting-with-mug",
-    "close:panel:handle",
-    "close:text:handle"
+    "close:plate:structure/closing-9x16",
+    "close:caption"
    ]
   }
  ],
- "layers": 79,
- "kit_assets_used": [
-  "compare-plate--grease-pencil",
-  "desk-top-down--grease-pencil",
-  "page-corporate--grease-pencil",
-  "room-wide--grease-pencil",
-  "screen-full--grease-pencil",
-  "sheet-tall--grease-pencil",
-  "sitting-with-mug--grease-pencil",
-  "talking-at-screen--grease-pencil",
-  "talking-to-camera--grease-pencil",
-  "underline-swipe--grease-pencil"
+ "layers": 35,
+ "plates_used": [
+  "cards/quote-pull-9x16",
+  "charts/line-dense-9x16",
+  "figures/big-number-l2-9x16",
+  "host/close-up",
+  "paper/headline-band-t1-9x16",
+  "room/desk-front-9x16",
+  "shorts/hook-card-t1",
+  "structure/both-true-9x16",
+  "structure/closing-9x16",
+  "tables/numbers-sheet-3r-9x16",
+  "tables/numbers-sheet-4r-9x16"
  ],
- "kit_reach": "Kit: 10 entries in grease-pencil, 10 concepts, 17 animated layers",
- "skipped": [],
+ "kit_reach": "Kit: 11 of 140 plates, 9 families, 5 animated layers",
+ "skipped": [
+  "payoff.detail <- script.verdict"
+ ],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 5.0
+ "longest_layer_hold_s": 6.426
 }
