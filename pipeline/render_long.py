@@ -76,8 +76,9 @@ from pipeline.audio_assets import (
 )
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.host import (build_host_clip, dressed, frame_shot,
-                           looking_at, pick_shot, place_on_room)
+from pipeline.host import (HostShot, build_host_clip, dressed,
+                           frame_shot, looking_at, pick_shot,
+                           place_on_room)
 from pipeline.chart import draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
@@ -346,6 +347,7 @@ def render_long(
         plate = _room_plate("establish", seed=f"{script.ticker}|{title}")
         if plate is None or "title" not in plate.slots:
             return _room_still(seg_i, "establish")
+        plates_used.add(plate.key)
         dest = rdir / f"chapter_{seg_i}.png"
         img = render_still(plate, {"title": title}, settings, reg)
         img.convert("RGB").resize((W, H), Image.LANCZOS).save(dest)
@@ -490,6 +492,19 @@ def render_long(
     # is limit 1) is not reached for twice.
     host_used: dict[str, int] = {}
 
+    # THE LINE A CHAPTER RESTS ON IS TOLD IN CLOSE-UP. Every host beat in this
+    # format was a full figure in a wide room — the shot you use when the ROOM
+    # is the point — including the one the chapter is built to arrive at. The
+    # last host beat before the next chapter starts is that line, and the kit
+    # has a role for it: `rests-on` is the close-up.
+    lands_a_chapter: set[int] = set()
+    _bounds = [t for t, _title, _type in chapters] + [duration + 1.0]
+    for _a, _b in zip(_bounds, _bounds[1:]):
+        inside = [i for i, sg in enumerate(segments)
+                  if sg.kind == "host" and _a <= sg.start < _b]
+        if inside:
+            lands_a_chapter.add(inside[-1])
+
     # What the face did, per segment. Over forty minutes the host is the
     # most-viewed element in the channel and the easiest to leave static
     # without noticing, so the manifest records it.
@@ -500,15 +515,21 @@ def render_long(
 
         The room this beat is shot in decides his size and where he stands.
         """
-        role_name = "panel" if panel else "beat"
-        room = _room_plate(role_name if panel else "talk",
+        role_name = ("panel" if panel
+                     else "rests-on" if seg_i in lands_a_chapter
+                     else "beat")
+        room = _room_plate("panel" if panel else "talk",
                            seed=f"{script.ticker}|{seg_i % 3}")
         # He is composited per output frame, so he is loaded at the size he
         # will be SHOWN at rather than at his delivered 2160x3840. Without
         # this every frame of every host beat is a 4K RGBA resize.
         shot_probe = pick_shot(reg, role_name, seg_i, used=host_used)
         target_h = H
-        if room is not None and shot_probe is not None:
+        if shot_probe is not None and shot_probe.is_framing:
+            spot_probe = frame_shot(shot_probe, (W, H))
+            if spot_probe is not None:
+                target_h = max(spot_probe.height, 1)
+        elif room is not None and shot_probe is not None:
             placed_probe = place_on_room(room, shot_probe)
             if placed_probe is not None:
                 target_h = max(int(placed_probe.height * (W / room.delivered[0])), 1)
@@ -527,7 +548,19 @@ def render_long(
                 host_used.get(motion.get("pose", ""), 0) + 1)
 
         clip_path, (hw, hh) = built
-        shot = pick_shot(reg, role_name, seg_i, used=host_used)
+        # The pose the clip was actually BUILT from, not a second guess at it:
+        # `build_host_clip` reads the same `used` tally this call just moved.
+        pose = reg.get(motion.get("pose", "")) if motion else None
+        shot = (HostShot(pose=pose,
+                         talk=reg.host_strip(pose.key, "talk"),
+                         idle=reg.host_strip(pose.key, "idle"))
+                if pose is not None
+                else pick_shot(reg, role_name, seg_i, used=host_used))
+        if shot is not None and shot.is_framing:
+            spot = frame_shot(shot, (W, H))
+            if spot is not None:
+                return (_add_input(["-i", str(clip_path)]),
+                        spot.x, spot.y, max(spot.width, 1), max(spot.height, 1))
         placed = place_on_room(room, shot) if (room and shot) else None
         if placed is not None:
             k = W / room.delivered[0]
@@ -682,6 +715,8 @@ def render_long(
         base = (Image.open(room.path).convert("RGB").resize((W, H), Image.LANCZOS)
                 if room is not None
                 else Image.new("RGB", (W, H), role(settings, "ground")))
+        if room is not None:
+            plates_used.add(room.key)
         bx, by, max_w, max_h = _evidence_box(room, seg_i, two_shot)
         ew, eh = size
         ex = bx + max(int((max_w - ew) / 2), 0)
@@ -912,7 +947,14 @@ def render_long(
         if seg.kind == "host":
             meta["variant"] = seg.payload.get("variant", 0)
         if seg.payload.get("layout"):
+            # WHAT WAS DRAWN, NOT WHAT WAS ASKED FOR. An annotated beat is
+            # forced to the full frame whatever the script wrote, so a
+            # manifest that echoed the payload said `two-shot` about a beat
+            # rendered one-up — and the mark warnings are read against this.
             meta["layout"] = seg.payload["layout"]
+            if seg.payload["layout"] == "two-shot" and _annotated(seg):
+                meta["layout"] = "full-frame (annotated)"
+                meta["layout_asked"] = "two-shot"
         if seg_animation:
             meta["animation"] = seg_animation
         meta["filter"] = chain
