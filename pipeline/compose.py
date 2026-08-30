@@ -35,6 +35,7 @@ Three things follow from the v2 kit that did not hold under the old one:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -52,6 +53,24 @@ log = logging.getLogger(__name__)
 # as close as the ceiling allows.
 FOCUS_FILL = 0.62
 FOCUS_MAX_SCALE = 2.4
+
+# How much of a two-shot's width the graphic takes. The rest is his column,
+# and a medium framing draws about 39% of a 16:9 frame — so he has room to
+# stand in his half rather than being cropped into it.
+TWO_SHOT_GRAPHIC = 0.56
+
+# HOW MUCH A PLATE MAY CARRY AND STILL SHARE THE FRAME. A two-shot draws the
+# graphic at 56% of the width, so its type lands at 56% of the size it was
+# drawn at. A quote pull is three slots and reads fine at that; a four-row
+# sheet is thirty-nine and its unit row is already the smallest type in the
+# kit. The dense plates are the ones a chapter is ABOUT, and a chapter's
+# evidence beat can have the frame to itself.
+TWO_SHOT_MAX_SLOTS = 10
+
+# What he does in a room that declares `hostAnchor: false`. The role is the
+# kit's own, so a kit that renames its framings is followed rather than
+# hard-coded around.
+HOST_WHERE_NOBODY_STANDS = "to-camera"
 
 # Where a caption band sits, as a fraction of frame height, and how tall it is
 # allowed to be. Kept clear of the disclaimer and of the top strip so a long
@@ -167,7 +186,13 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
             resolved.append(got)
     if not resolved:
         return None
-    return resolved[step % len(resolved)]
+    # The step rotates WITHIN a video; the seed decides where the rotation
+    # starts, so two videos do not open on the same angle. The docstring said
+    # both and the code did only the first — every short in the channel opened
+    # on the same room.
+    offset = (int(hashlib.sha256(seed.encode()).hexdigest(), 16)
+              if seed else 0)
+    return resolved[(offset + step) % len(resolved)]
 
 
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
@@ -272,6 +297,12 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         plate: Plate | None = None
         placed: tuple[int, int, int, int] | None = None
+        # The area the plate owns, and where the host stands if he is not on a
+        # room. A one-up shot gives the plate the whole frame and the host
+        # nothing to be beside; a two-shot splits it.
+        stage: tuple[int, int, int, int] = (0, 0, fw, fh)
+        host_column: tuple[int, int, int, int] | None = None
+        graphic_side = ""
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
@@ -289,8 +320,42 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                     f"kit. The registry is the only library — a name that "
                     f"resolves to nothing draws nothing, and an empty area on "
                     f"screen looks like a design choice.")
-            w, h = _fit(plate, frame)
-            placed = ((fw - w) // 2, (fh - h) // 2, w, h)
+            # -- A TWO-SHOT IS A SPLIT FRAME, NOT A MAN OVER A CHART. A shot
+            #    carrying both a content plate and a host drew the plate at
+            #    the full frame and then composited him into the middle of
+            #    it, over the thing he is discussing. The graphic takes a
+            #    column and he takes the other; which side alternates, so
+            #    consecutive two-shots are not the same picture; and the
+            #    glance is cut toward the graphic.
+            #
+            #    Only where the frame is wider than it is tall. A vertical
+            #    two-shot side by side gives each of them 46% of 1080, and a
+            #    plate drawn for a phone is not readable in half of one.
+            #
+            #    NEVER ON AN ANNOTATED BEAT. A mark is drawn at the scale of
+            #    the thing it marks, and half a frame is where a nib stops
+            #    being legible — which is a composition fault, not a reason to
+            #    thicken every stroke in the kit.
+            if (shot.host and plate.family != "room" and not shot.marks
+                    and plate.slot(shot.host.slot) is None and fw > fh):
+                if len(plate.slots) > TWO_SHOT_MAX_SLOTS:
+                    raise TemplateError(
+                        f"{fmt.name}/{shot.id}: {plate.key} declares "
+                        f"{len(plate.slots)} slots and cannot share the frame "
+                        f"with the host. A two-shot draws it at "
+                        f"{TWO_SHOT_GRAPHIC:.0%} of the width, so its type "
+                        f"lands at {TWO_SHOT_GRAPHIC:.0%} of the size it was "
+                        f"drawn at. Drop the host from this shot and let the "
+                        f"evidence have the frame.")
+                graphic_side = "left" if span_index % 2 else "right"
+                gw = int(fw * TWO_SHOT_GRAPHIC)
+                stage = ((0 if graphic_side == "left" else fw - gw),
+                         0, gw, fh)
+                host_column = ((gw, 0, fw - gw, fh)
+                               if graphic_side == "left" else (0, 0, fw - gw, fh))
+            w, h = _fit(plate, (stage[2], stage[3]))
+            placed = (stage[0] + (stage[2] - w) // 2,
+                      stage[1] + (stage[3] - h) // 2, w, h)
 
             # MOVING IN ON A SLOT — AND NEVER PAST THE EDGES OF WHAT IT
             # HAS TO SHOW. Without this a walk down a list is one wide shot
@@ -306,19 +371,22 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # the move is a PAN — the composition still changes, and every
             # figure stays on screen.
             if shot.focus and plate.slot(shot.focus) is not None:
+                gx, gy, gw2, gh2 = stage
                 sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, placed)
-                by_height = (fh * FOCUS_FILL) / max(sh_px, 1)
-                by_width = fw / max(sw, 1)
+                by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
+                by_width = gw2 / max(sw, 1)
                 k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
                 nw, nh = int(w * k), int(h * k)
-                sx, sy, sw, sh_px = _slot_in_frame(
-                    plate, shot.focus, ((fw - nw) // 2, (fh - nh) // 2, nw, nh))
-                nx = (fw - nw) // 2 + (fw // 2 - (sx + sw // 2))
-                ny = (fh - nh) // 2 + (fh // 2 - (sy + sh_px // 2))
-                # Never open a gap at an edge: a plate larger than the frame
+                base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
+                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, base)
+                nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
+                ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
+                # Never open a gap at an edge: a plate larger than its stage
                 # covers it, and one that is not stays centred on that axis.
-                nx = min(0, max(nx, fw - nw)) if nw >= fw else (fw - nw) // 2
-                ny = min(0, max(ny, fh - nh)) if nh >= fh else (fh - nh) // 2
+                nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
+                      else gx + (gw2 - nw) // 2)
+                ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
+                      else gy + (gh2 - nh) // 2)
                 placed = (nx, ny, nw, nh)
                 w, h = nw, nh
 
@@ -400,7 +468,8 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         # -- the host
         if shot.host:
             host_layer = _host_layer(reg, shot, plate, placed, frame, t0, t1,
-                                     seed=seed)
+                                     seed=seed, column=host_column,
+                                     graphic_side=graphic_side)
             if host_layer is not None:
                 layers.append(host_layer)
 
@@ -556,7 +625,9 @@ def _text_box(spec, frame: tuple[int, int]) -> tuple[int, int, int, int]:
 def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
                 placed: tuple[int, int, int, int] | None,
                 frame: tuple[int, int], t0: float, t1: float, *,
-                seed: str) -> Layer | None:
+                seed: str,
+                column: tuple[int, int, int, int] | None = None,
+                graphic_side: str = "") -> Layer | None:
     """The host, solved onto the room's anchor.
 
     THE ANCHOR'S HEIGHT IS HIS TARGET HEIGHT — never its width, which the
@@ -565,10 +636,32 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     ten-to-twenty-percent errors that read as a bad composite rather than as a
     bug. `host.place_on_room` is the contract; this only decides which pose.
     """
-    from pipeline.host import HostShot, place_on_room
+    from pipeline.host import (HostShot, dressed, frame_shot,
+                               looking_at, place_on_room)
 
     role = shot.host.pose
-    pose = reg.get(role) if role in reg else reg.host_for(role, seed=seed or shot.id)
+    # THE SEED IS PER SHOT, NOT PER VIDEO. `to-camera` is the close-up and the
+    # medium; hashed on the video's seed alone, every to-camera beat in a long
+    # resolves to the same one of them and the other is never cut to at all.
+    pose = (reg.get(role) if role in reg
+            else reg.host_for(role, seed=f"{seed}|{shot.id}"))
+
+    # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The camera
+    # is above the desk on `high-desk-down` and square to a wall of index cards
+    # on `wall-of-calls`: there is no floor in either, and both say so in the
+    # field rather than leaving it out. Standing a figure there put him on a
+    # surface the camera was above. A framing has no floor line to pin, so the
+    # beat survives as the close-up it should probably have been — which is
+    # branching on the refusal rather than reading it as an omission.
+    if (plate is not None and plate.refuses_host
+            and pose is not None and pose.floor_line_y):
+        instead = reg.host_for(HOST_WHERE_NOBODY_STANDS,
+                               seed=f"{seed}|{shot.id}")
+        if instead is not None:
+            log.debug("%s refuses a cut-out — %s is framed instead of %s",
+                      plate.key, instead.key, pose.key)
+            pose = instead
+
     if pose is None:
         raise TemplateError(
             f"{shot.id}: host {role!r} is neither a pose in the kit nor a role "
@@ -576,12 +669,32 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
             f"{', '.join(reg.host_roles_available())}")
 
     fw, fh = frame
-    host = HostShot(pose=pose,
-                    talk=reg.host_strip(pose.key, "talk"),
-                    idle=reg.host_strip(pose.key, "idle"))
+    host = dressed(reg, HostShot(pose=pose,
+                                 talk=reg.host_strip(pose.key, "talk"),
+                                 idle=reg.host_strip(pose.key, "idle")),
+                   seed=seed)
+
+    # A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON, and only then. The
+    # kit says on the plate that a glance with the graphic on the opposite
+    # side is worse than him facing camera, so straight to camera is both the
+    # default and the fallback: `looking_at` returns him unchanged when the
+    # side is unknown or the glance was never drawn for this pose.
+    if graphic_side:
+        host = looking_at(reg, host, graphic_side)
 
     box = None
-    if plate is not None and placed is not None:
+    # A FRAMING IS A CAMERA DISTANCE AND IS NEVER SOLVED ONTO AN ANCHOR.
+    # `close-up` and `medium` carry no floor line: fit into a room's standing
+    # spot, a close-up is a head the size of a man, hovering where his shoes
+    # would be. It is placed against the frame — or, in a two-shot, against
+    # his half of it — on the eye line the plate publishes.
+    if host.is_framing:
+        stage = column or (0, 0, fw, fh)
+        spot = frame_shot(host, (fw, fh),
+                          centre_fw=(stage[0] + stage[2] / 2) / max(fw, 1))
+        if spot is not None:
+            box = (spot.x, spot.y, spot.width, spot.height)
+    if box is None and plate is not None and placed is not None:
         spot = place_on_room(plate, host)
         if spot is not None:
             k = placed[2] / max(plate.delivered[0], 1)
@@ -594,10 +707,12 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
             dh = int(host.pose.delivered[1] * k)
             box = (hx + (hw - dw) // 2, hy + (hh - dh), dw, dh)
     if box is None:
-        k = min(fw / host.pose.delivered[0], fh * 0.55 / host.pose.delivered[1])
+        stage = column or (0, 0, fw, fh)
+        k = min(stage[2] / host.pose.delivered[0],
+                fh * 0.55 / host.pose.delivered[1])
         dw = int(host.pose.delivered[0] * k)
         dh = int(host.pose.delivered[1] * k)
-        box = ((fw - dw) // 2, fh - dh, dw, dh)
+        box = (stage[0] + (stage[2] - dw) // 2, fh - dh, dw, dh)
 
     # THE HOST IS A SUBJECT AND HAS TO BE SEEN. A plate pushed in on a row
     # carries its anchor off the bottom with it: in the numbers walk he stood
@@ -605,14 +720,21 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     # the edge — and the amount clipped changed shot to shot with which row
     # was lit. Clamped into the frame, he stands at the bottom of it instead.
     x, y, dw, dh = box
-    if dh > fh:
-        dw, dh = int(dw * fh / dh), fh
-    y = min(max(y, 0), fh - dh)
-    x = min(max(x, 0), max(fw - dw, 0))
-    return Layer(name=f"{shot.id}:host:{pose.name}", kind="host",
+    # A FRAMING IS ALREADY SOLVED and running off the left and right edges is
+    # what it is for — clamping one into the frame crops it into a narrower
+    # shot than the one that was drawn. Everything else is a cut-out standing
+    # in a room, and a room pushed in on a row carries its anchor off the
+    # bottom with it: he stood at y=1832 in a 1920 frame once, 13% of him on
+    # screen, reading as a smudge at the edge.
+    if not host.is_framing:
+        if dh > fh:
+            dw, dh = int(dw * fh / dh), fh
+        y = min(max(y, 0), fh - dh)
+        x = min(max(x, 0), max(fw - dw, 0))
+    return Layer(name=f"{shot.id}:host:{host.pose.name}", kind="host",
                  shot_id=shot.id, t_start=t0, t_end=t1,
                  x=x, y=y, w=dw, h=dh,
-                 entry_key=pose.key, concept=pose.family,
+                 entry_key=host.pose.key, concept=host.pose.family,
                  frame_count=pose.frame_count, fps=pose.fps or 0,
                  loops=True, z=40)
 
@@ -668,9 +790,16 @@ def check_invariants(fmt: Format, result: BuildResult,
                 f"which looks like a decision")
 
     # 5. The host is a subject, not a sticker over the evidence.
+    #
+    # A ROOM IS NOT EVIDENCE. It is the set he is standing in, and a close-up
+    # covering 97% of it is not a defect — it is what a close-up is. What this
+    # catches is him drawn across the thing he is discussing: a chart, a
+    # sheet, a card. Those are what a two-shot gives its own column to.
     for h in result.of_kind("host"):
         for o in result.for_shot(h.shot_id):
             if o.kind not in ("plate", "fill") or not o.w or not o.h:
+                continue
+            if o.concept == "room":
                 continue
             ox = max(0, min(h.x + h.w, o.x + o.w) - max(h.x, o.x))
             oy = max(0, min(h.y + h.h, o.y + o.h) - max(h.y, o.y))

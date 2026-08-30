@@ -177,6 +177,108 @@ def test_the_long_is_chapters_and_all_sixteen_types_have_a_file():
         f"missing: {sorted(set(CHAPTER_TYPES) - files)}"
 
 
+def _long_cut():
+    """The LONG, composed from the chapter files, on stub copy."""
+    fmt = expand_sequences(load_format("long"), lambda _s: ["a", "b", "c"])
+    words = [FakeWord(f"w{i}", i * 0.3, i * 0.3 + 0.25) for i in range(4000)]
+    spans = resolve_spans(fmt, words, 1200.0, {})
+    return fmt, build_layers(fmt, spans, StubResolver(), _reg(),
+                             aspect=fmt.aspect, seed="LONGTEST")
+
+
+def test_the_long_cuts_to_the_close_up():
+    """It is the shot that was missing, and it carries the beats that matter.
+
+    Every chapter used to land on a full figure in a wide room — the shot you
+    use when the ROOM is the point — for the line the chapter rests on.
+    """
+    _fmt, result = _long_cut()
+    poses = {l.entry_key for l in result.of_kind("host")}
+    assert any(k.startswith("host/close-up") for k in poses), sorted(poses)
+
+
+def test_a_two_shot_puts_the_graphic_beside_him_and_not_under_him():
+    """A shot carrying both a plate and a host is a split frame.
+
+    It used to draw the plate at the full frame and then composite him into
+    the middle of it, over the thing he is discussing.
+    """
+    _fmt, result = _long_cut()
+    two_shots = [l.shot_id for l in result.of_kind("host")
+                 if any(o.kind == "plate" and o.concept != "room"
+                        for o in result.for_shot(l.shot_id))]
+    assert two_shots, "no chapter puts him beside the evidence"
+    for shot_id in two_shots:
+        host = [l for l in result.for_shot(shot_id) if l.kind == "host"][0]
+        for o in result.for_shot(shot_id):
+            if o.kind != "plate" or o.concept == "room":
+                continue
+            overlap = (max(0, min(host.x + host.w, o.x + o.w) - max(host.x, o.x))
+                       * max(0, min(host.y + host.h, o.y + o.h) - max(host.y, o.y)))
+            assert overlap < 0.05 * o.w * o.h, \
+                f"{shot_id}: he is drawn over {overlap / (o.w * o.h):.0%} of {o.entry_key}"
+
+
+def test_a_glance_is_cut_on_the_two_shots():
+    """INGESTING THE SHOTS AND NEVER CUTTING TO THEM IS THE FAILURE HERE.
+
+    It is not an error and no render fails: it is every beat straight to
+    camera, with four glance keys sitting unused in the kit. So the check is
+    that one actually fires, and that it looks the way the graphic is.
+    """
+    _fmt, result = _long_cut()
+    glances = [l for l in result.of_kind("host") if "-glance-" in l.entry_key]
+    assert glances, "not one glance was cut in a whole long"
+    for host in glances:
+        side = host.entry_key.rsplit("-", 1)[1]
+        plates = [o for o in result.for_shot(host.shot_id)
+                  if o.kind == "plate" and o.concept != "room"]
+        assert plates, f"{host.shot_id}: a glance at nothing"
+        mid = plates[0].x + plates[0].w / 2
+        host_mid = host.x + host.w / 2
+        assert (mid < host_mid) == (side == "left"), \
+            f"{host.shot_id}: {host.entry_key} against a graphic on the other side"
+
+
+def test_a_room_that_refuses_a_cut_out_gets_a_framing_instead():
+    """`hostAnchor: false` is branched on, not read as an omission.
+
+    `room/wall-of-calls` is square to a wall of index cards and there is no
+    floor in it. A figure was composited in front of it anyway, standing on
+    nothing. A framing has no floor line to pin, so the beat survives as the
+    close-up it should probably have been.
+    """
+    reg = _reg()
+    _fmt, result = _long_cut()
+    refusing = {l.shot_id for l in result.layers
+                if l.kind == "plate" and (reg.get(l.entry_key) is not None
+                                          and reg.get(l.entry_key).refuses_host)}
+    assert refusing, "no chapter reaches a room that refuses a host"
+    for shot_id in refusing:
+        for host in [l for l in result.for_shot(shot_id) if l.kind == "host"]:
+            pose = reg.get(host.entry_key)
+            assert pose.framing, \
+                f"{shot_id}: {host.entry_key} stands in a room with no floor"
+
+
+def test_the_long_rotates_its_room_angles():
+    """Nine straight-on eye-level plates cut like props sliding on a shelf.
+
+    THE THREE NEW CAMERA POSITIONS ARE THE POINT. They were added because the
+    room only ever had one lens on it, and a kit that ships them into a
+    pipeline that never cuts to them has changed nothing. `high-desk-down` is
+    the one with no floor in shot: it fills the `surface` role alone, and the
+    filing walk is the beat that wants it.
+    """
+    _fmt, result = _long_cut()
+    rooms = {l.entry_key for l in result.layers
+             if l.kind == "plate" and l.concept == "room"}
+    assert len(rooms) >= 8, sorted(rooms)
+    for angle in ("corner-perspective", "low-desk-height", "high-desk-down"):
+        assert f"room/{angle}-16x9" in rooms, \
+            f"{angle} is in the kit and never cut to: {sorted(rooms)}"
+
+
 # ------------------------------------------------------------- the invariants
 
 
@@ -206,10 +308,29 @@ def test_the_host_is_not_mostly_off_the_frame(name):
     A plate pushed in on a row carries its anchor off the bottom with it: he
     stood at y=1832 in a 1920 frame once, 13% of him on screen, reading as a
     smudge at the edge.
+
+    A FRAMING IS MEASURED ON THE HEAD, NOT ON THE PLATE. `close-up` and
+    `medium` are camera distances: the kit says both run off the left and
+    right edges by design and that cropping to the width re-frames the shot,
+    so a close-up in a 9:16 frame is 1858px wide in a 1080px frame and 58% of
+    its area is off — which is the shot working. What must be on screen is his
+    face.
     """
+    reg = _reg()
     _fmt, _spans, result = _cut(name)
     fw, fh = result.frame
     for h in result.of_kind("host"):
+        pose = reg.get(h.entry_key)
+        head = pose.slot("head") if pose is not None else None
+        if pose is not None and pose.framing and head is not None:
+            k = h.w / max(pose.delivered[0], 1)
+            hx, hy, hw, hh = head.scaled()
+            box = (h.x + hx * k, h.y + hy * k, hw * k, hh * k)
+            assert box[0] >= 0 and box[0] + box[2] <= fw, \
+                f"{h.name}: his head is cropped by the frame's side"
+            assert box[1] >= 0 and box[1] + box[3] <= fh, \
+                f"{h.name}: his head is cropped top or bottom"
+            continue
         on = ((min(h.x + h.w, fw) - max(h.x, 0))
               * (min(h.y + h.h, fh) - max(h.y, 0)))
         assert on > 0.6 * h.w * h.h, \

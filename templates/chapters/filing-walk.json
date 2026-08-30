@@ -13,6 +13,16 @@
       "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
     },
     {
+      "id": "on-the-desk",
+      "plate": "room/surface",
+      "max_hold_s": 4,
+      "captions": true,
+      "bind": {
+        "caption": "?chapter.line.0"
+      },
+      "notes": "The camera above the desk, looking down at what he is walking through. `room/surface` is the only role `high-desk-down` fills, and it is the one angle in the kit with no floor in shot — it declares `hostAnchor: false` and nobody stands in it. A filing walk is the beat that wants it: the document is the subject, not the man reading it."
+    },
+    {
       "id": "evidence",
       "plate": "paper/headline-band-t2-16x9",
       "max_hold_s": 7,
@@ -21,7 +31,11 @@
         "kicker": "?script.ticker",
         "sub": "?chapter.line.1"
       },
-      "notes": "What a filing-walk chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+      "notes": "What a filing-walk chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence. He is beside it, in medium, looking at it. The graphic takes a column and he takes the other — the glance toward it is the pipeline's, off which side the graphic landed on, and a chapter where the evidence is the whole point keeps the frame to itself.",
+      "host": {
+        "pose": "host/medium",
+        "slot": "host-anchor"
+      }
     },
     {
       "id": "land",
@@ -32,7 +46,7 @@
       },
       "max_hold_s": 5,
       "captions": true,
-      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium — the framings carry the lines that matter."
     }
   ]
 }
