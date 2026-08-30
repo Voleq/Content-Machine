@@ -39,13 +39,24 @@ from pipeline.shots import (Format, expand_sequences, load_format,
 FPS = 30
 # The kit boils at three frames, 7fps. Code-drawn artwork matches it.
 BOIL_FRAMES = 3
-# The SHORT's host shots. The spec said 1, 5-8, 11, 12; 5-8 are the numbers
-# walk, and the walk pushes in until the sheet is full-bleed and the plate's
-# figure slot is off the bottom of the frame. A figure clamped back in stands
-# on the numbers. So the host is out of the walk and the spec is amended here
-# rather than in a comment that disagrees with the template.
-# tests/test_short_shots.py asserts this and the template agree.
-HOST_SHOTS = ("cold-open", "payoff", "close")
+# THE HOST IS IN ONE VERTICAL SHOT, AND IT IS THE TURN.
+#
+# He was in three — the cold open, the payoff and the close — all at full
+# figure in a wide room, which is the shot you use when the room is the point.
+# The turn is the line the whole cut rests on and it was being told on bare
+# ground with nobody in it. `host/close-up` is head and shoulders and it exists
+# for exactly that beat.
+#
+# Which shots those are is a property of the TEMPLATE, not of this module —
+# three formats put him in three different places — so this is read off the
+# format rather than written down twice. tests/test_short_shots.py asserts the
+# two agree.
+def host_shots(fmt) -> tuple[str, ...]:
+    """The ids of the shots this format puts the host in."""
+    return tuple(sh.id for sh in fmt.shots if sh.host)
+
+
+HOST_SHOTS = ("the-turn",)
 
 # One definition, in marks, so the fitter and the budget measurement agree.
 BODY_FONT = mk.BODY_FONT
@@ -128,11 +139,6 @@ class ShortResolver:
             return self._numbers(parts[1:])
         if parts[0] == "chart":
             return self._chart_source(parts[1:])
-        if parts[0] == "headline":
-            # The band's kicker is what KIND of page this is, and the script
-            # carries no source field. Naming it is honest; inventing an
-            # outlet name would be the renderer writing copy.
-            return "THE HEADLINE" if parts[1:] == ["kicker"] else None
         if parts[0] != "script":
             return None
         obj: object = self.script
@@ -273,6 +279,8 @@ class ShortResolver:
             return None
         if which == "kicker":
             return "BOTH TRUE"
+        if which == "expected_label":
+            return "Expected"
         # `structure/both-true` takes two STATEMENTS, not two stacked figures.
         # The plate wraps them itself in the face it declares, so a newline
         # here would be a second opinion about the line break.

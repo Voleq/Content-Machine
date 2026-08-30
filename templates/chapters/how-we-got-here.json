@@ -3,67 +3,36 @@
   "shots": [
     {
       "id": "open",
-      "plate": "room-wide-16--lived-in",
+      "plate": "room/read",
       "host": {
-        "pose": "talking-at-screen",
-        "slot": "figure"
+        "pose": "beat",
+        "slot": "host-anchor"
       },
-      "max_hold_s": 7,
-      "captions": true,
-      "text": [
-        {
-          "name": "lede",
-          "src": "chapter.line.0",
-          "size_fh": 0.055,
-          "align": "top",
-          "max_lines": 3
-        }
-      ]
-    },
-    {
-      "id": "dive-in",
-      "plate": "dive-in",
-      "max_hold_s": 3,
-      "captions": true,
-      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
-    },
-    {
-      "id": "the-history",
-      "plate": "sheet-wide",
-      "max_hold_s": 7,
-      "captions": true,
-      "bind": {
-        "row-1": "numbers.header"
-      },
-      "text": [
-        {
-          "name": "history",
-          "src": "chapter.line.1",
-          "size_fh": 0.042,
-          "align": "0.82",
-          "max_lines": 3
-        }
-      ]
-    },
-    {
-      "id": "dive-out",
-      "plate": "dive-out",
-      "max_hold_s": 3,
-      "captions": true,
-      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
-    },
-    {
-      "id": "surface",
-      "plate": "evidence-wall-empty",
       "max_hold_s": 6,
       "captions": true,
-      "notes": "The wall, which progression re-points at empty / half / full. Three pins go up over the chapter's own words, staggered, so the shot has something entering rather than being nine empty boxes for nine seconds. It declares NO figure slot, so the host does not stand here - a host bound to pin-1 renders at pin size, floating in a hole.",
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "paper/headline-band-t1-16x9",
+      "max_hold_s": 7,
+      "captions": true,
       "bind": {
-        "pin-1": "chapter.phrase.0",
-        "pin-2": "chapter.phrase.1",
-        "pin-3": "chapter.phrase.2"
+        "kicker": "?script.ticker",
+        "sub": "?chapter.line.1"
       },
-      "stagger_s": 0.9
+      "notes": "What a how-we-got-here chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+    },
+    {
+      "id": "land",
+      "plate": "room/read",
+      "host": {
+        "pose": "to-camera",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 5,
+      "captions": true,
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
     }
   ]
 }

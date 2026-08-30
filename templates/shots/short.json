@@ -28,7 +28,9 @@
     "room \u2014 which is the shot you use when the room is the point. The turn is",
     "the line the whole cut rests on and it was being told on bare ground with",
     "nobody in it. `host/close-up` is head and shoulders and it exists for",
-    "exactly that beat."
+    "exactly that beat.",
+    "",
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one."
   ],
   "shots": [
     {
@@ -36,7 +38,7 @@
       "plate": "shorts/hook-card-t1",
       "anchor": "hook",
       "captions": false,
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "hook": "script.hook_text",
         "sub": "?script.move_summary",
@@ -48,7 +50,7 @@
       "id": "the-move",
       "plate": "charts/line-dense-9x16",
       "anchor": "move",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "unit": "?chart.unit",
         "head": "chart.heads",
@@ -62,9 +64,8 @@
       "id": "the-news",
       "plate": "paper/headline-band-t1-9x16",
       "anchor": "headline",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
-        "kicker": "?headline.kicker",
         "headline": "script.headlines.0.text",
         "sub": "?script.headlines.0.meaning"
       },
@@ -78,14 +79,14 @@
         "slot": "host-anchor"
       },
       "anchor": "turn",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "notes": "The line the cut rests on, told to camera in close-up. Allowed to be empty \u2014 a video with no turn drops this shot rather than holding an empty frame."
     },
     {
       "id": "numbers",
       "plate": "tables/numbers-sheet-3r-9x16",
       "anchor": "numbers",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "unit": "?numbers.unit",
         "head": "numbers.years",
@@ -109,7 +110,7 @@
       "id": "the-sheet",
       "plate": "tables/numbers-sheet-4r-9x16",
       "anchor": "numbers_comment",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "lit": "all",
       "bind": {
         "unit": "?numbers.unit",
@@ -129,7 +130,7 @@
       "id": "the-comment",
       "plate": "cards/quote-pull-9x16",
       "anchor": "numbers_comment",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "body": "script.numbers_comment",
         "attribution": "?script.ticker",
@@ -141,7 +142,7 @@
       "id": "cheap-or-trap",
       "plate": "structure/both-true-9x16",
       "anchor": "cheap_or_trap",
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "kicker": "?compare.kicker",
         "statement-1": "compare.heavy",
@@ -155,7 +156,7 @@
       "plate": "figures/big-number-l2-9x16",
       "anchor": "conclusion",
       "captions": false,
-      "max_hold_s": 5,
+      "max_hold_s": 7,
       "bind": {
         "kicker": "?numbers.headline_kicker",
         "value": "numbers.headline_figure",
@@ -167,7 +168,7 @@
     {
       "id": "close",
       "plate": "structure/closing-9x16",
-      "max_hold_s": 4,
+      "max_hold_s": 7,
       "bind": {
         "kicker": "?script.ticker",
         "line-1": "script.conclusion",

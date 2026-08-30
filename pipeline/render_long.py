@@ -684,6 +684,11 @@ def render_long(
         n_inputs += 1
         return n_inputs - 1
 
+    def _annotated(seg) -> bool:
+        """Whether a mark lands on this beat."""
+        return any(seg.start - 1e-6 <= c.t < seg.end for c in scribble_cues)
+
+
     for i, seg in enumerate(segments):
         seg_len = seg.length
         seg_inputs = []
@@ -766,7 +771,21 @@ def render_long(
             # The plate the DIRECTOR named, with the text they wrote in it.
             visual = None
             art, is_video, size, plan, key = _plate_art(seg, i, value)
-            two_shot = seg.payload.get("layout") == "two-shot"
+            # AN ANNOTATED BEAT TAKES THE FRAME.
+            #
+            # A mark is solved onto the type it names, so how big it lands is
+            # decided by how big that type is on screen — and a plate shrunk
+            # into a two-shot's evidence column beside the host is drawn at
+            # about half size. A strike on one figure there solves to a 2.6
+            # unit stroke against a legible band of 3.2 to 26: a hairline, on
+            # the one beat somebody thought was worth pointing at.
+            #
+            # Thickening every stroke in the kit would fix one layout's scale
+            # by making the whole library heavier. If a mark is worth making,
+            # what it points at should be large enough to carry it — so the
+            # composition gives way, not the ink.
+            two_shot = (seg.payload.get("layout") == "two-shot"
+                        and not _annotated(seg))
             if is_video:
                 # A boiling plate is an alpha clip, so the background it plays
                 # on is the same composition a still gets pasted into.

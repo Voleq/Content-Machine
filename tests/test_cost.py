@@ -111,7 +111,7 @@ def test_the_short_report_states_what_the_script_reaches(settings, short_valid_j
         line), line
     # the denominator is the library, read live — the point of the line is that
     # the numerator is small against it
-    assert "of 113 plates" in line
+    assert "of 140 plates" in line
 
 
 def test_the_line_counts_what_the_script_actually_names(settings, short_valid_json):
@@ -147,5 +147,5 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     from pipeline.plates import load_plates
 
     assert report.kit_reach.startswith("Kit: ")
-    assert "of 113 plates" in report.kit_reach
+    assert "of 140 plates" in report.kit_reach
     assert report.kit_reach in report.render_text()

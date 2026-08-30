@@ -1,11 +1,11 @@
 {
-  "chapter": "cold-open",
+  "chapter": "bull-vs-bear",
   "shots": [
     {
       "id": "open",
       "plate": "room/establish",
       "host": {
-        "pose": "open",
+        "pose": "beat",
         "slot": "host-anchor"
       },
       "max_hold_s": 6,
@@ -14,15 +14,13 @@
     },
     {
       "id": "evidence",
-      "plate": "figures/big-number-l1-16x9",
+      "plate": "structure/both-true-16x9",
       "max_hold_s": 7,
       "captions": true,
       "bind": {
-        "kicker": "?script.ticker",
-        "value": "numbers.headline_figure",
-        "label": "?numbers.headline_label"
+        "kicker": "?compare.kicker"
       },
-      "notes": "What a cold-open chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+      "notes": "What a bull-vs-bear chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
     },
     {
       "id": "land",

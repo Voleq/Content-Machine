@@ -3,77 +3,44 @@
   "shots": [
     {
       "id": "open",
-      "plate": "room-wide-16--lived-in",
+      "plate": "room/talk",
       "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
+        "pose": "beat",
+        "slot": "host-anchor"
       },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "tables/numbers-sheet-4r-16x9",
       "max_hold_s": 7,
       "captions": true,
-      "text": [
-        {
-          "name": "lede",
-          "src": "chapter.line.0",
-          "size_fh": 0.055,
-          "align": "top",
-          "max_lines": 3
-        }
-      ]
-    },
-    {
-      "id": "dive-in",
-      "plate": "dive-in",
-      "max_hold_s": 3,
-      "captions": true,
-      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
-    },
-    {
-      "id": "the-sheet",
-      "plate": "sheet-wide",
-      "max_hold_s": 6,
-      "captions": true,
       "bind": {
-        "row-1": "numbers.header",
-        "row-2": "numbers.row.0",
-        "row-3": "?numbers.row.1",
-        "row-4": "?numbers.row.2",
-        "row-5": "?numbers.row.3",
-        "row-6": "?numbers.row.4"
+        "unit": "?numbers.unit",
+        "head": "numbers.years",
+        "label-1": "numbers.label.0",
+        "row-1": "numbers.figures.0",
+        "label-2": "?numbers.label.1",
+        "row-2": "?numbers.figures.1",
+        "label-3": "?numbers.label.2",
+        "row-3": "?numbers.figures.2",
+        "label-4": "?numbers.label.3",
+        "row-4": "?numbers.figures.3"
       },
-      "lit": "row-$n+1",
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-$n+1"
-        }
-      ],
-      "focus": "row-$n+1",
-      "repeat": {
-        "src": "script.numbers",
-        "max": 4,
-        "arrange": "sequence",
-        "lit": "row-$n+1",
-        "focus": "row-$n+1"
-      },
-      "notes": "Band 1 is the period header; metric N is row N+1. Binding only the header rendered an empty sheet with a ruled grid and nothing in it."
+      "notes": "What a the-numbers chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
     },
     {
-      "id": "dive-out",
-      "plate": "dive-out",
-      "max_hold_s": 3,
-      "captions": true,
-      "notes": "The dive. The room is a lobby; the substance happens in the monitor, and this is how we get there and back."
-    },
-    {
-      "id": "surface",
-      "plate": "room-side-16--lived-in",
+      "id": "land",
+      "plate": "room/talk",
       "host": {
-        "pose": "seated-talking",
-        "slot": "figure-seated"
+        "pose": "to-camera",
+        "slot": "host-anchor"
       },
-      "max_hold_s": 6,
+      "max_hold_s": 5,
       "captions": true,
-      "notes": "Back in the room to close the chapter before the next stinger."
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
     }
   ]
 }

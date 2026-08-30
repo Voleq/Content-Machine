@@ -7,10 +7,10 @@ format can do.
 Under the tag model, reach was an accident: the script named scenes, and a
 showcase render reached 17 of 442 assets with the desk carrying every beat
 that had a figure in it. Under the shot templates it is a property of the
-twelve shots, and the script cannot affect it — which is the point of the
-rewrite. So what is checked here has changed. It is no longer "did the writer
-name enough scenes" but "does the format, driven by a real script, actually
-put the kit on screen and animate it".
+shots, and the script cannot affect it — which is the point of the rewrite.
+So what is checked here is not "did the writer name enough scenes" but "does
+the format, driven by a real script, actually put the kit on screen and
+animate it".
 
 The two paths that stay green while being visibly wrong are still both
 exercised off a real render: a figure composited into a declared slot, and a
@@ -24,17 +24,22 @@ import json
 import pytest
 
 from config import Settings
-from pipeline.kit_manifest import REGISTERS, kit_for
 from pipeline.parser_short import parse_short_script
 from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 
-# A short is twelve shots, so it reaches roughly a dozen entries — it cannot
-# and should not reach a large fraction of a 476-entry kit. These are floors
+# A short is a dozen shots, so it reaches roughly a dozen plates — it cannot
+# and should not reach a large fraction of a 140-plate kit. These are floors
 # on the format doing its job, not on a writer naming things.
-MIN_ENTRIES = 8
+#
+# ANIMATED IS A LOWER FLOOR THAN IT WAS, ON PURPOSE. The old delivery re-baked
+# every still plate as a three-frame boil, so everything on screen moved. 44 of
+# the 140 v2 plates are `playback: static` — tables, charts, figures,
+# structure — because a figure that moves is a figure being re-read. What moves
+# in a vertical cut is the room, the host and the cards.
+MIN_PLATES = 8
 MIN_CONCEPTS = 5
-MIN_ANIMATED = 8
+MIN_ANIMATED = 2
 
 
 @pytest.fixture(scope="module")
@@ -58,43 +63,52 @@ def fixture_render(tmp_path_factory):
 
 def test_the_fixture_puts_the_kit_on_screen(fixture_render):
     _s, _script, _w, manifest = fixture_render
-    used = manifest["kit_assets_used"]
-    assert len(used) >= MIN_ENTRIES, f"only {len(used)} kit entries: {used}"
+    used = manifest["plates_used"]
+    assert len(used) >= MIN_PLATES, f"only {len(used)} plates: {used}"
 
 
-def test_every_entry_reached_is_in_the_videos_own_register(fixture_render):
-    """A video is entirely one register. Mixed mark-making is the one thing
-    the four-register delivery must never produce."""
+def test_every_plate_reached_is_in_the_one_library(fixture_render):
+    """There is no register to be in any more.
+
+    This used to check that every asset a video reached was drawn in the same
+    hand — a video is entirely one register, and mixed mark-making was the one
+    thing the four-register delivery must never produce. The delivery is gone
+    and so is the failure: `plates-registry.json` is the only library, and a
+    key that is not in it does not resolve at all.
+    """
+    from config import Settings
+    from pipeline.plates import load_plates
+
     _s, _script, _w, manifest = fixture_render
-    register = manifest["register"]
-    assert register in REGISTERS
-    kit = kit_for(register)
-    for key in manifest["kit_assets_used"]:
-        entry = kit[key]
-        assert entry.register in (register, "light"), (
-            f"{key} is {entry.register} in a {register} video")
+    assert manifest["kit"] == "v2-plates"
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    for key in manifest["plates_used"]:
+        assert reg.get(key) is not None, f"{key} is not in the registry"
 
 
 def test_the_fixture_plays_a_frame_sequence(fixture_render):
-    """The frame-sequence path: a boil runs continuously, a one-shot runs its
-    whole strip. A composition where nothing plays is a held photograph."""
+    """A composition where nothing plays is a held photograph.
+
+    The room boils, the host's strips run, the cards and the paper loop. The
+    data plates do not, and that is the rule rather than an omission.
+    """
+    from config import Settings
+    from pipeline.plates import load_plates
+
     _s, _script, _w, manifest = fixture_render
-    kit = kit_for(manifest["register"])
-    animated = [k for k in manifest["kit_assets_used"]
-                if kit[k].is_animated]
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    used = [reg.get(k) for k in manifest["plates_used"]]
+    animated = [p for p in used if p is not None and p.animated]
     assert len(animated) >= MIN_ANIMATED, (
-        f"only {len(animated)} animated entries: {animated}")
-    # A boil is three frames; a one-shot transition runs a longer strip.
-    assert any(kit[k].playback == "boil" for k in animated), "nothing boils"
-    assert any(kit[k].frames > 3 for k in animated), (
-        "no entry plays a strip longer than a boil")
+        f"only {len(animated)} animated plates: {[p.key for p in animated]}")
+    still = [p for p in used if p is not None and not p.animated]
+    assert still, "every plate on screen boils — the data plates must not"
 
 
 def test_the_fixture_reaches_distinct_concepts_not_one_plate_repeated(
         fixture_render):
     _s, _script, _w, manifest = fixture_render
-    concepts = {manifest_shot["plate"] for manifest_shot in manifest["shots"]
-                if manifest_shot["plate"]}
+    concepts = {sh["plate"] for sh in manifest["shots"] if sh["plate"]}
     assert len(concepts) >= MIN_CONCEPTS, f"only {len(concepts)}: {concepts}"
 
 
@@ -104,9 +118,16 @@ def test_the_fixture_fills_the_slots_it_asks_for(fixture_render):
     but the fixture must still be rich enough to exercise the path."""
     _s, _script, _w, manifest = fixture_render
     assert not manifest.get("unfilled")
-    filled = [l for sh in manifest["shots"] for l in sh["layers"]
-              if ":fill:" in l]
-    assert len(filled) >= 6, f"only {len(filled)} slot fills: {filled}"
+    # Every value goes into a slot the plate DECLARES, so what is counted is
+    # the values themselves rather than a layer per fill: one plate carries a
+    # whole sheet now.
+    from config import Settings
+    from pipeline.plates import load_plates
+
+    reg = load_plates(Settings(_env_file=None).assets_dir)
+    slots = sum(len(reg.get(k).slots) for k in manifest["plates_used"]
+                if reg.get(k) is not None)
+    assert slots >= 20, f"only {slots} declared slots across the plates reached"
 
 
 def test_the_render_states_its_own_reach(fixture_render):

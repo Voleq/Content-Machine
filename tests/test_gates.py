@@ -364,7 +364,7 @@ def test_the_kit_doctor_runs_without_a_script(settings):
 
     report = kit_doctor_text(settings)
     assert "KIT DOCTOR" in report
-    assert "113 plates" in report
+    assert "140 plates" in report
     assert "Never reached in a recent render" in report
     # It groups by family, because "eighteen room angles unused" is actionable
     # and a list of 113 keys is not.

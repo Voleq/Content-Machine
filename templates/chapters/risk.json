@@ -1,11 +1,11 @@
 {
-  "chapter": "cold-open",
+  "chapter": "risk",
   "shots": [
     {
       "id": "open",
-      "plate": "room/establish",
+      "plate": "room/read",
       "host": {
-        "pose": "open",
+        "pose": "beat",
         "slot": "host-anchor"
       },
       "max_hold_s": 6,
@@ -14,19 +14,19 @@
     },
     {
       "id": "evidence",
-      "plate": "figures/big-number-l1-16x9",
+      "plate": "cards/quote-pull-16x9",
       "max_hold_s": 7,
       "captions": true,
       "bind": {
-        "kicker": "?script.ticker",
-        "value": "numbers.headline_figure",
-        "label": "?numbers.headline_label"
+        "body": "chapter.line.0",
+        "attribution": "?numbers.headline_label",
+        "source": "?script.ticker"
       },
-      "notes": "What a cold-open chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+      "notes": "What a risk chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
     },
     {
       "id": "land",
-      "plate": "room/establish",
+      "plate": "room/read",
       "host": {
         "pose": "to-camera",
         "slot": "host-anchor"

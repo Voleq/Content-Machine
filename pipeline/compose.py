@@ -147,6 +147,29 @@ class BuildResult:
 # Resolving what the template names
 # ---------------------------------------------------------------------------
 
+def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
+                 step: int) -> Plate | None:
+    """A room ROLE — `talk`, `establish`, `read` — to one of its angles.
+
+    ROTATING, NOT DEFAULTING. The registry declares several angles per role
+    and a template that names `room/wide` gets `room/wide` every time; nine
+    straight-on eye-level plates cut like props sliding on a shelf, which is
+    why the kit added three camera positions. The step is the shot's index, so
+    consecutive rooms in one video differ, and the seed is the video's, so two
+    videos do not open on the same angle.
+    """
+    options = [k for k in reg.room_roles.get(role, ())]
+    resolved: list[Plate] = []
+    for stem in options:
+        key = reg.aspect_key(stem, aspect) or (stem if stem in reg else None)
+        got = reg.get(key) if key else None
+        if got is not None:
+            resolved.append(got)
+    if not resolved:
+        return None
+    return resolved[step % len(resolved)]
+
+
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
     """A template's plate name against the registry, aspect-aware.
 
@@ -215,6 +238,11 @@ def _arrange(n: int, how: str, frame: tuple[int, int],
 MEDIA_PREFIX = "media."
 
 
+def _settings():
+    from config import Settings
+    return Settings(_env_file=None)
+
+
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                  reg: Registry, *, aspect: str = "",
                  seed: str = "") -> BuildResult:
@@ -226,7 +254,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
     unfilled: list[str] = []
     skipped: list[str] = []
 
-    for span in spans:
+    for span_index, span in enumerate(spans):
         shot = span.shot
         t0, t1 = span.start, span.end
         # A resolver may need to know which shot it is answering for — the
@@ -247,7 +275,14 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
-            plate = resolve_plate(reg, shot.plate, aspect)
+            # `room/<role>` is a ROLE, not a key: the template says what kind
+            # of angle this beat wants and the registry picks one, rotating.
+            role = shot.plate.split("/", 1)[1] if shot.plate.startswith("room/") else ""
+            if role and role in reg.room_roles:
+                plate = resolve_room(reg, role, aspect, seed=seed,
+                                     step=span_index)
+            else:
+                plate = resolve_plate(reg, shot.plate, aspect)
             if plate is None:
                 raise TemplateError(
                     f"{fmt.name}/{shot.id}: plate {shot.plate!r} is not in the "
@@ -290,6 +325,13 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
             # -- what goes in its slots. The renderer draws the plate WITH
             #    these; nothing here sets type.
             values, missing, gone = _bound_values(shot, plate, resolver, reg)
+            # THE WALL IS THE RECEIPTS, so it is filled from the book rather
+            # than from the script: seven tickers this channel actually
+            # covered, when, and one word for how it went. A template cannot
+            # bind them — they are not facts about this video.
+            if plate.name.startswith("wall-of-calls"):
+                from pipeline.plates import wall_of_calls
+                values = {**wall_of_calls(_settings()), **values}
             unfilled += missing
             skipped += gone
 

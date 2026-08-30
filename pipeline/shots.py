@@ -44,7 +44,7 @@ class TemplateError(RuntimeError):
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "chapters",
-                         "chapter_enter", "progression", "notes"})
+                         "notes"})
 CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
 CHAPTER_DIR = Path("templates/chapters")
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
@@ -220,7 +220,6 @@ class Format:
     # the format and not of the frame: a future 16:9 format that is ninety
     # seconds long has nowhere to travel, and guessing from the aspect ratio
     # would switch four devices on for it in silence.
-    progression: bool = False
 
     def __len__(self) -> int:
         return len(self.shots)
@@ -387,7 +386,7 @@ def parse_format(raw: dict, source: Path | None = None,
 
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
                  shots=tuple(shots), source=source,
-                 progression=bool(raw.get("progression", False)))
+                 )
 
     for sh in fmt.shots:
         if not (sh.plate or sh.text or sh.bind or sh.repeat or sh.host):
@@ -421,14 +420,19 @@ def load_format(name: str, root: Path | str = ".") -> Format:
 
 
 def _sub(value: str | None, n: int) -> str | None:
-    """`$n` is the 1-based step of a sequence repeat; `$n+1` is the next.
+    """`$n` is the 1-based step of a sequence repeat; `$n+1` and `$n-1` shift it.
 
-    The offset form exists because the sheet's first band is the year header,
-    so metric N lives in row N+1.
+    The offset forms exist because the step number and the thing it names are
+    rarely the same number. A sheet's first band may be the year header, so
+    metric N lives in row N+1; a script's list is indexed from zero, so step
+    one places `consequences.0`. Longest token first, or `$n+1` is read as
+    `$n` followed by a stray `+1`.
     """
     if value is None:
         return None
-    return value.replace("$n+1", str(n + 1)).replace("$n", str(n))
+    return (value.replace("$n+1", str(n + 1))
+                 .replace("$n-1", str(n - 1))
+                 .replace("$n", str(n)))
 
 
 def expand_sequences(fmt: Format, items_for) -> Format:
@@ -471,6 +475,14 @@ def expand_sequences(fmt: Format, items_for) -> Format:
                 repeat=step,
                 lit=_sub(rep.lit, i),
                 focus=_sub(rep.focus, i),
+                # THE BINDS STEP TOO. A sequence that reuses the plate and
+                # changes nothing but which row is lit is fine on a sheet,
+                # where the figures are all already on screen. It is not fine
+                # on a card: MACRO's four consequences expanded to four shots
+                # of the identical picture and the measurement read 23.8s of
+                # one held composition, over an 8s ceiling. `$n` in a bind is
+                # which item of the list this step places.
+                bind={k: _sub(v, i) or v for k, v in (shot.bind or {}).items()},
                 anchor=shot.anchor if i == 1 else None,
                 marks=tuple(replace(m, target=_sub(m.target, i),
                                     name=_sub(m.name, i) or m.kind)

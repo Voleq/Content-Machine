@@ -1,245 +1,118 @@
 {
-  "format": "macro",
-  "aspect": "9:16",
+  "aspect": "9x16",
   "frame": {
     "w": 1080,
     "h": 1920
   },
+  "format": "macro",
   "notes": [
-    "Nine shots. No ticker, no company — the subject is a print and what it",
-    "does to people.",
+    "MACRO, on the v2 plate kit. A print, what it means mechanically, and who",
+    "it lands on.",
     "",
-    "THE ROOM IS THE SPINE. Open in the room, dive to the monitor for the",
-    "print, back to the desk for consensus and the statement, to the sheet",
-    "for the mechanism, the monitor for what is priced, and close in the",
-    "room. Nothing in this format sits on bare paper: type on nothing was",
-    "how the scrapped format looked, arriving by a different route.",
+    "`who-it-hits` is the one repeat in the vertical formats: four or five",
+    "consequences told over TIME rather than as cards in one frame. Three",
+    "cards in a 9:16 column measure 33px type, under the readability floor.",
     "",
-    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
-    "and two of those in a paper-white video reads as a different show",
-    "interrupting — it also makes the transition the loudest thing in a",
-    "format built on restraint. underline-swipe is a stroke, not a wall.",
-    "Full coverage is reserved for a chapter boundary in the LONG, where",
-    "a hard reset is the point."
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one."
   ],
   "shots": [
     {
       "id": "open",
-      "plate": "room-wide",
-      "host": {
-        "pose": "talking-at-screen",
-        "slot": "figure"
-      },
+      "plate": "shorts/hook-card-t3",
+      "max_hold_s": 7,
       "anchor": "hook",
       "captions": false,
-      "max_hold_s": 6,
-      "text": [
-        {
-          "name": "hook",
-          "src": "script.hook_text",
-          "size_fh": 0.085,
-          "align": "top",
-          "max_lines": 3,
-          "draw_on_s": 0.6
-        }
-      ]
-    },
-    {
-      "id": "the-print",
-      "plate": "screen-full",
-      "anchor": "print",
-      "captions": false,
-      "max_hold_s": 5,
       "bind": {
-        "screen": "plate.number-full"
-      },
-      "notes": "The dive. The print is ON the monitor, full bleed — the room's screen, not a card on paper.",
-      "enter": "underline-swipe",
-      "text": [
-        {
-          "name": "print-label",
-          "src": "numbers.label.0",
-          "size_fh": 0.045,
-          "slot": "screen.label",
-          "max_lines": 1
-        },
-        {
-          "name": "print-figure",
-          "src": "numbers.latest.0",
-          "size_fh": 0.14,
-          "slot": "screen.figure",
-          "max_lines": 1
-        }
-      ]
-    },
-    {
-      "id": "vs-expected",
-      "plate": "desk-top-down",
-      "anchor": "expected",
-      "max_hold_s": 5,
-      "bind": {
-        "pages": "plate.compare-plate"
-      },
-      "text": [
-        {
-          "name": "reported",
-          "src": "compare.reported",
-          "size_fh": 0.05,
-          "slot": "pages.left",
-          "max_lines": 1
-        },
-        {
-          "name": "expected",
-          "src": "compare.expected",
-          "size_fh": 0.05,
-          "slot": "pages.right",
-          "max_lines": 1
-        },
-        {
-          "name": "versus",
-          "src": "compare.versus",
-          "size_fh": 0.04,
-          "slot": "pages.gap",
-          "max_lines": 1
-        },
-        {
-          "name": "gap-read",
-          "src": "script.move_summary",
-          "size_fh": 0.038,
-          "align": "0.80",
-          "max_lines": 3
-        }
-      ],
-      "notes": "Printed against consensus, on the desk. Surfaces, not cards in space."
-    },
-    {
-      "id": "the-statement",
-      "plate": "desk-top-down",
-      "anchor": "statement",
-      "max_hold_s": 6,
-      "bind": {
-        "pages": "plate.page-institutional"
-      },
-      "text": [
-        {
-          "name": "statement-head",
-          "src": "script.headlines.0.text",
-          "size_fh": 0.05,
-          "align": "0.30",
-          "max_lines": 2,
-          "halign": "left"
-        },
-        {
-          "name": "the-clause",
-          "src": "script.headlines.0.meaning",
-          "size_fh": 0.04,
-          "align": "0.60",
-          "max_lines": 3,
-          "halign": "left"
-        }
-      ],
-      "marks": [
-        {
-          "kind": "ring",
-          "target": "the-clause",
-          "name": "clause-ring"
-        }
-      ],
-      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Left-aligned so it reads as a quoted document, and the ring goes round the clause itself rather than round a slot the clause could not fit in."
-    },
-    {
-      "id": "the-mechanism",
-      "plate": "desk-top-down",
-      "anchor": "mechanism",
-      "max_hold_s": 6,
-      "notes": "Rate to credit to hiring, one card per beat on the desk. Three cards in a column measure 33px type against a 67px floor — a chain of three tall cards does not fit 9:16 in space, so it is told over time. The arrow on each card but the last is what carries it forward.",
-      "repeat": {
-        "concept": "card-consequence-b",
-        "src": "script.mechanism",
-        "max": 3,
-        "bind": {
-          "label": "$item",
-          "mark": "$mark:arrow-down"
-        },
-        "arrange": "sequence",
-        "stagger_s": 0.9,
-        "connector": null
+        "hook": "script.hook_text",
+        "sub": "?script.move_summary",
+        "ticker": "script.ticker"
       }
     },
     {
-      "id": "who-it-hits",
-      "plate": "at-the-sheet",
-      "anchor": "consequences",
+      "id": "the-print",
+      "plate": "figures/big-number-l1-9x16",
       "max_hold_s": 7,
-      "repeat": {
-        "concept": "card-consequence",
-        "src": "script.consequences",
-        "max": 4,
-        "bind": {
-          "label": "$item",
-          "mark": "$mark:arrow-down"
-        },
-        "arrange": "sequence",
-        "stagger_s": 0.5
-      },
-      "notes": "One consequence per beat, pinned on the sheet. A 2x2 grid measures 47px type, still under the floor; four in a row is worse."
+      "anchor": "reported",
+      "bind": {
+        "kicker": "?numbers.headline_kicker",
+        "value": "compare.reported",
+        "label": "?numbers.headline_label",
+        "caption": "?script.move_summary"
+      }
     },
     {
-      "id": "whats-priced",
-      "plate": "screen-full",
-      "enter": "underline-swipe",
-      "anchor": "priced",
-      "max_hold_s": 6,
+      "id": "vs-expected",
+      "plate": "figures/compare-stacked-9x16",
+      "max_hold_s": 7,
+      "anchor": "expected",
       "bind": {
-        "screen": "chart.price"
+        "kicker": "?compare.kicker",
+        "label-1": "?numbers.headline_label",
+        "value-1": "compare.reported",
+        "label-2": "?compare.expected_label",
+        "value-2": "?compare.expected"
+      }
+    },
+    {
+      "id": "the-statement",
+      "plate": "paper/headline-band-t2-9x16",
+      "max_hold_s": 7,
+      "anchor": "headline",
+      "bind": {
+        "headline": "script.headlines.0.text",
+        "sub": "?script.headlines.0.meaning"
+      }
+    },
+    {
+      "id": "the-mechanism",
+      "plate": "cards/definition-9x16",
+      "max_hold_s": 7,
+      "anchor": "turn",
+      "bind": {
+        "kicker": "?compare.kicker",
+        "term": "?numbers.headline_label",
+        "body": "script.mechanism.0",
+        "example": "?script.mechanism.1"
       },
-      "marks": [
-        {
-          "kind": "ring",
-          "target": "chart.extreme_candle",
-          "name": "extreme-ring"
-        }
-      ],
-      "notes": "What the curve already believes."
+      "notes": "How it actually works, in the card drawn for a term and its meaning."
+    },
+    {
+      "id": "who-it-hits",
+      "plate": "cards/quote-pull-9x16",
+      "max_hold_s": 7,
+      "anchor": "consequences",
+      "bind": {
+        "body": "script.consequences.$n-1",
+        "attribution": "?script.ticker"
+      },
+      "repeat": {
+        "src": "script.consequences",
+        "max": 4,
+        "arrange": "sequence"
+      },
+      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time."
     },
     {
       "id": "so-what",
-      "plate": "room-wide",
-      "anchor": "conclusion",
-      "captions": true,
-      "max_hold_s": 5,
-      "text": [
-        {
-          "name": "so-what",
-          "src": "script.conclusion",
-          "size_fh": 0.06,
-          "align": "top",
-          "max_lines": 4,
-          "draw_on_s": 0.5
-        }
-      ],
-      "host": {
-        "pose": "talking-to-camera",
-        "slot": "figure"
-      },
-      "notes": "The payoff, said to camera. Only THE TURN earns a bare frame."
+      "plate": "structure/both-true-9x16",
+      "max_hold_s": 7,
+      "anchor": "cheap_or_trap",
+      "bind": {
+        "kicker": "?compare.kicker",
+        "statement-1": "compare.heavy",
+        "statement-2": "compare.light",
+        "caption": "?script.cheap_or_trap"
+      }
     },
     {
       "id": "close",
-      "plate": "room-wide",
-      "host": {
-        "pose": "sitting-with-mug",
-        "slot": "figure"
-      },
-      "max_hold_s": 4,
-      "text": [
-        {
-          "name": "handle",
-          "src": "channel.handle",
-          "size_fh": 0.045,
-          "align": "0.82"
-        }
-      ]
+      "plate": "structure/closing-9x16",
+      "max_hold_s": 7,
+      "bind": {
+        "kicker": "?script.ticker",
+        "line-1": "script.conclusion",
+        "date-label": "?channel.handle"
+      }
     }
   ]
 }
