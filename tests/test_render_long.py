@@ -652,6 +652,49 @@ def test_a_mark_solves_onto_the_type_not_onto_the_slot(settings):
     assert x + w > sx + sw * 0.5, "a right-aligned figure drew on the left"
 
 
+def test_the_mark_fits_the_target_rather_than_whatever_was_named(settings):
+    """A wide oval around four characters is a hairline, and that is not the nib.
+
+    `scrawl-oval-wide` is drawn to circle a LINE of type: its area slot is 674
+    units across, so solved onto a 160px cell its stroke lands at 2.7 against a
+    legible band that starts at 3.2. The tight oval is the same gesture drawn
+    for one word and lands at 9.4. Which is right is decided by how wide the
+    thing being marked actually is, and the tag names an intent rather than a
+    variant.
+    """
+    from pipeline.plates import load_plates
+    from pipeline.rasters import INK_WEIGHT_BAND, _pick_variant, _solved_stroke
+
+    reg = load_plates(settings.assets_dir)
+    lo, hi = INK_WEIGHT_BAND
+
+    tight, why = _pick_variant(reg, "scrawl-oval-wide", 160)
+    assert tight == "scrawl-oval-tight" and why
+    assert lo <= _solved_stroke(reg.require("annotations/scrawl-oval-tight"),
+                                160) <= hi
+    # And the other way: a tight oval asked to circle a whole line.
+    wide, why = _pick_variant(reg, "scrawl-oval-tight", 1200)
+    assert wide == "scrawl-oval-wide" and why
+    # A target the named mark already fits is left alone.
+    assert _pick_variant(reg, "scrawl-oval-wide", 900) == ("scrawl-oval-wide", "")
+
+
+def test_a_gesture_with_no_second_variant_is_never_swapped(settings):
+    """Only within a gesture.
+
+    A bracket that groups rows and an oval around a word are different
+    statements. Swapping one for the other because the arithmetic prefers it
+    would be this code overruling the director rather than fitting what they
+    asked for — so a bracket on a target too small stays a bracket, and the
+    warning stands.
+    """
+    from pipeline.plates import load_plates
+    from pipeline.rasters import _pick_variant
+
+    reg = load_plates(settings.assets_dir)
+    assert _pick_variant(reg, "bracket-rows", 110) == ("bracket-rows", "")
+
+
 def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
     """No ink, no box — and the caller falls back to a centred mark.
 

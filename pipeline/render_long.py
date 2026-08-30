@@ -99,6 +99,7 @@ from pipeline.rasters import (
     role,
     simple_text,
     solve_mark,
+    SCRIBBLE_MARKS,
 )
 from pipeline.render_common import (
     AudioTrack,
@@ -1114,7 +1115,27 @@ def render_long(
         for i, s in enumerate(segments) if s.kind == "plate"
     ]
 
-    def _target_box(t: float, target: str) -> tuple[int, int, int, int] | None:
+    def _row_band(plate, slot, box):
+        """The row band a slot sits in, if the plate declares one.
+
+        A MARK THAT GROUPS ROWS TAKES THE ROW. `[SCRIBBLE bracket-rows "10th"]`
+        means bracket the row that reads 10th, and matching the string found
+        the four glyphs instead — a bracket 110px wide around one cell, solving
+        to a stroke a third of the legible floor. The peer strip declares
+        `band-N` regions 1601 units across for exactly this, so the target is
+        the band the matched slot falls in.
+        """
+        sx, sy, sw, sh = slot.scaled()
+        for name, other in plate.slots.items():
+            if other.is_text or not name.startswith("band-"):
+                continue
+            bx, by, bw, bh = other.scaled()
+            if bx <= sx and by <= sy and bx + bw >= sx + sw and by + bh >= sy + sh:
+                return (bx, by, bw, bh)
+        return box
+
+    def _target_box(t: float, target: str,
+                    style: str = "") -> tuple[int, int, int, int] | None:
         """The frame box holding `target` at time `t`, or None."""
         want = " ".join(str(target).split()).lower()
         if not want:
@@ -1140,6 +1161,8 @@ def render_long(
                     ink = drawn_box(plate, slot, str(value), settings, reg)
                     if ink is None:
                         continue
+                    if SCRIBBLE_MARKS.get(style, ("", ""))[1] == "bracket":
+                        ink = _row_band(plate, slot, ink)
                     x, y, bw, bh = ink
                     return (int(rx + x * kx), int(ry + y * ky),
                             max(int(bw * kx), 1), max(int(bh * ky), 1))
@@ -1160,16 +1183,22 @@ def render_long(
         hold = float(c.payload.get("hold", 2.0))
 
         placed = None
-        box = _target_box(c.t, target)
+        drawn_style = style.value
+        box = _target_box(c.t, target, style.value)
         if box is not None:
-            solved = solve_mark(settings, style.value, box)
+            fitted: dict = {}
+            solved = solve_mark(settings, style.value, box, report=fitted)
+            drawn_style = fitted.get("style", style.value)
             if solved is not None:
                 (mx, my, mw, mh), mark_warnings = solved
                 for warn in mark_warnings:
                     log.warning("scribble %r: %s", target, warn)
+                if fitted.get("swapped"):
+                    log.info("scribble %r: %s", target, fitted["swapped"])
                 mark_solves.append({
-                    "t": round(float(c.t), 2), "style": style.value,
-                    "target": target, "on_screen": True,
+                    "t": round(float(c.t), 2), "style": drawn_style,
+                    "asked": style.value, "target": target, "on_screen": True,
+                    "fitted": fitted.get("swapped", ""),
                     "warnings": list(mark_warnings)})
                 # A mark draws outside what it wraps, so a solved canvas larger
                 # than the frame is expected. Several times the frame is not:
@@ -1189,7 +1218,7 @@ def render_long(
         mx, my, sw, sh = placed
 
         # The mark draws itself on, in attention, over the current frame.
-        frames = mark_frames(settings, sw, sh, style=style.value, fps=fps,
+        frames = mark_frames(settings, sw, sh, style=drawn_style, fps=fps,
                              draw_seconds=min(hold, 0.5),
                              seed=f"{script.ticker}|scr|{k}")
         if not frames:

@@ -454,7 +454,67 @@ def tint_mark(img: Image.Image, color) -> Image.Image:
     return solid
 
 
-def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int]
+def _same_gesture(style: str) -> list[str]:
+    """Every mark drawn with the same gesture, the named one first.
+
+    The table already says which those are: the second element is the stroke,
+    so `scrawl-oval-wide` and `scrawl-oval-tight` are both "circle" and
+    `underline-swipe` and `underline-tight` are both "underline". Reading the
+    family off it rather than listing pairs means a mark the kit adds later
+    joins its own family with no edit here.
+    """
+    gesture = SCRIBBLE_MARKS.get(style, ("", ""))[1]
+    if not gesture:
+        return [style]
+    return [style] + sorted(s for s, (_k, g) in SCRIBBLE_MARKS.items()
+                            if g == gesture and s != style)
+
+
+def _solved_stroke(plate, target_w: int) -> float:
+    """The stroke this mark lands at around a target `target_w` wide."""
+    area = plate.slot("area") if plate is not None else None
+    if area is None or not plate.ink_weight:
+        return 0.0
+    return plate.ink_weight * (target_w / max(area.w, 1))
+
+
+def _pick_variant(reg, style: str, target_w: int) -> tuple[str, str]:
+    """(style to draw, why it changed). THE MARK FITS THE TARGET.
+
+    A wide oval is drawn to circle a line of type and a tight one to circle
+    one word; asked to circle a four-character cell, the wide one solves to a
+    stroke a third of the way below the legible band and arrives as a
+    hairline. That is not a rendering problem and it is not the nib — it is
+    the wrong mark, and which one is right is decided by how wide the thing
+    being marked actually is.
+
+    Only within a gesture. A bracket that groups rows and an oval around a
+    word are different statements, and swapping one for the other because the
+    arithmetic prefers it would be this code overruling the director rather
+    than fitting what they asked for.
+    """
+    lo, hi = INK_WEIGHT_BAND
+    candidates = []
+    for name in _same_gesture(style):
+        plate = reg.get(SCRIBBLE_MARKS.get(name, ("", ""))[0])
+        if plate is None:
+            continue
+        candidates.append((name, _solved_stroke(plate, target_w)))
+    if not candidates:
+        return style, ""
+    named, solved = candidates[0]
+    if not solved or lo <= solved <= hi:
+        return named, ""
+    for name, other in candidates[1:]:
+        if lo <= other <= hi:
+            return name, (f"{named} solves to {solved:.1f} against a legible "
+                          f"band of {lo}-{hi} on a target {target_w}px wide; "
+                          f"{name} is the same gesture at {other:.1f}")
+    return named, ""
+
+
+def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int],
+               *, report: dict | None = None
                ) -> tuple[tuple[int, int, int, int], list[str]] | None:
     """Where an annotation goes, given the box it wraps. Returns (box, warnings).
 
@@ -478,11 +538,15 @@ def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int]
     """
     from pipeline.plates import load_plates
 
-    key = SCRIBBLE_MARKS.get(style, ("", ""))[0]
-    if not key:
+    if style not in SCRIBBLE_MARKS:
         return None
     reg = load_plates(settings.assets_dir)
-    plate = reg.get(key)
+    style, swapped = _pick_variant(reg, style, target[2])
+    if report is not None:
+        report["style"] = style
+        if swapped:
+            report["swapped"] = swapped
+    plate = reg.get(SCRIBBLE_MARKS[style][0])
     if plate is None:
         return None
     area = plate.slot("area")
