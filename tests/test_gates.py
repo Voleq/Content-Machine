@@ -441,3 +441,73 @@ def test_an_unknown_plate_blocks_and_is_named(settings):
     findings, stats = kit_doctor(_S(), settings)
     assert stats["unresolved_keys"] == ["[PLATE: not-a-plate]"]
     assert any(f.severity == "block" for f in findings)
+
+
+# --------------------------------------------------------------------------
+# What nothing can reach — a class of defect, not an instance.
+# --------------------------------------------------------------------------
+
+
+def test_the_doctor_reports_what_no_template_can_reach(settings):
+    """`room/high-desk-down` sat in the kit with no template naming its role.
+
+    Not an error, not a warning, no failing test: an angle that simply never
+    appeared, found by somebody noticing. Noticing is not a method, so the
+    doctor walks every shot file, every chapter type and the renderer's own
+    literals and says which plates have a route to the screen.
+    """
+    from pipeline.gates import kit_doctor_text
+
+    text = kit_doctor_text(settings)
+    assert "No shot template reaches" in text
+
+
+def test_a_plate_named_only_through_a_room_role_is_reachable(settings):
+    """A template writes `room/talk`, not `room/desk-front-16x9`.
+
+    A walk that only read plate keys would report all nine angles as
+    unreachable and bury the one that actually is.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("room/desk-front-16x9", "room/low-desk-height-16x9",
+                "room/high-desk-down-16x9", "room/desk-front-9x16"):
+        assert key in routes["template"], f"{key} has no route through a role"
+
+
+def test_a_plate_the_renderer_reaches_by_name_is_not_a_gap(settings):
+    """The annotations, the media frames and the row band are the renderer's.
+
+    No template mentions them and none should: a director writes `[SCRIBBLE]`,
+    not `[PLATE: annotations/strike-out]`, and the row band is named by another
+    plate's own slot. Counting those as gaps would bury the real ones under
+    twenty entries nobody can act on.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("annotations/strike-out", "overlays/row-band",
+                "frames/capture-frame-16x9", "frames/media-frame-t1-16x9"):
+        assert key in routes["code"], f"{key} reads as unreachable"
+
+
+def test_a_tag_route_is_not_credited_for_the_set_or_the_host(settings):
+    """The chapter curation lists `room/` and `host/` as universal.
+
+    Every chapter has a set and a host — but a director does not write a
+    [PLATE] for either, the renderer does. Crediting that curation as a tag
+    route made this report say every plate had a way to the screen while
+    `room/high-desk-down` demonstrably did not.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    assert not [k for k in routes["tag"]
+                if k.split("/", 1)[0] in ("room", "host", "annotations")]

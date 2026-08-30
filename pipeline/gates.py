@@ -882,6 +882,127 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
 # Kit doctor.
 # --------------------------------------------------------------------------
 
+# Families the renderer reaches for itself. A director writes `[PLATE:
+# tables/numbers-sheet-4r]`; nobody writes `[PLATE: room/wide]` or `[PLATE:
+# annotations/strike-out]` — the set, the host, the marks, the row band and
+# the frame a photograph goes in are the renderer's, and the chapter curation
+# lists them as universal for a different reason.
+RENDERER_OWNED_FAMILIES = ("room", "host", "annotations", "overlays", "frames")
+
+
+def reachable_plates(reg) -> dict[str, set[str]]:
+    """Which plates anything can actually put on screen, and by what route.
+
+    `room/surface` was in the kit for a delta and no template named it, so the
+    one angle with no floor in shot was ingested and never cut to. That is a
+    CLASS of defect rather than one plate: artwork arrives keyed and curated,
+    and nothing checks that a route to the screen exists. Finding them one at
+    a time, by noticing, is not a method.
+
+    Three routes, and the difference between them matters to whoever reads
+    the report:
+
+    * ``template`` — a shot file names it, or a role it fills does. This is
+      the format putting it on screen with no help from a writer.
+    * ``tag``      — the chapter-type curation offers it, so a director can
+      write a `[PLATE]` for it. Reachable, but only if somebody chooses it.
+    * ``code``     — the renderer reaches for it by name: the annotations a
+      SCRIBBLE resolves to, the frame a photograph gets, the band that lights
+      under a row. No template mentions these and none should.
+
+    What is in none of the three is drawn artwork with no way to the screen.
+    """
+    from pipeline.plates import CHAPTER_TYPES
+    from pipeline.rasters import SCRIBBLE_MARKS
+    from pipeline.shots import available_formats, load_format
+
+    by_template: set[str] = set()
+    by_tag: set[str] = set()
+
+    def _pose(key: str) -> None:
+        by_template.add(key)
+        # A pose is three strips and, for a framing, two glances the pipeline
+        # picks itself. Reaching the base reaches all of them.
+        for suffix in ("-talk", "-idle", "-glance-left", "-glance-right",
+                       "-glance-left-talk", "-glance-left-idle",
+                       "-glance-right-talk", "-glance-right-idle"):
+            if f"{key}{suffix}" in reg:
+                by_template.add(f"{key}{suffix}")
+
+    def _named(name: str, aspect: str) -> None:
+        from pipeline.compose import resolve_plate
+
+        if name.startswith("room/"):
+            role = name.split("/", 1)[1]
+            if role in reg.room_roles:
+                for stem in reg.room_roles[role]:
+                    for a in ("16x9", "9x16"):
+                        key = reg.aspect_key(stem, a)
+                        if key:
+                            by_template.add(key)
+                return
+        got = resolve_plate(reg, name, aspect)
+        if got is not None:
+            by_template.add(got.key)
+
+    for fmt_name in available_formats():
+        fmt = load_format(fmt_name)
+        for shot in fmt.shots:
+            if shot.plate:
+                _named(shot.plate, fmt.aspect)
+            for src in (shot.bind or {}).values():
+                src = str(src).lstrip("?")
+                if src.startswith("plate."):
+                    _named(src.split(".", 1)[1], fmt.aspect)
+            if shot.host:
+                role = shot.host.pose
+                if role in reg:
+                    _pose(role)
+                for key in reg.host_roles.get(role, ()):
+                    if key in reg:
+                        _pose(key)
+
+    for ctype in CHAPTER_TYPES:
+        by_tag |= set(reg.plates_for_chapter(ctype))
+
+    # The three are counted INDEPENDENTLY. Computing `code` only for what the
+    # other two missed made it read zero and hid that the annotations and the
+    # media frames have no other route: a reader needs to know which of the
+    # three reaches a plate, not which one got there first.
+    by_code: set[str] = set()
+    source = "\n".join(
+        path.read_text(encoding="utf-8", errors="ignore")
+        for path in sorted(Path("pipeline").glob("*.py")))
+    for key, _stroke in SCRIBBLE_MARKS.values():
+        if key in reg:
+            by_code.add(key)
+    for key in reg.keys():
+        # Anchored on the OPENING quote, so `f"frames/capture-frame-{aspect}"`
+        # counts and a key named in a comment does not.
+        stem = key.rsplit("-16x9", 1)[0].rsplit("-9x16", 1)[0]
+        if any(f'{q}{name}' in source
+               for q in ('"', "'") for name in ({key, stem})):
+            by_code.add(key)
+        # A plate another plate's SLOT names. `overlays/row-band` is reached
+        # by neither a template nor a source literal: a sheet's row slot
+        # declares it as its `overlay`, and the renderer follows that.
+        for other in reg.assets.values():
+            if any(slot.overlay == key for slot in other.slots.values()):
+                by_code.add(key)
+                break
+
+    # A `[PLATE]` TAG CANNOT NAME THE SET OR THE MAN STANDING IN IT. The
+    # chapter curation lists `room/`, `host/`, `annotations/`, `overlays/` and
+    # `frames/` as universal because every chapter has a set, a host, marks and
+    # a way to hold a photograph — but a director does not write a [PLATE] for
+    # any of them, the renderer does. Counting them as tag-reachable is what
+    # made this report say every plate had a route when `room/high-desk-down`
+    # demonstrably did not.
+    by_tag -= {k for k in by_tag
+               if k.split("/", 1)[0] in RENDERER_OWNED_FAMILIES}
+    return {"template": by_template, "tag": by_tag, "code": by_code}
+
+
 def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     """What the kit could not answer, and what it is never asked for.
 
@@ -936,6 +1057,19 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
     never_used = [k for k in reg.keys() if k not in ever_used]
     renders_seen = len(ledger.recent("render"))
 
+    # WHAT NOTHING CAN REACH, which is a different question from what nothing
+    # HAS reached: an empty ledger makes the list above the whole library,
+    # and this one is true on a fresh checkout with no renders behind it.
+    routes = reachable_plates(reg)
+    reached = routes["template"] | routes["tag"] | routes["code"]
+    unreachable = sorted(k for k in reg.keys() if k not in reached)
+    no_template = sorted(k for k in reg.keys() if k not in routes["template"])
+    for key in unreachable:
+        findings.append(Finding(
+            gate="kit", severity="warn",
+            message=f"{key} is drawn and no template, chapter type or "
+                    f"renderer can put it on screen"))
+
     return findings, {
         "used": sorted(used),
         "unresolved_keys": unresolved,
@@ -945,6 +1079,11 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
         "kit_size": len(reg),
         "outfit": reg.outfit,
         "renders_seen": renders_seen,
+        "unreachable": unreachable,
+        "no_template": no_template,
+        "reached_by_template": sorted(routes["template"]),
+        "tag_only": sorted(routes["tag"] - routes["template"]),
+        "code_only": sorted(routes["code"] - routes["template"] - routes["tag"]),
     }
 
 
@@ -977,6 +1116,36 @@ def kit_doctor_text(settings: Settings, script=None) -> str:
     lines.append("")
     lines.append(f"Slots a script left unfilled ({len(unfilled)}):")
     lines += [f"  {u}" for u in unfilled[:20]] or ["  none"]
+
+    # WHAT NOTHING CAN REACH — true on a fresh checkout, unlike the ledger
+    # below. `room/high-desk-down` sat in the kit for a delta with no template
+    # naming its role: not an error, not a warning, just an angle that never
+    # appeared. This is that class of defect, listed.
+    no_template = stats.get("no_template") or []
+    lines.append("")
+    lines.append(f"No shot template reaches ({len(no_template)} of "
+                 f"{stats['kit_size']}):")
+    tag_only = set(stats.get("tag_only") or [])
+    code_only = set(stats.get("code_only") or [])
+    unreachable = set(stats.get("unreachable") or [])
+    for key in no_template:
+        if key in unreachable:
+            note = "NOTHING REACHES IT"
+        elif key in tag_only:
+            note = "a director can write a [PLATE] for it"
+        elif key in code_only:
+            note = "the renderer reaches it"
+        else:
+            note = "reachable"
+        lines.append(f"  {key} — {note}")
+    if not no_template:
+        lines.append("  none")
+    lines.append("")
+    lines.append("  A plate only a TAG can reach is on the writer to choose, "
+                 "and one nothing reaches is artwork with no way to the "
+                 "screen. Both are input to the next batch: the first says "
+                 "the formats do not use what was drawn, the second says it "
+                 "cannot be used at all.")
 
     never = stats["never_used"]
     lines.append("")
