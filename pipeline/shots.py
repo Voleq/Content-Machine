@@ -621,11 +621,22 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
         used = spans[-1].end
         short = duration - used
         if short > 0.05:
-            # Only shots with a plate take the remainder. A bare-ground shot
-            # is genuinely motionless once its type has drawn on, so
-            # extending it is the one thing the ceiling exists to prevent —
-            # the slack goes to frames where something is still happening.
-            takers = [i for i, sp in enumerate(spans) if sp.shot.plate]
+            # THE SLACK GOES TO THE FRAMES THAT ARE STILL MOVING. A bare-
+            # ground shot is motionless once its type has drawn on, so
+            # extending it is the one thing the ceiling exists to prevent.
+            # But "has a plate" was too coarse a test for alive: 44 of the
+            # 140 plates are `playback: static` by design — a figure that
+            # moves is a figure being re-read — so an even share put a data
+            # plate on screen for 15.4 seconds in a twelve-minute cut while
+            # the room beside it, with a man talking in it, took the same.
+            #
+            # A shot with a HOST is the most alive frame in the format: he
+            # talks, he blinks, the room boils behind him. He takes the
+            # remainder first, and a plate only takes it when no shot in the
+            # cut has him in it.
+            takers = [i for i, sp in enumerate(spans) if sp.shot.host]
+            if not takers:
+                takers = [i for i, sp in enumerate(spans) if sp.shot.plate]
             if takers:
                 share = short / len(takers)
                 moved: list[Span] = []

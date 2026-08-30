@@ -1,0 +1,783 @@
+{
+ "ticker": "EXMPL",
+ "format": "long",
+ "beats": 16,
+ "shots_count": 49,
+ "anchored_shots": 14,
+ "kit": "v2-plates",
+ "duration_s": 702.203,
+ "frame": {
+  "w": 1920,
+  "h": 1080
+ },
+ "shots": [
+  {
+   "id": "ch1-cold-open-open",
+   "plate": "room/establish",
+   "start_s": 0.0,
+   "end_s": 16.795,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch1-cold-open-open:ground",
+    "ch1-cold-open-open:plate:room/wide-16x9",
+    "ch1-cold-open-open:host:leaning-on-desk",
+    "ch1-cold-open-open:caption"
+   ]
+  },
+  {
+   "id": "ch1-cold-open-evidence",
+   "plate": "figures/big-number-l1-16x9",
+   "start_s": 16.795,
+   "end_s": 23.795,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch1-cold-open-evidence:ground",
+    "ch1-cold-open-evidence:plate:figures/big-number-l1-16x9",
+    "ch1-cold-open-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch1-cold-open-land",
+   "plate": "room/establish",
+   "start_s": 23.795,
+   "end_s": 39.59,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch1-cold-open-land:ground",
+    "ch1-cold-open-land:plate:room/corner-perspective-16x9",
+    "ch1-cold-open-land:host:medium",
+    "ch1-cold-open-land:caption"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-open",
+   "plate": "room/read",
+   "start_s": 39.59,
+   "end_s": 56.384,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch2-how-we-got-here-open:ground",
+    "ch2-how-we-got-here-open:plate:room/printer-corner-16x9",
+    "ch2-how-we-got-here-open:host:hands-in-pockets",
+    "ch2-how-we-got-here-open:caption"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-evidence",
+   "plate": "paper/headline-band-t1-16x9",
+   "start_s": 56.384,
+   "end_s": 63.384,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch2-how-we-got-here-evidence:ground",
+    "ch2-how-we-got-here-evidence:plate:paper/headline-band-t1-16x9",
+    "ch2-how-we-got-here-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch2-how-we-got-here-land",
+   "plate": "room/read",
+   "start_s": 63.384,
+   "end_s": 79.179,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch2-how-we-got-here-land:ground",
+    "ch2-how-we-got-here-land:plate:room/printer-corner-16x9",
+    "ch2-how-we-got-here-land:host:close-up",
+    "ch2-how-we-got-here-land:caption"
+   ]
+  },
+  {
+   "id": "ch3-how-the-money-is-made-open",
+   "plate": "room/diagram",
+   "start_s": 79.179,
+   "end_s": 95.974,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch3-how-the-money-is-made-open:ground",
+    "ch3-how-the-money-is-made-open:plate:room/whiteboard-wall-16x9",
+    "ch3-how-the-money-is-made-open:host:holding-a-page",
+    "ch3-how-the-money-is-made-open:caption"
+   ]
+  },
+  {
+   "id": "ch3-how-the-money-is-made-evidence",
+   "plate": "cards/definition-16x9",
+   "start_s": 95.974,
+   "end_s": 113.769,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch3-how-the-money-is-made-evidence:ground",
+    "ch3-how-the-money-is-made-evidence:plate:cards/definition-16x9",
+    "ch3-how-the-money-is-made-evidence:host:medium-glance-left",
+    "ch3-how-the-money-is-made-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch3-how-the-money-is-made-land",
+   "plate": "room/diagram",
+   "start_s": 113.769,
+   "end_s": 129.564,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch3-how-the-money-is-made-land:ground",
+    "ch3-how-the-money-is-made-land:plate:room/whiteboard-wall-16x9",
+    "ch3-how-the-money-is-made-land:host:medium",
+    "ch3-how-the-money-is-made-land:caption"
+   ]
+  },
+  {
+   "id": "ch4-the-numbers-open",
+   "plate": "room/talk",
+   "start_s": 129.564,
+   "end_s": 146.359,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch4-the-numbers-open:ground",
+    "ch4-the-numbers-open:plate:room/desk-front-16x9",
+    "ch4-the-numbers-open:host:holding-a-page",
+    "ch4-the-numbers-open:caption"
+   ]
+  },
+  {
+   "id": "ch4-the-numbers-evidence",
+   "plate": "tables/numbers-sheet-4r-16x9",
+   "start_s": 146.359,
+   "end_s": 153.359,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch4-the-numbers-evidence:ground",
+    "ch4-the-numbers-evidence:plate:tables/numbers-sheet-4r-16x9",
+    "ch4-the-numbers-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch4-the-numbers-land",
+   "plate": "room/talk",
+   "start_s": 153.359,
+   "end_s": 169.153,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch4-the-numbers-land:ground",
+    "ch4-the-numbers-land:plate:room/low-desk-height-16x9",
+    "ch4-the-numbers-land:host:close-up",
+    "ch4-the-numbers-land:caption"
+   ]
+  },
+  {
+   "id": "ch5-one-framework-open",
+   "plate": "room/diagram",
+   "start_s": 169.153,
+   "end_s": 185.948,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch5-one-framework-open:ground",
+    "ch5-one-framework-open:plate:room/whiteboard-wall-16x9",
+    "ch5-one-framework-open:host:leaning-on-desk",
+    "ch5-one-framework-open:caption"
+   ]
+  },
+  {
+   "id": "ch5-one-framework-evidence",
+   "plate": "cards/criteria-16x9",
+   "start_s": 185.948,
+   "end_s": 192.948,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch5-one-framework-evidence:ground",
+    "ch5-one-framework-evidence:plate:cards/criteria-16x9",
+    "ch5-one-framework-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch5-one-framework-land",
+   "plate": "room/diagram",
+   "start_s": 192.948,
+   "end_s": 208.743,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch5-one-framework-land:ground",
+    "ch5-one-framework-land:plate:room/whiteboard-wall-16x9",
+    "ch5-one-framework-land:host:close-up",
+    "ch5-one-framework-land:caption"
+   ]
+  },
+  {
+   "id": "ch6-moat-open",
+   "plate": "room/diagram",
+   "start_s": 208.743,
+   "end_s": 225.538,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch6-moat-open:ground",
+    "ch6-moat-open:plate:room/whiteboard-wall-16x9",
+    "ch6-moat-open:host:leaning-on-desk",
+    "ch6-moat-open:caption"
+   ]
+  },
+  {
+   "id": "ch6-moat-evidence",
+   "plate": "structure/both-true-16x9",
+   "start_s": 225.538,
+   "end_s": 232.538,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch6-moat-evidence:ground",
+    "ch6-moat-evidence:plate:structure/both-true-16x9",
+    "ch6-moat-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch6-moat-land",
+   "plate": "room/diagram",
+   "start_s": 232.538,
+   "end_s": 248.333,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch6-moat-land:ground",
+    "ch6-moat-land:plate:room/whiteboard-wall-16x9",
+    "ch6-moat-land:host:medium",
+    "ch6-moat-land:caption"
+   ]
+  },
+  {
+   "id": "ch7-sector-comps-open",
+   "plate": "room/talk",
+   "start_s": 248.333,
+   "end_s": 265.127,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch7-sector-comps-open:ground",
+    "ch7-sector-comps-open:plate:room/desk-front-16x9",
+    "ch7-sector-comps-open:host:medium",
+    "ch7-sector-comps-open:caption"
+   ]
+  },
+  {
+   "id": "ch7-sector-comps-evidence",
+   "plate": "peers/peer-strip-16x9",
+   "start_s": 265.127,
+   "end_s": 272.127,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch7-sector-comps-evidence:ground",
+    "ch7-sector-comps-evidence:plate:peers/peer-strip-16x9",
+    "ch7-sector-comps-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch7-sector-comps-land",
+   "plate": "room/talk",
+   "start_s": 272.127,
+   "end_s": 287.922,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch7-sector-comps-land:ground",
+    "ch7-sector-comps-land:plate:room/low-desk-height-16x9",
+    "ch7-sector-comps-land:host:medium",
+    "ch7-sector-comps-land:caption"
+   ]
+  },
+  {
+   "id": "ch8-management-open",
+   "plate": "room/read",
+   "start_s": 287.922,
+   "end_s": 304.717,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch8-management-open:ground",
+    "ch8-management-open:plate:room/printer-corner-16x9",
+    "ch8-management-open:host:leaning-on-desk",
+    "ch8-management-open:caption"
+   ]
+  },
+  {
+   "id": "ch8-management-evidence",
+   "plate": "cards/quote-pull-16x9",
+   "start_s": 304.717,
+   "end_s": 322.512,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch8-management-evidence:ground",
+    "ch8-management-evidence:plate:cards/quote-pull-16x9",
+    "ch8-management-evidence:host:medium-glance-right",
+    "ch8-management-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch8-management-land",
+   "plate": "room/read",
+   "start_s": 322.512,
+   "end_s": 338.307,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch8-management-land:ground",
+    "ch8-management-land:plate:room/printer-corner-16x9",
+    "ch8-management-land:host:medium",
+    "ch8-management-land:caption"
+   ]
+  },
+  {
+   "id": "ch9-capital-allocation-open",
+   "plate": "room/talk",
+   "start_s": 338.307,
+   "end_s": 355.102,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch9-capital-allocation-open:ground",
+    "ch9-capital-allocation-open:plate:room/desk-front-16x9",
+    "ch9-capital-allocation-open:host:medium",
+    "ch9-capital-allocation-open:caption"
+   ]
+  },
+  {
+   "id": "ch9-capital-allocation-evidence",
+   "plate": "structure/unit-ladder-16x9",
+   "start_s": 355.102,
+   "end_s": 362.102,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch9-capital-allocation-evidence:ground",
+    "ch9-capital-allocation-evidence:plate:structure/unit-ladder-16x9",
+    "ch9-capital-allocation-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch9-capital-allocation-land",
+   "plate": "room/talk",
+   "start_s": 362.102,
+   "end_s": 377.896,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch9-capital-allocation-land:ground",
+    "ch9-capital-allocation-land:plate:room/low-desk-height-16x9",
+    "ch9-capital-allocation-land:host:medium",
+    "ch9-capital-allocation-land:caption"
+   ]
+  },
+  {
+   "id": "ch10-guidance-estimates-open",
+   "plate": "room/read",
+   "start_s": 377.896,
+   "end_s": 394.691,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch10-guidance-estimates-open:ground",
+    "ch10-guidance-estimates-open:plate:room/printer-corner-16x9",
+    "ch10-guidance-estimates-open:host:leaning-on-desk",
+    "ch10-guidance-estimates-open:caption"
+   ]
+  },
+  {
+   "id": "ch10-guidance-estimates-evidence",
+   "plate": "figures/compare-stacked-16x9",
+   "start_s": 394.691,
+   "end_s": 412.486,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch10-guidance-estimates-evidence:ground",
+    "ch10-guidance-estimates-evidence:plate:figures/compare-stacked-16x9",
+    "ch10-guidance-estimates-evidence:host:medium-glance-right",
+    "ch10-guidance-estimates-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch10-guidance-estimates-land",
+   "plate": "room/read",
+   "start_s": 412.486,
+   "end_s": 428.281,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch10-guidance-estimates-land:ground",
+    "ch10-guidance-estimates-land:plate:room/printer-corner-16x9",
+    "ch10-guidance-estimates-land:host:medium",
+    "ch10-guidance-estimates-land:caption"
+   ]
+  },
+  {
+   "id": "ch11-short-interest-open",
+   "plate": "room/receipts",
+   "start_s": 428.281,
+   "end_s": 445.076,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch11-short-interest-open:ground",
+    "ch11-short-interest-open:plate:room/wall-of-calls-16x9",
+    "ch11-short-interest-open:host:close-up",
+    "ch11-short-interest-open:caption"
+   ]
+  },
+  {
+   "id": "ch11-short-interest-evidence",
+   "plate": "figures/big-number-l2-16x9",
+   "start_s": 445.076,
+   "end_s": 462.87,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch11-short-interest-evidence:ground",
+    "ch11-short-interest-evidence:plate:figures/big-number-l2-16x9",
+    "ch11-short-interest-evidence:host:medium-glance-left",
+    "ch11-short-interest-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch11-short-interest-land",
+   "plate": "room/receipts",
+   "start_s": 462.87,
+   "end_s": 478.665,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch11-short-interest-land:ground",
+    "ch11-short-interest-land:plate:room/wall-of-calls-16x9",
+    "ch11-short-interest-land:host:close-up",
+    "ch11-short-interest-land:caption"
+   ]
+  },
+  {
+   "id": "ch12-valuation-open",
+   "plate": "room/talk",
+   "start_s": 478.665,
+   "end_s": 495.46,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch12-valuation-open:ground",
+    "ch12-valuation-open:plate:room/desk-front-16x9",
+    "ch12-valuation-open:host:holding-a-page",
+    "ch12-valuation-open:caption"
+   ]
+  },
+  {
+   "id": "ch12-valuation-evidence",
+   "plate": "figures/big-fraction-16x9",
+   "start_s": 495.46,
+   "end_s": 513.255,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch12-valuation-evidence:ground",
+    "ch12-valuation-evidence:plate:figures/big-fraction-16x9",
+    "ch12-valuation-evidence:host:medium-glance-right",
+    "ch12-valuation-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch12-valuation-land",
+   "plate": "room/talk",
+   "start_s": 513.255,
+   "end_s": 529.05,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch12-valuation-land:ground",
+    "ch12-valuation-land:plate:room/low-desk-height-16x9",
+    "ch12-valuation-land:host:medium",
+    "ch12-valuation-land:caption"
+   ]
+  },
+  {
+   "id": "ch13-risk-open",
+   "plate": "room/read",
+   "start_s": 529.05,
+   "end_s": 545.845,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch13-risk-open:ground",
+    "ch13-risk-open:plate:room/from-behind-the-monitor-16x9",
+    "ch13-risk-open:host:leaning-on-desk",
+    "ch13-risk-open:caption"
+   ]
+  },
+  {
+   "id": "ch13-risk-evidence",
+   "plate": "cards/quote-pull-16x9",
+   "start_s": 545.845,
+   "end_s": 552.845,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch13-risk-evidence:ground",
+    "ch13-risk-evidence:plate:cards/quote-pull-16x9",
+    "ch13-risk-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch13-risk-land",
+   "plate": "room/read",
+   "start_s": 552.845,
+   "end_s": 568.639,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch13-risk-land:ground",
+    "ch13-risk-land:plate:room/from-behind-the-monitor-16x9",
+    "ch13-risk-land:host:medium",
+    "ch13-risk-land:caption"
+   ]
+  },
+  {
+   "id": "ch14-filing-walk-open",
+   "plate": "room/read",
+   "start_s": 568.639,
+   "end_s": 585.434,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch14-filing-walk-open:ground",
+    "ch14-filing-walk-open:plate:room/printer-corner-16x9",
+    "ch14-filing-walk-open:host:holding-a-page",
+    "ch14-filing-walk-open:caption"
+   ]
+  },
+  {
+   "id": "ch14-filing-walk-on-the-desk",
+   "plate": "room/surface",
+   "start_s": 585.434,
+   "end_s": 589.434,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "ch14-filing-walk-on-the-desk:ground",
+    "ch14-filing-walk-on-the-desk:plate:room/high-desk-down-16x9",
+    "ch14-filing-walk-on-the-desk:caption"
+   ]
+  },
+  {
+   "id": "ch14-filing-walk-evidence",
+   "plate": "paper/headline-band-t2-16x9",
+   "start_s": 589.434,
+   "end_s": 607.229,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch14-filing-walk-evidence:ground",
+    "ch14-filing-walk-evidence:plate:paper/headline-band-t2-16x9",
+    "ch14-filing-walk-evidence:host:medium-glance-left",
+    "ch14-filing-walk-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch14-filing-walk-land",
+   "plate": "room/read",
+   "start_s": 607.229,
+   "end_s": 623.024,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch14-filing-walk-land:ground",
+    "ch14-filing-walk-land:plate:room/from-behind-the-monitor-16x9",
+    "ch14-filing-walk-land:host:close-up",
+    "ch14-filing-walk-land:caption"
+   ]
+  },
+  {
+   "id": "ch15-bull-vs-bear-open",
+   "plate": "room/establish",
+   "start_s": 623.024,
+   "end_s": 639.819,
+   "anchored": true,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch15-bull-vs-bear-open:ground",
+    "ch15-bull-vs-bear-open:plate:room/wide-tight-16x9",
+    "ch15-bull-vs-bear-open:host:leaning-on-desk",
+    "ch15-bull-vs-bear-open:caption"
+   ]
+  },
+  {
+   "id": "ch15-bull-vs-bear-evidence",
+   "plate": "structure/both-true-16x9",
+   "start_s": 639.819,
+   "end_s": 646.819,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch15-bull-vs-bear-evidence:ground",
+    "ch15-bull-vs-bear-evidence:plate:structure/both-true-16x9",
+    "ch15-bull-vs-bear-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch15-bull-vs-bear-land",
+   "plate": "room/establish",
+   "start_s": 646.819,
+   "end_s": 662.613,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch15-bull-vs-bear-land:ground",
+    "ch15-bull-vs-bear-land:plate:room/wide-16x9",
+    "ch15-bull-vs-bear-land:host:close-up",
+    "ch15-bull-vs-bear-land:caption"
+   ]
+  },
+  {
+   "id": "ch16-resigned-close-open",
+   "plate": "room/exit",
+   "start_s": 662.613,
+   "end_s": 679.408,
+   "anchored": false,
+   "max_hold_s": 6.0,
+   "layers": [
+    "ch16-resigned-close-open:ground",
+    "ch16-resigned-close-open:plate:room/doorway-16x9",
+    "ch16-resigned-close-open:host:head-in-hands",
+    "ch16-resigned-close-open:caption"
+   ]
+  },
+  {
+   "id": "ch16-resigned-close-evidence",
+   "plate": "structure/closing-16x9",
+   "start_s": 679.408,
+   "end_s": 686.408,
+   "anchored": false,
+   "max_hold_s": 7.0,
+   "layers": [
+    "ch16-resigned-close-evidence:ground",
+    "ch16-resigned-close-evidence:plate:structure/closing-16x9",
+    "ch16-resigned-close-evidence:caption"
+   ]
+  },
+  {
+   "id": "ch16-resigned-close-land",
+   "plate": "room/exit",
+   "start_s": 686.408,
+   "end_s": 702.203,
+   "anchored": false,
+   "max_hold_s": 5.0,
+   "layers": [
+    "ch16-resigned-close-land:ground",
+    "ch16-resigned-close-land:plate:room/doorway-16x9",
+    "ch16-resigned-close-land:host:medium",
+    "ch16-resigned-close-land:caption"
+   ]
+  }
+ ],
+ "layers": 185,
+ "plates_used": [
+  "cards/criteria-16x9",
+  "cards/definition-16x9",
+  "cards/quote-pull-16x9",
+  "figures/big-fraction-16x9",
+  "figures/big-number-l1-16x9",
+  "figures/big-number-l2-16x9",
+  "figures/compare-stacked-16x9",
+  "host/close-up",
+  "host/hands-in-pockets",
+  "host/head-in-hands",
+  "host/holding-a-page",
+  "host/leaning-on-desk",
+  "host/medium",
+  "host/medium-glance-left",
+  "host/medium-glance-right",
+  "paper/headline-band-t1-16x9",
+  "paper/headline-band-t2-16x9",
+  "peers/peer-strip-16x9",
+  "room/corner-perspective-16x9",
+  "room/desk-front-16x9",
+  "room/doorway-16x9",
+  "room/from-behind-the-monitor-16x9",
+  "room/high-desk-down-16x9",
+  "room/low-desk-height-16x9",
+  "room/printer-corner-16x9",
+  "room/wall-of-calls-16x9",
+  "room/whiteboard-wall-16x9",
+  "room/wide-16x9",
+  "room/wide-tight-16x9",
+  "structure/both-true-16x9",
+  "structure/closing-16x9",
+  "structure/unit-ladder-16x9",
+  "tables/numbers-sheet-4r-16x9"
+ ],
+ "kit_reach": "Kit: 33 of 140 plates, 8 families, 77 animated layers",
+ "skipped": [
+  "ch3-how-the-money-is-made-evidence.example <- chapter.line.1 (86 > 60 chars)",
+  "ch10-guidance-estimates-evidence.value-2 <- compare.expected",
+  "ch12-valuation-evidence.denominator <- compare.expected",
+  "ch14-filing-walk-on-the-desk.caption <- chapter.line.0 (65 > 60 chars)",
+  "ch14-filing-walk-evidence.sub <- chapter.line.1 (130 > 124 chars)",
+  "ch16-resigned-close-evidence.line-3 <- chapter.line.2 (98 > 80 chars)"
+ ],
+ "dropped_shots": [],
+ "text_overflow": {},
+ "longest_layer_hold_s": 7.0,
+ "pacing": {
+  "shots": 49,
+  "longest_span_s": 17.79,
+  "longest_still_span_s": 7.0,
+  "spans_over_their_ceiling": [
+   "ch1-cold-open-open 16.8s over 6.0s",
+   "ch1-cold-open-land 15.8s over 5.0s",
+   "ch2-how-we-got-here-open 16.8s over 6.0s",
+   "ch2-how-we-got-here-land 15.8s over 5.0s",
+   "ch3-how-the-money-is-made-open 16.8s over 6.0s",
+   "ch3-how-the-money-is-made-evidence 17.8s over 7.0s",
+   "ch3-how-the-money-is-made-land 15.8s over 5.0s",
+   "ch4-the-numbers-open 16.8s over 6.0s",
+   "ch4-the-numbers-land 15.8s over 5.0s",
+   "ch5-one-framework-open 16.8s over 6.0s",
+   "ch5-one-framework-land 15.8s over 5.0s",
+   "ch6-moat-open 16.8s over 6.0s",
+   "ch6-moat-land 15.8s over 5.0s",
+   "ch7-sector-comps-open 16.8s over 6.0s",
+   "ch7-sector-comps-land 15.8s over 5.0s",
+   "ch8-management-open 16.8s over 6.0s",
+   "ch8-management-evidence 17.8s over 7.0s",
+   "ch8-management-land 15.8s over 5.0s",
+   "ch9-capital-allocation-open 16.8s over 6.0s",
+   "ch9-capital-allocation-land 15.8s over 5.0s",
+   "ch10-guidance-estimates-open 16.8s over 6.0s",
+   "ch10-guidance-estimates-evidence 17.8s over 7.0s",
+   "ch10-guidance-estimates-land 15.8s over 5.0s",
+   "ch11-short-interest-open 16.8s over 6.0s",
+   "ch11-short-interest-evidence 17.8s over 7.0s",
+   "ch11-short-interest-land 15.8s over 5.0s",
+   "ch12-valuation-open 16.8s over 6.0s",
+   "ch12-valuation-evidence 17.8s over 7.0s",
+   "ch12-valuation-land 15.8s over 5.0s",
+   "ch13-risk-open 16.8s over 6.0s",
+   "ch13-risk-land 15.8s over 5.0s",
+   "ch14-filing-walk-open 16.8s over 6.0s",
+   "ch14-filing-walk-evidence 17.8s over 7.0s",
+   "ch14-filing-walk-land 15.8s over 5.0s",
+   "ch15-bull-vs-bear-open 16.8s over 6.0s",
+   "ch15-bull-vs-bear-land 15.8s over 5.0s",
+   "ch16-resigned-close-open 16.8s over 6.0s",
+   "ch16-resigned-close-land 15.8s over 5.0s"
+  ]
+ }
+}

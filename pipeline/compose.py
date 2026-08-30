@@ -516,6 +516,19 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                        aspect=aspect, unfilled=unfilled, skipped=skipped)
 
 
+def _slot_budget(plate: Plate, slot_name: str) -> int:
+    """The kit's own `maxChars` for a slot, or 0 when it declares none."""
+    slot = plate.slot(slot_name)
+    if slot is None:
+        return 0
+    role = (plate.type_roles.get(slot.role) or {})
+    if role.get("maxChars"):
+        return int(role["maxChars"])
+    if role.get("maxLines") and role.get("maxCharsPerLine"):
+        return int(role["maxLines"]) * int(role["maxCharsPerLine"])
+    return 0
+
+
 def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
                   reg: Registry) -> tuple[dict[str, str], list[str], list[str]]:
     """The slot values for one shot: `(values, unfilled, skipped)`.
@@ -546,6 +559,18 @@ def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
         if got is None or not str(got).strip():
             (skipped if optional else unfilled).append(
                 f"{shot.id}.{slot_name} <- {src}")
+            continue
+        # AN OPTIONAL SLOT THAT WILL NOT FIT IS LEFT EMPTY, NOT OVERFLOWED,
+        # AND NOT A REASON TO REFUSE THE VIDEO. The long binds a chapter's
+        # own sentences into slots, and a sentence is whatever length the
+        # writer wrote — a 65-character line into a 60-character caption
+        # failed the whole render over one optional caption. Required binds
+        # still refuse in `check_budgets`: a slot the beat is FOR, carrying
+        # something too long, is a beat that does not work.
+        budget = _slot_budget(plate, slot_name)
+        if optional and budget and len(str(got).strip()) > budget:
+            skipped.append(f"{shot.id}.{slot_name} <- {src} "
+                           f"({len(str(got).strip())} > {budget} chars)")
             continue
         # A value carrying the tag grammar's own separators would be read as
         # structure. Only `|` can do that; a comma is meaningful and is what

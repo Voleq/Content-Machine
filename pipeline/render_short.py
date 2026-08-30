@@ -916,6 +916,25 @@ def render_short(script, tts, workspace: Path, settings, *,
         "text_overflow": overflow,
         "longest_layer_hold_s": round(
             max((b - a for a, b, _ in held_layer_spans(result)), default=0.0), 3),
+        # PACING, WHICH IS A PROPERTY OF THE CUT AND NOT OF THE SUITE. A
+        # twelve-minute script through sixteen three-beat chapters gives every
+        # composition about fifteen seconds, and the only place that shows is
+        # here or in the video. `still` is the number that matters: a shot with
+        # a host in it is alive at fifteen seconds and a static data plate is a
+        # held photograph at eight.
+        "pacing": {
+            "shots": len(result.spans),
+            "longest_span_s": round(
+                max((sp.end - sp.start for sp in result.spans), default=0.0), 2),
+            "longest_still_span_s": round(max(
+                (sp.end - sp.start for sp in result.spans
+                 if sp.shot.plate and not sp.shot.host
+                 and not sp.shot.plate.startswith("room/")), default=0.0), 2),
+            "spans_over_their_ceiling": [
+                f"{sp.shot.id} {sp.end - sp.start:.1f}s over {sp.shot.max_hold_s}s"
+                for sp in result.spans
+                if sp.end - sp.start > sp.shot.max_hold_s + 0.05],
+        },
     }, indent=1), encoding="utf-8")
 
     return out, manifest_path
