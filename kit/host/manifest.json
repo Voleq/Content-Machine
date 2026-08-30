@@ -8,9 +8,6 @@
  "dataPolicy": "alpha cut-out figure, placed on a room host-anchor by height with the floor line pinned",
  "assets": {
   "host/leaning-on-desk": {
-   "author": "hostFigure",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1080,
     1920
@@ -28,17 +25,17 @@
      "tag": "_f01",
      "svg": "leaning-on-desk_f01.svg",
      "png": "leaning-on-desk_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "leaning-on-desk_f02.svg",
      "png": "leaning-on-desk_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -52,16 +49,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 587,
-     "y": 576,
+     "x": 586,
+     "y": 587,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 522,
-     "y": 436,
+     "x": 521,
+     "y": 447,
      "w": 176,
      "h": 194
     },
@@ -70,9 +67,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 429,
      "w": 614,
-     "h": 1323
+     "h": 1312
     }
    },
    "family": "host",
@@ -81,19 +78,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "leaning-on-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.26,
+    "slump": 0.34,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 11,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": 1031,
+    "forearmNote": "his forearm rests at this y. Align it to the room plate's host-anchor contact point; the forearm is drawn level because a forearm resting on a desk is horizontal, and a diagonal one is a man reaching for a desk he never touches."
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/leaning-on-desk-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/leaning-on-desk-talk": {
    "canvas": [
     1080,
     1920
@@ -102,6 +111,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "leaning-on-desk-talk_f01.svg",
+     "png": "leaning-on-desk-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "leaning-on-desk-talk_f02.svg",
+     "png": "leaning-on-desk-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "leaning-on-desk-talk.png",
@@ -114,16 +144,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 587,
-     "y": 576,
+     "x": 586,
+     "y": 587,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 522,
-     "y": 436,
+     "x": 521,
+     "y": 447,
      "w": 176,
      "h": 194
     },
@@ -132,9 +162,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 429,
      "w": 614,
-     "h": 1323
+     "h": 1312
     }
    },
    "family": "host",
@@ -143,40 +173,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "leaning-on-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.26,
+    "slump": 0.34,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 11,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": 1031,
+    "forearmNote": "his forearm rests at this y. Align it to the room plate's host-anchor contact point; the forearm is drawn level because a forearm resting on a desk is horizontal, and a diagonal one is a man reaching for a desk he never touches."
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "leaning-on-desk-talk_f01.svg",
-     "png": "leaning-on-desk-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "leaning-on-desk-talk_f02.svg",
-     "png": "leaning-on-desk-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/leaning-on-desk-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/leaning-on-desk-idle": {
    "canvas": [
     1080,
     1920
@@ -185,6 +206,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "leaning-on-desk-idle_f01.svg",
+     "png": "leaning-on-desk-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "leaning-on-desk-idle_f02.svg",
+     "png": "leaning-on-desk-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "leaning-on-desk-idle.png",
@@ -197,16 +239,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 587,
-     "y": 576,
+     "x": 586,
+     "y": 587,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 522,
-     "y": 436,
+     "x": 521,
+     "y": 447,
      "w": 176,
      "h": 194
     },
@@ -215,9 +257,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 429,
      "w": 614,
-     "h": 1323
+     "h": 1312
     }
    },
    "family": "host",
@@ -226,40 +268,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "leaning-on-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.26,
+    "slump": 0.34,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 11,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": 1031,
+    "forearmNote": "his forearm rests at this y. Align it to the room plate's host-anchor contact point; the forearm is drawn level because a forearm resting on a desk is horizontal, and a diagonal one is a man reaching for a desk he never touches."
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 4,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "leaning-on-desk-idle_f01.svg",
-     "png": "leaning-on-desk-idle_f01.png",
-     "boil": 3,
-     "mouthOpen": false,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "leaning-on-desk-idle_f02.svg",
-     "png": "leaning-on-desk-idle_f02.png",
-     "boil": 4,
-     "mouthOpen": false,
-     "bob": 3
-    }
-   ]
-  },
-  "host/hands-in-pockets": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/hands-in-pockets": {
    "canvas": [
     1080,
     1920
@@ -277,17 +310,17 @@
      "tag": "_f01",
      "svg": "hands-in-pockets_f01.svg",
      "png": "hands-in-pockets_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "hands-in-pockets_f02.svg",
      "png": "hands-in-pockets_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -301,16 +334,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 527,
-     "y": 576,
+     "x": 554,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 461,
-     "y": 436,
+     "x": 488,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -319,9 +352,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -330,19 +363,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "hands-in-pockets",
+    "weightOn": "camera-right leg",
+    "lean": 0.06,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/hands-in-pockets-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/hands-in-pockets-talk": {
    "canvas": [
     1080,
     1920
@@ -351,6 +396,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "hands-in-pockets-talk_f01.svg",
+     "png": "hands-in-pockets-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "hands-in-pockets-talk_f02.svg",
+     "png": "hands-in-pockets-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "hands-in-pockets-talk.png",
@@ -363,16 +429,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 527,
-     "y": 576,
+     "x": 554,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 461,
-     "y": 436,
+     "x": 488,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -381,9 +447,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -392,40 +458,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "hands-in-pockets",
+    "weightOn": "camera-right leg",
+    "lean": 0.06,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "hands-in-pockets-talk_f01.svg",
-     "png": "hands-in-pockets-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "hands-in-pockets-talk_f02.svg",
-     "png": "hands-in-pockets-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/hands-in-pockets-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/hands-in-pockets-idle": {
    "canvas": [
     1080,
     1920
@@ -434,6 +491,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "hands-in-pockets-idle_f01.svg",
+     "png": "hands-in-pockets-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "hands-in-pockets-idle_f02.svg",
+     "png": "hands-in-pockets-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "hands-in-pockets-idle.png",
@@ -446,16 +524,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 527,
-     "y": 576,
+     "x": 554,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 461,
-     "y": 436,
+     "x": 488,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -464,9 +542,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -475,40 +553,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "hands-in-pockets",
+    "weightOn": "camera-right leg",
+    "lean": 0.06,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 4,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "hands-in-pockets-idle_f01.svg",
-     "png": "hands-in-pockets-idle_f01.png",
-     "boil": 3,
-     "mouthOpen": false,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "hands-in-pockets-idle_f02.svg",
-     "png": "hands-in-pockets-idle_f02.png",
-     "boil": 4,
-     "mouthOpen": false,
-     "bob": 3
-    }
-   ]
-  },
-  "host/holding-a-page": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/holding-a-page": {
    "canvas": [
     1080,
     1920
@@ -526,17 +595,17 @@
      "tag": "_f01",
      "svg": "holding-a-page_f01.svg",
      "png": "holding-a-page_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "holding-a-page_f02.svg",
      "png": "holding-a-page_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -550,16 +619,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 536,
-     "y": 576,
+     "x": 558,
+     "y": 585,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 471,
-     "y": 436,
+     "x": 493,
+     "y": 444,
      "w": 176,
      "h": 194
     },
@@ -568,16 +637,16 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 427,
      "w": 614,
-     "h": 1323
+     "h": 1315
     }
    },
    "decorBoxes": [
     {
      "label": "page",
-     "x": 361,
-     "y": 890,
+     "x": 374,
+     "y": 882,
      "w": 385,
      "h": 315
     }
@@ -588,19 +657,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "holding-a-page",
+    "weightOn": "camera-left leg",
+    "lean": 0.12,
+    "slump": 0.26,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 8,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/holding-a-page-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/holding-a-page-talk": {
    "canvas": [
     1080,
     1920
@@ -609,6 +690,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "holding-a-page-talk_f01.svg",
+     "png": "holding-a-page-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "holding-a-page-talk_f02.svg",
+     "png": "holding-a-page-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "holding-a-page-talk.png",
@@ -621,16 +723,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 536,
-     "y": 576,
+     "x": 558,
+     "y": 585,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 471,
-     "y": 436,
+     "x": 493,
+     "y": 444,
      "w": 176,
      "h": 194
     },
@@ -639,16 +741,16 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 427,
      "w": 614,
-     "h": 1323
+     "h": 1315
     }
    },
    "decorBoxes": [
     {
      "label": "page",
-     "x": 361,
-     "y": 890,
+     "x": 374,
+     "y": 882,
      "w": 385,
      "h": 315
     }
@@ -659,40 +761,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "holding-a-page",
+    "weightOn": "camera-left leg",
+    "lean": 0.12,
+    "slump": 0.26,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 8,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "holding-a-page-talk_f01.svg",
-     "png": "holding-a-page-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "holding-a-page-talk_f02.svg",
-     "png": "holding-a-page-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/holding-a-page-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/holding-a-page-idle": {
    "canvas": [
     1080,
     1920
@@ -701,6 +794,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "holding-a-page-idle_f01.svg",
+     "png": "holding-a-page-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "holding-a-page-idle_f02.svg",
+     "png": "holding-a-page-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "holding-a-page-idle.png",
@@ -713,16 +827,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 536,
-     "y": 576,
+     "x": 558,
+     "y": 585,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 471,
-     "y": 436,
+     "x": 493,
+     "y": 444,
      "w": 176,
      "h": 194
     },
@@ -731,16 +845,16 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 427,
      "w": 614,
-     "h": 1323
+     "h": 1315
     }
    },
    "decorBoxes": [
     {
      "label": "page",
-     "x": 361,
-     "y": 890,
+     "x": 374,
+     "y": 882,
      "w": 385,
      "h": 315
     }
@@ -751,40 +865,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "holding-a-page",
+    "weightOn": "camera-left leg",
+    "lean": 0.12,
+    "slump": 0.26,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 8,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 4,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "holding-a-page-idle_f01.svg",
-     "png": "holding-a-page-idle_f01.png",
-     "boil": 3,
-     "mouthOpen": false,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "holding-a-page-idle_f02.svg",
-     "png": "holding-a-page-idle_f02.png",
-     "boil": 4,
-     "mouthOpen": false,
-     "bob": 3
-    }
-   ]
-  },
-  "host/pointing-down-at-desk": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/pointing-down-at-desk": {
    "canvas": [
     1080,
     1920
@@ -802,17 +907,17 @@
      "tag": "_f01",
      "svg": "pointing-down-at-desk_f01.svg",
      "png": "pointing-down-at-desk_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "pointing-down-at-desk_f02.svg",
      "png": "pointing-down-at-desk_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -826,16 +931,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 581,
-     "y": 576,
+     "x": 602,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 516,
-     "y": 436,
+     "x": 537,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -844,9 +949,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -855,19 +960,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "pointing-down-at-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.4,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/pointing-down-at-desk-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/pointing-down-at-desk-talk": {
    "canvas": [
     1080,
     1920
@@ -876,6 +993,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "pointing-down-at-desk-talk_f01.svg",
+     "png": "pointing-down-at-desk-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "pointing-down-at-desk-talk_f02.svg",
+     "png": "pointing-down-at-desk-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "pointing-down-at-desk-talk.png",
@@ -888,16 +1026,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 581,
-     "y": 576,
+     "x": 602,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 516,
-     "y": 436,
+     "x": 537,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -906,9 +1044,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -917,40 +1055,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "pointing-down-at-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.4,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "pointing-down-at-desk-talk_f01.svg",
-     "png": "pointing-down-at-desk-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "pointing-down-at-desk-talk_f02.svg",
-     "png": "pointing-down-at-desk-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/pointing-down-at-desk-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/pointing-down-at-desk-idle": {
    "canvas": [
     1080,
     1920
@@ -959,6 +1088,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "pointing-down-at-desk-idle_f01.svg",
+     "png": "pointing-down-at-desk-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "pointing-down-at-desk-idle_f02.svg",
+     "png": "pointing-down-at-desk-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "pointing-down-at-desk-idle.png",
@@ -971,16 +1121,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 581,
-     "y": 576,
+     "x": 602,
+     "y": 586,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 516,
-     "y": 436,
+     "x": 537,
+     "y": 446,
      "w": 176,
      "h": 194
     },
@@ -989,9 +1139,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 428,
      "w": 614,
-     "h": 1323
+     "h": 1313
     }
    },
    "family": "host",
@@ -1000,40 +1150,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "pointing-down-at-desk",
+    "weightOn": "camera-left leg",
+    "lean": 0.4,
+    "slump": 0.3,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 10,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 4,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "pointing-down-at-desk-idle_f01.svg",
-     "png": "pointing-down-at-desk-idle_f01.png",
-     "boil": 3,
-     "mouthOpen": false,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "pointing-down-at-desk-idle_f02.svg",
-     "png": "pointing-down-at-desk-idle_f02.png",
-     "boil": 4,
-     "mouthOpen": false,
-     "bob": 3
-    }
-   ]
-  },
-  "host/head-in-hands": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/head-in-hands": {
    "canvas": [
     1080,
     1920
@@ -1051,17 +1192,17 @@
      "tag": "_f01",
      "svg": "head-in-hands_f01.svg",
      "png": "head-in-hands_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "head-in-hands_f02.svg",
      "png": "head-in-hands_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -1075,16 +1216,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 603,
-     "y": 576,
+     "x": 636,
+     "y": 597,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 538,
-     "y": 436,
+     "x": 571,
+     "y": 457,
      "w": 176,
      "h": 194
     },
@@ -1093,9 +1234,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 440,
      "w": 614,
-     "h": 1323
+     "h": 1302
     }
    },
    "family": "host",
@@ -1104,19 +1245,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "head-in-hands",
+    "weightOn": "camera-right leg",
+    "lean": 0.4,
+    "slump": 0.66,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 21,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/head-in-hands-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/head-in-hands-talk": {
    "canvas": [
     1080,
     1920
@@ -1125,6 +1278,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "head-in-hands-talk_f01.svg",
+     "png": "head-in-hands-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "head-in-hands-talk_f02.svg",
+     "png": "head-in-hands-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "head-in-hands-talk.png",
@@ -1137,16 +1311,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 603,
-     "y": 576,
+     "x": 636,
+     "y": 597,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 538,
-     "y": 436,
+     "x": 571,
+     "y": 457,
      "w": 176,
      "h": 194
     },
@@ -1155,9 +1329,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 440,
      "w": 614,
-     "h": 1323
+     "h": 1302
     }
    },
    "family": "host",
@@ -1166,40 +1340,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "head-in-hands",
+    "weightOn": "camera-right leg",
+    "lean": 0.4,
+    "slump": 0.66,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 21,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "head-in-hands-talk_f01.svg",
-     "png": "head-in-hands-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "head-in-hands-talk_f02.svg",
-     "png": "head-in-hands-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/head-in-hands-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/head-in-hands-idle": {
    "canvas": [
     1080,
     1920
@@ -1208,6 +1373,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "head-in-hands-idle_f01.svg",
+     "png": "head-in-hands-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "head-in-hands-idle_f02.svg",
+     "png": "head-in-hands-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "head-in-hands-idle.png",
@@ -1220,16 +1406,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 603,
-     "y": 576,
+     "x": 636,
+     "y": 597,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 538,
-     "y": 436,
+     "x": 571,
+     "y": 457,
      "w": 176,
      "h": 194
     },
@@ -1238,9 +1424,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
-     "y": 418,
+     "y": 440,
      "w": 614,
-     "h": 1323
+     "h": 1302
     }
    },
    "family": "host",
@@ -1249,40 +1435,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "head-in-hands",
+    "weightOn": "camera-right leg",
+    "lean": 0.4,
+    "slump": 0.66,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 21,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 4,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "head-in-hands-idle_f01.svg",
-     "png": "head-in-hands-idle_f01.png",
-     "boil": 3,
-     "mouthOpen": false,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "head-in-hands-idle_f02.svg",
-     "png": "head-in-hands-idle_f02.png",
-     "boil": 4,
-     "mouthOpen": false,
-     "bob": 3
-    }
-   ]
-  },
-  "host/walking-out-of-frame": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/walking-out-of-frame": {
    "canvas": [
     1080,
     1920
@@ -1300,17 +1477,17 @@
      "tag": "_f01",
      "svg": "walking-out-of-frame_f01.svg",
      "png": "walking-out-of-frame_f01.png",
-     "boil": 1,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
      "svg": "walking-out-of-frame_f02.svg",
      "png": "walking-out-of-frame_f02.png",
-     "boil": 2,
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 2
     }
    ],
    "files": {
@@ -1324,16 +1501,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 614,
-     "y": 576,
+     "x": 631,
+     "y": 583,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 549,
-     "y": 436,
+     "x": 566,
+     "y": 443,
      "w": 176,
      "h": 194
     },
@@ -1342,9 +1519,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
-     "y": 418,
+     "y": 425,
      "w": 614,
-     "h": 1323
+     "h": 1316
     }
    },
    "family": "host",
@@ -1353,19 +1530,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "walking-out-of-frame",
+    "weightOn": "camera-right leg",
+    "lean": 0.2,
+    "slump": 0.22,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 7,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
-   }
-  },
-  "host/walking-out-of-frame-talk": {
+   },
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/walking-out-of-frame-talk": {
    "canvas": [
     1080,
     1920
@@ -1374,6 +1563,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "walking-out-of-frame-talk_f01.svg",
+     "png": "walking-out-of-frame-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "walking-out-of-frame-talk_f02.svg",
+     "png": "walking-out-of-frame-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
    ],
    "files": {
     "png": "walking-out-of-frame-talk.png",
@@ -1386,16 +1596,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 614,
-     "y": 576,
+     "x": 631,
+     "y": 583,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 549,
-     "y": 436,
+     "x": 566,
+     "y": 443,
      "w": 176,
      "h": 194
     },
@@ -1404,9 +1614,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
-     "y": 418,
+     "y": 425,
      "w": 614,
-     "h": 1323
+     "h": 1316
     }
    },
    "family": "host",
@@ -1415,40 +1625,31 @@
    "cutout": true,
    "alpha": true,
    "boil": 1,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "walking-out-of-frame",
+    "weightOn": "camera-right leg",
+    "lean": 0.2,
+    "slump": 0.22,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 7,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
-   "frameCount": 2,
-   "playback": "loop",
-   "fps": 8,
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "walking-out-of-frame-talk_f01.svg",
-     "png": "walking-out-of-frame-talk_f01.png",
-     "boil": 1,
-     "mouthOpen": true,
-     "bob": 0
-    },
-    {
-     "tag": "_f02",
-     "svg": "walking-out-of-frame-talk_f02.svg",
-     "png": "walking-out-of-frame-talk_f02.png",
-     "boil": 2,
-     "mouthOpen": false,
-     "bob": 0
-    }
-   ]
-  },
-  "host/walking-out-of-frame-idle": {
    "author": "hostFigure",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "host/walking-out-of-frame-idle": {
    "canvas": [
     1080,
     1920
@@ -1457,6 +1658,27 @@
    "delivered": [
     2160,
     3840
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "walking-out-of-frame-idle_f01.svg",
+     "png": "walking-out-of-frame-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "walking-out-of-frame-idle_f02.svg",
+     "png": "walking-out-of-frame-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
    ],
    "files": {
     "png": "walking-out-of-frame-idle.png",
@@ -1469,16 +1691,16 @@
      "role": "mouth",
      "region": true,
      "note": "talk frames differ here only",
-     "x": 614,
-     "y": 576,
+     "x": 631,
+     "y": 583,
      "w": 46,
      "h": 30
     },
     "head": {
      "role": "head",
      "region": true,
-     "x": 549,
-     "y": 436,
+     "x": 566,
+     "y": 443,
      "w": 176,
      "h": 194
     },
@@ -1487,9 +1709,9 @@
      "region": true,
      "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
-     "y": 418,
+     "y": 425,
      "w": 614,
-     "h": 1323
+     "h": 1316
     }
    },
    "family": "host",
@@ -1498,35 +1720,2180 @@
    "cutout": true,
    "alpha": true,
    "boil": 3,
-   "outfit": "shirt",
+   "outfit": "tee",
    "floorLineY": 1728,
+   "rig": {
+    "pose": "walking-out-of-frame",
+    "weightOn": "camera-right leg",
+    "lean": 0.2,
+    "slump": 0.22,
+    "spine": "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+    "headSink": 7,
+    "hipTilt": "loaded hip raised 28px; shoulders counter-tilt 24px the other way, applied to the shoulder JOINTS so the arms inherit it",
+    "armsMirrored": false,
+    "forearmY": null,
+    "forearmNote": "this pose makes no surface contact"
+   },
    "contrast": {
     "rule": "Dennis is the highest-contrast object in any frame he is in",
     "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
     "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
     "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
    },
+   "author": "hostFigure",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
    "frameCount": 2,
+   "fps": 2,
    "playback": "loop",
-   "fps": 4,
    "frames": [
     {
      "tag": "_f01",
-     "svg": "walking-out-of-frame-idle_f01.svg",
-     "png": "walking-out-of-frame-idle_f01.png",
-     "boil": 3,
+     "svg": "close-up_f01.svg",
+     "png": "close-up_f01.png",
      "mouthOpen": false,
-     "bob": 0
+     "bob": 0,
+     "boil": 1
     },
     {
      "tag": "_f02",
-     "svg": "walking-out-of-frame-idle_f02.svg",
-     "png": "walking-out-of-frame-idle_f02.png",
-     "boil": 4,
+     "svg": "close-up_f02.svg",
+     "png": "close-up_f02.png",
      "mouthOpen": false,
-     "bob": 3
+     "bob": 0,
+     "boil": 2
     }
-   ]
+   ],
+   "files": {
+    "png": "close-up.png",
+    "svg": "close-up.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-talk": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-talk_f01.svg",
+     "png": "close-up-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-talk_f02.svg",
+     "png": "close-up-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "close-up-talk.png",
+    "svg": "close-up-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-idle": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-idle_f01.svg",
+     "png": "close-up-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-idle_f02.svg",
+     "png": "close-up-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "close-up-idle.png",
+    "svg": "close-up-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium_f01.svg",
+     "png": "medium_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium_f02.svg",
+     "png": "medium_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium.png",
+    "svg": "medium.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-talk": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-talk_f01.svg",
+     "png": "medium-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-talk_f02.svg",
+     "png": "medium-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-talk.png",
+    "svg": "medium-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-idle": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-idle_f01.svg",
+     "png": "medium-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-idle_f02.svg",
+     "png": "medium-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "medium-idle.png",
+    "svg": "medium-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-left": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-left_f01.svg",
+     "png": "close-up-glance-left_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-left_f02.svg",
+     "png": "close-up-glance-left_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-left.png",
+    "svg": "close-up-glance-left.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-left-talk": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-left-talk_f01.svg",
+     "png": "close-up-glance-left-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-left-talk_f02.svg",
+     "png": "close-up-glance-left-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-left-talk.png",
+    "svg": "close-up-glance-left-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-left-idle": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-left-idle_f01.svg",
+     "png": "close-up-glance-left-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-left-idle_f02.svg",
+     "png": "close-up-glance-left-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-left-idle.png",
+    "svg": "close-up-glance-left-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-right": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-right_f01.svg",
+     "png": "close-up-glance-right_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-right_f02.svg",
+     "png": "close-up-glance-right_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-right.png",
+    "svg": "close-up-glance-right.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-right-talk": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-right-talk_f01.svg",
+     "png": "close-up-glance-right-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-right-talk_f02.svg",
+     "png": "close-up-glance-right-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-right-talk.png",
+    "svg": "close-up-glance-right-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/close-up-glance-right-idle": {
+   "canvas": [
+    1080,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "close-up-glance-right-idle_f01.svg",
+     "png": "close-up-glance-right-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "close-up-glance-right-idle_f02.svg",
+     "png": "close-up-glance-right-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "close-up-glance-right-idle.png",
+    "svg": "close-up-glance-right-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 472,
+     "y": 440,
+     "w": 135,
+     "h": 88
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 358,
+     "y": 257,
+     "w": 364,
+     "h": 156
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 306,
+     "y": 34,
+     "w": 469,
+     "h": 547
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 13,
+     "w": 1080,
+     "h": 1067
+    }
+   },
+   "family": "host",
+   "framing": "close-up",
+   "pose": "close-up",
+   "aspect": "1x1",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 335,
+    "eyeLineFraction": 0.3106,
+    "headHeightFraction": 0.4724,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "shoulders leave frame left, right and bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-left": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-left_f01.svg",
+     "png": "medium-glance-left_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-left_f02.svg",
+     "png": "medium-glance-left_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-glance-left.png",
+    "svg": "medium-glance-left.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-left-talk": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-left-talk_f01.svg",
+     "png": "medium-glance-left-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-left-talk_f02.svg",
+     "png": "medium-glance-left-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-glance-left-talk.png",
+    "svg": "medium-glance-left-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-left-idle": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-left-idle_f01.svg",
+     "png": "medium-glance-left-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-left-idle_f02.svg",
+     "png": "medium-glance-left-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "medium-glance-left-idle.png",
+    "svg": "medium-glance-left-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "glance": "camera-left",
+   "glanceNote": "He is looking at something off to camera-left. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-right": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-right_f01.svg",
+     "png": "medium-glance-right_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-right_f02.svg",
+     "png": "medium-glance-right_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-glance-right.png",
+    "svg": "medium-glance-right.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-right-talk": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-right-talk_f01.svg",
+     "png": "medium-glance-right-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-right-talk_f02.svg",
+     "png": "medium-glance-right-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-glance-right-talk.png",
+    "svg": "medium-glance-right-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-glance-right-idle": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-glance-right-idle_f01.svg",
+     "png": "medium-glance-right-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-glance-right-idle_f02.svg",
+     "png": "medium-glance-right-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "medium-glance-right-idle.png",
+    "svg": "medium-glance-right-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "tee",
+   "glance": "camera-right",
+   "glanceNote": "He is looking at something off to camera-right. Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-robe": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-robe_f01.svg",
+     "png": "medium-robe_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-robe_f02.svg",
+     "png": "medium-robe_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-robe.png",
+    "svg": "medium-robe.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "robe",
+   "glance": "to camera",
+   "glanceNote": "He is looking down the lens. Use this when he is addressing the viewer, not when a graphic is on screen.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-robe-talk": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 8,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-robe-talk_f01.svg",
+     "png": "medium-robe-talk_f01.png",
+     "mouthOpen": true,
+     "bob": 0,
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-robe-talk_f02.svg",
+     "png": "medium-robe-talk_f02.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "medium-robe-talk.png",
+    "svg": "medium-robe-talk.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 1,
+   "outfit": "robe",
+   "glance": "to camera",
+   "glanceNote": "He is looking down the lens. Use this when he is addressing the viewer, not when a graphic is on screen.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "host/medium-robe-idle": {
+   "canvas": [
+    1080,
+    1440
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    2880
+   ],
+   "frameCount": 2,
+   "fps": 4,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "medium-robe-idle_f01.svg",
+     "png": "medium-robe-idle_f01.png",
+     "mouthOpen": false,
+     "bob": 0,
+     "boil": 3
+    },
+    {
+     "tag": "_f02",
+     "svg": "medium-robe-idle_f02.svg",
+     "png": "medium-robe-idle_f02.png",
+     "mouthOpen": false,
+     "bob": 3,
+     "boil": 4
+    }
+   ],
+   "files": {
+    "png": "medium-robe-idle.png",
+    "svg": "medium-robe-idle.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
+     "x": 481,
+     "y": 413,
+     "w": 118,
+     "h": 77
+    },
+    "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
+     "x": 381,
+     "y": 254,
+     "w": 319,
+     "h": 137
+    },
+    "head": {
+     "role": "head",
+     "region": true,
+     "x": 335,
+     "y": 58,
+     "w": 410,
+     "h": 478
+    },
+    "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
+     "x": 0,
+     "y": 40,
+     "w": 1080,
+     "h": 1400
+    }
+   },
+   "family": "host",
+   "framing": "medium",
+   "pose": "medium",
+   "aspect": "3x4",
+   "cutout": true,
+   "alpha": true,
+   "boil": 3,
+   "outfit": "robe",
+   "glance": "to camera",
+   "glanceNote": "He is looking down the lens. Use this when he is addressing the viewer, not when a graphic is on screen.",
+   "contrast": {
+    "rule": "Dennis is the highest-contrast object in any frame he is in",
+    "why": "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+    "how": "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+    "note": "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round."
+   },
+   "floorLineY": false,
+   "fit": {
+    "mode": "eye-line",
+    "eyeLineY": 322,
+    "eyeLineFraction": 0.2237,
+    "headHeightFraction": 0.3097,
+    "note": "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+    "cropsAt": "hands leave frame at the bottom"
+   },
+   "author": "hostHead",
+   "seed": 1,
+   "surface": "night-card"
   }
  },
  "anchorContract": "a room's host-anchor region gives the target HEIGHT: scale this plate so (floorLineY - slots.figure.y) equals that height, then sit floorLineY on the region's bottom edge. Never scale to the anchor's width.",
@@ -1549,5 +3916,16 @@
  "exportScale": 2,
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "character": {
+  "revision": "08 — side-glance and the robe (visual system closed)",
+  "reads": "deadpan, tired, self-aware. Never the target of the joke — the one telling it.",
+  "expression": "resting face is neutral to tired: flat mouth with one corner dropped, level brow, half-lidded eyes. No smile in any pose or framing.",
+  "fatigue": "under-eye pouch and crease, hollow under the cheekbone, uneven stubble. Deliberately faint — shading heavy enough to read as bruising makes him look beaten, which is over the line.",
+  "dress": "washed-out tee, collar stretched out of shape. Never a shirt and tie. Hair flattened on the slept-on side, glasses slightly crooked and smudged on one lens.",
+  "posture": "asymmetric and slumped AT THE RIG, not at the outline. Revision 06 dipped the torso polygon while the skeleton stayed vertical and mirrored, so nothing read. The armature now carries a curved spine, a weight-bearing leg with the loaded hip raised, shoulders counter-tilting to the hips at the JOINTS, and per-pose asymmetric arms. See meta.rig on any pose plate.",
+  "authoredIn": "engine/plates.js — hostFace(), shared by hostFigure and hostHead so the full figure and the close-up cannot disagree about who he is.",
+  "eyeline": "The six full-figure poses and the two straight-to-camera framings look down the lens. The glance keys look off to camera-left or camera-right: match meta.glance to the side the graphic is on. A glance cut against a graphic on the opposite side is worse than him facing camera.",
+  "wardrobe": "One outfit per episode. 'tee' is the default and covers every pose; 'robe' exists at medium only, for the episodes shot at the worst hour. Both read at the size he occupies in frame; the retired shirt/cardigan/rolled/jumper/gilet still resolve for anything already cut against them."
+ }
 }

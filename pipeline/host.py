@@ -127,6 +127,22 @@ class HostShot:
     def floor_line_y(self) -> int:
         return int(self.pose.floor_line_y or self.pose.canvas[1])
 
+    @property
+    def is_framing(self) -> bool:
+        """Whether this is a camera DISTANCE rather than a figure in a room.
+
+        `close-up` and `medium` publish `floorLineY: false`: they are head-and-
+        shoulders and waist-up crops, so there is no floor line to pin and no
+        anchor to solve them onto. A framing IS the shot. Treating one as a
+        cut-out puts a disembodied head standing on a desk.
+        """
+        return not self.pose.floor_line_y
+
+    @property
+    def glance(self) -> str:
+        """Where he is looking: `to camera`, `camera-left`, `camera-right`."""
+        return str(getattr(self.pose, "glance", "") or "to camera")
+
 
 def shots(reg: Registry, role: str = "open") -> list[HostShot]:
     """Every usable pose for a shot role, in the order the registry declares.
@@ -207,9 +223,17 @@ def place_on_room(room: Plate, host: HostShot) -> Placement | None:
     composite rather than as a bug, which is why the rule is written on the
     plate and repeated here.
     """
+    # A ROOM MAY REFUSE. `room/high-desk-down` is the camera above the desk and
+    # `room/wall-of-calls` is a wall of index cards: neither has a floor in
+    # shot, and both say so in the field rather than leaving it out. That is
+    # not the same as a plate nobody decided about, which `Registry.verify`
+    # now refuses outright.
+    if room.refuses_host:
+        log.debug("%s declares hostAnchor: false — nobody stands here", room.key)
+        return None
     anchor = room.slot("host-anchor")
     figure = host.pose.slot("figure")
-    if anchor is None or figure is None or not host.pose.floor_line_y:
+    if anchor is None or figure is None or host.is_framing:
         return None
 
     # Everything in DELIVERED pixels from here. Mixing canvas units and
@@ -230,9 +254,23 @@ def place_on_room(room: Plate, host: HostShot) -> Placement | None:
     # Sit his floor line on the anchor's bottom edge.
     floor_px = host.floor_line_y * hs * scale
     y = int(round(ay + ah - floor_px))
-    # Centre him in the anchor's width. Advisory only: it says how much lateral
-    # room he has, and it never decides his size.
-    x = int(round(ax + (aw - width) / 2))
+    # WHERE HE STANDS LATERALLY. The anchor's width is advisory — it says how
+    # much lateral room he has, and it never decides his size — so on its own
+    # he is centred in it, which on a wide angle is a man standing in open
+    # floor beside a desk he is not touching.
+    #
+    # Twelve room plates publish a `contact` point: which pose makes contact at
+    # this angle, what he is touching, and where his hand lands. His own rig
+    # publishes `forearmY` but no forearm X, so what this can do soundly is put
+    # him AT the furniture rather than beside it: his figure box is centred on
+    # the contact point. The height rule above is untouched — the anchor
+    # decides his size, and nothing here is allowed to argue with it.
+    contact = room.host_contact
+    if contact.get("x") is not None:
+        fig_mid = (figure.x + figure.w / 2) * hs * scale
+        x = int(round(float(contact["x"]) * room.export_scale - fig_mid))
+    else:
+        x = int(round(ax + (aw - width) / 2))
     return Placement(scale=scale, x=x, y=y, width=width, height=height)
 
 

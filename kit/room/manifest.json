@@ -7,9 +7,6 @@
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
  "assets": {
   "room/wide-16x9": {
-   "author": "room",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -24,23 +21,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wide-16x9_f01.svg",
      "png": "wide-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wide-16x9_f02.svg",
      "png": "wide-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wide-16x9.png",
-    "svg": "wide-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -57,6 +53,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 634
+     },
      "x": 269,
      "y": 302,
      "w": 653,
@@ -117,14 +119,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 451,
+     "y": 634
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/wide-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-9x16": {
    "canvas": [
     1080,
     1920
@@ -139,23 +149,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wide-9x16_f01.svg",
      "png": "wide-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wide-9x16_f02.svg",
      "png": "wide-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wide-9x16.png",
-    "svg": "wide-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -172,6 +181,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 1114
+     },
      "x": 151,
      "y": 346,
      "w": 367,
@@ -232,14 +247,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 254,
+     "y": 1114
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/wide-tight-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-tight-16x9": {
    "canvas": [
     1920,
     1080
@@ -254,23 +277,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wide-tight-16x9_f01.svg",
      "png": "wide-tight-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wide-tight-16x9_f02.svg",
      "png": "wide-tight-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wide-tight-16x9.png",
-    "svg": "wide-tight-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -287,6 +309,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 531
+     },
      "x": 269,
      "y": 302,
      "w": 653,
@@ -347,14 +375,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 451,
+     "y": 531
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/wide-tight-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-tight-9x16": {
    "canvas": [
     1080,
     1920
@@ -369,23 +405,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wide-tight-9x16_f01.svg",
      "png": "wide-tight-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wide-tight-9x16_f02.svg",
      "png": "wide-tight-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wide-tight-9x16.png",
-    "svg": "wide-tight-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -402,6 +437,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 1011
+     },
      "x": 151,
      "y": 346,
      "w": 367,
@@ -462,14 +503,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 254,
+     "y": 1011
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/desk-front-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-front-16x9": {
    "canvas": [
     1920,
     1080
@@ -484,23 +533,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "desk-front-16x9_f01.svg",
      "png": "desk-front-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "desk-front-16x9_f02.svg",
      "png": "desk-front-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "desk-front-16x9.png",
-    "svg": "desk-front-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -516,6 +564,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 355,
+      "y": 634
+     },
      "x": 269,
      "y": 302,
      "w": 653,
@@ -576,14 +630,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 355,
+     "y": 634
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/desk-front-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-front-9x16": {
    "canvas": [
     1080,
     1920
@@ -598,23 +660,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "desk-front-9x16_f01.svg",
      "png": "desk-front-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "desk-front-9x16_f02.svg",
      "png": "desk-front-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "desk-front-9x16.png",
-    "svg": "desk-front-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -630,6 +691,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 200,
+      "y": 1114
+     },
      "x": 151,
      "y": 346,
      "w": 367,
@@ -690,14 +757,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 200,
+     "y": 1114
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/desk-corner-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-corner-16x9": {
    "canvas": [
     1920,
     1080
@@ -712,23 +787,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "desk-corner-16x9_f01.svg",
      "png": "desk-corner-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "desk-corner-16x9_f02.svg",
      "png": "desk-corner-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "desk-corner-16x9.png",
-    "svg": "desk-corner-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -812,14 +886,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/desk-corner-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-corner-9x16": {
    "canvas": [
     1080,
     1920
@@ -834,23 +911,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "desk-corner-9x16_f01.svg",
      "png": "desk-corner-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "desk-corner-9x16_f02.svg",
      "png": "desk-corner-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "desk-corner-9x16.png",
-    "svg": "desk-corner-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -934,14 +1010,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/from-behind-the-monitor-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/from-behind-the-monitor-16x9": {
    "canvas": [
     1920,
     1080
@@ -956,23 +1035,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "from-behind-the-monitor-16x9_f01.svg",
      "png": "from-behind-the-monitor-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "from-behind-the-monitor-16x9_f02.svg",
      "png": "from-behind-the-monitor-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "from-behind-the-monitor-16x9.png",
-    "svg": "from-behind-the-monitor-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1048,14 +1126,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/from-behind-the-monitor-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/from-behind-the-monitor-9x16": {
    "canvas": [
     1080,
     1920
@@ -1070,23 +1151,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "from-behind-the-monitor-9x16_f01.svg",
      "png": "from-behind-the-monitor-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "from-behind-the-monitor-9x16_f02.svg",
      "png": "from-behind-the-monitor-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "from-behind-the-monitor-9x16.png",
-    "svg": "from-behind-the-monitor-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1162,14 +1242,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/whiteboard-wall-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/whiteboard-wall-16x9": {
    "canvas": [
     1920,
     1080
@@ -1184,23 +1267,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "whiteboard-wall-16x9_f01.svg",
      "png": "whiteboard-wall-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "whiteboard-wall-16x9_f02.svg",
      "png": "whiteboard-wall-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "whiteboard-wall-16x9.png",
-    "svg": "whiteboard-wall-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1216,6 +1298,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 221,
+      "y": 634
+     },
      "x": 269,
      "y": 302,
      "w": 653,
@@ -1276,14 +1364,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 221,
+     "y": 634
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/whiteboard-wall-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/whiteboard-wall-9x16": {
    "canvas": [
     1080,
     1920
@@ -1298,23 +1394,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "whiteboard-wall-9x16_f01.svg",
      "png": "whiteboard-wall-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "whiteboard-wall-9x16_f02.svg",
      "png": "whiteboard-wall-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "whiteboard-wall-9x16.png",
-    "svg": "whiteboard-wall-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1330,6 +1425,12 @@
      "region": true,
      "scales": "host",
      "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 124,
+      "y": 1114
+     },
      "x": 151,
      "y": 346,
      "w": 367,
@@ -1390,14 +1491,22 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 124,
+     "y": 1114
+    },
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/printer-corner-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/printer-corner-16x9": {
    "canvas": [
     1920,
     1080
@@ -1412,23 +1521,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "printer-corner-16x9_f01.svg",
      "png": "printer-corner-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "printer-corner-16x9_f02.svg",
      "png": "printer-corner-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "printer-corner-16x9.png",
-    "svg": "printer-corner-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1504,14 +1612,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/printer-corner-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/printer-corner-9x16": {
    "canvas": [
     1080,
     1920
@@ -1526,23 +1637,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "printer-corner-9x16_f01.svg",
      "png": "printer-corner-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "printer-corner-9x16_f02.svg",
      "png": "printer-corner-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "printer-corner-9x16.png",
-    "svg": "printer-corner-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1618,14 +1728,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/doorway-16x9": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/doorway-16x9": {
    "canvas": [
     1920,
     1080
@@ -1640,23 +1753,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "doorway-16x9_f01.svg",
      "png": "doorway-16x9_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "doorway-16x9_f02.svg",
      "png": "doorway-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "doorway-16x9.png",
-    "svg": "doorway-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1732,14 +1844,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 864,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/doorway-9x16": {
+   },
    "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/doorway-9x16": {
    "canvas": [
     1080,
     1920
@@ -1754,23 +1869,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "doorway-9x16_f01.svg",
      "png": "doorway-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "doorway-9x16_f02.svg",
      "png": "doorway-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "doorway-9x16.png",
-    "svg": "doorway-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "title": {
@@ -1846,14 +1960,17 @@
     "scales": "host.floorLineY - host.slots.figure.y",
     "pin": "host.floorLineY onto this plate's floorLineY",
     "floorLineY": 1344,
+    "floorInFrame": true,
     "widthIsAdvisory": true,
+    "contact": null,
     "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
-   }
-  },
-  "room/wall-of-calls-16x9": {
-   "author": "wallOfCalls",
+   },
+   "author": "room",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/corner-perspective-16x9": {
    "canvas": [
     1920,
     1080
@@ -1868,23 +1985,762 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wall-of-calls-16x9_f01.svg",
-     "png": "wall-of-calls-16x9_f01.png",
-     "boil": 1
+     "png": "corner-perspective-16x9_f01.png",
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wall-of-calls-16x9_f02.svg",
+     "png": "corner-perspective-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "corner-perspective-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 67,
+     "y": 518,
+     "w": 461,
+     "h": 210
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 67,
+     "y": 734,
+     "w": 422,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, near end",
+      "x": 350,
+      "y": 717
+     },
+     "x": 96,
+     "y": 237,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-corner-perspective",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "corner-perspective",
+   "floorLineY": 799,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 622,
+     "y": 544,
+     "r": 845
+    },
+    "monitor": {
+     "x": 935,
+     "y": 468,
+     "r": 653
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 799,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, near end",
+     "x": 350,
+     "y": 717
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/corner-perspective-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "corner-perspective-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "corner-perspective-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "corner-perspective-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 54,
+     "y": 806,
+     "w": 432,
+     "h": 250
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 54,
+     "y": 1152,
+     "w": 378,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, near end",
+      "x": 92,
+      "y": 1144
+     },
+     "x": 54,
+     "y": 269,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-corner-perspective",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "corner-perspective",
+   "floorLineY": 1267,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 333,
+     "y": 875,
+     "r": 475
+    },
+    "monitor": {
+     "x": 540,
+     "y": 783,
+     "r": 367
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1267,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, near end",
+     "x": 92,
+     "y": 1144
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/low-desk-height-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "low-desk-height-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "low-desk-height-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "low-desk-height-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 806,
+     "y": 270,
+     "w": 614,
+     "h": 200
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 806,
+      "y": 678
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=1361 on a canvas 1080 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
+     "x": 518,
+     "y": 216,
+     "w": 499,
+     "h": 1145
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-low-desk-height",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "low-desk-height",
+   "floorLineY": 1361,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 422,
+     "y": 562,
+     "r": 960
+    },
+    "monitor": {
+     "x": 1190,
+     "y": 454,
+     "r": 768
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 1145,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1361,
+    "floorInFrame": false,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, far edge",
+     "x": 806,
+     "y": 678
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/low-desk-height-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "low-desk-height-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "low-desk-height-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "low-desk-height-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 65,
+     "y": 557,
+     "w": 540,
+     "h": 240
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 454,
+      "y": 1122
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=2419 on a canvas 1920 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
+     "x": 292,
+     "y": 384,
+     "w": 281,
+     "h": 2035
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-low-desk-height",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "low-desk-height",
+   "floorLineY": 2419,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 238,
+     "y": 922,
+     "r": 540
+    },
+    "monitor": {
+     "x": 670,
+     "y": 730,
+     "r": 432
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 2035,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 2419,
+    "floorInFrame": false,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, far edge",
+     "x": 454,
+     "y": 1122
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/high-desk-down-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "high-desk-down-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "high-desk-down-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "high-desk-down-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 115,
+     "y": 97,
+     "w": 576,
+     "h": 220
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 115,
+     "y": 302,
+     "w": 499,
+     "h": 64
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-high-desk-down",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "high-desk-down",
+   "floorLineY": 2376,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 346,
+     "y": 281,
+     "r": 1114
+    },
+    "monitor": {
+     "x": 1651,
+     "y": 130,
+     "r": 845
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.",
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/high-desk-down-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "high-desk-down-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "high-desk-down-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "high-desk-down-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 65,
+     "y": 134,
+     "w": 475,
+     "h": 250
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 65,
+     "y": 384,
+     "w": 432,
+     "h": 64
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-high-desk-down",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "high-desk-down",
+   "floorLineY": 4224,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 194,
+     "y": 499,
+     "r": 626
+    },
+    "monitor": {
+     "x": 929,
+     "y": 230,
+     "r": 475
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.",
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wall-of-calls-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wall-of-calls-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
      "png": "wall-of-calls-16x9_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wall-of-calls-16x9.png",
-    "svg": "wall-of-calls-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "kicker": {
@@ -2153,12 +3009,15 @@
     }
    },
    "rows": 7,
-   "floorLineY": 994
-  },
-  "room/wall-of-calls-9x16": {
+   "floorLineY": 994,
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. A wall of call tickers is a full-frame data plate, not a set: cut to it over his voice. floorLineY is still declared because the wall meets a floor, but nothing should be stood on it.",
    "author": "wallOfCalls",
    "seed": 1,
    "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wall-of-calls-9x16": {
    "canvas": [
     1080,
     1920
@@ -2173,23 +3032,22 @@
    "playback": "loop",
    "frames": [
     {
+     "boil": 1,
      "tag": "_f01",
-     "svg": "wall-of-calls-9x16_f01.svg",
      "png": "wall-of-calls-9x16_f01.png",
-     "boil": 1
+     "svg": null
     },
     {
+     "boil": 2,
      "tag": "_f02",
-     "svg": "wall-of-calls-9x16_f02.svg",
      "png": "wall-of-calls-9x16_f02.png",
-     "boil": 2
+     "svg": null
     }
    ],
    "files": {
     "png": "wall-of-calls-9x16.png",
-    "svg": "wall-of-calls-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "svg": null,
+    "baseIsFrame": "_f01"
    },
    "slots": {
     "kicker": {
@@ -2458,7 +3316,13 @@
     }
    },
    "rows": 7,
-   "floorLineY": 1766
+   "floorLineY": 1766,
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. A wall of call tickers is a full-frame data plate, not a set: cut to it over his voice. floorLineY is still declared because the wall meets a floor, but nothing should be stood on it.",
+   "author": "wallOfCalls",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
   }
  },
  "hostAnchorContract": "the host-anchor region's HEIGHT is the host's target height, and the quantity it scales is (host.floorLineY - host.slots.figure.y) — not the raw figure box, which runs past the floor line to carry the shoes. Then sit host.floorLineY on the region's bottom edge. Width is advisory: the figure box includes arms meant to pass it. See meta.hostAnchor on every plate.",
@@ -2471,5 +3335,6 @@
  "exportScale": 2,
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "regeneratedFrom": "engine/build.js at delta 08. Deltas 05-07 changed this family and were not shipped as archives, so this section is the ENGINE's own emission rather than a signed-off delivery snapshot. The reconcile check in scripts/ingest_kit.py compares the two and has nothing independent to compare against for room until delta 05's room/manifest.json arrives."
 }

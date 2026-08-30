@@ -1,242 +1,161 @@
 {
   "format": "short",
-  "aspect": "9:16",
-  "frame": {
-    "w": 1080,
-    "h": 1920
-  },
+  "aspect": "9x16",
+  "frame": { "w": 1080, "h": 1920 },
   "notes": [
-    "Twelve shots. The template fixes space and order; the audio clock fixes",
-    "duration. Positions and type sizes are fractions of FRAME HEIGHT, so one",
-    "template holds at any delivery resolution.",
+    "The SHORT, on the v2 plate kit. Every `plate` here is a registry key and",
+    "every `bind` target is a slot that plate DECLARES — the renderer puts the",
+    "text in the slot and does nothing else. Type is set in the face, size,",
+    "weight and colour role the kit declares for that slot's role, so the",
+    "character budgets are the kit's own `maxChars` rather than something",
+    "measured by running a fitter over this file.",
     "",
-    "The host appears in 1, 5-8, 11 and 12 and nowhere else. Large type and",
-    "the caption band never coexist: a shot carrying type at 6.5% of frame",
-    "height or more sets captions false, and the parser refuses the template",
-    "if it does not.",
+    "THE VERTICAL SET IS TEN FAMILIES, NOT THE WHOLE KIT. The comps table, the",
+    "scatter, the waterfall, the grouped bars, the flow plate and the diff",
+    "plate are 16:9 by design: they need horizontal room to be readable and",
+    "they do not belong in seventy-five seconds. Nothing here reaches for one.",
     "",
-    "Shot 2 enters on ink-wipe rather than dive-in. dive-in is delivered 16:9",
-    "only (group D, 1920x1080) because the dive is the LONG's lobby-to-monitor",
-    "motion; ink-wipe is the kit's 9:16 transition. See the Stage 1 report.",
+    "Positions and type sizes are fractions of FRAME HEIGHT, so one template",
+    "holds at any delivery resolution. Large type and the caption band never",
+    "coexist: a shot carrying type at 6.5% of frame height or more sets",
+    "captions false, and the parser refuses the template if it does not.",
     "",
-    "Shot 4 names no plate. There is no statement plate in the delivery, and",
-    "the shot is one sentence on bare ground — 'this shot is allowed to be",
-    "empty; that is its job'. A null plate is the ground and nothing else.",
-    "",
-    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
-    "and two of those in a paper-white video reads as a different show",
-    "interrupting — it also makes the transition the loudest thing in a",
-    "format built on restraint. underline-swipe is a stroke, not a wall.",
-    "Full coverage is reserved for a chapter boundary in the LONG, where",
-    "a hard reset is the point."
+    "THE HOST IS IN FOUR SHOTS AND THE CLOSE-UP CARRIES THE TURN. He was in the",
+    "cold open, the payoff and the close, all three at full figure in a wide",
+    "room — which is the shot you use when the room is the point. The turn is",
+    "the line the whole cut rests on and it was being told on bare ground with",
+    "nobody in it. `host/close-up` is head and shoulders and it exists for",
+    "exactly that beat."
   ],
   "shots": [
     {
-      "id": "cold-open",
-      "plate": "room-wide",
-      "host": {
-        "pose": "talking-at-screen",
-        "slot": "figure"
-      },
+      "id": "hook",
+      "plate": "shorts/hook-card-t1",
       "anchor": "hook",
       "captions": false,
-      "max_hold_s": 6,
-      "text": [
-        {
-          "name": "hook",
-          "src": "script.hook_text",
-          "size_fh": 0.085,
-          "align": "top",
-          "max_lines": 3,
-          "draw_on_s": 0.6
-        }
-      ],
-      "notes": "Room-wide with the host talking at the screen. The hook draws on."
+      "max_hold_s": 5,
+      "bind": {
+        "hook": "script.hook_text",
+        "move": "?script.move_summary",
+        "ticker": "script.ticker"
+      },
+      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file."
     },
     {
       "id": "the-move",
-      "plate": "screen-full",
-      "enter": "underline-swipe",
+      "plate": "charts/line-dense-9x16",
       "anchor": "move",
-      "max_hold_s": 6,
+      "max_hold_s": 5,
       "bind": {
-        "screen": "chart.price"
+        "unit": "?chart.unit",
+        "head": "chart.heads",
+        "y": "chart.axis",
+        "plot-area": "chart.series",
+        "mark-last": "?chart.last"
       },
-      "marks": [
-        {
-          "kind": "ring",
-          "target": "chart.extreme_candle",
-          "name": "extreme-ring"
-        }
-      ],
-      "text": [
-        {
-          "name": "move-summary",
-          "src": "script.move_summary",
-          "size_fh": 0.04,
-          "align": "0.70",
-          "max_lines": 3
-        }
-      ],
-      "notes": "Chart full bleed in the screen slot. The ring lands on the extreme candle, never on a label."
+      "notes": "The price, as a path through the figures the data carries. `plot-area` is a data region: it takes the series and the renderer draws it, which is not the renderer computing anything — it is being handed one."
     },
     {
       "id": "the-news",
-      "plate": "desk-top-down",
+      "plate": "paper/headline-band-t1-9x16",
       "anchor": "headline",
-      "max_hold_s": 6,
+      "max_hold_s": 5,
       "bind": {
-        "pages": "plate.page-corporate"
+        "kicker": "?script.headlines.0.source",
+        "headline": "script.headlines.0.text",
+        "sub": "?script.headlines.0.meaning"
       },
-      "text": [
-        {
-          "name": "headline",
-          "src": "script.headlines.0.text",
-          "size_fh": 0.05,
-          "align": "0.30",
-          "max_lines": 2
-        },
-        {
-          "name": "meaning",
-          "src": "script.headlines.0.meaning",
-          "size_fh": 0.04,
-          "align": "0.60",
-          "max_lines": 3,
-          "color": "red"
-        }
-      ],
-      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent."
+      "notes": "A headline on paper, in the band drawn for it. Three treatments exist so two headlines in one video are not the same picture twice."
     },
     {
       "id": "the-turn",
-      "plate": null,
+      "plate": "room/desk-front-9x16",
+      "host": { "pose": "host/close-up", "slot": "host-anchor" },
       "anchor": "turn",
-      "captions": false,
       "max_hold_s": 5,
-      "text": [
-        {
-          "name": "turn",
-          "src": "script.turn_line",
-          "size_fh": 0.09,
-          "align": "center",
-          "max_lines": 3,
-          "draw_on_s": 0.5
-        }
-      ],
-      "notes": "One sentence, centred, bare. Allowed to be empty; that is its job."
+      "notes": "The line the cut rests on, told to camera in close-up. Allowed to be empty — a video with no turn drops this shot rather than holding an empty frame."
     },
     {
       "id": "numbers",
-      "plate": "sheet-tall",
+      "plate": "tables/numbers-sheet-3r-9x16",
       "anchor": "numbers",
       "max_hold_s": 5,
       "bind": {
-        "row-1": "numbers.header",
-        "row-2": "numbers.row.0",
-        "row-3": "?numbers.row.1",
-        "row-4": "?numbers.row.2",
-        "row-5": "?numbers.row.3",
-        "row-6": "?numbers.row.4"
+        "unit": "?numbers.unit",
+        "head": "numbers.years",
+        "label-1": "numbers.label.0",
+        "row-1": "numbers.figures.0",
+        "label-2": "?numbers.label.1",
+        "row-2": "?numbers.figures.1",
+        "label-3": "?numbers.label.2",
+        "row-3": "?numbers.figures.2"
       },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-$n+1"
-        }
-      ],
       "repeat": {
         "src": "script.numbers",
-        "max": 4,
+        "max": 3,
         "arrange": "sequence",
-        "lit": "row-$n+1",
-        "focus": "row-$n+1"
+        "lit": "band-$n",
+        "focus": "label-$n"
       },
-      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot — four steps that differ only by which row carries a rectangle are one shot with extra runtime. Band 1 is the year header, so metric N is row N+1. NO HOST. The walk pushes in and pans so the lit row lands in the middle of the frame, which makes the sheet full-bleed and carries the plate's figure slot off the bottom edge with it. Left where the slot puts him, 13% of him is on screen; clamped back into frame he stands across two rows of the table. There is no room for a figure in front of a wall-sized sheet, so he is not in these four - he returns at the payoff."
+      "notes": "One row per shot, and the frame MOVES IN on the lit row rather than boxing it in a wide shot — steps that differ only by which row carries a rectangle are one shot with extra runtime. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff."
     },
     {
       "id": "the-sheet",
-      "plate": "sheet-tall",
+      "plate": "tables/numbers-sheet-4r-9x16",
       "anchor": "numbers_comment",
       "max_hold_s": 5,
+      "lit": "all",
       "bind": {
-        "row-1": "numbers.header",
-        "row-2": "numbers.row.0",
-        "row-3": "?numbers.row.1",
-        "row-4": "?numbers.row.2",
-        "row-5": "?numbers.row.3",
-        "row-6": "?numbers.row.4"
+        "unit": "?numbers.unit",
+        "head": "numbers.years",
+        "label-1": "numbers.label.0",
+        "row-1": "numbers.figures.0",
+        "label-2": "?numbers.label.1",
+        "row-2": "?numbers.figures.1",
+        "label-3": "?numbers.label.2",
+        "row-3": "?numbers.figures.2",
+        "label-4": "?numbers.label.3",
+        "row-4": "?numbers.figures.3"
       },
-      "text": [
-        {
-          "name": "numbers-comment",
-          "src": "script.numbers_comment",
-          "size_fh": 0.038,
-          "align": "0.74",
-          "max_lines": 6
-        }
-      ],
-      "notes": "Pull back: every row lit, the header above them, the comment beneath.",
-      "lit": "all"
+      "notes": "Pull back: every row up at once, after the walk down them."
     },
     {
       "id": "cheap-or-trap",
-      "plate": "compare-plate",
+      "plate": "structure/both-true-9x16",
       "anchor": "cheap_or_trap",
       "max_hold_s": 5,
       "bind": {
-        "left": "compare.heavy",
-        "right": "compare.light",
-        "gap": "compare.versus"
+        "kicker": "?compare.kicker",
+        "statement-1": "compare.heavy",
+        "statement-2": "compare.light",
+        "caption": "?script.cheap_or_trap"
       },
-      "text": [
-        {
-          "name": "cheap-or-trap",
-          "src": "script.cheap_or_trap",
-          "size_fh": 0.04,
-          "align": "0.78",
-          "max_lines": 2
-        }
-      ],
-      "notes": "Two multiples, heavy against light. Two lines of type at most."
+      "notes": "Two things that are both true at once. The plate the format opens on more than any other."
     },
     {
       "id": "payoff",
-      "plate": "room-wide",
-      "host": {
-        "pose": "talking-to-camera",
-        "slot": "figure"
-      },
+      "plate": "figures/big-number-l2-9x16",
       "anchor": "conclusion",
       "captions": false,
-      "max_hold_s": 6,
-      "text": [
-        {
-          "name": "conclusion",
-          "src": "script.conclusion",
-          "size_fh": 0.07,
-          "align": "top",
-          "max_lines": 5,
-          "draw_on_s": 0.5
-        }
-      ]
+      "max_hold_s": 5,
+      "bind": {
+        "kicker": "?script.verdict",
+        "value": "numbers.headline_figure",
+        "label": "?numbers.headline_label",
+        "caption": "?script.numbers_comment"
+      },
+      "notes": "The one figure the video is about, at the size it deserves."
     },
     {
       "id": "close",
-      "plate": "room-wide",
-      "host": {
-        "pose": "sitting-with-mug",
-        "slot": "figure"
-      },
+      "plate": "structure/closing-9x16",
       "max_hold_s": 4,
-      "text": [
-        {
-          "name": "handle",
-          "src": "channel.handle",
-          "size_fh": 0.045,
-          "align": "0.82"
-        }
-      ],
-      "notes": "Sitting with the mug, the handle, out."
+      "bind": {
+        "kicker": "?script.ticker",
+        "line-1": "script.conclusion",
+        "date-label": "?channel.handle"
+      },
+      "notes": "Resigned, not conclusive. The handle sits under it where the date label goes."
     }
   ]
 }

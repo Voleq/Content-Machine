@@ -39,6 +39,7 @@ import logging
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ class Slot:
     region: bool = False          # a reserved area, not a text box
     overlay: str = ""             # the plate composited into it (band-N)
     renderer: str = ""            # a data region series.py fills
+    contact: dict = field(default_factory=dict)   # where he touches the furniture
     sets_type: bool = False       # the plate declares a typeRole for its role
     export_scale: int = 2
     note: str = ""
@@ -145,6 +147,7 @@ class Slot:
             region=bool(raw.get("region", False)),
             overlay=str(raw.get("overlay", "")),
             renderer=str(raw.get("renderer", "")),
+            contact=raw.get("contact") if isinstance(raw.get("contact"), dict) else {},
             sets_type=bool((type_roles or {}).get(role)),
             export_scale=export_scale,
             note=str(raw.get("note", "")),
@@ -196,12 +199,53 @@ class Plate:
     seed: int = 1
     outfit: str = ""
     floor_line_y: int | None = None
-    host_anchor: dict = field(default_factory=dict)
+    # The raw `hostAnchor` field: a dict on a plate that carries one, the
+    # literal False on a plate that REFUSES one, and None when the plate never
+    # mentioned it. Three states, and `or {}` collapsed the last two into each
+    # other — which is how "this angle has no floor for him to stand on" and
+    # "nobody wrote the field" became the same thing to this code.
+    host_anchor_declared: Any = None
     alpha: bool = False
     solve: str = ""
     anchor: str = ""
     ink_weight: float = 0.0
     columns: int = 0
+
+    @property
+    def host_anchor(self) -> dict:
+        """What the plate declares about standing a host on it. `{}` if nothing."""
+        d = self.host_anchor_declared
+        return d if isinstance(d, dict) else {}
+
+    @property
+    def refuses_host(self) -> bool:
+        """Whether the plate says, in the field, that nobody stands here.
+
+        `room/high-desk-down` is the camera looking down at the desk: there is
+        no floor in shot, so there is nowhere for him to stand and the plate
+        says `hostAnchor: false` rather than leaving the field out.
+        `room/wall-of-calls` refuses for the same reason.
+
+        A refusal is DATA and is different from an omission. Reading them as
+        the same thing is how a renderer ends up compositing a man onto a
+        surface the camera is above.
+        """
+        return self.host_anchor_declared is False
+
+    @property
+    def host_contact(self) -> dict:
+        """Where he touches the furniture at this angle, if the plate says.
+
+        `{pose, surface, x, y}` in the room's CANVAS units: which pose makes
+        contact here, what he is touching, and the point his hand lands on.
+        Twelve room plates carry one. Without it he is placed in the middle of
+        the anchor, which on a wide angle is standing in open floor next to a
+        desk he is not touching.
+        """
+        anchor = self.slot("host-anchor")
+        got = (anchor.contact if anchor is not None else None) \
+            or self.host_anchor.get("contact")
+        return got if isinstance(got, dict) else {}
 
     @property
     def animated(self) -> bool:
@@ -334,7 +378,7 @@ class Registry:
             seed=int(e.get("seed", 1)),
             outfit=str(e.get("outfit") or ""),
             floor_line_y=e.get("floorLineY"),
-            host_anchor=e.get("hostAnchor") or {},
+            host_anchor_declared=e.get("hostAnchor", None),
             alpha=bool(e.get("alpha", False)),
             solve=str(e.get("solve", "")),
             anchor=str(e.get("anchor", "")),
@@ -519,7 +563,10 @@ class Registry:
     # --------------------------------------------------------------- verify
 
     def verify(self) -> list[str]:
-        """Every file the registry names, present. Returns problems, never raises."""
+        """Every file the registry names, present, and every room decided about.
+
+        Returns problems, never raises.
+        """
         problems: list[str] = []
         for key, p in sorted(self.assets.items()):
             if not p.path.exists():
@@ -527,6 +574,22 @@ class Registry:
             for fr, fp in zip(p.frames, p.frame_paths()):
                 if not fp.exists():
                     problems.append(f"{key}: missing frame {fr.tag or '(base)'} {fp}")
+
+            # A ROOM SAYS WHETHER ANYONE STANDS IN IT, ONE WAY OR THE OTHER.
+            #
+            # `room/high-desk-down` is the camera above the desk: there is no
+            # floor in shot, so it declares `hostAnchor: false`. That refusal
+            # is DATA. A room carrying neither an anchor nor the refusal has
+            # not been decided about, and the renderer's only options are to
+            # composite a man onto a surface the camera is above, or to drop
+            # him silently — and it cannot tell which is intended.
+            if p.family == "room" and p.slot("host-anchor") is None \
+                    and not p.refuses_host:
+                problems.append(
+                    f"{key}: declares neither a host-anchor nor "
+                    f"`hostAnchor: false`. A room says whether anyone stands "
+                    f"in it; leaving the field out is not the same as saying "
+                    f"no, and this code cannot tell which was meant.")
         return problems
 
 

@@ -458,7 +458,38 @@
       const top = mid - hlH * 0.62;
       P.slot("kicker", L, top - (land ? 62 : 74), R - L, land ? 44 : 50, { align: "left", role: "kicker" });
       P.slot("headline", L, top, R - L, hlH, { align: "left", role: "headline" });
-      P.inkAdd(H.line(L - 10, top + hlH + 20, R * 0.62, top + hlH + 20, { stroke: p.structure, width: land ? 9 : 8, opacity: 0.95, amp: 4, over: 16, seed: 71 }));
+      // TREATMENT 1 IS THE ONE PLATE IN THE PACK WITH NOTHING ON IT TO BOIL.
+      //
+      // t2 draws a hatched panel and t3 a taped strip, so 3.6% of their pixels
+      // change between frames — right in the 1-6% pack band. t1 drew ONE rule,
+      // which is 0.40%: a plate that is frozen with a single element twitching,
+      // and that reads worse than an honest still. Amplitude could never fix it
+      // (it was already at 1.39 units, dead centre of spec) because the problem
+      // is how much ink is on the plate, not how far it moves.
+      //
+      // What is added is inside the treatment's own vocabulary rather than
+      // borrowed from t2's: t1 IS the rule-under treatment, so it gets a rule a
+      // hand actually drew — a reinforcing second pass that leaves the primary
+      // and rejoins it, the same idiom the scrawled ovals use — plus the short
+      // kicker tick the other two get for free from their panel edges. No box,
+      // no hatch: those are what makes a plate t2.
+      // Rule extents are proportions of the TEXT MEASURE (R - L), not of R. In
+      // landscape those are nearly the same number and the bug never showed; in
+      // portrait R*0.62 is 670 units of a 920-unit measure, so every rule came
+      // out short and the plate lost a third of its ink in the aspect that had
+      // least to spare. Same class as the rhythm defect the text plates had:
+      // a constant standing in for a measurement.
+      const meas = R - L;
+      const ruleY = top + hlH + 20;
+      P.inkAdd(H.line(L - 10, ruleY, L + meas * (land ? 0.68 : 0.88), ruleY, { stroke: p.structure, width: land ? 9 : 11, opacity: 0.95, amp: 4, over: 16, seed: 71 }));
+      P.inkAdd(H.line(L - 4, ruleY + (land ? 3 : 2.5), L + meas * (land ? 0.6 : 0.8), ruleY + (land ? 3 : 2.5), { stroke: p.structure, width: land ? 4.2 : 5.2, opacity: 0.42, amp: 5, over: 12, seed: 72 }));
+      P.inkAdd(H.line(L - 10, top - (land ? 78 : 92), L + meas * (land ? 0.19 : 0.3), top - (land ? 78 : 92), { stroke: p.structure, width: land ? 5 : 6.2, opacity: 0.8, amp: 3.4, over: 10, seed: 73 }));
+      // and a closing rule under the sub. Without it the sub hangs off the
+      // bottom of nothing, which is the same fragment-of-a-longer-list problem
+      // the peer strip's foot rule solves — so it earns its place on the plate
+      // rather than being ink added to satisfy a number.
+      const subBase = top + hlH + 48 + (land ? 92 : 110) + (land ? 26 : 30);
+      P.inkAdd(H.line(L - 6, subBase, L + meas * (land ? 0.5 : 0.68), subBase, { stroke: p.structure, width: land ? 5.5 : 6.8, opacity: 0.7, amp: 3.6, over: 12, seed: 74 }));
       P.slot("sub", L, top + hlH + 48, (R - L) * 0.8, land ? 92 : 110, { align: "left", role: "sub" });
     } else if (t === 2) {
       const pt = mid - hlH * 0.9;
@@ -1333,8 +1364,19 @@
       // number-led: the move itself is the hook
       P.slot("ticker", L, 300, 300, 56, { align: "left", role: "ticker" });
       P.slot("huge", L, 420, R - L, 300, { align: "left", role: "huge" });
-      P.inkAdd(H.line(L - 10, 760, R - 200, 754, { stroke: p.structure, width: 9, opacity: 0.95, amp: 4.2, over: 18, seed: 381 }));
+      // Same defect as headline-band-t1, same fix, same restraint. t3 drew ONE
+      // rule: 0.16% of its pixels changed between frames against a 1-6% pack
+      // band, so the plate was frozen with one element twitching. t1 draws a
+      // hatched ticker chip and t2 a hatched box, and copying either would make
+      // t3 stop being the number-led treatment. So it gets a rule a hand drew
+      // over twice, and a short ticker tick — ink that belongs to a plate whose
+      // whole argument is one figure.
+      const rY = 760;
+      P.inkAdd(H.line(L - 10, rY, R - 200, rY - 6, { stroke: p.structure, width: 9, opacity: 0.95, amp: 4.2, over: 18, seed: 381 }));
+      P.inkAdd(H.line(L - 2, rY + 5, R - 260, rY + 1, { stroke: p.structure, width: 4.6, opacity: 0.4, amp: 5.2, over: 13, seed: 382 }));
+      P.inkAdd(H.line(L - 10, 372, L + 210, 372, { stroke: p.structure, width: 5.4, opacity: 0.78, amp: 3.4, over: 11, seed: 383 }));
       P.slot("hook", L, 810, R - L, 620, { align: "left", role: "hook" });
+      P.inkAdd(H.line(L - 6, 1452, L + (R - L) * 0.62, 1452, { stroke: p.structure, width: 5.8, opacity: 0.68, amp: 3.6, over: 12, seed: 384 }));
       P.slot("sub", L, 1480, R - L, 160, { align: "left", role: "sub" });
     }
     return P;
@@ -1351,6 +1393,264 @@
       pts.push({ x: cx + Math.cos(a) * rx * k, y: cy + Math.sin(a) * ry * k });
     }
     return pts;
+  }
+
+  // WARDROBE, hoisted to module scope so the close-up and the medium wear the same
+  // clothes as the full figure rather than a second copy of the same hexes. Moving
+  // the table changes no drawing: hostFigure reads the identical values in the
+  // identical order, so all thirty shipped host plates stay byte-identical.
+  // HEAD TILT, one constant for the whole family so every plate is the same man.
+  // ~2.6 degrees. Small on purpose: enough that he is not square to the lens,
+  // nowhere near enough to read as a man about to fall over. Symmetry is what was
+  // making him look composed, and composed is the one thing he is not.
+  const HEAD_TILT = 0.075;
+
+  const HOST_OUTFITS = {
+    // THE DEFAULT: a washed-out tee with a collar that has lost its shape. This
+    // replaces the open shirt, which read as smart-casual office — a man dressed
+    // to be seen. He is not; he has been at this desk since three.
+    "tee": { top: "#8C918C", leg: "#2E353F", layer: null, sleeves: "short", collar: "stretched" },
+    // the same tee under a robe, for the pieces shot at the worst hour
+    "robe": { top: "#8C918C", leg: "#2E353F", layer: "robe", sleeves: "long", collar: "stretched" },
+    // the shipped open collar over a tee, kept so anything already cut against it
+    // still resolves — no longer the default
+    "shirt": { top: "#7C8794", leg: "#2E353F", layer: null, sleeves: "long" },
+    // a cardigan over the shirt — the late-night, been-here-since-six look
+    "cardigan": { top: "#8A8378", leg: "#31363E", layer: "cardigan", sleeves: "long" },
+    // sleeves rolled: the same shirt, working
+    "rolled": { top: "#6F8290", leg: "#2C333C", layer: null, sleeves: "rolled" },
+    // a crew jumper, no collar. The darkest top in the set
+    "jumper": { top: "#5E6A72", leg: "#2A3038", layer: null, sleeves: "long" },
+    // gilet over a shirt, for the pieces shot in the cold office
+    "gilet": { top: "#7C8794", leg: "#2E353F", layer: "gilet", sleeves: "long" },
+  };
+  const HOST_OUTFIT_DEFAULT = "tee";
+
+  /* THE FACE — authored once, drawn by both the full figure and the close-up.
+
+     Revision 05 duplicated this vocabulary between hostFigure and hostHead, on the
+     grounds that extracting it meant proving the emitted string sequence had not
+     changed across thirty shipped files. Revision 06 changes the face on every one
+     of those files by instruction, so the re-render is happening regardless and
+     the reason for the duplication is gone. Extracting it now is the cheap moment;
+     leaving it duplicated would mean authoring the same tired face twice and
+     watching the two drift apart on the next note.
+
+     WHAT THIS FACE IS. Deadpan. Not sad, not sour, not pleading — the resting face
+     of a man who has been awake since three and is about to say something very dry
+     about a filing. He is telling the joke, never wearing it. The line between
+     tired and pathetic is held by three things, and every value below is set
+     against them: the brow stays LEVEL (a raised inner brow is what reads as
+     wounded), the mouth stays FLAT rather than turned down, and the eyes stay open
+     enough to be looking AT you. Droop any of the three further and he becomes the
+     target instead of the teller. */
+  function hostFace(o) {
+    const P = o.P, S = o.S, ell = o.ell, dot = o.dot;
+    const hcx = o.cx, hcy = o.cy, R = o.R;
+    const ink = o.ink, skin = o.skin, hair = o.hair;
+    const lw = o.lw || 1, seg = o.seg || 0, fine = !!o.fine;
+    const mouthOpen = o.mouthOpen, closedEyes = !!o.closedEyes;
+    // GLANCE. -1 looks camera-left, +1 camera-right, 0 straight down the lens.
+    // He faced camera in every frame regardless of what was on screen, so he could
+    // never look at the chart he was discussing.
+    //
+    // The whole read is the PUPIL, and it is not just an x offset. A real glance
+    // moves both pupils the same way while the two eyes show DIFFERENT amounts of
+    // white — the eye he turns toward crowds its outer corner, the far one opens
+    // up — and the head yaws a few degrees with it. Offset alone, applied
+    // symmetrically, reads as a squint.
+    const glance = o.glance || 0;
+
+    // TILT. Pivoted at the throat, not the head's centre, so the head leans on the
+    // neck instead of sliding sideways off it. Small: 3-4 degrees is the whole
+    // difference between composed and not, and 10 is a man falling over.
+    const tilt = o.tilt || 0;
+    const rotAbout = function (px, py, a) {
+      const c = Math.cos(a), s = Math.sin(a);
+      return function (pt) {
+        const dx = pt.x - px, dy = pt.y - py;
+        return { x: px + dx * c - dy * s, y: py + dx * s + dy * c };
+      };
+    };
+    const T = rotAbout(hcx, hcy + R * 1.05, tilt);
+    const M = function (arr) { return arr.map(T); };
+    const pt = function (x, y) { return T({ x: x, y: y }); };
+
+    const head = M(ell(hcx, hcy, R * 0.86, R * 0.98, seg || 26, 0.04, 701));
+    P.colourAdd(S.hatch(head, { color: skin, opacity: 0.62, gap: 6, width: 10, angle: -82, over: 11, seed: 702 }));
+    const headDark = clipHalf(head, -1, 0, -(hcx + R * 0.2));
+    if (headDark) P.colourAdd(S.hatch(headDark, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: -80, over: 8, seed: 704 }));
+    // under the jaw and the brow: the two shadows that make a face read as a head
+    P.colourAdd(S.hatch(M(ell(hcx, hcy + R * 0.80, R * 0.58, R * 0.21, 14, 0.08, 706)), { color: ink, opacity: 0.2, gap: 6, width: 9, angle: -8, over: 6, seed: 707 }));
+
+    // HOLLOW UNDER THE CHEEKBONE. Lower and stronger than the faint cheek pass it
+    // replaces, and deliberately uneven — the lit side keeps some, the turned side
+    // gets most. A symmetric pair of these reads as blusher.
+    P.colourAdd(S.hatch(M(ell(hcx - R * 0.44, hcy + R * 0.33, R * 0.21, R * 0.13, 12, 0.1, 761)), { color: ink, opacity: 0.105, gap: 8, width: 11, angle: -54, over: 5, seed: 762 }));
+    P.colourAdd(S.hatch(M(ell(hcx + R * 0.47, hcy + R * 0.30, R * 0.17, R * 0.11, 12, 0.1, 763)), { color: ink, opacity: 0.07, gap: 9, width: 11, angle: -112, over: 5, seed: 764 }));
+
+    // STUBBLE. Two passes at different angles over the jaw, heavier on the turned
+    // side. Even stubble is a beard; uneven stubble is three days of not deciding.
+    // Kept LIGHT: at 0.17 it read as a full dark beard, which is a different man.
+    // The polygon starts below the cheekbone so it does not climb into the hollow
+    // and gang up with it into one dark mask.
+    const jaw = M([
+      { x: hcx - R * 0.68, y: hcy + R * 0.44 }, { x: hcx - R * 0.50, y: hcy + R * 0.80 },
+      { x: hcx, y: hcy + R * 0.97 }, { x: hcx + R * 0.52, y: hcy + R * 0.78 },
+      { x: hcx + R * 0.66, y: hcy + R * 0.42 }, { x: hcx + R * 0.38, y: hcy + R * 0.58 },
+      { x: hcx - R * 0.36, y: hcy + R * 0.60 },
+    ]);
+    P.colourAdd(S.hatch(jaw, { color: ink, opacity: 0.105, gap: 5.2, width: 8, angle: -74, over: 5, seed: 766 }));
+    P.colourAdd(S.hatch(clipHalf(jaw, -1, 0, -(hcx + R * 0.1)) || jaw, { color: ink, opacity: 0.07, gap: 6.4, width: 9, angle: -30, over: 4, seed: 768 }));
+
+    P.inkAdd(S.outline(head, { stroke: ink, width: 6.4 * lw, opacity: 0.97, amp: 2.4, over: 10, seed: 708 }));
+    P.inkAdd(S.outline(head, { stroke: ink, width: 4.2 * lw, opacity: 0.92, amp: 2.6, over: 12, seed: 703 }));
+    [-1, 1].forEach(function (s, i) {
+      P.inkAdd(S.stroke(M([
+        { x: hcx + s * R * 0.82, y: hcy - R * 0.1 },
+        { x: hcx + s * R * 0.98, y: hcy + R * 0.08 },
+        { x: hcx + s * R * 0.79, y: hcy + R * 0.26 },
+      ]), { stroke: ink, width: 3.2 * lw, opacity: 0.8, amp: 1.6, over: 5, seed: 706 + i }));
+    });
+
+    // HAIR: a soft cap with a receding front, FLATTENED on his right (camera-left)
+    // where he has been leaning on his hand, and standing up on the other side.
+    // No radiating spikes — those read as a horror mask.
+    const cap = [], N = seg ? 20 : 16;
+    for (let i = 0; i <= N; i++) {
+      const a = Math.PI * 1.06 + (Math.PI * 0.88 * i) / N;
+      const cxu = Math.cos(a), cyu = Math.sin(a);
+      const flat = cxu < 0 ? 0.83 : 0.97;                 // slept-on side sits closer to the skull
+      const lift = cxu > 0.45 ? 1.06 : 1.0;               // and pushed up on the other
+      cap.push({ x: hcx + cxu * R * 0.9 * flat, y: hcy + cyu * R * 1.02 * lift });
+    }
+    const capBack = [
+      { x: hcx + R * 0.42, y: hcy - R * 0.52 }, { x: hcx - R * 0.02, y: hcy - R * 0.54 }, { x: hcx - R * 0.40, y: hcy - R * 0.44 },
+    ];
+    const capAll = M(cap.concat(capBack)), capM = M(cap);
+    P.colourAdd(S.hatch(capAll, { color: hair, opacity: 0.52, gap: 5.5, width: 9, angle: -66, over: 10, seed: 711 }));
+    P.inkAdd(S.stroke(capM, { stroke: ink, width: 3.8 * lw, opacity: 0.88, amp: 2.2, over: 9, seed: 712 }));
+    P.inkAdd(S.stroke([capM[capM.length - 1]].concat(M(capBack)).concat([capM[0]]), { stroke: ink, width: 2.6, opacity: 0.46, amp: 2.2, over: 6, seed: 713 }));
+    for (let i = 0; i < (seg ? 4 : 3); i++) {
+      const bx = hcx - R * 0.36 + i * R * 0.34;
+      P.inkAdd(S.stroke(M([{ x: bx, y: hcy - R * 0.86 }, { x: bx + R * 0.18, y: hcy - R * 0.64 }]), { stroke: ink, width: 2.4, opacity: 0.36, amp: 1.8, over: 5, seed: 715 + i }));
+    }
+    // the piece that will not lie down, on the un-slept side
+    P.inkAdd(S.stroke(M([
+      { x: hcx + R * 0.50, y: hcy - R * 0.74 }, { x: hcx + R * 0.66, y: hcy - R * 0.96 }, { x: hcx + R * 0.80, y: hcy - R * 0.88 },
+    ]), { stroke: ink, width: 2.8, opacity: 0.5, amp: 2.2, over: 6, seed: 719 }));
+
+    // ---- eyes ---------------------------------------------------------------
+    // The glasses sit CROOKED: the whole pair is rotated a degree and a half about
+    // the bridge, on top of whatever the head is doing. Nobody straightens their
+    // glasses at four in the morning.
+    const eyeY = hcy + R * 0.04;
+    const G = rotAbout(hcx, eyeY, tilt + 0.026);
+    const GM = function (arr) { return arr.map(G); };
+
+    [-1, 1].forEach(function (s, i) {
+      const lx = hcx + s * R * 0.35;
+      const lens = GM(ell(lx, eyeY, R * 0.29, R * 0.235, seg ? 20 : 18, 0.03, 721 + i));
+      P.colourAdd(S.hatch(lens, { color: "#FFFFFF", opacity: 0.26, gap: 6, width: 9, angle: -60, over: 6, seed: 723 + i }));
+
+      // HALF-LIDDED. The lid comes down over the top third of the eye and the pupil
+      // sits low and partly under it. This is the single strongest fatigue cue on
+      // the plate — wide open eyes read as alert no matter what the rest is doing.
+      if (!closedEyes) {
+        const lidY = eyeY - R * 0.055 + (s < 0 ? 0 : R * 0.012);
+        const lidPoly = GM([
+          { x: lx - R * 0.27, y: eyeY - R * 0.24 }, { x: lx + R * 0.27, y: eyeY - R * 0.24 },
+          { x: lx + R * 0.25, y: lidY }, { x: lx, y: lidY + R * 0.035 }, { x: lx - R * 0.25, y: lidY - R * 0.01 },
+        ]);
+        P.colourAdd(S.hatch(lidPoly, { color: skin, opacity: 0.72, gap: 5, width: 9, angle: -70, over: 6, seed: 773 + i }));
+        P.colourAdd(S.hatch(lidPoly, { color: ink, opacity: 0.085, gap: 7, width: 9, angle: -64, over: 5, seed: 775 + i }));
+        P.topAdd(S.stroke(GM([
+          { x: lx - R * 0.25, y: lidY - R * 0.01 }, { x: lx, y: lidY + R * 0.035 }, { x: lx + R * 0.25, y: lidY },
+        ]), { stroke: ink, width: 3.4 * lw, opacity: 0.88, amp: 1, over: 4, seed: 777 + i }));
+      }
+
+      P.topAdd(S.outline(lens, { stroke: ink, width: 3.4 * lw, opacity: 0.9, amp: 1.6, over: 6, seed: 725 + i }));
+      P.topAdd(S.stroke(GM([{ x: lx + s * R * 0.28, y: eyeY - R * 0.05 }, { x: hcx + s * R * 0.83, y: hcy - R * 0.04 }]), { stroke: ink, width: 2.6, opacity: 0.66, amp: 1.2, over: 4, seed: 727 + i }));
+      // a smudge on one lens, because he has taken them off and put them back on
+      if (s < 0) {
+        P.topAdd(S.stroke(GM([{ x: lx - R * 0.16, y: eyeY + R * 0.12 }, { x: lx + R * 0.05, y: eyeY - R * 0.10 }]), { stroke: "#FFFFFF", width: 5, opacity: 0.3, amp: 1.4, over: 4, seed: 779 }));
+      }
+
+      // BROW, LEVEL. The old brow lifted at the inner end, which is the shape that
+      // reads as pleading — the exact thing this revision is told not to be. Flat
+      // and slightly heavy instead: unimpressed, not wounded.
+      P.topAdd(S.stroke(M([
+        { x: hcx + s * R * 0.13, y: hcy - R * 0.33 - (s > 0 ? R * 0.02 : 0) },
+        { x: hcx + s * R * 0.38, y: hcy - R * 0.345 },
+        { x: hcx + s * R * 0.58, y: hcy - R * 0.30 },
+      ]), { stroke: ink, width: 3.8 * lw, opacity: 0.82, amp: 1.4, over: 4, seed: 729 + i }));
+
+      // UNDER-EYE: the bag, then the fold under it. Two marks, not one — a single
+      // line under an eye is a wrinkle; a shaded pouch with a crease under it is
+      // not having slept. The shading is deliberately FAINT: at 0.19 the pair read
+      // as two black eyes, and a man who looks beaten is the target of the joke
+      // rather than the one telling it. The crease does most of the work.
+      P.colourAdd(S.hatch(M(ell(lx, eyeY + R * 0.205, R * 0.24, R * 0.075, 12, 0.09, 781 + i)), { color: ink, opacity: 0.095, gap: 6.5, width: 9, angle: -12, over: 4, seed: 783 + i }));
+      P.topAdd(S.stroke(M([
+        { x: lx - R * 0.21, y: eyeY + R * 0.145 }, { x: lx, y: eyeY + R * 0.20 }, { x: lx + R * 0.19, y: eyeY + R * 0.15 },
+      ]), { stroke: ink, width: 2.4, opacity: 0.42, amp: 1, over: 3, seed: 785 + i }));
+      if (fine) {
+        P.topAdd(S.stroke(M([
+          { x: lx - R * 0.16, y: eyeY + R * 0.30 }, { x: lx + R * 0.14, y: eyeY + R * 0.295 },
+        ]), { stroke: ink, width: 1.9, opacity: 0.3, amp: 0.9, over: 3, seed: 787 + i }));
+      }
+
+      if (closedEyes) {
+        P.topAdd(S.stroke(GM([
+          { x: lx - R * 0.15, y: eyeY + R * 0.01 }, { x: lx, y: eyeY + R * 0.07 }, { x: lx + R * 0.15, y: eyeY + R * 0.01 },
+        ]), { stroke: ink, width: 3 * lw, opacity: 0.85, amp: 1.1, over: 3, seed: 731 + i }));
+      } else {
+        // The pupil rides toward the glance, and further on the eye he is turning
+        // TOWARD (s === glance) than on the trailing one — that difference in how
+        // much white each eye shows is what sells a look as a look.
+        const lead = s === glance;
+        const gx = glance * R * (lead ? 0.155 : 0.115);
+        dot(G({ x: lx + s * R * 0.03 + gx, y: eyeY + R * 0.075 }), R * 0.075, 733 + i * 5);
+      }
+    });
+
+    // A HEAD YAW GOES WITH IT. Eyes alone slide in a fixed skull; a few degrees of
+    // turn is what makes him look AT the thing rather than past it. The nose and
+    // philtrum carry the yaw — they are the landmarks a turn is read from — the
+    // far cheek gains an edge, and the mouth shifts a fraction of the same amount.
+    const YAW = glance * R * 0.075;
+    P.topAdd(S.stroke(GM([{ x: hcx - R * 0.07 + YAW, y: eyeY - R * 0.04 }, { x: hcx + R * 0.07 + YAW, y: eyeY - R * 0.04 }]), { stroke: ink, width: 3, opacity: 0.82, amp: 0.9, over: 3, seed: 741 }));
+    P.topAdd(S.stroke(M([
+      { x: hcx + R * 0.03 + YAW, y: hcy + R * 0.17 }, { x: hcx + R * 0.1 + YAW * 1.3, y: hcy + R * 0.36 }, { x: hcx - R * 0.03 + YAW * 1.3, y: hcy + R * 0.38 },
+    ]), { stroke: ink, width: 3 * lw, opacity: 0.68, amp: 1.2, over: 4, seed: 743 }));
+    if (glance) {
+      P.colourAdd(S.hatch(M(ell(hcx - glance * R * 0.62, hcy + R * 0.16, R * 0.16, R * 0.34, 14, 0.08, 791)), { color: ink, opacity: 0.075, gap: 8, width: 11, angle: -84, over: 5, seed: 792 }));
+    }
+
+    // ---- mouth --------------------------------------------------------------
+    // FLAT, AND NOT LEVEL. The shipped mouth lifted at both corners: small, closed,
+    // pleasant — a smile, in every pose, under writing about extradition. This one
+    // is a straight set with the camera-right corner a hair lower than the left.
+    // The asymmetry is doing the work: a perfectly level mouth reads as composed,
+    // and one dropped corner reads as a man who has heard it all before. It is
+    // deliberately NOT turned down at both ends, which would be sulking.
+    if (mouthOpen) {
+      const m = M(ell(hcx, hcy + R * 0.62, R * 0.15, R * 0.11, seg ? 16 : 14, 0.05, 751));
+      P.colourAdd(S.hatch(m, { color: ink, opacity: 0.36, gap: 5, width: 8, angle: -70, over: 6, seed: 752 }));
+      P.topAdd(S.outline(m, { stroke: ink, width: 3 * lw, opacity: 0.86, amp: 1.2, over: 5, seed: 753 }));
+    } else {
+      P.topAdd(S.stroke(M([
+        { x: hcx - R * 0.235 + YAW * 0.5, y: hcy + R * 0.612 },
+        { x: hcx + R * 0.01 + YAW * 0.5, y: hcy + R * 0.623 },
+        { x: hcx + R * 0.225 + YAW * 0.5, y: hcy + R * 0.652 },
+      ]), { stroke: ink, width: 4 * lw, opacity: 0.92, amp: 1.1, over: 5, seed: 754 }));
+      // the crease at the dropped corner only
+      P.topAdd(S.stroke(M([
+        { x: hcx + R * 0.25 + YAW * 0.5, y: hcy + R * 0.60 }, { x: hcx + R * 0.30 + YAW * 0.5, y: hcy + R * 0.70 },
+      ]), { stroke: ink, width: 2.2, opacity: 0.42, amp: 1, over: 3, seed: 757 }));
+    }
+    P.topAdd(S.stroke(M([{ x: hcx - R * 0.2, y: hcy + R * 0.76 }, { x: hcx + R * 0.2, y: hcy + R * 0.755 }]), { stroke: ink, width: 2.2, opacity: 0.3, amp: 1, over: 4, seed: 756 }));
+    return { eyeY: eyeY, tilt: tilt, glance: glance };
   }
 
   function hostFigure(o) {
@@ -1380,20 +1680,9 @@
     // back at the desk's value, which is the defect revisions 02 and 03 were
     // spent fixing. So these vary in HUE and in detail, and only slightly in
     // value.
-    const OUTFITS = {
-      // the default: open collar over a tee, sleeves down
-      "shirt": { top: "#7C8794", leg: "#2E353F", layer: null, sleeves: "long" },
-      // a cardigan over the shirt — the late-night, been-here-since-six look
-      "cardigan": { top: "#8A8378", leg: "#31363E", layer: "cardigan", sleeves: "long" },
-      // sleeves rolled: the same shirt, working
-      "rolled": { top: "#6F8290", leg: "#2C333C", layer: null, sleeves: "rolled" },
-      // a crew jumper, no collar. The darkest top in the set
-      "jumper": { top: "#5E6A72", leg: "#2A3038", layer: null, sleeves: "long" },
-      // gilet over a shirt, for the pieces shot in the cold office
-      "gilet": { top: "#7C8794", leg: "#2E353F", layer: "gilet", sleeves: "long" },
-    };
-    const OUT = OUTFITS[o.outfit] || OUTFITS.shirt;
-    P.meta.outfit = o.outfit || "shirt";
+    const OUTFITS = HOST_OUTFITS;
+    const OUT = OUTFITS[o.outfit] || OUTFITS[HOST_OUTFIT_DEFAULT];
+    P.meta.outfit = o.outfit || HOST_OUTFIT_DEFAULT;
     const shirt = OUT.top, trouser = OUT.leg, shoeC = "#1E242B", skin = "#C99A6E", hair = "#3B3129";
     const floorY = Math.round(h * 0.9);
     P.meta.floorLineY = floorY;
@@ -1419,24 +1708,95 @@
     // ---- pose -------------------------------------------------------------
     // Every pose used to be the same body with different elbow angles. A pose is
     // a LEAN and a STRIDE as well as an arm: those are what make a stance read.
-    // Arm targets are offsets from the shoulder joint in head units, [ex,ey,hx,hy],
-    // outer side positive; a second entry overrides the right arm.
+    //
+    // REVISION 07 — THE RIG, not the pose values.
+    //
+    // Revision 06 was told to make him asymmetric and slumped and it failed,
+    // because there was nothing in the armature for either word to act on. The
+    // skeleton was vertical and mirrored: `leanAt` tilted a STRAIGHT line about the
+    // hip (linear in y, so no curve anywhere), both hips sat at one shared `hipY`
+    // with x mirrored, stride was equal and opposite, and `arms[i] || arms[0]` gave
+    // four of six poses two reflected arms. Revision 06's shoulder drop went onto
+    // the torso OUTLINE only — the silhouette dipped while the shoulder joints the
+    // arms hang from stayed level, and the legs never saw it at all. Moving the
+    // outline is not moving the skeleton. Same failure as the line-weight pass:
+    // the multiplier was fine, the input barely varied.
+    //
+    // So slump and weight are now RIG TERMS, and the drawing reads them:
+    //
+    //   slump   the spine's forward bow. Quadratic, peaking mid-torso, so the head
+    //           ends up forward of the hips over a hollowed chest — a C-curve. A
+    //           linear tilt can only ever be a plank leaning.
+    //   weight  which leg carries him, +1 camera-right. The loaded hip RIDES UP and
+    //           the free hip drops (that is the real anatomy, and it is the readable
+    //           half of contrapposto); the loaded leg goes vertical under its hip
+    //           while the free one bends and swings its ankle in.
+    //   shoulderTilt  derived, always OPPOSITE the hip tilt, and applied to the
+    //           shoulder JOINTS so the arms inherit it instead of just the outline.
+    //   arms    asymmetric by default — one hanging, one occupied. The `|| arms[0]`
+    //           fallback is gone: every pose states both arms, because a man with
+    //           two identical arms is a mannequin.
     const POSE = {
-      "leaning-on-desk": { lean: 0.44, stride: 0.05, arms: [[0.42, 1.26, 0.72, 2.46]] },
-      "hands-in-pockets": { lean: 0.06, stride: 0.04, arms: [[0.56, 1.20, 0.34, 2.30]] },
-      "holding-a-page": { lean: 0.12, stride: 0.04, arms: [[0.62, 1.14, 0.26, 2.00]] },
-      "pointing-down-at-desk": { lean: 0.40, stride: 0.06, arms: [[0.52, 1.22, 0.34, 2.38], [0.70, 1.04, 1.16, 2.10]] },
+      // his weight is ON THE DESK: forearm flat, that shoulder dropped hard, hip
+      // pushed out the other way. contact.forearmY publishes where the forearm
+      // lands so the compositor can sit it on the room plate's own contact point.
+      "leaning-on-desk": { lean: 0.26, stride: 0.06, weight: -1, slump: 0.34,
+        arms: [[0.34, 1.16, 1.02, 1.52], [0.50, 1.30, 0.30, 2.36]], forearm: "left" },
+      "hands-in-pockets": { lean: 0.06, stride: 0.05, weight: 1, slump: 0.30,
+        arms: [[0.56, 1.20, 0.34, 2.30], [0.50, 1.16, 0.42, 2.24]] },
+      "holding-a-page": { lean: 0.12, stride: 0.04, weight: -1, slump: 0.26,
+        arms: [[0.62, 1.14, 0.26, 2.00], [0.54, 1.20, 0.34, 1.92]] },
+      "pointing-down-at-desk": { lean: 0.40, stride: 0.06, weight: -1, slump: 0.30,
+        arms: [[0.52, 1.22, 0.34, 2.38], [0.70, 1.04, 1.16, 2.10]] },
       // the hands have to REACH the face — a head in hands that floats beside the
       // head is just a man surrendering. Offsets are solved against the head
       // landmark, not guessed: shoulder sits 0.84HU below head centre.
-      "head-in-hands": { lean: 0.54, stride: 0.03, arms: [[0.90, 0.86, -0.25, -0.80]] },
-      "walking-out-of-frame": { lean: 0.20, stride: 0.40, arms: [[0.46, 1.20, 0.24, 2.32], [0.56, 1.10, 0.90, 2.04]] },
-    }[pose] || { lean: 0.06, stride: 0.04, arms: [[0.54, 1.06, 0.30, 1.98]] };
+      // The deepest slump in the set. Elbows DOWN and out with the forearms running
+      // steeply up to the TEMPLES — heels of the hands pressed to the side of the
+      // head, fingers into the hair. Elbows above the shoulders splay into
+      // surrender, which is a different gesture and the wrong one.
+      //
+      // Both hand targets are SOLVED against the head landmark, not guessed: the
+      // head sits 0.98HU above the shoulder joint before sink, the sink is
+      // 0.17·slump, and the head's own half-width is 0.40HU — so a hand at ±0.52HU
+      // from the head centre lands just outside the silhouette and reads as
+      // pressed against it. The two arms differ because the spine has carried the
+      // head off the shoulder centreline, so a mirrored pair would miss on one side.
+      "head-in-hands": { lean: 0.40, stride: 0.03, weight: 1, slump: 0.66,
+        arms: [[0.30, 0.55, -0.49, -0.91], [0.34, 0.60, 0.19, -1.17]] },
+      "walking-out-of-frame": { lean: 0.20, stride: 0.40, weight: 1, slump: 0.22,
+        arms: [[0.46, 1.20, 0.24, 2.32], [0.56, 1.10, 0.90, 2.04]] },
+    }[pose] || { lean: 0.06, stride: 0.04, weight: 1, slump: 0.28,
+      arms: [[0.54, 1.06, 0.30, 1.98], [0.48, 1.10, 0.36, 1.92]] };
 
     const cx = w * (pose === "walking-out-of-frame" ? 0.56 : 0.5);
-    // Lean is a TILT, not a shift: zero at the hip, full at the head, so the man
-    // pivots over his own feet instead of sliding sideways in one piece.
-    const leanAt = function (y) { return POSE.lean * HU * ((hipY - y) / (hipY - topY)); };
+    const WGT = POSE.weight || 1, SLUMP = POSE.slump || 0;
+    // THE SPINE, AS A CURVE. Both terms are powers of u, so displacement piles up
+    // toward the crown and the mid-torso lags behind: the head finishes forward of
+    // the hips over a chest that is still back. That lag IS the C. A linear ramp
+    // — what shipped through revision 06 — can only ever be a plank leaning, no
+    // matter what you multiply it by.
+    //
+    // The bow is NOT multiplied by weight. The slump direction is the lean
+    // direction; tying it to which leg carries him made the curve reverse between
+    // poses, which is a man bending away from his own lean.
+    const spineAt = function (y) {
+      const u = Math.max(0, Math.min(1, (hipY - y) / (hipY - topY)));
+      return POSE.lean * HU * Math.pow(u, 1.7) + SLUMP * HU * 0.72 * Math.pow(u, 2.3);
+    };
+    const leanAt = spineAt;
+    // A SLUMP ALSO SHORTENS. Displacement alone reads as a man leaning; what says
+    // slumped is the head sinking toward the shoulders as the upper back rounds
+    // over. Applied at the neck and the head together so the neck compresses
+    // rather than the head detaching and floating down.
+    const HEAD_SINK = SLUMP * HU * 0.17;
+    // HIPS AND SHOULDERS TILT OPPOSITE WAYS. The loaded hip rises; the shoulder
+    // over it drops. Level shoulders on level hips was the last symmetry left, and
+    // these have to be big enough to SEE — the first pass set them at half this
+    // and the drawing read square anyway.
+    const HIP_TILT = HU * 0.15, SH_TILT = HU * 0.13;
+    const hipYof = function (s) { return hipY - s * WGT * HIP_TILT; };
+    const shYof = function (s) { return shoulderY + s * WGT * SH_TILT; };
     const clampX = function (x) { return Math.max(HU * 0.4, Math.min(w - HU * 0.4, x)); };
 
     const quad = function (a2, b2, wa, wb) {
@@ -1474,11 +1834,24 @@
     };
 
     // ---- legs (behind the shirt hem) --------------------------------------
+    // The loaded leg is straight and vertical under its own raised hip; the free
+    // leg bends and swings its ankle inward. Mirrored legs with equal-and-opposite
+    // stride is what made every pose read as a figure on a stand.
     [-1, 1].forEach(function (s, i) {
+      const loaded = s === WGT;
       const sw = POSE.stride * HU * (i === 0 ? -1 : 1);
-      const hipP = { x: cx + s * hipHalf * 0.5, y: hipY };
-      const kneeP = { x: cx + s * hipHalf * 0.46 + sw * 0.7, y: kneeY };
-      const ankP = { x: cx + s * hipHalf * 0.42 + sw, y: ankleY };
+      const hy = hipYof(s);
+      const hipP = { x: cx + s * hipHalf * 0.5 + spineAt(hy), y: hy };
+      // The loaded leg is a straight column under its own raised hip. The free leg
+      // breaks at the knee, carries it inward across the body and lands its ankle
+      // further in still — that inward break is the whole reason a standing figure
+      // reads as resting rather than as a figure on a stand.
+      const kneeP = loaded
+        ? { x: hipP.x - s * HU * 0.03, y: kneeY }
+        : { x: hipP.x - s * hipHalf * 0.16 + sw * 0.7, y: kneeY - HU * 0.06 };
+      const ankP = loaded
+        ? { x: hipP.x - s * HU * 0.06, y: ankleY }
+        : { x: hipP.x - s * hipHalf * 0.26 + sw, y: ankleY };
       mass(quad(hipP, kneeP, HU * 0.31, HU * 0.24), trouser, 0.88, 4.2, -70 + i * 8, 601 + i * 9);
       mass(quad(kneeP, ankP, HU * 0.24, HU * 0.17), trouser, 0.88, 4.0, -70 + i * 8, 615 + i * 9);
       const dir = pose === "walking-out-of-frame" ? 1 : (i === 0 ? -1 : 1);
@@ -1494,29 +1867,44 @@
     });
 
     // ---- neck, drawn BEFORE the shirt so the collar sits on top of it ------
-    const nTop = { x: cx + leanAt(headCy + HU * 0.4), y: headCy + HU * 0.36 };
+    const nTop = { x: cx + leanAt(headCy + HU * 0.4), y: headCy + HU * 0.36 + HEAD_SINK };
     const nBot = { x: cx + leanAt(shoulderY), y: shoulderY + HU * 0.12 };
     mass(quad(nTop, nBot, HU * 0.19, HU * 0.24), skin, 0.44, 3.0, -84, 641);
 
     // ---- torso: shoulders, waist, hip. A body has a middle ----------------
-    const lS = leanAt(shoulderY), lC = leanAt(chestY), lW = leanAt(waistY);
+    // The outline now follows the RIG rather than carrying its own cosmetic dip:
+    // every point takes its x from spineAt() at that height and its y from the
+    // tilted shoulder and hip lines. Revision 06 hand-dipped this polygon while
+    // the joints stayed level, which is exactly why it did not read.
+    const lS = spineAt(shoulderY), lC = spineAt(chestY), lW = spineAt(waistY);
     const torso = [
-      { x: cx - shoulderHalf * 0.84 + lS, y: shoulderY },
-      { x: cx + shoulderHalf * 0.84 + lS, y: shoulderY - HU * 0.04 },
-      { x: cx + chestHalf + lC, y: chestY },
+      { x: cx - shoulderHalf * 0.84 + lS, y: shYof(-1) - HU * 0.045 },
+      { x: cx + shoulderHalf * 0.84 + lS, y: shYof(1) - HU * 0.045 },
+      { x: cx + chestHalf + lC, y: chestY + WGT * HU * 0.03 },
       { x: cx + waistHalf + lW, y: waistY },
-      { x: cx + hipHalf, y: hipY + HU * 0.16 },
-      { x: cx - hipHalf, y: hipY + HU * 0.2 },
+      { x: cx + hipHalf + spineAt(hipYof(1)), y: hipYof(1) + HU * 0.16 },
+      { x: cx - hipHalf + spineAt(hipYof(-1)), y: hipYof(-1) + HU * 0.20 },
       { x: cx - waistHalf + lW, y: waistY },
-      { x: cx - chestHalf + lC, y: chestY },
+      { x: cx - chestHalf + lC, y: chestY - WGT * HU * 0.03 },
     ];
-mass(torso, shirt, 0.88, 4.8, -78, 651);
-    // collar
+    mass(torso, shirt, 0.88, 4.8, -78, 651);
+    // THE COLLAR HAS LOST ITS SHAPE — a crew neck stretched wide and sagging
+    // off-centre, with a second slack line where the ribbing has given up. Same
+    // neckline as the close-up, at full-figure scale: one shirt, two framings.
+    // It rides the shoulder tilt, so it sags toward the dropped side.
+    const CW = HU * 0.34, CD = HU * 0.16, cSag = WGT * HU * 0.05;
     P.inkAdd(S.stroke([
-      { x: cx - HU * 0.26 + lS, y: shoulderY + HU * 0.04 },
-      { x: cx + leanAt(shoulderY + HU * 0.3), y: shoulderY + HU * 0.34 },
-      { x: cx + HU * 0.26 + lS, y: shoulderY + HU * 0.02 },
-    ], { stroke: ink, width: 3.4, opacity: 0.8, amp: 2, over: 6, seed: 655 }));
+      { x: cx - CW * 1.10 + lS, y: shYof(-1) + HU * 0.02 },
+      { x: cx - CW * 0.62 + lS, y: shYof(-0.5) + HU * 0.18 },
+      { x: cx + CW * 0.10 + lS, y: shoulderY + CD * 1.45 + cSag },
+      { x: cx + CW * 0.78 + lS, y: shYof(0.5) + HU * 0.17 },
+      { x: cx + CW * 1.06 + lS, y: shYof(1) + HU * 0.06 },
+    ], { stroke: ink, width: 3.4, opacity: 0.84, amp: 2.2, over: 6, seed: 655 }));
+    P.inkAdd(S.stroke([
+      { x: cx - CW * 0.86 + lS, y: shYof(-1) + HU * 0.10 },
+      { x: cx + CW * 0.06 + lS, y: shoulderY + CD * 1.92 + cSag },
+      { x: cx + CW * 0.86 + lS, y: shYof(1) + HU * 0.12 },
+    ], { stroke: ink, width: 2.2, opacity: 0.36, amp: 2.4, over: 5, seed: 658 }));
     // ---- the outfit's layer, over the torso -------------------------------
     if (OUT.layer) {
       const inset = HU * 0.1;
@@ -1551,11 +1939,28 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
 
     // ---- arms, over the trunk ---------------------------------------------
     const hands = [];
+    let forearmY = null;
     [-1, 1].forEach(function (s, i) {
-      const t = POSE.arms[i] || POSE.arms[0];
-      const sh = { x: cx + s * shoulderHalf * 0.78 + lS, y: shoulderY + HU * 0.14 };
-      const el = { x: clampX(sh.x + s * HU * t[0]), y: sh.y + HU * t[1] };
-      const hd = { x: clampX(sh.x + s * HU * t[2]), y: sh.y + HU * t[3] };
+      // No `|| arms[0]` fallback any more: every pose states both arms, because a
+      // man with two identical arms is a mannequin. The shoulder joint takes the
+      // TILTED shoulder height, so the arm inherits the posture instead of hanging
+      // off a level peg while the outline dips around it.
+      const t = POSE.arms[i];
+      const sh = { x: cx + s * shoulderHalf * 0.78 + lS, y: shYof(s) + HU * 0.14 };
+      let el = { x: clampX(sh.x + s * HU * t[0]), y: sh.y + HU * t[1] };
+      let hd = { x: clampX(sh.x + s * HU * t[2]), y: sh.y + HU * t[3] };
+      // WEIGHT ON THE DESK. The forearm is levelled — elbow and hand at one height
+      // — because a forearm resting on a surface is horizontal, and a diagonal one
+      // is a man reaching toward a desk he never touches. The height is published
+      // in the manifest so the compositor can sit it on the room plate's own
+      // contact point rather than guessing a desk height.
+      const isForearm = (POSE.forearm === "left" && s === -1) || (POSE.forearm === "right" && s === 1);
+      if (isForearm) {
+        const fy = Math.max(el.y, hd.y);
+        el = { x: el.x, y: fy };
+        hd = { x: hd.x, y: fy + HU * 0.02 };
+        forearmY = fy;
+      }
       // rolled sleeves stop at the elbow: upper arm in cloth, forearm bare
       mass(quad(sh, el, HU * 0.27, HU * 0.21), shirt, 0.86, 4.0, -60 + i * 20, 661 + i * 17);
       mass(quad(el, hd, HU * 0.19, HU * 0.15), OUT.sleeves === "rolled" ? skin : skin, 0.46, 3.6, -60 + i * 20, 681 + i * 17);
@@ -1594,81 +1999,42 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
 
     // ---- head -------------------------------------------------------------
     const R = HU * 0.47;
-    const hcx = cx + leanAt(headCy), hcy = headCy;
+    const hcx = cx + leanAt(headCy), hcy = headCy + HEAD_SINK;
     // THE HEAD IS WHERE THE EYE HAS TO LAND, and it was the one part still sitting
     // cream on a cream wall: the shirt and trousers were fixed in revision 03, so
     // the eye went to his chest instead of his face. The head now carries the
     // heaviest outline on the plate and a skin value with somewhere to go, plus a
     // turned plane strong enough to model it.
-    const head = ell(hcx, hcy, R * 0.86, R * 0.98, 26, 0.04, 701);
-    P.colourAdd(S.hatch(head, { color: skin, opacity: 0.62, gap: 6, width: 10, angle: -82, over: 11, seed: 702 }));
-    const headDark = clipHalf(head, -1, 0, -(hcx + R * 0.2));
-    if (headDark) P.colourAdd(S.hatch(headDark, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: -80, over: 8, seed: 704 }));
-    // under the jaw and the brow: the two shadows that make a face read as a head
-    P.colourAdd(S.hatch(ell(hcx, hcy + R * 0.78, R * 0.6, R * 0.22, 14, 0.08, 706), { color: ink, opacity: 0.22, gap: 6, width: 9, angle: -8, over: 6, seed: 707 }));
-    P.inkAdd(S.outline(head, { stroke: ink, width: 6.4, opacity: 0.97, amp: 2.4, over: 10, seed: 708 }));
-    P.inkAdd(S.outline(head, { stroke: ink, width: 4.2, opacity: 0.92, amp: 2.6, over: 12, seed: 703 }));
-    [-1, 1].forEach(function (s, i) {
-      P.inkAdd(S.stroke([
-        { x: hcx + s * R * 0.82, y: hcy - R * 0.1 },
-        { x: hcx + s * R * 0.98, y: hcy + R * 0.08 },
-        { x: hcx + s * R * 0.79, y: hcy + R * 0.26 },
-      ], { stroke: ink, width: 3.2, opacity: 0.8, amp: 1.6, over: 5, seed: 706 + i }));
+    //
+    // The drawing itself lives in hostFace so the close-up and the full figure
+    // cannot disagree about what he looks like.
+    const FACE = hostFace({
+      P: P, S: S, ell: ell, dot: function (q, r, sd) { dot(q.x, q.y, r, sd); },
+      cx: hcx, cy: hcy, R: R, ink: ink, skin: skin, hair: hair,
+      lw: 1, seg: 0, fine: false, tilt: HEAD_TILT,
+      mouthOpen: mouthOpen, closedEyes: pose === "head-in-hands",
     });
+    const eyeY = FACE.eyeY;
 
-    // hair: a soft cap with a receding front. No radiating spikes — those read as
-    // a horror mask, which is the whole reason this pass exists.
-    const cap = [];
-    for (let i = 0; i <= 16; i++) {
-      const a = Math.PI * 1.06 + (Math.PI * 0.88 * i) / 16;
-      cap.push({ x: hcx + Math.cos(a) * R * 0.9, y: hcy + Math.sin(a) * R * 1.02 });
-    }
-    const capBack = [
-      { x: hcx + R * 0.4, y: hcy - R * 0.5 }, { x: hcx - R * 0.02, y: hcy - R * 0.56 }, { x: hcx - R * 0.42, y: hcy - R * 0.48 },
-    ];
-    P.colourAdd(S.hatch(cap.concat(capBack), { color: hair, opacity: 0.52, gap: 5.5, width: 9, angle: -66, over: 10, seed: 711 }));
-    P.inkAdd(S.stroke(cap, { stroke: ink, width: 3.8, opacity: 0.88, amp: 2.2, over: 9, seed: 712 }));
-    P.inkAdd(S.stroke([cap[cap.length - 1]].concat(capBack).concat([cap[0]]), { stroke: ink, width: 2.6, opacity: 0.46, amp: 2.2, over: 6, seed: 713 }));
-    for (let i = 0; i < 3; i++) {
-      const bx = hcx - R * 0.36 + i * R * 0.36;
-      P.inkAdd(S.stroke([{ x: bx, y: hcy - R * 0.86 }, { x: bx + R * 0.18, y: hcy - R * 0.64 }], { stroke: ink, width: 2.4, opacity: 0.36, amp: 1.8, over: 5, seed: 715 + i }));
-    }
-
-    const eyeY = hcy + R * 0.04;
-    [-1, 1].forEach(function (s, i) {
-      const lx = hcx + s * R * 0.35;
-      const lens = ell(lx, eyeY, R * 0.29, R * 0.235, 18, 0.03, 721 + i);
-      P.colourAdd(S.hatch(lens, { color: "#FFFFFF", opacity: 0.26, gap: 6, width: 9, angle: -60, over: 6, seed: 723 + i }));
-      P.topAdd(S.outline(lens, { stroke: ink, width: 3.4, opacity: 0.9, amp: 1.6, over: 6, seed: 725 + i }));
-      P.topAdd(S.stroke([{ x: lx + s * R * 0.28, y: eyeY - R * 0.05 }, { x: hcx + s * R * 0.83, y: hcy - R * 0.04 }], { stroke: ink, width: 2.6, opacity: 0.66, amp: 1.2, over: 4, seed: 727 + i }));
-      // brow lifted at the inner end: weary, not menacing
-      P.topAdd(S.stroke([
-        { x: hcx + s * R * 0.14, y: hcy - R * 0.36 },
-        { x: hcx + s * R * 0.38, y: hcy - R * 0.31 },
-        { x: hcx + s * R * 0.57, y: hcy - R * 0.24 },
-      ], { stroke: ink, width: 3.6, opacity: 0.78, amp: 1.4, over: 4, seed: 729 + i }));
-      if (pose === "head-in-hands") {
-        P.topAdd(S.stroke([
-          { x: lx - R * 0.15, y: eyeY + R * 0.01 }, { x: lx, y: eyeY + R * 0.07 }, { x: lx + R * 0.15, y: eyeY + R * 0.01 },
-        ], { stroke: ink, width: 3, opacity: 0.85, amp: 1.1, over: 3, seed: 731 + i }));
-      } else {
-        dot(lx + s * R * 0.03, eyeY + R * 0.035, R * 0.078, 733 + i * 5);
-      }
-    });
-    P.topAdd(S.stroke([{ x: hcx - R * 0.07, y: eyeY - R * 0.04 }, { x: hcx + R * 0.07, y: eyeY - R * 0.04 }], { stroke: ink, width: 3, opacity: 0.82, amp: 0.9, over: 3, seed: 741 }));
-    P.topAdd(S.stroke([
-      { x: hcx + R * 0.03, y: hcy + R * 0.17 }, { x: hcx + R * 0.1, y: hcy + R * 0.36 }, { x: hcx - R * 0.03, y: hcy + R * 0.38 },
-    ], { stroke: ink, width: 3, opacity: 0.68, amp: 1.2, over: 4, seed: 743 }));
-
-    if (mouthOpen) {
-      const m = ell(hcx, hcy + R * 0.62, R * 0.15, R * 0.11, 14, 0.05, 751);
-      P.colourAdd(S.hatch(m, { color: ink, opacity: 0.36, gap: 5, width: 8, angle: -70, over: 6, seed: 752 }));
-      P.topAdd(S.outline(m, { stroke: ink, width: 3, opacity: 0.86, amp: 1.2, over: 5, seed: 753 }));
-    } else {
-      P.topAdd(S.stroke([
-        { x: hcx - R * 0.23, y: hcy + R * 0.595 }, { x: hcx, y: hcy + R * 0.65 }, { x: hcx + R * 0.23, y: hcy + R * 0.59 },
-      ], { stroke: ink, width: 4, opacity: 0.92, amp: 1.1, over: 5, seed: 754 }));
-    }
+    // THE RIG, PUBLISHED. Declared here rather than beside floorLineY because
+    // forearmY is only known once the arms have been solved. A compositor cutting
+    // two-shots needs to know which way he leans and which leg carries him, and
+    // forearmY is what lets leaning-on-desk actually meet a desk: align it to the
+    // room plate's own slots["host-anchor"].contact.y instead of guessing a height.
+    P.meta.rig = {
+      pose: pose,
+      weightOn: WGT < 0 ? "camera-left leg" : "camera-right leg",
+      lean: POSE.lean,
+      slump: SLUMP,
+      spine: "curved: offset = lean·u^1.7 + 0.72·slump·u^2.3, u = 0 at the hip and 1 at the crown. Both terms are powers, so displacement piles up toward the head and the mid-torso lags behind — the head finishes forward of the hips over a chest that is still back. A linear ramp, which is what shipped through revision 06, can only ever be a plank leaning.",
+      headSink: Math.round(HEAD_SINK),
+      hipTilt: "loaded hip raised " + Math.round(HIP_TILT) + "px; shoulders counter-tilt " + Math.round(SH_TILT) + "px the other way, applied to the shoulder JOINTS so the arms inherit it",
+      armsMirrored: false,
+      forearmY: forearmY == null ? null : Math.round(forearmY),
+      forearmNote: forearmY == null
+        ? "this pose makes no surface contact"
+        : "his forearm rests at this y. Align it to the room plate's host-anchor contact point; the forearm is drawn level because a forearm resting on a desk is horizontal, and a diagonal one is a man reaching for a desk he never touches.",
+    };
 
     // Contact: small and tight, so he stands ON the floor line rather than
     // hovering over it. The one thing on this plate allowed darker than the line.
@@ -1688,6 +2054,289 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
   }
 
   const HOST_POSES = ["leaning-on-desk", "hands-in-pockets", "holding-a-page", "pointing-down-at-desk", "head-in-hands", "walking-out-of-frame"];
+
+  /* THE HOST, CLOSE. Two framings: head-and-shoulders and waist-up.
+
+     Six poses shipped, all full-body, all the same size in frame — so in a forty
+     minute video the shot needed most, his FACE, did not exist. The confession,
+     the turn, the moment the argument lands: none of them have a plate.
+
+     Why this is a draw and not a crop. Everywhere else in this pack a tighter
+     framing is free — the plates are 3840x2160 and the video is 1920x1080, so the
+     renderer crops a native-resolution medium out of any wide. It does not work
+     here: on the full figure the head slot is 176x194 canvas units, and filling a
+     1080-tall frame with it is a 6x upscale of a line drawing. A close-up needs the
+     head drawn AT close-up size, where the jaw, the brow and the mouth carry real
+     line weight. That is a different drawing, not a different rectangle.
+
+     Why the head vocabulary is duplicated from hostFigure rather than shared. The
+     six poses are finished, verified and shipped, and their thirty files must stay
+     byte-identical: extracting a shared head means proving the emitted string
+     sequence did not change, which costs a re-render of all thirty to verify. So
+     the head is copied here, at close-up scale, and the two are kept in step by
+     hand. That is the honest trade, and it is written down so the next revision
+     knows it is a decision and not an accident.
+
+     NO FLOOR LINE. These are not standing figures and there is nothing to pin to a
+     room's floor. They declare `fit` instead — an EYE LINE, which is how a close-up
+     is actually placed — and `floorLineY: false` rather than a number a compositor
+     could believe. */
+  function hostHead(o) {
+    const w = o.w, h = o.h, p = o.pal, mouthOpen = o.mouthOpen, bob = o.bob || 0;
+    const framing = o.framing === "medium" ? "medium" : "close-up";
+    const close = framing === "close-up";
+    const P = H.Plate({
+      key: o.key, w: w, h: h, seed: o.seed,
+      pal: { ground: "none", ground2: p.ground2, grain: null, structure: p.structure, surfaceKey: p.surfaceKey },
+      meta: { family: "host", framing: framing, pose: framing, aspect: close ? "1x1" : "3x4", cutout: true, alpha: true, boil: o.boil | 0 },
+    });
+    const ink = p.structure;
+    const OUT = HOST_OUTFITS[o.outfit] || HOST_OUTFITS[HOST_OUTFIT_DEFAULT];
+    P.meta.outfit = o.outfit || HOST_OUTFIT_DEFAULT;
+    const shirt = OUT.top, skin = "#C99A6E", hair = "#3B3129";
+    const BOFF = (o.boil | 0) * 9173;
+    const S = boilShift(inkScale(h / 1920), o.boil | 0);
+    const ell = function (cx2, cy2, rx, ry, n, jit, seed) { return ellipse(cx2, cy2, rx, ry, n, jit, seed + BOFF); };
+
+    // ---- framing ----------------------------------------------------------
+    // R is the head's radius unit, exactly as in hostFigure (there R = HU*0.47).
+    // Everything below is landmarked off it, so the two framings are the same man
+    // at two distances rather than two differently-proportioned drawings.
+    //
+    // The close-up's two numbers are SOLVED, not chosen: the head top wants to sit
+    // just inside the frame and the shoulders want to enter around three quarters
+    // down, which given shoulderY = hcy + 1.787R fixes both R and hcy. Set by eye
+    // the first time, the shoulders landed at 0.87h and the plate came out as a
+    // head on a stick with a slab of shirt under it.
+    const R = close ? h * 0.241 : h * 0.158;
+    const HU = R / 0.47;
+    const cx = w * 0.5;
+    const hcy = (close ? h * 0.301 : h * 0.2174) + bob;
+    const hcx = cx;
+    const shoulderY = hcy + HU * 0.84 + bob * 0.5;
+    const chestY = hcy + HU * 1.39, waistY = hcy + HU * 2.14, hipY = hcy + HU * 2.64;
+    // In a close-up the shoulders RUN OFF both edges. A close-up whose shoulders
+    // fit inside the frame is a medium shot with a big head in it.
+    const shoulderHalf = close ? R * 1.78 : HU * 0.86;
+    const chestHalf = close ? R * 2.0 : HU * 0.8;
+    const waistHalf = HU * 0.66, hipHalf = HU * 0.78;
+
+    const mass = function (poly, colour, op, lw, ang, seed) {
+      const c = centroid(poly);
+      P.colourAdd(S.hatch(poly, { color: colour, opacity: op, gap: 6.8, width: 11.5, angle: ang, over: 11, seed: seed }));
+      const inboard = c.x < cx ? clipHalf(poly, -1, 0, -c.x) : clipHalf(poly, 1, 0, c.x);
+      if (inboard) P.colourAdd(S.hatch(inboard, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: ang - 6, over: 8, seed: seed + 3 }));
+      P.inkAdd(S.outline(poly, { stroke: ink, width: lw * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: seed + 1 }));
+    };
+    const dot = function (x, y, r, seed) {
+      P.topAdd(S.hatch(ell(x, y, r, r, 12, 0.05, seed), { color: ink, opacity: 0.95, gap: 2.4, width: 4.4, angle: -60, over: 3, seed: seed + 1 }));
+    };
+    const quad = function (a2, b2, wa, wb) {
+      const dx = b2.x - a2.x, dy = b2.y - a2.y, L = Math.hypot(dx, dy) || 1;
+      const nx = -dy / L, ny = dx / L;
+      return [
+        { x: a2.x + nx * wa, y: a2.y + ny * wa }, { x: b2.x + nx * wb, y: b2.y + ny * wb },
+        { x: b2.x - nx * wb, y: b2.y - ny * wb }, { x: a2.x - nx * wa, y: a2.y - ny * wa },
+      ];
+    };
+
+    // ---- torso, then neck, then head: back to front -----------------------
+    // THE SHOULDERS SLOPE, IN BOTH FRAMINGS. A torso whose top edge is horizontal
+    // from one arm to the other is a plank he is standing behind — which is what
+    // both of these were on the first pass. A trapezius line from the neck out to
+    // each shoulder point is the whole difference between a bust and a sandwich
+    // board, and at waist-up it is the only thing giving the figure a top.
+    // ONE SHOULDER LOWER. Square shoulders are the last symmetry left once the
+    // head is tilted, and square reads as composed. His camera-right shoulder
+    // drops; the tilt leans the other way, which is what a person standing on one
+    // leg actually does. The medium takes LESS of it than the close-up: at the
+    // close-up's figure the drop is a shoulder, but across a waist-up torso the
+    // same fraction bends the whole ribcage and he reads as deformed rather than
+    // relaxed. Same posture, read at two distances, so it is two numbers.
+    const DROP = R * (close ? 0.17 : 0.085);
+    const nHalf = R * 0.40;
+    const torso = close ? [
+      { x: cx - nHalf, y: shoulderY - R * 0.52 },
+      { x: cx - shoulderHalf * 0.54, y: shoulderY - R * 0.34 },
+      { x: cx - shoulderHalf, y: shoulderY + R * 0.10 },
+      { x: cx - chestHalf, y: h + HU * 0.4 },
+      { x: cx + chestHalf, y: h + HU * 0.4 },
+      { x: cx + shoulderHalf, y: shoulderY + R * 0.12 + DROP },
+      { x: cx + shoulderHalf * 0.54, y: shoulderY - R * 0.32 + DROP },
+      { x: cx + nHalf, y: shoulderY - R * 0.52 + DROP * 0.34 },
+    ] : [
+      { x: cx - nHalf, y: shoulderY - R * 0.48 },
+      { x: cx - shoulderHalf * 0.55, y: shoulderY - R * 0.30 },
+      { x: cx - shoulderHalf * 0.94, y: shoulderY + R * 0.12 },
+      { x: cx - chestHalf, y: chestY },
+      { x: cx - waistHalf, y: waistY },
+      { x: cx - hipHalf, y: hipY },
+      { x: cx + hipHalf, y: hipY },
+      { x: cx + waistHalf, y: waistY },
+      { x: cx + chestHalf, y: chestY },
+      { x: cx + shoulderHalf * 0.94, y: shoulderY + R * 0.14 + DROP },
+      { x: cx + shoulderHalf * 0.55, y: shoulderY - R * 0.28 + DROP },
+      { x: cx + nHalf, y: shoulderY - R * 0.48 + DROP * 0.34 },
+    ];
+    // The neck is SHORT in both: it starts under the jaw rather than at the head's
+    // centre, which is what keeps it from reading as a trunk.
+    const neckTop = hcy + R * 0.56;
+    const neckBot = shoulderY - R * (close ? 0.18 : 0.14);
+    const neckPoly = quad({ x: hcx, y: neckTop }, { x: cx, y: neckBot }, R * 0.36, R * 0.42);
+    // NO CLOSED OUTLINE ON THE NECK. mass() puts every hatch on the colour layer
+    // and every line on the ink layer, so a neck outlined as a quad has its bottom
+    // edge painted on top of the shirt that is meant to cover it. At full-figure
+    // size the collar hides that; at these sizes it is a box drawn on his chest.
+    // Two side lines from jaw to collar is all a neck needs.
+    P.colourAdd(S.hatch(neckPoly, { color: skin, opacity: 0.44, gap: 6.8, width: 11.5, angle: -84, over: 11, seed: 641 }));
+    const inb = clipHalf(neckPoly, -1, 0, -cx);
+    if (inb) P.colourAdd(S.hatch(inb, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: -90, over: 8, seed: 644 }));
+    [-1, 1].forEach(function (s, i) {
+      P.inkAdd(S.stroke([{ x: cx + s * R * 0.36, y: neckTop }, { x: cx + s * R * 0.40, y: neckBot }], { stroke: ink, width: close ? 4.4 : 3.8, opacity: 0.9, amp: 2, over: 7, seed: 646 + i }));
+    });
+    mass(torso, shirt, 0.88, close ? 5.6 : 5, -78, 651);
+    // THE COLLAR HAS LOST ITS SHAPE. The shipped neckline was a tidy V — smart
+    // casual, a man dressed to be seen. This is a crew neck stretched wide and
+    // sagging off-centre, with a second slack line where the ribbing has given up.
+    const CW = R * 0.66, CD = R * 0.30;
+    P.inkAdd(S.stroke([
+      { x: cx - CW * 1.18, y: shoulderY - R * 0.34 },
+      { x: cx - CW * 0.72, y: shoulderY + R * 0.06 },
+      { x: cx - CW * 0.18, y: shoulderY + CD },
+      { x: cx + CW * 0.34, y: shoulderY + CD * 0.86 + DROP * 0.5 },
+      { x: cx + CW * 0.80, y: shoulderY + R * 0.01 + DROP * 0.6 },
+      { x: cx + CW * 1.14, y: shoulderY - R * 0.40 + DROP * 0.7 },
+    ], { stroke: ink, width: (close ? 5.2 : 4.4) * 0.92, opacity: 0.88, amp: 2.4, over: 7, seed: 655 }));
+    P.inkAdd(S.stroke([
+      { x: cx - CW * 0.92, y: shoulderY - R * 0.10 },
+      { x: cx - CW * 0.22, y: shoulderY + CD * 1.26 },
+      { x: cx + CW * 0.38, y: shoulderY + CD * 1.10 + DROP * 0.5 },
+      { x: cx + CW * 0.92, y: shoulderY - R * 0.16 + DROP * 0.6 },
+    ], { stroke: ink, width: 2.6, opacity: 0.4, amp: 2.6, over: 6, seed: 658 }));
+    if (OUT.layer) {
+      const robe = OUT.layer === "robe";
+      const inset = HU * 0.1, layerC = OUT.layer === "gilet" ? "#4E5862" : robe ? "#6E6A62" : "#5A5F5C";
+      const lowY = close ? h + HU * 0.4 : waistY;
+      // A ROBE IS NOT A CARDIGAN. Its panels are wider, they cross toward the
+      // middle instead of hanging parallel, and it has a SHAWL collar — one
+      // continuous band folded back around the neck, which is the whole silhouette
+      // of the garment. Drawn as cardigan panels in a different grey it would read
+      // as the same knitwear again, and the point of a second outfit is that the
+      // episode looks different.
+      [[-1], [1]].forEach(function (sg, i) {
+        const s2 = sg[0];
+        const pn = robe ? [
+          { x: cx + s2 * (chestHalf + inset * 0.4), y: chestY - R * 0.10 },
+          { x: cx + s2 * HU * 0.05, y: chestY + R * 0.32 },
+          { x: cx + s2 * HU * 0.12, y: lowY },
+          { x: cx + s2 * (chestHalf + inset * 0.2), y: lowY },
+        ] : [
+          { x: cx + s2 * (chestHalf - inset), y: chestY }, { x: cx + s2 * HU * 0.16, y: chestY },
+          { x: cx + s2 * HU * 0.2, y: lowY }, { x: cx + s2 * ((close ? chestHalf : waistHalf) - inset), y: lowY },
+        ];
+        P.colourAdd(S.hatch(pn, { color: layerC, opacity: 0.9, gap: 6.2, width: 10, angle: -80 + i * 6, over: 10, seed: 731 + i * 5 }));
+        P.inkAdd(S.outline(pn, { stroke: ink, width: 4.6, opacity: 0.95, amp: 2.4, over: 9, seed: 735 + i * 5 }));
+      });
+      if (robe) {
+        [[-1], [1]].forEach(function (sg, i) {
+          const s2 = sg[0];
+          const band = [
+            { x: cx + s2 * CW * 1.16, y: shoulderY - R * 0.40 },
+            { x: cx + s2 * CW * 1.52, y: shoulderY - R * 0.22 },
+            { x: cx + s2 * HU * 0.20, y: chestY + R * 0.30 },
+            { x: cx + s2 * HU * 0.04, y: chestY + R * 0.24 },
+            { x: cx + s2 * CW * 0.74, y: shoulderY - R * 0.14 },
+          ];
+          P.colourAdd(S.hatch(band, { color: layerC, opacity: 0.72, gap: 5.4, width: 9, angle: -62 + i * 10, over: 9, seed: 761 + i * 5 }));
+          P.inkAdd(S.outline(band, { stroke: ink, width: 4.2, opacity: 0.9, amp: 2.2, over: 8, seed: 765 + i * 5 }));
+        });
+        // the tie belt sits at waistY, which in a waist-up frame is the crop edge
+        // itself — drawn there it was a smudge on the bottom border rather than a
+        // belt. Raised into the frame, where it reads, and the crossing lapels are
+        // doing most of the work anyway.
+        if (!close) {
+          P.inkAdd(S.stroke([
+            { x: cx - chestHalf * 0.86, y: waistY - R * 0.52 },
+            { x: cx - HU * 0.10, y: waistY - R * 0.34 },
+            { x: cx + chestHalf * 0.78, y: waistY - R * 0.56 },
+          ], { stroke: ink, width: 5.2, opacity: 0.86, amp: 2.6, over: 8, seed: 771 }));
+        }
+      }
+    }
+    P.inkAdd(S.line(cx, shoulderY + HU * 0.4, cx, close ? h : waistY + HU * 0.2, { stroke: ink, width: 2.2, opacity: 0.3, amp: 2.2, over: 5, step: 7, seed: 657 }));
+    // ---- arms: only the medium has them in frame --------------------------
+    if (!close) {
+      [-1, 1].forEach(function (s, i) {
+        // The arm hangs from just INSIDE the shoulder point, and the sleeve is
+        // narrow enough to sit within the torso silhouette where the two meet.
+        // Wider than that, the sleeve's outline crosses the torso's outline — and
+        // since every outline is on the ink layer, both stay visible and he ends up
+        // wearing a cape with a seam down the chest.
+        const sh = { x: cx + s * shoulderHalf * 0.70, y: shoulderY + R * 0.04 };
+        const el = { x: sh.x + s * R * 0.30, y: sh.y + HU * 1.16 };
+        const hd = { x: sh.x + s * R * 0.12, y: sh.y + HU * 2.22 };
+        // A ROBE HAS SLEEVES. Left in the tee's grey, the upper arm read as a
+        // t-shirt sleeve laid over a dressing gown, with both outlines visible
+        // because they are all on the ink layer — the exact seam-down-the-chest
+        // failure described above, one joint further out.
+        const upperC = OUT.layer === "robe" ? "#6E6A62" : shirt;
+        mass(quad(sh, el, HU * 0.21, HU * 0.17), upperC, 0.86, 4.2, -60 + i * 20, 661 + i * 17);
+        mass(quad(el, hd, HU * 0.16, HU * 0.13), OUT.layer === "robe" ? upperC : skin, 0.46, 3.6, -60 + i * 20, 681 + i * 17);
+        if (OUT.layer === "robe") {
+          // a cuff, so the sleeve ends somewhere rather than fading into the crop
+          P.inkAdd(S.stroke([
+            { x: hd.x - s * HU * 0.15, y: hd.y - HU * 0.30 },
+            { x: hd.x + s * HU * 0.15, y: hd.y - HU * 0.26 },
+          ], { stroke: ink, width: 4.4, opacity: 0.85, amp: 2, over: 6, seed: 691 + i }));
+        }
+        if (OUT.sleeves === "rolled") {
+          P.inkAdd(S.stroke([{ x: el.x - HU * 0.2, y: el.y - HU * 0.04 }, { x: el.x + HU * 0.2, y: el.y + HU * 0.02 }], { stroke: ink, width: 5.4, opacity: 0.9, amp: 2, over: 6, seed: 751 + i }));
+        }
+        if (OUT.layer === "cardigan") {
+          P.colourAdd(S.hatch(quad(sh, el, HU * 0.28, HU * 0.22), { color: "#5A5F5C", opacity: 0.82, gap: 6.4, width: 10, angle: -60 + i * 20, over: 9, seed: 761 + i * 5 }));
+          P.inkAdd(S.outline(quad(sh, el, HU * 0.28, HU * 0.22), { stroke: ink, width: 4.2, opacity: 0.92, amp: 2.2, over: 8, seed: 765 + i * 5 }));
+        }
+      });
+    }
+
+    // ---- head ---------------------------------------------------------------
+    const FACE = hostFace({
+      P: P, S: S, ell: ell, dot: function (q, r, sd) { dot(q.x, q.y, r, sd); },
+      cx: hcx, cy: hcy, R: R, ink: ink, skin: skin, hair: hair,
+      lw: close ? 1.3 : 1, seg: 20, fine: true, tilt: HEAD_TILT,
+      mouthOpen: mouthOpen, closedEyes: false, glance: o.glance || 0,
+    });
+    const eyeY = FACE.eyeY;
+    P.meta.glance = o.glance ? (o.glance < 0 ? "camera-left" : "camera-right") : "to camera";
+    P.meta.glanceNote = o.glance
+      ? "He is looking at something off to " + (o.glance < 0 ? "camera-left" : "camera-right") + ". Cut this against a chart or an insert on THAT side of frame; using it with the graphic on the opposite side is worse than him facing camera."
+      : "He is looking down the lens. Use this when he is addressing the viewer, not when a graphic is on screen.";
+
+    P.meta.contrast = {
+      rule: "Dennis is the highest-contrast object in any frame he is in",
+      why: "he is the reason anyone is watching, and a figure at the same value as the desk behind him disappears into it",
+      how: "his own material hatch and a neutral ink pass on each part's turned side; the room's heaviest furniture tops out at a 0.19 ink hatch and he sits above it",
+      note: "he is NOT lit to match the room. Revision 01 tinted him from the room's two sources and that is exactly what closed the gap. The room gives way to him, not the other way round.",
+    };
+    // NO FLOOR LINE, STATED AS DATA. These are not standing figures: there is
+    // nothing to pin to a room's floorLineY, and a number here is a number a
+    // compositor would believe. Placement code branches on floorLineY === false
+    // and reads `fit` instead.
+    P.meta.floorLineY = false;
+    P.meta.fit = {
+      mode: "eye-line",
+      eyeLineY: Math.round(eyeY),
+      eyeLineFraction: +(eyeY / h).toFixed(4),
+      headHeightFraction: +((R * 1.96) / h).toFixed(4),
+      note: "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
+      cropsAt: close ? "shoulders leave frame left, right and bottom" : "hands leave frame at the bottom",
+    };
+    P.slot("mouth", hcx - R * 0.26, hcy + R * 0.44, R * 0.52, R * 0.34, { role: "mouth", region: true, note: "talk frames differ here only" });
+    P.slot("eyes", hcx - R * 0.7, eyeY - R * 0.3, R * 1.4, R * 0.6, { role: "eyes", region: true, note: "the eye line is fit.eyeLineY; this box is the pair" });
+    P.slot("head", hcx - R * 0.9, hcy - R * 1.12, R * 1.8, R * 2.1, { role: "head", region: true });
+    P.slot("figure", 0, hcy - R * 1.2, w, h - (hcy - R * 1.2), { role: "figure", region: true, note: "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit" });
+    return P;
+  }
 
   // ---------------- the room ----------------
   // Every plate declares floorLineY and the figure stands on it.
@@ -2327,6 +2976,284 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
           { x: x1 + dx * 0.5, y: y1 + dy * 0.86 }, { x: x1 + dx * 0.8, y: y2 - dy * 0.06 }, { x: x2, y: y2 },
         ], { stroke: ink, width: 3, opacity: 0.3, amp: 2.2, over: 6, seed: seed }));
       },
+
+      // ================= CAMERA ==============================================
+      // Every primitive above this line draws a flat ELEVATION. A rect is a rect,
+      // the horizon sits at whatever height the floor line was put, and no edge
+      // runs away from the viewer — so eight angles assembled out of them are
+      // eight arrangements of furniture photographed from one position, and
+      // cutting between them reads as props sliding around on a shelf rather than
+      // as cutting. Closing that is the whole of revision 05.
+      //
+      // Three variables were going unused. PERSPECTIVE is the one that needs new
+      // geometry, and it is what these add: a vanishing point, and walls, floors
+      // and desks that converge on it. HEIGHT and SHOT SIZE are then just choices
+      // about where to put the camera, which the angle branches make.
+      //
+      // Tone is unchanged. lumAt still carries the light and depth still sets
+      // line weight; the one addition is that a receding surface is not at a
+      // single depth, so it is drawn in depth BANDS and each band declares its
+      // own. A gradient of line weight down the length of one desk is the thing
+      // that reads as distance — it is the same trick the props already use to
+      // separate planes, applied within a single object.
+      vanish: function (vx, vy) {
+        return {
+          x: vx, y: vy,
+          // t is 0 at the picture plane and 1 at the vanishing point
+          to: function (x, y, t) { return { x: x + (vx - x) * t, y: y + (vy - y) * t }; },
+          // what an object at depth t shrinks to
+          s: function (t) { return 1 - t; },
+          // depth of a point that lands at screen x on a line through (x0,y0)
+          tAtX: function (x0, x) { return (x - x0) / ((vx - x0) || 1); },
+        };
+      },
+
+      // A room with a CORNER in it: one wall square to camera, one running away
+      // to the vanishing point, meeting on a vertical. The floor boards and the
+      // ceiling line converge on the same point, which is what makes the two
+      // walls read as one space instead of two flats stood side by side.
+      //
+      // The corner vertical is the single most important line on the plate and it
+      // gets full ink at near weight. Without it the two walls are just two
+      // differently-hatched rectangles.
+      cornerRoom: function (V, cornerX, ceilY, floorY, tFar, seed) {
+        const jF = function (x) { const t = (x - cornerX) / ((V.x - cornerX) || 1); return floorY + (V.y - floorY) * t; };
+        const jC = function (x) { const t = (x - cornerX) / ((V.x - cornerX) || 1); return ceilY + (V.y - ceilY) * t; };
+        const xR = W + 20;
+        // FRONTAL WALL, camera-left of the corner. Flat, and the lightest plane in
+        // the room: same six-band treatment as shell(), because it is the same
+        // kind of surface.
+        for (let i = 0; i < 5; i++) {
+          const bh = (floorY - ceilY) / 5, y0 = ceilY + bh * i;
+          const lum = lumAt(cornerX * 0.5, y0 + bh * 0.5);
+          const op = clamp01(0.24 * (1 - lum) * (1 - i / 6));
+          if (op > 0.02) P.colourAdd(S.hatch(rect(-20, y0, cornerX + 20, bh + 2), { color: wood, opacity: op, gap: 10 + i * 0.5, width: 15, angle: -3, over: 26, seed: seed + i }));
+        }
+        // RECEDING WALL. Banded in DEPTH rather than in height, and each band
+        // carries a little more hatch than the one in front of it: the wall is now
+        // the surface with real distance in it, so it is where atmospheric
+        // perspective belongs.
+        for (let i = 0; i < 6; i++) {
+          const t0 = (tFar / 6) * i, t1 = (tFar / 6) * (i + 1);
+          const band = [V.to(cornerX, ceilY, t0), V.to(cornerX, ceilY, t1), V.to(cornerX, floorY, t1), V.to(cornerX, floorY, t0)];
+          const c = centroid(band);
+          P.colourAdd(S.hatch(band, { color: wood, opacity: clamp01((0.1 + 0.26 * (1 - lumAt(c.x, c.y))) * (0.45 + i * 0.13)), gap: 9.5, width: 14, angle: -70, over: 22, seed: seed + 20 + i }));
+        }
+        // CEILING. Above the frontal wall it is a flat band; past the corner it
+        // comes DOWN toward the horizon, and that descending line is half of what
+        // says the wall is receding.
+        P.colourAdd(S.hatch(rect(-20, -20, cornerX + 20, ceilY + 22), { color: wood, opacity: 0.2, gap: 11, width: 16, angle: -3, over: 24, seed: seed + 40 }));
+        P.colourAdd(S.hatch([{ x: cornerX, y: ceilY }, { x: xR, y: jC(xR) }, { x: xR, y: -20 }, { x: cornerX, y: -20 }], { color: wood, opacity: 0.16, gap: 12, width: 16, angle: -70, over: 22, seed: seed + 42 }));
+        // FLOOR. The mirror of the ceiling: past the corner it opens UP toward the
+        // horizon, so the floor gets bigger as the wall goes away.
+        P.colourAdd(S.hatch(rect(-20, floorY, W + 40, HH - floorY + 20), { color: wood, opacity: 0.3, gap: 9, width: 14, angle: -7, over: 26, seed: seed + 44 }));
+        P.colourAdd(S.hatch([{ x: cornerX, y: floorY }, { x: xR, y: jF(xR) }, { x: xR, y: floorY }], { color: wood, opacity: 0.26, gap: 10, width: 15, angle: -7, over: 24, seed: seed + 46 }));
+        // FLOOR BOARDS, converging. Six lines from the bottom edge of the frame to
+        // the vanishing point. This is the cheapest perspective cue on the plate
+        // and the one the eye reads first.
+        for (let i = 0; i < 7; i++) {
+          const bx = -W * 0.15 + W * 0.24 * i;
+          const end = V.to(bx, HH + 20, 0.82);
+          thin([{ x: bx, y: HH + 20 }, { x: (bx + end.x) / 2, y: (HH + 20 + end.y) / 2 }, { x: end.x, y: end.y }], 0.16, 2.6, seed + 60 + i);
+        }
+        // CEILING JOINTS, converging on the same point
+        for (let i = 0; i < 3; i++) {
+          const bx = -W * 0.1 + W * 0.3 * i;
+          const end = V.to(bx, -20, 0.7);
+          thin([{ x: bx, y: -20 }, { x: end.x, y: end.y }], 0.1, 2.2, seed + 70 + i);
+        }
+        // the two junction lines, and the corner
+        P.inkAdd(S.line(-20, floorY, cornerX, floorY - 3, { stroke: ink, width: 4.4, opacity: 0.9, amp: 3.6, over: 22, seed: seed + 80 }));
+        P.inkAdd(S.stroke([{ x: cornerX, y: floorY }, V.to(cornerX, floorY, tFar * 0.55), V.to(cornerX, floorY, tFar)], { stroke: ink, width: 4.2, opacity: 0.88, amp: 3.2, over: 20, seed: seed + 82 }));
+        thin([{ x: -20, y: ceilY }, { x: cornerX, y: ceilY + 2 }], 0.3, 3, seed + 84);
+        thin([{ x: cornerX, y: ceilY }, V.to(cornerX, ceilY, tFar * 0.6), V.to(cornerX, ceilY, tFar)], 0.3, 3, seed + 86);
+        // THE CORNER. Near camera, so it is the heaviest vertical in frame.
+        P.inkAdd(S.stroke([{ x: cornerX, y: ceilY - 4 }, { x: cornerX + q(3), y: (ceilY + floorY) / 2 }, { x: cornerX, y: floorY + 4 }], { stroke: ink, width: 5.4, opacity: 0.9, amp: 3, over: 18, seed: seed + 88 }));
+        // skirting, on both walls, following their own junction
+        mass(rect(-20, floorY - q(24), cornerX + 20, q(24)), wood, 0.42, seed + 90, -4, 3, { depth: 0.6 });
+        mass([{ x: cornerX, y: floorY - q(24) }, V.to(cornerX, floorY - q(24), tFar), V.to(cornerX, floorY, tFar), { x: cornerX, y: floorY }], wood, 0.4, seed + 94, -70, 3, { depth: 0.4 });
+        return { floorAt: jF, ceilAt: jC };
+      },
+
+      // A desk running INTO the frame. The back edge lies along the receding wall
+      // and the front edge is a line parallel to it, so both converge on the same
+      // point; the apron under the front edge narrows with depth, which gives the
+      // plate a second set of converging lines under the first.
+      //
+      // Returns at(t) so the branch can stand a prop on the surface at a stated
+      // depth and get back both the point and the scale it should be drawn at —
+      // props on a receding desk have to shrink or the desk stops receding.
+      deskInto: function (V, backX, topY, offX, offY, deskH, tNear, tFar, seed) {
+        const bN = V.to(backX, topY, tNear), bF = V.to(backX, topY, tFar);
+        const fN = V.to(backX + offX, topY + offY, tNear), fF = V.to(backX + offX, topY + offY, tFar);
+        const sN = V.s(tNear), sF = V.s(tFar);
+        const apN = { x: fN.x, y: fN.y + deskH * sN }, apF = { x: fF.x, y: fF.y + deskH * sF };
+        // the recess under it, drawn first: the darkest thing in the frame
+        deep([fN, fF, apF, apN], seed + 200, 0.6, 0, "top");
+        // TOP SURFACE. Left as ground — it is the plane the lamp falls on — with
+        // only enough weight at the far end to say it is going away.
+        mass([bN, bF, fF, fN], wood, 0.14, seed, -70, 3.4, { depth: PLANE.desk, weight: 0.35 });
+        // the far half again, heavier: the surface fades out rather than ending
+        mass([V.to(backX, topY, (tNear + tFar) / 2), bF, fF, V.to(backX + offX, topY + offY, (tNear + tFar) / 2)], wood, 0.22, seed + 4, -70, 2.4, { depth: 0.42, mask: false });
+        // FRONT APRON. Banded in depth so its weight falls off along its own
+        // length, but the bands are HATCH ONLY with a single outline over the whole
+        // apron at the end. Drawn as four masses it came out as four panels with
+        // seams between them — a sideboard, not a desk.
+        solid([fN, fF, apF, apN], paper, 1, seed + 8);
+        for (let i = 0; i < 4; i++) {
+          const ta = tNear + (tFar - tNear) * (i / 4), tb = tNear + (tFar - tNear) * ((i + 1) / 4);
+          const a = V.to(backX + offX, topY + offY, ta), b = V.to(backX + offX, topY + offY, tb);
+          const band = [a, b, { x: b.x, y: b.y + deskH * V.s(tb) }, { x: a.x, y: a.y + deskH * V.s(ta) }];
+          const c = centroid(band), lum = lumAt(c.x, c.y);
+          P.inkAdd(S.hatch(band, { color: wood, opacity: clamp01((0.62 - i * 0.07) * (1.18 - lum * 0.5)), gap: 7.5, width: 12, angle: -4, over: 14, seed: seed + 10 + i * 4 }));
+          P.inkAdd(S.hatch(band, { color: ink, opacity: (0.1 + 0.09 * (1 - lum)) * (0.8 - i * 0.16), gap: 9, width: 13, angle: 2, over: 10, seed: seed + 30 + i * 4 }));
+        }
+        P.inkAdd(S.outline([fN, fF, apF, apN], { stroke: ink, width: 4.6, opacity: 0.92, amp: 3, over: 14, seed: seed + 38 }));
+        // the front edge itself: one heavy converging line, near end to far end
+        P.inkAdd(S.stroke([fN, { x: (fN.x + fF.x) / 2, y: (fN.y + fF.y) / 2 }, fF], { stroke: ink, width: 5.6, opacity: 0.92, amp: 2.6, over: 16, seed: seed + 40 }));
+        // legs at both ends, so the desk has a near end and a far end
+        [[tNear, sN], [tFar, sF]].forEach(function (pr, i) {
+          const t = pr[0], s = pr[1];
+          const lp = V.to(backX + offX * 0.86, topY + offY * 0.86, t);
+          mass([{ x: lp.x - q(9) * s, y: lp.y + deskH * s * 0.1 }, { x: lp.x + q(9) * s, y: lp.y + deskH * s * 0.1 },
+            { x: lp.x + q(8) * s, y: lp.y + deskH * s * 1.6 }, { x: lp.x - q(8) * s, y: lp.y + deskH * s * 1.6 }],
+            wood, 0.46, seed + 60 + i * 6, -74, 4, { depth: 0.7 - i * 0.34, weight: 0.7 });
+          contact(lp.x, lp.y + deskH * s * 1.6, q(14) * s, seed + 70 + i);
+        });
+        return {
+          at: function (t, across) {
+            const a = across == null ? 0.5 : across;
+            const pt = V.to(backX + offX * a, topY + offY * a, t);
+            return { x: pt.x, y: pt.y, s: V.s(t) };
+          },
+        };
+      },
+
+      // Looking UP. The ceiling is in frame, its joints converge on a point above
+      // the top edge, and the wall's verticals lean in with them. Nothing else in
+      // this library has a ceiling in it — at eye level there is nothing above the
+      // wall to draw, which is precisely why every plate reads as the same shot.
+      ceilingUp: function (junctionY, seed) {
+        const vx = W * 0.5, vy = -HH * 0.85;
+        P.colourAdd(S.hatch(rect(-20, -20, W + 40, junctionY + 22), { color: wood, opacity: 0.34, gap: 9, width: 14, angle: -70, over: 24, seed: seed }));
+        P.colourAdd(S.hatch(rect(-20, -20, W + 40, junctionY * 0.5), { color: wood, opacity: 0.22, gap: 10, width: 15, angle: -70, over: 22, seed: seed + 2 }));
+        // TILE JOINTS, converging on a point above the top edge. These are the only
+        // lines in the pack that say "up", so they are drawn to be SEEN — at 0.2
+        // opacity they were invisible and the ceiling read as a soffit.
+        for (let i = 0; i < 6; i++) {
+          const bx = -W * 0.14 + W * 0.26 * i, t = 0.8;
+          thin([{ x: bx, y: junctionY }, { x: bx + (vx - bx) * t, y: junctionY + (vy - junctionY) * t }], 0.4, 3.4, seed + 10 + i);
+        }
+        // the ceiling/wall junction: seen from below it bows, it does not rule
+        P.inkAdd(S.stroke([{ x: -20, y: junctionY - q(14) }, { x: W * 0.5, y: junctionY }, { x: W + 20, y: junctionY - q(18) }], { stroke: ink, width: 4.8, opacity: 0.9, amp: 3.4, over: 20, seed: seed + 30 }));
+        // A strip light, because that is what is above a desk at three in the
+        // morning and it is the one object only this camera can see. It is BIG: a
+        // small one floating in the top band read as a canoe.
+        const lx = W * 0.24, lw = W * 0.54, ly = junctionY * 0.30;
+        mass([{ x: lx, y: ly }, { x: lx + lw, y: ly - q(16) }, { x: lx + lw * 0.93, y: ly + q(74) }, { x: lx + lw * 0.06, y: ly + q(86) }], wood, 0.5, seed + 40, -4, 4.6, { depth: 0.55, weight: 0.85 });
+        // the tube: bare ground, because it is a source
+        mass([{ x: lx + lw * 0.07, y: ly + q(18) }, { x: lx + lw * 0.93, y: ly + q(4) }, { x: lx + lw * 0.9, y: ly + q(50) }, { x: lx + lw * 0.09, y: ly + q(64) }], paper, 0.1, seed + 44, -4, 2.6, { flat: true });
+        [0.22, 0.78].forEach(function (t, i) {
+          thin([{ x: lx + lw * t, y: ly + q(78) }, { x: lx + lw * t + q(8), y: junctionY - q(16) }], 0.34, 3, seed + 50 + i);
+        });
+      },
+
+      // The near edge of the desk, seen from desk height. The surface is a
+      // TRAPEZOID — its far edge is shorter than its near one, because it is
+      // further away — and the two side edges are the only converging lines this
+      // camera can show. Drawn as a horizontal band (the first pass) it read as a
+      // dado rail with monitors hung above it: a wall, not a desk.
+      deskEdgeNear: function (farY, nearY, inset, seed) {
+        const xl = -20, xr = W + 20, fl = inset, fr = W - inset;
+        const surf = [{ x: fl, y: farY }, { x: fr, y: farY - q(4) }, { x: xr, y: nearY }, { x: xl, y: nearY + q(8) }];
+        deep(rect(xl, nearY, xr - xl, HH - nearY + 20), seed + 300, 0.34, 0, "bottom");
+        mass(surf, wood, 0.2, seed, -4, 3.6, { depth: 0.8, weight: 0.4 });
+        thin([{ x: xl, y: nearY + q(8) }, { x: fl, y: farY }], 0.55, 4.4, seed + 4);
+        thin([{ x: xr, y: nearY }, { x: fr, y: farY - q(4) }], 0.55, 4.4, seed + 6);
+        // the front edge: nearest thing in frame, heaviest line on the plate
+        P.inkAdd(S.stroke([{ x: xl, y: nearY + q(8) }, { x: W * 0.5, y: nearY + q(2) }, { x: xr, y: nearY }], { stroke: ink, width: 7, opacity: 0.94, amp: 3, over: 22, seed: seed + 10 }));
+        mass(rect(xl, nearY + q(8), xr - xl, HH - nearY), wood, 0.66, seed + 14, -4, 4.6, { depth: PLANE.near, weight: 1 });
+        for (let i = 0; i < 4; i++) thin([{ x: W * (0.08 + i * 0.28), y: nearY + q(30) }, { x: W * (0.1 + i * 0.28), y: HH + 20 }], 0.16, 2.6, seed + 20 + i);
+        return { farL: fl, farR: fr, farW: fr - fl };
+      },
+
+      // Looking DOWN at the desk surface, and nothing else: no horizon, no floor
+      // line, no wall. The plane fills the frame, so the perspective is in the
+      // objects on it — rectangles on a surface tilted away from camera converge
+      // toward a point well below the frame.
+      deskPlan: function (V, seed) {
+        // The surface is hatched CELL BY CELL from lumAt rather than at one flat
+        // opacity, so the lamp still reads as an absence of tone in one corner.
+        // Same rule as everywhere else in this room — light removes hatch — and on
+        // a plate that is nothing but one surface it is the only thing modelling
+        // it. A single opacity over the whole frame made the desk a flat field
+        // with objects sitting on top of nothing.
+        for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) {
+          const cw = (W + 40) / 5, ch = (HH + 40) / 5, x0 = -20 + cw * c, y0 = -20 + ch * r;
+          const op = clamp01(0.3 * (1 - lumAt(x0 + cw * 0.5, y0 + ch * 0.5)));
+          if (op > 0.02) P.colourAdd(S.hatch(rect(x0, y0, cw + 2, ch + 2), { color: wood, opacity: op, gap: 11, width: 16, angle: -84, over: 26, seed: seed + r * 7 + c }));
+        }
+        // grain, running the length of the desk and converging with everything else
+        for (let i = 0; i < 9; i++) {
+          const bx = -W * 0.1 + W * 0.15 * i;
+          const end = V.to(bx, -20, 0.3);
+          thin([{ x: bx, y: -20 }, { x: end.x, y: (end.y + HH) * 0.5 }, { x: V.to(bx, -20, 0.5).x, y: HH + 20 }], 0.1, 2.4, seed + 10 + i);
+        }
+        // the far edge of the desk, top of frame — the one straight line, and the
+        // only thing that says which way is away
+        thin([{ x: -20, y: HH * 0.06 }, { x: W + 20, y: HH * 0.05 }], 0.3, 3.4, seed + 40);
+        return {
+          // A rectangle lying ON the desk. Its far edge is NARROWER than its near
+          // one, and its line weight comes from how far down the frame it sits —
+          // on a plate with no horizon those two are the only cues saying which
+          // way is away, so both are stated rather than implied.
+          sheet: function (cx2, cy2, w2, h2, rot, tone, sd) {
+            const conv = 0.9;
+            const co = Math.cos(rot), si = Math.sin(rot);
+            const poly = [[-w2 / 2 * conv, -h2 / 2], [w2 / 2 * conv, -h2 / 2], [w2 / 2, h2 / 2], [-w2 / 2, h2 / 2]]
+              .map(function (d) { return { x: cx2 + d[0] * co - d[1] * si, y: cy2 + d[0] * si + d[1] * co }; });
+            // A sheet lying on a desk casts a thin, tight dark down ONE side. Without
+            // it the paper and the desk are the same plane and the sheet reads as a
+            // hole in the surface rather than as an object on it.
+            deep([poly[3], poly[2], { x: poly[2].x + q(10), y: poly[2].y + q(14) }, { x: poly[3].x + q(8), y: poly[3].y + q(14) }], sd + 400, 0.5, 0, "top");
+            mass(poly, tone || paper, 0.84, sd, -3, 3.2, { flat: true, depth: 0.3 + clamp01(cy2 / HH) * 0.55 });
+            return poly;
+          },
+        };
+      },
+
+      // A mug from above is a RING, not a cylinder — the one prop that only this
+      // camera can draw, and the reason the high angle is worth a plate.
+      planMug: function (x, y, r, seed) {
+        mass(ellipse(x, y, r, r * 0.97, 20, 0.03, seed), wood, 0.5, seed, -74, 4.2, { depth: 0.72, weight: 0.7 });
+        deep(ellipse(x, y, r * 0.78, r * 0.76, 18, 0.04, seed + 4), seed + 4, 0.72, 3, "top");
+        P.inkAdd(S.outline(ellipse(x, y, r * 0.78, r * 0.76, 18, 0.04, seed + 6), { stroke: ink, width: 3.4, opacity: 0.82, amp: 1.8, over: 7, seed: seed + 7 }));
+        // the handle, seen flat
+        P.inkAdd(S.stroke([{ x: x + r * 0.96, y: y - r * 0.24 }, { x: x + r * 1.5, y: y }, { x: x + r * 0.96, y: y + r * 0.24 }], { stroke: ink, width: 5, opacity: 0.9, amp: 2, over: 6, seed: seed + 10 }));
+      },
+      // A keyboard from above is the only view where it is actually a grid, so the
+      // keys are drawn as KEYS — small quads with gaps — not as short strokes. As
+      // strokes the whole slab came out as corduroy.
+      planKeyboard: function (x, y, w2, rot, seed) {
+        const h2 = w2 * 0.36, co = Math.cos(rot), si = Math.sin(rot);
+        const pt = function (dx, dy) { return { x: x + dx * co - dy * si, y: y + dx * si + dy * co }; };
+        const poly = [pt(-w2 / 2 * 0.96, -h2 / 2), pt(w2 / 2 * 0.96, -h2 / 2), pt(w2 / 2, h2 / 2), pt(-w2 / 2, h2 / 2)];
+        // the well the keys sit in is one of the frame's real darks
+        mass(poly, wood, 0.5, seed, -8, 4.4, { depth: 0.72, weight: 1 });
+        deep([pt(-w2 * 0.45, -h2 * 0.42), pt(w2 * 0.45, -h2 * 0.42), pt(w2 * 0.45, h2 * 0.42), pt(-w2 * 0.45, h2 * 0.42)], seed + 200, 0.44, 0, "top");
+        const cols = 13, rows = 5, kw = (w2 * 0.9) / cols, kh = (h2 * 0.84) / rows;
+        for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+          const dx = -w2 * 0.45 + kw * c + (r === rows - 1 && c > 2 && c < 10 ? 0 : 0);
+          const dy = -h2 * 0.42 + kh * r;
+          const wide = r === rows - 1 && c === 5;
+          const kq = [pt(dx + kw * 0.1, dy + kh * 0.12), pt(dx + kw * (wide ? 4.2 : 0.9), dy + kh * 0.12),
+            pt(dx + kw * (wide ? 4.2 : 0.9), dy + kh * 0.88), pt(dx + kw * 0.1, dy + kh * 0.88)];
+          if (wide || !(r === rows - 1 && c > 5 && c < 10)) {
+            P.inkAdd(S.hatch(kq, { color: paper, opacity: 0.34, gap: 7, width: 9, angle: -8, over: 4, seed: seed + r * 20 + c }));
+            P.inkAdd(S.outline(kq, { stroke: ink, width: 2, opacity: 0.44, amp: 0.7, over: 3, seed: seed + 300 + r * 20 + c }));
+          }
+        }
+      },
     };
   }
 
@@ -2338,16 +3265,37 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
     });
     P.meta.family = "room";
     P.meta.angle = angle;
-    const floorY = Math.round(h * (land ? 0.8 : 0.7));
+    // FLOOR LINE, AND WHY IT IS NO LONGER THE SAME NUMBER ON EVERY PLATE.
+    //
+    // Eight angles all put it at 0.8h (0.7h portrait), which is another way of
+    // saying eight cameras stood in the same place. The three angles added in
+    // revision 05 are camera POSITIONS, so each states its own — and two of them
+    // put the floor line off the bottom of the canvas, because a camera at desk
+    // height and a camera looking down at the desk genuinely cannot see the
+    // floor. It is still declared, because the anchor arithmetic is defined
+    // against it; it is simply not in frame.
+    const CAM = { "corner-perspective": 1, "low-desk-height": 1, "high-desk-down": 1 }[angle] ? angle : null;
+    const floorY = angle === "low-desk-height" ? Math.round(h * 1.26)
+      : angle === "high-desk-down" ? Math.round(h * 2.2)
+      : angle === "corner-perspective" ? Math.round(h * (land ? 0.74 : 0.66))
+      : Math.round(h * (land ? 0.8 : 0.7));
     P.meta.floorLineY = floorY;
     const k = land ? w / 1920 : w / 1080;
     const S = inkScale(k);
     const K = roomKit(P, p, k, { w: w, h: h, floorY: floorY });
-    K.shell(floorY, w, h, 801);
+    // The camera angles draw their own shell. shell() IS a flat elevation — a
+    // horizontal floor line and a wall banded by height — which is precisely the
+    // thing these three exist to stop doing.
+    if (!CAM) K.shell(floorY, w, h, 801);
 
     const zoom = k * (angle === "wide-tight" || angle === "desk-corner" ? 1.45 : 1);
     const u = function (n) { return n * zoom; };
     const deskH = u(230), deskTop = floorY - deskH;
+    // Where his hand, hip or elbow actually meets the furniture on this plate.
+    // Set by the branches that HAVE furniture he can reach; left null by the ones
+    // that are open floor, because inventing a contact point on a plate with
+    // nothing to touch is worse than admitting there isn't one.
+    let contact = null;
 
     if (angle === "wide" || angle === "wide-tight") {
       const tight = angle === "wide-tight";
@@ -2389,6 +3337,11 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
       K.crumples(w * 0.205, floorY - u(8), u(30), 3, 935);
       K.cable(w * 0.42, deskTop + u(6), w * 0.47, floorY - u(8), 921);
       K.foreground("mug", -1, floorY + h * 0.06, 981);
+      // The desk's near end, clear of the lamp and the first mug: this is where a
+      // leaning hand actually lands on this plate. The anchor region has always
+      // put him beside the desk; what it never said was WHERE the desk is under
+      // him, so leaning-on-desk leaned on nothing.
+      contact = { pose: "leaning-on-desk", surface: "desk top, left end", x: Math.round(w * 0.235), y: Math.round(deskTop) };
       P.slot("title", w * 0.35, 70, w * 0.3, land ? 250 : 300, { align: "left", role: "title", note: "chapter opener writes here; nothing else changes" });
     } else if (angle === "desk-front") {
       K.lights({ x: w * 0.18, y: deskTop - u(135), r: w * 0.42 }, { x: w * 0.42, y: deskTop - K.stackHeight(3) - u(170), r: w * 0.38 });
@@ -2418,6 +3371,7 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
       K.cable(w * 0.47, deskTop + u(6), w * 0.53, floorY - u(10), 922);
       K.stack(w * 0.17, floorY - u(4), u(150), 4, 879);
       K.foreground("chair", 1, floorY + h * 0.1, 982);
+      contact = { pose: "leaning-on-desk", surface: "desk top, left end", x: Math.round(w * 0.185), y: Math.round(deskTop) };
       P.slot("title", w * 0.3, 56, w * 0.3, land ? 210 : 260, { align: "left", role: "title" });
     } else if (angle === "desk-corner") {
       const dc = deskTop + u(70);
@@ -2478,6 +3432,7 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
       K.chair(w * 0.22, floorY - u(6), u(185), 913);
       K.plant(w * 0.94, floorY - u(4), u(140), 885);
       K.foreground("chair", -1, floorY + h * 0.08, 985);
+      contact = { pose: "leaning-on-desk", surface: "desk top, left end", x: Math.round(w * 0.115), y: Math.round(deskTop) };
       P.slot("title", w * (land ? 0.66 : 0.08), h * (land ? 0.58 : 0.52), w * (land ? 0.28 : 0.5), 300, { align: "left", role: "title" });
     } else if (angle === "printer-corner") {
       // both sources are off-frame here: warm from the desk behind camera-right,
@@ -2496,6 +3451,167 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
       K.crumples(w * 0.5, floorY - u(8), u(32), 5, 970);
       K.foreground("stack", -1, floorY - u(4), 986);
       P.slot("title", w * (land ? 0.54 : 0.08), 120, w * (land ? 0.38 : 0.6), land ? 300 : 320, { align: "left", role: "title" });
+    } else if (angle === "corner-perspective") {
+      // THE ONE ANGLE WITH A CAMERA IN IT.
+      //
+      // A visible wall corner, a desk running away from the viewer, floor boards
+      // and a ceiling joint converging on the same point. Every other plate in the
+      // family is a flat elevation, and this is the plate that makes the others
+      // read as a room when a cut lands on them: once the eye has been shown the
+      // space once, it carries that reading into the elevations.
+      const ceilY = h * (land ? 0.10 : 0.14);
+      const cornerX = w * (land ? 0.30 : 0.26);
+      const V = K.vanish(w * (land ? 0.70 : 0.78), h * (land ? 0.46 : 0.44));
+      const tFar = 0.78;
+      const deskTopY = floorY - h * (land ? 0.22 : 0.17);
+      const backX = cornerX + w * 0.02, offX = -w * 0.09, offY = h * (land ? 0.19 : 0.14);
+      // Both sources sit at a DEPTH now, not just at an x: the lamp is a third of
+      // the way down the receding desk and the monitor is further along it, so the
+      // falloff runs into the frame instead of across it.
+      const lampP = V.to(backX + offX, deskTopY + offY * 0.5, 0.20);
+      const monP = V.to(backX, deskTopY, 0.44);
+      K.lights({ x: lampP.x, y: lampP.y - h * 0.08, r: w * 0.44 }, { x: monP.x, y: monP.y - h * 0.06, r: w * 0.34 });
+      K.cornerRoom(V, cornerX, ceilY, floorY, tFar, 820);
+      // The frontal wall carries the flat furniture: it is the one plane in this
+      // frame where an axis-aligned rectangle is the correct drawing.
+      K.whiteboard(w * 0.02, h * (land ? 0.15 : 0.17), cornerX - w * 0.07, h * (land ? 0.30 : 0.22), 826);
+      K.clock(cornerX - w * 0.045, h * (land ? 0.55 : 0.47), u(48), 893);
+      // And the receding wall carries its page as a CONVERGING quad. An
+      // axis-aligned rect on a wall that is running away is the exact tell that
+      // there is no camera, so it is drawn in the same perspective as the wall.
+      [[0.14, 0.30], [0.42, 0.19]].forEach(function (pr, i) {
+        const t0 = pr[0], sz = pr[1], wy = h * (land ? 0.20 : 0.24), wh = h * (land ? 0.17 : 0.13);
+        K.mass([V.to(cornerX, wy, t0), V.to(cornerX, wy, t0 + sz * 0.34),
+          V.to(cornerX, wy + wh, t0 + sz * 0.34), V.to(cornerX, wy + wh, t0)],
+          p.ground, 0.84, 830 + i * 6, -3, 3.2, { depth: 0.42 - i * 0.16 });
+      });
+      const D = K.deskInto(V, backX, deskTopY, offX, offY, h * (land ? 0.20 : 0.15), 0.02, 0.62, 840);
+      // Props DOWN the desk, each shrinking with its own depth. A prop that does
+      // not shrink stops the desk receding all by itself.
+      const far = D.at(0.46, 0.25), mid = D.at(0.30, 0.5), near = D.at(0.10, 0.6), edge = D.at(0.02, 0.78);
+      K.stack(far.x, far.y, u(190) * far.s, 4, 872);
+      K.cableMess(mid.x - u(70) * mid.s, mid.y - u(24) * mid.s, u(210) * mid.s, u(140) * mid.s, 927);
+      K.monitor(mid.x - u(160) * mid.s, mid.y, u(310) * mid.s, u(205) * mid.s, 822);
+      K.postits(mid.x + u(130) * mid.s, mid.y - u(240) * mid.s, 2, 902);
+      K.lamp(near.x - u(260) * near.s, near.y - u(4), u(140) * near.s, 865);
+      K.keyboard(near.x - u(110) * near.s, near.y, u(240) * near.s, 842);
+      K.openReport(near.x + u(150) * near.s, near.y + u(6) * near.s, u(230) * near.s, 869);
+      K.ringStain(edge.x - u(70) * edge.s, edge.y + u(8), u(36) * edge.s, 931);
+      K.mug(edge.x + u(80) * edge.s, edge.y + u(10), u(32) * edge.s, 851, true);
+      // the floor is a real plane on this plate, so things stand at two depths on it
+      K.plant(w * 0.055, floorY - u(4), u(150), 881);
+      K.wastebasket(w * 0.155, floorY + h * (land ? 0.11 : 0.09), u(140), 923);
+      K.crumples(w * 0.235, floorY + h * (land ? 0.14 : 0.11), u(34), 3, 935);
+      // The right of the frame is the floor opening toward the vanishing point, and
+      // it was empty: a receding plane with nothing standing on it reads as a
+      // backdrop again. Two objects at two DEPTHS is what makes it a floor.
+      const fp1 = V.to(cornerX + w * 0.34, floorY + h * 0.05, 0.20);
+      const fp2 = V.to(cornerX + w * 0.46, floorY + h * 0.02, 0.44);
+      K.printer(fp1.x, fp1.y, u(280) * V.s(0.20), u(200) * V.s(0.20), 919);
+      K.stack(fp2.x, fp2.y, u(210) * V.s(0.44), 5, 876);
+      // NO CROPPED FOREGROUND OBJECT ON THIS PLATE, and that is the point.
+      // foreground() exists because the eight elevations laid every prop along one
+      // horizontal line and had no depth without it. This plate has depth from the
+      // geometry, and the near mug at this size read as a bin standing in the
+      // middle of the floor — the darkest thing in frame, sitting on nothing, next
+      // to the one part of the drawing worth looking at.
+      contact = { pose: "leaning-on-desk", surface: "desk top, near end", x: Math.round(edge.x - u(150) * edge.s), y: Math.round(edge.y) };
+      P.slot("title", w * (land ? 0.035 : 0.05), h * (land ? 0.48 : 0.42), w * (land ? 0.24 : 0.4), land ? 210 : 250, { align: "left", role: "title" });
+      P.slot("caption", w * (land ? 0.035 : 0.05), h * (land ? 0.68 : 0.60), w * (land ? 0.22 : 0.35), 64, { align: "left", role: "caption" });
+    } else if (angle === "low-desk-height") {
+      // CAMERA AT DESK HEIGHT, LOOKING UP.
+      //
+      // The desk edge cuts across the foreground, the ceiling exists, and there is
+      // no floor in frame at all. He is ABOVE the lens instead of standing in the
+      // middle of it, which is the shot the confession and the turn actually need.
+      const farY = h * (land ? 0.62 : 0.58), nearY = h * (land ? 0.86 : 0.80);
+      const ceilJ = h * (land ? 0.22 : 0.26);
+      K.lights({ x: w * 0.22, y: farY - h * 0.10, r: w * 0.50 }, { x: w * 0.62, y: farY - h * 0.20, r: w * 0.40 });
+      // The wall is lightest at the bottom where the desk lamp reaches and
+      // heaviest at the top: looking up is looking away from the only light in the
+      // room, which is the opposite gradient to every other plate in the family.
+      for (let i = 0; i < 5; i++) {
+        const bh = (farY - ceilJ) / 5, y0 = ceilJ + bh * i;
+        P.colourAdd(S.hatch(K.rect(-20, y0, w + 40, bh + 2), { color: p.ground2, opacity: 0.25 - i * 0.045, gap: 10 + i * 0.4, width: 15, angle: -3, over: 26, seed: 861 + i }));
+      }
+      K.ceilingUp(ceilJ, 870);
+      // The desk is drawn BEFORE the props that stand on it, because the surface is
+      // a trapezoid now and the monitors are placed against its inset far edge.
+      const DE = K.deskEdgeNear(farY, nearY, w * (land ? 0.13 : 0.09), 812);
+      // wall furniture hangs HIGH from down here: the calendar is above the lens
+      // rather than beside it, which is most of why this reads as a low angle
+      K.calendar(w * 0.06, ceilJ + h * (land ? 0.04 : 0.03), u(210), u(240), 891);
+      K.tapedPage(w * 0.29, ceilJ + h * (land ? 0.02 : 0.015), u(165), u(220), 895);
+      K.binders(w * 0.80, ceilJ + h * (land ? 0.22 : 0.18), u(195), u(130), 5, 917);
+      // The monitors are BIG and stand on the desk's FAR edge, inset from the frame:
+      // from desk height a screen towers, and the first pass had them at
+      // picture-frame size floating mid-wall, which is a wall elevation with
+      // monitors hung on it.
+      K.monitor(DE.farL + DE.farW * 0.40, farY + u(30), u(560), u(400), 821);
+      K.monitor(DE.farL + DE.farW * 0.02, farY + u(38), u(300), u(420), 831);
+      K.stack(DE.farL + DE.farW * 0.30, farY + u(34), u(230), 3, 871);
+      K.postits(DE.farL + DE.farW * 0.36, farY - u(150), 2, 901);
+      K.cableMess(DE.farL + DE.farW * 0.12, farY - u(30), u(240), u(150), 927);
+      // The props on the near surface are cropped by its front edge, and THAT is
+      // this plate's foreground crop — it does not also need a near mug pasted into
+      // a corner. The desk edge cutting across the bottom is the depth cue the
+      // whole camera position is built on.
+      K.keyboard(w * 0.30, nearY + u(24), u(330), 842);
+      K.openReport(w * 0.55, nearY + u(30), u(330), 869);
+      K.mug(w * 0.13, nearY + u(58), u(86), 851, true);
+      K.ringStain(w * 0.45, nearY + u(30), u(64), 931);
+      K.pen(w * 0.84, nearY + u(16), u(190), 859);
+      contact = { pose: "leaning-on-desk", surface: "desk top, far edge", x: Math.round(w * 0.42), y: Math.round(farY + u(8)) };
+      P.slot("title", w * (land ? 0.42 : 0.06), ceilJ + h * (land ? 0.03 : 0.03), w * (land ? 0.32 : 0.5), land ? 200 : 240, { align: "left", role: "title" });
+    } else if (angle === "high-desk-down") {
+      // CAMERA ABOVE THE DESK, LOOKING DOWN AT THE SURFACE.
+      //
+      // No horizon, no floor line, no wall: the plane fills the frame, so all the
+      // perspective is in the objects. Rectangles lying on a surface tilted away
+      // from the lens converge toward a point well below the bottom edge, and
+      // their line weight falls off with how far up the frame they sit.
+      //
+      // THIS PLATE DECLARES hostAnchor: false. See the anchor block below.
+      const V = K.vanish(w * 0.5, h * 3.2);
+      K.lights({ x: w * 0.18, y: h * 0.26, r: w * 0.58 }, { x: w * 0.86, y: h * 0.12, r: w * 0.44 });
+      const PL = K.deskPlan(V, 818);
+      const ruled = function (cx2, cy2, w2, h2, rot, n, sd) {
+        PL.sheet(cx2, cy2, w2, h2, rot, p.ground, sd);
+        const co = Math.cos(rot), si = Math.sin(rot);
+        for (let i = 0; i < n; i++) {
+          const dy = -h2 * 0.34 + (h2 * 0.68 / (n - 1)) * i;
+          const x1 = -w2 * 0.34, x2 = w2 * (0.08 + (i % 3) * 0.12);
+          K.thin([{ x: cx2 + x1 * co - dy * si, y: cy2 + x1 * si + dy * co },
+            { x: cx2 + x2 * co - dy * si, y: cy2 + x2 * si + dy * co }], 0.3, 2.2, sd + 20 + i);
+        }
+      };
+      // a loose drift of paper, three sheets out of square with each other
+      PL.sheet(w * 0.27, h * 0.40, w * 0.30, h * (land ? 0.36 : 0.22), -0.07, p.ground, 941);
+      ruled(w * 0.31, h * 0.44, w * 0.29, h * (land ? 0.35 : 0.21), 0.05, 6, 943);
+      // an open report from above is a SPREAD: two pages and a gutter, and this is
+      // the only camera in the pack that can say so
+      ruled(w * 0.63, h * 0.35, w * 0.20, h * (land ? 0.32 : 0.20), 0.02, 5, 945);
+      ruled(w * 0.82, h * 0.345, w * 0.20, h * (land ? 0.32 : 0.20), -0.01, 5, 947);
+      K.thin([{ x: w * 0.73, y: h * 0.19 }, { x: w * 0.725, y: h * 0.51 }], 0.5, 3.4, 949);
+      K.planKeyboard(w * 0.44, h * (land ? 0.82 : 0.76), w * 0.34, -0.03, 843);
+      K.planMug(w * 0.15, h * (land ? 0.72 : 0.64), u(72), 851);
+      K.planMug(w * 0.87, h * (land ? 0.63 : 0.57), u(52), 853);
+      // A phone face-down on bare desk: the one genuinely dark object in a frame
+      // that is otherwise all paper and pale wood, and the plate needs one. It sits
+      // clear of the sheets — laid on top of one it read as a hole punched in the
+      // paper rather than as an object beside it.
+      K.mass([{ x: w * 0.10, y: h * (land ? 0.60 : 0.54) }, { x: w * 0.195, y: h * (land ? 0.585 : 0.528) },
+        { x: w * 0.205, y: h * (land ? 0.75 : 0.665) }, { x: w * 0.11, y: h * (land ? 0.775 : 0.685) }],
+        "#2E3742", 0.72, 951, -78, 4.4, { depth: 0.62, weight: 1 });
+      K.ringStain(w * 0.25, h * (land ? 0.86 : 0.80), u(52), 931);
+      K.ringStain(w * 0.70, h * (land ? 0.78 : 0.70), u(38), 933);
+      K.pen(w * 0.62, h * (land ? 0.66 : 0.60), u(170), 859);
+      K.crumples(w * 0.91, h * (land ? 0.87 : 0.82), u(42), 2, 935);
+      // one more sheet, well up the frame, so the top-left is not dead space and
+      // the drift of paper has somewhere to have come from
+      PL.sheet(w * 0.10, h * (land ? 0.20 : 0.16), w * 0.20, h * (land ? 0.24 : 0.15), 0.09, p.ground, 953);
+      P.slot("title", w * 0.06, h * (land ? 0.09 : 0.07), w * (land ? 0.30 : 0.44), land ? 220 : 250, { align: "left", role: "title" });
+      P.slot("caption", w * 0.06, h * (land ? 0.28 : 0.20), w * (land ? 0.26 : 0.4), 64, { align: "left", role: "caption" });
     } else {
       // The doorway: he is standing in a lit hallway looking into a dark room, so
       // the warm source is the doorway itself and the cold monitor glow is the
@@ -2529,19 +3645,49 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
     // little past the floor line to carry the shoes, and scaling by the box
     // would shrink him by that overhang. This is the number the compositor
     // already solves with; it is written down here so the two cannot drift.
-    const anchorH = Math.round(h * 0.52);
-    P.slot("host-anchor", Math.round(w * (angle === "doorway" ? 0.62 : 0.14)), floorY - anchorH, Math.round(w * 0.34), anchorH, {
-      role: "host-anchor", region: true, scales: "host",
-      note: "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
-    });
-    P.meta.hostAnchor = {
-      targetHeight: anchorH,
-      scales: "host.floorLineY - host.slots.figure.y",
-      pin: "host.floorLineY onto this plate's floorLineY",
-      floorLineY: floorY,
-      widthIsAdvisory: true,
-      light: "light the cut-out from this plate's meta.light — same two sources, same sides",
-    };
+    //
+    // REVISION 05 — TWO ADDITIONS, BOTH DATA.
+    //
+    // 1. CONTACT. Every plate declared its anchor in open floor, including the
+    //    ones whose whole mid-frame is desk, so leaning-on-desk had nothing under
+    //    the elbow. A plate with furniture he can reach now declares the POINT he
+    //    meets it and the pose that meets it. The anchor's own x/y/w/h are
+    //    untouched on every existing plate — this is a new field on the same slot,
+    //    so nothing already composited against the region moves.
+    //
+    // 2. AN EXPLICIT REFUSAL, AS A BOOLEAN. high-desk-down looks straight down at
+    //    the desk: there is no floor line and no standing figure to place, and a
+    //    renderer that assumes every room plate can hold a host will either crash
+    //    or invent a position. A sentence in a meta string does not stop that, so
+    //    the plate ships `hostAnchor: false` and no host-anchor slot. Placement
+    //    code branches on the boolean; hostAnchorNote is for the human reading the
+    //    manifest. A room plate that declares NEITHER a host-anchor slot nor
+    //    hostAnchor === false is a bug, and the audit is what catches it.
+    if (angle === "high-desk-down") {
+      P.meta.hostAnchor = false;
+      P.meta.hostAnchorNote = "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.";
+    } else {
+      const anchorH = angle === "low-desk-height" ? floorY - Math.round(h * 0.20) : Math.round(h * 0.52);
+      const anchorX = Math.round(w * (angle === "doorway" ? 0.62 : angle === "low-desk-height" ? 0.27 : angle === "corner-perspective" ? 0.05 : 0.14));
+      const anchorW = Math.round(w * (angle === "low-desk-height" ? 0.26 : 0.34));
+      P.slot("host-anchor", anchorX, floorY - anchorH, anchorW, anchorH, Object.assign({
+        role: "host-anchor", region: true, scales: "host",
+        note: "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+      }, contact ? { contact: contact } : {}, angle === "low-desk-height" ? {
+        cropped: "below",
+        cropNote: "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=" + floorY + " on a canvas " + h + " tall. His legs finish below the frame, which is what a low angle does to a standing man.",
+      } : {}));
+      P.meta.hostAnchor = {
+        targetHeight: anchorH,
+        scales: "host.floorLineY - host.slots.figure.y",
+        pin: "host.floorLineY onto this plate's floorLineY",
+        floorLineY: floorY,
+        floorInFrame: floorY <= h,
+        widthIsAdvisory: true,
+        contact: contact || null,
+        light: "light the cut-out from this plate's meta.light — same two sources, same sides",
+      };
+    }
     return P;
   }
 
@@ -2558,6 +3704,14 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
     P.meta.family = "room";
     P.meta.rows = rows;
     P.meta.floorLineY = Math.round(h * 0.92); // a wall plate: the floor is still declared
+    // NO HOST ANCHOR, DECLARED AS DATA. This is a board plate: it is a wall of
+    // tickers cut to directly, and there is nowhere on it a figure belongs. It
+    // carried neither an anchor slot nor a refusal, which is precisely the case
+    // the revision-05 rule exists to catch — a renderer looping over the room
+    // family and assuming every plate can hold a host would have invented a
+    // position here. Metadata only: not a mark on this plate changes.
+    P.meta.hostAnchor = false;
+    P.meta.hostAnchorNote = "Deliberately none. A wall of call tickers is a full-frame data plate, not a set: cut to it over his voice. floorLineY is still declared because the wall meets a floor, but nothing should be stood on it.";
     const k = land ? w / 1920 : w / 1080;
     const S = inkScale(k);
     const q = function (n) { return n * k; };
@@ -2954,6 +4108,9 @@ mass(torso, shirt, 0.88, 4.8, -78, 651);
   ];
 
   const ROOM_ANGLES = ["wide", "wide-tight", "desk-front", "desk-corner", "from-behind-the-monitor", "whiteboard-wall", "printer-corner", "doorway"];
+  // Camera positions rather than furniture arrangements — see build.js CAMERA_ANGLES.
+  const ROOM_CAMERA_ANGLES = ["corner-perspective", "low-desk-height", "high-desk-down"];
+  const HOST_FRAMINGS = ["close-up", "medium"];
 
-  g.PLATES = { ROLES, SURFACES, pal, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, HOST_POSES, ellipse, room, wallOfCalls, ROOM_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
+  g.PLATES = { ROLES, SURFACES, pal, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
 })(typeof window !== "undefined" ? window : globalThis);
