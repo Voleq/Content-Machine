@@ -7,7 +7,7 @@
   },
   "notes": [
     "The SHORT, on the v2 plate kit. Every `plate` here is a registry key and",
-    "every `bind` target is a slot that plate DECLARES \u2014 the renderer puts the",
+    "every `bind` target is a slot that plate DECLARES — the renderer puts the",
     "text in the slot and does nothing else. Type is set in the face, size,",
     "weight and colour role the kit declares for that slot's role, so the",
     "character budgets are the kit's own `maxChars` rather than something",
@@ -25,7 +25,7 @@
     "",
     "THE HOST IS IN FOUR SHOTS AND THE CLOSE-UP CARRIES THE TURN. He was in the",
     "cold open, the payoff and the close, all three at full figure in a wide",
-    "room \u2014 which is the shot you use when the room is the point. The turn is",
+    "room — which is the shot you use when the room is the point. The turn is",
     "the line the whole cut rests on and it was being told on bare ground with",
     "nobody in it. `host/close-up` is head and shoulders and it exists for",
     "exactly that beat.",
@@ -44,7 +44,7 @@
         "sub": "?script.move_summary",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card is the format's own opener \u2014 three treatments, and which one a video gets is a property of the script, not of this file."
+      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file."
     },
     {
       "id": "the-move",
@@ -58,7 +58,7 @@
         "plot-area": "chart.series",
         "mark-last": "?chart.last"
       },
-      "notes": "The price, as a path through the figures the data carries. `plot-area` is a data region: it takes the series and the renderer draws it, which is not the renderer computing anything \u2014 it is being handed one."
+      "notes": "The price, as a path through the figures the data carries. `plot-area` is a data region: it takes the series and the renderer draws it, which is not the renderer computing anything — it is being handed one."
     },
     {
       "id": "the-news",
@@ -73,14 +73,14 @@
     },
     {
       "id": "the-turn",
-      "plate": "room/desk-front-9x16",
+      "plate": "room/talk",
       "host": {
         "pose": "host/close-up",
         "slot": "host-anchor"
       },
       "anchor": "turn",
       "max_hold_s": 7,
-      "notes": "The line the cut rests on, told to camera in close-up. Allowed to be empty \u2014 a video with no turn drops this shot rather than holding an empty frame."
+      "notes": "The line the cut rests on, told to camera in close-up. Allowed to be empty — a video with no turn drops this shot rather than holding an empty frame. The room is a ROLE, not a key: three angles fill `talk` and which one a video gets is its seed's, so the channel's shorts are not all shot from the same chair."
     },
     {
       "id": "numbers",
@@ -104,7 +104,7 @@
         "lit": "band-$n",
         "focus": "band-$n"
       },
-      "notes": "One row per shot: the band lights and the frame moves to it. Steps that differ only by which row carries a rectangle are one shot with extra runtime \u2014 but a vertical sheet's row is already the width of the frame, so the move is a pan rather than a zoom past the figures. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff."
+      "notes": "One row per shot: the band lights and the frame moves to it. Steps that differ only by which row carries a rectangle are one shot with extra runtime — but a vertical sheet's row is already the width of the frame, so the move is a pan rather than a zoom past the figures. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff."
     },
     {
       "id": "the-sheet",

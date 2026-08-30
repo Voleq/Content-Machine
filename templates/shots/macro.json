@@ -87,10 +87,10 @@
       },
       "repeat": {
         "src": "script.consequences",
-        "max": 4,
+        "max": 3,
         "arrange": "sequence"
       },
-      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time."
+      "notes": "One consequence per beat, full size. Three in a column measure 33px type, under the readability floor, so a chain at 9:16 has to be told over time. THREE, NOT FOUR. Every step of a sequence is a field on the writer's form, and a fourth consequence took the MACRO form to thirteen — past the dozen at which a form is a document again and gets filled in like one."
     },
     {
       "id": "so-what",
