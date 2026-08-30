@@ -210,6 +210,14 @@ class Plate:
     anchor: str = ""
     ink_weight: float = 0.0
     columns: int = 0
+    # A CAMERA DISTANCE, NOT A CUT-OUT. `close-up` and `medium` declare a
+    # `framing` and no floor line: they are not figures to stand somewhere,
+    # they are the shot itself, and `fit` says how to place one — on the eye
+    # line, scaled by head height, running off the left and right edges by
+    # design.
+    framing: str = ""
+    glance: str = ""              # "camera-left" | "camera-right" | "to camera"
+    fit: dict = field(default_factory=dict)
 
     @property
     def host_anchor(self) -> dict:
@@ -318,6 +326,13 @@ class Registry:
         self.host_poses: dict[str, dict] = raw.get("hostPoses") or {}
         self.room_roles: dict[str, tuple[str, ...]] = {
             k: tuple(v) for k, v in (raw.get("roomRoles") or {}).items()}
+        # Which keys are the same shot in other clothes. `figure` is settled at
+        # ingest (the outfit is baked into the pose art); `medium` is a pair of
+        # keys, so the choice is the pipeline's and has to be made once per
+        # episode rather than once per shot.
+        self.wardrobe: dict[str, dict] = {
+            k: v for k, v in (raw.get("wardrobe") or {}).items()
+            if isinstance(v, dict)}
         self._chapter_types: dict[str, dict] = raw.get("chapterTypes") or {}
         self._universal: tuple[str, ...] = tuple(
             (self._chapter_types.get("_universal") or {}).get("plates", ()))
@@ -384,6 +399,9 @@ class Registry:
             anchor=str(e.get("anchor", "")),
             ink_weight=float(e.get("inkWeight") or 0.0),
             columns=int(e.get("columns") or 0),
+            framing=str(e.get("framing") or ""),
+            glance=str(e.get("glance") or ""),
+            fit=dict(e.get("fit") or {}),
         )
 
     # ---------------------------------------------------------------- basics

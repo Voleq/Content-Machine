@@ -27,6 +27,8 @@ from pipeline.host import (
     build_host_clip,
     mouth_schedule,
     pick_shot,
+    frame_shot,
+    looking_at,
     place_on_room,
     shots,
     speaking_spans,
@@ -188,6 +190,99 @@ def test_a_room_with_no_anchor_places_nothing(reg):
     shot = shots(reg, "beat")[0]
     plate = reg.require("tables/numbers-sheet-6r-16x9")
     assert place_on_room(plate, shot) is None
+
+
+# --------------------------------------------------------------------------
+# The framings — a camera distance is not a cut-out.
+# --------------------------------------------------------------------------
+
+
+def _framing(reg, key):
+    from pipeline.host import HostShot
+    return HostShot(pose=reg.require(key),
+                    talk=reg.host_strip(key, "talk"),
+                    idle=reg.host_strip(key, "idle"))
+
+
+@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
+def test_a_framing_is_never_solved_onto_an_anchor(reg, key):
+    """`close-up` and `medium` publish `floorLineY: false`.
+
+    They are head-and-shoulders and waist-up crops: there is no floor line to
+    pin and no anchor to solve them onto. Fitted into a room's standing spot,
+    a close-up is a head the size of a man hovering where his shoes would be.
+    """
+    shot = _framing(reg, key)
+    assert shot.is_framing
+    assert place_on_room(reg.require("room/wide-16x9"), shot) is None
+
+
+@pytest.mark.parametrize("frame", ((1920, 1080), (1080, 1920)))
+@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
+def test_a_framing_sits_its_crop_on_the_bottom_of_the_frame(reg, key, frame):
+    """The ink runs to the plate's bottom edge — `figure` is y=40 h=1400 on a
+    1440 canvas — so that edge is at or below the frame's. Lifted to put the
+    eye line on the upper third, a medium draws a straight cut across his
+    hands a quarter of the way up the picture."""
+    placed = frame_shot(_framing(reg, key), frame)
+    assert placed is not None
+    assert placed.y + placed.height >= frame[1] - 1
+
+
+@pytest.mark.parametrize("key", ("host/close-up", "host/medium"))
+def test_a_framing_is_placed_on_its_eye_line_and_its_head(reg, key):
+    """Scale by the head, place by the eyes. Both numbers are the plate's."""
+    shot = _framing(reg, key)
+    fw, fh = 1920, 1080
+    placed = frame_shot(shot, (fw, fh))
+    head = shot.pose.slot("head")
+    k = placed.height / shot.pose.delivered[1]
+    head_h = head.h * shot.pose.export_scale * k
+    want = 0.49 if shot.pose.framing == "close-up" else 0.31
+    assert abs(head_h / fh - want) < 0.01, \
+        f"{key}: head is {head_h / fh:.0%} of frame height"
+    # And his head is on screen, whatever his plate does at the sides.
+    hx = placed.x + head.x * shot.pose.export_scale * k
+    assert hx >= 0 and hx + head.w * shot.pose.export_scale * k <= fw
+
+
+def test_the_width_of_a_framing_is_not_a_bound(reg):
+    """The kit is explicit: both framings run off the left and right edges by
+    design, and cropping to the width re-frames the shot into a narrower one
+    than was drawn. In a 9:16 frame the close-up is wider than the frame."""
+    placed = frame_shot(_framing(reg, "host/close-up"), (1080, 1920))
+    assert placed.width > 1080
+
+
+def test_a_glance_is_cut_only_when_the_side_is_known(reg):
+    """A glance against a graphic on the OPPOSITE side is worse than him
+    facing camera, so straight to camera is the default and the fallback."""
+    shot = _framing(reg, "host/medium")
+    assert looking_at(reg, shot, "left").key == "host/medium-glance-left"
+    assert looking_at(reg, shot, "right").key == "host/medium-glance-right"
+    assert looking_at(reg, shot, "").key == "host/medium"
+    assert looking_at(reg, shot, "up").key == "host/medium"
+
+
+def test_a_pose_with_no_glance_drawn_stays_facing_camera(reg):
+    """The kit drew glances for the two framings and nothing else. A figure
+    asked to look at a graphic returns unchanged rather than resolving to a
+    key that is not there."""
+    figure = shots(reg, "panel")[0]
+    assert looking_at(reg, figure, "left").key == figure.key
+
+
+def test_a_room_that_refuses_a_host_places_nobody(reg):
+    """`hostAnchor: false` is DATA. The camera is above the desk on
+    `high-desk-down` and square to a wall of index cards on `wall-of-calls`:
+    neither has a floor in shot and both say so in the field rather than
+    leaving it out. Reading a refusal as an omission is how a renderer ends up
+    compositing a man onto a surface the camera is above."""
+    figure = shots(reg, "beat")[0]
+    for key in ("room/high-desk-down-16x9", "room/wall-of-calls-16x9"):
+        room = reg.require(key)
+        assert room.refuses_host
+        assert place_on_room(room, figure) is None
 
 
 # --------------------------------------------------------------------------

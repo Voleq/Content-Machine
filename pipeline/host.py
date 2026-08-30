@@ -40,6 +40,7 @@ error rather than a shrug, because a short with no host is the bug this replaced
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import random
 from dataclasses import dataclass
@@ -272,6 +273,115 @@ def place_on_room(room: Plate, host: HostShot) -> Placement | None:
     else:
         x = int(round(ax + (aw - width) / 2))
     return Placement(scale=scale, x=x, y=y, width=width, height=height)
+
+
+# A FRAMING IS PLACED ON THE EYE LINE. The head is the fraction of frame
+# height the shot wants; the eye line sits on the frame's upper third. Both
+# numbers are the kit's, and the plate carries them.
+CLOSE_UP_HEAD_FH = 0.49         # the kit's band is 0.42-0.56: this is its centre
+EYE_LINE_FH = 1.0 / 3.0
+
+# THE MEDIUM'S BAND AND ITS CROP DISAGREE, AND THE CROP WINS. The kit asks for
+# a head at 0.16-0.22 of frame height, but on both framings the ink runs to the
+# plate's bottom edge — `figure` is y=40 h=1400 on a 1440 canvas, and the fit
+# block says the hands leave frame there. Scaled to a 0.19 head, the medium is
+# 0.61 of frame height, so that cut edge floats a quarter of the frame above
+# the bottom and shows as a straight line across him. Sitting the crop on the
+# frame's bottom edge instead puts his head at 0.31 — larger than the band,
+# and the only reading of the two rules that does not draw the cut.
+MEDIUM_HEAD_FH = 0.31
+
+
+def frame_shot(host: HostShot, frame: tuple[int, int], *,
+               head_fh: float = 0.0,
+               centre_fw: float = 0.5) -> Placement | None:
+    """Place a framing against the FRAME. None if this pose is not one.
+
+    `close-up` and `medium` are camera distances. They have no floor line and
+    no anchor to solve onto, and the manifest is explicit about what they take
+    instead: scale so `slots.head` is the fraction of frame height the shot
+    wants, then put `fit.eyeLineY` on the frame's upper third.
+
+    THE WIDTH IS NOT A BOUND. Both framings run off the left and right edges
+    by design — cropping to the width re-frames the shot into something
+    narrower than what was drawn — so `x` here may be negative and `x + width`
+    may pass the frame's right edge. `centre_fw` moves his head, not his
+    bounding box: in a two-shot he sits at a third and the graphic takes the
+    rest.
+    """
+    if not host.is_framing:
+        return None
+    head = host.pose.slot("head")
+    fit = host.pose.fit or {}
+    if head is None or not fit.get("eyeLineY"):
+        return None
+
+    fw, fh = frame
+    hs = host.pose.export_scale
+    if not head_fh:
+        head_fh = MEDIUM_HEAD_FH if host.pose.framing == "medium" else CLOSE_UP_HEAD_FH
+    scale = (fh * head_fh) / max(head.h * hs, 1)
+
+    width = int(round(host.pose.delivered[0] * scale))
+    height = int(round(host.pose.delivered[1] * scale))
+    # His eyes on the upper third, and his head — not the plate — on centre_fw.
+    y = int(round(fh * EYE_LINE_FH - float(fit["eyeLineY"]) * hs * scale))
+    # NEVER FLOAT THE CROP. The ink reaches the plate's bottom edge on both
+    # framings, so that edge has to be at or below the frame's — a framing
+    # lifted to put its eye line on the third would otherwise draw a straight
+    # cut across his hands in the middle of the picture.
+    y = min(y, fh - height)
+    head_mid = (head.x + head.w / 2) * hs * scale
+    x = int(round(fw * centre_fw - head_mid))
+    return Placement(scale=scale, x=x, y=y, width=width, height=height)
+
+
+# How often the medium framing is the robe instead of the tee. One in three
+# episodes: the robe is the late one, and a thing that happens every time is
+# not a thing anybody notices.
+WARDROBE_ALT_ONE_IN = 3
+
+
+def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
+    """The same shot in this episode's clothes.
+
+    ONE OUTFIT PER EPISODE, THE SAME IN EVERY FRAME OF IT. The figure poses
+    are settled at ingest — the outfit is baked into the artwork by
+    `--outfit` — but the robe is a different KEY rather than an engine
+    argument, because a garment with a shawl collar, crossing panels and its
+    own cuff is drawn and not recoloured. So that one choice is the
+    pipeline's, and it is made from the video's seed. Picked per shot he
+    would change clothes mid-sentence.
+    """
+    rule = (getattr(reg, "wardrobe", None) or {}).get("medium") or {}
+    alt = rule.get("alt")
+    if not alt or host.key != rule.get("default"):
+        return host
+    picked = int(hashlib.sha256(f"wardrobe|{seed}".encode()).hexdigest(), 16)
+    if picked % WARDROBE_ALT_ONE_IN != 0 or reg.get(alt) is None:
+        return host
+    return HostShot(pose=reg.require(alt),
+                    talk=reg.host_strip(alt, "talk"),
+                    idle=reg.host_strip(alt, "idle"))
+
+
+def looking_at(reg: Registry, host: HostShot, side: str) -> HostShot:
+    """The same shot, glancing toward `side` ("left"/"right"), if one exists.
+
+    A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON. The kit says it on the
+    plate: using one with the graphic on the opposite side is worse than him
+    facing camera. So this returns the host unchanged unless the side is known
+    and the glance was actually drawn — straight to camera is the default and
+    the fallback both.
+    """
+    if side not in ("left", "right") or not host.pose.framing:
+        return host
+    pose = reg.get(f"{host.pose.key}-glance-{side}")
+    if pose is None:
+        return host
+    return HostShot(pose=pose,
+                    talk=reg.host_strip(pose.key, "talk"),
+                    idle=reg.host_strip(pose.key, "idle"))
 
 
 def composite_on_room(room_img, host_img, placement: Placement):

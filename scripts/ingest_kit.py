@@ -145,6 +145,12 @@ def _install(built: dict, delivery: Path, staged: Path, dest: Path,
     registry["chapterTypes"] = roles.get("chapterTypes", {})
     registry["purposes"] = {k: v for k, v in roles.get("purposes", {}).items()
                             if not k.startswith("_")}
+    # ONE OUTFIT PER EPISODE. `--outfit` picks which of the five the engine
+    # renders into the figure keys; the robe is a different KEY rather than a
+    # recolour, so the pipeline needs the block itself to know that
+    # `host/medium-robe` is the same shot in other clothes.
+    registry["wardrobe"] = {k: v for k, v in roles.get("wardrobe", {}).items()
+                            if not k.startswith("_")}
     (dest / REGISTRY_NAME).write_text(
         json.dumps(registry, indent=1, sort_keys=False) + "\n", encoding="utf-8")
     print(f"  {REGISTRY_NAME}")
