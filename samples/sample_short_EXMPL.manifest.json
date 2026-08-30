@@ -15,9 +15,9 @@
    "id": "hook",
    "plate": "shorts/hook-card-t1",
    "start_s": 0.0,
-   "end_s": 5.012,
+   "end_s": 3.586,
    "anchored": true,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "hook:ground",
     "hook:plate:shorts/hook-card-t1"
@@ -26,10 +26,10 @@
   {
    "id": "the-move",
    "plate": "charts/line-dense-9x16",
-   "start_s": 5.012,
-   "end_s": 10.023,
+   "start_s": 3.586,
+   "end_s": 7.172,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-move:ground",
     "the-move:plate:charts/line-dense-9x16",
@@ -39,10 +39,10 @@
   {
    "id": "the-news",
    "plate": "paper/headline-band-t1-9x16",
-   "start_s": 10.023,
-   "end_s": 15.035,
+   "start_s": 7.172,
+   "end_s": 10.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-news:ground",
     "the-news:plate:paper/headline-band-t1-9x16",
@@ -51,14 +51,14 @@
   },
   {
    "id": "the-turn",
-   "plate": "room/desk-front-9x16",
-   "start_s": 15.035,
-   "end_s": 21.46,
+   "plate": "room/talk",
+   "start_s": 10.758,
+   "end_s": 17.758,
    "anchored": true,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-turn:ground",
-    "the-turn:plate:room/desk-front-9x16",
+    "the-turn:plate:room/low-desk-height-9x16",
     "the-turn:host:close-up",
     "the-turn:caption"
    ]
@@ -66,10 +66,10 @@
   {
    "id": "numbers-1",
    "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 21.46,
-   "end_s": 27.886,
+   "start_s": 17.758,
+   "end_s": 24.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "numbers-1:ground",
     "numbers-1:plate:tables/numbers-sheet-3r-9x16",
@@ -79,10 +79,10 @@
   {
    "id": "numbers-2",
    "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 27.886,
-   "end_s": 34.312,
+   "start_s": 24.758,
+   "end_s": 31.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "numbers-2:ground",
     "numbers-2:plate:tables/numbers-sheet-3r-9x16",
@@ -92,10 +92,10 @@
   {
    "id": "numbers-3",
    "plate": "tables/numbers-sheet-3r-9x16",
-   "start_s": 34.312,
-   "end_s": 40.737,
+   "start_s": 31.758,
+   "end_s": 38.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "numbers-3:ground",
     "numbers-3:plate:tables/numbers-sheet-3r-9x16",
@@ -105,10 +105,10 @@
   {
    "id": "the-sheet",
    "plate": "tables/numbers-sheet-4r-9x16",
-   "start_s": 40.737,
-   "end_s": 47.163,
+   "start_s": 38.758,
+   "end_s": 45.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-sheet:ground",
     "the-sheet:plate:tables/numbers-sheet-4r-9x16",
@@ -118,10 +118,10 @@
   {
    "id": "the-comment",
    "plate": "cards/quote-pull-9x16",
-   "start_s": 47.163,
-   "end_s": 53.588,
+   "start_s": 45.758,
+   "end_s": 52.758,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-comment:ground",
     "the-comment:plate:cards/quote-pull-9x16",
@@ -131,10 +131,10 @@
   {
    "id": "cheap-or-trap",
    "plate": "structure/both-true-9x16",
-   "start_s": 53.588,
-   "end_s": 60.014,
+   "start_s": 52.758,
+   "end_s": 59.758,
    "anchored": true,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "cheap-or-trap:ground",
     "cheap-or-trap:plate:structure/both-true-9x16",
@@ -144,10 +144,10 @@
   {
    "id": "payoff",
    "plate": "figures/big-number-l2-9x16",
-   "start_s": 60.014,
-   "end_s": 66.439,
+   "start_s": 59.758,
+   "end_s": 66.758,
    "anchored": true,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "payoff:ground",
     "payoff:plate:figures/big-number-l2-9x16"
@@ -156,10 +156,10 @@
   {
    "id": "close",
    "plate": "structure/closing-9x16",
-   "start_s": 66.439,
+   "start_s": 66.758,
    "end_s": 71.865,
    "anchored": false,
-   "max_hold_s": 4.0,
+   "max_hold_s": 7.0,
    "layers": [
     "close:ground",
     "close:plate:structure/closing-9x16",
@@ -174,7 +174,7 @@
   "figures/big-number-l2-9x16",
   "host/close-up",
   "paper/headline-band-t1-9x16",
-  "room/desk-front-9x16",
+  "room/low-desk-height-9x16",
   "shorts/hook-card-t1",
   "structure/both-true-9x16",
   "structure/closing-9x16",
@@ -187,5 +187,5 @@
  ],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 6.426
+ "longest_layer_hold_s": 7.0
 }

@@ -692,7 +692,7 @@
       "attribution": "",
       "variant": 0,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.8564,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8564,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8564,trim=0:8.8564,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.8564,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8564,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8564,trim=0:8.8564,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
@@ -720,7 +720,7 @@
       "attribution": "",
       "variant": 1,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -729,7 +729,7 @@
       "attribution": "",
       "variant": 2,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:8.2645,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.2645,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.2645,trim=0:8.2645,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "img",
@@ -758,7 +758,7 @@
       "attribution": "",
       "variant": 3,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.9041,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9041,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9041,trim=0:2.9041,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.9041,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.9041,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.9041,trim=0:2.9041,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -772,7 +772,7 @@
         "frames": 210,
         "distinct": 2
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -781,7 +781,7 @@
       "attribution": "",
       "variant": 4,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.1056,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.1056,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.1056,trim=0:3.1056,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.1056,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.1056,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.1056,trim=0:3.1056,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -789,7 +789,8 @@
       "end": 67.3951,
       "value": "structure/flow-16x9",
       "attribution": "",
-      "layout": "two-shot",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
@@ -799,7 +800,7 @@
       "attribution": "",
       "variant": 5,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -808,7 +809,7 @@
       "attribution": "",
       "variant": 6,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:6.1781,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.1781,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.1781,trim=0:6.1781,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -835,7 +836,7 @@
       "attribution": "",
       "variant": 7,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.7487,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.7487,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.7487,trim=0:3.7487,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.7487,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.7487,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.7487,trim=0:3.7487,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "chart",
@@ -844,7 +845,8 @@
       "value": "revenue",
       "source": "generated",
       "attribution": "",
-      "layout": "two-shot",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
@@ -873,7 +875,7 @@
       "attribution": "",
       "variant": 8,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -900,7 +902,7 @@
       "attribution": "",
       "variant": 9,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:4.8428,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.8428,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.8428,trim=0:4.8428,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:4.8428,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:4.8428,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=4.8428,trim=0:4.8428,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "clip",
@@ -918,7 +920,8 @@
       "end": 149.5,
       "value": "peers/peer-strip-16x9",
       "attribution": "",
-      "layout": "two-shot",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
@@ -927,13 +930,14 @@
       "end": 156.5,
       "value": "cards/quote-pull-16x9",
       "attribution": "",
-      "layout": "two-shot",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
       "animation": {
         "asset": "cards/quote-pull-16x9",
         "frames": 210,
         "distinct": 2
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -950,7 +954,8 @@
       "end": 170.5,
       "value": "structure/unit-ladder-16x9",
       "attribution": "",
-      "layout": "two-shot",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
       "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
     },
     {
@@ -960,7 +965,7 @@
       "attribution": "",
       "variant": 10,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -978,7 +983,7 @@
       "attribution": "",
       "variant": 11,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.7845,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7845,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7845,trim=0:2.7845,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.7845,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.7845,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.7845,trim=0:2.7845,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1006,7 +1011,7 @@
       "attribution": "",
       "variant": 12,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:3.2155,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2155,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2155,trim=0:3.2155,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:3.2155,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.2155,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.2155,trim=0:3.2155,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "meme",
@@ -1052,7 +1057,7 @@
       "attribution": "",
       "variant": 13,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:2.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:2.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.0000,trim=0:2.0000,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1066,7 +1071,7 @@
         "frames": 210,
         "distinct": 2
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1280:720[hfg];[hbg][hfg]overlay=60:180:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=961:540[hfg];[hbg][hfg]overlay=899:270:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1084,7 +1089,7 @@
       "attribution": "",
       "variant": 14,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "host",
@@ -1093,11 +1098,11 @@
       "attribution": "",
       "variant": 15,
       "layout": "host-full",
-      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=463:823[hfg];[hbg][hfg]overlay=364:122:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:10.0170,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.0170,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.0170,trim=0:10.0170,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 10,
+  "segment_cache_hits": 35,
   "segment_failures": [],
   "layers": [
     {
@@ -1195,8 +1200,8 @@
       "name": "scribble_0",
       "t_start": 65.6034,
       "t_end": 68.1034,
-      "x": 1082,
-      "y": 442
+      "x": 1451,
+      "y": 413
     },
     {
       "name": "scribble_1",
@@ -1209,8 +1214,8 @@
       "name": "scribble_2",
       "t_start": 145.1269,
       "t_end": 147.6269,
-      "x": 1209,
-      "y": 548
+      "x": 1615,
+      "y": 550
     },
     {
       "name": "scribble_3",
@@ -1223,8 +1228,8 @@
       "name": "scribble_4",
       "t_start": 165.0272,
       "t_end": 167.5272,
-      "x": 992,
-      "y": 481
+      "x": 1335,
+      "y": 464
     },
     {
       "name": "scribble_5",
@@ -1253,6 +1258,74 @@
       "t_end": 256.533991,
       "x": 36,
       "y": 1036
+    }
+  ],
+  "marks": [
+    {
+      "t": 65.6,
+      "style": "scrawl-oval-wide",
+      "target": "Or it doesn't",
+      "on_screen": true,
+      "warnings": [
+        "annotations/scrawl-oval-wide solves to a 2.6-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
+      ]
+    },
+    {
+      "t": 104.0,
+      "style": "underline-tight",
+      "target": "-89",
+      "on_screen": false,
+      "warnings": []
+    },
+    {
+      "t": 145.13,
+      "style": "bracket-rows",
+      "target": "10th",
+      "on_screen": true,
+      "warnings": [
+        "annotations/bracket-rows solves to a 1.1-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
+      ]
+    },
+    {
+      "t": 152.59,
+      "style": "box-scrawl",
+      "target": "Durable growth",
+      "on_screen": true,
+      "warnings": []
+    },
+    {
+      "t": 165.03,
+      "style": "strike-out",
+      "target": "212",
+      "on_screen": true,
+      "warnings": []
+    },
+    {
+      "t": 192.16,
+      "style": "scrawl-oval-tight",
+      "target": "14%",
+      "on_screen": false,
+      "warnings": []
+    }
+  ],
+  "marks_out_of_band": [
+    {
+      "t": 65.6,
+      "style": "scrawl-oval-wide",
+      "target": "Or it doesn't",
+      "on_screen": true,
+      "warnings": [
+        "annotations/scrawl-oval-wide solves to a 2.6-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
+      ]
+    },
+    {
+      "t": 145.13,
+      "style": "bracket-rows",
+      "target": "10th",
+      "on_screen": true,
+      "warnings": [
+        "annotations/bracket-rows solves to a 1.1-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
+      ]
     }
   ],
   "segment_warnings": [
@@ -1345,12 +1418,19 @@
     "frames/media-frame-t1-16x9",
     "frames/media-frame-t2-16x9",
     "frames/media-frame-t3-16x9",
+    "host/close-up",
     "host/hands-in-pockets",
     "host/holding-a-page",
     "host/leaning-on-desk",
+    "host/medium-robe",
+    "host/pointing-down-at-desk",
     "peers/peer-strip-16x9",
+    "room/corner-perspective-16x9",
     "room/desk-corner-16x9",
     "room/desk-front-16x9",
+    "room/low-desk-height-16x9",
+    "room/whiteboard-wall-16x9",
+    "room/wide-16x9",
     "structure/both-true-16x9",
     "structure/closing-16x9",
     "structure/flow-16x9",
@@ -1437,7 +1517,7 @@
     },
     {
       "segment": 3,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 124,
       "idle_frames": 0,
@@ -1455,7 +1535,7 @@
     },
     {
       "segment": 7,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 43,
       "idle_frames": 0,
@@ -1491,7 +1571,7 @@
     },
     {
       "segment": 15,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 56,
       "idle_frames": 0,
@@ -1509,7 +1589,7 @@
     },
     {
       "segment": 22,
-      "pose": "host/hands-in-pockets",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 73,
       "idle_frames": 0,
@@ -1536,7 +1616,7 @@
     },
     {
       "segment": 33,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 48,
       "idle_frames": 0,
@@ -1554,7 +1634,7 @@
     },
     {
       "segment": 41,
-      "pose": "host/holding-a-page",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 150,
       "idle_frames": 0,
@@ -1563,7 +1643,7 @@
     },
     {
       "segment": 42,
-      "pose": "host/leaning-on-desk",
+      "pose": "host/close-up",
       "spoke": true,
       "talk_frames": 150,
       "idle_frames": 0,
@@ -1571,6 +1651,23 @@
       "has_idle": true
     }
   ],
+  "panel_hosts": {
+    "2": "host/leaning-on-desk",
+    "8": "host/pointing-down-at-desk",
+    "13": "host/holding-a-page",
+    "14": "host/leaning-on-desk",
+    "16": "host/pointing-down-at-desk",
+    "20": "host/pointing-down-at-desk",
+    "21": "host/holding-a-page",
+    "26": "host/leaning-on-desk",
+    "29": "host/holding-a-page",
+    "31": "host/medium-robe",
+    "35": "host/medium-robe",
+    "36": "host/pointing-down-at-desk",
+    "39": "host/medium-robe",
+    "40": "host/pointing-down-at-desk"
+  },
+  "glances": [],
   "blinks": 0,
   "shots_with_blink": 0,
   "shots_with_idle": 16,

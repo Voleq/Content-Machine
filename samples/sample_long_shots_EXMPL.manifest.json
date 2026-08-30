@@ -2,7 +2,7 @@
  "ticker": "EXMPL",
  "format": "long",
  "beats": 16,
- "shots_count": 48,
+ "shots_count": 49,
  "anchored_shots": 14,
  "kit": "v2-plates",
  "duration_s": 256.534,
@@ -20,7 +20,7 @@
    "max_hold_s": 6.0,
    "layers": [
     "ch1-cold-open-open:ground",
-    "ch1-cold-open-open:plate:room/wide-16x9",
+    "ch1-cold-open-open:plate:room/wide-tight-16x9",
     "ch1-cold-open-open:host:hands-in-pockets",
     "ch1-cold-open-open:caption"
    ]
@@ -47,8 +47,8 @@
    "max_hold_s": 5.0,
    "layers": [
     "ch1-cold-open-land:ground",
-    "ch1-cold-open-land:plate:room/corner-perspective-16x9",
-    "ch1-cold-open-land:host:close-up",
+    "ch1-cold-open-land:plate:room/wide-16x9",
+    "ch1-cold-open-land:host:medium",
     "ch1-cold-open-land:caption"
    ]
   },
@@ -61,7 +61,7 @@
    "max_hold_s": 6.0,
    "layers": [
     "ch2-how-we-got-here-open:ground",
-    "ch2-how-we-got-here-open:plate:room/printer-corner-16x9",
+    "ch2-how-we-got-here-open:plate:room/from-behind-the-monitor-16x9",
     "ch2-how-we-got-here-open:host:holding-a-page",
     "ch2-how-we-got-here-open:caption"
    ]
@@ -70,7 +70,7 @@
    "id": "ch2-how-we-got-here-evidence",
    "plate": "paper/headline-band-t1-16x9",
    "start_s": 24.028,
-   "end_s": 31.036,
+   "end_s": 31.035,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -82,49 +82,50 @@
   {
    "id": "ch2-how-we-got-here-land",
    "plate": "room/read",
-   "start_s": 31.036,
-   "end_s": 36.043,
+   "start_s": 31.035,
+   "end_s": 36.042,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch2-how-we-got-here-land:ground",
-    "ch2-how-we-got-here-land:plate:room/printer-corner-16x9",
-    "ch2-how-we-got-here-land:host:close-up",
+    "ch2-how-we-got-here-land:plate:room/from-behind-the-monitor-16x9",
+    "ch2-how-we-got-here-land:host:medium",
     "ch2-how-we-got-here-land:caption"
    ]
   },
   {
    "id": "ch3-how-the-money-is-made-open",
    "plate": "room/diagram",
-   "start_s": 36.043,
-   "end_s": 42.05,
+   "start_s": 36.042,
+   "end_s": 42.049,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch3-how-the-money-is-made-open:ground",
     "ch3-how-the-money-is-made-open:plate:room/whiteboard-wall-16x9",
-    "ch3-how-the-money-is-made-open:host:leaning-on-desk",
+    "ch3-how-the-money-is-made-open:host:pointing-down-at-desk",
     "ch3-how-the-money-is-made-open:caption"
    ]
   },
   {
    "id": "ch3-how-the-money-is-made-evidence",
    "plate": "cards/definition-16x9",
-   "start_s": 42.05,
-   "end_s": 49.057,
+   "start_s": 42.049,
+   "end_s": 49.056,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch3-how-the-money-is-made-evidence:ground",
     "ch3-how-the-money-is-made-evidence:plate:cards/definition-16x9",
+    "ch3-how-the-money-is-made-evidence:host:medium-glance-left",
     "ch3-how-the-money-is-made-evidence:caption"
    ]
   },
   {
    "id": "ch3-how-the-money-is-made-land",
    "plate": "room/diagram",
-   "start_s": 49.057,
-   "end_s": 54.064,
+   "start_s": 49.056,
+   "end_s": 54.063,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -137,22 +138,22 @@
   {
    "id": "ch4-the-numbers-open",
    "plate": "room/talk",
-   "start_s": 54.064,
-   "end_s": 60.071,
+   "start_s": 54.063,
+   "end_s": 60.07,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch4-the-numbers-open:ground",
-    "ch4-the-numbers-open:plate:room/desk-front-16x9",
-    "ch4-the-numbers-open:host:holding-a-page",
+    "ch4-the-numbers-open:plate:room/desk-corner-16x9",
+    "ch4-the-numbers-open:host:leaning-on-desk",
     "ch4-the-numbers-open:caption"
    ]
   },
   {
    "id": "ch4-the-numbers-evidence",
    "plate": "tables/numbers-sheet-4r-16x9",
-   "start_s": 60.071,
-   "end_s": 67.078,
+   "start_s": 60.07,
+   "end_s": 67.077,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -164,13 +165,13 @@
   {
    "id": "ch4-the-numbers-land",
    "plate": "room/talk",
-   "start_s": 67.078,
-   "end_s": 72.085,
+   "start_s": 67.077,
+   "end_s": 72.084,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch4-the-numbers-land:ground",
-    "ch4-the-numbers-land:plate:room/low-desk-height-16x9",
+    "ch4-the-numbers-land:plate:room/desk-front-16x9",
     "ch4-the-numbers-land:host:close-up",
     "ch4-the-numbers-land:caption"
    ]
@@ -178,22 +179,22 @@
   {
    "id": "ch5-one-framework-open",
    "plate": "room/diagram",
-   "start_s": 72.085,
-   "end_s": 78.093,
+   "start_s": 72.084,
+   "end_s": 78.091,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch5-one-framework-open:ground",
     "ch5-one-framework-open:plate:room/whiteboard-wall-16x9",
-    "ch5-one-framework-open:host:leaning-on-desk",
+    "ch5-one-framework-open:host:holding-a-page",
     "ch5-one-framework-open:caption"
    ]
   },
   {
    "id": "ch5-one-framework-evidence",
    "plate": "cards/criteria-16x9",
-   "start_s": 78.093,
-   "end_s": 85.1,
+   "start_s": 78.091,
+   "end_s": 85.098,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -205,8 +206,8 @@
   {
    "id": "ch5-one-framework-land",
    "plate": "room/diagram",
-   "start_s": 85.1,
-   "end_s": 90.107,
+   "start_s": 85.098,
+   "end_s": 90.105,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -219,8 +220,8 @@
   {
    "id": "ch6-moat-open",
    "plate": "room/diagram",
-   "start_s": 90.107,
-   "end_s": 96.114,
+   "start_s": 90.105,
+   "end_s": 96.112,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
@@ -233,8 +234,8 @@
   {
    "id": "ch6-moat-evidence",
    "plate": "structure/both-true-16x9",
-   "start_s": 96.114,
-   "end_s": 103.121,
+   "start_s": 96.112,
+   "end_s": 103.119,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -246,8 +247,8 @@
   {
    "id": "ch6-moat-land",
    "plate": "room/diagram",
-   "start_s": 103.121,
-   "end_s": 108.128,
+   "start_s": 103.119,
+   "end_s": 108.126,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
@@ -260,22 +261,22 @@
   {
    "id": "ch7-sector-comps-open",
    "plate": "room/talk",
-   "start_s": 108.128,
-   "end_s": 114.135,
+   "start_s": 108.126,
+   "end_s": 114.133,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch7-sector-comps-open:ground",
-    "ch7-sector-comps-open:plate:room/desk-front-16x9",
-    "ch7-sector-comps-open:host:leaning-on-desk",
+    "ch7-sector-comps-open:plate:room/desk-corner-16x9",
+    "ch7-sector-comps-open:host:medium",
     "ch7-sector-comps-open:caption"
    ]
   },
   {
    "id": "ch7-sector-comps-evidence",
    "plate": "peers/peer-strip-16x9",
-   "start_s": 114.135,
-   "end_s": 121.142,
+   "start_s": 114.133,
+   "end_s": 121.14,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -287,54 +288,55 @@
   {
    "id": "ch7-sector-comps-land",
    "plate": "room/talk",
-   "start_s": 121.142,
-   "end_s": 126.15,
+   "start_s": 121.14,
+   "end_s": 126.146,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch7-sector-comps-land:ground",
-    "ch7-sector-comps-land:plate:room/low-desk-height-16x9",
-    "ch7-sector-comps-land:host:close-up",
+    "ch7-sector-comps-land:plate:room/desk-front-16x9",
+    "ch7-sector-comps-land:host:medium",
     "ch7-sector-comps-land:caption"
    ]
   },
   {
    "id": "ch8-management-open",
    "plate": "room/read",
-   "start_s": 126.15,
-   "end_s": 132.157,
+   "start_s": 126.146,
+   "end_s": 132.153,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch8-management-open:ground",
-    "ch8-management-open:plate:room/printer-corner-16x9",
-    "ch8-management-open:host:holding-a-page",
+    "ch8-management-open:plate:room/from-behind-the-monitor-16x9",
+    "ch8-management-open:host:hands-in-pockets",
     "ch8-management-open:caption"
    ]
   },
   {
    "id": "ch8-management-evidence",
    "plate": "cards/quote-pull-16x9",
-   "start_s": 132.157,
-   "end_s": 139.164,
+   "start_s": 132.153,
+   "end_s": 139.16,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch8-management-evidence:ground",
     "ch8-management-evidence:plate:cards/quote-pull-16x9",
+    "ch8-management-evidence:host:medium-glance-right",
     "ch8-management-evidence:caption"
    ]
   },
   {
    "id": "ch8-management-land",
    "plate": "room/read",
-   "start_s": 139.164,
-   "end_s": 144.171,
+   "start_s": 139.16,
+   "end_s": 144.167,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch8-management-land:ground",
-    "ch8-management-land:plate:room/printer-corner-16x9",
+    "ch8-management-land:plate:room/from-behind-the-monitor-16x9",
     "ch8-management-land:host:close-up",
     "ch8-management-land:caption"
    ]
@@ -342,22 +344,22 @@
   {
    "id": "ch9-capital-allocation-open",
    "plate": "room/talk",
-   "start_s": 144.171,
-   "end_s": 150.178,
+   "start_s": 144.167,
+   "end_s": 150.174,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
     "ch9-capital-allocation-open:ground",
-    "ch9-capital-allocation-open:plate:room/desk-front-16x9",
-    "ch9-capital-allocation-open:host:leaning-on-desk",
+    "ch9-capital-allocation-open:plate:room/desk-corner-16x9",
+    "ch9-capital-allocation-open:host:medium",
     "ch9-capital-allocation-open:caption"
    ]
   },
   {
    "id": "ch9-capital-allocation-evidence",
    "plate": "structure/unit-ladder-16x9",
-   "start_s": 150.178,
-   "end_s": 155.444,
+   "start_s": 150.174,
+   "end_s": 155.44,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -369,54 +371,55 @@
   {
    "id": "ch9-capital-allocation-land",
    "plate": "room/talk",
-   "start_s": 155.444,
-   "end_s": 158.456,
+   "start_s": 155.44,
+   "end_s": 158.453,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch9-capital-allocation-land:ground",
-    "ch9-capital-allocation-land:plate:room/low-desk-height-16x9",
-    "ch9-capital-allocation-land:host:close-up",
+    "ch9-capital-allocation-land:plate:room/desk-front-16x9",
+    "ch9-capital-allocation-land:host:medium",
     "ch9-capital-allocation-land:caption"
    ]
   },
   {
    "id": "ch10-guidance-estimates-open",
    "plate": "room/read",
-   "start_s": 158.456,
-   "end_s": 163.724,
+   "start_s": 158.453,
+   "end_s": 163.72,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch10-guidance-estimates-open:ground",
-    "ch10-guidance-estimates-open:plate:room/printer-corner-16x9",
-    "ch10-guidance-estimates-open:host:holding-a-page",
+    "ch10-guidance-estimates-open:plate:room/from-behind-the-monitor-16x9",
+    "ch10-guidance-estimates-open:host:hands-in-pockets",
     "ch10-guidance-estimates-open:caption"
    ]
   },
   {
    "id": "ch10-guidance-estimates-evidence",
    "plate": "figures/compare-stacked-16x9",
-   "start_s": 163.724,
-   "end_s": 168.991,
+   "start_s": 163.72,
+   "end_s": 168.987,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch10-guidance-estimates-evidence:ground",
     "ch10-guidance-estimates-evidence:plate:figures/compare-stacked-16x9",
+    "ch10-guidance-estimates-evidence:host:medium-glance-right",
     "ch10-guidance-estimates-evidence:caption"
    ]
   },
   {
    "id": "ch10-guidance-estimates-land",
    "plate": "room/read",
-   "start_s": 168.991,
-   "end_s": 173.998,
+   "start_s": 168.987,
+   "end_s": 173.994,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch10-guidance-estimates-land:ground",
-    "ch10-guidance-estimates-land:plate:room/printer-corner-16x9",
+    "ch10-guidance-estimates-land:plate:room/from-behind-the-monitor-16x9",
     "ch10-guidance-estimates-land:host:close-up",
     "ch10-guidance-estimates-land:caption"
    ]
@@ -424,81 +427,83 @@
   {
    "id": "ch11-short-interest-open",
    "plate": "room/receipts",
-   "start_s": 173.998,
-   "end_s": 177.634,
+   "start_s": 173.994,
+   "end_s": 177.629,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch11-short-interest-open:ground",
     "ch11-short-interest-open:plate:room/wall-of-calls-16x9",
-    "ch11-short-interest-open:host:holding-a-page",
+    "ch11-short-interest-open:host:close-up",
     "ch11-short-interest-open:caption"
    ]
   },
   {
    "id": "ch11-short-interest-evidence",
    "plate": "figures/big-number-l2-16x9",
-   "start_s": 177.634,
-   "end_s": 181.01,
+   "start_s": 177.629,
+   "end_s": 181.005,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch11-short-interest-evidence:ground",
     "ch11-short-interest-evidence:plate:figures/big-number-l2-16x9",
+    "ch11-short-interest-evidence:host:medium-glance-left",
     "ch11-short-interest-evidence:caption"
    ]
   },
   {
    "id": "ch11-short-interest-land",
    "plate": "room/receipts",
-   "start_s": 181.01,
-   "end_s": 184.385,
+   "start_s": 181.005,
+   "end_s": 184.38,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch11-short-interest-land:ground",
     "ch11-short-interest-land:plate:room/wall-of-calls-16x9",
-    "ch11-short-interest-land:host:close-up",
+    "ch11-short-interest-land:host:medium",
     "ch11-short-interest-land:caption"
    ]
   },
   {
    "id": "ch12-valuation-open",
    "plate": "room/talk",
-   "start_s": 184.385,
-   "end_s": 188.02,
+   "start_s": 184.38,
+   "end_s": 188.015,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch12-valuation-open:ground",
-    "ch12-valuation-open:plate:room/desk-front-16x9",
-    "ch12-valuation-open:host:leaning-on-desk",
+    "ch12-valuation-open:plate:room/desk-corner-16x9",
+    "ch12-valuation-open:host:pointing-down-at-desk",
     "ch12-valuation-open:caption"
    ]
   },
   {
    "id": "ch12-valuation-evidence",
    "plate": "figures/big-fraction-16x9",
-   "start_s": 188.02,
-   "end_s": 191.655,
+   "start_s": 188.015,
+   "end_s": 191.65,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch12-valuation-evidence:ground",
     "ch12-valuation-evidence:plate:figures/big-fraction-16x9",
+    "ch12-valuation-evidence:host:medium-glance-right",
     "ch12-valuation-evidence:caption"
    ]
   },
   {
    "id": "ch12-valuation-land",
    "plate": "room/talk",
-   "start_s": 191.655,
-   "end_s": 195.289,
+   "start_s": 191.65,
+   "end_s": 195.284,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch12-valuation-land:ground",
-    "ch12-valuation-land:plate:room/low-desk-height-16x9",
+    "ch12-valuation-land:plate:room/desk-front-16x9",
     "ch12-valuation-land:host:close-up",
     "ch12-valuation-land:caption"
    ]
@@ -506,22 +511,22 @@
   {
    "id": "ch13-risk-open",
    "plate": "room/read",
-   "start_s": 195.289,
-   "end_s": 200.945,
+   "start_s": 195.284,
+   "end_s": 200.94,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch13-risk-open:ground",
-    "ch13-risk-open:plate:room/from-behind-the-monitor-16x9",
-    "ch13-risk-open:host:holding-a-page",
+    "ch13-risk-open:plate:room/printer-corner-16x9",
+    "ch13-risk-open:host:hands-in-pockets",
     "ch13-risk-open:caption"
    ]
   },
   {
    "id": "ch13-risk-evidence",
    "plate": "cards/quote-pull-16x9",
-   "start_s": 200.945,
-   "end_s": 206.601,
+   "start_s": 200.94,
+   "end_s": 206.596,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -533,77 +538,91 @@
   {
    "id": "ch13-risk-land",
    "plate": "room/read",
-   "start_s": 206.601,
-   "end_s": 211.608,
+   "start_s": 206.596,
+   "end_s": 211.603,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch13-risk-land:ground",
-    "ch13-risk-land:plate:room/from-behind-the-monitor-16x9",
-    "ch13-risk-land:host:close-up",
+    "ch13-risk-land:plate:room/printer-corner-16x9",
+    "ch13-risk-land:host:medium",
     "ch13-risk-land:caption"
    ]
   },
   {
    "id": "ch14-filing-walk-open",
    "plate": "room/read",
-   "start_s": 211.608,
-   "end_s": 217.019,
+   "start_s": 211.603,
+   "end_s": 216.334,
    "anchored": true,
    "max_hold_s": 6.0,
    "layers": [
     "ch14-filing-walk-open:ground",
-    "ch14-filing-walk-open:plate:room/printer-corner-16x9",
-    "ch14-filing-walk-open:host:holding-a-page",
+    "ch14-filing-walk-open:plate:room/from-behind-the-monitor-16x9",
+    "ch14-filing-walk-open:host:hands-in-pockets",
     "ch14-filing-walk-open:caption"
+   ]
+  },
+  {
+   "id": "ch14-filing-walk-on-the-desk",
+   "plate": "room/surface",
+   "start_s": 216.334,
+   "end_s": 220.341,
+   "anchored": false,
+   "max_hold_s": 4.0,
+   "layers": [
+    "ch14-filing-walk-on-the-desk:ground",
+    "ch14-filing-walk-on-the-desk:plate:room/high-desk-down-16x9",
+    "ch14-filing-walk-on-the-desk:caption"
    ]
   },
   {
    "id": "ch14-filing-walk-evidence",
    "plate": "paper/headline-band-t2-16x9",
-   "start_s": 217.019,
-   "end_s": 221.781,
+   "start_s": 220.341,
+   "end_s": 224.499,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
     "ch14-filing-walk-evidence:ground",
     "ch14-filing-walk-evidence:plate:paper/headline-band-t2-16x9",
+    "ch14-filing-walk-evidence:host:medium-glance-left",
     "ch14-filing-walk-evidence:caption"
    ]
   },
   {
    "id": "ch14-filing-walk-land",
    "plate": "room/read",
-   "start_s": 221.781,
-   "end_s": 226.543,
+   "start_s": 224.499,
+   "end_s": 228.582,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch14-filing-walk-land:ground",
     "ch14-filing-walk-land:plate:room/printer-corner-16x9",
-    "ch14-filing-walk-land:host:close-up",
+    "ch14-filing-walk-land:host:medium",
     "ch14-filing-walk-land:caption"
    ]
   },
   {
    "id": "ch15-bull-vs-bear-open",
    "plate": "room/establish",
-   "start_s": 226.543,
-   "end_s": 231.305,
+   "start_s": 228.582,
+   "end_s": 232.664,
    "anchored": false,
    "max_hold_s": 6.0,
    "layers": [
     "ch15-bull-vs-bear-open:ground",
-    "ch15-bull-vs-bear-open:plate:room/wide-16x9",
-    "ch15-bull-vs-bear-open:host:holding-a-page",
+    "ch15-bull-vs-bear-open:plate:room/corner-perspective-16x9",
+    "ch15-bull-vs-bear-open:host:leaning-on-desk",
     "ch15-bull-vs-bear-open:caption"
    ]
   },
   {
    "id": "ch15-bull-vs-bear-evidence",
    "plate": "structure/both-true-16x9",
-   "start_s": 231.305,
-   "end_s": 236.067,
+   "start_s": 232.664,
+   "end_s": 236.747,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -615,13 +634,13 @@
   {
    "id": "ch15-bull-vs-bear-land",
    "plate": "room/establish",
-   "start_s": 236.067,
+   "start_s": 236.747,
    "end_s": 240.829,
    "anchored": false,
    "max_hold_s": 5.0,
    "layers": [
     "ch15-bull-vs-bear-land:ground",
-    "ch15-bull-vs-bear-land:plate:room/corner-perspective-16x9",
+    "ch15-bull-vs-bear-land:plate:room/wide-tight-16x9",
     "ch15-bull-vs-bear-land:host:close-up",
     "ch15-bull-vs-bear-land:caption"
    ]
@@ -668,7 +687,7 @@
    ]
   }
  ],
- "layers": 176,
+ "layers": 185,
  "plates_used": [
   "cards/criteria-16x9",
   "cards/definition-16x9",
@@ -681,25 +700,31 @@
   "host/hands-in-pockets",
   "host/holding-a-page",
   "host/leaning-on-desk",
+  "host/medium",
+  "host/medium-glance-left",
+  "host/medium-glance-right",
+  "host/pointing-down-at-desk",
   "host/walking-out-of-frame",
   "paper/headline-band-t1-16x9",
   "paper/headline-band-t2-16x9",
   "peers/peer-strip-16x9",
   "room/corner-perspective-16x9",
+  "room/desk-corner-16x9",
   "room/desk-front-16x9",
   "room/doorway-16x9",
   "room/from-behind-the-monitor-16x9",
-  "room/low-desk-height-16x9",
+  "room/high-desk-down-16x9",
   "room/printer-corner-16x9",
   "room/wall-of-calls-16x9",
   "room/whiteboard-wall-16x9",
   "room/wide-16x9",
+  "room/wide-tight-16x9",
   "structure/both-true-16x9",
   "structure/closing-16x9",
   "structure/unit-ladder-16x9",
   "tables/numbers-sheet-4r-16x9"
  ],
- "kit_reach": "Kit: 28 of 140 plates, 8 families, 70 animated layers",
+ "kit_reach": "Kit: 34 of 140 plates, 8 families, 77 animated layers",
  "skipped": [
   "ch10-guidance-estimates-evidence.value-2 <- compare.expected",
   "ch12-valuation-evidence.denominator <- compare.expected"

@@ -2,7 +2,7 @@
  "ticker": "SPY",
  "format": "macro",
  "beats": 8,
- "shots_count": 11,
+ "shots_count": 10,
  "anchored_shots": 1,
  "kit": "v2-plates",
  "duration_s": 66.316,
@@ -15,7 +15,7 @@
    "id": "open",
    "plate": "shorts/hook-card-t3",
    "start_s": 0.0,
-   "end_s": 6.029,
+   "end_s": 6.632,
    "anchored": true,
    "max_hold_s": 7.0,
    "layers": [
@@ -26,8 +26,8 @@
   {
    "id": "the-print",
    "plate": "figures/big-number-l1-9x16",
-   "start_s": 6.029,
-   "end_s": 12.057,
+   "start_s": 6.632,
+   "end_s": 13.263,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -39,8 +39,8 @@
   {
    "id": "vs-expected",
    "plate": "figures/compare-stacked-9x16",
-   "start_s": 12.057,
-   "end_s": 18.086,
+   "start_s": 13.263,
+   "end_s": 19.895,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -52,8 +52,8 @@
   {
    "id": "the-statement",
    "plate": "paper/headline-band-t2-9x16",
-   "start_s": 18.086,
-   "end_s": 24.115,
+   "start_s": 19.895,
+   "end_s": 26.526,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -65,8 +65,8 @@
   {
    "id": "the-mechanism",
    "plate": "cards/definition-9x16",
-   "start_s": 24.115,
-   "end_s": 30.144,
+   "start_s": 26.526,
+   "end_s": 33.158,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -78,8 +78,8 @@
   {
    "id": "who-it-hits-1",
    "plate": "cards/quote-pull-9x16",
-   "start_s": 30.144,
-   "end_s": 36.172,
+   "start_s": 33.158,
+   "end_s": 39.79,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -91,8 +91,8 @@
   {
    "id": "who-it-hits-2",
    "plate": "cards/quote-pull-9x16",
-   "start_s": 36.172,
-   "end_s": 42.201,
+   "start_s": 39.79,
+   "end_s": 46.421,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -104,8 +104,8 @@
   {
    "id": "who-it-hits-3",
    "plate": "cards/quote-pull-9x16",
-   "start_s": 42.201,
-   "end_s": 48.23,
+   "start_s": 46.421,
+   "end_s": 53.053,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -115,23 +115,10 @@
    ]
   },
   {
-   "id": "who-it-hits-4",
-   "plate": "cards/quote-pull-9x16",
-   "start_s": 48.23,
-   "end_s": 54.259,
-   "anchored": false,
-   "max_hold_s": 7.0,
-   "layers": [
-    "who-it-hits-4:ground",
-    "who-it-hits-4:plate:cards/quote-pull-9x16",
-    "who-it-hits-4:caption"
-   ]
-  },
-  {
    "id": "so-what",
    "plate": "structure/both-true-9x16",
-   "start_s": 54.259,
-   "end_s": 60.287,
+   "start_s": 53.053,
+   "end_s": 59.684,
    "anchored": false,
    "max_hold_s": 7.0,
    "layers": [
@@ -143,7 +130,7 @@
   {
    "id": "close",
    "plate": "structure/closing-9x16",
-   "start_s": 60.287,
+   "start_s": 59.684,
    "end_s": 66.316,
    "anchored": false,
    "max_hold_s": 7.0,
@@ -154,7 +141,7 @@
    ]
   }
  ],
- "layers": 32,
+ "layers": 29,
  "plates_used": [
   "cards/definition-9x16",
   "cards/quote-pull-9x16",
@@ -165,11 +152,11 @@
   "structure/both-true-9x16",
   "structure/closing-9x16"
  ],
- "kit_reach": "Kit: 8 of 140 plates, 5 families, 7 animated layers",
+ "kit_reach": "Kit: 8 of 140 plates, 5 families, 6 animated layers",
  "skipped": [
   "so-what.caption <- script.cheap_or_trap"
  ],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 6.029
+ "longest_layer_hold_s": 6.632
 }

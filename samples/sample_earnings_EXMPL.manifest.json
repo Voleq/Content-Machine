@@ -15,9 +15,9 @@
    "id": "open",
    "plate": "shorts/hook-card-t2",
    "start_s": 0.0,
-   "end_s": 8.182,
+   "end_s": 8.057,
    "anchored": true,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "open:ground",
     "open:plate:shorts/hook-card-t2"
@@ -26,10 +26,10 @@
   {
    "id": "the-print",
    "plate": "figures/big-number-l1-9x16",
-   "start_s": 8.182,
-   "end_s": 16.365,
+   "start_s": 8.057,
+   "end_s": 16.115,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-print:ground",
     "the-print:plate:figures/big-number-l1-9x16",
@@ -39,10 +39,10 @@
   {
    "id": "vs-expected",
    "plate": "figures/compare-stacked-9x16",
-   "start_s": 16.365,
-   "end_s": 24.547,
+   "start_s": 16.115,
+   "end_s": 24.172,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "vs-expected:ground",
     "vs-expected:plate:figures/compare-stacked-9x16",
@@ -52,10 +52,10 @@
   {
    "id": "the-sheet",
    "plate": "tables/numbers-sheet-4r-9x16",
-   "start_s": 24.547,
-   "end_s": 32.729,
+   "start_s": 24.172,
+   "end_s": 32.229,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-sheet:ground",
     "the-sheet:plate:tables/numbers-sheet-4r-9x16",
@@ -65,10 +65,10 @@
   {
    "id": "guidance",
    "plate": "cards/definition-9x16",
-   "start_s": 32.729,
-   "end_s": 40.911,
+   "start_s": 32.229,
+   "end_s": 40.286,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "guidance:ground",
     "guidance:plate:cards/definition-9x16",
@@ -78,13 +78,13 @@
   {
    "id": "the-turn",
    "plate": "room/talk",
-   "start_s": 40.911,
-   "end_s": 49.094,
+   "start_s": 40.286,
+   "end_s": 48.344,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-turn:ground",
-    "the-turn:plate:room/low-desk-height-9x16",
+    "the-turn:plate:room/desk-corner-9x16",
     "the-turn:host:close-up",
     "the-turn:caption"
    ]
@@ -92,10 +92,10 @@
   {
    "id": "so-what",
    "plate": "structure/both-true-9x16",
-   "start_s": 49.094,
-   "end_s": 57.276,
+   "start_s": 48.344,
+   "end_s": 56.401,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "so-what:ground",
     "so-what:plate:structure/both-true-9x16",
@@ -105,10 +105,10 @@
   {
    "id": "close",
    "plate": "structure/closing-9x16",
-   "start_s": 57.276,
+   "start_s": 56.401,
    "end_s": 64.458,
    "anchored": false,
-   "max_hold_s": 4.0,
+   "max_hold_s": 7.0,
    "layers": [
     "close:ground",
     "close:plate:structure/closing-9x16",
@@ -122,7 +122,7 @@
   "figures/big-number-l1-9x16",
   "figures/compare-stacked-9x16",
   "host/close-up",
-  "room/low-desk-height-9x16",
+  "room/desk-corner-9x16",
   "shorts/hook-card-t2",
   "structure/both-true-9x16",
   "structure/closing-9x16",
@@ -140,5 +140,5 @@
  ],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 8.182
+ "longest_layer_hold_s": 8.057
 }
