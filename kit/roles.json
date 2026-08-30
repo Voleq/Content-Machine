@@ -42,7 +42,8 @@
   "panel": [
    "host/pointing-down-at-desk",
    "host/holding-a-page",
-   "host/leaning-on-desk"
+   "host/leaning-on-desk",
+   "host/medium"
   ],
   "close": [
    "host/walking-out-of-frame",
@@ -148,7 +149,14 @@
    "",
    "high-desk-down declares `hostAnchor: false` — looking down at the desk there",
    "is no floor for him to stand on — so it is a SURFACE angle and never carries",
-   "a host. wall-of-calls refuses an anchor for the same reason."
+   "a host. wall-of-calls refuses an anchor for the same reason.",
+   "",
+   "panel is the TWO-SHOT: him on one side, the thing being discussed on",
+   "the other. The angles here are the ones with lateral room — a corner",
+   "or a wall — because a straight-on desk shot puts him in the middle of",
+   "the frame with nowhere for a graphic to go. `render_long` asked for",
+   "this role and nothing filled it, so every two-shot in the tag-driven",
+   "long was composed on flat ground with no room in it at all."
   ],
   "establish": [
    "room/wide",
@@ -159,6 +167,11 @@
    "room/desk-front",
    "room/desk-corner",
    "room/low-desk-height"
+  ],
+  "panel": [
+   "room/desk-corner",
+   "room/corner-perspective",
+   "room/whiteboard-wall"
   ],
   "read": [
    "room/from-behind-the-monitor",

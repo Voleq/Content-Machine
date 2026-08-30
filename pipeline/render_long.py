@@ -76,7 +76,8 @@ from pipeline.audio_assets import (
 )
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
-from pipeline.host import build_host_clip, pick_shot, place_on_room
+from pipeline.host import (build_host_clip, dressed, frame_shot,
+                           looking_at, pick_shot, place_on_room)
 from pipeline.chart import draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
@@ -584,35 +585,87 @@ def render_long(
     #
     # One set. One piece of evidence. One cut-out standing in it.
 
-    def _host_column(room, shot) -> tuple[int, int, int]:
-        """(x, width, height) of the host on this room, in frame pixels."""
-        placed = place_on_room(room, shot) if (room and shot) else None
-        if placed is None:
-            return W - px(520), px(460), int(H * 0.7)
-        k = W / room.delivered[0]
-        return (int(placed.x * k), max(int(placed.width * k), 1),
-                max(int(placed.height * k), 1))
+    # One answer per beat. `_evidence_box`, `_fit_evidence` and `_panel_plate`
+    # all ask, and `pick_shot` reads a `used` tally that a host beat in between
+    # can move — which would size the evidence column against one pose and
+    # composite another.
+    panel_host_memo: dict[int, object] = {}
 
-    def _evidence_box(room, shot, two_shot: bool) -> tuple[int, int, int, int]:
+    def _panel_host(room, seg_i: int):
+        """(shot, box, evidence side) for a two-shot, or None.
+
+        THE GLANCE IS DECIDED HERE, because this is where the side is known.
+        A figure is placed by the room — the angle and its contact point say
+        where he stands, and which side is left over follows from that. A
+        FRAMING has no floor line and no anchor: the medium is a camera
+        distance, so it is placed against the frame on its eye line, and the
+        side alternates rather than being read off a room that never put him
+        anywhere.
+        """
+        if seg_i in panel_host_memo:
+            return panel_host_memo[seg_i]
+        picked = _solve_panel_host(room, seg_i)
+        panel_host_memo[seg_i] = picked
+        return picked
+
+    def _solve_panel_host(room, seg_i: int):
+        shot = pick_shot(reg, "panel", seg_i, used=host_used)
+        if shot is None:
+            return None
+        # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The
+        # angle says nobody stands here; a framing has no floor line to pin,
+        # so the beat survives as the shot it should probably have been.
+        if room is not None and room.refuses_host and not shot.is_framing:
+            instead = pick_shot(reg, "to-camera", seg_i, used=host_used)
+            if instead is not None:
+                shot = instead
+        shot = dressed(reg, shot, seed=script.ticker)
+        if shot.is_framing:
+            side = "left" if seg_i % 2 else "right"     # his side
+            spot = frame_shot(shot, (W, H),
+                              centre_fw=(0.24 if side == "left" else 0.76))
+            if spot is not None:
+                shot = looking_at(reg, shot,
+                                  "right" if side == "left" else "left")
+                return (shot, (spot.x, spot.y, spot.width, spot.height),
+                        "right" if side == "left" else "left")
+        placed = place_on_room(room, shot) if room is not None else None
+        if placed is None:
+            return (shot, (W - px(520), int(H * 0.3), px(460), int(H * 0.7)),
+                    "left")
+        k = W / room.delivered[0]
+        box = (int(placed.x * k), int(placed.y * k),
+               max(int(placed.width * k), 1), max(int(placed.height * k), 1))
+        # Whichever side of him has more room. He is placed by the ROOM, so
+        # which side that is depends on the angle rather than on a flag.
+        left_w = box[0] - px(120)
+        right_w = W - (box[0] + box[2]) - px(120)
+        return (looking_at(reg, shot, "right" if right_w >= left_w else "left"),
+                box, "right" if right_w >= left_w else "left")
+
+    def _evidence_box(room, seg_i: int, two_shot: bool) -> tuple[int, int, int, int]:
         """(x, y, max width, max height) for the evidence, beside the host."""
         if not two_shot:
             ew, eh = int(W * 0.86), int(H * 0.86)
             return int((W - ew) / 2), int((H - eh) / 2), ew, eh
-        hx, hw, _ = _host_column(room, shot)
-        # Whichever side of him has more room. He is placed by the ROOM, so
-        # which side that is depends on the angle rather than on a flag.
-        left_w, right_w = hx - px(120), W - (hx + hw) - px(120)
-        if right_w >= left_w:
-            return hx + hw + px(60), int(H * 0.10), max(right_w, px(400)), int(H * 0.80)
-        return px(60), int(H * 0.10), max(left_w, px(400)), int(H * 0.80)
+        picked = _panel_host(room, seg_i)
+        if picked is None:
+            ew, eh = int(W * 0.86), int(H * 0.86)
+            return int((W - ew) / 2), int((H - eh) / 2), ew, eh
+        _shot, (hx, _hy, hw, _hh), side = picked
+        if side == "right":
+            right_w = W - (hx + hw) - px(120)
+            return (hx + hw + px(60), int(H * 0.10),
+                    max(right_w, px(400)), int(H * 0.80))
+        return (px(60), int(H * 0.10),
+                max(hx - px(120), px(400)), int(H * 0.80))
 
     def _fit_evidence(w: int, h: int, seg_i: int, *,
                       two_shot: bool) -> tuple[int, int]:
         """The size an evidence image of (w, h) takes in its column."""
         room = _room_plate("panel" if two_shot else "talk",
                            seed=f"{script.ticker}|{seg_i % 3}")
-        shot = pick_shot(reg, "panel", seg_i, used=host_used) if two_shot else None
-        _, _, max_w, max_h = _evidence_box(room, shot, two_shot)
+        _, _, max_w, max_h = _evidence_box(room, seg_i, two_shot)
         ratio = min(max_w / max(w, 1), max_h / max(h, 1))
         return max(int(w * ratio), 1), max(int(h * ratio), 1)
 
@@ -626,22 +679,21 @@ def render_long(
         """
         room = _room_plate("panel" if two_shot else "talk",
                            seed=f"{script.ticker}|{seg_i % 3}")
-        shot = pick_shot(reg, "panel", seg_i, used=host_used) if two_shot else None
         base = (Image.open(room.path).convert("RGB").resize((W, H), Image.LANCZOS)
                 if room is not None
                 else Image.new("RGB", (W, H), role(settings, "ground")))
-        bx, by, max_w, max_h = _evidence_box(room, shot, two_shot)
+        bx, by, max_w, max_h = _evidence_box(room, seg_i, two_shot)
         ew, eh = size
         ex = bx + max(int((max_w - ew) / 2), 0)
         ey = by + max(int((max_h - eh) / 2), 0)
-        if shot is not None and room is not None:
-            placed = place_on_room(room, shot)
-            if placed is not None:
-                k = W / room.delivered[0]
-                fig = Image.open(shot.pose.path).convert("RGBA").resize(
-                    (max(int(placed.width * k), 1), max(int(placed.height * k), 1)),
-                    Image.LANCZOS)
-                base.paste(fig, (int(placed.x * k), int(placed.y * k)), fig)
+        picked = _panel_host(room, seg_i) if two_shot else None
+        if picked is not None:
+            shot, (hx, hy, hw, hh), _side = picked
+            fig = Image.open(shot.pose.path).convert("RGBA").resize(
+                (max(hw, 1), max(hh, 1)), Image.LANCZOS)
+            base.paste(fig, (hx, hy), fig)
+            plates_used.add(shot.key)
+            panel_hosts[seg_i] = shot.key
         base.save(dest)
         return dest, ex, ey
 
@@ -653,6 +705,12 @@ def render_long(
     # and `_panel_plate` both depend on which room angle and which host shot
     # the seed picked.
     panel_rects: dict[int, tuple[int, int, int, int]] = {}
+
+    # Which pose stood in each two-shot, glance and all. Recorded because
+    # ingesting the glances and never cutting to one is a failure the suite
+    # cannot see: it is not an error, it is nine identical straight-to-camera
+    # beats, and the only place it shows is here.
+    panel_hosts: dict[int, str] = {}
 
     def _panel_frame(still: Path, seg_i: int, dest: Path, *,
                      two_shot: bool = True) -> Path:
@@ -1045,6 +1103,13 @@ def render_long(
                             max(int(bw * kx), 1), max(int(bh * ky), 1))
         return None
 
+    # EVERY MARK, AND WHAT IT SOLVED TO. The band warning went to the log,
+    # where nobody reads it: a hairline on the one beat somebody thought was
+    # worth pointing at is invisible in a green suite and invisible in a
+    # terminal that scrolled. It is a property of the cut, so it goes in the
+    # manifest with the rest of them.
+    mark_solves: list[dict] = []
+
     for k, c in enumerate(scribble_cues):
         parsed = parse_scribble_payload(c.payload["value"])
         if parsed is None:
@@ -1060,6 +1125,10 @@ def render_long(
                 (mx, my, mw, mh), mark_warnings = solved
                 for warn in mark_warnings:
                     log.warning("scribble %r: %s", target, warn)
+                mark_solves.append({
+                    "t": round(float(c.t), 2), "style": style.value,
+                    "target": target, "on_screen": True,
+                    "warnings": list(mark_warnings)})
                 # A mark draws outside what it wraps, so a solved canvas larger
                 # than the frame is expected. Several times the frame is not:
                 # that is a target so small the mark blew up around it, and a
@@ -1070,6 +1139,9 @@ def render_long(
             if box is None:
                 log.info("scribble %r: nothing on screen carries it — centred",
                          target)
+                mark_solves.append({
+                    "t": round(float(c.t), 2), "style": style.value,
+                    "target": target, "on_screen": False, "warnings": []})
             placed = (int((W - px(700)) / 2), int((H - px(460)) / 2),
                       px(700), px(460))
         mx, my, sw, sh = placed
@@ -1229,6 +1301,8 @@ def render_long(
              "x": l.x, "y": l.y}
             for l in layers
         ],
+        "marks": mark_solves,
+        "marks_out_of_band": [m for m in mark_solves if m["warnings"]],
         "segment_warnings": seg_warnings,
         "chapter_warnings": chapter_warnings,
         # What the video actually announces, against what the script asked
@@ -1254,6 +1328,10 @@ def render_long(
         # the designed fallback. `blinks: 0` with shots that HAVE the strips
         # is the bug.
         "host_motion": host_motion,
+        # Who stood in each two-shot. A glance key here is the pipeline having
+        # cut him toward the graphic rather than through it.
+        "panel_hosts": panel_hosts,
+        "glances": sorted({k for k in panel_hosts.values() if "-glance-" in k}),
         "blinks": sum(m.get("blinks", 0) for m in host_motion),
         "shots_with_blink": sum(1 for m in host_motion if m.get("has_blink")),
         "shots_with_idle": sum(1 for m in host_motion if m.get("has_idle")),
