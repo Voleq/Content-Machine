@@ -655,7 +655,16 @@ def render_long(
                 shot = instead
         shot = dressed(reg, shot, seed=script.ticker)
         if shot.is_framing:
-            side = "left" if seg_i % 2 else "right"     # his side
+            # WHICH SIDE HE STANDS ON ALTERNATES BETWEEN TWO-SHOTS, NOT
+            # BETWEEN SEGMENTS. Keyed on `seg_i` it looked like it did, and
+            # did not: `pick_shot` steps the same index through a four-pose
+            # bank, so the medium is only ever reached on a segment number
+            # that is odd, and every glance in a twelve-minute cut went the
+            # same way. Counting the framings already placed is independent
+            # of which segment they landed on.
+            placed_before = sum(1 for got in panel_host_memo.values()
+                                if got is not None and got[0].is_framing)
+            side = "left" if placed_before % 2 else "right"   # his side
             spot = frame_shot(shot, (W, H),
                               centre_fw=(0.24 if side == "left" else 0.76))
             if spot is not None:

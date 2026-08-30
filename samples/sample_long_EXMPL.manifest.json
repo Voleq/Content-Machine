@@ -1071,7 +1071,7 @@
         "frames": 210,
         "distinct": 2
       },
-      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=961:540[hfg];[hbg][hfg]overlay=899:270:eof_action=repeat,setsar=1,format=yuv420p[out]"
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=961:540[hfg];[hbg][hfg]overlay=60:270:eof_action=repeat,setsar=1,format=yuv420p[out]"
     },
     {
       "kind": "plate",
@@ -1102,7 +1102,7 @@
     }
   ],
   "segmented": true,
-  "segment_cache_hits": 35,
+  "segment_cache_hits": 32,
   "segment_failures": [],
   "layers": [
     {
@@ -1200,8 +1200,8 @@
       "name": "scribble_0",
       "t_start": 65.6034,
       "t_end": 68.1034,
-      "x": 1451,
-      "y": 413
+      "x": 1449,
+      "y": 433
     },
     {
       "name": "scribble_1",
@@ -1214,8 +1214,8 @@
       "name": "scribble_2",
       "t_start": 145.1269,
       "t_end": 147.6269,
-      "x": 1615,
-      "y": 550
+      "x": 1589,
+      "y": 513
     },
     {
       "name": "scribble_3",
@@ -1263,12 +1263,12 @@
   "marks": [
     {
       "t": 65.6,
-      "style": "scrawl-oval-wide",
+      "style": "scrawl-oval-tight",
+      "asked": "scrawl-oval-wide",
       "target": "Or it doesn't",
       "on_screen": true,
-      "warnings": [
-        "annotations/scrawl-oval-wide solves to a 2.6-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
-      ]
+      "fitted": "scrawl-oval-wide solves to 2.6 against a legible band of 3.2-26.0 on a target 151px wide; scrawl-oval-tight is the same gesture at 8.8",
+      "warnings": []
     },
     {
       "t": 104.0,
@@ -1280,24 +1280,28 @@
     {
       "t": 145.13,
       "style": "bracket-rows",
+      "asked": "bracket-rows",
       "target": "10th",
       "on_screen": true,
-      "warnings": [
-        "annotations/bracket-rows solves to a 1.1-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
-      ]
+      "fitted": "",
+      "warnings": []
     },
     {
       "t": 152.59,
       "style": "box-scrawl",
+      "asked": "box-scrawl",
       "target": "Durable growth",
       "on_screen": true,
+      "fitted": "",
       "warnings": []
     },
     {
       "t": 165.03,
       "style": "strike-out",
+      "asked": "strike-out",
       "target": "212",
       "on_screen": true,
+      "fitted": "",
       "warnings": []
     },
     {
@@ -1308,26 +1312,7 @@
       "warnings": []
     }
   ],
-  "marks_out_of_band": [
-    {
-      "t": 65.6,
-      "style": "scrawl-oval-wide",
-      "target": "Or it doesn't",
-      "on_screen": true,
-      "warnings": [
-        "annotations/scrawl-oval-wide solves to a 2.6-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
-      ]
-    },
-    {
-      "t": 145.13,
-      "style": "bracket-rows",
-      "target": "10th",
-      "on_screen": true,
-      "warnings": [
-        "annotations/bracket-rows solves to a 1.1-unit stroke against a legible band of 3.2\u201326.0 \u2014 the target is small enough that the mark arrives as a hairline. Mark a wider target, or give the beat the full frame."
-      ]
-    }
-  ],
+  "marks_out_of_band": [],
   "segment_warnings": [
     "visual cue at 84.34s deferred to 86.75s \u2014 the previous visual was still being read",
     "visual cue at 87.14s deferred to 97.50s \u2014 the previous visual was still being read",
@@ -1422,7 +1407,8 @@
     "host/hands-in-pockets",
     "host/holding-a-page",
     "host/leaning-on-desk",
-    "host/medium-robe",
+    "host/medium-glance-left",
+    "host/medium-glance-right",
     "host/pointing-down-at-desk",
     "peers/peer-strip-16x9",
     "room/corner-perspective-16x9",
@@ -1661,13 +1647,16 @@
     "21": "host/holding-a-page",
     "26": "host/leaning-on-desk",
     "29": "host/holding-a-page",
-    "31": "host/medium-robe",
-    "35": "host/medium-robe",
+    "31": "host/medium-glance-left",
+    "35": "host/medium-glance-right",
     "36": "host/pointing-down-at-desk",
-    "39": "host/medium-robe",
+    "39": "host/medium-glance-left",
     "40": "host/pointing-down-at-desk"
   },
-  "glances": [],
+  "glances": [
+    "host/medium-glance-left",
+    "host/medium-glance-right"
+  ],
   "blinks": 0,
   "shots_with_blink": 0,
   "shots_with_idle": 16,
