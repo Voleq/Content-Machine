@@ -342,6 +342,35 @@ def frame_shot(host: HostShot, frame: tuple[int, int], *,
 WARDROBE_ALT_ONE_IN = 3
 
 
+def wardrobe_gaps(reg: Registry, rule: dict) -> list[str]:
+    """Poses this outfit is not drawn for. Empty means it dresses a whole cut.
+
+    ONE OUTFIT PER EPISODE IS A PROPERTY OF THE ARTWORK, NOT OF THE PICKER.
+    `host/medium-robe` is one key: there is no robe close-up and no robe
+    figure, so a video that chooses it and then cuts to the close-up — which
+    every chapter does, on the line it rests on — has him in two outfits in
+    one cut. That is a more visible break of the rule than the missing glance
+    is, and it is not something the seed can be careful about.
+
+    So the alt is offered only when the kit can dress every shot in it. This
+    reads the registry rather than a list, which means the day the robe
+    variants ship the outfit turns itself on with no code change.
+    """
+    default, alt = str(rule.get("default") or ""), str(rule.get("alt") or "")
+    if not default or not alt or not alt.startswith(default):
+        return [default or "(no default declared)"]
+    suffix = alt[len(default):]                   # "-robe"
+    gaps = []
+    for key in reg.keys():
+        if not key.startswith("host/"):
+            continue
+        if key.endswith(("-talk", "-idle")) or key.endswith(suffix):
+            continue
+        if f"{key}{suffix}" not in reg:
+            gaps.append(key)
+    return gaps
+
+
 def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
     """The same shot in this episode's clothes.
 
@@ -352,10 +381,21 @@ def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
     own cuff is drawn and not recoloured. So that one choice is the
     pipeline's, and it is made from the video's seed. Picked per shot he
     would change clothes mid-sentence.
+
+    Which is exactly what one key on its own does, over a cut: see
+    `wardrobe_gaps`. Until the alt covers every pose, this returns the shot
+    it was given, and a consistent tee beats a wardrobe that changes halfway
+    through.
     """
     rule = (getattr(reg, "wardrobe", None) or {}).get("medium") or {}
     alt = rule.get("alt")
     if not alt or host.key != rule.get("default"):
+        return host
+    gaps = wardrobe_gaps(reg, rule)
+    if gaps:
+        log.debug("%s dresses %d of the poses in the kit — not offered "
+                  "(missing: %s)", alt, len(reg.host_poses) - len(gaps),
+                  ", ".join(sorted(gaps)[:4]))
         return host
     picked = int(hashlib.sha256(f"wardrobe|{seed}".encode()).hexdigest(), 16)
     if picked % WARDROBE_ALT_ONE_IN != 0 or reg.get(alt) is None:

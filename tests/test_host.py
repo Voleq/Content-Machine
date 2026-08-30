@@ -27,6 +27,7 @@ from pipeline.host import (
     build_host_clip,
     mouth_schedule,
     pick_shot,
+    dressed,
     frame_shot,
     looking_at,
     place_on_room,
@@ -270,6 +271,42 @@ def test_a_pose_with_no_glance_drawn_stays_facing_camera(reg):
     key that is not there."""
     figure = shots(reg, "panel")[0]
     assert looking_at(reg, figure, "left").key == figure.key
+
+
+def test_the_robe_is_not_worn_while_it_dresses_one_shot(reg):
+    """ONE OUTFIT PER EPISODE IS A PROPERTY OF THE ARTWORK.
+
+    `host/medium-robe` is a single key. A video that picks it and then cuts to
+    the close-up — which every chapter does, on the line it rests on — has him
+    in two outfits in one cut, and no amount of care in the picker fixes that.
+    A consistent tee beats a wardrobe that changes halfway through.
+    """
+    from pipeline.host import wardrobe_gaps
+
+    rule = reg.wardrobe.get("medium") or {}
+    assert rule.get("alt") == "host/medium-robe", "the kit stopped declaring it"
+    gaps = wardrobe_gaps(reg, rule)
+    assert "host/close-up" in gaps, \
+        "a robe close-up shipped — the outfit can be worn now, and this test " \
+        "is the thing to delete"
+    shot = _framing(reg, "host/medium")
+    for seed in ("EXMPL", "AAPL", "NVDA", "TSLA", "MSFT", "GOOG", "AMZN"):
+        assert dressed(reg, shot, seed=seed).key == "host/medium"
+
+
+def test_an_outfit_that_covers_every_pose_would_be_worn(reg):
+    """The gate is coverage, not a hard-coded refusal.
+
+    Which matters, because it means the day the robe variants ship the outfit
+    turns itself on with no code change — and if it never ships, nothing here
+    has to remember to keep saying no.
+    """
+    from pipeline.host import wardrobe_gaps
+
+    # A rule whose alt IS the default covers everything, trivially.
+    assert wardrobe_gaps(reg, {"default": "host/medium",
+                               "alt": "host/medium"}) == []
+    assert wardrobe_gaps(reg, {"default": "host/medium", "alt": ""})
 
 
 def test_a_room_that_refuses_a_host_places_nobody(reg):
