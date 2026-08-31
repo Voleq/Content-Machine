@@ -28,7 +28,13 @@ SAMPLES = Path("samples")
 # Stage 3. Its numbers are measured and printed but not enforced, and this
 # exemption comes off with the renderer that earns it. Nothing else may be
 # added to this set without a stage attached.
-NOT_YET_REWRITTEN = {"sample_long_EXMPL.mp4"}
+#
+# Both entries are that renderer, at the two lengths it is driven at: it
+# writes `segments` where the shot engine writes `shots`, which is the same
+# fact this exemption is about. The shot engine's own full-length cut,
+# `sample_long_full_shots_EXMPL.mp4`, is NOT here and is measured like
+# everything else.
+NOT_YET_REWRITTEN = {"sample_long_EXMPL.mp4", "sample_long_full_EXMPL.mp4"}
 
 # No composition in a vertical format may sit unchanged longer than this. It
 # is the loosest ceiling any shot in any of the three templates sets; a
