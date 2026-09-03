@@ -330,6 +330,16 @@ class Registry:
         # ingest (the outfit is baked into the pose art); `medium` is a pair of
         # keys, so the choice is the pipeline's and has to be made once per
         # episode rather than once per shot.
+        #
+        # A REGISTRY WITH NO WARDROBE BLOCK IS STALE, NOT BARE. `roles.json`
+        # has always declared one; the ingest did not stamp it, so this read
+        # `{}` and the robe was unreachable by name — a silent no-op that
+        # looked exactly like a working picker.
+        if "wardrobe" not in raw:
+            raise PlateError(
+                f"{path} declares no `wardrobe` — the kit's roles.json has "
+                f"one, so this registry predates the ingest that stamps it. "
+                f"Re-run `python scripts/ingest_kit.py kit`")
         self.wardrobe: dict[str, dict] = {
             k: v for k, v in (raw.get("wardrobe") or {}).items()
             if isinstance(v, dict)}
@@ -570,11 +580,23 @@ class Registry:
         v = self.host_poses.get(pose_key, {}).get("limit")
         return int(v) if v is not None else None
 
-    def room_for(self, role: str, aspect: str, seed: str = "") -> Plate | None:
+    def room_for(self, role: str, aspect: str, seed: str = "") -> Plate:
+        """One of the angles that fill a room ROLE. Raises if none do.
+
+        THIS USED TO RETURN NONE AND THE CALLER DREW FLAT GROUND. `render_long`
+        asked for a `panel` room for every two-shot and `roles.json` declared
+        no such role, so every two-shot in the format was composed on a plain
+        colour with no room in it at all — for weeks, silently, because a
+        renderer that never fails for want of a backdrop never mentioned it.
+        """
         options = [k for stem in self.room_roles.get(role, ())
                    if (k := self.aspect_key(stem, aspect))]
         if not options:
-            return None
+            known = ", ".join(sorted(self.room_roles)) or "(none)"
+            raise PlateError(
+                f"no room plate fills the role {role!r} at {aspect}. The kit "
+                f"declares {known} — either `roles.json` is missing this role "
+                f"or none of its angles ships in this aspect")
         rng = random.Random(f"{role}|{aspect}|{seed}")
         return self.assets[rng.choice(options)]
 

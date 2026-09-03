@@ -78,7 +78,7 @@ from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import (HostShot, build_host_clip, dressed,
                            frame_shot, looking_at, pick_shot,
-                           place_on_room)
+                           place_on_room, stands_on)
 from pipeline.chart import draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
 from pipeline.models import (
@@ -319,13 +319,13 @@ def render_long(
         return reg.room_for(role_name, aspect, seed=seed or script.ticker)
 
     def _room_still(variant: int, role_name: str = "talk") -> Path:
-        """The room, as a still. The bottom layer when nothing else is on."""
+        """The room, as a still. The bottom layer when nothing else is on.
+
+        `_room_plate` raises when nothing fills the role, and that is the
+        point: this used to paint a flat colour instead, which is how every
+        two-shot in the format went weeks with no room in it.
+        """
         plate = _room_plate(role_name, seed=f"{script.ticker}|{variant % 3}")
-        if plate is None:
-            dest = rdir / "room_missing.png"
-            if not dest.exists():
-                Image.new("RGB", (W, H), role(settings, "ground")).save(dest)
-            return dest
         plates_used.add(plate.key)
         key = (plate.key, "")
         if key not in room_cache:
@@ -346,7 +346,7 @@ def render_long(
         from pipeline.plate_frames import render_still
 
         plate = _room_plate("establish", seed=f"{script.ticker}|{title}")
-        if plate is None or "title" not in plate.slots:
+        if "title" not in plate.slots:
             return _room_still(seg_i, "establish")
         plates_used.add(plate.key)
         dest = rdir / f"chapter_{seg_i}.png"
@@ -530,10 +530,10 @@ def render_long(
             spot_probe = frame_shot(shot_probe, (W, H))
             if spot_probe is not None:
                 target_h = max(spot_probe.height, 1)
-        elif room is not None and shot_probe is not None:
+        elif (room is not None and shot_probe is not None
+                and stands_on(room, shot_probe)):
             placed_probe = place_on_room(room, shot_probe)
-            if placed_probe is not None:
-                target_h = max(int(placed_probe.height * (W / room.delivered[0])), 1)
+            target_h = max(int(placed_probe.height * (W / room.delivered[0])), 1)
         motion: dict = {}
         built = build_host_clip(
             tts.words, seg.start, seg.end, rdir / f"host_{seg_i}.mov",
@@ -562,8 +562,8 @@ def render_long(
             if spot is not None:
                 return (_add_input(["-i", str(clip_path)]),
                         spot.x, spot.y, max(spot.width, 1), max(spot.height, 1))
-        placed = place_on_room(room, shot) if (room and shot) else None
-        if placed is not None:
+        if room is not None and shot is not None and stands_on(room, shot):
+            placed = place_on_room(room, shot)
             k = W / room.delivered[0]
             return (_add_input(["-i", str(clip_path)]),
                     int(placed.x * k), int(placed.y * k),
@@ -672,10 +672,10 @@ def render_long(
                                   "right" if side == "left" else "left")
                 return (shot, (spot.x, spot.y, spot.width, spot.height),
                         "right" if side == "left" else "left")
-        placed = place_on_room(room, shot) if room is not None else None
-        if placed is None:
+        if room is None or not stands_on(room, shot):
             return (shot, (W - px(520), int(H * 0.3), px(460), int(H * 0.7)),
                     "left")
+        placed = place_on_room(room, shot)
         k = W / room.delivered[0]
         box = (int(placed.x * k), int(placed.y * k),
                max(int(placed.width * k), 1), max(int(placed.height * k), 1))

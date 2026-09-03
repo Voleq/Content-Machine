@@ -662,7 +662,7 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     bug. `host.place_on_room` is the contract; this only decides which pose.
     """
     from pipeline.host import (HostShot, dressed, frame_shot,
-                               looking_at, place_on_room)
+                               looking_at, place_on_room, stands_on)
 
     role = shot.host.pose
     # THE SEED IS PER SHOT, NOT PER VIDEO. `to-camera` is the close-up and the
@@ -719,13 +719,19 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
                           centre_fw=(stage[0] + stage[2] / 2) / max(fw, 1))
         if spot is not None:
             box = (spot.x, spot.y, spot.width, spot.height)
-    if box is None and plate is not None and placed is not None:
+    # HE STANDS ON A ROOM, and only on a room: a content plate has no floor
+    # line and no anchor, and `place_on_room` raises rather than guessing at
+    # one. Asked here rather than caught, because a caller that cannot answer
+    # "is there a floor in this shot" has no business compositing a man.
+    if (box is None and plate is not None and placed is not None
+            and plate.slot("host-anchor") is not None
+            and stands_on(plate, host)):
         spot = place_on_room(plate, host)
-        if spot is not None:
-            k = placed[2] / max(plate.delivered[0], 1)
-            box = (placed[0] + int(spot.x * k), placed[1] + int(spot.y * k),
-                   max(int(spot.width * k), 1), max(int(spot.height * k), 1))
-        elif plate.slot(shot.host.slot) is not None:
+        k = placed[2] / max(plate.delivered[0], 1)
+        box = (placed[0] + int(spot.x * k), placed[1] + int(spot.y * k),
+               max(int(spot.width * k), 1), max(int(spot.height * k), 1))
+    if box is None and plate is not None and placed is not None:
+        if plate.slot(shot.host.slot) is not None:
             hx, hy, hw, hh = _slot_in_frame(plate, shot.host.slot, placed)
             k = min(hw / host.pose.delivered[0], hh / host.pose.delivered[1])
             dw = int(host.pose.delivered[0] * k)

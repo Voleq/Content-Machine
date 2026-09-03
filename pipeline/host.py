@@ -198,6 +198,16 @@ def available(reg: Registry, role: str = "open") -> bool:
 # --------------------------------------------------------------------------
 # Placement — the anchor contract.
 # --------------------------------------------------------------------------
+class HostPlacementError(Exception):
+    """The host cannot be placed, and improvising is worse than stopping.
+
+    Everything in this module used to degrade to None so a render never failed
+    for want of a host. That is the right instinct for a MISSING pose and the
+    wrong one for a placement that cannot be solved: the frame still gets
+    drawn, with him at a size and a position nobody chose.
+    """
+
+
 @dataclass(frozen=True)
 class Placement:
     """Where a host cut-out goes on a room, in DELIVERED pixels."""
@@ -209,8 +219,24 @@ class Placement:
     height: int
 
 
-def place_on_room(room: Plate, host: HostShot) -> Placement | None:
-    """Solve the host onto a room's ``host-anchor``. None if either lacks one.
+def stands_on(room: Plate, host: HostShot) -> bool:
+    """Whether this pose is a cut-out this room has a floor for.
+
+    The two DECLARED cases, both of which are data rather than a failure:
+
+    * `room.refuses_host` — `room/high-desk-down` is the camera above the desk
+      and `room/wall-of-calls` is a wall of index cards. Neither has a floor
+      in shot, and both say so in the field rather than leaving it out.
+    * `host.is_framing` — a close-up is a camera distance, not a cut-out.
+      There is no floor line on it to pin.
+
+    A caller asks this and then places him, or frames him, or leaves him out.
+    """
+    return not room.refuses_host and not host.is_framing
+
+
+def place_on_room(room: Plate, host: HostShot) -> Placement:
+    """Solve the host onto a room's ``host-anchor``. Raises rather than shrugs.
 
     The anchor's HEIGHT is the target: scale so that
     ``(host.floorLineY - figure.y)`` equals it, then sit the host's floor line
@@ -223,19 +249,34 @@ def place_on_room(room: Plate, host: HostShot) -> Placement | None:
     height of his feet. Both are ten-to-twenty-percent errors that read as a bad
     composite rather than as a bug, which is why the rule is written on the
     plate and repeated here.
+
+    THIS USED TO RETURN NONE AND THE CALLERS IMPROVISED. A close-up handed to
+    it came back as nothing, and the caller fitted a head into a body-sized
+    anchor; a room with no anchor came back as nothing, and the caller stood
+    him at a guessed column. Both read as compositing bugs and neither was
+    visible until somebody watched the frame. Every one of those is a caller
+    that should have asked `stands_on` first, so every one of them is a raise
+    now and shows up on the first render.
     """
-    # A ROOM MAY REFUSE. `room/high-desk-down` is the camera above the desk and
-    # `room/wall-of-calls` is a wall of index cards: neither has a floor in
-    # shot, and both say so in the field rather than leaving it out. That is
-    # not the same as a plate nobody decided about, which `Registry.verify`
-    # now refuses outright.
-    if room.refuses_host:
-        log.debug("%s declares hostAnchor: false — nobody stands here", room.key)
-        return None
+    if not stands_on(room, host):
+        raise HostPlacementError(
+            f"{host.key} cannot stand on {room.key}: "
+            + ("the room declares hostAnchor: false — nobody stands here"
+               if room.refuses_host else
+               f"{host.key} is a {host.pose.framing or 'framing'}, a camera "
+               f"distance with no floor line — frame it with `frame_shot`")
+            + ". Ask `stands_on` before placing.")
     anchor = room.slot("host-anchor")
     figure = host.pose.slot("figure")
-    if anchor is None or figure is None or host.is_framing:
-        return None
+    if anchor is None:
+        raise HostPlacementError(
+            f"{room.key} declares neither a host-anchor nor `hostAnchor: "
+            f"false` — `Registry.verify` refuses that, so this registry is "
+            f"stale: re-run `python scripts/ingest_kit.py kit`")
+    if figure is None:
+        raise HostPlacementError(
+            f"{host.key} has no `figure` slot, so there is nothing to measure "
+            f"his standing height from")
 
     # Everything in DELIVERED pixels from here. Mixing canvas units and
     # delivered pixels in this calculation is the exportScale trap the manifest
@@ -244,7 +285,9 @@ def place_on_room(room: Plate, host: HostShot) -> Placement | None:
     hs = host.pose.export_scale
     standing = (host.floor_line_y - figure.y) * hs   # delivered px, host plate
     if standing <= 0:
-        return None
+        raise HostPlacementError(
+            f"{host.key}: floorLineY {host.floor_line_y} is at or above the "
+            f"figure box's top ({figure.y}) — he has no height to scale")
 
     ax, ay, aw, ah = anchor.scaled()                 # delivered px, room plate
     scale = ah / standing

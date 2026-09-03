@@ -189,13 +189,19 @@ def _room(settings: Settings, orient: str, size: tuple[int, int]):
     aspect = "16x9" if orient == "wide" else "9x16"
     try:
         reg = load_plates(settings.assets_dir)
-        for role_name in BACKDROP_ROLES:
-            plate = reg.room_for(role_name, aspect, seed=orient)
-            if plate is not None:
-                img = Image.open(plate.path).convert("RGB").resize(size, Image.LANCZOS)
-                return img, plate
     except Exception as exc:  # noqa: BLE001 — a cover is never fatal
-        log.debug("thumbnail: no room plate (%s)", exc)
+        log.debug("thumbnail: no registry (%s)", exc)
+        return Image.new("RGB", size, role(settings, "ground")), None
+    for role_name in BACKDROP_ROLES:
+        # `room_for` raises when nothing fills a role, so this tries the next
+        # one rather than letting the first miss take the whole list with it.
+        try:
+            plate = reg.room_for(role_name, aspect, seed=orient)
+        except Exception as exc:  # noqa: BLE001
+            log.debug("thumbnail: no %s room (%s)", role_name, exc)
+            continue
+        img = Image.open(plate.path).convert("RGB").resize(size, Image.LANCZOS)
+        return img, plate
     return Image.new("RGB", size, role(settings, "ground")), None
 
 
@@ -220,7 +226,7 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
              size: tuple[int, int], orient: str,
              is_move: bool = False) -> Image.Image:
     """One cover. The room, a drawn border, the ticker, the number, Dennis."""
-    from pipeline.host import place_on_room
+    from pipeline.host import place_on_room, stands_on
 
     W, H = size
     room_img, room_plate = _room(settings, orient, size)
@@ -268,10 +274,9 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     fig, shot = _host(settings, f"{ticker}|{orient}")
     if fig is not None:
         fh = int(H * fig_h)
-        if room_plate is not None:
+        if room_plate is not None and stands_on(room_plate, shot):
             placed = place_on_room(room_plate, shot)
-            if placed is not None:
-                fh = max(int(placed.height * (H / room_plate.delivered[1])), 1)
+            fh = max(int(placed.height * (H / room_plate.delivered[1])), 1)
         floor = H - pad
         if room_plate is not None and room_plate.floor_line_y:
             floor = int(room_plate.floor_line_y * (H / room_plate.canvas[1]))

@@ -185,12 +185,16 @@ def test_he_is_never_scaled_to_the_anchor_width(reg):
         "the figure box was fitted to the anchor width"
 
 
-def test_a_room_with_no_anchor_places_nothing(reg):
-    """None, rather than a guess. A host somewhere arbitrary is worse than no
-    host, because nobody looks for a bug in a frame that has a man in it."""
+def test_a_room_with_no_anchor_refuses_rather_than_guessing(reg):
+    """It RAISES. A host somewhere arbitrary is worse than no host, because
+    nobody looks for a bug in a frame that has a man in it — and returning
+    nothing is what let the caller put him somewhere arbitrary."""
+    from pipeline.host import HostPlacementError
+
     shot = shots(reg, "beat")[0]
     plate = reg.require("tables/numbers-sheet-6r-16x9")
-    assert place_on_room(plate, shot) is None
+    with pytest.raises(HostPlacementError, match="host-anchor"):
+        place_on_room(plate, shot)
 
 
 # --------------------------------------------------------------------------
@@ -213,9 +217,14 @@ def test_a_framing_is_never_solved_onto_an_anchor(reg, key):
     pin and no anchor to solve them onto. Fitted into a room's standing spot,
     a close-up is a head the size of a man hovering where his shoes would be.
     """
+    from pipeline.host import HostPlacementError, stands_on
+
     shot = _framing(reg, key)
     assert shot.is_framing
-    assert place_on_room(reg.require("room/wide-16x9"), shot) is None
+    room = reg.require("room/wide-16x9")
+    assert not stands_on(room, shot)
+    with pytest.raises(HostPlacementError, match="camera distance"):
+        place_on_room(room, shot)
 
 
 @pytest.mark.parametrize("frame", ((1920, 1080), (1080, 1920)))
@@ -315,11 +324,64 @@ def test_a_room_that_refuses_a_host_places_nobody(reg):
     neither has a floor in shot and both say so in the field rather than
     leaving it out. Reading a refusal as an omission is how a renderer ends up
     compositing a man onto a surface the camera is above."""
+    from pipeline.host import HostPlacementError, stands_on
+
     figure = shots(reg, "beat")[0]
     for key in ("room/high-desk-down-16x9", "room/wall-of-calls-16x9"):
         room = reg.require(key)
         assert room.refuses_host
-        assert place_on_room(room, figure) is None
+        assert not stands_on(room, figure)
+        with pytest.raises(HostPlacementError, match="nobody stands here"):
+            place_on_room(room, figure)
+
+
+def test_nothing_in_the_placement_chain_returns_nothing(reg):
+    """EVERY BUG IN THIS CHAIN WAS THE SAME SHAPE.
+
+    Something returned None and the caller improvised: a head fitted into a
+    body-sized anchor, a two-shot composed on flat ground, a wardrobe that was
+    unreachable by name. None of the three failed a render and none of them
+    was visible until somebody watched a frame.
+
+    So the contract is that they raise, and this is that contract — asserted
+    on the three signatures rather than on one example of each, because the
+    next one of these will be a function somebody adds.
+    """
+    import inspect
+
+    from pipeline.host import frame_shot, place_on_room
+    from pipeline.plates import Registry
+
+    for fn in (place_on_room, Registry.room_for):
+        ret = inspect.signature(fn).return_annotation
+        assert "None" not in str(ret), (
+            f"{fn.__qualname__} may return None again — a caller will "
+            f"improvise, and the frame will still get drawn")
+    # `frame_shot` is the exception that proves it: it answers a question
+    # ("is this a framing?") the caller is allowed not to know the answer to.
+    assert "None" in str(inspect.signature(frame_shot).return_annotation)
+
+
+def test_a_registry_with_no_wardrobe_block_is_refused(tmp_path):
+    """It reads as a kit that declares no outfits and it is a stale build.
+
+    `roles.json` has always carried the block; the ingest simply did not stamp
+    it, so `reg.wardrobe` was `{}` and `host/medium-robe` could not be reached
+    by name. A silent no-op that looked exactly like a working picker.
+    """
+    import json
+    import shutil
+
+    from pipeline.plates import PlateError, REGISTRY_NAME, load_plates
+
+    src = Settings(_env_file=None).assets_dir / "plates"
+    dest = tmp_path / "plates"
+    dest.mkdir(parents=True)
+    raw = json.loads((src / REGISTRY_NAME).read_text(encoding="utf-8"))
+    raw.pop("wardrobe")
+    (dest / REGISTRY_NAME).write_text(json.dumps(raw), encoding="utf-8")
+    with pytest.raises(PlateError, match="wardrobe"):
+        load_plates(tmp_path)
 
 
 # --------------------------------------------------------------------------
