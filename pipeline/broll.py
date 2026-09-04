@@ -12,7 +12,6 @@ render — every failure path degrades to a deterministic filler.
                             own site (og:image, real mode) -> filler card
     [MEME: key]             owned meme library -> providers (pipeline.memes)
     [CHART: metric]         auto-generated channel-style chart (pipeline.chart)
-    [ASSET: slug]           assets/custom/<slug>.* (validated pre-render)
 
 `[SHOW FILING: file]` stays with the renderer (workspace screenshots,
 normalized + generically labelled by pipeline.company_data).
@@ -40,6 +39,23 @@ from pipeline.memes import MemeManager
 from pipeline.render_common import RenderError, ffprobe_duration, run_ffmpeg
 
 log = logging.getLogger(__name__)
+
+
+def _compact(value: float) -> str:
+    """`400000000` -> `400M`.
+
+    Every figure slot in the kit declares a `maxChars`, and it is a HARD limit:
+    over it the line collides with rules drawn in ink. A raw `{:,.0f}` on a
+    revenue figure is eleven characters against a seven-character axis label,
+    which is how a chart came out with every gridline overset.
+    """
+    n = float(value)
+    for cut, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if abs(n) >= cut:
+            scaled = n / cut
+            return (f"{scaled:.0f}{suffix}" if abs(scaled) >= 10
+                    else f"{scaled:.1f}{suffix}".replace(".0", ""))
+    return f"{n:,.0f}"
 
 # ---------------------------------------------------------------------------
 # The vetted palette: key -> pre-tested Pexels video query. The preferred
@@ -466,7 +482,10 @@ def normalize_image(src: Path, dest: Path, settings: Settings) -> Path:
     from pipeline.rasters import cover_fill_frame
 
     W, H = settings.long_resolution
-    frame = cover_fill_frame(src, W, H)
+    from pipeline.rasters import role
+
+    frame = cover_fill_frame(src, W, H, ground=role(settings, "ground"),
+                             line=role(settings, "structure"))
     dest.parent.mkdir(parents=True, exist_ok=True)
     frame.save(dest, format="PNG")
     return dest
@@ -683,6 +702,10 @@ class ContentManager:
             log.warning("image %r failed (%s) — filler", query, e)
             return self.filler_image(query, kind)
 
+    @staticmethod
+    def _compact_number(value: float) -> str:
+        return _compact(value)
+
     def filler_image(self, query: str, kind: str = "img") -> Visual:
         from PIL import Image, ImageDraw
 
@@ -690,12 +713,14 @@ class ContentManager:
         if not path.exists():
             W, H = self.settings.long_resolution
             path.parent.mkdir(parents=True, exist_ok=True)
-            from pipeline.rasters import BG, BORDER, MUTED
+            from pipeline.rasters import role
 
-            img = Image.new("RGB", (W, H), BG)
+            img = Image.new("RGB", (W, H), role(self.settings, "ground"))
             d = ImageDraw.Draw(img)
-            d.rectangle([16, 16, W - 17, H - 17], outline=BORDER, width=3)
-            d.text((W // 8, H // 2), "( imagery unavailable )", fill=MUTED)
+            d.rectangle([16, 16, W - 17, H - 17],
+                        outline=role(self.settings, "second-ground"), width=3)
+            d.text((W // 8, H // 2), "( imagery unavailable )",
+                   fill=role(self.settings, "neutral-data"))
             img.save(path)
         return Visual(key=query, kind=kind, path=path, is_video=False, source="filler")
 
@@ -714,22 +739,31 @@ class ContentManager:
         hash (style included)."""
         try:
             if metric == "price":
-                from pipeline.chart import (
-                    render_marker_price_chart,
-                    render_price_chart,
-                )
+                from pipeline.chart import render_price_plate
+                from pipeline.plates import load_plates
                 from pipeline.prices import get_price_history
 
+                # There is one price chart now, not a clean one and a "marker"
+                # one. The marker variant existed because the branded card was
+                # too clean to sit beside hand-drawn work; the plate IS
+                # hand-drawn, so `style` no longer selects a second look.
                 series = get_price_history(ticker, self.settings)
-                marker = style == "marker"
                 h = hashlib.sha256(
-                    f"price|{style}|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
+                    f"price|{ticker}|{series.dates[-1]}|{series.closes[-1]}".encode()
                 ).hexdigest()[:20]
                 out = self.settings.cache_dir / "charts" / f"{h}.png"
                 if not out.exists():
+                    out.parent.mkdir(parents=True, exist_ok=True)
                     W, H = self.settings.long_resolution
-                    render = render_marker_price_chart if marker else render_price_chart
-                    render(series, out, self.settings, size=(W, H))
+                    reg = load_plates(self.settings.assets_dir)
+                    tmp = out.with_suffix(".plate.png")
+                    render_price_plate(reg, series, tmp, self.settings,
+                                       aspect="9x16" if H > W else "16x9",
+                                       seed=f"price|{ticker}")
+                    from PIL import Image
+
+                    Image.open(tmp).convert("RGB").resize((W, H)).save(out)
+                    tmp.unlink(missing_ok=True)
                 return Visual(key=metric, kind="chart", path=out, is_video=False,
                               source="generated", attribution="")
 
@@ -740,16 +774,48 @@ class ContentManager:
             if not values or all(v is None for v in values):
                 log.warning("chart metric %r has no history — filler", metric)
                 return self.filler_image(metric, "chart")
-            from pipeline.chart import render_metric_chart
+            from pipeline.chart import render_series
+            from pipeline.plates import PERIOD_COUNT, load_plates
+
+            # SIX PERIODS. Four fiscal years, the last full year, LTM. A shorter
+            # history is padded at the FRONT with empty periods rather than
+            # squeezed into fewer columns: the plate is authored six wide, and
+            # an empty cell means NO DATA, which is information — a missing
+            # column is a lie about which year each figure belongs to.
+            years = ([""] * max(PERIOD_COUNT - len(years), 0) + years)[-PERIOD_COUNT:]
+            values = ([None] * max(PERIOD_COUNT - len(values), 0)
+                      + list(values))[-PERIOD_COUNT:]
 
             label = metric.replace("_", " ").capitalize()
             h = hashlib.sha256(
-                json.dumps([metric, years, values]).encode()
+                json.dumps([metric, years, [str(v) for v in values]]).encode()
             ).hexdigest()[:20]
             out = self.settings.cache_dir / "charts" / f"{h}.png"
             if not out.exists():
-                render_metric_chart(label, years, values, out, self.settings,
-                                    size=self.settings.long_resolution)
+                out.parent.mkdir(parents=True, exist_ok=True)
+                reg = load_plates(self.settings.assets_dir)
+                aspect = ("9x16" if self.settings.long_resolution[0]
+                          < self.settings.long_resolution[1] else "16x9")
+                plate = reg.require(reg.aspect_key("charts/line-6y", aspect))
+                # The axis labels ARE the scale, so they are written from the
+                # same numbers the path is drawn from. Five gridlines, evenly
+                # spaced across the series' own range.
+                present = [float(v) for v in values if v is not None]
+                lo, hi = (min(present), max(present)) if present else (0.0, 1.0)
+                slot_values = {"unit": label}
+                for i, y in enumerate(years, start=1):
+                    slot_values[f"head-{i}"] = str(y)
+                for i in range(5):
+                    slot_values[f"y-{i + 1}"] = _compact(lo + (hi - lo) * i / 4)
+                for i, v in enumerate(values, start=1):
+                    if v is not None:
+                        slot_values[f"value-{i}"] = _compact(float(v))
+                img = render_series(reg, plate,
+                                    [None if v is None else float(v) for v in values],
+                                    self.settings, slot_values=slot_values,
+                                    seed=f"{metric}|{h}")
+                img.convert("RGB").resize(
+                    tuple(self.settings.long_resolution)).save(out)
             return Visual(key=metric, kind="chart", path=out, is_video=False,
                           source="generated", attribution="")
         except (OSError, RenderError) as e:
@@ -757,24 +823,8 @@ class ContentManager:
             return self.filler_image(metric, "chart")
 
     # ------------------------------------------------------------ assets
-    def resolve_asset(self, slug: str) -> Visual:
-        """[ASSET: slug] -> assets/custom/<slug>.* (validated pre-render;
-        if it vanished since, degrade to the filler card, never abort)."""
-        custom = self.settings.assets_dir / "custom"
-        hits = sorted(custom.glob(f"{slug}.*")) if custom.is_dir() else []
-        images = [p for p in hits if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp")]
-        if not images:
-            log.warning("custom asset %r missing at render time — filler", slug)
-            return self.filler_image(slug, "asset")
-        src = images[0]
-        stamp = hashlib.sha256(src.read_bytes()).hexdigest()[:20]
-        norm = self.settings.cache_dir / "custom" / f"{slug}_{stamp}.png"
-        if not norm.exists():
-            normalize_image(src, norm, self.settings)
-        return Visual(key=slug, kind="asset", path=norm, is_video=False,
-                      source="local", attribution="")
-
-    # ------------------------------------------------------- screengrabs
+    # Video containers an operator capture may arrive in. A screen-record is
+    # normally .mp4 or .mov; the other two turn up from screen tools.
     _CLIP_SUFFIXES = (".mp4", ".mov", ".mkv", ".webm")
 
     def resolve_screengrab(self, slug: str) -> Visual:
@@ -823,18 +873,6 @@ class ContentManager:
         return dest
 
     # ------------------------------------------------------------- doodles
-    def resolve_doodle(self, key: str) -> Visual | None:
-        """[DOODLE: key] -> a crude hand-drawn overlay from the owned
-        library. Local-only; a miss returns None (renderer logs + skips)."""
-        from pipeline.doodles import DoodleLibrary
-
-        path = DoodleLibrary(self.settings).resolve(key)
-        if path is None:
-            return None
-        return Visual(key=key, kind="doodle", path=path, is_video=False,
-                      source="local", attribution="")
-
-    # ---------------------------------------------------------- dispatch
     def resolve_visual(self, kind: str, value: str, *, ticker: str = "",
                        company_data=None, website: str = "",
                        choice: int = 0, style: str = "clean") -> Visual:
@@ -850,8 +888,6 @@ class ContentManager:
                                       company_data=company_data, style=style)
         if kind == "screengrab":
             return self.resolve_screengrab(value)
-        if kind == "asset":
-            return self.resolve_asset(value)
         raise ValueError(f"unknown visual kind {kind!r}")
 
     def plan(self, script, *, company_data=None,
@@ -876,8 +912,6 @@ class ContentManager:
                 kind = "chart"
             elif e.type is TagType.SCREENGRAB:
                 kind = "screengrab"
-            elif e.type is TagType.ASSET:
-                kind = "asset"
             else:
                 continue
             style = e.style or "clean"

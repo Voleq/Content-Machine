@@ -219,15 +219,40 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
 # Metric -> the words a script uses for it. Only metrics with an unambiguous
 # spoken name are checked; a vague one would produce noise, and a noisy gate
 # gets ignored, which is worse than no gate.
+# The key on the LEFT is the field the export actually carries, and getting
+# that wrong is silent: `_series_for` returns nothing for a name the sheet does
+# not use, and a metric with no series is skipped rather than reported. "Free
+# cash flow" was checked against `free_cash_flow` for as long as the sheet has
+# called it `fcf`, so the most quoted line in a cash-flow chapter went through
+# unexamined.
+#
+# The list is longer than the spoken check strictly needs because the ON-SCREEN
+# check reads row labels off a numbers sheet, and a sheet's rows are the
+# export's own rows: gross profit, operating income, EBITDA, stock comp. A
+# metric missing here is a row nothing verifies.
 _METRIC_WORDS = {
     "revenue": ("revenue", "sales", "top line"),
+    "gross_profit": ("gross profit",),
+    "operating_income": ("operating income", "operating profit", "ebit"),
+    "ebitda": ("ebitda",),
     "net_income": ("net income", "bottom line", "earnings"),
-    "free_cash_flow": ("free cash flow", "fcf"),
-    "shares_outstanding": ("share count", "shares outstanding", "diluted shares"),
+    "fcf": ("free cash flow", "fcf"),
+    "operating_cf": ("cash from operations", "operating cash flow"),
+    "capex": ("capex", "capital expenditure"),
+    "sbc": ("stock comp", "stock-based compensation", "share-based comp"),
+    "diluted_shares": ("share count", "shares outstanding", "diluted shares"),
     "total_debt": ("total debt", "debt load"),
-    "cash": ("cash", "cash on hand", "cash balance"),
+    "net_debt": ("net debt",),
+    "total_equity": ("total equity", "book value"),
+    # NOT a bare "cash": that word is in "free cash flow", "cash from
+    # operations", "cash used investing" and "net change in cash", and this
+    # entry is the BALANCE. Matching a flow against a balance blocks a correct
+    # sheet, which is the one thing a blocking gate must never do.
+    "cash": ("cash on hand", "cash balance", "cash and equivalents",
+             "cash and cash equivalents"),
     "gross_margin": ("gross margin",),
     "operating_margin": ("operating margin",),
+    "net_margin": ("net margin",),
 }
 
 # Spoken figures are rounded ("four hundred million" for 400.2M), so a claim
@@ -264,6 +289,34 @@ def _series_for(data, field_name: str) -> list[float]:
         if isinstance(latest, (int, float)):
             values.append(float(latest))
     return values
+
+
+def _history_for(data, field_name: str) -> list[float]:
+    """The ordered history series alone — no dashboard value appended.
+
+    `_series_for` is a bag of everything the export knows about a metric, which
+    is the right shape for "is this figure real" and the wrong one for "is this
+    figure in the right column".
+    """
+    if data is None:
+        return []
+    getter = getattr(data, "history_for", None)
+    series = None
+    if callable(getter):
+        try:
+            series = getter(field_name)
+        except Exception:                          # noqa: BLE001
+            series = None
+    if series is None:
+        hist = getattr(data, "history", None)
+        if hasattr(hist, "get"):
+            series = hist.get(field_name)
+        elif hasattr(data, "get"):
+            series = (data.get("history") or {}).get(field_name)
+    if not isinstance(series, (list, tuple)):
+        return []
+    return [float(v) for v in series if isinstance(v, (int, float))] \
+        if all(isinstance(v, (int, float)) for v in series) else []
 
 
 def _matches(value: float, known: list[float]) -> bool:
@@ -330,10 +383,143 @@ _VENDORS = ("refinitiv", "lseg", "eikon", "bloomberg terminal", "capital iq",
             "factset")
 
 
+# --------------------------------------------------------------------------
+# The two v2 rules that are checkable.
+#
+# "No construction twice in one script. One reframe, one simile chain, one
+# bathos drop, one fake-out. Maximum. ... This is checkable by the voice
+# linter: pattern-match the construction and flag the repeat."
+#
+# Three of the four have a surface form precise enough to match. BATHOS DOES
+# NOT, and it is deliberately absent rather than approximated: its signature is
+# a grand setup deflated by something mundane, which has no lexical marker at
+# all, and a fuzzy matcher for it would fire on ordinary sentences. A check
+# that cries wolf gets switched off, and takes the three accurate ones with it.
+_CONSTRUCTIONS: tuple[tuple[str, str, "re.Pattern[str]"], ...] = (
+    ("reframe", "that's not X, it's Y",
+     re.compile(r"\bth(?:at|is|at's|is's|ese|ose)?\s*(?:'s|is|isn't|is not|"
+                r"was|wasn't)?\s*n(?:o|ot)\b[^.?!]{2,60}?[,;]\s*"
+                r"(?:it|that|this)\s*(?:'s|is|was)\b", re.I)),
+    ("simile", "a flat simile",
+     re.compile(r"\b(?:like|as if)\s+(?:a|an|the|it|you|they|somebody|"
+                r"someone|watching)\b", re.I)),
+    ("fake-out", "the sincere fake-out",
+     re.compile(r"\[BEAT\]\s*(?:it|that|and it|but it)\s*(?:'s|is|has|"
+                r"was)\s+(?:also|still|been)\b", re.I)),
+)
+
+# A TURN, for the twenty-second rule. Not "anything interesting happened" —
+# the four things the bible names: an aside, a number anchored, a mode shift,
+# a question. A bare figure is not one of them: this register states figures
+# continuously, so counting them as turns would mean the check never fires,
+# which is the same as not having it. What makes an anchored number a turn is
+# the anchor, and the anchor is addressed to somebody.
+_TURN = re.compile(r"[?]|\[(?:BEAT|SIGH|DRY|FLAT)\]|"
+                   r"\b(?:i|i'm|i've|i'd|i'll|me|my|you|you're|you've|you'd|"
+                   r"you'll|your|we|we're|us|our)\b", re.I)
+
+# Seconds of unbroken exposition before it is worth saying so. The bible says
+# "about twenty", and about is the operative word — 24 gives a long sentence
+# room to finish rather than flagging the one that runs two words over.
+UNBROKEN_LIMIT_S = 24.0
+
+# Spoken words per second. The read is slow and the number only has to be
+# right enough to turn a word count into "about twenty seconds".
+SPOKEN_WPS = 2.4
+
+def _unbroken_runs(narration: str) -> list[tuple[int, float, str]]:
+    """Stretches with no turn in them: (line, seconds, opening words).
+
+    Counted word by word rather than sentence by sentence. A turn three words
+    into a forty-word sentence ends the run there — attributing the rest of
+    that sentence to the stretch before it reports a stretch that was never
+    spoken, and the number in the message has to be one the writer can hear.
+    """
+    runs: list[tuple[int, float, str]] = []
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        run: list[str] = []
+        for word in line.split():
+            run.append(word)
+            if not _TURN.search(word):
+                continue
+            # The turn's own word ends the run and does not start the next.
+            secs = (len(run) - 1) / SPOKEN_WPS
+            if secs > UNBROKEN_LIMIT_S:
+                runs.append((lineno, secs, " ".join(run[:12])))
+            run = []
+        if len(run) / SPOKEN_WPS > UNBROKEN_LIMIT_S:
+            runs.append((lineno, len(run) / SPOKEN_WPS, " ".join(run[:12])))
+    return runs
+
+
+def delivery_text(script) -> str:
+    """The narration with its PACING marks put back where the writer wrote them.
+
+    `script.narration` is what the voice reads, so the tokenizer has taken
+    every bracket out of it — including `[BEAT]`, `[SIGH]`, `[DRY]` and
+    `[FLAT]`, which are not visuals but punctuation the writer placed. Linting
+    the stripped text makes a beat invisible, so a stretch broken by one reads
+    as unbroken and the sincere fake-out — whose whole shape is a concession, a
+    beat, then a short clause — cannot be recognised at all.
+
+    Not the RAW script: that carries `[PLATE]` payloads full of prose, and a
+    caption reading "like a memoir title" is not a simile Dennis spoke.
+    """
+    narration = getattr(script, "narration", None) or getattr(
+        script, "audio_script", "")
+    marks = {"BEAT", "SIGH", "DRY", "FLAT"}
+    events = [e for e in (getattr(script, "events", None) or [])
+              if str(getattr(getattr(e, "type", None), "value", "")).upper() in marks]
+    if not events:
+        return narration
+    out = []
+    at = 0
+    for e in sorted(events, key=lambda e: getattr(e, "char_offset", 0)):
+        cut = max(0, min(int(getattr(e, "char_offset", 0)), len(narration)))
+        if cut < at:
+            continue
+        out.append(narration[at:cut])
+        out.append(f" [{str(e.type.value).upper()}] ")
+        at = cut
+    out.append(narration[at:])
+    return "".join(out)
+
+
 def voice_lint(narration: str) -> list[Finding]:
     """Flags what the bible forbids. Never a joke quota — density is the
-    writer's call and a linter that policed it would flatten the voice."""
+    writer's call and a linter that policed it would flatten the voice.
+
+    Two of the flags are structural rather than lexical, and they are the two
+    the bible asks for by name: a construction used twice in one script, and a
+    stretch of explanation with no turn in it. Both are warnings. The first
+    repeat of a good construction is not a defect that should stop a render —
+    it is the thing the writer should go and fix, and saying which line it was
+    is the whole use of saying it at all.
+    """
     findings: list[Finding] = []
+
+    # A construction used a second time. The FIRST is the licence; the second
+    # is the finding, and it carries both line numbers so the writer can see
+    # what it is repeating rather than hunting for it.
+    for name, described, pattern in _CONSTRUCTIONS:
+        hits = [(n, ln) for n, ln in enumerate(narration.splitlines(), 1)
+                if pattern.search(ln)]
+        for lineno, line in hits[1:]:
+            findings.append(Finding(
+                gate="voice", severity="warn", line=lineno,
+                message=(f"{described} again — one {name} per script. "
+                         f"The first is on line {hits[0][0]}; no individual "
+                         f"one is bad, the repeat is what reads as tired"),
+                excerpt=line.strip()[:140]))
+
+    for lineno, secs, opening in _unbroken_runs(narration):
+        findings.append(Finding(
+            gate="voice", severity="warn", line=lineno,
+            message=(f"about {secs:.0f} seconds of explanation with no turn in "
+                     f"it — an aside, a number anchored, a mode shift or a "
+                     f"question, roughly every twenty"),
+            excerpt=opening.strip()[:140]))
+
     for lineno, line in enumerate(narration.splitlines(), 1):
         low = line.lower()
         for word in _HYPE:
@@ -360,6 +546,217 @@ def voice_lint(narration: str) -> list[Finding]:
                 message="exclamation mark — the register is flat",
                 excerpt=line.strip()[:140]))
     return findings
+
+
+# --------------------------------------------------------------------------
+# Figures that reach the screen.
+# --------------------------------------------------------------------------
+
+# What a plate's `unit=` slot means as a multiplier. The director writes `400`
+# under `unit=$M`, and the export holds 400,000,000; comparing those raw
+# rejects every correct sheet in the library.
+_UNIT_SCALE: tuple[tuple[str, float], ...] = (
+    ("$b", 1e9), ("bn", 1e9), ("billion", 1e9),
+    ("$m", 1e6), ("mm", 1e6), ("million", 1e6),
+    ("$k", 1e3), ("thousand", 1e3),
+)
+
+
+def _declared_unit(values: dict[str, str]) -> float | None:
+    """The multiplier the plate declares, or None when it declares none.
+
+    Looked for in `unit` AND `kicker`, because the kit puts it in both:
+    `tables/numbers-sheet` has a `unit` slot reading "$M", and
+    `structure/row-spotlight` carries it in the kicker as "NET INCOME, $M".
+    Reading only `unit` made every spotlight compare millions against dollars,
+    and every correct one of them blocked.
+    """
+    for slot in ("unit", "kicker", "head-move"):
+        low = str(values.get(slot) or "").strip().lower()
+        for token, mult in _UNIT_SCALE:
+            if token in low:
+                return mult
+    return None
+
+
+# The families a numbers plate uses for its rows, and where each finds its
+# label. Read off the slot names the FILL produced rather than off the plate,
+# because what is being checked is what the director actually wrote.
+_ROW_STEMS = ("cell", "row", "subtotal", "total")
+
+
+def _row_figures(values: dict[str, str]) -> list[tuple[str, list[str]]]:
+    """(label, its figures) for every labelled row the director filled.
+
+    Row keys are whatever sits between the stem and the final column index, so
+    one rule covers all three shapes the library uses: `cell-3-1 … cell-3-6`
+    under `label-3` on a plain sheet, `cell-2-1-1 … cell-2-1-6` under
+    `label-2-1` on a grouped cash-flow statement, and a single unindexed row's
+    `cell-1 … cell-6` under `label`. Subtotals and the total line are rows too
+    — "cash from operations" is the most quoted line on a cash-flow sheet, and
+    it is a subtotal.
+    """
+    rows: dict[tuple[str, str], list[tuple[int, str]]] = {}
+    labels: dict[tuple[str, str], str] = {}
+    for name, raw in values.items():
+        parts = name.split("-")
+        stem, rest = parts[0], parts[1:]
+        if stem == "label":
+            labels[("cell", "-".join(rest))] = str(raw)
+            continue
+        if stem not in _ROW_STEMS:
+            continue
+        if rest and rest[0] == "label":
+            labels[(stem, "-".join(rest[1:]))] = str(raw)
+            continue
+        if not rest or not rest[-1].isdigit():
+            continue
+        rows.setdefault((stem, "-".join(rest[:-1])), []).append(
+            (int(rest[-1]), str(raw)))
+
+    out = []
+    for (stem, key), cells in rows.items():
+        label = (labels.get((stem, key)) or labels.get((stem, ""))
+                 or labels.get(("cell", key)) or "")
+        if label:
+            out.append((label, [v for _, v in sorted(cells)]))
+    return out
+
+
+def _cell_value(raw: str) -> float | None:
+    """A plate cell as a signed number, or None when it holds no figure.
+
+    NOT `extract_numbers`, which is built for prose and returns the magnitude:
+    it reads "-8" as eight, so a loss compared clean against a profit and every
+    negative row on every sheet passed. A cell is not a sentence — it is a
+    figure the director typed, and it is read as one.
+    """
+    text = str(raw or "").strip()
+    if not text:
+        return None                     # an empty cell means NO DATA
+    cleaned = (text.replace(",", "").replace("$", "").replace("%", "")
+                   .replace("\u2212", "-").replace("\u2013", "-").strip())
+    mult = 1.0
+    if cleaned[-1:].lower() in "kmbt":
+        mult = {"k": 1e3, "m": 1e6, "b": 1e9, "t": 1e12}[cleaned[-1].lower()]
+        cleaned = cleaned[:-1]
+    if cleaned.startswith("(") and cleaned.endswith(")"):
+        cleaned = "-" + cleaned[1:-1]   # accountants' parentheses are a minus
+    try:
+        return float(cleaned) * mult
+    except ValueError:
+        return None
+
+
+def onscreen_fact_check(script, data) -> list[Finding]:
+    """Figures written into a plate, checked against the export. BLOCKING.
+
+    "The register is sharper and more confident than v1, which raises what an
+    error costs. A dry channel that gets a number wrong looks careless; a
+    sharp one that gets a number wrong looks like it was never checking."
+
+    So this blocks where the spoken check warns, and the asymmetry is the
+    point rather than an inconsistency: a spoken figure is a sentence a viewer
+    hears once and a linter can misread, while a figure in a `[PLATE]` slot is
+    a number the director typed, held on screen for six seconds, and
+    screenshotted by anyone who disagrees with it. The voice gets to be as
+    confident as it likes precisely because these were verified before
+    anything rendered.
+    """
+    findings: list[Finding] = []
+    if data is None:
+        return findings
+    known = {m: _series_for(data, m) for m in _METRIC_WORDS}
+
+    for event in getattr(script, "events", None) or []:
+        values = dict(getattr(event, "values", None) or {})
+        if not values:
+            continue
+        declared = _declared_unit(values)
+        scale = declared if declared is not None else 1.0
+        for label, figures in _row_figures(values):
+            low = str(label).lower()
+            metric = next((m for m, words in _METRIC_WORDS.items()
+                           if any(w in low for w in words)), "")
+            series = known.get(metric) or []
+            if not metric or not series:
+                continue
+
+            # POSITION MATTERS ON A SHEET. Six cells under six period heads
+            # against a six-period history is a column-by-column comparison,
+            # and only that catches a figure put under the wrong year — a
+            # membership test passes every one of those, because the number is
+            # in the series, just not there. Where the lengths disagree the
+            # test falls back to membership rather than guessing an alignment.
+            history = _history_for(data, metric)
+            aligned = history if len(history) == len(figures) else []
+
+            for i, figure in enumerate(figures):
+                stated = _cell_value(figure)
+                if stated is None:
+                    continue            # an empty cell means NO DATA
+                stated *= scale
+                if aligned:
+                    want = aligned[i]
+                    # With a unit declared the comparison is exact. Without
+                    # one the plate has not said what "212" means, so the
+                    # scale-tolerant test is the only honest one — still
+                    # against THAT column, which is the half that matters.
+                    hit = (abs(stated - want) <= max(abs(want) * _TOLERANCE, 1e-9)
+                           if declared is not None else _matches(stated, [want]))
+                    if hit:
+                        continue
+                    expected = f"{want:,.0f} in that column"
+                else:
+                    if _matches(stated, series):
+                        continue
+                    expected = ", ".join(f"{v:,.0f}" for v in series[:6])
+                findings.append(Finding(
+                    gate="fact-check", severity="block",
+                    message=(f"“{figure}” is on screen for {metric} and the "
+                             f"data has {expected} — a figure that reaches the "
+                             f"frame is verified before anything renders"),
+                    excerpt=f"{label}: {', '.join(figures)}"[:140]))
+    return findings
+
+
+# --------------------------------------------------------------------------
+# The confession ledger, checked.
+# --------------------------------------------------------------------------
+
+
+def confession_lint(script, settings: Settings) -> list[Finding]:
+    """The same admission, told twice.
+
+    "A repetition rule someone has to remember will fail; a ledger makes it
+    impossible." The ledger is the mechanism and this is the reading of it: a
+    warning, naming the video the story was already told in, so a writer who
+    genuinely means to return to an old loss can — they just have to mean it.
+
+    Nothing here asks for a confession. Roughly one video in three carries one
+    and the writing prompt is where that gets said; a gate that nagged for one
+    every time would rebuild the rule the bible deleted.
+    """
+    said = getattr(script, "confession", None)
+    if said is None or not getattr(said, "text", ""):
+        return []
+    from pipeline.standing import ConfessionLedger
+
+    try:
+        prior = ConfessionLedger(settings).repeats(said.text)
+    except Exception as exc:                       # noqa: BLE001 — never fatal
+        log.debug("confession ledger unreadable (%s)", exc)
+        return []
+    out: list[Finding] = []
+    for c in prior:
+        where = c.ticker or "a previous video"
+        when = f" on {c.workdate}" if c.workdate else ""
+        out.append(Finding(
+            gate="confession", severity="warn",
+            message=(f"this admission was already made about {where}{when} — "
+                     f"the ledger exists so the same story is not told twice"),
+            excerpt=c.text[:140]))
+    return out
 
 
 # --------------------------------------------------------------------------
@@ -485,274 +882,304 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
 # Kit doctor.
 # --------------------------------------------------------------------------
 
+# Families the renderer reaches for itself. A director writes `[PLATE:
+# tables/numbers-sheet-4r]`; nobody writes `[PLATE: room/wide]` or `[PLATE:
+# annotations/strike-out]` — the set, the host, the marks, the row band and
+# the frame a photograph goes in are the renderer's, and the chapter curation
+# lists them as universal for a different reason.
+RENDERER_OWNED_FAMILIES = ("room", "host", "annotations", "overlays", "frames")
+
+
+def reachable_plates(reg) -> dict[str, set[str]]:
+    """Which plates anything can actually put on screen, and by what route.
+
+    `room/surface` was in the kit for a delta and no template named it, so the
+    one angle with no floor in shot was ingested and never cut to. That is a
+    CLASS of defect rather than one plate: artwork arrives keyed and curated,
+    and nothing checks that a route to the screen exists. Finding them one at
+    a time, by noticing, is not a method.
+
+    Three routes, and the difference between them matters to whoever reads
+    the report:
+
+    * ``template`` — a shot file names it, or a role it fills does. This is
+      the format putting it on screen with no help from a writer.
+    * ``tag``      — the chapter-type curation offers it, so a director can
+      write a `[PLATE]` for it. Reachable, but only if somebody chooses it.
+    * ``code``     — the renderer reaches for it by name: the annotations a
+      SCRIBBLE resolves to, the frame a photograph gets, the band that lights
+      under a row. No template mentions these and none should.
+
+    What is in none of the three is drawn artwork with no way to the screen.
+    """
+    from pipeline.plates import CHAPTER_TYPES
+    from pipeline.rasters import SCRIBBLE_MARKS
+    from pipeline.shots import available_formats, load_format
+
+    by_template: set[str] = set()
+    by_tag: set[str] = set()
+
+    def _pose(key: str) -> None:
+        by_template.add(key)
+        # A pose is three strips and, for a framing, two glances the pipeline
+        # picks itself. Reaching the base reaches all of them.
+        for suffix in ("-talk", "-idle", "-glance-left", "-glance-right",
+                       "-glance-left-talk", "-glance-left-idle",
+                       "-glance-right-talk", "-glance-right-idle"):
+            if f"{key}{suffix}" in reg:
+                by_template.add(f"{key}{suffix}")
+
+    def _named(name: str, aspect: str) -> None:
+        from pipeline.compose import resolve_plate
+
+        if name.startswith("room/"):
+            role = name.split("/", 1)[1]
+            if role in reg.room_roles:
+                for stem in reg.room_roles[role]:
+                    for a in ("16x9", "9x16"):
+                        key = reg.aspect_key(stem, a)
+                        if key:
+                            by_template.add(key)
+                return
+        got = resolve_plate(reg, name, aspect)
+        if got is not None:
+            by_template.add(got.key)
+
+    for fmt_name in available_formats():
+        fmt = load_format(fmt_name)
+        for shot in fmt.shots:
+            if shot.plate:
+                _named(shot.plate, fmt.aspect)
+            for src in (shot.bind or {}).values():
+                src = str(src).lstrip("?")
+                if src.startswith("plate."):
+                    _named(src.split(".", 1)[1], fmt.aspect)
+            if shot.host:
+                role = shot.host.pose
+                if role in reg:
+                    _pose(role)
+                for key in reg.host_roles.get(role, ()):
+                    if key in reg:
+                        _pose(key)
+
+    for ctype in CHAPTER_TYPES:
+        by_tag |= set(reg.plates_for_chapter(ctype))
+
+    # The three are counted INDEPENDENTLY. Computing `code` only for what the
+    # other two missed made it read zero and hid that the annotations and the
+    # media frames have no other route: a reader needs to know which of the
+    # three reaches a plate, not which one got there first.
+    by_code: set[str] = set()
+    source = "\n".join(
+        path.read_text(encoding="utf-8", errors="ignore")
+        for path in sorted(Path("pipeline").glob("*.py")))
+    for key, _stroke in SCRIBBLE_MARKS.values():
+        if key in reg:
+            by_code.add(key)
+    for key in reg.keys():
+        # Anchored on the OPENING quote, so `f"frames/capture-frame-{aspect}"`
+        # counts and a key named in a comment does not.
+        stem = key.rsplit("-16x9", 1)[0].rsplit("-9x16", 1)[0]
+        if any(f'{q}{name}' in source
+               for q in ('"', "'") for name in ({key, stem})):
+            by_code.add(key)
+        # A plate another plate's SLOT names. `overlays/row-band` is reached
+        # by neither a template nor a source literal: a sheet's row slot
+        # declares it as its `overlay`, and the renderer follows that.
+        for other in reg.assets.values():
+            if any(slot.overlay == key for slot in other.slots.values()):
+                by_code.add(key)
+                break
+
+    # A `[PLATE]` TAG CANNOT NAME THE SET OR THE MAN STANDING IN IT. The
+    # chapter curation lists `room/`, `host/`, `annotations/`, `overlays/` and
+    # `frames/` as universal because every chapter has a set, a host, marks and
+    # a way to hold a photograph — but a director does not write a [PLATE] for
+    # any of them, the renderer does. Counting them as tag-reachable is what
+    # made this report say every plate had a route when `room/high-desk-down`
+    # demonstrably did not.
+    by_tag -= {k for k in by_tag
+               if k.split("/", 1)[0] in RENDERER_OWNED_FAMILIES}
+    return {"template": by_template, "tag": by_tag, "code": by_code}
+
 
 def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
-    """What the kit could not answer, and what nothing has ever asked for.
+    """What the kit could not answer, and what it is never asked for.
 
-    Three reports, and the second and third are the ones that grow the
-    library:
+    Three questions, and the gap list is the input to the next design batch:
 
-    1. **Unresolved tag keys** — a script named artwork that does not exist.
-       For a card tag that means the blank layout carries the beat; for
-       anything else the beat is lost.
-    2. **Assets never used across recent renders** — the honest inverse. It
-       turns "the library feels thin" into a list of drawings that exist and
-       have never been on screen, which is a different problem with a
-       different fix.
-    3. **PNGs with no registry entry** — the shape that let twenty contact
-       sheets become addressable assets.
-
-    This is how the library grows from real gaps rather than guesses: the
-    unresolved list says what to draw next, the unused list says what to stop
-    drawing, and the unregistered list says what was delivered wrong.
+    1. **Unresolved plate names** — a `[PLATE]` the director wrote that does not
+       resolve. Every one is a beat that would draw an empty frame.
+    2. **Plates never reached** across recent renders. Not "unused this video" —
+       one script touching six plates says nothing, six weeks of them says
+       plenty.
+    3. **Slots a script left unfilled.** A plate with an empty box renders as a
+       blank area, and an empty cell in this library means NO DATA, so this
+       reports rather than blocks — but a plate filling none of its slots is a
+       bordered rectangle nobody meant to ship.
     """
-    from pipeline.kit import load_kit, load_variant_ledger
-    from pipeline.models import KIT_TAG_BLANKS, KIT_TAG_FAMILIES
+    from pipeline.models import TagType
+    from pipeline.plate_tags import check_bound
+    from pipeline.plates import PlateError, load_plates, load_variant_ledger
 
-    kit = load_kit(settings.assets_dir)
     findings: list[Finding] = []
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError as exc:
+        return [Finding(gate="kit", severity="block", message=str(exc))], {
+            "used": [], "unresolved_keys": [], "never_used": [],
+            "never_used_count": 0, "unfilled": [], "kit_size": 0,
+        }
+
     used: set[str] = set()
     unresolved: list[str] = []
+    unfilled: list[str] = []
 
     events = list(getattr(script, "events", [])
                   or getattr(script, "inline_events", []))
     for e in events:
-        families = KIT_TAG_FAMILIES.get(e.type)
-        if families is None:
+        if e.type is not TagType.PLATE:
             continue
-        asset = kit.resolve_asset(families, e.payload, placeable=True)
-        if asset is not None:
-            used.add(asset.key)
+        fill = check_bound(reg, e.payload, e.values)
+        if not fill.ok:
+            unresolved.append(f"[PLATE: {fill.name}]")
+            for problem in fill.problems:
+                findings.append(Finding(gate="kit", severity="block",
+                                        message=problem))
             continue
-        # Artwork exists for this beat and cannot be placed: every card that
-        # answers the key keeps baked furniture the frame draws itself. That is
-        # not "worth drawing if it recurs" — the beat has nowhere to go, and a
-        # silent fallback to a stuck card is how the disclaimer reached the
-        # sample twice. It blocks, and it names the beat.
-        blocked = kit.resolve_asset(families, e.payload)
-        if blocked is not None:
-            findings.append(Finding(
-                gate="kit", severity="block",
-                message=(f"[{e.type.value}: {e.payload}] has no eligible card: "
-                         f"{blocked.key} carries the ticker chip and disclaimer "
-                         f"painted into it and the strip cannot lift them, so "
-                         f"placing it prints both twice. Artwork owed — the "
-                         f"same card without the frame furniture "
-                         f"(`/kit doctor` lists the batch).")))
-            continue
-        unresolved.append(f"[{e.type.value}: {e.payload}]")
-        blank = KIT_TAG_BLANKS.get(e.type)
-        if blank and blank in kit:
-            findings.append(Finding(
-                gate="kit", severity="warn",
-                message=(f"[{e.type.value}: {e.payload}] has no named artwork "
-                         f"in {' / '.join(families)} — the blank layout will "
-                         f"carry it. Worth drawing if it recurs.")))
-        else:
-            findings.append(Finding(
-                gate="kit", severity="warn",
-                message=(f"[{e.type.value}: {e.payload}] is not in "
-                         f"{' / '.join(families)} — the beat will be skipped")))
+        used.add(fill.key)
+        for w in fill.warnings:
+            unfilled.append(w)
+            findings.append(Finding(gate="kit", severity="warn", message=w))
 
-    # Never used, across THIS script and the recent-render ledger. One script
-    # touching six assets says nothing; six weeks of them says plenty.
     ledger = load_variant_ledger(settings)
     ever_used = used | ledger.all_used()
-    # Only independently pickable assets count. `family()` already hides
-    # aliases and -talk twins, and neither is a drawing anybody could have
-    # used on its own — counting them would inflate the gap.
-    pickable = [k for f in kit.families() for k in kit.family(f)]
-    never_used = [k for k in pickable if k not in ever_used]
+    never_used = [k for k in reg.keys() if k not in ever_used]
+    renders_seen = len(ledger.recent("render"))
 
-    unregistered = [p for p in kit.verify() if "no registry entry" in p]
-    for p in unregistered:
+    # WHAT NOTHING CAN REACH, which is a different question from what nothing
+    # HAS reached: an empty ledger makes the list above the whole library,
+    # and this one is true on a fresh checkout with no renders behind it.
+    routes = reachable_plates(reg)
+    reached = routes["template"] | routes["tag"] | routes["code"]
+    unreachable = sorted(k for k in reg.keys() if k not in reached)
+    no_template = sorted(k for k in reg.keys() if k not in routes["template"])
+    for key in unreachable:
         findings.append(Finding(
             gate="kit", severity="warn",
-            message=f"{p} — it is not addressable and never will be"))
-
-    stuck = sorted(kit.furniture_stuck())
-    if stuck:
-        drawings = _furniture_work_order(kit)
-        findings.append(Finding(
-            gate="kit", severity="warn",
-            message=(f"{sum(len(v) for v in drawings.values())} chapter "
-                     f"drawing(s) carry the ticker chip and disclaimer painted "
-                     f"in, and the strip cannot lift them — they are OUT of "
-                     f"selection until Design redraws them, so the rotation is "
-                     f"that much shorter. `/kit doctor` lists the batch by "
-                     f"family. e.g. {', '.join(stuck[:3])}")))
+            message=f"{key} is drawn and no template, chapter type or "
+                    f"renderer can put it on screen"))
 
     return findings, {
         "used": sorted(used),
         "unresolved_keys": unresolved,
         "never_used": sorted(never_used),
         "never_used_count": len(never_used),
-        "unregistered_pngs": unregistered,
-        "aliases": len(kit.aliases()),
-        "dead_mouth_flaps": list(kit.dead_mouth_flaps()),
-        "furniture_stuck": stuck,
-        "furniture_work_order": _furniture_work_order(kit),
-        "missing_micro_motion": _shots_without_micro_motion(kit),
-        "byproduct_shortfall": _byproduct_shortfall(kit),
-        "kit_size": len(kit),
+        "unfilled": unfilled,
+        "kit_size": len(reg),
+        "outfit": reg.outfit,
+        "renders_seen": renders_seen,
+        "unreachable": unreachable,
+        "no_template": no_template,
+        "reached_by_template": sorted(routes["template"]),
+        "tag_only": sorted(routes["tag"] - routes["template"]),
+        "code_only": sorted(routes["code"] - routes["template"] - routes["tag"]),
     }
-
-
-def _byproduct_shortfall(kit) -> list[str]:
-    """By-product layouts the channel asks for and the kit cannot supply.
-
-    Counted off the registry rather than off a render, so it is answerable
-    before anybody waits twelve minutes for one.
-    """
-    from pipeline.byproducts import BYPRODUCT_FAMILIES
-
-    out: list[str] = []
-    for label, (families, _cap, wanted) in BYPRODUCT_FAMILIES.items():
-        if wanted is None:
-            continue
-        found = sum(len(kit.family(fam)) for fam in families)
-        if found < wanted:
-            out.append(f"{label}: {found} of {wanted} layout(s) in "
-                       f"{', '.join(families)} — {wanted - found} short")
-    return out
-
-
-def _shots_without_micro_motion(kit) -> dict[str, list[str]]:
-    """Host shots with no `-blink` / `-idle` strip, by suffix.
-
-    The renderer schedules blinks and idles the moment the strips exist and
-    boils silently until then, which is the right failure mode and also an
-    invisible one — a face that never blinks looks like a rendering choice
-    rather than like missing artwork. This is the list that turns it back
-    into a line item.
-    """
-    from pipeline.host import HOST_BANKS
-
-    out: dict[str, list[str]] = {"-blink": [], "-idle": []}
-    for key in sorted({k for bank in HOST_BANKS.values() for k in bank}):
-        if kit.get(key) is None:
-            continue
-        for suffix in out:
-            if kit.micro_motion(key, suffix) is None:
-                out[suffix].append(key)
-    return out
-
-
-FURNITURE_ASK = ("the same card, no ticker chip, no disclaimer line, "
-                 "everything else byte-identical")
-
-
-def _furniture_work_order(kit) -> dict[str, list[str]]:
-    """The Design deliverable: stuck DRAWINGS by chapter family.
-
-    Grouped and de-twinned on purpose. The stuck set counts every registered
-    frame, so a shot appears four times over (itself plus its `-talk`, `-blink`
-    and `-idle` strips) — Design redraws one card and its strips follow, so a
-    work order that listed all four would overstate the ask by three.
-
-    This is the actual fix. Filtering the cards out of selection only stops
-    them shipping in the meantime, and it costs the rotation every one of them.
-    """
-    order: dict[str, list[str]] = {}
-    for key in sorted(kit.furniture_stuck()):
-        asset = kit.get(key)
-        if asset is None:
-            continue
-        leaf = key.rsplit("/", 1)[-1]
-        if any(leaf.endswith(s) for s in ("-talk", *kit.MICRO_SUFFIXES)):
-            continue
-        order.setdefault(asset.family, []).append(key)
-    return order
 
 
 def kit_doctor_text(settings: Settings, script=None) -> str:
     """The `/kit doctor` report, as text.
 
-    Callable with no script — the library-level half (never used, unregistered
-    PNGs, dead flaps) does not need one, and that is the half an operator
-    actually goes looking for.
+    Callable with no script — the library half (never reached) does not need
+    one, and that is the half an operator actually goes looking for. THE GAP
+    LIST IS THE INPUT TO THE NEXT DESIGN BATCH: what was asked for and missing,
+    and what has been drawn and never used.
     """
-    from pipeline.kit import load_kit
+    from pipeline.plates import PlateError, load_plates
 
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError as exc:
+        return f"KIT DOCTOR — the kit is not ingested.\n  {exc}"
+
     findings, stats = kit_doctor(script or _EmptyScript(), settings)
 
-    lines = [f"KIT DOCTOR — {stats['kit_size']} registered assets, "
-             f"{stats['aliases']} aliases"]
+    lines = [f"KIT DOCTOR — {stats['kit_size']} plates, "
+             f"outfit {stats.get('outfit') or '?'}"]
 
     unresolved = stats["unresolved_keys"]
     lines.append("")
-    lines.append(f"Unresolved tag keys ({len(unresolved)}):")
+    lines.append(f"Unresolved plate names ({len(unresolved)}):")
     lines += [f"  {k}" for k in unresolved[:20]] or ["  none"]
+
+    unfilled = stats.get("unfilled") or []
+    lines.append("")
+    lines.append(f"Slots a script left unfilled ({len(unfilled)}):")
+    lines += [f"  {u}" for u in unfilled[:20]] or ["  none"]
+
+    # WHAT NOTHING CAN REACH — true on a fresh checkout, unlike the ledger
+    # below. `room/high-desk-down` sat in the kit for a delta with no template
+    # naming its role: not an error, not a warning, just an angle that never
+    # appeared. This is that class of defect, listed.
+    no_template = stats.get("no_template") or []
+    lines.append("")
+    lines.append(f"No shot template reaches ({len(no_template)} of "
+                 f"{stats['kit_size']}):")
+    tag_only = set(stats.get("tag_only") or [])
+    code_only = set(stats.get("code_only") or [])
+    unreachable = set(stats.get("unreachable") or [])
+    for key in no_template:
+        if key in unreachable:
+            note = "NOTHING REACHES IT"
+        elif key in tag_only:
+            note = "a director can write a [PLATE] for it"
+        elif key in code_only:
+            note = "the renderer reaches it"
+        else:
+            note = "reachable"
+        lines.append(f"  {key} — {note}")
+    if not no_template:
+        lines.append("  none")
+    lines.append("")
+    lines.append("  A plate only a TAG can reach is on the writer to choose, "
+                 "and one nothing reaches is artwork with no way to the "
+                 "screen. Both are input to the next batch: the first says "
+                 "the formats do not use what was drawn, the second says it "
+                 "cannot be used at all.")
 
     never = stats["never_used"]
     lines.append("")
-    lines.append(f"Never used in a recent render ({len(never)} of "
+    seen = stats.get("renders_seen", 0)
+    lines.append(f"Never reached in a recent render ({len(never)} of "
                  f"{stats['kit_size']}):")
+    if not seen:
+        lines.append("  (the render ledger is empty — nothing has been "
+                     "recorded yet, so this list is the whole library rather "
+                     "than a gap)")
     if never:
         by_family: dict[str, int] = {}
         for key in never:
-            asset = kit.get(key)
-            if asset is not None:
-                by_family[asset.family] = by_family.get(asset.family, 0) + 1
-        for family, n in sorted(by_family.items(), key=lambda kv: -kv[1])[:15]:
-            total = len(kit.family(family)) or n
+            plate = reg.get(key)
+            if plate is not None:
+                by_family[plate.family] = by_family.get(plate.family, 0) + 1
+        for family, n in sorted(by_family.items(), key=lambda kv: -kv[1]):
+            total = len(reg.family(family)) or n
             lines.append(f"  {family}: {n} of {total}")
+        lines.append("")
+        lines.append("  A family that is never reached is either artwork the "
+                     "writing prompt does not offer, or artwork the format "
+                     "does not need. Both are worth knowing before the next "
+                     "batch is commissioned.")
     else:
         lines.append("  none")
 
-    unreg = stats["unregistered_pngs"]
-    lines.append("")
-    lines.append(f"PNGs with no registry entry ({len(unreg)}):")
-    lines += [f"  {p}" for p in unreg[:20]] or ["  none"]
-
-    dead = stats["dead_mouth_flaps"]
-    if dead:
+    problems = reg.verify()
+    if problems:
         lines.append("")
-        lines.append("Artwork owed — a -talk twin identical to its base, so "
-                     "the mouth flap animates nothing:")
-        lines += [f"  {k}" for k in dead]
+        lines.append(f"Files the registry names and disk does not have "
+                     f"({len(problems)}):")
+        lines += [f"  {p}" for p in problems[:10]]
 
-    covers = stats.get("byproduct_shortfall") or []
-    if covers:
-        lines.append("")
-        lines.append("Artwork owed — by-product layouts the kit cannot fill:")
-        lines += [f"  {line}" for line in covers]
-
-    micro = stats.get("missing_micro_motion") or {}
-    if any(micro.values()):
-        lines.append("")
-        lines.append("Artwork owed — host shots that cannot blink or settle "
-                     "because no strip is registered beside them:")
-        for suffix, keys in micro.items():
-            if not keys:
-                continue
-            lines.append(f"  {suffix}: {len(keys)} shot(s) — "
-                         f"{', '.join(k.rsplit('/', 1)[-1] for k in keys[:4])}"
-                         f"{', ...' if len(keys) > 4 else ''}")
-        lines.append("  (drop `<shot>-blink` / `<shot>-idle` into the delivery "
-                     "and re-run ingest — no code change is needed)")
-
-    order = stats.get("furniture_work_order") or {}
-    if order:
-        total = sum(len(v) for v in order.values())
-        lines.append("")
-        lines.append(f"ARTWORK OWED — {total} chapter drawing(s) in "
-                     f"{len(order)} families, listed in full because this is "
-                     f"the deliverable:")
-        lines.append(f"  Ask, for every key below: {FURNITURE_ASK}.")
-        lines.append("  Until then each one is OUT of long-form and short-form "
-                     "selection — the frame draws the chip and the disclaimer, "
-                     "so a card that keeps its own prints both twice.")
-        for family, keys in sorted(order.items()):
-            pool = len(kit.family(family))
-            lines.append(f"  {family} — {len(keys)} of {pool} drawing(s):")
-            lines += [f"      {k.rsplit('/', 1)[-1]}" for k in keys]
-
-    if findings:
-        lines.append("")
-        lines.append("Findings:")
-        lines += [f"  {f.render()}" for f in findings[:20]]
     return "\n".join(lines)
 
 
@@ -817,7 +1244,9 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
     report.findings += fact_check(narration, data)
-    report.findings += voice_lint(narration)
+    report.findings += onscreen_fact_check(script, data)
+    report.findings += voice_lint(delivery_text(script))
+    report.findings += confession_lint(script, settings)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
     report.findings += check_audio(settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)

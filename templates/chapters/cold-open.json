@@ -2,61 +2,38 @@
   "chapter": "cold-open",
   "shots": [
     {
-      "id": "stinger",
-      "plate": "chapter-stinger",
-      "max_hold_s": 4,
-      "captions": false,
-      "text": [
-        {
-          "name": "chapter-number",
-          "src": "chapter.number",
-          "size_fh": 0.07,
-          "slot": "chapter-number",
-          "max_lines": 1
-        },
-        {
-          "name": "chapter-title",
-          "src": "chapter.title",
-          "size_fh": 0.075,
-          "slot": "chapter-title",
-          "max_lines": 2
-        }
-      ],
-      "notes": "The chapter card. The boundary transition onto it comes from the format, so this file works wherever it is picked."
-    },
-    {
       "id": "open",
-      "plate": "room-wide-16--lived-in",
+      "plate": "room/establish",
       "host": {
-        "pose": "talking-to-camera",
-        "slot": "figure"
+        "pose": "open",
+        "slot": "host-anchor"
       },
-      "max_hold_s": 7,
-      "captions": true,
-      "text": [
-        {
-          "name": "hook",
-          "src": "chapter.line.0",
-          "size_fh": 0.058,
-          "align": "top",
-          "max_lines": 3
-        }
-      ]
-    },
-    {
-      "id": "the-question",
-      "plate": "question-card",
       "max_hold_s": 6,
       "captions": true,
-      "text": [
-        {
-          "name": "question",
-          "src": "chapter.line.1",
-          "size_fh": 0.05,
-          "slot": "question",
-          "max_lines": 3
-        }
-      ]
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "figures/big-number-l1-16x9",
+      "max_hold_s": 7,
+      "captions": true,
+      "bind": {
+        "kicker": "?script.ticker",
+        "value": "numbers.headline_figure",
+        "label": "?numbers.headline_label"
+      },
+      "notes": "What a cold-open chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+    },
+    {
+      "id": "land",
+      "plate": "room/establish",
+      "host": {
+        "pose": "to-camera",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 5,
+      "captions": true,
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
     }
   ]
 }

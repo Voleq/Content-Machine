@@ -18,7 +18,6 @@ from pathlib import Path
 import pytest
 
 from pipeline.compose import build_layers, check_invariants, held_layer_spans
-from pipeline.kit_manifest import REGISTERS, kit_for, pick_register
 from pipeline.render_short import HOST_SHOTS, build_anchors
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
                             load_format, parse_format, resolve_spans,
@@ -27,7 +26,10 @@ from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, expand_sequences,
 # Shots the host appears in. The spec said 1, 5-8, 11, 12; 5-8 are the
 # numbers walk, and the push-in that makes the walk a composition change also
 # leaves no room for a figure — see the note on the `numbers` shot.
-SPEC_HOST_SHOTS = {"cold-open", "payoff", "close"}
+# The host is in ONE vertical shot now, and it is the turn: the line the
+# cut rests on, in close-up. He was in three, all at full figure in a wide
+# room, which is the shot you use when the room is the point.
+SPEC_HOST_SHOTS = {"the-turn"}
 
 
 class FakeWord:
@@ -47,8 +49,23 @@ class StubResolver:
         # fails a geometry check that real content would pass.
         if src == "numbers.header":
             return "\tFY-4\tFY-3\tFY-2\tFY-1\tFY-0"
+        # A DATA REGION AND A ROW TAKE FIGURES, NOT WORDS. `plot-area`, a
+        # series and a sheet row are shapes the plate reserves for numbers, and
+        # a stub that hands them prose fails a check real content would pass.
+        # Matched on the whole source: `numbers.figures.0` ends in "0".
+        parts = set(src.split("."))
+        if {"series", "figures"} & parts:
+            return ",".join(str(10 + i * 3) for i in range(6))
+        # The heads are however many the plate declares — four on the dense
+        # chart, six on a per-period one.
+        if {"heads", "axis"} & parts:
+            return "a,b,c,d"
+        if "years" in parts:
+            return "a,b,c,d,e,f"
         leaf = src.rsplit(".", 1)[-1]
-        if leaf in ("versus", "reported", "expected", "latest", "label"):
+        if leaf in ("versus", "reported", "expected", "latest", "label",
+                    "headline_figure", "headline_label", "headline_kicker",
+                    "last", "unit", "ticker", "kicker", "expected_label"):
             return "vs" if leaf == "versus" else "3.4%"
         return f"words for {leaf}"
 
@@ -77,9 +94,11 @@ def authored():
     return load_format("short")
 
 
-@pytest.fixture()
-def kit():
-    return kit_for("marker")
+@pytest.fixture(scope="module")
+def reg():
+    from config import Settings
+    from pipeline.plates import load_plates
+    return load_plates(Settings(_env_file=None).assets_dir)
 
 
 def _words(duration: float = 70.0, n: int = 240) -> list[FakeWord]:
@@ -87,58 +106,73 @@ def _words(duration: float = 70.0, n: int = 240) -> list[FakeWord]:
     return [FakeWord(f"w{i}", i * step, (i + 1) * step) for i in range(n)]
 
 
-def _build(fmt, kit, chart: Path | None = None, duration: float = 70.0):
+def _build(fmt, reg, chart: Path | None = None, duration: float = 70.0):
     spans = resolve_spans(fmt, _words(duration), duration, {})
-    return spans, build_layers(fmt, spans, StubResolver(chart), kit, "marker")
+    return spans, build_layers(fmt, spans, StubResolver(chart), reg,
+                               aspect=fmt.aspect, seed="test")
 
 
 # ---------------------------------------------------------------------------
 # The template itself
 # ---------------------------------------------------------------------------
 
-def test_the_short_is_twelve_shots(fmt, authored):
-    assert len(authored) == 9, "the numbers beat is authored once, not four times"
-    assert len(fmt) == 12
-    assert [s.id for s in fmt] == [
-        "cold-open", "the-move", "the-news", "the-turn",
-        "numbers-1", "numbers-2", "numbers-3", "numbers-4",
-        "the-sheet", "cheap-or-trap", "payoff", "close"]
+def test_the_numbers_beat_is_authored_once_and_cut_many_times(fmt, authored):
+    """A beat is an idea the format has; a shot is a frame.
 
-
-def test_every_plate_the_template_names_exists_in_every_register(fmt):
-    """Slot geometry is identical across registers so this swap costs nothing.
-
-    If a plate is missing from one register, a video seeded into that register
-    fails at render time for a reason that has nothing to do with the script.
+    The walk down the sheet is one shot definition and as many cuts as the
+    script carries metrics — four metrics make four, two make two, and neither
+    case is authored twice.
     """
-    for register in REGISTERS:
-        k = kit_for(register)
-        for shot in fmt:
-            if shot.plate:
-                assert k.has(shot.plate, register), (
-                    f"{shot.id}: no plate {shot.plate!r} in {register}")
-            if shot.host:
-                assert k.has(shot.host.pose, register), (
-                    f"{shot.id}: no host pose {shot.host.pose!r} in {register}")
-            if shot.enter:
-                assert k.has(shot.enter, register), (
-                    f"{shot.id}: no transition {shot.enter!r} in {register}")
+    assert len(authored) == 10
+    assert [s.id for s in authored] == [
+        "hook", "the-move", "the-news", "the-turn", "numbers", "the-sheet",
+        "the-comment", "cheap-or-trap", "payoff", "close"]
+    walk = [s.id for s in fmt if s.id.startswith("numbers-")]
+    assert walk == ["numbers-1", "numbers-2", "numbers-3"]
+    assert len(fmt) == len(authored) + len(walk) - 1
 
 
-def test_slot_geometry_is_identical_across_registers(fmt):
-    """The promise that makes register a per-video coin flip."""
+def test_every_plate_the_template_names_is_in_the_kit(fmt, reg):
+    """A name that resolves to nothing draws nothing.
+
+    There is one library now. This used to check four hand-drawn registers
+    for the same plate, because a video seeded into the one that was missing
+    it failed at render time for a reason that had nothing to do with the
+    script — and the two libraries living in one repository is what this
+    conversion removes.
+    """
+    from pipeline.compose import resolve_plate
+
     for shot in fmt:
-        if not shot.plate:
+        if shot.plate:
+            role = (shot.plate.split("/", 1)[1]
+                    if shot.plate.startswith("room/") else "")
+            if role and role in reg.room_roles:
+                continue                       # a role, resolved by rotation
+            assert resolve_plate(reg, shot.plate, fmt.aspect) is not None, \
+                f"{shot.id}: {shot.plate!r} is not a plate in the kit"
+        if shot.host:
+            pose = shot.host.pose
+            assert pose in reg or pose in reg.host_roles, \
+                f"{shot.id}: {pose!r} is neither a pose nor a host role"
+
+
+def test_the_vertical_set_stays_vertical(fmt, reg):
+    """Ten families, and none of the 16:9-only plates.
+
+    The comps table, the scatter, the waterfall, the grouped bars, the flow
+    plate and the diff plate need horizontal room to be readable and do not
+    belong in seventy-five seconds. Naming one here would render it letterboxed
+    into a vertical frame with its type at a third of the size it was drawn at.
+    """
+    from pipeline.compose import resolve_plate
+
+    for shot in fmt:
+        if not shot.plate or shot.plate.startswith("room/"):
             continue
-        boxes = {}
-        for register in REGISTERS:
-            e = kit_for(register).concept(shot.plate, register)
-            boxes[register] = {n: s.box for n, s in e.slots.items()}
-        first = boxes[REGISTERS[0]]
-        for register in REGISTERS[1:]:
-            assert boxes[register] == first, (
-                f"{shot.plate}: slots differ between {REGISTERS[0]} and "
-                f"{register}")
+        plate = resolve_plate(reg, shot.plate, fmt.aspect)
+        assert plate is not None and plate.aspect in ("9x16", ""), \
+            f"{shot.id}: {plate.key} is {plate.aspect}, not a vertical plate"
 
 
 def test_a_template_carrying_large_type_and_captions_is_refused():
@@ -164,17 +198,19 @@ def test_type_below_the_floor_is_refused():
 # The invariants
 # ---------------------------------------------------------------------------
 
-def test_the_composition_satisfies_every_invariant(fmt, kit, tmp_path):
+def test_the_composition_satisfies_every_invariant(fmt, reg, tmp_path):
     chart = tmp_path / "chart.png"
     from PIL import Image
     Image.new("RGBA", (872, 1712), (255, 255, 255, 255)).save(chart)
-    _spans, result = _build(fmt, kit, chart)
-    problems = check_invariants(fmt, result, host_shots=HOST_SHOTS)
+    _spans, result = _build(fmt, reg, chart)
+    problems = check_invariants(
+        fmt, result,
+        host_shots=[sh.id for sh in fmt.shots if sh.host])
     assert problems == [], "\n".join(problems)
 
 
-def test_no_layer_outlives_its_shot(fmt, kit):
-    spans, result = _build(fmt, kit)
+def test_no_layer_outlives_its_shot(fmt, reg):
+    spans, result = _build(fmt, reg)
     by_id = {s.shot.id: s for s in spans}
     for layer in result.layers:
         span = by_id[layer.shot_id]
@@ -182,15 +218,15 @@ def test_no_layer_outlives_its_shot(fmt, kit):
         assert layer.t_end <= span.end + 1e-6, layer.name
 
 
-def test_the_host_appears_in_exactly_the_shots_they_are_in(fmt, kit):
-    _spans, result = _build(fmt, kit)
+def test_the_host_appears_in_exactly_the_shots_they_are_in(fmt, reg):
+    _spans, result = _build(fmt, reg)
     got = {l.shot_id for l in result.layers if l.kind == "host"}
     assert got == SPEC_HOST_SHOTS
     assert set(HOST_SHOTS) == SPEC_HOST_SHOTS
 
 
-def test_large_type_and_the_caption_band_never_share_a_shot(fmt, kit):
-    _spans, result = _build(fmt, kit)
+def test_large_type_and_the_caption_band_never_share_a_shot(fmt, reg):
+    _spans, result = _build(fmt, reg)
     for span in result.spans:
         big = [l for l in result.layers
                if l.shot_id == span.shot.id and l.kind == "text"
@@ -198,18 +234,18 @@ def test_large_type_and_the_caption_band_never_share_a_shot(fmt, kit):
         assert not (big and span.shot.captions), span.shot.id
 
 
-def test_nothing_renders_below_three_and_a_half_percent(fmt, kit):
-    _spans, result = _build(fmt, kit)
+def test_nothing_renders_below_three_and_a_half_percent(fmt, reg):
+    _spans, result = _build(fmt, reg)
     for layer in result.layers:
         if layer.kind == "text":
             assert layer.size_fh >= MIN_TYPE_FH, layer.name
 
 
-def test_no_composition_holds_past_its_ceiling(fmt, kit):
+def test_no_composition_holds_past_its_ceiling(fmt, reg):
     """Every shot either moves continuously or changes inside its ceiling."""
-    _spans, result = _build(fmt, kit)
+    _spans, result = _build(fmt, reg)
     for span in result.spans:
-        moving = any(l.shot_id == span.shot.id and l.loops and l.frames
+        moving = any(l.shot_id == span.shot.id and l.moves
                      for l in result.layers)
         if moving:
             continue
@@ -220,24 +256,28 @@ def test_no_composition_holds_past_its_ceiling(fmt, kit):
             f"{span.shot.max_hold_s}s")
 
 
-def test_every_shot_reaches_the_plate_the_template_names(fmt, kit):
-    _spans, result = _build(fmt, kit)
+def test_every_shot_reaches_the_plate_the_template_names(fmt, reg):
+    _spans, result = _build(fmt, reg)
     for span in result.spans:
         if not span.shot.plate:
             continue
         plates = [l for l in result.layers
                   if l.shot_id == span.shot.id and l.kind == "plate"]
         assert len(plates) == 1, span.shot.id
-        assert plates[0].concept == span.shot.plate
+        # `entry_key` is the registry key the layer reached; a template may
+        # name a bare plate, an aspect-free stem, or a room ROLE, and what
+        # matters is that the shot landed on the plate the kit resolved for it.
+        assert plates[0].entry_key, span.shot.id
+        assert plates[0].concept == plates[0].entry_key.split("/", 1)[0]
 
 
-def test_the_templates_line_budget_reaches_the_layer(fmt, kit):
+def test_the_templates_line_budget_reaches_the_layer(fmt, reg):
     """`max_lines` is a constraint the writer is given, so it must be applied.
 
     The renderer hardcoded six and THE TURN set three, so the turn rendered
     four lines — the template asked for a limit the drawing ignored.
     """
-    _spans, result = _build(fmt, kit)
+    _spans, result = _build(fmt, reg)
     for shot in fmt:
         for spec in shot.text:
             layer = next((l for l in result.layers
@@ -246,7 +286,7 @@ def test_the_templates_line_budget_reaches_the_layer(fmt, kit):
                 assert layer.max_lines == spec.max_lines, layer.name
 
 
-def test_a_bare_shot_never_outruns_its_own_ceiling(fmt, kit):
+def test_a_bare_shot_never_outruns_its_own_ceiling(fmt, reg):
     """A shot with no plate has no boil under it.
 
     Its type draws on and then the frame is genuinely motionless, so its
@@ -267,32 +307,35 @@ def test_a_bare_shot_never_outruns_its_own_ceiling(fmt, kit):
                 f"its {span.shot.max_hold_s}s ceiling, at {duration}s runtime")
 
 
-def test_every_shot_is_present_and_ordered(fmt, kit):
-    spans, _result = _build(fmt, kit)
+def test_every_shot_is_present_and_ordered(fmt, reg):
+    spans, _result = _build(fmt, reg)
     assert [s.shot.id for s in spans] == [s.id for s in fmt]
     for a, b in zip(spans, spans[1:]):
         assert a.end <= b.start + 1e-6, f"{a.shot.id} overlaps {b.shot.id}"
         assert a.dur > 0
 
 
-def test_an_unfilled_slot_is_a_failure_not_an_empty_box(fmt, kit):
+def test_an_unfilled_slot_is_a_failure_not_an_empty_box(fmt, reg):
     """A slot with no value must fail the build, never draw an empty box."""
     class Empty:
         def text_for(self, src): return None
         def image_for(self, src): return None
 
     spans = resolve_spans(fmt, _words(), 70.0, {})
-    result = build_layers(fmt, spans, Empty(), kit, "marker")
+    result = build_layers(fmt, spans, Empty(), reg, aspect=fmt.aspect,
+                          seed="test")
     assert result.unfilled, "an empty resolver filled every slot"
-    problems = check_invariants(fmt, result, host_shots=HOST_SHOTS)
-    assert any("unfilled slot" in p for p in problems)
+    problems = check_invariants(
+        fmt, result,
+        host_shots=[sh.id for sh in fmt.shots if sh.host])
+    assert any("required and empty" in p for p in problems)
 
 
 # ---------------------------------------------------------------------------
 # Timing comes from the audio, never from a constant
 # ---------------------------------------------------------------------------
 
-def test_duration_comes_from_the_audio_clock(fmt, kit):
+def test_duration_comes_from_the_audio_clock(fmt, reg):
     """The same template against two different runtimes yields two cuts."""
     short_spans = resolve_spans(fmt, _words(40.0), 40.0, {})
     long_spans = resolve_spans(fmt, _words(90.0), 90.0, {})
@@ -313,20 +356,13 @@ def test_a_shot_starts_where_its_words_are_spoken(fmt):
     assert move.start == pytest.approx(3.0, abs=0.6)
 
 
-def test_register_is_one_per_video_and_seeded_by_the_script(fmt):
-    a = pick_register("aaaaaaaabbbb")
-    b = pick_register("aaaaaaaabbbb")
-    assert a == b and a in REGISTERS
-    assert len({pick_register(f"{i:08x}") for i in range(64)}) > 1
-
-
 def test_the_template_is_data_not_code():
     """Adding a format is authoring a file. This is that promise, checked."""
     raw = json.loads(Path("templates/shots/short.json").read_text(
         encoding="utf-8"))
     assert raw["format"] == "short"
-    # Nine authored, twelve cut. The numbers beat is one declaration.
-    assert len(raw["shots"]) == 9
+    # Ten authored, twelve cut. The numbers beat is one declaration.
+    assert len(raw["shots"]) == 10
     assert all("plate" in s for s in raw["shots"])
     seq = [s for s in raw["shots"] if s.get("repeat", {}).get("arrange") == "sequence"]
     assert len(seq) == 1 and seq[0]["id"] == "numbers"

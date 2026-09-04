@@ -21,7 +21,12 @@ RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed
 Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register]
 The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider. [MEME: harold-quick-flip-became-bagholder]
 The industry is two giants and a coupon. [CLIP: boardroom_suits] Pricing power is a memoir title.
-Bull case: sticky contracts. Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing."""
+Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | statement-1=Forty percent of revenue is contracted. | mark-1=up | statement-2=One point four billion of debt. | mark-2=down] Bear case: the balance sheet has a clock on it. I'll be up at three a.m. either way. See you at the next filing.
+
+=== CHAPTERS ==="""  + """
+00:00 cold-open | nobody cares anymore
+00:06 the-numbers | five years of them
+00:14 bull-vs-bear | both of these are true"""
 
 
 @pytest.fixture(scope="module")
@@ -210,19 +215,6 @@ def test_host_holds_the_untagged_stretches(rendered):
     # host beats are numbered sequentially so the renderer can vary the shot
     variants = [h["variant"] for h in hosts]
     assert len(set(variants)) == len(variants)
-
-
-def test_design_system_furniture_present_and_clear(rendered):
-    """Chapter stingers exist; the brand strip moved to the TOP so it can't
-    collide with the bottom caption band."""
-    settings, script, tts, out, manifest = rendered
-    names = {l["name"] for l in manifest["layers"]}
-    assert any(n.startswith("chapter_") for n in names), "chapter stingers ride the acts"
-    lt = next(l for l in manifest["layers"] if l["name"] == "lower_third")
-    H = manifest["resolution"][1]
-    assert lt["y"] < H * 0.25, "the brand strip sits at the top, clear of captions"
-
-
 def test_draft_reuses_cached_tts_and_is_smaller(rendered):
     settings, script, tts, out, manifest = rendered
     engine = TTSEngine(settings)
@@ -290,69 +282,6 @@ def test_screengrab_and_marker_chart_segments(rendered_doodles):
     charts = [s for s in segs if s["kind"] == "chart"]
     assert len(charts) >= 2
     assert all(c["source"] == "generated" for c in charts)
-
-
-def test_same_doodle_cannot_render_back_to_back(tmp_path_factory):
-    """§variety B2: an adjacent duplicate doodle reads as a stuck frame — the
-    renderer drops the repeat, so only one of two identical adjacent doodles
-    reaches the composite."""
-    from config import Settings
-
-    tmp = tmp_path_factory.mktemp("long_dupe_doodle")
-    settings = Settings(MOCK_MODE=True, workspace_dir=tmp / "ws",
-                        cache_dir=tmp / "cache", state_dir=tmp / "state",
-                        long_width=640, long_height=360, _env_file=None)
-    settings.ensure_runtime_dirs()
-    raw = ("EXMPL is down and forgotten. [DOODLE: shrug] I start reading here. "
-           "[DOODLE: shrug] Still reading, calmly. [CLIP: tumbleweed] "
-           "See you at the next filing.")
-    script, _ = parse_long_script(raw, "EXMPL", settings)
-    ws = settings.workspace_dir / "EXMPL" / "test"
-    ws.mkdir(parents=True)
-    tts = TTSEngine(settings).synthesize(script.narration, "long")
-    _, manifest = render_long(script, tts, ws, settings,
-                              content=ContentManager(settings))
-    layers = json.loads(manifest.read_text(encoding="utf-8"))["layers"]
-    shrug_layers = [l for l in layers if l["name"].startswith("doodle_")
-                    and "shrug" in l["name"]]
-    assert len(shrug_layers) == 1, "the back-to-back duplicate doodle was dropped"
-
-
-def test_doodle_and_scribble_overlays_present(rendered_doodles):
-    settings, script, tts, out, manifest = rendered_doodles
-    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
-    cues = build_long_timeline(script, tts.words, tts.duration_s)
-    doodles = [c for c in cues if c.kind is CueKind.DOODLE]
-    scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
-    assert doodles and scribbles
-    # every overlay cue time reached the compositing filtergraph
-    for c in doodles + scribbles:
-        assert f"between(t,{c.t:.4f}" in filter_text
-    # overlays never became concat segments (they ride on top)
-    assert not any(s["kind"] in ("doodle", "scribble") for s in manifest["segments"])
-
-
-def test_the_chapter_stinger_is_an_opaque_card(rendered):
-    """A section divider interrupts. It does not wash over the cut.
-
-    It was `(*BG, 235)` — 92% opaque — so for its whole 0.9s the frame
-    underneath printed through it: "02 / what they do." landed on top of
-    "EXMPL dispatch dashboard" at 35s of the sample, both large, neither
-    readable. Asserted on the PNG the renderer composites rather than on a
-    video frame, because that is where the decision lives.
-    """
-    from PIL import Image
-
-    settings, script, tts, out, manifest = rendered
-    rdir = out.parent / "render_long"
-    cards = sorted(rdir.glob("chapter_*.png"))
-    assert cards, "no chapter stinger was drawn"
-    for card in cards:
-        alpha = Image.open(card).convert("RGBA").getchannel("A")
-        assert alpha.getextrema() == (255, 255), \
-            f"{card.name} is translucent — the cut under it shows through"
-
-
 def test_the_stinger_sits_above_its_own_transition_strip(rendered):
     """z-order is list order, and the ink wipe belongs behind the divider.
 
@@ -370,19 +299,415 @@ def test_the_stinger_sits_above_its_own_transition_strip(rendered):
         assert names.index(f"chapter_{k}") > i, \
             f"{name} is composited over chapter_{k}"
 
+# --------------------------------------------------------------------------
+# The room, the host and the chapter openers — the three things the new kit
+# put in place of the design-system furniture the old renderer drew itself.
+# --------------------------------------------------------------------------
 
-def test_no_host_beat_places_a_card_that_keeps_its_furniture(rendered):
-    """The duplicated disclaimer, asserted on what the render CHOSE.
 
-    Five of the twenty banked host keys carry the chip and the disclaimer
-    painted in and cannot be stripped; `chapters/short-interest/
-    dennis-eyes-the-squeeze` was on screen at 60s of the sample with the line
-    printed twice. The manifest records every shot the rig used.
+def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
+    """Not a separate stinger family, and no ordinal anywhere.
+
+    The old card printed "01"…"14" into the artwork, which is why a chapter
+    could not be moved, repeated or cut without the card lying about it.
     """
-    from pipeline.kit import load_kit
+    settings, script, tts, out, manifest = rendered
+    stingers = manifest["stingers"]
+    assert stingers, "no chapter openers were drawn"
+    for st in stingers:
+        assert st["title"], "an opener with no title"
+        assert st["type"], "an opener with no type"
+        assert "n" not in st, "a chapter opener carries an ordinal"
+    assert manifest["chapter_warnings"] == []
+
+
+def test_every_on_screen_title_is_one_the_director_wrote(rendered, long_valid_text):
+    """The failure this replaced put six generic section names on screen
+    regardless of what the sections actually were."""
+    settings, script, tts, out, manifest = rendered
+    written = {(c.type, c.title) for c in script.chapter_list}
+    for st in manifest["stingers"]:
+        assert (st["type"], st["title"]) in written, \
+            f"{st['title']!r} is on screen and not in the trailer"
+
+
+def test_the_host_is_placed_and_lip_synced(rendered):
+    settings, script, tts, out, manifest = rendered
+    motion = manifest.get("host_motion") or []
+    assert motion, "no host beat reported any motion"
+    assert all(m["pose"].startswith("host/") for m in motion)
+    assert any(m["spoke"] for m in motion), "the host never opened his mouth"
+
+
+def test_the_plates_are_the_ones_the_script_named(rendered, long_valid_text):
+    """The renderer never picks a plate."""
+    from pipeline.models import TagType
 
     settings, script, tts, out, manifest = rendered
-    stuck = load_kit(settings.assets_dir).furniture_stuck()
-    used = {m["shot"] for m in manifest.get("host_motion", [])}
-    assert used, "no host shot was recorded"
-    assert not (used & stuck), f"placed with baked furniture: {sorted(used & stuck)}"
+    named = {e.payload for e in script.events_of(TagType.PLATE)}
+    drawn = {s["value"] for s in manifest["segments"] if s["kind"] == "plate"}
+    assert drawn <= named, f"the renderer drew a plate nobody named: {drawn - named}"
+
+
+def test_a_declared_type_size_is_honoured_when_the_value_fits(settings):
+    """The kit reserved that column at that size; the renderer keeps it.
+
+    `fill_slot` shrinks a value that will not fit and warns when it does. The
+    warning is only worth reading if it is rare, and it was not: the fit test
+    measured the font's em box, which stands taller than any glyph by the
+    internal leading, against a slot box drawn around the ink. Short values in
+    roomy slots came out one to four steps down — `cards/definition-16x9`
+    setting a fourteen-character term at 58pt in a box that holds 76 — and
+    every plate in the render logged a line about it.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    # Four faces, four sizes, four families: a period head, a percentile
+    # column head, a display term, and a table header.
+    cases = [
+        ("cycles/cycle-frame-16x9", "head-1", "2021"),
+        ("peers/peer-strip-16x9", "head-fwd", "PCTILE"),
+        ("cards/definition-16x9", "term", "Free cash flow"),
+        ("tables/numbers-sheet-4r-16x9", "head-1", "FY21"),
+    ]
+    for key, slot_name, value in cases:
+        plate = reg.get(key)
+        assert plate is not None, key
+        img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+        warnings = fill_slot(img, plate, plate.slots[slot_name], value,
+                             settings, reg)
+        assert warnings == [], (
+            f"{key} {slot_name}: {value!r} fits the slot the kit drew for it, "
+            f"and the renderer set it smaller anyway — {warnings}")
+
+
+def test_type_sits_on_its_ink_rather_than_hanging_off_the_leading(settings):
+    """Two things at once, because they constrain each other.
+
+    A line is centred on the type's visible extent rather than on the em box,
+    which carries the internal leading above the cap and below the descender —
+    centring the box drops the line below the middle of its slot.
+
+    And that extent is measured on a fixed reference, not on the string. A
+    per-string bbox would centre every cell on its own ink, so "Revenue" and
+    "Margin (%)" would sit at different heights in the same table row. Both
+    are placement bugs that no exception reports.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("cards/definition-16x9")
+    slot = plate.slots["term"]
+    scale = max(int(plate.export_scale or 1), 1)
+
+    def drawn(text: str):
+        img = Image.new("RGBA", ((slot.x + slot.w + 8) * scale,
+                                 (slot.y + slot.h + 8) * scale), (0, 0, 0, 0))
+        fill_slot(img, plate, slot, text, settings, reg)
+        box = img.crop((slot.x * scale, slot.y * scale,
+                        (slot.x + slot.w) * scale, (slot.y + slot.h) * scale))
+        ink = box.getbbox()
+        assert ink is not None, f"nothing was drawn for {text!r}"
+        return box, ink
+
+    # A cap and a descender: this line fills the reference band, so it is the
+    # one that should come out centred.
+    box, ink = drawn("Paying down debt")
+    above, below = ink[1], box.height - ink[3]
+    assert abs(above - below) <= max(4, box.height * 0.06), (
+        f"the line sits {above}px from the top of its slot and {below}px from "
+        f"the bottom — centred on the em box, not on the type")
+
+    # Same slot, a line with no descender at all. It must not float upward to
+    # re-centre itself: the cap heights have to agree, or a table row staggers.
+    _, no_desc = drawn("Free cash flow")
+    assert abs(no_desc[1] - ink[1]) <= 2, (
+        f"a line without a descender starts {no_desc[1]}px down and one with "
+        f"a descender starts {ink[1]}px down — the row would stagger")
+
+
+SHEET = ("numbers-sheet-4r-16x9 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM"
+         " | label-1=Revenue | row-1=400,431,458,472,486,496"
+         " | label-2=Gross profit | row-2=268,281,289,292,296,297"
+         " | label-3=Operating income | row-3=-8,-25,-49,-70,-89,-94"
+         " | label-4=Free cash flow | row-4=12,-3,-31,-52,-68,-71 | band=3")
+
+
+def test_every_value_the_director_writes_lands_on_the_plate(settings):
+    """Box by box: the slot the tag names is different with the value in it.
+
+    The check the render was missing. A four-row sheet came out with its
+    period heads, its row labels and its row band drawn and *every one of its
+    twenty-four figures absent* — because `Slot.is_text` was a list of role
+    names in Python, and `figure` names both the host's body on a room angle
+    and the number in a table cell. Nothing raised: the fill resolved clean,
+    validation passed, the manifest reported the plate drawn, and the frame
+    was a sheet with no numbers on it.
+
+    So this compares the filled plate against the bare one inside each named
+    slot's own box. A value that reaches no pixels is a value that is not on
+    screen, whatever the manifest says.
+    """
+    from pipeline.plate_frames import render_frame
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    fill = build_fill(reg, SHEET)
+    assert fill.problems == [], fill.problems
+
+    plate = reg.get(fill.key)
+    bare = render_frame(plate, 0, None, settings, reg)
+    full = render_frame(plate, 0, fill.values, settings, reg)
+    scale = max(int(plate.export_scale or 1), 1)
+
+    missing = []
+    for name in sorted(fill.values):
+        slot = plate.slots[name]
+        if not slot.is_text:
+            continue                      # a band lights, it takes no words
+        box = (slot.x * scale, slot.y * scale,
+               (slot.x + slot.w) * scale, (slot.y + slot.h) * scale)
+        if full.crop(box).tobytes() == bare.crop(box).tobytes():
+            missing.append(f"{name}={fill.values[name]!r}")
+    assert missing == [], (
+        f"{len(missing)} of {len(fill.values)} values on {plate.key} drew "
+        f"nothing at all: {', '.join(missing)}")
+
+
+def test_whether_a_slot_takes_type_is_the_kit_s_answer(settings):
+    """`figure` is a table cell here and the host's body there.
+
+    Both are called `figure` by the kit, and no list of role names in Python
+    can be right about both. The plate's own `typeRoles` table is what says
+    which: a slot whose role has an entry is set in that face at that size, a
+    slot whose role has none has nothing to be set in.
+    """
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+
+    cell = reg.get("tables/numbers-sheet-4r-16x9").slots["cell-1-1"]
+    body = reg.get("host/leaning-on-desk").slots["figure"]
+    assert cell.role == body.role == "figure"
+    assert cell.is_text, "a table cell takes the figure the director wrote"
+    assert not body.is_text, "the host's body is not a text box"
+
+    # And the three kinds of slot that are never type, whatever they are called.
+    assert not reg.get("charts/line-6y-16x9").slots["plot-area"].is_text
+    assert not reg.get("cycles/cycle-frame-16x9").slots["path"].is_text
+    assert not reg.get("tables/numbers-sheet-4r-16x9").slots["band-1"].is_text
+
+
+def test_the_last_column_is_set_in_the_weight_the_kit_asked_for(settings):
+    """Ten sheets declare `lastColumnWeight`; LTM is what the argument turns on.
+
+    Checked as ink rather than as a font object, because the failure being
+    guarded is the renderer reading the field and then not using it.
+    """
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("tables/numbers-sheet-3r-16x9")
+    assert plate.type_roles["figure"].get("lastColumnWeight")
+
+    def ink(slot_name: str) -> int:
+        slot = plate.slots[slot_name]
+        scale = max(int(plate.export_scale or 1), 1)
+        img = Image.new("RGBA", ((slot.x + slot.w + 8) * scale,
+                                 (slot.y + slot.h + 8) * scale), (0, 0, 0, 0))
+        fill_slot(img, plate, slot, "888", settings, reg)
+        return sum(1 for px in img.getdata() if px[3] > 0)
+
+    cols = sorted(n for n in plate.slots if n.startswith("cell-1-"))
+    first, last = ink(cols[0]), ink(cols[-1])
+    assert last > first, (
+        f"the same figure covers {last}px in {cols[-1]} and {first}px in "
+        f"{cols[0]} — the last column is not being set heavier")
+
+
+def test_the_committed_fixtures_fit_the_plates_they_name(settings):
+    """Every `[PLATE]` in every fixture, against the kit's own limits.
+
+    A `maxChars` is a hard limit — over it the line collides with rules drawn
+    in ink — and a declared size is what the plate reserved the column at.
+    Both were only ever discovered at the end of a four-minute render, as a
+    warning in a log nobody reads twice: a seventeen-character figure in a
+    slot that holds eight, set at 64pt instead of 84 to squeeze it in.
+
+    A budget is a contract on the writing, and a fixture is writing.
+    """
+    import re
+    from pathlib import Path
+
+    from PIL import Image
+
+    from pipeline.plate_frames import fill_slot
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    tag = re.compile(r"\[PLATE:\s*(.+?)\]", re.DOTALL)
+
+    problems: list[str] = []
+    seen = 0
+    for path in sorted(Path("fixtures/scripts").glob("*.txt")):
+        if "unknown" in path.name:
+            continue                      # deliberately malformed
+        for payload in tag.findall(path.read_text(encoding="utf-8")):
+            fill = build_fill(reg, payload)
+            if not fill.key:
+                continue                  # resolution is its own test
+            seen += 1
+            plate = reg.get(fill.key)
+            img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+            for name, value in fill.values.items():
+                slot = plate.slots.get(name)
+                if slot is None or not slot.is_text:
+                    continue
+                for w in fill_slot(img, plate, slot, value, settings, reg):
+                    problems.append(f"{path.name}: {w}")
+    assert seen, "no [PLATE] tags found in the fixtures at all"
+    assert problems == [], "\n".join(problems)
+
+
+def test_a_positive_figure_never_draws_in_the_fall_colour(settings):
+    """Red means down. It does not get to mean it about a number that rose.
+
+    `peers/peer-strip` declares a role PAIR — `move` in `down` beside `moveUp`
+    in `up` — and the renderer took the base role every time, so a gross
+    margin of 60 drew in the same red as a cash burn of −14. The value's sign
+    is the only thing a pair like that can be keyed on.
+    """
+    from pipeline.plate_frames import type_role
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("peers/peer-strip-16x9")
+    slot = plate.slots["move-1"]
+
+    assert type_role(plate, slot, "60")["colour"] == "up"
+    assert type_role(plate, slot, "7.8")["colour"] == "up"
+    assert type_role(plate, slot, "-14")["colour"] == "down"
+    # Not a figure at all: the base role, never a guess.
+    assert type_role(plate, slot, "n/a")["colour"] == "down"
+
+
+def test_a_data_region_nobody_filled_is_reported(settings):
+    """An unfilled `bars` leaves the plate's own placeholder lengths on screen.
+
+    Worse than an empty box, because invented bar lengths read as data. The
+    unfilled report covers renderer regions for that reason, not only text.
+    """
+    from pipeline.plate_frames import unfilled_slots
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("peers/peer-strip-16x9")
+    assert "bars" in unfilled_slots(plate, {"ticker-1": "EV/S"})
+    assert "bars" not in unfilled_slots(plate, {"bars": "90,55,10,5,95"})
+    # A reserved AREA is not something a script fills.
+    room = reg.get("room/wide-16x9")
+    assert "host-anchor" not in unfilled_slots(room, {})
+
+
+def test_a_mark_solves_onto_the_type_not_onto_the_slot(settings):
+    """`unit-ladder`'s value column is a third of the sheet wide.
+
+    Its figures are right-aligned three characters into it, so a strike solved
+    onto the slot RECTANGLE runs from the row labels to past the plate's edge
+    and crosses out the row below the one it names. `solve_mark`'s own
+    docstring says the mark goes on the type; it can only do that if it is
+    handed the type's box.
+    """
+    from pipeline.plate_frames import drawn_box
+    from pipeline.plate_tags import build_fill
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    fill = build_fill(reg, "unit-ladder-16x9 | step-2-label=Sales and marketing"
+                           " | step-2-value=-212")
+    plate = reg.get(fill.key)
+    slot = plate.slots["step-2-value"]
+    ink = drawn_box(plate, slot, fill.values["step-2-value"], settings, reg)
+    assert ink is not None
+
+    x, y, w, h = ink
+    sx, sy, sw, sh = slot.scaled()
+    assert w < sw * 0.6, f"the ink is {w}px in a {sw}px column — not measured"
+    assert h < sh * 0.8, f"the ink is {h}px in a {sh}px row — not measured"
+    # And inside the slot it belongs to, on the right because the slot is.
+    assert sx <= x and x + w <= sx + sw + 1
+    assert sy <= y and y + h <= sy + sh + 1
+    assert x + w > sx + sw * 0.5, "a right-aligned figure drew on the left"
+
+
+def test_the_mark_fits_the_target_rather_than_whatever_was_named(settings):
+    """A wide oval around four characters is a hairline, and that is not the nib.
+
+    `scrawl-oval-wide` is drawn to circle a LINE of type: its area slot is 674
+    units across, so solved onto a 160px cell its stroke lands at 2.7 against a
+    legible band that starts at 3.2. The tight oval is the same gesture drawn
+    for one word and lands at 9.4. Which is right is decided by how wide the
+    thing being marked actually is, and the tag names an intent rather than a
+    variant.
+    """
+    from pipeline.plates import load_plates
+    from pipeline.rasters import INK_WEIGHT_BAND, _pick_variant, _solved_stroke
+
+    reg = load_plates(settings.assets_dir)
+    lo, hi = INK_WEIGHT_BAND
+
+    tight, why = _pick_variant(reg, "scrawl-oval-wide", 160)
+    assert tight == "scrawl-oval-tight" and why
+    assert lo <= _solved_stroke(reg.require("annotations/scrawl-oval-tight"),
+                                160) <= hi
+    # And the other way: a tight oval asked to circle a whole line.
+    wide, why = _pick_variant(reg, "scrawl-oval-tight", 1200)
+    assert wide == "scrawl-oval-wide" and why
+    # A target the named mark already fits is left alone.
+    assert _pick_variant(reg, "scrawl-oval-wide", 900) == ("scrawl-oval-wide", "")
+
+
+def test_a_gesture_with_no_second_variant_is_never_swapped(settings):
+    """Only within a gesture.
+
+    A bracket that groups rows and an oval around a word are different
+    statements. Swapping one for the other because the arithmetic prefers it
+    would be this code overruling the director rather than fitting what they
+    asked for — so a bracket on a target too small stays a bracket, and the
+    warning stands.
+    """
+    from pipeline.plates import load_plates
+    from pipeline.rasters import _pick_variant
+
+    reg = load_plates(settings.assets_dir)
+    assert _pick_variant(reg, "bracket-rows", 110) == ("bracket-rows", "")
+
+
+def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
+    """No ink, no box — and the caller falls back to a centred mark.
+
+    An empty cell means NO DATA in this library, so a mark aimed at one has
+    nothing to sit on. Returning a box anyway would put a strike through a
+    space and read as a crossed-out figure.
+    """
+    from pipeline.plate_frames import drawn_box
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    plate = reg.get("structure/unit-ladder-16x9")
+    slot = plate.slots["step-2-value"]
+    assert drawn_box(plate, slot, "", settings, reg) is None
+    assert drawn_box(plate, slot, "   ", settings, reg) is None
+    assert drawn_box(plate, slot, "-212", settings, reg) is not None

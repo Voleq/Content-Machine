@@ -28,3 +28,16 @@ tmp/
 
 # Local neural voice (bootstrap downloads it; ~63MB of model, not source)
 assets/voices/
+
+# The materialised design kit — a BUILD PRODUCT, ~400MB of 4K PNGs.
+#
+# The kit is deterministic: `kit/` holds the engine, the manifests and the
+# curation, and every plate is an author plus a seed that reproduces byte for
+# byte. So the source is 1.4MB of JS and the artwork is a cache of it, rebuilt
+# by `python scripts/ingest_kit.py kit`. Committing the cache is how a repo
+# grows a gigabyte of files that no longer match the code that draws them.
+assets/plates/
+.kit-build/
+
+# Build-time rasteriser for the kit engine. Never in the render path.
+node_modules/

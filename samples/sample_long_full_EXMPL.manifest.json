@@ -1,0 +1,3721 @@
+{
+  "ticker": "EXMPL",
+  "draft": false,
+  "proof": false,
+  "audio_tier": "mock",
+  "draft_audio": false,
+  "duration": 1305.688753,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "cues": [
+    {
+      "t": 9.3307,
+      "kind": "clip",
+      "payload": {
+        "order": 0,
+        "value": "tumbleweed",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 13.921,
+      "kind": "plate",
+      "payload": {
+        "order": 1,
+        "value": "figures/big-number-l1-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "FROM THE HIGH",
+          "value": "-60%",
+          "label": "and still not obviously cheap",
+          "caption": "EXMPL, close to close"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 136.9582,
+      "kind": "clip",
+      "payload": {
+        "order": 6,
+        "value": "tumbleweed",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 152.2866,
+      "kind": "plate",
+      "payload": {
+        "order": 7,
+        "value": "paper/headline-band-t1-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "WHERE THIS COMES FROM",
+          "headline": "The 10-K and eleven calls",
+          "sub": "Everything on screen is in one of those two documents"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 208.9279,
+      "kind": "img",
+      "payload": {
+        "order": 9,
+        "value": "EXMPL data center server racks",
+        "tag": "IMG",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 213.7642,
+      "kind": "img",
+      "payload": {
+        "order": 10,
+        "value": "EXMPL dispatch dashboard",
+        "tag": "PRODUCT",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 222.535,
+      "kind": "plate",
+      "payload": {
+        "order": 11,
+        "value": "cards/definition-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE WORD OF THE DAY",
+          "term": "Seat-based SaaS",
+          "body": "You pay per person who logs in, every month, whether or not they log in.",
+          "example": "Four thousand depots, nine seats each, forty dollars a seat."
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 233.1911,
+      "kind": "plate",
+      "payload": {
+        "order": 12,
+        "value": "structure/flow-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "HOW A DOLLAR ARRIVES",
+          "input": "A depot signs",
+          "box-1": "Seats provisioned",
+          "box-2": "Monthly invoice",
+          "box-3": "Renewal in twelve months",
+          "output": "Or it doesn't",
+          "arrow-1": ".",
+          "arrow-2": ".",
+          "arrow-3": ".",
+          "arrow-4": ".",
+          "caption": "The last box is the only one anybody argues about"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 238.6831,
+      "kind": "scribble",
+      "payload": {
+        "order": 13,
+        "value": "scrawl-oval-wide -> Or it doesn't",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 248.4376,
+      "kind": "sound",
+      "payload": {
+        "order": 14,
+        "value": "windows_error",
+        "tag": "SOUND",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 260.0773,
+      "kind": "plate",
+      "payload": {
+        "order": 15,
+        "value": "cards/criteria-16x9",
+        "tag": "PLATE",
+        "values": {
+          "title": "WHAT WOULD MAKE IT STICKY",
+          "row-1": "The dispatcher opens it before coffee",
+          "row-2": "It holds the customer list nobody else has",
+          "row-3": "Ripping it out costs a week of missed loads",
+          "caption": "Three tests, and it passes two"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 299.4002,
+      "kind": "clip",
+      "payload": {
+        "order": 17,
+        "value": "boardroom_suits",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 331.2634,
+      "kind": "plate",
+      "payload": {
+        "order": 19,
+        "value": "figures/compare-side-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "WHAT A DEPOT PAYS",
+          "label-1": "EXMPL, standalone",
+          "value-1": "$360",
+          "detail-1": "nine seats, forty dollars, every month",
+          "label-2": "Bundled competitor",
+          "value-2": "$0",
+          "detail-2": "included with the fleet contract they already signed",
+          "caption": "You cannot out-price free, you can only out-last it"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 406.7373,
+      "kind": "plate",
+      "payload": {
+        "order": 22,
+        "value": "tables/numbers-sheet-6r-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "$M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "label-1": "Revenue",
+          "cell-1-1": "400",
+          "cell-1-2": "452",
+          "cell-1-3": "471",
+          "cell-1-4": "491",
+          "cell-1-5": "496",
+          "cell-1-6": "496",
+          "label-2": "Gross profit",
+          "cell-2-1": "252",
+          "cell-2-2": "280",
+          "cell-2-3": "287",
+          "cell-2-4": "290",
+          "cell-2-5": "288",
+          "cell-2-6": "288",
+          "label-3": "Operating income",
+          "cell-3-1": "-8",
+          "cell-3-2": "-23",
+          "cell-3-3": "-38",
+          "cell-3-4": "-49",
+          "cell-3-5": "-60",
+          "cell-3-6": "-60",
+          "label-4": "Free cash flow",
+          "cell-4-1": "12",
+          "cell-4-2": "-2",
+          "cell-4-3": "-6",
+          "cell-4-4": "-11",
+          "cell-4-5": "-15",
+          "cell-4-6": "-15",
+          "label-5": "Net income",
+          "cell-5-1": "-8",
+          "cell-5-2": "-25",
+          "cell-5-3": "-49",
+          "cell-5-4": "-70",
+          "cell-5-5": "-89",
+          "cell-5-6": "-89",
+          "label-6": "Share count",
+          "cell-6-1": "100",
+          "cell-6-2": "106",
+          "cell-6-3": "113",
+          "cell-6-4": "119",
+          "cell-6-5": "126",
+          "cell-6-6": "126",
+          "band-3": "3"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 411.4846,
+      "kind": "plate",
+      "payload": {
+        "order": 23,
+        "value": "charts/line-6y-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "Revenue, $M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "y-1": "0",
+          "y-2": "125",
+          "y-3": "250",
+          "y-4": "375",
+          "y-5": "500",
+          "value-1": "400",
+          "value-2": "452",
+          "value-3": "471",
+          "value-4": "491",
+          "value-5": "496",
+          "value-6": "496"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 414.3813,
+      "kind": "chart",
+      "payload": {
+        "order": 24,
+        "value": "revenue",
+        "tag": "CHART",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 414.3813,
+      "kind": "filing",
+      "payload": {
+        "order": 25,
+        "value": "income_statement.png",
+        "tag": "SHOW FILING",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 431.8417,
+      "kind": "clip",
+      "payload": {
+        "order": 27,
+        "value": "hamster_wheel",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 431.8417,
+      "kind": "plate",
+      "payload": {
+        "order": 28,
+        "value": "structure/row-spotlight-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "NET INCOME, $M",
+          "label": "Net income",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "cell-1": "-8",
+          "cell-2": "-25",
+          "cell-3": "-49",
+          "cell-4": "-70",
+          "cell-5": "-89",
+          "cell-6": "-89",
+          "caption": "Every year, wider"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 431.8417,
+      "kind": "scribble",
+      "payload": {
+        "order": 29,
+        "value": "underline-tight -> -89",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 436.9108,
+      "kind": "plate",
+      "payload": {
+        "order": 30,
+        "value": "charts/bars-6y-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "Revenue growth, %",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "y-1": "0",
+          "y-2": "3",
+          "y-3": "6",
+          "y-4": "9",
+          "y-5": "12",
+          "value-1": "12",
+          "value-2": "13",
+          "value-3": "4",
+          "value-4": "4",
+          "value-5": "1",
+          "value-6": "1"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 474.0041,
+      "kind": "plate",
+      "payload": {
+        "order": 32,
+        "value": "tables/numbers-sheet-4r-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "$M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "label-1": "Revenue per share",
+          "cell-1-1": "4.00",
+          "cell-1-2": "4.26",
+          "cell-1-3": "4.17",
+          "cell-1-4": "4.13",
+          "cell-1-5": "3.94",
+          "cell-1-6": "3.94",
+          "label-2": "Gross profit per share",
+          "cell-2-1": "2.52",
+          "cell-2-2": "2.64",
+          "cell-2-3": "2.54",
+          "cell-2-4": "2.44",
+          "cell-2-5": "2.29",
+          "cell-2-6": "2.29",
+          "label-3": "Cash per share",
+          "cell-3-1": "1.20",
+          "cell-3-2": "1.60",
+          "cell-3-3": "2.90",
+          "cell-3-4": "4.10",
+          "cell-3-5": "3.20",
+          "cell-3-6": "3.20",
+          "label-4": "Debt per share",
+          "cell-4-1": "2.00",
+          "cell-4-2": "3.20",
+          "cell-4-3": "4.40",
+          "cell-4-4": "4.20",
+          "cell-4-5": "11.10",
+          "cell-4-6": "11.10",
+          "band-1": "1"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 474.0041,
+      "kind": "scribble",
+      "payload": {
+        "order": 33,
+        "value": "underline-swipe -> 3.94",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 539.5811,
+      "kind": "plate",
+      "payload": {
+        "order": 36,
+        "value": "figures/big-number-l2-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "GROSS MARGIN",
+          "value": "58%",
+          "label": "on the LTM",
+          "detail": "a real software margin, priced like a reseller",
+          "caption": "From the filing"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 565.9729,
+      "kind": "plate",
+      "payload": {
+        "order": 37,
+        "value": "structure/unit-ladder-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "FY25, $M",
+          "top-label": "Revenue",
+          "top-value": "496",
+          "step-1-label": "Cost of revenue",
+          "step-1-value": "-208",
+          "step-2-label": "Sales and marketing",
+          "step-2-value": "-212",
+          "step-3-label": "R&D",
+          "step-3-value": "-80",
+          "step-4-label": "G&A",
+          "step-4-value": "-40",
+          "step-5-label": "Other",
+          "step-5-value": "-16",
+          "out-label": "Operating income",
+          "out-value": "-60",
+          "band-2": "2"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 572.9731,
+      "kind": "scribble",
+      "payload": {
+        "order": 38,
+        "value": "strike-out -> 212",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 579.6515,
+      "kind": "plate",
+      "payload": {
+        "order": 39,
+        "value": "tables/cash-flow-16x9",
+        "tag": "PLATE",
+        "values": {
+          "unit": "$M",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "group-1": "Operating",
+          "label-1-1": "Net income",
+          "cell-1-1-1": "-8",
+          "cell-1-1-2": "-25",
+          "cell-1-1-3": "-49",
+          "cell-1-1-4": "-70",
+          "cell-1-1-5": "-89",
+          "cell-1-1-6": "-89",
+          "label-1-2": "Working capital",
+          "cell-1-2-1": "23",
+          "cell-1-2-2": "27",
+          "cell-1-2-3": "46",
+          "cell-1-2-4": "62",
+          "cell-1-2-5": "80",
+          "cell-1-2-6": "80",
+          "subtotal-label-1": "Cash from operations",
+          "subtotal-1-1": "15",
+          "subtotal-1-2": "2",
+          "subtotal-1-3": "-3",
+          "subtotal-1-4": "-8",
+          "subtotal-1-5": "-9",
+          "subtotal-1-6": "-9",
+          "group-2": "Investing",
+          "label-2-1": "Capex",
+          "cell-2-1-1": "-3",
+          "cell-2-1-2": "-4",
+          "cell-2-1-3": "-3",
+          "cell-2-1-4": "-3",
+          "cell-2-1-5": "-6",
+          "cell-2-1-6": "-6",
+          "label-2-2": "Acquisitions",
+          "cell-2-2-1": "0",
+          "cell-2-2-2": "-40",
+          "cell-2-2-3": "0",
+          "cell-2-2-4": "0",
+          "cell-2-2-5": "0",
+          "cell-2-2-6": "0",
+          "subtotal-label-2": "Cash used investing",
+          "subtotal-2-1": "-3",
+          "subtotal-2-2": "-44",
+          "subtotal-2-3": "-3",
+          "subtotal-2-4": "-3",
+          "subtotal-2-5": "-6",
+          "subtotal-2-6": "-6",
+          "group-3": "Financing",
+          "label-3-1": "Equity issued",
+          "cell-3-1-1": "0",
+          "cell-3-1-2": "60",
+          "cell-3-1-3": "120",
+          "cell-3-1-4": "180",
+          "cell-3-1-5": "95",
+          "cell-3-1-6": "40",
+          "label-3-2": "Debt drawn",
+          "cell-3-2-1": "20",
+          "cell-3-2-2": "40",
+          "cell-3-2-3": "60",
+          "cell-3-2-4": "0",
+          "cell-3-2-5": "30",
+          "cell-3-2-6": "0",
+          "subtotal-label-3": "Cash from financing",
+          "subtotal-3-1": "20",
+          "subtotal-3-2": "100",
+          "subtotal-3-3": "180",
+          "subtotal-3-4": "180",
+          "subtotal-3-5": "125",
+          "subtotal-3-6": "40",
+          "total-label": "Net change in cash",
+          "total-1": "32",
+          "total-2": "58",
+          "total-3": "177",
+          "total-4": "169",
+          "total-5": "110",
+          "total-6": "25"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 592.6172,
+      "kind": "scribble",
+      "payload": {
+        "order": 40,
+        "value": "bracket-rows -> Working capital",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 611.5056,
+      "kind": "sound",
+      "payload": {
+        "order": 42,
+        "value": "sad_trombone",
+        "tag": "SOUND",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 630.7114,
+      "kind": "plate",
+      "payload": {
+        "order": 43,
+        "value": "structure/timeline-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "WHAT THEY BOUGHT",
+          "date-1": "FY22",
+          "date-2": "FY23",
+          "date-3": "FY24",
+          "date-4": "FY25",
+          "date-5": "LTM",
+          "date-6": "NEXT",
+          "label-1": "Acquisition $40M",
+          "label-2": "Sales hiring",
+          "label-3": "Sales hiring",
+          "label-4": "Sales hiring",
+          "label-5": "Discipline",
+          "label-6": "?",
+          "caption": "One acquisition, three years of hiring, and a word"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 651.4251,
+      "kind": "sound",
+      "payload": {
+        "order": 45,
+        "value": "windows_error",
+        "tag": "SOUND",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 704.4395,
+      "kind": "plate",
+      "payload": {
+        "order": 48,
+        "value": "cards/quote-pull-16x9",
+        "tag": "PLATE",
+        "values": {
+          "body": "We are managing the business for durable growth rather than for any single quarter's margin.",
+          "attribution": "Chief Executive, Q3 call",
+          "source": "Earnings call transcript"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 711.1059,
+      "kind": "plate",
+      "payload": {
+        "order": 49,
+        "value": "structure/timeline-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE RECORD",
+          "date-1": "FY21",
+          "date-2": "FY22",
+          "date-3": "FY23",
+          "date-4": "FY24",
+          "date-5": "FY25",
+          "date-6": "LTM",
+          "label-1": "Durable growth",
+          "label-2": "Durable growth",
+          "label-3": "Investment year",
+          "label-4": "Investment year",
+          "label-5": "Disciplined",
+          "label-6": "Durable growth",
+          "caption": "Eleven quarters, one sentence"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 711.1059,
+      "kind": "scribble",
+      "payload": {
+        "order": 50,
+        "value": "box-scrawl -> Durable growth",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 748.0096,
+      "kind": "meme",
+      "payload": {
+        "order": 52,
+        "value": "harold-quick-flip-became-bagholder",
+        "tag": "MEME",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 782.6912,
+      "kind": "plate",
+      "payload": {
+        "order": 54,
+        "value": "cards/quote-pull-16x9",
+        "tag": "PLATE",
+        "values": {
+          "body": "We think the right measure of this business is annual recurring revenue, not GAAP revenue, and we would encourage you to look at it that way.",
+          "attribution": "CFO, Q1 call",
+          "source": "Earnings call transcript"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 802.3732,
+      "kind": "scribble",
+      "payload": {
+        "order": 56,
+        "value": "caret-note -> encourage you",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 823.325,
+      "kind": "clip",
+      "payload": {
+        "order": 57,
+        "value": "boardroom_suits",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 860.8636,
+      "kind": "filing",
+      "payload": {
+        "order": 59,
+        "value": "risk_factors.png",
+        "tag": "SHOW FILING",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 860.8636,
+      "kind": "plate",
+      "payload": {
+        "order": 60,
+        "value": "paper/headline-band-t2-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "ITEM 1A",
+          "headline": "Tested on trailing twelve-month adjusted EBITDA",
+          "sub": "Not on EBITDA. On adjusted EBITDA, as defined in the agreement."
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 882.759,
+      "kind": "plate",
+      "payload": {
+        "order": 62,
+        "value": "cards/quote-pull-16x9",
+        "tag": "PLATE",
+        "values": {
+          "body": "Our credit agreement contains a covenant tested on trailing twelve-month adjusted EBITDA, and we may not remain in compliance.",
+          "attribution": "Item 1A, Risk Factors",
+          "source": "Form 10-K"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 952.1998,
+      "kind": "plate",
+      "payload": {
+        "order": 65,
+        "value": "structure/unit-ladder-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE COVENANT, $M",
+          "top-label": "Reported adjusted EBITDA",
+          "top-value": "52",
+          "step-1-label": "Restructuring, twice",
+          "step-1-value": "-12",
+          "step-2-label": "Stock compensation",
+          "step-2-value": "-16",
+          "step-3-label": "Litigation, non-recurring x3",
+          "step-3-value": "-6",
+          "step-4-label": "Integration costs",
+          "step-4-value": "-4",
+          "step-5-label": "Other adjustments",
+          "step-5-value": "-2",
+          "out-label": "What a lender calls EBITDA",
+          "out-value": "12",
+          "band-3": "3"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 957.2828,
+      "kind": "scribble",
+      "payload": {
+        "order": 66,
+        "value": "strike-out -> 52",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 1031.1028,
+      "kind": "plate",
+      "payload": {
+        "order": 70,
+        "value": "figures/big-number-l2-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "SHORT INTEREST",
+          "value": "19%",
+          "label": "of float, and rising",
+          "detail": "up from six percent a year ago",
+          "caption": "Borrow is still cheap, which tells you something"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1056.5957,
+      "kind": "plate",
+      "payload": {
+        "order": 72,
+        "value": "figures/big-fraction-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "REVERSE DCF",
+          "numerator": "7.8x",
+          "numerator-label": "EV/Sales today",
+          "denominator": "2%",
+          "denominator-label": "LTM revenue growth",
+          "result": "14%/yr",
+          "caption": "Ten years of that, and it is a gut-check, not a fair value"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1063.008,
+      "kind": "scribble",
+      "payload": {
+        "order": 73,
+        "value": "scrawl-oval-tight -> 14%",
+        "tag": "SCRIBBLE",
+        "values": {},
+        "hold": 2.0
+      },
+      "fallback": false
+    },
+    {
+      "t": 1069.3421,
+      "kind": "plate",
+      "payload": {
+        "order": 74,
+        "value": "cycles/cycle-frame-16x9",
+        "tag": "PLATE",
+        "values": {
+          "metric": "EV/Sales",
+          "unit": "x",
+          "then-value": "14.2x",
+          "then-date": "FY21",
+          "now-value": "7.8x",
+          "now-date": "today",
+          "trough": "3.1x",
+          "head-1": "FY21",
+          "head-2": "FY22",
+          "head-3": "FY23",
+          "head-4": "FY24",
+          "head-5": "FY25",
+          "head-6": "LTM",
+          "path": "14.2,9.1,3.1,4.8,6.2,7.8",
+          "caption": "It has been cheaper than this, twice"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1092.9583,
+      "kind": "plate",
+      "payload": {
+        "order": 76,
+        "value": "figures/big-fraction-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE OTHER WAY ROUND",
+          "numerator": "3.1x",
+          "numerator-label": "EV/Sales at the trough",
+          "denominator": "58%",
+          "denominator-label": "gross margin, unchanged",
+          "result": "~$9",
+          "caption": "The same business, at the price it traded at two years ago"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1161.2261,
+      "kind": "plate",
+      "payload": {
+        "order": 81,
+        "value": "structure/both-true-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "BOTH TRUE",
+          "statement-1": "Forty percent of revenue is contracted.",
+          "detail-1": "Churn is falling, and the new CFO stopped buying growth in March.",
+          "mark-1": "up",
+          "statement-2": "One point four billion of debt.",
+          "detail-2": "Four hundred million of cash, and share count up six percent a year.",
+          "mark-2": "down",
+          "caption": "Both of these are true at the same time"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1161.2261,
+      "kind": "clip",
+      "payload": {
+        "order": 82,
+        "value": "growing_plant",
+        "tag": "CLIP",
+        "values": {}
+      },
+      "fallback": false
+    },
+    {
+      "t": 1175.1732,
+      "kind": "plate",
+      "payload": {
+        "order": 83,
+        "value": "cards/criteria-16x9",
+        "tag": "PLATE",
+        "values": {
+          "title": "THREE QUESTIONS",
+          "row-1": "Does the cash come back, and when",
+          "row-2": "Who has to be wrong for this to work",
+          "row-3": "What would make me sell it in a month",
+          "caption": "If I can't answer the third one, I don't own it"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1210.2022,
+      "kind": "plate",
+      "payload": {
+        "order": 86,
+        "value": "structure/closing-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "THE CLOSE",
+          "line-1": "The business is better than the chart.",
+          "line-2": "The balance sheet is worse than the story.",
+          "line-3": "You don't have to swing at every pitch.",
+          "date-label": "Next filing",
+          "date": "14 May"
+        }
+      },
+      "fallback": false
+    },
+    {
+      "t": 1268.3604,
+      "kind": "plate",
+      "payload": {
+        "order": 88,
+        "value": "structure/both-true-16x9",
+        "tag": "PLATE",
+        "values": {
+          "kicker": "WHAT WOULD CHANGE MY MIND",
+          "statement-1": "Sales and marketing down twenty percent, revenue flat.",
+          "detail-1": "That would mean they were overspending and stopped.",
+          "mark-1": "up",
+          "statement-2": "The renewal number back in the disclosure.",
+          "detail-2": "You do not put a number back unless it improved.",
+          "mark-2": "up",
+          "caption": "Two things, both checkable, both in the next two filings"
+        }
+      },
+      "fallback": false
+    }
+  ],
+  "segments": [
+    {
+      "kind": "host",
+      "start": 0.0,
+      "end": 9.3307,
+      "attribution": "",
+      "variant": 0,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.3307,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3307,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3307,trim=0:9.3307,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 9.3307,
+      "end": 14.3307,
+      "value": "tumbleweed",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 14.3307,
+      "end": 21.3307,
+      "value": "figures/big-number-l1-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 21.3307,
+      "end": 32.89345,
+      "attribution": "",
+      "variant": 1,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 32.89345,
+      "end": 44.456199999999995,
+      "attribution": "",
+      "variant": 2,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 44.456199999999995,
+      "end": 56.01895,
+      "attribution": "",
+      "variant": 3,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 56.01895,
+      "end": 67.5817,
+      "attribution": "",
+      "variant": 4,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 67.5817,
+      "end": 79.14445,
+      "attribution": "",
+      "variant": 5,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 79.14445,
+      "end": 90.7072,
+      "attribution": "",
+      "variant": 6,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 90.7072,
+      "end": 102.26995,
+      "attribution": "",
+      "variant": 7,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 102.26995,
+      "end": 113.83269999999999,
+      "attribution": "",
+      "variant": 8,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 113.83269999999999,
+      "end": 125.39544999999998,
+      "attribution": "",
+      "variant": 9,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5627,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5627,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5627,trim=0:11.5627,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 125.39544999999998,
+      "end": 136.9582,
+      "attribution": "",
+      "variant": 10,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.5628,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.5628,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.5628,trim=0:11.5628,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 136.9582,
+      "end": 141.9582,
+      "value": "tumbleweed",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 141.9582,
+      "end": 152.2866,
+      "attribution": "",
+      "variant": 11,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.3284,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.3284,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.3284,trim=0:10.3284,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 152.2866,
+      "end": 159.2866,
+      "value": "paper/headline-band-t1-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "paper/headline-band-t1-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=961:540[hfg];[hbg][hfg]overlay=60:270:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 159.2866,
+      "end": 169.21486,
+      "attribution": "",
+      "variant": 12,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 169.21486,
+      "end": 179.14311999999998,
+      "attribution": "",
+      "variant": 13,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 179.14311999999998,
+      "end": 189.07137999999998,
+      "attribution": "",
+      "variant": 14,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 189.07137999999998,
+      "end": 198.99964,
+      "attribution": "",
+      "variant": 15,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 198.99964,
+      "end": 208.9279,
+      "attribution": "",
+      "variant": 16,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9283,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9283,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9283,trim=0:9.9283,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "img",
+      "start": 208.9279,
+      "end": 213.9279,
+      "value": "EXMPL data center server racks",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "img",
+      "start": 213.9279,
+      "end": 218.9279,
+      "value": "EXMPL dispatch dashboard",
+      "source": "cache",
+      "attribution": "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 218.9279,
+      "end": 222.535,
+      "attribution": "",
+      "variant": 17,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.6071,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6071,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6071,trim=0:3.6071,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 222.535,
+      "end": 229.535,
+      "value": "cards/definition-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/definition-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 229.535,
+      "end": 233.1911,
+      "attribution": "",
+      "variant": 18,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:3.6561,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:3.6561,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=3.6561,trim=0:3.6561,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 233.1911,
+      "end": 240.1911,
+      "value": "structure/flow-16x9",
+      "attribution": "",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 240.1911,
+      "end": 250.1342,
+      "attribution": "",
+      "variant": 19,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9431,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9431,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9431,trim=0:9.9431,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 250.1342,
+      "end": 260.0773,
+      "attribution": "",
+      "variant": 20,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.9431,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.9431,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.9431,trim=0:9.9431,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 260.0773,
+      "end": 267.0773,
+      "value": "cards/criteria-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/criteria-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=972:546[hfg];[hbg][hfg]overlay=888:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 267.0773,
+      "end": 277.85159999999996,
+      "attribution": "",
+      "variant": 21,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 277.85159999999996,
+      "end": 288.6259,
+      "attribution": "",
+      "variant": 22,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 288.6259,
+      "end": 299.4002,
+      "attribution": "",
+      "variant": 23,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.7743,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.7743,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.7743,trim=0:10.7743,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 299.4002,
+      "end": 304.4002,
+      "value": "boardroom_suits",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 304.4002,
+      "end": 313.3546,
+      "attribution": "",
+      "variant": 24,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 313.3546,
+      "end": 322.30899999999997,
+      "attribution": "",
+      "variant": 25,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 322.30899999999997,
+      "end": 331.2634,
+      "attribution": "",
+      "variant": 26,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.9544,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.9544,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.9544,trim=0:8.9544,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 331.2634,
+      "end": 338.2634,
+      "value": "figures/compare-side-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 338.2634,
+      "end": 349.67571666666663,
+      "attribution": "",
+      "variant": 27,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 349.67571666666663,
+      "end": 361.0880333333333,
+      "attribution": "",
+      "variant": 28,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 361.0880333333333,
+      "end": 372.50035,
+      "attribution": "",
+      "variant": 29,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 372.50035,
+      "end": 383.91266666666667,
+      "attribution": "",
+      "variant": 30,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 383.91266666666667,
+      "end": 395.3249833333333,
+      "attribution": "",
+      "variant": 31,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 395.3249833333333,
+      "end": 406.7373,
+      "attribution": "",
+      "variant": 32,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.4123,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.4123,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.4123,trim=0:11.4123,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 406.7373,
+      "end": 413.7373,
+      "value": "tables/numbers-sheet-6r-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 413.7373,
+      "end": 420.7373,
+      "value": "charts/line-6y-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "chart",
+      "start": 420.7373,
+      "end": 427.7373,
+      "value": "revenue",
+      "source": "generated",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "filing",
+      "start": 427.7373,
+      "end": 433.7373,
+      "value": "income_statement.png",
+      "attribution": "",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 433.7373,
+      "end": 438.7373,
+      "value": "hamster_wheel",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 438.7373,
+      "end": 445.7373,
+      "value": "structure/row-spotlight-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 445.7373,
+      "end": 452.7373,
+      "value": "charts/bars-6y-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 452.7373,
+      "end": 463.3707,
+      "attribution": "",
+      "variant": 33,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.6334,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6334,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6334,trim=0:10.6334,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 463.3707,
+      "end": 474.0041,
+      "attribution": "",
+      "variant": 34,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.6334,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.6334,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.6334,trim=0:10.6334,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 474.0041,
+      "end": 481.0041,
+      "value": "tables/numbers-sheet-4r-16x9",
+      "attribution": "",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 481.0041,
+      "end": 492.7195,
+      "attribution": "",
+      "variant": 35,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 492.7195,
+      "end": 504.43489999999997,
+      "attribution": "",
+      "variant": 36,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 504.43489999999997,
+      "end": 516.1503,
+      "attribution": "",
+      "variant": 37,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 516.1503,
+      "end": 527.8657,
+      "attribution": "",
+      "variant": 38,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 527.8657,
+      "end": 539.5811,
+      "attribution": "",
+      "variant": 39,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.7154,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.7154,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.7154,trim=0:11.7154,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 539.5811,
+      "end": 546.5811,
+      "value": "figures/big-number-l2-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 546.5811,
+      "end": 556.277,
+      "attribution": "",
+      "variant": 40,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.6959,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.6959,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.6959,trim=0:9.6959,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 556.277,
+      "end": 565.9729,
+      "attribution": "",
+      "variant": 41,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.6959,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.6959,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.6959,trim=0:9.6959,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 565.9729,
+      "end": 572.9729,
+      "value": "structure/unit-ladder-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 572.9729,
+      "end": 579.6515,
+      "attribution": "",
+      "variant": 42,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:6.6786,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:6.6786,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=6.6786,trim=0:6.6786,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 579.6515,
+      "end": 586.6515,
+      "value": "tables/cash-flow-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 586.6515,
+      "end": 597.666475,
+      "attribution": "",
+      "variant": 43,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 597.666475,
+      "end": 608.68145,
+      "attribution": "",
+      "variant": 44,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 608.68145,
+      "end": 619.6964250000001,
+      "attribution": "",
+      "variant": 45,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 619.6964250000001,
+      "end": 630.7114,
+      "attribution": "",
+      "variant": 46,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.0150,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.0150,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.0150,trim=0:11.0150,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 630.7114,
+      "end": 637.7114,
+      "value": "structure/timeline-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 637.7114,
+      "end": 648.83275,
+      "attribution": "",
+      "variant": 47,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 648.83275,
+      "end": 659.9541,
+      "attribution": "",
+      "variant": 48,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 659.9541,
+      "end": 671.07545,
+      "attribution": "",
+      "variant": 49,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 671.07545,
+      "end": 682.1967999999999,
+      "attribution": "",
+      "variant": 50,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1213,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1213,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1213,trim=0:11.1213,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 682.1967999999999,
+      "end": 693.31815,
+      "attribution": "",
+      "variant": 51,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 693.31815,
+      "end": 704.4395,
+      "attribution": "",
+      "variant": 52,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.1214,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.1214,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.1214,trim=0:11.1214,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 704.4395,
+      "end": 711.4395,
+      "value": "cards/quote-pull-16x9",
+      "attribution": "",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
+      "animation": {
+        "asset": "cards/quote-pull-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1649:928[hfg];[hbg][hfg]overlay=135:76:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 711.4395,
+      "end": 718.4395,
+      "value": "structure/timeline-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 718.4395,
+      "end": 729.793,
+      "attribution": "",
+      "variant": 53,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 729.793,
+      "end": 741.1465,
+      "attribution": "",
+      "variant": 54,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 741.1465,
+      "end": 752.5,
+      "attribution": "",
+      "variant": 55,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.3535,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.3535,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.3535,trim=0:11.3535,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "meme",
+      "start": 752.5,
+      "end": 755.5,
+      "value": "harold-quick-flip-became-bagholder",
+      "source": "library",
+      "attribution": "owned meme library (harold-quick-flip-became-bagholder)",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:3.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 755.5,
+      "end": 764.5637333333333,
+      "attribution": "",
+      "variant": 56,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 764.5637333333333,
+      "end": 773.6274666666667,
+      "attribution": "",
+      "variant": 57,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 773.6274666666667,
+      "end": 782.6912,
+      "attribution": "",
+      "variant": 58,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.0637,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.0637,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.0637,trim=0:9.0637,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 782.6912,
+      "end": 789.6912,
+      "value": "cards/quote-pull-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/quote-pull-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1346:757[hfg];[hbg][hfg]overlay=514:161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 789.6912,
+      "end": 800.9024666666667,
+      "attribution": "",
+      "variant": 59,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 800.9024666666667,
+      "end": 812.1137333333334,
+      "attribution": "",
+      "variant": 60,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 812.1137333333334,
+      "end": 823.325,
+      "attribution": "",
+      "variant": 61,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.2113,trim=0:11.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 823.325,
+      "end": 828.325,
+      "value": "boardroom_suits",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 828.325,
+      "end": 839.1712,
+      "attribution": "",
+      "variant": 62,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 839.1712,
+      "end": 850.0174000000001,
+      "attribution": "",
+      "variant": 63,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 850.0174000000001,
+      "end": 860.8636,
+      "attribution": "",
+      "variant": 64,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.8462,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.8462,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.8462,trim=0:10.8462,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "filing",
+      "start": 860.8636,
+      "end": 866.8636,
+      "value": "risk_factors.png",
+      "attribution": "",
+      "layout": "cutaway-full",
+      "filter": "[0:v]trim=0:6.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 866.8636,
+      "end": 873.8636,
+      "value": "paper/headline-band-t2-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "paper/headline-band-t2-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=1345:756[hfg];[hbg][hfg]overlay=515:162:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 873.8636,
+      "end": 882.759,
+      "attribution": "",
+      "variant": 65,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.8954,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.8954,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.8954,trim=0:8.8954,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 882.759,
+      "end": 889.759,
+      "value": "cards/quote-pull-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/quote-pull-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 889.759,
+      "end": 900.1658,
+      "attribution": "",
+      "variant": 66,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 900.1658,
+      "end": 910.5726,
+      "attribution": "",
+      "variant": 67,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 910.5726,
+      "end": 920.9793999999999,
+      "attribution": "",
+      "variant": 68,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 920.9793999999999,
+      "end": 931.3862,
+      "attribution": "",
+      "variant": 69,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 931.3862,
+      "end": 941.793,
+      "attribution": "",
+      "variant": 70,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 941.793,
+      "end": 952.1998,
+      "attribution": "",
+      "variant": 71,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.4068,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.4068,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.4068,trim=0:10.4068,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 952.1998,
+      "end": 959.1998,
+      "value": "structure/unit-ladder-16x9",
+      "attribution": "",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 959.1998,
+      "end": 971.1836333333333,
+      "attribution": "",
+      "variant": 72,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 971.1836333333333,
+      "end": 983.1674666666667,
+      "attribution": "",
+      "variant": 73,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 983.1674666666667,
+      "end": 995.1513,
+      "attribution": "",
+      "variant": 74,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 995.1513,
+      "end": 1007.1351333333332,
+      "attribution": "",
+      "variant": 75,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1007.1351333333332,
+      "end": 1019.1189666666666,
+      "attribution": "",
+      "variant": 76,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1019.1189666666666,
+      "end": 1031.1028,
+      "attribution": "",
+      "variant": 77,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:11.9838,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:11.9838,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=11.9838,trim=0:11.9838,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1031.1028,
+      "end": 1038.1028,
+      "value": "figures/big-number-l2-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1038.1028,
+      "end": 1047.34925,
+      "attribution": "",
+      "variant": 78,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.2465,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2465,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2465,trim=0:9.2465,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1047.34925,
+      "end": 1056.5957,
+      "attribution": "",
+      "variant": 79,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.2465,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.2465,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.2465,trim=0:9.2465,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1056.5957,
+      "end": 1063.5957,
+      "value": "figures/big-fraction-16x9",
+      "attribution": "",
+      "layout": "full-frame (annotated)",
+      "layout_asked": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1063.5957,
+      "end": 1069.3421,
+      "attribution": "",
+      "variant": 80,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:5.7464,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:5.7464,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.7464,trim=0:5.7464,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1069.3421,
+      "end": 1076.3421,
+      "value": "cycles/cycle-frame-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1076.3421,
+      "end": 1084.6502,
+      "attribution": "",
+      "variant": 81,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.3081,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3081,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3081,trim=0:8.3081,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1084.6502,
+      "end": 1092.9583,
+      "attribution": "",
+      "variant": 82,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:8.3081,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:8.3081,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=8.3081,trim=0:8.3081,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1092.9583,
+      "end": 1099.9583,
+      "value": "figures/big-fraction-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1099.9583,
+      "end": 1110.1696,
+      "attribution": "",
+      "variant": 83,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1110.1696,
+      "end": 1120.3809,
+      "attribution": "",
+      "variant": 84,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1120.3809,
+      "end": 1130.5922,
+      "attribution": "",
+      "variant": 85,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1130.5922,
+      "end": 1140.8035,
+      "attribution": "",
+      "variant": 86,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1140.8035,
+      "end": 1151.0148000000002,
+      "attribution": "",
+      "variant": 87,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1151.0148000000002,
+      "end": 1161.2261,
+      "attribution": "",
+      "variant": 88,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2113,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2113,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2113,trim=0:10.2113,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1161.2261,
+      "end": 1168.2261,
+      "value": "structure/both-true-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "clip",
+      "start": 1168.2261,
+      "end": 1173.2261,
+      "value": "growing_plant",
+      "source": "cache",
+      "attribution": "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+      "layout": "cutaway-full",
+      "filter": "[1:v]trim=0:5.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[0:v]trim=0:5.0000,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=5.0000,trim=0:5.0000,scale=1306:648[hfg];[hbg][hfg]overlay=307:130:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1173.2261,
+      "end": 1175.1732,
+      "attribution": "",
+      "variant": 89,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:1.9471,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:1.9471,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=1.9471,trim=0:1.9471,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1175.1732,
+      "end": 1182.1732,
+      "value": "cards/criteria-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "animation": {
+        "asset": "cards/criteria-16x9",
+        "frames": 210,
+        "distinct": 2
+      },
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]loop=loop=-1:size=32767:start=0,setpts=N/FRAME_RATE/TB,trim=0:7.0000,setpts=PTS-STARTPTS,scale=971:546[hfg];[hbg][hfg]overlay=889:267:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1182.1732,
+      "end": 1191.5162,
+      "attribution": "",
+      "variant": 90,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=467:830[hfg];[hbg][hfg]overlay=362:116:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1191.5162,
+      "end": 1200.8591999999999,
+      "attribution": "",
+      "variant": 91,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1200.8591999999999,
+      "end": 1210.2022,
+      "attribution": "",
+      "variant": 92,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:9.3430,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:9.3430,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=9.3430,trim=0:9.3430,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1210.2022,
+      "end": 1217.2022,
+      "value": "structure/closing-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1217.2022,
+      "end": 1227.43384,
+      "attribution": "",
+      "variant": 93,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1227.43384,
+      "end": 1237.66548,
+      "attribution": "",
+      "variant": 94,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1237.66548,
+      "end": 1247.89712,
+      "attribution": "",
+      "variant": 95,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1247.89712,
+      "end": 1258.12876,
+      "attribution": "",
+      "variant": 96,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1258.12876,
+      "end": 1268.3604,
+      "attribution": "",
+      "variant": 97,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.2316,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.2316,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.2316,trim=0:10.2316,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "plate",
+      "start": 1268.3604,
+      "end": 1275.3604,
+      "value": "structure/both-true-16x9",
+      "attribution": "",
+      "layout": "two-shot",
+      "filter": "[0:v]trim=0:7.0000,setpts=PTS-STARTPTS,scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1275.3604,
+      "end": 1285.469851,
+      "attribution": "",
+      "variant": 98,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=951:1691[hfg];[hbg][hfg]overlay=330:-161:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1285.469851,
+      "end": 1295.5793019999999,
+      "attribution": "",
+      "variant": 99,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=466:829[hfg];[hbg][hfg]overlay=121:117:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    },
+    {
+      "kind": "host",
+      "start": 1295.5793019999999,
+      "end": 1305.688753,
+      "attribution": "",
+      "variant": 100,
+      "layout": "host-full",
+      "filter": "[0:v]trim=0:10.1095,setpts=PTS-STARTPTS,scale=1920:1080[hbg];[1:v]trim=0:10.1095,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=10.1095,trim=0:10.1095,scale=1045:1045[hfg];[hbg][hfg]overlay=437:35:eof_action=repeat,setsar=1,format=yuv420p[out]"
+    }
+  ],
+  "segmented": true,
+  "segment_cache_hits": 61,
+  "segment_failures": [],
+  "layers": [
+    {
+      "name": "intro_card",
+      "t_start": 0.0,
+      "t_end": 2.6,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_1",
+      "t_start": 9.3307,
+      "t_end": 10.9307,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_2",
+      "t_start": 189.07137999999998,
+      "t_end": 190.67137999999997,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_3",
+      "t_start": 361.0880333333333,
+      "t_end": 362.68803333333335,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_4",
+      "t_start": 572.9729,
+      "t_end": 574.5729,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_5",
+      "t_start": 752.5,
+      "t_end": 754.1,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_6",
+      "t_start": 920.9793999999999,
+      "t_end": 922.5794,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_7",
+      "t_start": 1110.1696,
+      "t_end": 1111.7695999999999,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "chapter_8",
+      "t_start": 1247.89712,
+      "t_end": 1249.49712,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "glitch@427.74",
+      "t_start": 427.7373,
+      "t_end": 428.2373,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "glitch@860.86",
+      "t_start": 860.8636,
+      "t_end": 861.3636,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "name": "scribble_0",
+      "t_start": 238.6831,
+      "t_end": 241.1831,
+      "x": 1449,
+      "y": 433
+    },
+    {
+      "name": "scribble_1",
+      "t_start": 431.8417,
+      "t_end": 434.3417,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_2",
+      "t_start": 474.0041,
+      "t_end": 476.5041,
+      "x": 1415,
+      "y": 398
+    },
+    {
+      "name": "scribble_3",
+      "t_start": 572.9731,
+      "t_end": 575.4731,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_4",
+      "t_start": 592.6172,
+      "t_end": 595.1172,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_5",
+      "t_start": 711.1059,
+      "t_end": 713.6059,
+      "x": 170,
+      "y": 345
+    },
+    {
+      "name": "scribble_6",
+      "t_start": 802.3732,
+      "t_end": 804.8732,
+      "x": 610,
+      "y": 310
+    },
+    {
+      "name": "scribble_7",
+      "t_start": 957.2828,
+      "t_end": 959.7828,
+      "x": 1308,
+      "y": 239
+    },
+    {
+      "name": "scribble_8",
+      "t_start": 1063.008,
+      "t_end": 1065.508,
+      "x": 349,
+      "y": 748
+    },
+    {
+      "name": "corner_bug",
+      "t_start": 0.0,
+      "t_end": 1305.688753,
+      "x": 1387,
+      "y": 30
+    },
+    {
+      "name": "lower_third",
+      "t_start": 0.0,
+      "t_end": 1305.688753,
+      "x": 36,
+      "y": 30
+    },
+    {
+      "name": "disclaimer",
+      "t_start": 0.0,
+      "t_end": 1305.688753,
+      "x": 36,
+      "y": 1036
+    }
+  ],
+  "marks": [
+    {
+      "t": 238.68,
+      "style": "scrawl-oval-tight",
+      "asked": "scrawl-oval-wide",
+      "target": "Or it doesn't",
+      "on_screen": true,
+      "fitted": "scrawl-oval-wide solves to 2.6 against a legible band of 3.2-26.0 on a target 151px wide; scrawl-oval-tight is the same gesture at 8.8",
+      "warnings": []
+    },
+    {
+      "t": 431.84,
+      "style": "underline-tight",
+      "target": "-89",
+      "on_screen": false,
+      "warnings": []
+    },
+    {
+      "t": 474.0,
+      "style": "underline-tight",
+      "asked": "underline-swipe",
+      "target": "3.94",
+      "on_screen": true,
+      "fitted": "underline-swipe solves to 0.8 against a legible band of 3.2-26.0 on a target 88px wide; underline-tight is the same gesture at 3.8",
+      "warnings": []
+    },
+    {
+      "t": 572.97,
+      "style": "strike-out",
+      "target": "212",
+      "on_screen": false,
+      "warnings": []
+    },
+    {
+      "t": 592.62,
+      "style": "bracket-rows",
+      "target": "Working capital",
+      "on_screen": false,
+      "warnings": []
+    },
+    {
+      "t": 711.11,
+      "style": "box-scrawl",
+      "asked": "box-scrawl",
+      "target": "Durable growth",
+      "on_screen": true,
+      "fitted": "",
+      "warnings": []
+    },
+    {
+      "t": 802.37,
+      "style": "caret-note",
+      "target": "encourage you",
+      "on_screen": false,
+      "warnings": []
+    },
+    {
+      "t": 957.28,
+      "style": "strike-out",
+      "asked": "strike-out",
+      "target": "52",
+      "on_screen": true,
+      "fitted": "",
+      "warnings": []
+    },
+    {
+      "t": 1063.01,
+      "style": "scrawl-oval-tight",
+      "asked": "scrawl-oval-tight",
+      "target": "14%",
+      "on_screen": true,
+      "fitted": "",
+      "warnings": []
+    }
+  ],
+  "marks_out_of_band": [],
+  "segment_warnings": [
+    "116s with no visual from 21s to 137s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "50s with no visual from 159s to 209s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "32s with no visual from 267s to 299s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "27s with no visual from 304s to 331s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "68s with no visual from 338s to 407s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "visual cue at 411.48s deferred to 413.74s \u2014 the previous visual was still being read",
+    "visual cue at 414.38s deferred to 420.74s \u2014 the previous visual was still being read",
+    "visual cue at 414.38s deferred to 427.74s \u2014 the previous visual was still being read",
+    "visual cue at 431.84s deferred to 438.74s \u2014 the previous visual was still being read",
+    "visual cue at 436.91s deferred to 445.74s \u2014 the previous visual was still being read",
+    "59s with no visual from 481s to 540s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "44s with no visual from 587s to 631s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "67s with no visual from 638s to 704s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "visual cue at 748.01s deferred to 752.50s \u2014 the previous visual was still being read",
+    "34s with no visual from 718s to 752s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "27s with no visual from 756s to 783s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "34s with no visual from 790s to 823s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "33s with no visual from 828s to 861s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "visual cue at 860.86s deferred to 866.86s \u2014 the previous visual was still being read",
+    "62s with no visual from 890s to 952s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "72s with no visual from 959s to 1031s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "61s with no visual from 1100s to 1161s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "visual cue at 1161.23s deferred to 1168.23s \u2014 the previous visual was still being read",
+    "28s with no visual from 1182s to 1210s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "51s with no visual from 1217s to 1268s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "30s with no visual from 1275s to 1306s \u2014 the shot changes but nothing new is shown; consider a tag in that stretch",
+    "adjacent img cuts at 208.93s/213.93s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 406.74s/413.74s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 438.74s/445.74s \u2014 same visual type back-to-back",
+    "adjacent plate cuts at 704.44s/711.44s \u2014 same visual type back-to-back"
+  ],
+  "chapter_warnings": [],
+  "chapters": [
+    {
+      "t": 0.0,
+      "title": "a body or a bargain",
+      "type": "cold-open"
+    },
+    {
+      "t": 180.0,
+      "title": "what they actually sell",
+      "type": "how-the-money-is-made"
+    },
+    {
+      "t": 360.0,
+      "title": "six years, one direction",
+      "type": "the-numbers"
+    },
+    {
+      "t": 570.0,
+      "title": "where the cash went",
+      "type": "capital-allocation"
+    },
+    {
+      "t": 750.0,
+      "title": "eleven quarters, one sentence",
+      "type": "management"
+    },
+    {
+      "t": 920.0,
+      "title": "the covenant, four hundred pages in",
+      "type": "risk"
+    },
+    {
+      "t": 1100.0,
+      "title": "what you'd have to believe",
+      "type": "valuation"
+    },
+    {
+      "t": 1240.0,
+      "title": "the close",
+      "type": "resigned-close"
+    }
+  ],
+  "plates_used": [
+    "cards/criteria-16x9",
+    "cards/definition-16x9",
+    "cards/quote-pull-16x9",
+    "charts/bars-6y-16x9",
+    "charts/line-6y-16x9",
+    "cycles/cycle-frame-16x9",
+    "figures/big-fraction-16x9",
+    "figures/big-number-l1-16x9",
+    "figures/big-number-l2-16x9",
+    "figures/compare-side-16x9",
+    "frames/media-frame-t1-16x9",
+    "frames/media-frame-t2-16x9",
+    "frames/media-frame-t3-16x9",
+    "host/close-up",
+    "host/hands-in-pockets",
+    "host/holding-a-page",
+    "host/leaning-on-desk",
+    "host/medium-glance-left",
+    "host/medium-glance-right",
+    "host/pointing-down-at-desk",
+    "paper/headline-band-t1-16x9",
+    "paper/headline-band-t2-16x9",
+    "room/corner-perspective-16x9",
+    "room/desk-corner-16x9",
+    "room/desk-front-16x9",
+    "room/low-desk-height-16x9",
+    "room/whiteboard-wall-16x9",
+    "room/wide-16x9",
+    "structure/both-true-16x9",
+    "structure/closing-16x9",
+    "structure/flow-16x9",
+    "structure/row-spotlight-16x9",
+    "structure/timeline-16x9",
+    "structure/unit-ladder-16x9",
+    "tables/cash-flow-16x9",
+    "tables/numbers-sheet-4r-16x9",
+    "tables/numbers-sheet-6r-16x9"
+  ],
+  "stingers": [
+    {
+      "type": "cold-open",
+      "title": "a body or a bargain",
+      "script_t": 0.0,
+      "t": 9.33
+    },
+    {
+      "type": "how-the-money-is-made",
+      "title": "what they actually sell",
+      "script_t": 180.0,
+      "t": 189.07
+    },
+    {
+      "type": "the-numbers",
+      "title": "six years, one direction",
+      "script_t": 360.0,
+      "t": 361.09
+    },
+    {
+      "type": "capital-allocation",
+      "title": "where the cash went",
+      "script_t": 570.0,
+      "t": 572.97
+    },
+    {
+      "type": "management",
+      "title": "eleven quarters, one sentence",
+      "script_t": 750.0,
+      "t": 752.5
+    },
+    {
+      "type": "risk",
+      "title": "the covenant, four hundred pages in",
+      "script_t": 920.0,
+      "t": 920.98
+    },
+    {
+      "type": "valuation",
+      "title": "what you'd have to believe",
+      "script_t": 1100.0,
+      "t": 1110.17
+    },
+    {
+      "type": "resigned-close",
+      "title": "the close",
+      "script_t": 1240.0,
+      "t": 1247.9
+    }
+  ],
+  "transitions": [],
+  "animated_segments": 8,
+  "longest_host_beat_s": 11.98,
+  "host_motion": [
+    {
+      "segment": 0,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 136,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 3,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 4,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 5,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 171,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 6,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 7,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 171,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 8,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 9,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 10,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 174,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 11,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 12,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 174,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 14,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 16,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 148,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 17,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 148,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 18,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 150,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 19,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 150,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 20,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 148,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 23,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 54,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 25,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 54,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 27,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 149,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 28,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 148,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 30,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 162,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 31,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 157,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 32,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 162,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 34,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 133,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 35,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 134,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 36,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 136,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 38,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 39,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 40,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 41,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 171,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 42,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 172,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 43,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 171,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 51,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 158,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 52,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 159,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 54,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 55,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 56,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 57,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 58,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 175,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 60,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 146,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 61,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 146,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 63,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 99,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 65,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 162,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 66,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 164,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 67,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 164,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 68,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 165,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 70,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 167,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 71,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 168,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 72,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 167,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 73,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 167,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 74,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 167,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 75,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 167,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 78,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 169,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 79,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 170,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 80,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 171,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 82,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 136,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 83,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 138,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 84,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 136,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 86,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 168,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 87,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 169,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 88,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 169,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 90,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 163,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 91,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 163,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 92,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 162,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 95,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 129,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 97,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 157,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 98,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 99,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 158,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 100,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 156,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 101,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 156,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 102,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 156,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 104,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 105,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 106,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 107,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 108,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 109,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 180,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 111,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 138,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 112,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 137,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 114,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 85,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 116,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 125,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 117,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 124,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 119,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 120,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 152,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 121,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 152,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 122,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 123,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 124,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 152,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 127,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 28,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 129,
+      "pose": "host/leaning-on-desk",
+      "spoke": true,
+      "talk_frames": 139,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 130,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 139,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 131,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 141,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 133,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 153,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 134,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 155,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 135,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 154,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 136,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 153,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 137,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 153,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 139,
+      "pose": "host/hands-in-pockets",
+      "spoke": true,
+      "talk_frames": 150,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 140,
+      "pose": "host/holding-a-page",
+      "spoke": true,
+      "talk_frames": 153,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    },
+    {
+      "segment": 141,
+      "pose": "host/close-up",
+      "spoke": true,
+      "talk_frames": 150,
+      "idle_frames": 0,
+      "has_talk": true,
+      "has_idle": true
+    }
+  ],
+  "panel_hosts": {
+    "2": "host/leaning-on-desk",
+    "15": "host/medium-glance-left",
+    "24": "host/pointing-down-at-desk",
+    "29": "host/holding-a-page",
+    "37": "host/holding-a-page",
+    "44": "host/pointing-down-at-desk",
+    "45": "host/holding-a-page",
+    "46": "host/leaning-on-desk",
+    "49": "host/holding-a-page",
+    "50": "host/leaning-on-desk",
+    "59": "host/medium-glance-right",
+    "62": "host/leaning-on-desk",
+    "64": "host/pointing-down-at-desk",
+    "69": "host/holding-a-page",
+    "77": "host/holding-a-page",
+    "85": "host/holding-a-page",
+    "94": "host/leaning-on-desk",
+    "96": "host/pointing-down-at-desk",
+    "110": "host/leaning-on-desk",
+    "115": "host/medium-glance-left",
+    "118": "host/leaning-on-desk",
+    "125": "host/holding-a-page",
+    "128": "host/pointing-down-at-desk",
+    "132": "host/pointing-down-at-desk",
+    "138": "host/leaning-on-desk"
+  },
+  "glances": [
+    "host/medium-glance-left",
+    "host/medium-glance-right"
+  ],
+  "blinks": 0,
+  "shots_with_blink": 0,
+  "shots_with_idle": 101,
+  "attributions": [
+    "\"Factory floor\" by A. Photographer, CC BY-SA 4.0, via Wikimedia Commons",
+    "Video by Generic Fixture on Pexels (https://www.pexels.com/video/mock-generic-990001/)",
+    "owned meme library (harold-quick-flip-became-bagholder)"
+  ],
+  "filter_script": "/home/user/Content-Machine/workspace/EXMPL/sample_long_full/long_final.filter.txt",
+  "output": "/home/user/Content-Machine/workspace/EXMPL/sample_long_full/long_final.mp4"
+}

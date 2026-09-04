@@ -1,0 +1,48 @@
+figures — one number, large
+==========================
+
+USE WHEN
+  A single quantity is the beat. The frame's job is to make it unforgettable
+  and then get out of the way. If two numbers matter, use compare-*; if
+  three do, it is a table.
+
+MEMBERS
+  big-number-l1     kicker, value, label, caption. One line of label.
+  big-number-l2     adds detail — a second label line, for a qualifier the
+                    number cannot carry alone ("...at the midpoint of guidance").
+  big-fraction      numerator over denominator, both labelled, with a result.
+                    Use when the number is a ratio and the reader should see
+                    what it is made of.
+  compare-side      two quantities, side by side. 16:9 has detail-1/detail-2;
+                    9:16 replaces them with a single delta.
+  compare-stacked   two quantities, one above the other, with a delta. Use
+                    when the two are the same measure at two times; side-by-
+                    side is for two different things at the same time.
+
+SLOTS
+  kicker      what this is. Small, above. Sets the frame, never repeats the
+              label.
+  value       the number. Largest thing on the plate.
+  label       what it measures.
+  detail      the qualifier (l2, compare-side 16:9 only)
+  caption     source or basis. Lowest, smallest. Always populated on any
+              figure that came from a filing.
+  big-fraction: numerator / numerator-label / denominator / denominator-label
+              / result
+  compare-*:  label-1 / value-1 / label-2 / value-2, plus delta or detail-N
+
+SEQUENCE
+  1  kicker
+  2  value — the whole point, do not build up to it
+  3  label
+  4  detail, if present
+  5  caption
+  compare-*: kicker, then side 1 complete, then side 2 complete, then delta.
+  Never both values at once — the frame is an argument about the second one.
+
+TRAPS
+  * The value takes a colour only if it has direction. A revenue figure is
+    neutral data even in a segment about decline.
+  * delta takes up or down and gets the sign. If it needs a sentence to be
+    understood, it belongs in caption.
+  * kicker is not a title. Titles go on paper/headline-band.

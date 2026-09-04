@@ -1,178 +1,259 @@
 #!/usr/bin/env python3
-"""Install a DENNIS kit delivery into the repo, or verify the installed one.
+"""Materialise the design kit: run the engine, write the artwork, verify it.
 
-    python scripts/ingest_kit.py <delivery-dir>   install, verifying as it goes
-    python scripts/ingest_kit.py --check          verify what is already here
+    python scripts/ingest_kit.py kit            build from the delivery in kit/
+    python scripts/ingest_kit.py kit --outfit cardigan
+    python scripts/ingest_kit.py --check        verify what is already on disk
 
-A delivery is a directory containing `assets/manifest.json`, the per-register
-PNG and SVG directories it names, and `engine/`. The ingest REPLACES the
-register directories and the manifests; there is no merge mode, because
-merging is what left stale assets resolvable last time.
+THE KIT IS CODE, NOT PICTURES. `kit/engine/build.js` declares every asset as an
+author plus a seed plus arguments, and `BUILD.draw()` reproduces it byte for
+byte. Outfits, boil frames and aspects are arguments — which is why the delivery
+is 1.4 MB of JS rather than 860 MB of PNGs, and why five outfits are not five
+families somebody has to re-export.
 
-Nothing here trusts the manifest. Every frame it names is opened and measured,
-every slot is checked against its own canvas, and any single failure exits
-non-zero and says DO NOT COMMIT. A missing asset must never reach a render and
-degrade quietly into an empty box: this is where that is stopped.
+So ingest RUNS the engine and writes real files out, and the render path then
+loads plain PNGs exactly as it always did. Node is a build-time dependency and
+must never appear in the render path: a bug in `plates.js` has to break a build,
+not a published video. Nothing under `pipeline/` imports this module or shells
+out to node — `tests/test_ingest.py` holds that line.
+
+Nothing here trusts anything. The engine's own manifest is checked against the
+manifest the delivery shipped, every frame it names is opened and measured, and
+a PNG on disk that the registry does not name is a failure rather than dead
+weight nobody notices. Any single failure exits non-zero and says DO NOT COMMIT,
+because a missing asset must never reach a render and degrade quietly into an
+empty box.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from pipeline.kit_manifest import (  # noqa: E402
-    LIGHT_REGISTER, MANIFEST_NAME, REGISTERS, KitError, _parse_entries,
-    _png_size, verify_entries,
+from pipeline.plates import (  # noqa: E402
+    CHAPTER_TYPES, PLATES_DIRNAME, REGISTRY_NAME, PlateError, load_registry,
 )
 
 REPO = Path(__file__).resolve().parents[1]
-ALL_REGISTERS = (*REGISTERS, LIGHT_REGISTER)
+DRIVER = REPO / "scripts" / "kit_engine.js"
 
-# Names Windows cannot create, whatever the filesystem underneath says. A
-# delivery is somebody else's export: `restyle/con/` arrived that way once and
-# took eighteen frames down with it, silently, because the Linux tree still
-# looked clean. 3,544 files is a lot of chances to do it again.
-_WIN_RESERVED = {"con", "prn", "aux", "nul",
-                 *(f"com{i}" for i in range(1, 10)),
-                 *(f"lpt{i}" for i in range(1, 10))}
-_WIN_ILLEGAL = set('<>:"|?*') | {chr(c) for c in range(32)}
-
-
-def unportable(relpath: str) -> str | None:
-    """Why Windows would refuse this path, or `None` if it would not."""
-    for seg in str(relpath).replace("\\", "/").split("/"):
-        if not seg:
-            continue
-        if seg.split(".")[0].lower() in _WIN_RESERVED:
-            return f"{seg!r} is a reserved device name on Windows"
-        bad = sorted(_WIN_ILLEGAL & set(seg))
-        if bad:
-            return f"{seg!r} contains {''.join(bad)!r}"
-        if seg != seg.rstrip(" .") or seg != seg.lstrip(" "):
-            return f"{seg!r} has a leading or trailing space or dot"
-    return None
+# The families the delivery ships. A family on disk that is not here, or one
+# here with nothing on disk, is a delivery that changed shape without anyone
+# saying so — which is the moment to look, not to carry on.
+EXPECTED_FAMILIES = frozenset({
+    "annotations", "cards", "charts", "cycles", "figures", "frames", "host",
+    "overlays", "paper", "peers", "room", "shorts", "structure", "tables",
+})
 
 
-def _read_manifest(assets_dir: Path) -> dict:
-    mpath = assets_dir / MANIFEST_NAME
-    if not mpath.exists():
-        raise KitError(f"no {MANIFEST_NAME} in {assets_dir}")
-    return json.loads(mpath.read_text(encoding="utf-8"))
+def _node(delivery: Path, out: Path, outfit: str) -> dict:
+    """Run the engine. Its stdout is the registry; stderr is for the operator."""
+    if not DRIVER.exists():
+        raise PlateError(f"missing engine driver {DRIVER}")
+    cmd = ["node", str(DRIVER), "--kit", str(delivery), "--out", str(out),
+           "--outfit", outfit]
+    print(f"  $ {' '.join(cmd)}")
+    try:
+        proc = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+    except FileNotFoundError:
+        raise PlateError(
+            "node is not on PATH. The kit is JS and is rendered at INGEST — "
+            "install Node 18+ and run `npm ci` for the rasteriser. The render "
+            "path needs neither."
+        ) from None
+    if proc.stderr.strip():
+        for line in proc.stderr.strip().splitlines():
+            print(f"  {line}")
+    if proc.returncode != 0:
+        raise PlateError(f"the engine failed (exit {proc.returncode})")
+    try:
+        return json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise PlateError(f"the engine did not emit a registry: {exc}") from None
 
 
-def _install(delivery: Path, repo: Path) -> None:
-    src_assets = delivery / "assets"
-    if not src_assets.is_dir():
-        raise KitError(f"{delivery} has no assets/ directory")
-    dst_assets = repo / "assets"
-    dst_assets.mkdir(parents=True, exist_ok=True)
+def _shipped_manifests(delivery: Path) -> dict:
+    """Every asset the delivery's own manifests declare, merged."""
+    out: dict = {}
+    for m in sorted(delivery.glob("*/manifest.json")):
+        raw = json.loads(m.read_text(encoding="utf-8"))
+        for key, entry in raw.get("assets", {}).items():
+            out[key] = entry
+    return out
 
-    for reg in ALL_REGISTERS:
-        for sub in (reg, f"{reg}-svg"):
-            src = src_assets / sub
-            if not src.is_dir():
-                continue
-            dst = dst_assets / sub
-            if dst.exists():
-                shutil.rmtree(dst)
-            shutil.copytree(src, dst)
-            print(f"  {sub}/  {len(list(dst.iterdir()))} files")
 
-    for m in sorted(src_assets.glob("manifest*.json")):
-        shutil.copy2(m, dst_assets / m.name)
-        print(f"  {m.name}")
-    readme = src_assets / "README.md"
-    if readme.exists():
-        shutil.copy2(readme, dst_assets / "KIT_README.md")
+def _reconcile(built: dict, shipped: dict) -> list[str]:
+    """The engine drew it; the delivery said what it would be. They must agree.
 
-    src_engine = delivery / "engine"
-    if src_engine.is_dir():
-        dst_engine = repo / "engine"
-        dst_engine.mkdir(exist_ok=True)
-        for js in sorted(src_engine.glob("*.js")):
-            shutil.copy2(js, dst_engine / js.name)
-            print(f"  engine/{js.name}")
-        top_readme = delivery / "README.md"
-        if top_readme.exists():
-            shutil.copy2(top_readme, dst_engine / "KIT_DELIVERY.md")
+    This is the check that makes "the engine is the source, the PNGs are a
+    cache" safe to act on. If a re-run of the engine produced different slot
+    geometry from the manifests the artwork was signed off against, every
+    downstream coordinate is wrong and no rendered frame would look obviously
+    broken — the figures would just sit somewhere else.
+    """
+    problems: list[str] = []
+    for key in sorted(set(shipped) - set(built)):
+        problems.append(f"{key}: the delivery declares it, the engine did not draw it")
+    for key in sorted(set(built) - set(shipped)):
+        problems.append(f"{key}: the engine drew it, no manifest declares it")
+    for key in sorted(set(built) & set(shipped)):
+        b, s = built[key], shipped[key]
+        for field in ("canvas", "exportScale", "playback", "frameCount", "slots"):
+            if b.get(field) != s.get(field):
+                problems.append(
+                    f"{key}: {field} disagrees with the shipped manifest "
+                    f"(engine {b.get(field)!r} vs delivery {s.get(field)!r})")
+    return problems
+
+
+def _install(built: dict, delivery: Path, staged: Path, dest: Path,
+             outfit: str) -> dict:
+    """Replace the installed kit with what was just drawn.
+
+    REPLACES, never merges. Merging is what left stale assets resolvable last
+    time: a family that shrank kept its old members, and they stayed addressable
+    from a script long after the artwork stopped meaning anything.
+    """
+    roles_path = delivery / "roles.json"
+    roles = json.loads(roles_path.read_text(encoding="utf-8")) if roles_path.exists() else {}
+    if not roles:
+        print("  (the delivery ships no roles.json — chapter types and host "
+              "roles will be empty)")
+
+    if dest.exists():
+        shutil.rmtree(dest)
+    dest.mkdir(parents=True)
+    for fam in sorted({e["family"] for e in built["assets"].values()}):
+        shutil.copytree(staged / fam, dest / fam)
+        print(f"  {fam}/  {len(list((dest / fam).iterdir()))} files")
+
+    registry = dict(built)
+    registry["outfit"] = outfit
+    registry["hostRoles"] = {k: v for k, v in roles.get("hostRoles", {}).items()
+                             if not k.startswith("_")}
+    registry["hostPoses"] = roles.get("hostPoses", {})
+    registry["roomRoles"] = {k: v for k, v in roles.get("roomRoles", {}).items()
+                             if not k.startswith("_")}
+    registry["chapterTypes"] = roles.get("chapterTypes", {})
+    registry["purposes"] = {k: v for k, v in roles.get("purposes", {}).items()
+                            if not k.startswith("_")}
+    # ONE OUTFIT PER EPISODE. `--outfit` picks which of the five the engine
+    # renders into the figure keys; the robe is a different KEY rather than a
+    # recolour, so the pipeline needs the block itself to know that
+    # `host/medium-robe` is the same shot in other clothes.
+    registry["wardrobe"] = {k: v for k, v in roles.get("wardrobe", {}).items()
+                            if not k.startswith("_")}
+    (dest / REGISTRY_NAME).write_text(
+        json.dumps(registry, indent=1, sort_keys=False) + "\n", encoding="utf-8")
+    print(f"  {REGISTRY_NAME}")
+    return registry
 
 
 def _verify(repo: Path) -> int:
-    """The exhaustive pass: every register, every frame, every slot."""
-    assets = repo / "assets"
-    raw = _read_manifest(assets)
-    entries = _parse_entries(raw, repo)
+    """The exhaustive pass: every asset, every frame, every slot, every file."""
+    dest = repo / "assets" / PLATES_DIRNAME
+    reg = load_registry(dest)
 
-    print(f"manifest: {len(entries)} entries, "
-          f"{sum(e.frames for e in entries)} frames")
+    print(f"registry: {len(reg.assets)} plates, "
+          f"{sum(a.frame_count for a in reg.assets.values())} frames, "
+          f"outfit {reg.outfit!r}")
 
-    problems = verify_entries(entries, registers=None,
-                              check_files=True, check_sizes=True)
+    problems: list[str] = []
+    named: set[Path] = set()
 
-    # The SVG source is the thing that allows a re-export at any resolution
-    # later, so a delivery that dropped one is incomplete even though every
-    # PNG is present and every render would succeed.
-    for e in entries:
-        for f in e.svg_files:
-            p = repo / e.svg_dir / f
+    for key, a in sorted(reg.assets.items()):
+        d = dest / a.family
+        for fr in a.frames:
+            p = d / fr.png
+            named.add(p.resolve())
             if not p.exists():
-                problems.append(f"{e.key}: missing SVG source {p}")
-
-    # Anything on disk the manifest does not name. A PNG with no entry does
-    # not exist as far as the renderer is concerned, and it is dead weight in
-    # a repository that is already carrying 1,772 frames.
-    named = {(repo / e.dir / f).resolve() for e in entries for f in e.files}
-    named |= {(repo / e.svg_dir / f).resolve()
-              for e in entries for f in e.svg_files}
-    orphans = []
-    for reg in ALL_REGISTERS:
-        for sub in (reg, f"{reg}-svg"):
-            d = assets / sub
-            if not d.is_dir():
+                problems.append(f"{key}: missing frame {p.relative_to(repo)}")
                 continue
-            for p in d.iterdir():
-                if p.is_file() and p.resolve() not in named:
-                    orphans.append(p)
+            size = _png_size(p)
+            if size != tuple(a.delivered):
+                problems.append(
+                    f"{key}: {fr.png} is {size[0]}x{size[1]}, the registry "
+                    f"promises {a.delivered[0]}x{a.delivered[1]}")
+            if fr.svg:
+                sp = d / fr.svg
+                named.add(sp.resolve())
+                if not sp.exists():
+                    problems.append(f"{key}: missing SVG source {sp.relative_to(repo)}")
 
-    # Portability, on every path the manifest names.
-    for e in entries:
-        for f in e.files:
-            why = unportable(f"{e.dir}{f}")
-            if why:
-                problems.append(f"{e.key}: {why}")
-        for f in e.svg_files:
-            why = unportable(f"{e.svg_dir}{f}")
-            if why:
-                problems.append(f"{e.key}: {why}")
+        base = d / a.files_png
+        named.add(base.resolve())
+        if a.files_svg:
+            named.add((d / a.files_svg).resolve())
+        if not base.exists():
+            problems.append(f"{key}: missing base file {base.relative_to(repo)}")
+        elif a.base_is_frame:
+            # f01 BYTE-IDENTICAL TO BASE. Not "the same drawing" — the same
+            # bytes. A base that is its own render pops on the first frame of
+            # the loop, and a re-render with the same arguments is exactly the
+            # kind of thing that looks right and is not.
+            first = d / a.frames[0].png
+            if first.exists() and _sha(base) != _sha(first):
+                problems.append(
+                    f"{key}: the base file is not byte-identical to "
+                    f"{a.frames[0].tag} — entering the loop will pop")
 
-    scales = Counter()
-    for e in entries:
-        sx, sy = e.scale
-        scales[(sx, sy)] += 1
-    playback = Counter(e.playback for e in entries)
-    groups = Counter(e.group for e in entries)
-    regs = Counter(e.register for e in entries)
+        # Slots are checked against the canvas but NOT clipped to it, and a
+        # slot outside it is not an error. Twelve annotation slots sit outside
+        # their own plate on purpose — `bracket-rows/area` is at x = -880 —
+        # because a mark is composited onto something else and its caption
+        # lands beside the mark, not inside it. A renderer that clips would
+        # silently drop every annotation caption.
+        for name, s in a.slots.items():
+            if s.w <= 0 or s.h <= 0:
+                problems.append(f"{key}: slot {name!r} has no area")
 
-    print(f"registers: {dict(sorted(regs.items()))}")
-    print(f"groups:    {dict(sorted(groups.items()))}")
+    orphans = []
+    for fam in sorted(EXPECTED_FAMILIES):
+        fd = dest / fam
+        if not fd.is_dir():
+            problems.append(f"family {fam}/ is missing from the installed kit")
+            continue
+        for p in sorted(fd.iterdir()):
+            if p.is_file() and p.resolve() not in named:
+                orphans.append(p)
+    for fd in sorted(dest.iterdir()):
+        if fd.is_dir() and fd.name not in EXPECTED_FAMILIES:
+            problems.append(f"family {fd.name}/ is on disk and not expected")
+
+    # AN UNREGISTERED PNG DOES NOT EXIST — and is a failure, not a note. It is
+    # how a contact sheet became an addressable asset last time, and how a
+    # drawing whose entry had moved stayed resolvable from a script.
+    for p in orphans:
+        problems.append(f"unregistered file on disk: {p.relative_to(repo)}")
+
+    fams = Counter(a.family for a in reg.assets.values())
+    playback = Counter(a.playback for a in reg.assets.values())
+    aspects = Counter(a.aspect for a in reg.assets.values())
+    print(f"families:  {dict(sorted(fams.items()))}")
     print(f"playback:  {dict(playback)}")
-    print("fps:       " + str({p: sorted({e.fps for e in entries
-                                          if e.playback == p})
-                               for p in sorted(playback)}))
-    print(f"scale:     {dict(scales)}   <- read per entry, never assumed")
-    print(f"slots:     {sum(len(e.slots) for e in entries)} across "
-          f"{sum(1 for e in entries if e.slots)} entries")
-
-    if orphans:
-        print(f"\nunreferenced files on disk: {len(orphans)}")
-        for p in orphans[:10]:
-            print(f"  {p.relative_to(repo)}")
+    print(f"aspects:   {dict(sorted(aspects.items()))}")
+    print(f"scale:     {sorted({a.export_scale for a in reg.assets.values()})} "
+          f"<- read per plate, never assumed")
+    print(f"slots:     {sum(len(a.slots) for a in reg.assets.values())} across "
+          f"{len(reg.assets)} plates")
+    print(f"palette:   {len(reg.palette)} roles: "
+          f"{', '.join(sorted(reg.palette))}")
+    print(f"chapters:  {len(CHAPTER_TYPES)} types, "
+          f"{sum(len(reg.plates_for_chapter(c)) for c in CHAPTER_TYPES)} "
+          f"type/plate pairings")
+    outside = sum(1 for a in reg.assets.values() for s in a.slots.values()
+                  if s.x < 0 or s.y < 0 or s.x + s.w > a.canvas[0]
+                  or s.y + s.h > a.canvas[1])
+    print(f"slots outside their own canvas: {outside}  "
+          f"<- deliberate; never clip a slot")
 
     if problems:
         print(f"\nFAILED — {len(problems)} problems:")
@@ -183,18 +264,35 @@ def _verify(repo: Path) -> int:
         print("\nDO NOT COMMIT.")
         return 1
 
-    print(f"\nOK — {len(entries)} entries verified, every frame present at "
-          f"its delivered size, every slot inside its canvas.")
+    print(f"\nOK — {len(reg.assets)} plates verified, every frame present at "
+          f"its delivered size, every base byte-identical to its first frame, "
+          f"nothing on disk the registry does not name.")
     return 0
 
 
+def _sha(p: Path) -> bytes:
+    return hashlib.sha256(p.read_bytes()).digest()
+
+
+def _png_size(p: Path) -> tuple[int, int]:
+    """Read a PNG's dimensions off the IHDR, without decoding the image."""
+    with p.open("rb") as fh:
+        head = fh.read(24)
+    if len(head) < 24 or head[:8] != b"\x89PNG\r\n\x1a\n":
+        raise PlateError(f"{p} is not a PNG")
+    return (int.from_bytes(head[16:20], "big"), int.from_bytes(head[20:24], "big"))
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__,
-                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("delivery", nargs="?", type=Path,
-                    help="directory holding assets/ and engine/")
+                    help="the kit delivery: engine/, per-family manifest.json, roles.json")
     ap.add_argument("--check", action="store_true",
-                    help="verify the installed kit without installing")
+                    help="verify the installed kit without rebuilding it")
+    ap.add_argument("--outfit", default="shirt",
+                    help="which wardrobe to materialise (one per episode; the "
+                         "engine renders five and the pipeline uses one)")
     args = ap.parse_args()
 
     if not args.check and args.delivery is None:
@@ -202,11 +300,33 @@ def main() -> int:
 
     try:
         if args.delivery is not None:
-            print(f"installing from {args.delivery}")
-            _install(args.delivery, REPO)
+            delivery = args.delivery.resolve()
+            if not (delivery / "engine").is_dir():
+                raise PlateError(f"{delivery} has no engine/ directory")
+            print(f"building from {delivery}, outfit {args.outfit!r}")
+            staged = REPO / ".kit-build"
+            if staged.exists():
+                shutil.rmtree(staged)
+            try:
+                built = _node(delivery, staged, args.outfit)
+                problems = _reconcile(built["assets"], _shipped_manifests(delivery))
+                if problems:
+                    print(f"\nFAILED — the engine and the delivery's manifests "
+                          f"disagree ({len(problems)}):")
+                    for p in problems[:20]:
+                        print(f"  {p}")
+                    print("\nDO NOT COMMIT.")
+                    return 1
+                print(f"  reconciled: {len(built['assets'])} plates match the "
+                      f"manifests the artwork was signed off against")
+                _install(built, delivery, staged,
+                         REPO / "assets" / PLATES_DIRNAME, args.outfit)
+            finally:
+                if staged.exists():
+                    shutil.rmtree(staged)
             print()
         return _verify(REPO)
-    except KitError as exc:
+    except PlateError as exc:
         print(f"FAILED — {exc}", file=sys.stderr)
         print("\nDO NOT COMMIT.", file=sys.stderr)
         return 1

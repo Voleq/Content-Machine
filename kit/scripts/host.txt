@@ -1,0 +1,131 @@
+host — Dennis
+=============
+
+USE WHEN
+  A claim needs a person attached to it. Dennis is the one carrying the
+  argument; the data plates are what he is pointing at. A frame with a chart
+  and no host is a document, which is correct for the middle of an
+  explanation and wrong for its start and end.
+
+  He is 9:16 only, on purpose. He is composited onto a room plate at the
+  room's host-anchor slot in both aspects — never rescaled to fill 16:9.
+
+MEMBERS (6 poses x 5 frames = 30)
+  leaning-on-desk         the default. Talking to camera, weight on one arm.
+  hands-in-pockets        listening, or between arguments. Neutral, low energy.
+  holding-a-page          reading a figure out. Use when the page is the
+                          source of the number on screen this beat.
+  pointing-down-at-desk   the number is on the desk. Pairs with a table or
+                          chart plate placed in the lower half of frame.
+  head-in-hands           the cost of being right. Once per video, at most.
+                          Weary, not comic — do not use it for a mild loss.
+  walking-out-of-frame    the exit. Last host frame of a section, never mid-
+                          argument.
+
+  Per pose: the base plate, talk_f01 / talk_f02, idle_f01 / idle_f02.
+    base       hold frame. Use on a still beat, or as the frame under a cut.
+               Boil 0 — the one frame that does not tremble.
+    talk_f01/2 alternate on speech, 8fps on twos. f01 has the mouth open.
+               Two frames is the whole loop; do not interpolate a third.
+    idle_f01/2 alternate when he is on screen and silent. Same 8fps cut; f02
+               bobs 3 canvas units. Slower cadence than talk in practice —
+               hold each frame two beats rather than one.
+
+BOIL
+  The loops boil: each frame is the same drawing redrawn with every stroke seed
+  shifted, so tremor, overshoot and hatch phase move while geometry, line
+  weight and hatch density stay put. Indices are in the manifest's loops.boil
+  block — base 0, talk 1 and 2, idle 3 and 4.
+
+  Cut the frames hard. No cross-fade, ever: a dissolve between two boil frames
+  reads as a camera artefact, not as a hand redrawing a line.
+
+  If the figure appears to shift position or change weight between frames, the
+  boil has become a second drawing — that is a bug in the plate, not a
+  cadence problem. The board's live boil check is there to catch exactly this.
+
+CONTRAST — the rule that decides everything else
+  Dennis is the highest-contrast object in any frame he is in. He is the reason
+  people are watching, and a figure at the same value as the desk behind him
+  reads as part of the furniture.
+
+  His clothing carries real value: a mid-slate torso and near-black trousers,
+  with outlines heavier than anything in the set. He was cream on cream for two
+  revisions — a #D9CFBB shirt against a #E6DDC9 ground is a four percent step,
+  so the largest shape in the frame had no edge at all.
+
+  The HEAD carries the heaviest outline on the plate, and the skin is a value
+  with somewhere to go rather than a tint of the ground. That is deliberate and
+  it is the last thing that was wrong: with the shirt and trousers fixed but the
+  head still cream on a cream wall, the eye landed on his chest instead of his
+  face. A jaw shadow and a turned plane on the skull do the modelling.
+
+  He is NOT lit to match the room. That sounds wrong and is not: an earlier
+  revision tinted him per limb from the room's two sources, and the result was
+  a figure sitting at exactly the desk's value. What separates him is that his
+  own material hatch runs heavier than anything in the set, and each part
+  carries a neutral ink pass on its turned side. The room's heaviest furniture
+  is capped below him on purpose — the set gives way to the host, never the
+  other way round.
+
+  His contact pool is small and tight, so he stands ON the floor line. It is the
+  one thing on the plate allowed to go darker than the line.
+
+  The test: composite him onto a room plate and look at the two together. If
+  your eye does not go to him first, the room is too loud — fix the ROOM.
+
+WARDROBE (5 outfits)
+  He hosts every episode, and a single outfit across a series reads as a
+  uniform. The outfit is an episode-level argument, not a redraw: same body,
+  same poses, same seeds, different clothes.
+
+    shirt      the default. Open collar over a tee, sleeves down.
+    cardigan   an olive cardigan over the shirt, carried down the upper arm.
+               The been-here-since-six look.
+    rolled     the same shirt, sleeves rolled to the elbow — bare forearms and
+               a heavy fold band at the crease. For the working passages.
+    jumper     a crew jumper, no collar. The darkest top in the set.
+    gilet      a gilet over the shirt, for anything shot in the cold office.
+
+  All five keep a mid-to-dark torso and the darkest cloth on the plate at the
+  trousers, because that is what separates him from a pale wall. They vary in
+  HUE and in detail, barely in value — an outfit that goes pale puts him back at
+  the desk's value, which is the defect two whole revisions were spent fixing.
+
+  EVERY FRAME OF ONE EPISODE MUST USE THE SAME OUTFIT. The 30 shipped frames are
+  "shirt"; render another with BUILD.drawWith(item, "cardigan"). Mixing values
+  inside an episode changes his clothes mid-sentence.
+
+SLOTS (3, same on every one of the 30)
+  figure   the whole body's bounding area. Use it to place him against the
+           room's host-anchor and to know what he occludes. Nothing is
+           drawn into it.
+
+           This box's HEIGHT is what the room's host-anchor height scales to:
+           scale the plate until figure.h equals the anchor's h, then sit
+           floorLineY on the anchor's bottom edge. Never scale him to the
+           anchor's width.
+  head     head bounding area. Anchor for anything that has to sit near his
+           face — a headline band, a callout, a highlight ring.
+  mouth    mouth area. For lip-sync substitution if a mouth set is ever
+           drawn. Empty in this batch.
+
+SEQUENCE
+  1  place figure on the room's host-anchor
+  2  hold the base plate through the cut
+  3  switch to talk_f01/f02 on the first word, alternate on syllable stress
+  4  fall to idle_f01/f02 within two frames of the last word
+  5  cut on the base plate, not mid-loop
+
+TRAPS
+  * Do not flip him horizontally to face the other way. The glasses, the part
+    in the hair and the pocket line are all asymmetric; a flip reads as a
+    different man. There is no lighting reason to flip him either — he is not
+    lit from the room's sources, so no room angle requires a mirror.
+  * head-in-hands and walking-out-of-frame do not talk. Their talk frames
+    exist for continuity of the file set; using them looks like a mistake.
+  * He never overlaps a plot-area. If the composition forces it, change the
+    room angle, not his position.
+  * Do not boil him against a boiling background. The room does not boil, on
+    purpose — two trembling layers is noise, and the figure stops being the
+    thing that moves.

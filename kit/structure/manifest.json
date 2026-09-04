@@ -1,0 +1,2087 @@
+{
+ "family": "structure",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "assets": {
+  "structure/both-true-16x9": {
+   "author": "bothTrue",
+   "seed": 3,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "both-true-16x9.svg",
+     "png": "both-true-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "both-true-16x9.png",
+    "svg": "both-true-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 150,
+     "y": 96,
+     "w": 1620,
+     "h": 32
+    },
+    "statement-1": {
+     "align": "left",
+     "role": "statement",
+     "x": 150,
+     "y": 397,
+     "w": 740,
+     "h": 144
+    },
+    "detail-1": {
+     "align": "left",
+     "role": "detail",
+     "x": 150,
+     "y": 555,
+     "w": 740,
+     "h": 70
+    },
+    "mark-1": {
+     "align": "left",
+     "role": "label",
+     "x": 191,
+     "y": 645,
+     "w": 699,
+     "h": 39
+    },
+    "statement-2": {
+     "align": "left",
+     "role": "statement",
+     "x": 1030,
+     "y": 397,
+     "w": 740,
+     "h": 144
+    },
+    "detail-2": {
+     "align": "left",
+     "role": "detail",
+     "x": 1030,
+     "y": 555,
+     "w": 740,
+     "h": 70
+    },
+    "mark-2": {
+     "align": "left",
+     "role": "label",
+     "x": 1071,
+     "y": 645,
+     "w": 699,
+     "h": 39
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 150,
+     "y": 950,
+     "w": 1620,
+     "h": 30
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "both-true",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/both-true-9x16": {
+   "author": "bothTrue",
+   "seed": 3,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "both-true-9x16.svg",
+     "png": "both-true-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "both-true-9x16.png",
+    "svg": "both-true-9x16.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 190,
+     "w": 920,
+     "h": 32
+    },
+    "statement-1": {
+     "align": "left",
+     "role": "statement",
+     "x": 80,
+     "y": 594,
+     "w": 920,
+     "h": 144
+    },
+    "detail-1": {
+     "align": "left",
+     "role": "detail",
+     "x": 80,
+     "y": 764,
+     "w": 920,
+     "h": 70
+    },
+    "mark-1": {
+     "align": "left",
+     "role": "label",
+     "x": 152,
+     "y": 869,
+     "w": 848,
+     "h": 39
+    },
+    "statement-2": {
+     "align": "left",
+     "role": "statement",
+     "x": 80,
+     "y": 1058,
+     "w": 920,
+     "h": 144
+    },
+    "detail-2": {
+     "align": "left",
+     "role": "detail",
+     "x": 80,
+     "y": 1228,
+     "w": 920,
+     "h": 70
+    },
+    "mark-2": {
+     "align": "left",
+     "role": "label",
+     "x": 152,
+     "y": 1333,
+     "w": 848,
+     "h": 39
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 80,
+     "y": 1770,
+     "w": 920,
+     "h": 30
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "both-true",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/unit-ladder-16x9": {
+   "author": "unitLadder",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "unit-ladder-16x9.svg",
+     "png": "unit-ladder-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "unit-ladder-16x9.png",
+    "svg": "unit-ladder-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 420,
+     "y": 84,
+     "w": 1080,
+     "h": 50
+    },
+    "top-label": {
+     "align": "left",
+     "role": "label",
+     "x": 420,
+     "y": 160,
+     "w": 562,
+     "h": 120
+    },
+    "top-value": {
+     "align": "right",
+     "role": "big",
+     "x": 1003,
+     "y": 160,
+     "w": 497,
+     "h": 120
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 394,
+     "y": 328,
+     "w": 1132,
+     "h": 91
+    },
+    "step-1-label": {
+     "align": "left",
+     "role": "label",
+     "x": 472,
+     "y": 340,
+     "w": 648,
+     "h": 70
+    },
+    "step-1-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 1154,
+     "y": 340,
+     "w": 346,
+     "h": 70
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 394,
+     "y": 425,
+     "w": 1132,
+     "h": 91
+    },
+    "step-2-label": {
+     "align": "left",
+     "role": "label",
+     "x": 472,
+     "y": 436,
+     "w": 648,
+     "h": 70
+    },
+    "step-2-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 1154,
+     "y": 436,
+     "w": 346,
+     "h": 70
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 394,
+     "y": 522,
+     "w": 1132,
+     "h": 91
+    },
+    "step-3-label": {
+     "align": "left",
+     "role": "label",
+     "x": 472,
+     "y": 533,
+     "w": 648,
+     "h": 70
+    },
+    "step-3-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 1154,
+     "y": 533,
+     "w": 346,
+     "h": 70
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 394,
+     "y": 618,
+     "w": 1132,
+     "h": 91
+    },
+    "step-4-label": {
+     "align": "left",
+     "role": "label",
+     "x": 472,
+     "y": 630,
+     "w": 648,
+     "h": 70
+    },
+    "step-4-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 1154,
+     "y": 630,
+     "w": 346,
+     "h": 70
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 394,
+     "y": 715,
+     "w": 1132,
+     "h": 91
+    },
+    "step-5-label": {
+     "align": "left",
+     "role": "label",
+     "x": 472,
+     "y": 727,
+     "w": 648,
+     "h": 70
+    },
+    "step-5-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 1154,
+     "y": 727,
+     "w": 346,
+     "h": 70
+    },
+    "out-label": {
+     "align": "left",
+     "role": "label",
+     "x": 420,
+     "y": 850,
+     "w": 540,
+     "h": 110
+    },
+    "out-value": {
+     "align": "right",
+     "role": "big",
+     "x": 960,
+     "y": 842,
+     "w": 540,
+     "h": 120
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "unit-ladder",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/unit-ladder-9x16": {
+   "author": "unitLadder",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "unit-ladder-9x16.svg",
+     "png": "unit-ladder-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "unit-ladder-9x16.png",
+    "svg": "unit-ladder-9x16.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 90,
+     "y": 200,
+     "w": 900,
+     "h": 50
+    },
+    "top-label": {
+     "align": "left",
+     "role": "label",
+     "x": 90,
+     "y": 290,
+     "w": 468,
+     "h": 140
+    },
+    "top-value": {
+     "align": "right",
+     "role": "big",
+     "x": 576,
+     "y": 290,
+     "w": 414,
+     "h": 140
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 64,
+     "y": 488,
+     "w": 952,
+     "h": 201
+    },
+    "step-1-label": {
+     "align": "left",
+     "role": "label",
+     "x": 142,
+     "y": 515,
+     "w": 540,
+     "h": 149
+    },
+    "step-1-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 702,
+     "y": 515,
+     "w": 288,
+     "h": 149
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 64,
+     "y": 695,
+     "w": 952,
+     "h": 201
+    },
+    "step-2-label": {
+     "align": "left",
+     "role": "label",
+     "x": 142,
+     "y": 722,
+     "w": 540,
+     "h": 149
+    },
+    "step-2-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 702,
+     "y": 722,
+     "w": 288,
+     "h": 149
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 64,
+     "y": 902,
+     "w": 952,
+     "h": 201
+    },
+    "step-3-label": {
+     "align": "left",
+     "role": "label",
+     "x": 142,
+     "y": 929,
+     "w": 540,
+     "h": 149
+    },
+    "step-3-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 702,
+     "y": 929,
+     "w": 288,
+     "h": 149
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 64,
+     "y": 1108,
+     "w": 952,
+     "h": 201
+    },
+    "step-4-label": {
+     "align": "left",
+     "role": "label",
+     "x": 142,
+     "y": 1135,
+     "w": 540,
+     "h": 149
+    },
+    "step-4-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 702,
+     "y": 1135,
+     "w": 288,
+     "h": 149
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 64,
+     "y": 1315,
+     "w": 952,
+     "h": 201
+    },
+    "step-5-label": {
+     "align": "left",
+     "role": "label",
+     "x": 142,
+     "y": 1342,
+     "w": 540,
+     "h": 149
+    },
+    "step-5-value": {
+     "align": "right",
+     "role": "figure",
+     "x": 702,
+     "y": 1342,
+     "w": 288,
+     "h": 149
+    },
+    "out-label": {
+     "align": "left",
+     "role": "label",
+     "x": 90,
+     "y": 1568,
+     "w": 450,
+     "h": 150
+    },
+    "out-value": {
+     "align": "right",
+     "role": "big",
+     "x": 540,
+     "y": 1560,
+     "w": 450,
+     "h": 160
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "unit-ladder",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/closing-16x9": {
+   "author": "closingPlate",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "closing-16x9.svg",
+     "png": "closing-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "closing-16x9.png",
+    "svg": "closing-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 200,
+     "y": 130,
+     "w": 1520,
+     "h": 52
+    },
+    "line-1": {
+     "align": "left",
+     "role": "detail",
+     "x": 282,
+     "y": 250,
+     "w": 1438,
+     "h": 130
+    },
+    "line-2": {
+     "align": "left",
+     "role": "detail",
+     "x": 282,
+     "y": 420,
+     "w": 1438,
+     "h": 130
+    },
+    "line-3": {
+     "align": "left",
+     "role": "detail",
+     "x": 282,
+     "y": 590,
+     "w": 1438,
+     "h": 130
+    },
+    "date-label": {
+     "align": "left",
+     "role": "caption",
+     "x": 200,
+     "y": 790,
+     "w": 760,
+     "h": 60
+    },
+    "date": {
+     "align": "right",
+     "role": "figure",
+     "x": 960,
+     "y": 782,
+     "w": 760,
+     "h": 76
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "closing",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/closing-9x16": {
+   "author": "closingPlate",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "closing-9x16.svg",
+     "png": "closing-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "closing-9x16.png",
+    "svg": "closing-9x16.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 90,
+     "y": 280,
+     "w": 900,
+     "h": 52
+    },
+    "line-1": {
+     "align": "left",
+     "role": "detail",
+     "x": 172,
+     "y": 430,
+     "w": 818,
+     "h": 190
+    },
+    "line-2": {
+     "align": "left",
+     "role": "detail",
+     "x": 172,
+     "y": 680,
+     "w": 818,
+     "h": 190
+    },
+    "line-3": {
+     "align": "left",
+     "role": "detail",
+     "x": 172,
+     "y": 930,
+     "w": 818,
+     "h": 190
+    },
+    "date-label": {
+     "align": "left",
+     "role": "caption",
+     "x": 90,
+     "y": 1240,
+     "w": 450,
+     "h": 60
+    },
+    "date": {
+     "align": "right",
+     "role": "figure",
+     "x": 540,
+     "y": 1232,
+     "w": 450,
+     "h": 76
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "closing",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/row-spotlight-16x9": {
+   "author": "rowSpotlight",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "row-spotlight-16x9.svg",
+     "png": "row-spotlight-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "row-spotlight-16x9.png",
+    "svg": "row-spotlight-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 140,
+     "y": 120,
+     "w": 1640,
+     "h": 52
+    },
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 150,
+     "y": 310,
+     "w": 429,
+     "h": 460
+    },
+    "head-1": {
+     "align": "right",
+     "role": "caption",
+     "x": 605,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 605,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "head-2": {
+     "align": "right",
+     "role": "caption",
+     "x": 802,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 802,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "head-3": {
+     "align": "right",
+     "role": "caption",
+     "x": 999,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 999,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "head-4": {
+     "align": "right",
+     "role": "caption",
+     "x": 1196,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1196,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "head-5": {
+     "align": "right",
+     "role": "caption",
+     "x": 1392,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1392,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "head-6": {
+     "align": "right",
+     "role": "caption",
+     "x": 1589,
+     "y": 304,
+     "w": 185,
+     "h": 60
+    },
+    "cell-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1589,
+     "y": 376,
+     "w": 185,
+     "h": 384
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 140,
+     "y": 840,
+     "w": 1640,
+     "h": 70
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "row-spotlight",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/row-spotlight-9x16": {
+   "author": "rowSpotlight",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "row-spotlight-9x16.svg",
+     "png": "row-spotlight-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "row-spotlight-9x16.png",
+    "svg": "row-spotlight-9x16.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 60,
+     "y": 300,
+     "w": 960,
+     "h": 52
+    },
+    "label": {
+     "align": "left",
+     "role": "label",
+     "x": 70,
+     "y": 630,
+     "w": 258,
+     "h": 660
+    },
+    "head-1": {
+     "align": "right",
+     "role": "caption",
+     "x": 354,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 354,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "head-2": {
+     "align": "right",
+     "role": "caption",
+     "x": 466,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 466,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "head-3": {
+     "align": "right",
+     "role": "caption",
+     "x": 578,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 578,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "head-4": {
+     "align": "right",
+     "role": "caption",
+     "x": 690,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 690,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "head-5": {
+     "align": "right",
+     "role": "caption",
+     "x": 802,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 802,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "head-6": {
+     "align": "right",
+     "role": "caption",
+     "x": 914,
+     "y": 624,
+     "w": 100,
+     "h": 60
+    },
+    "cell-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 914,
+     "y": 696,
+     "w": 100,
+     "h": 584
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 60,
+     "y": 1390,
+     "w": 960,
+     "h": 70
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "row-spotlight",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/flow-16x9": {
+   "author": "flowPlate",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "flow-16x9.svg",
+     "png": "flow-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "flow-16x9.png",
+    "svg": "flow-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 150,
+     "y": 110,
+     "w": 1620,
+     "h": 52
+    },
+    "input": {
+     "align": "left",
+     "role": "label",
+     "x": 90,
+     "y": 493,
+     "w": 240,
+     "h": 180
+    },
+    "box-1": {
+     "align": "left",
+     "role": "label",
+     "x": 436,
+     "y": 475,
+     "w": 256,
+     "h": 216
+    },
+    "arrow-1": {
+     "align": "center",
+     "role": "caption",
+     "x": 332,
+     "y": 509,
+     "w": 104,
+     "h": 60
+    },
+    "box-2": {
+     "align": "left",
+     "role": "label",
+     "x": 820,
+     "y": 475,
+     "w": 256,
+     "h": 216
+    },
+    "arrow-2": {
+     "align": "center",
+     "role": "caption",
+     "x": 716,
+     "y": 509,
+     "w": 104,
+     "h": 60
+    },
+    "box-3": {
+     "align": "left",
+     "role": "label",
+     "x": 1204,
+     "y": 475,
+     "w": 256,
+     "h": 216
+    },
+    "arrow-3": {
+     "align": "center",
+     "role": "caption",
+     "x": 1100,
+     "y": 509,
+     "w": 104,
+     "h": 60
+    },
+    "arrow-4": {
+     "align": "center",
+     "role": "caption",
+     "x": 1484,
+     "y": 509,
+     "w": 104,
+     "h": 60
+    },
+    "output": {
+     "align": "left",
+     "role": "statement",
+     "x": 1600,
+     "y": 483,
+     "w": 230,
+     "h": 200
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 150,
+     "y": 930,
+     "w": 1620,
+     "h": 70
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "flow",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "statement": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "detail": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.85,
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "big": {
+     "font": "Courier Prime",
+     "size": 120,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/timeline-16x9": {
+   "author": "timeline",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "timeline-16x9.svg",
+     "png": "timeline-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "timeline-16x9.png",
+    "svg": "timeline-16x9.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 170,
+     "y": 120,
+     "w": 1580,
+     "h": 54
+    },
+    "date-1": {
+     "align": "center",
+     "role": "date",
+     "x": 25,
+     "y": 446,
+     "w": 291,
+     "h": 48
+    },
+    "label-1": {
+     "align": "center",
+     "role": "label",
+     "x": 25,
+     "y": 326,
+     "w": 291,
+     "h": 110
+    },
+    "date-2": {
+     "align": "center",
+     "role": "date",
+     "x": 341,
+     "y": 614,
+     "w": 291,
+     "h": 48
+    },
+    "label-2": {
+     "align": "center",
+     "role": "label",
+     "x": 341,
+     "y": 670,
+     "w": 291,
+     "h": 110
+    },
+    "date-3": {
+     "align": "center",
+     "role": "date",
+     "x": 657,
+     "y": 446,
+     "w": 291,
+     "h": 48
+    },
+    "label-3": {
+     "align": "center",
+     "role": "label",
+     "x": 657,
+     "y": 326,
+     "w": 291,
+     "h": 110
+    },
+    "date-4": {
+     "align": "center",
+     "role": "date",
+     "x": 973,
+     "y": 614,
+     "w": 291,
+     "h": 48
+    },
+    "label-4": {
+     "align": "center",
+     "role": "label",
+     "x": 973,
+     "y": 670,
+     "w": 291,
+     "h": 110
+    },
+    "date-5": {
+     "align": "center",
+     "role": "date",
+     "x": 1289,
+     "y": 446,
+     "w": 291,
+     "h": 48
+    },
+    "label-5": {
+     "align": "center",
+     "role": "label",
+     "x": 1289,
+     "y": 326,
+     "w": 291,
+     "h": 110
+    },
+    "date-6": {
+     "align": "center",
+     "role": "date",
+     "x": 1605,
+     "y": 614,
+     "w": 291,
+     "h": 48
+    },
+    "label-6": {
+     "align": "center",
+     "role": "label",
+     "x": 1605,
+     "y": 670,
+     "w": 291,
+     "h": 110
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 170,
+     "y": 950,
+     "w": 1580,
+     "h": 64
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "timeline",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 32,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 26
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "structure/timeline-9x16": {
+   "author": "timeline",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "timeline-9x16.svg",
+     "png": "timeline-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "timeline-9x16.png",
+    "svg": "timeline-9x16.svg"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 280,
+     "w": 920,
+     "h": 54
+    },
+    "date-1": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 394,
+     "w": 324,
+     "h": 52
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 380,
+     "w": 496,
+     "h": 100
+    },
+    "date-2": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 634,
+     "w": 324,
+     "h": 52
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 620,
+     "w": 496,
+     "h": 100
+    },
+    "date-3": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 874,
+     "w": 324,
+     "h": 52
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 860,
+     "w": 496,
+     "h": 100
+    },
+    "date-4": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 1114,
+     "w": 324,
+     "h": 52
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 1100,
+     "w": 496,
+     "h": 100
+    },
+    "date-5": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 1354,
+     "w": 324,
+     "h": 52
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 1340,
+     "w": 496,
+     "h": 100
+    },
+    "date-6": {
+     "align": "right",
+     "role": "date",
+     "x": 80,
+     "y": 1594,
+     "w": 324,
+     "h": 52
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 508,
+     "y": 1580,
+     "w": 496,
+     "h": 100
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 80,
+     "y": 1740,
+     "w": 920,
+     "h": 64
+    }
+   },
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "timeline",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 8
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 20
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  }
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

@@ -1,0 +1,65 @@
+tables — the sheet
+==================
+
+USE WHEN
+  The argument is about a series over time and the reader has to be able to
+  check it. A table is what you show when you want to be believed; a chart is
+  what you show when you want to be understood. Show the table first, then
+  the chart of one of its rows.
+
+MEMBERS
+  numbers-sheet-{3,4,5,6}r-{16x9,9x16}
+                          Eight sheets: three, four, five and six rows, each
+                          in both aspects, six periods throughout. Pick the
+                          sheet that fits the rows the argument actually has —
+                          an empty row is worse than a shorter sheet, and a
+                          script with four rows should never have to use a
+                          six-row plate in either aspect.
+
+                          Portrait is tighter per row: at six rows the figure
+                          size is at its floor, so if the copy is long prefer
+                          5r-9x16 and cut a row. Cut rows, never periods.
+
+  numbers-sheet-6r-spark-16x9
+  numbers-sheet-4r-spark-9x16
+                          The sparkline variants. Not the plain sheet with a
+                          column bolted on: the spark column takes real width,
+                          so figures and labels are re-sized to what is left
+                          and labels must be abbreviated.
+  cash-flow-16x9          three groups, subtotals, a total. 86 slots.
+  cash-flow-9x16          same statement re-authored tall. 110 slots — the
+                          portrait version splits groups further, so the slot
+                          count is higher, not lower.
+
+SLOTS
+  unit               the units line ("$m", "USD m, unless stated"). One place,
+                     once. Never repeat units in cells.
+  head-1..6          the six periods, oldest left.
+  label-N            row label. maxChars is tight; abbreviate the label, not
+                     the unit.
+  cell-N-C           row N, period C.
+  band-N             row highlight area. Composite overlays/row-band here —
+                     do not tint the cells.
+  cash-flow adds:
+    group-N            group heading ("Operating", "Investing", "Financing")
+    band-G-R / label-G-R / cell-G-R-C   rows within a group
+    subtotal-label-G / subtotal-G-C     the group's subtotal row
+    total-label / total-C               the statement total
+
+SEQUENCE
+  1  unit
+  2  head-1..6, left to right
+  3  labels, top to bottom
+  4  cells — by row, left to right. Never column-major: the reader is
+     following a series, not a period.
+  5  band-N on the row the voiceover is on, one at a time
+  For cash-flow: group heading, then its rows, then its subtotal, then the
+  next group. Total last, alone on its beat.
+
+TRAPS
+  * A cell with no data is empty. Do not write "n/a", "—" or "0" — zero is a
+    number and means something else.
+  * Only one band lit at a time. Two bands is a comparison, which is
+    structure/row-spotlight or figures/compare-side, not this.
+  * Colour lives in the cells that have direction. A whole row in down is a
+    row of losses, not a row you want emphasised — for emphasis use the band.

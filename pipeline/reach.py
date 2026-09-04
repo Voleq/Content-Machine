@@ -1,10 +1,14 @@
-"""How much of the design kit a script actually reaches.
+"""How much of the plate library a script actually reaches.
 
-The kit is 442 addressable assets. The showcase short reaches 17 of them, five
-families, one beat-library scene — and it did that for months without anybody
-noticing, because the number existed only inside `kit_assets_used` in a render
-manifest nobody opens. Nothing measured it before the render, nothing printed
-it after, so "the library feels unused" stayed a feeling.
+The library is 113 plates. A script that names six of them will look like the
+last script that named six of them, and it did that for months without anybody
+noticing, because the number existed only inside a render manifest nobody
+opens. Nothing measured it before the render, nothing printed it after, so "the
+library feels unused" stayed a feeling.
+
+The COUNT comes off the registry, so it follows the kit rather than a figure
+typed here. The floor stays, because the floor is the number that says whether
+this video will look like the last one.
 
 This is the measurement, in one place, read by two callers that used to have no
 way of asking the question at all:
@@ -67,15 +71,12 @@ def _events(script) -> list:
 
 
 def _is_beat_family(family: str) -> bool:
-    """True for a family the SHORT BEAT LIBRARY is drawn from.
+    """True for a family whose plates carry a figure as their whole point.
 
-    Read off the tag routing rather than off a list of folder names, so a
-    shorts family added to `[PROP]` counts as a beat the day it is routed.
+    Read off the registry's own families rather than a list of folder names, so
+    a kit that adds one counts it the day it lands.
     """
-    from pipeline.models import KIT_TAG_FAMILIES, TagType
-
-    return (family.startswith("shorts/")
-            and family in KIT_TAG_FAMILIES[TagType.PROP])
+    return family in ("figures", "tables", "charts", "cycles", "peers")
 
 
 @dataclass(frozen=True)
@@ -104,12 +105,12 @@ class Reach:
     def line(self) -> str:
         """The one line the approval report carries."""
         scenes = len(self.scenes)
-        return (f"Kit: {len(self.keys)} of {self.total} assets · "
+        return (f"Kit: {len(self.keys)} of {self.total} plates · "
                 f"{len(self.families)} families · "
-                f"{scenes} beat-library scene{'' if scenes == 1 else 's'}")
+                f"{scenes} data plate{'' if scenes == 1 else 's'}")
 
 
-def rendered_reach(kit_keys, kit) -> Reach:
+def rendered_reach(kit_keys, reg) -> Reach:
     """The reach of a FINISHED render, off the manifest's `kit_assets_used`.
 
     The same line in the same shape as the script's, so the two are readable
@@ -122,7 +123,7 @@ def rendered_reach(kit_keys, kit) -> Reach:
     return Reach(
         keys=keys,
         scenes=tuple(k for k in keys if _is_beat_family(k.rsplit("/", 1)[0])),
-        total=len(kit),
+        total=len(reg),
     )
 
 
@@ -133,25 +134,27 @@ def script_reach(script, settings) -> Reach:
     first, then the parameterised blank — so a `[TERM]` with no drawing counts
     as the asset that will actually be placed rather than as nothing.
     """
-    from pipeline.kit import card_asset_for, load_kit
-    from pipeline.models import KIT_TAG_FAMILIES
+    from pipeline.models import TagType
+    from pipeline.plates import PlateError, load_plates
 
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return Reach()
     keys: set[str] = set()
     scenes: set[str] = set()
     drawn: set[str] = set()
     for event in _events(script):
-        if event.type not in KIT_TAG_FAMILIES:
+        if event.type is not TagType.PLATE:
             continue
-        asset, _blank = card_asset_for(kit, event.type, event.payload)
-        if asset is None:
+        plate = reg.get(event.payload)
+        if plate is None:
             continue
-        keys.add(asset.key)
-        if _is_beat_family(asset.family):
-            scenes.add(asset.key)
-            # The figures the writer handed this drawing — `[PROP: crushed-flat
-            # = -41%]` and the named form both land in `values`, and a bare
-            # payload with no `=` hands it nothing.
+        keys.add(plate.key)
+        if _is_beat_family(plate.family):
+            scenes.add(plate.key)
+            # The figures the director wrote into this plate. Every word on
+            # screen is in `values`, so this is the whole set.
             drawn |= _figures(*(str(v) for v in (event.values or {}).values()))
 
     return Reach(
@@ -159,7 +162,7 @@ def script_reach(script, settings) -> Reach:
         scenes=tuple(sorted(scenes)),
         undrawn=tuple(_undrawn_beats(script, drawn)),
         data_beats=len(_figure_beats(script)),
-        total=len(kit),
+        total=len(reg),
     )
 
 

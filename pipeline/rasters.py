@@ -1,16 +1,27 @@
-"""Pillow raster + animation-frame generation, and ASS karaoke captions.
+"""What the kit does not draw: captions, alpha clips, and figure animation.
 
-All text is rendered with Pillow (never ImageMagick / MoviePy TextClip).
-Animated moments (row type-ons, hand-drawn scribbles, zoom-punches, flash
-stingers) are generated here as short RGBA frame sequences, encoded once
-by ffmpeg into small alpha .mov clips, and composited by the FFmpeg
-filtergraph — Python never renders per-frame at video resolution for the
-full timeline.
+Everything with a plate equivalent has gone. This module existed because the
+renderer had to draw what the kit did not ship — sheets, cards, panels, chapter
+stingers, backdrops — and the kit now ships all of it. What is left is the work
+that is genuinely not a plate:
 
-This is the reusable SHORT asset kit (§4): headline-overlay treatment,
-numbers sheet, caption style, hand-drawn annotations, transition
-stingers, intro/outro bug. Placeholder aesthetics; the production kit
-from Claude Design drops over the same components.
+* **captions** (`build_phrase_ass`, `phrase_pages`) — ASS subtitles, which are
+  a text format rather than a drawing
+* **alpha clips** (`frames_to_alpha_clip`) — the encode step every animated
+  overlay goes through
+* **figure animation** (`count_up_frames`, `roll_steps`, `roll_over_lines`) — a
+  number counting up is a value CHANGING over time, and a plate is one moment
+* **annotation marks** (`fitted_mark`, `mark_frames`) — solving an
+  `annotations/` cut-out onto a target and drawing it on
+* **small utilities** (`simple_text`, `drawn_rect`, `flash_frames`,
+  `cover_fill_frame`)
+
+THERE ARE NO COLOUR CONSTANTS HERE ANY MORE. `INK`, `RED`, `GREEN`, `PANEL` and
+`CARD_LINE` named a palette that no longer exists, and worse, `RED` carried both
+"this went down" and "look at this" — so nothing on screen could tell the two
+apart. Colour is asked for by ROLE through the registry
+(`pipeline.plates.Registry.colour`): ground, second-ground, structure, down, up,
+neutral-data, attention, other-party. Red means down. Emphasis is attention.
 """
 
 from __future__ import annotations
@@ -30,44 +41,24 @@ from pipeline.render_common import run_ffmpeg
 
 log = logging.getLogger(__name__)
 
-# Bundled brand fonts (Google Fonts, reproduced from the .dc.html kits):
-#   Shantell Sans — hand-drawn headlines + marker text
-#   Space Grotesk — numbers / UI sans
-#   Space Mono    — labels + tags
-SHANTELL = "ShantellSans-Bold.ttf"
-SHANTELL_ITALIC = "ShantellSans-BoldItalic.ttf"
-GROTESK = "SpaceGrotesk-Medium.ttf"
-GROTESK_BOLD = "SpaceGrotesk-Bold.ttf"
-MONO = "SpaceMono-Regular.ttf"
-MONO_BOLD = "SpaceMono-Bold.ttf"
-DISPLAY_BOLD = GROTESK_BOLD          # UI display sans (back-compat alias)
+# The two faces the kit ships, and the only two anything here may set. Every
+# plate's typeRoles names one of them; a third face in a caption is a third
+# voice on screen.
+ARCHIVO = "ArchivoNarrow[wght].ttf"
+COURIER = "CourierPrime-Regular.ttf"
+COURIER_BOLD = "CourierPrime-Bold.ttf"
 
-# Palette — the LIGHT kit. Dennis is drawn in dark ink on paper, and the
-# names below keep their meaning through the swap: BG is whatever the page
-# is, INK is whatever text is drawn in. Only the values inverted, so every
-# card, chart and caption in this module followed without touching them.
-#
-# Red carries down-moves and emphasis; green is UP ONLY — it is the one
-# colour the kit refuses to use decoratively.
-BG = (242, 242, 239)       # #f2f2ef  paper
-BG_CARD = (250, 249, 246)  # #faf9f6  the tall beat card
-BG_MARK = (242, 242, 239)  # #f2f2ef  marker chart paper
-CARD = (250, 249, 246)     # #faf9f6  inner card
-CARD2 = (238, 236, 229)    # #eeece5
-CARD_LINE = (226, 223, 213)  # #e2dfd5  inner card border
-BORDER = (207, 204, 194)   # #cfccc2  card border
-BORDER2 = (211, 207, 196)  # #d3cfc4  chip border
-INK = (35, 35, 38)         # #232326  text
-MUTED = (143, 140, 131)    # #8f8c83  muted text
-MUTED2 = (74, 71, 63)      # #4a473f  secondary text
-FAINT = (179, 176, 166)    # #b3b0a6  faintest label
-GREEN = (47, 213, 118)     # #2fd576  UP ONLY
-RED = (255, 82, 71)        # #ff5247  down / emphasis
-GRID = (222, 219, 209)     # #dedbd1  chart gridlines
-ACCENT = RED               # the light kit leads with red, not green
-GOLD = RED                 # back-compat alias
-PANEL = CARD               # back-compat alias
-PANEL_LINE = CARD_LINE     # back-compat alias
+
+def role(settings: Settings, name: str) -> tuple[int, int, int]:
+    """A palette colour, BY ROLE, off the registry.
+
+    The one way anything in this module gets a colour. There is no hex here to
+    go stale, and no name that means two things: ``down`` is a fall, and
+    emphasis is ``attention``.
+    """
+    from pipeline.plates import load_plates
+
+    return load_plates(settings.assets_dir).colour(name)
 
 
 def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFont:
@@ -88,98 +79,19 @@ def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[st
                 cur = w
         lines.append(cur)
     return lines
-
-
-def text_panel(
-    settings: Settings,
-    text: str,
-    *,
-    width: int,
-    font_name: str = DISPLAY_BOLD,
-    font_size: int = 64,
-    fg=(*INK, 255),
-    bg=(*PANEL, 235),
-    accent=None,
-    pad: int = 36,
-    align: str = "center",
-    placed: list | None = None,
-) -> Image.Image:
-    """Auto-height panel with wrapped text (hook / conclusion cards).
-
-    The plate is paper and its edge is drawn — these are the two cards a
-    viewer actually reads, and they used to be a 26px-radius rectangle
-    primitive sitting next to deliberately wobbly ink.
-
-    `placed`, when given, is filled with `(line, x, y)` for every line drawn —
-    what `roll_over_lines` needs to repaint a figure without re-wrapping the
-    sentence around it.
-    """
-    font = load_font(settings, font_name, font_size)
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    inner = width - 2 * pad - (14 if accent else 0)
-    lines = _wrap(probe, text, font, inner)
-    ascent, descent = font.getmetrics()
-    lh = int((ascent + descent) * 1.12)
-    height = 2 * pad + lh * len(lines)
-
-    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # Seeded off the card's own content, so the same hook draws the same
-    # wobble every render — these rasters are pinned by golden frames, and a
-    # border that re-wobbles per run is a diff nobody can read.
-    rng = random.Random(f"panel|{text}|{width}")
-    drawn_card(d, [0, 0, width - 1, height - 1], rng, fill=bg)
-    if accent:
-        accent_stroke(d, [0, 0, 14, height - 1], rng, color=(*accent, 255))
-    x0 = pad + (14 if accent else 0)
-    for i, line in enumerate(lines):
-        lw = probe.textlength(line, font=font)
-        if align == "center":
-            x = (width - lw) / 2
-        else:
-            x = x0
-        d.text((x, pad + i * lh), line, font=font, fill=fg)
-        if placed is not None:
-            placed.append((line, x, pad + i * lh))
-    return img
-
-
-def text_panel_frames(
-    settings: Settings,
-    text: str,
-    *,
-    fps: int = 30,
-    seconds: float = 0.7,
-    **panel,
-) -> tuple[Image.Image, list[Image.Image] | None]:
-    """`(panel, roll frames or None)` — the ledger line with its figure landing.
-
-    The payoff line is where the short's own number is finally said, and it
-    arrived fully formed while the sheet above it counted. Every other
-    argument is `text_panel`'s.
-    """
-    placed: list = []
-    img = text_panel(settings, text, placed=placed, **panel)
-    font = load_font(settings, panel.get("font_name", DISPLAY_BOLD),
-                     panel.get("font_size", 64))
-    ascent, descent = font.getmetrics()
-    frames = roll_over_lines(
-        img, placed, font,
-        fill=panel.get("fg", (*INK, 255)), bg=panel.get("bg", (*PANEL, 235)),
-        line_h=int((ascent + descent) * 1.12), fps=fps, seconds=seconds)
-    return img, frames
-
-
 def simple_text(
     settings: Settings,
     text: str,
     *,
-    font_name: str = MONO_BOLD,
+    font_name: str = COURIER_BOLD,
     font_size: int = 44,
-    fill=(*INK, 255),
+    fill=None,
     stroke_width: int = 0,
-    stroke_fill=(*BG, 255),
+    stroke_fill=None,
 ) -> Image.Image:
+    fill = fill if fill is not None else (*role(settings, "structure"), 255)
+    stroke_fill = (stroke_fill if stroke_fill is not None
+                   else (*role(settings, "ground"), 255))
     font = load_font(settings, font_name, font_size)
     probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     w = int(probe.textlength(text, font=font)) + 2 * stroke_width + 8
@@ -190,253 +102,6 @@ def simple_text(
     d.text((stroke_width + 4, stroke_width + 2), text, font=font, fill=fill,
            stroke_width=stroke_width, stroke_fill=stroke_fill)
     return img
-
-
-def brand_bug(settings: Settings, opener: str, *, width: int,
-              font_size: int = 34) -> Image.Image:
-    """The intro/outro bug: the marker wordmark + the sampled hook-bank
-    opener, in the brand's hand-drawn + mono pairing."""
-    name_font = load_font(settings, SHANTELL, font_size)
-    line_font = load_font(settings, MONO, int(font_size * 0.62))
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    name = settings.brand_name.lower()
-    nw = probe.textlength(name, font=name_font)
-    lw = probe.textlength(opener, font=line_font)
-    h = name_font.size + line_font.size + 30
-    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    # wordmark, with the signature red terminal dot
-    d.text(((width - nw) / 2 - 6, 0), name, font=name_font, fill=(*INK, 255))
-    d.text(((width - nw) / 2 - 6 + nw, 0), ".", font=name_font, fill=(*RED, 255))
-    d.text(((width - lw) / 2, name_font.size + 12), opener, font=line_font,
-           fill=(*MUTED, 255))
-    return img
-
-
-# What the $TICKER chip's colour is allowed to mean. The channel rule, stated
-# in thumbnail.py and enforced by `metric_colour`: green is UP ONLY, red is a
-# bad number, everything else is ink.
-PILL_FILL = {"up": GREEN, "down": RED}
-
-
-def ticker_pill(settings: Settings, ticker: str, *, font_size: int = 40,
-                direction: str | None = None) -> Image.Image:
-    """The $TICKER chip — Space Mono bold, near-black on paper or on direction.
-
-    The chip carries DIRECTION or it carries nothing. It used to be filled
-    GREEN unconditionally, so a short about a 48% drawdown wore a bright green
-    $SNDK in the corner of every frame — and a chip that is green on every
-    video says nothing at all, which is exactly the argument 87f2839 made when
-    it took GOLD off the thumbnail for being on every thumbnail.
-
-    So: green when the move is up, red when it is down, and an ink edge on
-    plain paper when the caller has no move to report — never decoration.
-    """
-    font = load_font(settings, MONO_BOLD, font_size)
-    label = ticker if ticker.startswith("$") else f"${ticker}"
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    tw = probe.textlength(label, font=font)
-    padx, pady = int(font_size * 0.42), int(font_size * 0.26)
-    w, h = int(tw + 2 * padx), int(font.size + 2 * pady)
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    fill = PILL_FILL.get((direction or "").strip().lower())
-    # The seed deliberately does NOT include the direction: a ticker's chip
-    # keeps the same hand-drawn edge whichever way the price went, so only the
-    # colour carries the information.
-    drawn_card(d, [0, 0, w - 1, h - 1], random.Random(f"pill|{label}|{w}x{h}"),
-               fill=(*(fill or BG), 255),
-               # on paper the chip needs its own edge to read as a chip at all
-               line=(*(CARD_LINE if fill else INK), 255))
-    d.text((padx, pady - 2), label, font=font, fill=(*INK, 255))
-    return img
-
-
-def nos_header(settings: Settings, *, font_size: int = 30) -> Image.Image:
-    """The "noise or signal?" header — Shantell Sans, muted, with a red "?"."""
-    font = load_font(settings, SHANTELL, font_size)
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    base, mark = "noise or signal", "?"
-    bw = probe.textlength(base, font=font)
-    mw = probe.textlength(mark, font=font)
-    w, h = int(bw + mw + 8), int(font.size + 10)
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.text((0, 2), base, font=font, fill=(*MUTED, 255),
-           stroke_width=2, stroke_fill=(0, 0, 0, 160))
-    d.text((bw + 2, 2), mark, font=font, fill=(*RED, 255),
-           stroke_width=2, stroke_fill=(0, 0, 0, 160))
-    return img
-
-
-def lower_third(settings: Settings, primary: str, secondary: str = "", *,
-                width: int, font_size: int = 34) -> Image.Image:
-    """A branded lower-third strip: primary line (Space Grotesk) + a muted
-    Space Mono secondary, on a paper card with a green left edge."""
-    pf = load_font(settings, GROTESK_BOLD, font_size)
-    sf = load_font(settings, MONO, int(font_size * 0.6))
-    pad = int(font_size * 0.5)
-    bar = int(font_size * 0.22)
-    h = pad * 2 + pf.size + (sf.size + 6 if secondary else 0)
-    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    rng = random.Random(f"lower3|{primary}|{secondary}|{width}")
-    drawn_card(d, [0, 0, width - 1, h - 1], rng, fill=(*CARD, 235))
-    accent_stroke(d, [0, 0, bar, h - 1], rng, color=(*GREEN, 255))
-    d.text((bar + pad, pad), primary, font=pf, fill=(*INK, 255))
-    if secondary:
-        d.text((bar + pad, pad + pf.size + 6), secondary, font=sf, fill=(*MUTED, 255))
-    return img
-
-
-def _brand_grid(d: ImageDraw.ImageDraw, W: int, H: int) -> None:
-    step = max(H // 16, 40)
-    for x in range(0, W, step):
-        d.line([x, 0, x, H], fill=(20, 20, 24), width=1)
-    for y in range(0, H, step):
-        d.line([0, y, W, y], fill=(20, 20, 24), width=1)
-
-
-def interstitial_card(
-    settings: Settings, *, width: int, height: int, scene_path: Path | None,
-    headline: str = "", kicker: str = "", accent=GREEN, period=RED,
-) -> Image.Image:
-    """A composed full-frame brand card for the LONG's cutaways: a mascot
-    scene (carrying its own hand-lettered label) on the brand grid, with a
-    Space Mono section kicker + green rule top-left. The scene is the hero;
-    the top-right and bottom bands stay clear for the corner bug, the
-    lower-third and the captions."""
-    W, H = width, height
-    img = Image.new("RGBA", (W, H), (*BG, 255))
-    d = ImageDraw.Draw(img)
-    _brand_grid(d, W, H)
-    pad = int(H * 0.075)
-
-    # section kicker, top-left, with a short green rule under it
-    if kicker:
-        kf = load_font(settings, MONO_BOLD, int(H * 0.03))
-        d.text((pad, pad), kicker.upper(), font=kf, fill=(*MUTED, 255))
-        d.line([pad, pad + kf.size + 12, pad + int(W * 0.09), pad + kf.size + 12],
-               fill=(*accent, 255), width=3)
-
-    # the mascot scene, large, centred in the upper two-thirds (clear of the
-    # bottom caption band)
-    if scene_path is not None and Path(scene_path).exists():
-        scene = Image.open(scene_path).convert("RGBA")
-        sh = int(H * 0.56)
-        sw = int(scene.width * sh / scene.height)
-        if sw > W - 2 * pad:
-            sw = W - 2 * pad
-            sh = int(scene.height * sw / scene.width)
-        scene = scene.resize((sw, sh), Image.LANCZOS)
-        img.alpha_composite(scene, ((W - sw) // 2, int(H * 0.13)))
-
-    # optional short hand-drawn line, mid-frame left (for scenes with no
-    # baked label) — sits well above the caption band
-    if headline:
-        hf = load_font(settings, SHANTELL, int(H * 0.06))
-        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-        lw = probe.textlength(headline, font=hf)
-        d.text((pad, int(H * 0.76)), headline, font=hf, fill=(*INK, 255))
-        d.text((pad + lw, int(H * 0.76)), ".", font=hf, fill=(*period, 255))
-    return img
-
-
-def intro_card(settings: Settings, ticker: str, tagline: str, *,
-               width: int, height: int, scene_path: Path | None = None) -> Image.Image:
-    """The LONG opening title card: the marker wordmark + $TICKER pill +
-    the tagline + a mascot, composed on the brand grid — a real open, not a
-    lone mascot on a flat backdrop."""
-    W, H = width, height
-    img = Image.new("RGBA", (W, H), (*BG, 255))
-    d = ImageDraw.Draw(img)
-    _brand_grid(d, W, H)
-
-    if scene_path is not None and Path(scene_path).exists():
-        scene = Image.open(scene_path).convert("RGBA")
-        sh = int(H * 0.42)
-        sw = int(scene.width * sh / scene.height)
-        scene = scene.resize((sw, sh), Image.LANCZOS)
-        img.alpha_composite(scene, ((W - sw) // 2, int(H * 0.10)))
-
-    # wordmark, centred, with the red terminal dot
-    wf = load_font(settings, SHANTELL, int(H * 0.16))
-    name = settings.brand_name.lower()
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    nw = probe.textlength(name, font=wf)
-    dot = probe.textlength(".", font=wf)
-    wy = int(H * 0.58)
-    d.text(((W - nw - dot) / 2, wy), name, font=wf, fill=(*INK, 255))
-    d.text(((W - nw - dot) / 2 + nw, wy), ".", font=wf, fill=(*RED, 255))
-
-    # ticker pill + tagline under the wordmark
-    pill = ticker_pill(settings, ticker, font_size=int(H * 0.05))
-    img.alpha_composite(pill, ((W - pill.width) // 2, wy + int(wf.size * 1.05)))
-    tf = load_font(settings, MONO, int(H * 0.032))
-    tw = probe.textlength(tagline, font=tf)
-    d.text(((W - tw) / 2, wy + int(wf.size * 1.05) + pill.height + int(H * 0.02)),
-           tagline, font=tf, fill=(*MUTED, 255))
-    return img
-
-
-def chapter_stinger(settings: Settings, number: str, title: str, *,
-                    width: int, height: int) -> Image.Image:
-    """A full-frame chapter stinger card: a big Shantell chapter title with
-    a mono kicker and the red terminal dot — the LONG section divider.
-
-    The title is FITTED. It used to be drawn at a fixed size from the left
-    margin, which was invisible while the titles were six hardcoded two-word
-    phrases; the moment the script's own sections reached the card, "what the
-    money actually does" ran off the right-hand edge mid-word.
-
-    OPAQUE. It was 235/255, so for the whole 0.9s the cut underneath printed
-    through the divider: "02 / what they do." landed on top of "EXMPL dispatch
-    dashboard" at 35s of the sample, both large, both unreadable. A section
-    divider is a card, and it is the one moment in the format allowed to
-    interrupt — the 0.2s fade is where the transition lives, not the fill.
-    """
-    img = Image.new("RGBA", (width, height), (*BG, 255))
-    d = ImageDraw.Draw(img)
-    kick = load_font(settings, MONO_BOLD, max(int(height * 0.045), 14))
-    left = int(width * 0.1)
-    avail = width - left * 2
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-
-    size = max(int(height * 0.16), 28)
-    floor = max(int(height * 0.07), 18)
-    big = load_font(settings, SHANTELL, size)
-    while size > floor and probe.textlength(f"{title}.", font=big) > avail:
-        size -= 2
-        big = load_font(settings, SHANTELL, size)
-
-    lines = [title]
-    if probe.textlength(f"{title}.", font=big) > avail:
-        # Still too long at the floor: break on a word boundary rather than
-        # shrinking the section title into illegibility.
-        from pipeline.kit_frames import _wrap_to
-
-        lines = _wrap_to(d, title, big, avail) or [title]
-
-    line_h = int(size * 1.12)
-    top = int(height * 0.44) - (len(lines) - 1) * line_h // 2
-    d.text((left, int(height * 0.36) - (len(lines) - 1) * line_h // 2),
-           number.upper(), font=kick, fill=(*MUTED, 255))
-    for i, line in enumerate(lines):
-        y = top + i * line_h
-        d.text((left, y), line, font=big, fill=(*INK, 255))
-        if i == len(lines) - 1:
-            d.text((left + probe.textlength(line, font=big), y), ".",
-                   font=big, fill=(*RED, 255))
-    return img
-
-
-# --------------------------------------------------------------------------
-# Full-frame media treatment + designed backdrops (the LONG "media IS the
-# background" kit). Every LONG still is composed to fill the frame — never a
-# bare black frame, never letterbox bars. The renderer holds it still.
-# --------------------------------------------------------------------------
-
-
 def _cover(img: Image.Image, W: int, H: int) -> Image.Image:
     """Scale + centre-crop `img` to exactly WxH (cover fit, no bars)."""
     scale = max(W / img.width, H / img.height)
@@ -451,6 +116,8 @@ def cover_fill_frame(
     width: int,
     height: int,
     *,
+    ground: tuple[int, int, int],
+    line: tuple[int, int, int],
     keep_min: float = 0.72,
     blur: int = 26,
     darken: float = 0.5,
@@ -474,7 +141,7 @@ def cover_fill_frame(
 
     bg = ImageEnhance.Brightness(_cover(img, W, H).filter(
         ImageFilter.GaussianBlur(blur))).enhance(darken)
-    bg = Image.blend(bg, Image.new("RGB", (W, H), BG), 0.42)
+    bg = Image.blend(bg, Image.new("RGB", (W, H), ground), 0.42)
     fg = img.copy()
     fg.thumbnail((int(W * 0.92), int(H * 0.9)), Image.LANCZOS)
     ox, oy = (W - fg.width) // 2, (H - fg.height) // 2
@@ -482,158 +149,13 @@ def cover_fill_frame(
     if border:
         ImageDraw.Draw(bg).rectangle(
             [ox - 2, oy - 2, ox + fg.width + 1, oy + fg.height + 1],
-            outline=BORDER2, width=2)
+            outline=line, width=2)
     return bg
 
 
 # the designed filler families — visually distinct looks so consecutive
 # filler beats never read as "the same scene on repeat"
 LONG_BACKDROP_FAMILIES = 5
-
-
-def _lerp(a, b, t):
-    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
-
-
-def long_backdrop(
-    settings: Settings, width: int, height: int, variant: int, *,
-    ticker: str = "", label: str = "", seed: str = "bg",
-) -> Image.Image:
-    """A DESIGNED Dennis-palette full-frame background for a filler beat.
-
-    `variant` selects one of a few visually distinct families (gradient,
-    grid texture, a branded 'signal' chart card, a chapter word, a dot
-    field). Because the families differ so strongly, a run of filler cuts
-    reads as motion through a designed deck — never a repeated bare frame.
-    """
-    W, H = width, height
-    fam = variant % LONG_BACKDROP_FAMILIES
-    rng = random.Random(f"{seed}|{variant}")
-    # The light kit leads with red; green is reserved for up-moves, so a
-    # decorative backdrop never uses it.
-    accent = RED
-    # Paper tones, close together — this is the room Dennis stands in, and it
-    # must stay quiet enough for dark ink to read on top of it.
-    LIFT_HI, LIFT_MID, LIFT_LO = (250, 249, 246), (242, 242, 239), (233, 231, 225)
-    img = Image.new("RGB", (W, H), LIFT_MID)
-    d = ImageDraw.Draw(img, "RGBA")
-
-    if fam == 0:  # diagonal gradient + a large, clearly visible accent glow
-        top, bot = (LIFT_HI, LIFT_LO) if rng.random() < 0.5 else (LIFT_MID, LIFT_LO)
-        for y in range(0, H, 2):
-            d.line([(0, y), (W, y)], fill=_lerp(top, bot, y / H))
-        glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        gx, gy = (rng.choice([int(W * 0.2), int(W * 0.8)]),
-                  rng.choice([int(H * 0.25), int(H * 0.75)]))
-        ImageDraw.Draw(glow).ellipse(
-            [gx - W * 0.45, gy - W * 0.45, gx + W * 0.45, gy + W * 0.45],
-            fill=(*accent, 80))
-        img = Image.alpha_composite(img.convert("RGBA"),
-                                    glow.filter(ImageFilter.GaussianBlur(140))).convert("RGB")
-        d = ImageDraw.Draw(img, "RGBA")
-
-    elif fam == 1:  # brand grid texture + a SUBTLE ticker watermark + hairline
-        img.paste(LIFT_LO, (0, 0, W, H))
-        gd = ImageDraw.Draw(img)
-        step = max(H // rng.choice([12, 14, 18]), 40)
-        for x in range(0, W, step):
-            gd.line([x, 0, x, H], fill=LIFT_MID, width=1)
-        for y in range(0, H, step):
-            gd.line([0, y, W, y], fill=LIFT_MID, width=1)
-        ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        od = ImageDraw.Draw(ov)
-        if ticker:  # a faint texture, not the hero — seed varies scale/place
-            wf = load_font(settings, SHANTELL, int(H * rng.choice([0.2, 0.26, 0.3])))
-            probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-            tw = probe.textlength(f"${ticker}", font=wf)
-            wx = rng.choice([int(W * 0.06), (W - tw) / 2, W - tw - int(W * 0.06)])
-            wy = rng.choice([int(H * 0.16), (H - wf.size) / 2, int(H * 0.62)])
-            od.text((wx, wy), f"${ticker}", font=wf, fill=(*FAINT, 90))
-        hy = rng.choice([0.2, 0.5, 0.82])
-        od.line([(0, int(H * hy)), (W, int(H * hy))], fill=(*accent, 120),
-                width=max(int(H * 0.008), 3))
-        img = Image.alpha_composite(img.convert("RGBA"), ov).convert("RGB")
-        d = ImageDraw.Draw(img, "RGBA")
-
-    elif fam == 2:  # a branded "signal" card — a decorative marker line chart
-        d.rectangle([0, 0, W, H], fill=LIFT_LO)
-        cx0, cy0, cx1, cy1 = int(W * 0.07), int(H * 0.1), int(W * 0.93), int(H * 0.9)
-        # Its own rng, so the card's edge does not shift the draws the
-        # decorative line below is built from: everything else about this
-        # backdrop stays byte-identical.
-        drawn_card(d, [cx0, cy0, cx1, cy1],
-                   random.Random(f"{seed}|{variant}|card"),
-                   fill=(*CARD2, 255), line=(*BORDER2, 255), width=3)
-        x0, x1 = int(W * 0.13), int(W * 0.87)
-        y0, y1 = int(H * 0.26), int(H * 0.8)
-        for k in range(4):
-            gy = y0 + (y1 - y0) * k / 3
-            d.line([(x0, gy), (x1, gy)], fill=(*GRID, 255), width=1)
-        n = 10
-        ys = [rng.uniform(y0, y1) for _ in range(n)]
-        pts = [(x0 + (x1 - x0) * i / (n - 1), ys[i]) for i in range(n)]
-        area = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        ImageDraw.Draw(area).polygon(pts + [(x1, y1), (x0, y1)], fill=(*accent, 40))
-        img = Image.alpha_composite(img.convert("RGBA"), area).convert("RGB")
-        d = ImageDraw.Draw(img, "RGBA")
-        d.line(pts, fill=(*accent, 255), width=max(int(W * 0.005), 3), joint="curve")
-        d.ellipse([pts[-1][0] - 9, pts[-1][1] - 9, pts[-1][0] + 9, pts[-1][1] + 9],
-                  fill=(*accent, 255))
-        kf = load_font(settings, MONO_BOLD, int(H * 0.032))
-        d.text((int(W * 0.13), int(H * 0.14)), (label or "the tape").upper(),
-               font=kf, fill=(*MUTED2, 255))
-
-    elif fam == 3:  # chapter word — big Shantell line, mono kicker, red dot
-        for y in range(0, H, 2):
-            d.line([(0, y), (W, y)], fill=_lerp(LIFT_MID, LIFT_LO, y / H))
-        gd = ImageDraw.Draw(img)
-        step = max(H // 14, 44)
-        for x in range(0, W, step):
-            gd.line([x, 0, x, H], fill=CARD_LINE, width=1)
-        d = ImageDraw.Draw(img, "RGBA")
-        kf = load_font(settings, MONO_BOLD, int(H * 0.034))
-        bf = load_font(settings, SHANTELL, int(H * 0.12))
-        word = label or "the deep dive"
-        d.text((int(W * 0.1), int(H * 0.39)), ("section" if label else "dennis").upper(),
-               font=kf, fill=(*MUTED2, 255))
-        d.line([int(W * 0.1), int(H * 0.44), int(W * 0.17), int(H * 0.44)],
-               fill=(*accent, 255), width=4)
-        probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-        tw = probe.textlength(word, font=bf)
-        d.text((int(W * 0.1), int(H * 0.49)), word, font=bf, fill=(*INK, 255))
-        d.text((int(W * 0.1) + tw, int(H * 0.49)), ".", font=bf, fill=(*RED, 255))
-
-    else:  # fam == 4: dot field + a bold diagonal accent band
-        d.rectangle([0, 0, W, H], fill=LIFT_LO)
-        step = max(H // 18, 40)
-        for yy in range(step, H, step):
-            for xx in range(step, W, step):
-                d.ellipse([xx - 3, yy - 3, xx + 3, yy + 3], fill=(*BORDER, 255))
-        band = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        ImageDraw.Draw(band).line([(0, int(H * 0.78)), (W, int(H * 0.32))],
-                                  fill=(*accent, 90), width=max(int(H * 0.05), 18))
-        img = Image.alpha_composite(img.convert("RGBA"),
-                                    band.filter(ImageFilter.GaussianBlur(6))).convert("RGB")
-        d = ImageDraw.Draw(img, "RGBA")
-        d.line([(0, int(H * 0.78)), (W, int(H * 0.32))], fill=(*accent, 220),
-               width=max(int(H * 0.006), 3))
-
-    # a gentle vignette gives the room some depth. On paper it only settles
-    # the edges a little — crushing them would put a dark ring behind a host
-    # drawn in dark ink.
-    vig = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(vig).ellipse([-int(W * 0.25), -int(H * 0.25),
-                                 int(W * 1.25), int(H * 1.25)], fill=255)
-    vig = vig.filter(ImageFilter.GaussianBlur(int(W * 0.05)))
-    settled = ImageEnhance.Brightness(img).enhance(0.96)
-    return Image.composite(img, settled, vig)
-
-
-# --------------------------------------------------------------------------
-# Frame sequences -> alpha clips.
-# --------------------------------------------------------------------------
-
-
 def frames_to_alpha_clip(frames: list[Image.Image], fps: int, out_path: Path) -> Path:
     """Encode RGBA frames once into a PNG-codec .mov (alpha preserved)."""
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -646,471 +168,6 @@ def frames_to_alpha_clip(frames: list[Image.Image], fps: int, out_path: Path) ->
             "-c:v", "png", "-pix_fmt", "rgba", str(out_path),
         ])
     return out_path
-
-
-def doodle_clip(
-    src: Path,
-    out_path: Path,
-    *,
-    display_w: int,
-    duration_s: float,
-    fps: int = 30,
-    seed: str = "doodle",
-) -> tuple[Path, tuple[int, int]]:
-    """Resize a doodle PNG to display width, give it the hand-drawn boil,
-    and encode an alpha .mov. Returns (clip_path, (w, h)) of the frames so
-    the caller can position it."""
-    from pipeline.doodles import wobble_frames
-
-    img = Image.open(src).convert("RGBA")
-    if img.width != display_w:
-        ratio = display_w / img.width
-        img = img.resize((display_w, max(int(img.height * ratio), 1)), Image.LANCZOS)
-    frames = wobble_frames(img, duration_s=duration_s, fps=fps, seed=seed)
-    frames_to_alpha_clip(frames, fps, out_path)
-    return out_path, frames[0].size
-
-
-def typing_frames(
-    settings: Settings,
-    text: str,
-    *,
-    font_size: int = 46,
-    fill=INK,
-    fps: int = 30,
-    type_seconds: float = 0.9,
-    cursor: bool = True,
-) -> list[Image.Image]:
-    """Monospace type-on reveal of one line."""
-    font = load_font(settings, MONO_BOLD, font_size)
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    full_w = int(probe.textlength(text, font=font)) + 26
-    ascent, descent = font.getmetrics()
-    h = ascent + descent + 10
-    n_frames = max(int(type_seconds * fps), 2)
-    frames: list[Image.Image] = []
-    for k in range(n_frames + 1):
-        shown = text[: max(1, round(len(text) * k / n_frames))] if k else ""
-        img = Image.new("RGBA", (full_w, h), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        d.text((4, 4), shown, font=font, fill=(*fill, 255))
-        if cursor and k < n_frames:
-            cx = d.textlength(shown, font=font) + 6
-            d.rectangle([cx, 6, cx + font_size * 0.55, h - 8], fill=(*fill, 200))
-        frames.append(img)
-    return frames
-
-
-# --------------------------------------------------------------------------
-# Headline overlay (the "why" treatment ON the chart).
-# --------------------------------------------------------------------------
-
-
-def headline_card(settings: Settings, text: str, *, meaning: str = "",
-                  width: int, font_size: int = 40,
-                  placed: list | None = None) -> Image.Image:
-    """Driver-headline card (the WHY beat): a red left border, the quoted
-    headline in Space Grotesk, and the red hand-drawn "gloss" line under it
-    (Shantell Sans) saying what it actually means.
-
-    `placed`, when given, is filled with `(line, x, y)` for the QUOTED lines —
-    the headline's own figure is what rolls, not the gloss under it.
-    """
-    font = load_font(settings, GROTESK_BOLD, font_size)
-    gloss_font = load_font(settings, SHANTELL, int(font_size * 0.82))
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    pad = int(font_size * 0.55)
-    bar_w = int(font_size * 0.30)
-    inner = width - 2 * pad - bar_w
-    quoted = text if text.strip().startswith('"') else f'"{text}"'
-    lines = _wrap(probe, quoted, font, inner)
-    lh = int(font_size * 1.24)
-    gloss_lines = _wrap(probe, meaning, gloss_font, inner) if meaning else []
-    glh = int(gloss_font.size * 1.2)
-    h = 2 * pad + lh * len(lines) + (int(pad * 0.6) + glh * len(gloss_lines)
-                                     if gloss_lines else 0)
-    img = Image.new("RGBA", (width, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    rng = random.Random(f"headline|{text}|{meaning}|{width}")
-    drawn_card(d, [0, 0, width - 1, h - 1], rng, fill=(*CARD, 244))
-    accent_stroke(d, [0, 0, bar_w, h - 1], rng, color=(*RED, 255))
-    y = pad
-    for line in lines:
-        d.text((bar_w + pad, y), line, font=font, fill=(*INK, 255))
-        if placed is not None:
-            placed.append((line, bar_w + pad, y))
-        y += lh
-    y += int(pad * 0.6)
-    for line in gloss_lines:
-        d.text((bar_w + pad, y), line, font=gloss_font, fill=(*RED, 255))
-        y += glh
-    return img
-
-
-def headline_card_frames(settings: Settings, text: str, *, meaning: str = "",
-                         width: int, font_size: int = 40,
-                         fps: int = 30, seconds: float = 0.7
-                         ) -> tuple[Image.Image, list[Image.Image] | None]:
-    """`(card, roll frames or None)` — the driver's figure landing on arrival.
-
-    A driver headline is almost always a number ("orders fell 41%"), and it
-    was the one place a figure reached the frame already counted.
-    """
-    placed: list = []
-    card = headline_card(settings, text, meaning=meaning, width=width,
-                         font_size=font_size, placed=placed)
-    frames = roll_over_lines(
-        card, placed, load_font(settings, GROTESK_BOLD, font_size),
-        fill=(*INK, 255), bg=(*CARD, 244), line_h=int(font_size * 1.24),
-        fps=fps, seconds=seconds)
-    return card, frames
-
-
-# --------------------------------------------------------------------------
-# The numbers sheet — a clean statement card with mini trend bars (§4).
-# --------------------------------------------------------------------------
-
-_NUM_RE = re.compile(r"-?\d+(?:[.,]\d+)?")
-
-
-def parse_row_values(values: list[str]) -> list[float] | None:
-    """Best-effort numeric parse of display strings for the trend bars."""
-    out: list[float] = []
-    for v in values:
-        m = _NUM_RE.search(v.replace(",", ""))
-        if not m:
-            return None
-        x = float(m.group(0))
-        if "-" in v.split(m.group(0))[0] or v.strip().startswith("("):
-            x = -abs(x)
-        low = v.lower()
-        if "b" in low.split(m.group(0))[-1][:2]:
-            x *= 1000  # bars only need relative scale vs M
-        out.append(x)
-    return out
-
-
-# The sheet's metrics are authored against a 1000px-wide card — the width the
-# SHORT's design layout asks for at full resolution.
-SHEET_DESIGN_W = 1000
-
-
-def sheet_layout(settings: Settings, n_rows: int, *, width: int,
-                 row_h: int | None = None, title_h: int | None = None,
-                 years_h: int | None = None, pad: int | None = None) -> dict:
-    """Pixel geometry shared by the base card, row clips and zoom pops.
-
-    Every metric scales with the card's width. They used to be fixed pixel
-    counts, so a card rendered at half size kept full-size rows and a
-    full-size title — the same sheet, but proportioned differently. That makes
-    a reduced-resolution render stop being a miniature of the real one, which
-    matters most for the golden frames, whose whole job is to be evidence
-    about what ships.
-    """
-    # The rows are generous because this is a PHONE. The gut check is the most
-    # read thing in the short and it rendered as a thin landscape strip —
-    # 1000x570 on a 1080x1920 frame, 27% of it — with figures small enough to
-    # squint at. The sheet is a generated raster, so unlike the 16:9 card
-    # artwork its proportions are a choice rather than arithmetic.
-    s = max(width, 1) / SHEET_DESIGN_W
-    row_h = row_h if row_h is not None else max(int(176 * s), 24)
-    title_h = title_h if title_h is not None else max(int(116 * s), 20)
-    years_h = years_h if years_h is not None else max(int(72 * s), 14)
-    pad = pad if pad is not None else max(int(30 * s), 6)
-    return {
-        "width": width,
-        "pad": pad,
-        "title_h": title_h,
-        "years_h": years_h,
-        "row_h": row_h,
-        "height": title_h + years_h + n_rows * row_h + 2 * pad,
-        "rows_y0": pad + title_h + years_h,
-        "label_w": int(width * 0.30),
-        "bars_w": int(width * 0.16),
-    }
-
-
-def numbers_sheet_base(settings: Settings, n_rows: int, years: list[str], *,
-                       width: int, title: str = "THE GUT CHECK") -> tuple[Image.Image, dict]:
-    """The empty statement card: title, year headers, ruled row slots.
-    Rows type on later as separate overlays positioned by the layout.
-
-    The card's edge is drawn, and it is drawn INSIDE the sheet: the returned
-    layout is what positions every row overlay and every zoom pop, so the
-    sheet's width and height are not the border's to change.
-    """
-    ly = sheet_layout(settings, n_rows, width=width)
-    W, H = width, ly["height"]
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    drawn_card(d, [0, 0, W - 1, H - 1],
-               random.Random(f"sheet|{title}|{n_rows}|{width}"),
-               fill=(*PANEL, 246), line=(*PANEL_LINE, 255))
-
-    title_font = load_font(settings, GROTESK_BOLD, int(ly["title_h"] * 0.46))
-    d.text((ly["pad"], ly["pad"] + 4), title, font=title_font, fill=(*INK, 255))
-    sub_font = load_font(settings, MONO, int(ly["title_h"] * 0.22))
-    d.text((ly["pad"], ly["pad"] + title_font.size + 12),
-           "from the filing · direction, not a snapshot", font=sub_font,
-           fill=(*MUTED, 255))
-
-    # Year headers over the value columns, fitted to the column they sit in.
-    # The row VALUES have always shrunk to fit; the headers did not, so a
-    # narrow card printed "2021 2022 2023" on top of itself while the numbers
-    # under them stayed legible.
-    if years:
-        x0 = ly["label_w"]
-        cols_w = W - x0 - ly["bars_w"] - ly["pad"]
-        cell_w = cols_w / len(years)
-        ysize = max(int(ly["years_h"] * 0.44), 1)
-        yr_font = load_font(settings, MONO_BOLD, ysize)
-        widest = max((str(y) for y in years), key=len)
-        while ysize > 7 and d.textlength(widest, font=yr_font) > cell_w - 4:
-            ysize -= 1
-            yr_font = load_font(settings, MONO_BOLD, ysize)
-        for j, y in enumerate(years):
-            cx = x0 + cols_w * (j + 0.5) / len(years)
-            d.text((cx - d.textlength(str(y), font=yr_font) / 2,
-                    ly["pad"] + ly["title_h"] + 6),
-                   str(y), font=yr_font, fill=(*MUTED, 255))
-
-    for i in range(n_rows):  # recessive rules between row slots
-        ry = ly["rows_y0"] + (i + 1) * ly["row_h"]
-        if i < n_rows - 1:
-            d.line([ly["pad"], ry, W - ly["pad"], ry], fill=(*PANEL_LINE, 200), width=1)
-    return img, ly
-
-
-def number_row_frames(
-    settings: Settings,
-    label: str,
-    values: list[str],
-    layout: dict,
-    *,
-    fps: int = 30,
-    type_seconds: float = 0.8,
-) -> list[Image.Image]:
-    """One sheet row typing on: label, then the year values landing cell by
-    cell (oldest -> newest), then the mini trend bars growing."""
-    W = layout["width"]
-    H = layout["row_h"]
-    label_w = layout["label_w"]
-    bars_w = layout["bars_w"]
-    pad = layout["pad"]
-    cols_w = W - label_w - bars_w - pad
-
-    # fit fonts to their columns so long labels / wide values never collide
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    lsize = int(H * 0.34)
-    label_font = load_font(settings, DISPLAY_BOLD, lsize)
-    while lsize > 14 and probe.textlength(label, font=label_font) > label_w - pad - 8:
-        lsize -= 2
-        label_font = load_font(settings, DISPLAY_BOLD, lsize)
-    cell_w = cols_w / max(len(values), 1)
-    vsize = int(H * 0.30)
-    val_font = load_font(settings, MONO_BOLD, vsize)
-    widest = max(values, key=len)
-    while vsize > 12 and probe.textlength(widest, font=val_font) > cell_w - 8:
-        vsize -= 2
-        val_font = load_font(settings, MONO_BOLD, vsize)
-    numeric = parse_row_values(values)
-
-    def render(progress: float) -> Image.Image:
-        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        # One rng per frame, seeded off the row rather than off the frame
-        # index: every frame of the growing bar then carries the SAME wobble,
-        # so it grows instead of boiling, and two calls with these arguments
-        # are byte-identical.
-        rng = random.Random(f"row|{label}|{'|'.join(values)}|{W}x{H}")
-        # phase 1 (0..0.25): the label types
-        label_p = min(progress / 0.25, 1.0)
-        shown = label[: max(1, round(len(label) * label_p))] if label_p > 0 else ""
-        d.text((pad, (H - label_font.size) / 2), shown, font=label_font,
-               fill=(*MUTED2, 255))
-        # phase 2 (0.25..0.85): values land cell by cell
-        n = len(values)
-        vals_p = max(0.0, min((progress - 0.25) / 0.60, 1.0))
-        visible = int(math.ceil(vals_p * n))
-        for j in range(visible):
-            v = values[j]
-            cx = label_w + cols_w * (j + 0.5) / n
-            color = INK
-            if numeric is not None and numeric[j] < 0:
-                color = RED
-            d.text((cx - d.textlength(v, font=val_font) / 2,
-                    (H - val_font.size) / 2), v, font=val_font, fill=(*color, 255))
-        # phase 3 (0.85..1): mini trend bars grow. Neutral single hue —
-        # direction is a fact, not a judgement (rising share count is not
-        # good news); only genuinely negative values go red. Each bar is one
-        # stroke of the nib rather than a 2px-radius rectangle: they sit on a
-        # drawn sheet, three inches from a drawn row rule.
-        if numeric is not None and len(numeric) >= 2:
-            bars_p = max(0.0, min((progress - 0.85) / 0.15, 1.0))
-            bx0 = W - bars_w - pad + 6
-            bw = (bars_w - 12) / len(numeric)
-            lo, hi = min(numeric + [0.0]), max(numeric + [0.0])
-            span = (hi - lo) or 1.0
-            zero_y = H * 0.78 - (0.0 - lo) / span * H * 0.56
-            for j, x in enumerate(numeric):
-                vy = H * 0.78 - (x - lo) / span * H * 0.56
-                top, bot = (vy, zero_y) if x >= 0 else (zero_y, vy)
-                bot = top + max((bot - top) * bars_p, 2)
-                color = (72, 72, 84) if x >= 0 else RED  # neutral trend bar; red only if negative
-                accent_stroke(d, [bx0 + j * bw + 1, top,
-                                  bx0 + (j + 1) * bw - 2, bot],
-                              rng, color=(*color, 220), jitter=0.6, passes=1)
-        return img
-
-    n_frames = max(int(type_seconds * fps), 4)
-    return [render(k / n_frames) for k in range(n_frames + 1)]
-
-
-def number_row_image(settings: Settings, label: str, values: list[str],
-                     layout: dict) -> Image.Image:
-    """The row's final frame (used for the zoom-punch pop)."""
-    return number_row_frames(settings, label, values, layout, fps=2,
-                             type_seconds=1.0)[-1]
-
-
-# --------------------------------------------------------------------------
-# Hand-drawn annotations, zoom-punch, flash stinger.
-# --------------------------------------------------------------------------
-
-
-def scribble_frames(
-    w: int,
-    h: int,
-    *,
-    style: str = "circle",
-    color=RED,
-    fps: int = 30,
-    draw_seconds: float = 0.4,
-    stroke: int | None = None,
-    seed: str = "scribble",
-) -> list[Image.Image]:
-    """A marker-style mark (circle / underline / arrow) drawing itself on,
-    with hand-drawn jitter — the red scrawl the kit uses over the chart or
-    a numbers row. Composited on the top layer."""
-    rng = random.Random(seed)
-    stroke = stroke or max(int(min(w, h) * 0.06), 5)
-    n = max(int(draw_seconds * fps), 4)
-    cx, cy = w / 2, h / 2
-    rx, ry = w / 2 - stroke, h / 2 - stroke
-    jitter = [(rng.uniform(-2.5, 2.5), rng.uniform(-2.5, 2.5)) for _ in range(64)]
-
-    def point(theta: float) -> tuple[float, float]:
-        j = jitter[int((theta % (2 * math.pi)) / (2 * math.pi) * 63)]
-        return (cx + rx * math.cos(theta) + j[0], cy + ry * math.sin(theta) + j[1])
-
-    # an arrow flies in from the top-left corner toward the center
-    tail = (stroke * 1.5, stroke * 1.5)
-    tip = (cx, cy)
-
-    frames: list[Image.Image] = []
-    for k in range(n + 1):
-        p = k / n
-        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        if style == "underline":
-            x1 = stroke + (w - 2 * stroke) * p
-            wave = [(x, h * 0.6 + math.sin(x / 14) * h * 0.12)
-                    for x in range(stroke, int(x1), 6)]
-            if len(wave) >= 2:
-                d.line(wave, fill=(*color, 235), width=stroke, joint="curve")
-        elif style == "arrow":
-            hx = tail[0] + (tip[0] - tail[0]) * p
-            hy = tail[1] + (tip[1] - tail[1]) * p
-            shaft = [(tail[0] + rng.uniform(-2, 2), tail[1] + rng.uniform(-2, 2)),
-                     (hx, hy)]
-            d.line(shaft, fill=(*color, 235), width=stroke, joint="curve")
-            if p > 0.85:  # the arrowhead lands last
-                ah = stroke * 3
-                d.line([(tip[0] - ah, tip[1] - ah * 0.3), (tip[0], tip[1])],
-                       fill=(*color, 235), width=stroke, joint="curve")
-                d.line([(tip[0] - ah * 0.3, tip[1] - ah), (tip[0], tip[1])],
-                       fill=(*color, 235), width=stroke, joint="curve")
-        else:  # circle
-            start = -math.pi / 2
-            # 1.15 turns so the ellipse visibly closes like a real scribble
-            theta_end = start + 2 * math.pi * 1.15 * p
-            pts = [point(start + (theta_end - start) * i / 48) for i in range(49)]
-            if len(pts) >= 2 and p > 0:
-                d.line(pts, fill=(*color, 235), width=stroke, joint="curve")
-        frames.append(img)
-    return frames
-
-
-def scribble_callout_frames(
-    settings: Settings,
-    w: int,
-    h: int,
-    *,
-    style: str,
-    target: str,
-    fps: int = 30,
-    draw_seconds: float = 0.45,
-    hold_seconds: float = 1.2,
-    color=RED,
-    seed: str = "callout",
-) -> list[Image.Image]:
-    """A scribble mark drawing itself on, plus the target text as a small
-    hand-labelled callout beneath it — the LONG/inline `[SCRIBBLE: … -> target]`
-    treatment that rides over whatever segment is on screen.
-
-    The mark is the kit's own drawing whenever `marks/` ships one for `style`,
-    which is what puts the other twelve marks on screen: the vocabulary in
-    `SCRIBBLE_MARKS` is the whole of it, and a style with no artwork falls back
-    to the procedural stroke rather than to nothing.
-    """
-    mark_h = int(h * 0.62)
-    mark = mark_frames(settings, w, mark_h, style=style, color=color, fps=fps,
-                       draw_seconds=draw_seconds, seed=seed)
-    font = load_font(settings, MONO_BOLD, max(int(h * 0.12), 16))
-    probe = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
-    label = target if probe.textlength(target, font=font) < w - 20 else target[:24]
-    lw = probe.textlength(label, font=font)
-
-    frames: list[Image.Image] = []
-    total = len(mark) + max(int(hold_seconds * fps), 1)
-    for k in range(total):
-        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        img.alpha_composite(mark[min(k, len(mark) - 1)], (0, 0))
-        if k >= len(mark) - 2:  # the label appears as the mark completes
-            d = ImageDraw.Draw(img)
-            lx = (w - lw) / 2
-            ly = mark_h + int(h * 0.02)
-            d.text((lx, ly), label, font=font, fill=(*color, 255),
-                   stroke_width=3, stroke_fill=(8, 9, 11, 230))
-        frames.append(img)
-    return frames
-
-
-def zoom_pop_frames(image: Image.Image, *, fps: int = 30,
-                    pop_seconds: float = 0.5, max_scale: float = 1.32) -> list[Image.Image]:
-    """Zoom-punch on a key number: the row pops out, holds, settles."""
-    n = max(int(pop_seconds * fps), 4)
-    cw = int(image.width * max_scale) + 8
-    ch = int(image.height * max_scale) + 8
-    frames: list[Image.Image] = []
-    for k in range(n + 1):
-        p = k / n
-        # fast out, brief hold, ease back
-        if p < 0.3:
-            s = 1.0 + (max_scale - 1.0) * (p / 0.3)
-        elif p < 0.7:
-            s = max_scale
-        else:
-            s = max_scale - (max_scale - 1.0) * ((p - 0.7) / 0.3)
-        img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-        scaled = image.resize((max(int(image.width * s), 1),
-                               max(int(image.height * s), 1)), Image.BICUBIC)
-        img.alpha_composite(scaled, ((cw - scaled.width) // 2,
-                                     (ch - scaled.height) // 2))
-        frames.append(img)
-    return frames
-
-
 def flash_frames(w: int, h: int, *, fps: int = 30,
                  flash_seconds: float = 0.14) -> list[Image.Image]:
     """A white flash stinger for beat transitions."""
@@ -1136,107 +193,7 @@ def _ass_time(t: float) -> str:
     m = int((t % 3600) // 60)
     s = t % 60
     return f"{h}:{m:02d}:{s:05.2f}"
-
-
-def _pages(words: list[WordTimestamp], max_words: int, max_chars: int, max_gap: float):
-    page: list[WordTimestamp] = []
-    for w in words:
-        if page and (
-            len(page) >= max_words
-            or sum(len(x.word) + 1 for x in page) + len(w.word) > max_chars
-            or w.start - page[-1].end > max_gap
-        ):
-            yield page
-            page = []
-        page.append(w)
-    if page:
-        yield page
-
-
-def build_karaoke_ass(
-    words: list[WordTimestamp],
-    *,
-    play_res: tuple[int, int],
-    font_size: int = 66,
-    margin_v: int = 250,
-    max_words: int = 3,
-    max_chars: int = 18,
-    accent_rgb: tuple[int, int, int] = GOLD,
-    duration: float | None = None,
-    box: bool = False,
-    margin_h: int = 60,
-) -> str:
-    """Word-synced karaoke: unspoken text white, spoken fills accent.
-
-    `box=True` switches to an opaque, text-fitted caption box (ASS
-    BorderStyle=3): each line gets its own dark chip sized to its content,
-    so a LONG caption can never clip off-frame or stack into the furniture.
-    The default (outline) style is byte-for-byte the SHORT's captions.
-    """
-    W, H = play_res
-
-    def bgr(c):  # ASS colours are &HAABBGGRR
-        r, g, b = c
-        return f"&H00{b:02X}{g:02X}{r:02X}"
-
-    # BorderStyle, Outline (box padding / stroke), Shadow, and the outline/back
-    # colours differ between the outline caption (SHORT) and the fitted box (LONG)
-    # On the light kit the caption band is paper, not a dark slab: a
-    # near-opaque #faf9f6 box for the LONG, and a paper outline for the SHORT
-    # so text stays legible over photography without punching a hole in the
-    # frame. (&HAABBGGRR — AA is 00 opaque, FF transparent.)
-    if box:
-        border_style, outline, shadow = 3, 12, 0
-        outline_c, back_c = "&H14F6F9FA", "&H14F6F9FA"
-    else:
-        border_style, outline, shadow = 1, 4, 2
-        outline_c, back_c = "&H00EFF2F2", "&H78F6F9FA"
-
-    header = f"""[Script Info]
-ScriptType: v4.00+
-PlayResX: {W}
-PlayResY: {H}
-WrapStyle: 2
-ScaledBorderAndShadow: yes
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,Space Grotesk,{font_size},{bgr(accent_rgb)},&H00FFFFFF,{outline_c},{back_c},-1,0,0,0,100,100,0,0,{border_style},{outline},{shadow},2,{margin_h},{margin_h},{margin_v},1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
-    events: list[str] = []
-    pages = list(_pages(words, max_words, max_chars, 0.9))
-    for i, page in enumerate(pages):
-        start = page[0].start
-        if i + 1 < len(pages):
-            end = max(pages[i + 1][0].start, page[-1].end)
-        else:
-            end = page[-1].end + 0.8
-            if duration is not None:
-                end = min(end, duration)
-        parts = []
-        for j, w in enumerate(page):
-            if j + 1 < len(page):
-                span = page[j + 1].start - w.start
-            else:
-                span = w.end - w.start
-            parts.append(f"{{\\k{max(int(round(span * 100)), 1)}}}{w.word}")
-        text = " ".join(parts)
-        events.append(
-            f"Dialogue: 0,{_ass_time(start)},{_ass_time(end)},Caps,,0,0,0,,{text}"
-        )
-    return header + "\n".join(events) + "\n"
-
-
-# --------------------------------------------------------------------------
-# Phrase captions (the SHORT's caption track).
-# --------------------------------------------------------------------------
-
-# Where a caption may break. A karaoke page that fills up mid-clause splits
-# "revenue went four hundred / million to four ninety six", which reads as two
-# unrelated fragments; breaking after the punctuation keeps a phrase whole.
+# Where a caption line may end: on punctuation, not mid-clause.
 _PHRASE_END = re.compile(r"[.!?…]$|[,;:—–]$")
 
 # Function words a line must never end on: a caption ending "of" or "the"
@@ -1301,6 +258,7 @@ def phrase_pages(
 def build_phrase_ass(
     words: list[WordTimestamp],
     *,
+    settings: Settings,
     play_res: tuple[int, int],
     font_size: int = 62,
     margin_v: int = 300,
@@ -1310,12 +268,12 @@ def build_phrase_ass(
     duration: float | None = None,
     punch: bool = True,
 ) -> str:
-    """The SHORT's captions: dark ink on a paper chip, phrase by phrase.
+    """The SHORT's captions: structure ink on the ground, phrase by phrase.
 
     Not karaoke. The word-by-word red fill was doing two things at once —
-    colouring text the same red the kit uses for a down-move, and drawing the
-    eye along a line that had already been split mid-clause. This is one
-    legible phrase at a time, in the same ink as everything else on the frame.
+    colouring text in the same red that means a down-move, and drawing the eye
+    along a line that had already been split mid-clause. This is one legible
+    phrase at a time, in the same ink as everything else on the frame.
 
     `punch` gives each line a 60ms scale-up on entry. It is the caption half of
     the motion layer: enough to register as a cut, not enough to bounce.
@@ -1326,6 +284,8 @@ def build_phrase_ass(
         r, g, b = c
         return f"&H00{b:02X}{g:02X}{r:02X}"
 
+    ink = role(settings, "structure")
+
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {W}
@@ -1335,7 +295,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Caps,Shantell Sans,{font_size},{bgr(INK)},{bgr(INK)},&H0AF6F9FA,&H0AF6F9FA,-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
+Style: Caps,Archivo Narrow,{font_size},{bgr(ink)},{bgr(ink)},&H0AF6F9FA,&H0AF6F9FA,-1,0,0,0,100,100,0,0,3,14,0,2,{margin_h},{margin_h},{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -1422,136 +382,224 @@ def stroke_inset(box, *, width, jitter, overshoot) -> tuple[int, int]:
     reach = jitter + width / 2 + 1
     return (int(math.ceil(w * overshoot + reach)),
             int(math.ceil(h * overshoot + reach)))
-
-
-def drawn_card(d, box, rng, *, fill, line=(*CARD_LINE, 255), width=2,
-               jitter=1.6, overshoot=0.006):
-    """The kit's card: a flat plate, with its EDGE drawn by hand.
-
-    The fill stays flat — paper IS flat, and what read as machine-made was the
-    perfect radius and the 1px rule around it, never the colour inside. So the
-    plate is square and its edge is a pen stroke, the same treatment the
-    thumbnail border uses.
-
-    The stroke is inset by `stroke_inset`, so the card occupies exactly the box
-    it was measured at: a border that grew the canvas would move every overlay
-    positioned against it.
-    """
-    x0, y0, x1, y1 = box
-    if fill is not None:
-        d.rectangle([x0, y0, x1, y1], fill=fill)
-    ix, iy = stroke_inset(box, width=width, jitter=jitter, overshoot=overshoot)
-    drawn_rect(d, [x0 + ix, y0 + iy, x1 - ix, y1 - iy], rng, width=width,
-               color=line, jitter=jitter, overshoot=overshoot)
-
-
-def accent_stroke(d, box, rng, *, color, jitter=1.0, passes=2):
-    """An accent bar: one marker stroke down the middle of `box`.
-
-    The kit's accent is a stroke of colour and it was drawn as a rounded
-    rectangle — a 7px radius on a 14px bar, which is a machine-made lozenge
-    wherever it turns up. The nib is the bar's own thickness and the stroke
-    runs the full length of the box, so it covers the band the layout reserved
-    for it: a trend bar's length is data, not decoration.
-    """
-    x0, y0, x1, y1 = box
-    w, h = abs(x1 - x0), abs(y1 - y0)
-    if h >= w:                      # the usual case — a bar down a card's edge
-        nib = max(int(round(w)), 2)
-        cx = (x0 + x1) / 2
-        pts = [(cx, y0), (cx, y1)]
-    else:                           # a bar wider than it is tall (a flat year)
-        nib = max(int(round(h)), 2)
-        cy = (y0 + y1) / 2
-        pts = [(x0, cy), (x1, cy)]
-    marker_stroke(d, pts, rng, width=nib, color=color, jitter=jitter,
-                  passes=passes)
-
-
-# --------------------------------------------------------------------------
-# The kit's own marks.
-#
-# `marks/` is twelve real drawings and the pipeline reached exactly one of
-# them: the ring on the price chart. Everything else drew a procedural
-# ellipse over artwork that already existed. So the resolution lives here,
-# next to the primitives, and `[SCRIBBLE: …]` draws the real mark.
-#
-# The vocabulary is a MAPPING, not a family of code paths: a style names a
-# `marks/` key and the procedural stroke that stands in when the kit has not
-# shipped it. Adding a mark is a row here.
-# --------------------------------------------------------------------------
-
-SCRIBBLE_MARKS: dict[str, tuple[str, str]] = {
-    # style              kit artwork              drawn stand-in
-    "circle":           ("marks/circle",           "circle"),
-    "oval":             ("marks/oval",             "circle"),
-    "bracket":          ("marks/bracket",          "circle"),
-    "star":             ("marks/star",             "circle"),
-    "question":         ("marks/question",         "circle"),
-    "check":            ("marks/check",            "circle"),
-    "cross-out":        ("marks/cross-out",        "underline"),
-    "redaction":        ("marks/redaction",        "underline"),
-    "underline":        ("marks/underline",        "underline"),
-    "jab":              ("marks/jab",              "arrow"),
-    "arrow":            ("marks/arrow-down",       "arrow"),
-    "arrow-down":       ("marks/arrow-down",       "arrow"),
-    "arrow-curve-down": ("marks/arrow-curve-down", "arrow"),
-}
-
-# Measured across the family on its own 1200x960 canvas: the median ink run
-# through a stroke is 11px. Fitting a mark into a callout box scales that down
-# with everything else — a 520px callout lands at 2.6px — and the mark then
-# arrives thinner than the label under it, which reads as an artefact rather
-# than as a pen. Under the floor the ink is dilated back to a nib; the floor is
-# about the weight of the chart's own data line at the same frame size.
+# A mark's nib, in delivered pixels. A plate downscaled onto a small target
+# loses its stroke before it loses its shape, so the alpha is grown back to a
+# floor — otherwise a tight oval around one cell arrives as a grey smudge.
 MARK_NIB_PX = 11
 MARK_MIN_NIB_PX = 5
 
 
+# An annotation's style IS its plate name. The old table mapped twelve invented
+# style words onto the retired `marks/` family; there is nothing left to map,
+# because `[SCRIBBLE: strike-out -> …]` resolves to `annotations/strike-out`.
+# `pipeline.models.SCRIBBLE_ALIASES` catches what a writer is likely to type
+# instead ("circle", "underline") so a beat is never lost over a synonym.
+#
+# The second element is the procedural stroke drawn when the plate cannot be
+# loaded. Decoration is never allowed to fail a render.
+SCRIBBLE_MARKS: dict[str, tuple[str, str]] = {
+    "scrawl-oval-wide": ("annotations/scrawl-oval-wide", "circle"),
+    "scrawl-oval-tight": ("annotations/scrawl-oval-tight", "circle"),
+    "underline-swipe": ("annotations/underline-swipe", "underline"),
+    "underline-tight": ("annotations/underline-tight", "underline"),
+    "strike-out": ("annotations/strike-out", "cross-out"),
+    "box-scrawl": ("annotations/box-scrawl", "box"),
+    "bracket-rows": ("annotations/bracket-rows", "bracket"),
+    "arrow-elbow": ("annotations/arrow-elbow", "arrow"),
+    "caret-note": ("annotations/caret-note", "caret"),
+    "tick-marks": ("annotations/tick-marks", "check"),
+}
+
+# The legible band for a solved mark's stroke, in canvas units. The kit warns
+# when `inkWeight x solve` leaves it: below, the mark is a hairline nobody sees;
+# above, it is a smear over the thing it was meant to point at.
+#
+# SOLVE SCALE IS NOT THE METRIC. A tight mark reads fine at 0.4x and a wide mark
+# at 0.4x is a hairline — the first version of this check compared scale alone
+# and told the operator to use the tight mark they were already using.
+INK_WEIGHT_BAND = (3.2, 26.0)
+
+
 def mark_image(settings: Settings, key: str) -> Image.Image | None:
-    """One frame of a `marks/` asset, or None.
+    """Frame one of an `annotations/` plate, or None.
 
     Never raises: a caller that cannot find its mark draws one rather than
     failing to render, which is the only sane failure mode for decoration.
     """
     try:
-        from pipeline.kit import load_kit
+        from pipeline.plates import load_plates
 
-        asset = load_kit(settings.assets_dir).get(key)
-        if asset is None or not asset.frames:
+        plate = load_plates(settings.assets_dir).get(key)
+        if plate is None or not plate.frames:
             return None
-        return Image.open(asset.frames[0]).convert("RGBA")
+        return Image.open(plate.frame_paths()[0]).convert("RGBA")
     except Exception:  # noqa: BLE001 — decoration is never fatal
         log.debug("no %s in the kit — the mark will be drawn instead", key)
         return None
 
 
 def thicken_mark(img: Image.Image, radius: int) -> Image.Image:
-    """Grow a mark's ink by `radius` px, keeping its shape. No-op at 0."""
+    """Grow a mark's alpha, so a downscaled stroke keeps a legible nib."""
     if radius <= 0:
         return img
-    alpha = img.getchannel("A").filter(ImageFilter.MaxFilter(2 * radius + 1))
+    a = img.getchannel("A").filter(ImageFilter.MaxFilter(2 * radius + 1))
     out = img.copy()
-    out.putalpha(alpha)
+    out.putalpha(a)
     return out
 
 
 def tint_mark(img: Image.Image, color) -> Image.Image:
-    """Recolour a mark's ink, keeping its alpha. The marks ship in ink; a ring
-    on a chart is the direction colour and a callout is the accent."""
-    solid = Image.new("RGBA", img.size, (*color[:3], 255))
+    solid = Image.new("RGBA", img.size, (*color[:3], 0))
     solid.putalpha(img.getchannel("A"))
     return solid
 
 
+def _same_gesture(style: str) -> list[str]:
+    """Every mark drawn with the same gesture, the named one first.
+
+    The table already says which those are: the second element is the stroke,
+    so `scrawl-oval-wide` and `scrawl-oval-tight` are both "circle" and
+    `underline-swipe` and `underline-tight` are both "underline". Reading the
+    family off it rather than listing pairs means a mark the kit adds later
+    joins its own family with no edit here.
+    """
+    gesture = SCRIBBLE_MARKS.get(style, ("", ""))[1]
+    if not gesture:
+        return [style]
+    return [style] + sorted(s for s, (_k, g) in SCRIBBLE_MARKS.items()
+                            if g == gesture and s != style)
+
+
+def _solved_stroke(plate, target_w: int) -> float:
+    """The stroke this mark lands at around a target `target_w` wide."""
+    area = plate.slot("area") if plate is not None else None
+    if area is None or not plate.ink_weight:
+        return 0.0
+    return plate.ink_weight * (target_w / max(area.w, 1))
+
+
+def _pick_variant(reg, style: str, target_w: int) -> tuple[str, str]:
+    """(style to draw, why it changed). THE MARK FITS THE TARGET.
+
+    A wide oval is drawn to circle a line of type and a tight one to circle
+    one word; asked to circle a four-character cell, the wide one solves to a
+    stroke a third of the way below the legible band and arrives as a
+    hairline. That is not a rendering problem and it is not the nib — it is
+    the wrong mark, and which one is right is decided by how wide the thing
+    being marked actually is.
+
+    Only within a gesture. A bracket that groups rows and an oval around a
+    word are different statements, and swapping one for the other because the
+    arithmetic prefers it would be this code overruling the director rather
+    than fitting what they asked for.
+    """
+    lo, hi = INK_WEIGHT_BAND
+    candidates = []
+    for name in _same_gesture(style):
+        plate = reg.get(SCRIBBLE_MARKS.get(name, ("", ""))[0])
+        if plate is None:
+            continue
+        candidates.append((name, _solved_stroke(plate, target_w)))
+    if not candidates:
+        return style, ""
+    named, solved = candidates[0]
+    if not solved or lo <= solved <= hi:
+        return named, ""
+    for name, other in candidates[1:]:
+        if lo <= other <= hi:
+            return name, (f"{named} solves to {solved:.1f} against a legible "
+                          f"band of {lo}-{hi} on a target {target_w}px wide; "
+                          f"{name} is the same gesture at {other:.1f}")
+    return named, ""
+
+
+def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int],
+               *, report: dict | None = None
+               ) -> tuple[tuple[int, int, int, int], list[str]] | None:
+    """Where an annotation goes, given the box it wraps. Returns (box, warnings).
+
+    THE MARK GOES ON THE TYPE, NOT ON THE SLOT RECTANGLE. A table cell is 216
+    canvas units tall for 30-unit figures; an oval stretched onto the rectangle
+    is an oval around empty space. Each mark declares an `area` slot — "what
+    this wraps" — and the transform that lands `area` on the target is what puts
+    the ink where it was drawn to fall. That is also what makes
+    `underline-swipe` work with no special case: its swipe is drawn BELOW its
+    area slot, so solving the area onto the word puts the swipe under the word.
+
+    How a mark may be solved is declared, not assumed:
+
+    * ``both``       x and y independently. Only safe for marks that ENCLOSE —
+                     an oval is meant to take its target's proportions.
+    * ``x-uniform``  fit the width, same scale for y. A line of its own natural
+                     thickness stretched independently in y becomes a fat wave.
+
+    and those carry an anchor: ``bottom`` for underlines, whose ink sits below
+    the area slot, ``middle`` for strikes.
+    """
+    from pipeline.plates import load_plates
+
+    if style not in SCRIBBLE_MARKS:
+        return None
+    reg = load_plates(settings.assets_dir)
+    style, swapped = _pick_variant(reg, style, target[2])
+    if report is not None:
+        report["style"] = style
+        if swapped:
+            report["swapped"] = swapped
+    plate = reg.get(SCRIBBLE_MARKS[style][0])
+    if plate is None:
+        return None
+    area = plate.slot("area")
+    if area is None:
+        return None
+
+    tx, ty, tw, th = target
+    sx = tw / max(area.w, 1)
+    sy = th / max(area.h, 1)
+    if (plate.solve or "both") != "both":
+        sy = sx                      # x-uniform: one scale, both axes
+
+    warnings: list[str] = []
+    if plate.ink_weight:
+        solved = plate.ink_weight * sx
+        lo, hi = INK_WEIGHT_BAND
+        if solved > hi:
+            warnings.append(
+                f"{key} solves to a {solved:.1f}-unit stroke against a legible "
+                f"band of {lo}–{hi} — a smear over what it points at. Mark the "
+                f"figure rather than the sentence, or use the tight mark.")
+        elif solved < lo:
+            # Below the floor the advice is NOT "use the wide mark" — this is
+            # usually already the wide one, and what shrank it is the target:
+            # a single figure, or a plate scaled into a two-shot's evidence
+            # column. Naming the cause is the difference between a warning an
+            # operator can act on and one they learn to scroll past.
+            warnings.append(
+                f"{key} solves to a {solved:.1f}-unit stroke against a legible "
+                f"band of {lo}–{hi} — the target is small enough that the mark "
+                f"arrives as a hairline. Mark a wider target, or give the beat "
+                f"the full frame.")
+
+    # Place the whole plate so its area slot lands on the target.
+    w = int(round(plate.canvas[0] * sx))
+    h = int(round(plate.canvas[1] * sy))
+    x = int(round(tx - area.x * sx))
+    y = int(round(ty - area.y * sy))
+    if plate.anchor == "bottom":
+        y = int(round(ty + th - (area.y + area.h) * sy))
+    elif plate.anchor == "middle":
+        y = int(round(ty + th / 2 - (area.y + area.h / 2) * sy))
+
+    # A MARK DRAWS OUTSIDE WHAT IT WRAPS. A target so wide that the solved
+    # canvas leaves the frame cannot be circled at all — the fix is to circle
+    # the figure rather than the sentence, and saying so is more use than
+    # silently drawing two arcs off the edge.
+    return (x, y, w, h), warnings
+
+
 def fitted_mark(settings: Settings, w: int, h: int, *, style: str,
                 color=None) -> Image.Image | None:
-    """`style`'s real artwork on a `w` x `h` transparent plate, or None.
-
-    Fitted to its OWN aspect and centred: the marks are 5:4 scrawls, and
-    squashing one into the box is the machine look coming back in through the
-    resize.
-    """
+    """An annotation plate scaled into a w x h box, tinted, or None."""
     key = SCRIBBLE_MARKS.get(style, ("", ""))[0]
     if not key:
         return None
@@ -1576,7 +624,7 @@ def mark_frames(
     h: int,
     *,
     style: str,
-    color=RED,
+    color=None,
     fps: int = 30,
     draw_seconds: float = 0.4,
     stroke: int | None = None,
@@ -1584,18 +632,80 @@ def mark_frames(
 ) -> list[Image.Image]:
     """`style` drawing itself on — the kit's mark when one ships, else drawn.
 
-    The order the chart's ring already uses: real artwork first, the
-    procedural scrawl as the fallback, never an exception. The reveal is
-    `draw_on_frames` — the artwork is already the right pixels, and uncovering
-    them along the reading direction is indistinguishable from watching the
-    pen move, without a second code path that could disagree with the still.
+    An annotation is drawn in ATTENTION, and that is the point: it SPENDS the
+    frame's one attention, so a plate that already carries an attention mark
+    cannot also be annotated.
     """
+    if color is None:
+        color = role(settings, "attention") if settings else (224, 160, 22)
     art = fitted_mark(settings, w, h, style=style, color=color) if settings else None
+    n = max(int(draw_seconds * fps), 1)
     if art is not None:
-        return draw_on_frames(art, fps=fps, seconds=draw_seconds, direction="left")
-    return scribble_frames(
+        # Wipe the artwork on left to right, so it reads as being drawn.
+        out = []
+        for i in range(n):
+            frac = _ease_out((i + 1) / n)
+            frame = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            cut = max(int(w * frac), 1)
+            frame.paste(art.crop((0, 0, cut, h)), (0, 0))
+            out.append(frame)
+        return out
+    return _drawn_mark_frames(
         w, h, style=SCRIBBLE_MARKS.get(style, ("", "circle"))[1], color=color,
         fps=fps, draw_seconds=draw_seconds, stroke=stroke, seed=seed)
+
+
+def _drawn_mark_frames(w: int, h: int, *, style: str, color, fps: int,
+                       draw_seconds: float, stroke: int | None,
+                       seed: str) -> list[Image.Image]:
+    """The procedural fallback, for when the plate cannot be loaded.
+
+    Deliberately crude. It is not trying to be the artwork — it is here so that
+    a missing mark is a rougher mark rather than a missing beat, and so nothing
+    in the annotation path can raise during a render.
+    """
+    rng = random.Random(seed)
+    width = stroke or max(int(min(w, h) * 0.055), 3)
+    cx, cy = w / 2, h / 2
+    rx, ry = w * 0.46, h * 0.42
+
+    def ellipse_pts(n: int = 44) -> list[tuple[float, float]]:
+        return [(cx + rx * math.cos(2 * math.pi * i / n + 0.4),
+                 cy + ry * math.sin(2 * math.pi * i / n + 0.4))
+                for i in range(n + 3)]
+
+    paths: list[list[tuple[float, float]]] = {
+        "circle": [ellipse_pts()],
+        "box": [[(w * .06, h * .1), (w * .94, h * .08), (w * .95, h * .9),
+                 (w * .05, h * .92), (w * .06, h * .1)]],
+        "underline": [[(w * .04, h * .74), (w * .96, h * .68)],
+                      [(w * .08, h * .88), (w * .9, h * .84)]],
+        "cross-out": [[(w * .06, h * .18), (w * .94, h * .84)],
+                      [(w * .06, h * .84), (w * .94, h * .18)]],
+        "bracket": [[(w * .72, h * .04), (w * .22, h * .1), (w * .2, h * .9),
+                     (w * .7, h * .96)]],
+        "arrow": [[(w * .05, h * .12), (w * .55, h * .2), (w * .9, h * .8)],
+                  [(w * .78, h * .74), (w * .9, h * .8), (w * .76, h * .9)]],
+        "caret": [[(w * .3, h * .9), (w * .5, h * .5), (w * .7, h * .9)]],
+        "check": [[(w * .1, h * .55), (w * .3, h * .8), (w * .6, h * .2)]],
+    }.get(style, [ellipse_pts()])
+
+    total = sum(max(len(p) - 1, 1) for p in paths)
+    n = max(int(draw_seconds * fps), 1)
+    frames: list[Image.Image] = []
+    for i in range(n):
+        drawn = _ease_out((i + 1) / n) * total
+        img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        budget = drawn
+        for path in paths:
+            take = int(min(max(budget, 0), len(path) - 1)) + 1
+            if take >= 2:
+                marker_stroke(d, path[:take], rng, width=width,
+                              color=(*color[:3], 255), jitter=1.5)
+            budget -= len(path) - 1
+        frames.append(img)
+    return frames
 
 
 def _ease_out(t: float) -> float:
@@ -1707,8 +817,8 @@ def count_up_frames(
     height: int,
     fps: int = 30,
     seconds: float = 0.8,
-    font_name: str = MONO_BOLD,
-    fill=INK,
+    font_name: str = COURIER_BOLD,
+    fill=None,
     align: str = "center",
 ) -> list[Image.Image]:
     """A figure rolling up to its spoken value.
@@ -1718,6 +828,7 @@ def count_up_frames(
     flickering through the alphabet is noise, not motion. A value with no
     digits at all is simply held, so this is safe to call on anything.
     """
+    fill = fill if fill is not None else role(settings, "structure")
     m = re.search(r"-?\d[\d,]*\.?\d*", value)
     frames: list[Image.Image] = []
     n = max(int(seconds * fps), 2)
@@ -1752,94 +863,4 @@ def count_up_frames(
         cur = target * _ease_out(k / n)
         body = f"{cur:,.{decimals}f}" if grouped else f"{cur:.{decimals}f}"
         frames.append(draw(f"{head}{body}{tail}"))
-    return frames
-
-
-def draw_on_frames(
-    image: Image.Image,
-    *,
-    fps: int = 30,
-    seconds: float = 0.9,
-    direction: str = "left",
-) -> list[Image.Image]:
-    """A finished graphic revealed as if it were being drawn.
-
-    A wipe rather than a re-render: the chart, the bars and the table are
-    already correct pixels, and revealing them along the reading direction is
-    indistinguishable from watching the line drawn — without a second code
-    path that could disagree with the still.
-    """
-    frames: list[Image.Image] = []
-    W, H = image.size
-    n = max(int(seconds * fps), 2)
-    for k in range(n + 1):
-        p = _ease_out(k / n)
-        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        if direction == "up":
-            box = (0, H - max(int(H * p), 1), W, H)
-        elif direction == "down":
-            box = (0, 0, W, max(int(H * p), 1))
-        else:
-            box = (0, 0, max(int(W * p), 1), H)
-        frame.paste(image.crop(box), (box[0], box[1]))
-        frames.append(frame)
-    return frames
-
-
-def stamp_slam_frames(
-    image: Image.Image,
-    *,
-    fps: int = 30,
-    seconds: float = 0.45,
-    from_scale: float = 1.9,
-) -> list[Image.Image]:
-    """A card slammed down onto the frame: oversized, dropping to size, still.
-
-    Ends on the untouched image, so the beat that follows can hold this exact
-    frame — the slam is an entrance, not a state.
-    """
-    frames: list[Image.Image] = []
-    W, H = image.size
-    n = max(int(seconds * fps), 2)
-    for k in range(n + 1):
-        p = _ease_out(k / n)
-        scale = from_scale + (1.0 - from_scale) * p
-        sw, sh = max(int(W * scale), 1), max(int(H * scale), 1)
-        scaled = image.resize((sw, sh), Image.LANCZOS)
-        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        frame.paste(scaled, (int((W - sw) / 2), int((H - sh) / 2)), scaled)
-        if k == n:
-            frame = image.copy()
-        frames.append(frame)
-    return frames
-
-
-def slide_in_frames(
-    image: Image.Image,
-    *,
-    fps: int = 30,
-    seconds: float = 0.4,
-    direction: str = "up",
-    travel: float = 0.14,
-) -> list[Image.Image]:
-    """A card arriving from just off its resting position."""
-    frames: list[Image.Image] = []
-    W, H = image.size
-    n = max(int(seconds * fps), 2)
-    span = int((H if direction in ("up", "down") else W) * travel)
-    for k in range(n + 1):
-        p = _ease_out(k / n)
-        off = int(span * (1.0 - p))
-        dx, dy = 0, 0
-        if direction == "up":
-            dy = off
-        elif direction == "down":
-            dy = -off
-        elif direction == "left":
-            dx = off
-        else:
-            dx = -off
-        frame = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        frame.paste(image, (dx, dy), image)
-        frames.append(frame)
     return frames

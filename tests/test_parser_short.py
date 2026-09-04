@@ -13,20 +13,20 @@ def test_parse_valid_json(short_valid_json, settings):
     assert not any("anchor" in w for w in warnings)
 
 
-def test_inline_doodle_and_scribble_stripped_and_anchored(short_doodles_json, settings):
+def test_inline_plate_and_scribble_stripped_and_anchored(short_doodles_json, settings):
     script, warnings = parse_short_script(short_doodles_json, settings)
     # tags are stripped from the spoken/captioned text
     assert "[" not in script.audio_script and "]" not in script.audio_script
-    assert "DOODLE" not in script.audio_script and "SCRIBBLE" not in script.audio_script
-    doodles = script.doodle_events()
+    assert "PLATE" not in script.audio_script and "SCRIBBLE" not in script.audio_script
+    plates = [e for e in script.inline_events if e.type is TagType.PLATE]
     scribbles = script.scribble_events()
-    assert [e.payload for e in doodles] == ["crash"]
-    assert [e.payload for e in scribbles] == ["circle -> Net income"]
+    assert [e.payload for e in plates] == ["shorts/hook-card-t2"]
+    assert [e.payload for e in scribbles] == ["scrawl-oval-tight -> Net income"]
     # offsets index the CLEAN audio_script (the word right after each tag)
-    for e in doodles + scribbles:
-        assert e.type in (TagType.DOODLE, TagType.SCRIBBLE)
+    for e in plates + scribbles:
+        assert e.type in (TagType.PLATE, TagType.SCRIBBLE)
         assert 0 <= e.char_offset <= len(script.audio_script)
-    after = script.audio_script[doodles[0].char_offset:].lstrip()
+    after = script.audio_script[plates[0].char_offset:].lstrip()
     assert after.startswith("The news")
 
 
@@ -69,8 +69,8 @@ def test_budget_measured_on_clean_text(settings):
         "audio_script": padded,
         "move_summary": "+10% today",
         "headlines": [{"text": "H", "meaning": "M"}],
-        "years": ["2024", "2025"],
-        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
+        "numbers": [{"label": "Rev", "values": ["", "", "", "", "$1M", "$2M"]}],
         "numbers_comment": "flat", "conclusion": "Noise.",
     }
     tight = settings.model_copy(update={"short_max_chars": len(padded) - 5})
@@ -89,8 +89,8 @@ def test_malformed_inline_scribble_warned_and_skipped(settings):
         "audio_script": "Numbers first. [SCRIBBLE: wobble -> nothing] Then the point. Noise.",
         "move_summary": "+5% today",
         "headlines": [{"text": "H", "meaning": "M"}],
-        "years": ["2024", "2025"],
-        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
+        "numbers": [{"label": "Rev", "values": ["", "", "", "", "$1M", "$2M"]}],
         "numbers_comment": "flat", "conclusion": "Noise.",
     }
     script, warnings = parse_short_script(json.dumps(data), settings)
@@ -107,28 +107,10 @@ def _short_with(audio_script: str) -> str:
         "audio_script": audio_script,
         "move_summary": "+5% today",
         "headlines": [{"text": "H", "meaning": "M"}],
-        "years": ["2024", "2025"],
-        "numbers": [{"label": "Rev", "values": ["$1M", "$2M"]}],
+        "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
+        "numbers": [{"label": "Rev", "values": ["", "", "", "", "$1M", "$2M"]}],
         "numbers_comment": "flat", "conclusion": "Noise.",
     })
-
-
-def test_the_short_grammar_keeps_evidence_tags_and_strips_them_from_the_text(settings):
-    """The SHORT accepted three tags and dropped the rest with a warning
-    nobody read, so the evidence grammar the prompt showed the writer reached
-    nothing. Every tag is stripped from what is SPOKEN; the ones the short can
-    act on survive as events."""
-    from pipeline.models import TagType
-
-    script, _ = parse_short_script(
-        _short_with("Here is a clip tag [CLIP: dumpster_fire] that belongs "
-                    "now. [PROP: crushed-flat] Noise."), settings)
-    assert "[CLIP" not in script.audio_script and "[PROP" not in script.audio_script
-    assert [e.type for e in script.inline_events] == [TagType.CLIP, TagType.PROP]
-    assert [e.payload for e in script.inline_events] == \
-        ["dumpster_fire", "crushed-flat"]
-
-
 def test_delivery_direction_reaches_the_voice_instead_of_the_floor(settings):
     """[BEAT]/[SIGH]/[FLAT]/[DRY] were documented in the prompt and dropped by
     the parser, so TTS got unpunctuated text and every short came out flat.
@@ -151,44 +133,6 @@ def test_a_script_with_no_delivery_direction_is_called_out(settings):
         _short_with("A flat sentence with no direction at all. Noise."), settings)
     assert not script.delivery_events()
     assert any("delivery direction" in w for w in warnings)
-
-
-# --------------------------------------------------------------------------
-# A box with nothing in it, said BEFORE the render.
-# --------------------------------------------------------------------------
-# The catalogue tells the writer this matters — "WITHOUT the `= value` the
-# drawing renders with its boxes EMPTY. Always give a figure." — and nothing
-# enforced it. The tag resolved, the beat played, and an empty red box went to
-# air. Approval is the last point where catching it is free; after it, the
-# operator has watched the render to find out.
-
-
-def test_a_tag_that_leaves_a_box_empty_is_on_the_approval_report(settings):
-    _, warnings = parse_short_script(
-        _short_with("The floors go past. "
-                    "[PROP: b2-elevator-drop = -$8M, -$25M] Noise."), settings)
-    empty = [w for w in warnings if "no value" in w]
-    assert len(empty) == 4, warnings          # six floors, two figures
-    assert all("b2-elevator-drop" in w for w in empty)
-    assert any("'floor-6'" in w for w in empty), empty
-
-
-def test_a_tag_with_no_value_at_all_is_reported_too(settings):
-    """The quietest case and the worst one: every box on the drawing empty."""
-    _, warnings = parse_short_script(
-        _short_with("It lands flat. [PROP: crushed-flat] Noise."), settings)
-    assert any("no value" in w and "crushed-flat" in w for w in warnings), warnings
-
-
-def test_an_empty_box_is_a_warning_and_never_a_blocker(settings):
-    """A deliberately empty box is a legitimate choice on some drawings, and
-    the operator is the one who can say so. The script still parses."""
-    script, warnings = parse_short_script(
-        _short_with("It lands flat. [PROP: crushed-flat] Noise."), settings)
-    assert script.ticker == "EXMPL"
-    assert [e.payload for e in script.inline_events] == ["crushed-flat"]
-
-
 def test_the_showcase_fixture_leaves_no_box_empty(short_valid_json, settings):
     """The fixture the sample MP4 is built from, and the first thing anyone
     reads to learn the format. It was demonstrating the bug."""
@@ -296,7 +240,9 @@ def test_warning_on_thin_history(short_valid_json, settings):
     data = json.loads(short_valid_json)
     for row in data["numbers"]:
         if row["label"] == "Revenue":
-            row["values"] = ["$491M", "$496M"]
+            # Six periods, two of them carrying a figure: the shape of a
+            # company with two years of history, not a narrower sheet.
+            row["values"] = ["", "", "", "", "$491M", "$496M"]
     raw = json.dumps(data)
     _, warnings = parse_short_script(raw, settings)
     assert any("fewer than 3 years" in w for w in warnings)
@@ -339,28 +285,6 @@ def test_a_bare_show_article_survives_the_parser(settings, short_valid_json):
     assert len(articles) == 1
     assert articles[0].payload == ""
     assert not any("carries no key" in w for w in warnings)
-
-
-def test_other_tags_still_need_a_key(settings, short_valid_json):
-    """The exemption is one tag, not the end of the rule."""
-    import json
-
-    before, _ = parse_short_script(short_valid_json, settings)
-    named = len([e for e in before.inline_events if e.type is TagType.PROP])
-
-    data = json.loads(short_valid_json)
-    data["audio_script"] = "[PROP] " + data["audio_script"]
-    script, warnings = parse_short_script(json.dumps(data), settings)
-    assert len([e for e in script.inline_events
-                if e.type is TagType.PROP]) == named, "the keyless tag survived"
-    assert any("carries no key" in w for w in warnings)
-
-
-# --------------------------------------------------------------------------
-# The reach warning: how much of the beat library the script actually asks for.
-# --------------------------------------------------------------------------
-
-
 def _thin(short_valid_json: str, *tags: str) -> str:
     """The fixture with its beat library stripped out, plus `tags`.
 
@@ -375,28 +299,6 @@ def _thin(short_valid_json: str, *tags: str) -> str:
     assert "[PROP" not in stripped
     data["audio_script"] = " ".join(tags) + " " + stripped
     return json.dumps(data)
-
-
-def test_a_thin_script_is_warned_about_and_the_beats_are_named(
-        settings, short_valid_json):
-    """A warning that does not say WHICH beat is short is one nobody acts on.
-
-    The library is 51 drawings built to carry a figure and the showcase render
-    reached one of them. Nothing measured that, before or after, so it stayed
-    a feeling about the videos rather than a number on the report.
-    """
-    script, warnings = parse_short_script(_thin(short_valid_json), settings)
-    assert not [e for e in script.inline_events if e.type is TagType.PROP]
-    reach = [w for w in warnings if "beat-library scene" in w]
-    assert len(reach) == 1, warnings
-    assert "the floor is 4" in reach[0]
-    # every data beat in the fixture, named, because none of them has a drawing
-    assert 'the move ("+29% today · 5× average volume")' in reach[0]
-    for i, label in enumerate(("Revenue", "Net income", "Free cash flow",
-                               "Shares out")):
-        assert f"numbers row {i} ({label} " in reach[0], label
-
-
 def test_the_reach_warning_never_blocks(settings, short_valid_json):
     """A thin script is a judgement call, not a defect. It parses, it renders,
     and the operator decides — a gate here would teach gate-skipping."""
@@ -410,34 +312,56 @@ def test_the_reach_warning_never_blocks(settings, short_valid_json):
     assert not any("beat-library" in b for b in report.blocking)
     assert any("beat-library" in w for w in report.warnings)
 
-
-def test_a_script_that_draws_its_beats_is_not_warned(settings, short_valid_json):
-    """Four distinct scenes, one per data beat — the floor, not the target."""
-    raw = _thin(
-        short_valid_json,
-        "[PROP: crushed-flat = -$89M]",
-        "[PROP: chart-off-cliff = -$15M]",
-        "[PROP: climb-bars = $496M]",
-        "[PROP: numbers-raining = 365M, +29%, -$15M]",
-    )
-    script, warnings = parse_short_script(raw, settings)
-    assert len([e for e in script.inline_events
-                if e.type is TagType.PROP]) == 4
-    assert not [w for w in warnings if "beat-library scene" in w], warnings
+# --------------------------------------------------------------------------
+# The plate tag, in the short.
+# --------------------------------------------------------------------------
 
 
-def test_the_same_drawing_four_times_is_still_thin(settings, short_valid_json):
-    """DISTINCT picks. Repeating one drawing is the template look this is for."""
-    raw = _thin(short_valid_json, *["[PROP: crushed-flat = -$89M]"] * 4)
-    script, warnings = parse_short_script(raw, settings)
-    reach = [w for w in warnings if "beat-library scene" in w]
-    assert reach and reach[0].startswith("1 beat-library scene "), reach
+def test_the_short_grammar_carries_plates_and_strips_them_from_the_text(
+        short_valid_json, settings):
+    """[PLATE] is parsed, resolved and removed from what gets spoken."""
+    script, _ = parse_short_script(short_valid_json, settings)
+    plates = [e for e in script.inline_events if e.type is TagType.PLATE]
+    assert len(plates) >= 4
+    assert all("/" in e.payload for e in plates), "payloads are registry keys"
+    assert all(e.values for e in plates), "every plate carries its own content"
+    assert "[PLATE" not in script.audio_script
+    assert "|" not in script.audio_script
 
 
-def test_the_short_prompt_states_that_the_desk_is_not_a_beat(settings):
-    """The default has to be written down: a figure with no [PROP] gets the
-    desk, and the desk is not a beat."""
-    text = (settings.templates_dir / "master_prompt_short.md").read_text(
-        encoding="utf-8")
-    assert "The desk is not a beat." in text
-    assert "four distinct beat-library scenes is the floor" in text
+def test_a_plate_that_names_a_slot_the_kit_does_not_have_is_reported(
+        short_valid_json, settings):
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = (
+        "EXMPL is up. [PLATE: hook-card-t1 | ticker=EXMPL | nonesuch=x] "
+        + data["audio_script"])
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert any("has no slot 'nonesuch'" in w for w in warnings), warnings
+
+
+def test_a_row_that_does_not_match_its_header_is_reported(
+        short_valid_json, settings):
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = (
+        "EXMPL is up. [PLATE: numbers-sheet-4r-9x16 | unit=$M "
+        "| head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=1,2,3] "
+        + data["audio_script"])
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert any("3 figures against 6 period heads" in w for w in warnings), warnings
+
+
+def test_a_landscape_plate_is_refused_in_a_vertical_cut(
+        short_valid_json, settings):
+    """9:16 is a re-author, never a crop."""
+    import json
+
+    data = json.loads(short_valid_json)
+    data["audio_script"] = (
+        "EXMPL is up. [PLATE: numbers-sheet-6r-16x9 | unit=$M] "
+        + data["audio_script"])
+    _, warnings = parse_short_script(json.dumps(data), settings)
+    assert any("16x9" in w and "9x16" in w for w in warnings), warnings

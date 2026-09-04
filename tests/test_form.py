@@ -98,16 +98,20 @@ def test_the_long_has_no_written_fields_at_all():
     This test does not fail on the gap — it MEASURES it, so closing it is a
     deliberate act with a test change beside it.
     """
+    from pipeline.plates import CHAPTER_TYPES
+
     fields = writer_fields("long")
     per_chapter = {f.name for f in fields}
     assert per_chapter, "the long reads no chapter sources at all"
-    chapters = 9
-    assert len(fields) * chapters >= 60, (
-        f"{len(fields)} fields x {chapters} chapters")
-    # And every one of them is sliced, not written.
+    # Sixteen chapter types have a file now, not nine, and a chapter binds
+    # PROSE only to slots written for a sentence: a `label` holds thirty
+    # characters and is for a metric name. So the gap is smaller than it was
+    # and it is still a gap — every one of these is sliced out of a block of
+    # narration rather than written into a field of its own.
+    assert len(fields) * len(CHAPTER_TYPES) >= 30, (
+        f"{len(fields)} fields x {len(CHAPTER_TYPES)} chapters")
     from pipeline.render_long_shots import LongResolver
-    for name in ("title", "line", "phrase"):
-        assert any(f.name.startswith(name) for f in fields)
+    assert any(f.name.startswith("line") for f in fields)
     assert hasattr(LongResolver, "_chapter")
 
 

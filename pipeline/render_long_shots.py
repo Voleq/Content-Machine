@@ -72,6 +72,8 @@ class LongResolver(ShortResolver):
         # sheet is measured over the export's fiscal years.
         if src == "numbers.header":
             return ("\t" + "\t".join(self.periods)) if self.periods else None
+        if src == "numbers.years":
+            return ",".join(self.periods) if self.periods else None
         parts = src.split(".")
         if parts[0] == "chapter":
             return self._chapter(parts[1:])
@@ -136,11 +138,12 @@ def _rows_from(company_data: dict | None) -> tuple[list, list]:
     from pipeline.models import NumberRow
     if company_data is None:
         return [], []
-    # CompanyData is a model, not a dict: `history` is metric -> series and
-    # `history_years` are the periods those series are measured over. The
-    # LTM column is dropped — it is not a fiscal period and putting it under
-    # an FY header is exactly the flow/stock confusion in another costume.
-    years = [y for y in (company_data.history_years or []) if y != "LTM"]
+    # SIX PERIODS, LTM INCLUDED. Four fiscal years, the last full year and LTM
+    # is what every table and every time-series plate in the kit is authored
+    # for, and LTM is usually the column the argument turns on. This dropped
+    # it — "not a fiscal period" — and then handed five figures to a plate
+    # with six heads, which the header check now refuses outright.
+    years = list(company_data.history_years or [])
     hist = company_data.history or {}
     wanted = ("revenue", "net_income", "ebitda", "operating_income",
               "gross_profit", "free_cash_flow")
@@ -155,7 +158,8 @@ def _rows_from(company_data: dict | None) -> tuple[list, list]:
                                  values=vals))
         if len(out) >= 5:
             break
-    return out, [str(y) for y in years][-5:]
+    from pipeline.plates import PERIOD_COUNT
+    return out, [str(y) for y in years][-PERIOD_COUNT:]
 
 
 def _short(v) -> str:

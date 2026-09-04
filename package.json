@@ -1,0 +1,12 @@
+{
+  "name": "dennis-kit-build",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Build-time only. The design kit is JS: scripts/kit_engine.js runs engine/build.js at ingest and writes PNGs, and the render path reads those files with no node anywhere near it.",
+  "scripts": {
+    "ingest": "python scripts/ingest_kit.py kit"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

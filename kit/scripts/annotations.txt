@@ -1,0 +1,117 @@
+annotations — marks made on another plate
+========================================
+
+USE WHEN
+  The voice-over points at something. The script asks for these by name
+  ([DOODLE: annotations/scrawl-oval-wide], [SCRIBBLE: circle -> Gross margin]);
+  they are not decoration.
+
+  An annotation is drawn in ATTENTION (#E0A016). It therefore SPENDS the frame's
+  one attention. A plate that already has an attention mark cannot also be
+  annotated — pick one, or split the beat into two shots. This is the whole
+  reason annotations are a family and not a flag on every plate: the operator has
+  to choose.
+
+MEMBERS (10, all alpha cut-outs, stretched onto the thing they wrap)
+  scrawl-oval-wide    the workhorse. Circles a line of type or a headline.
+  scrawl-oval-tight   one cell, one candle, one word.
+  underline-swipe     two swipes under a line. Emphasis without enclosing.
+  underline-tight     the same, for a cell or a single figure.
+  strike-out          two crossing swipes. For a number that is wrong or stale.
+  box-scrawl          a rough rectangle. For a block, not a line.
+  bracket-rows        a tall bracket plus a stub, for grouping rows. Has a note
+                      slot to the right, outside the plate.
+  arrow-elbow         from a scrawled note to a target. note slot at the tail.
+  caret-note          a caret with words above it, for an insertion.
+  tick-marks          three ticks. For a list being confirmed.
+
+SLOTS
+  area   what the mark wraps or points at. Nothing is drawn in it — it is how
+         the compositor knows where to put the plate.
+  note   the mark's own words, on EVERY mark. Set in the family's one type
+         role, "caption": Courier Prime, in attention, sized off the pen
+         (inkWeight x 2.6) so the words scale with the mark they belong to.
+         Three marks used to declare this slot with a role no plate defined,
+         which meant the renderer had no size or colour to set them in and the
+         audit skipped them without a word.
+
+  BOTH SLOTS ARE MEASURED OFF THE DRAWN INK, never off the geometry the strokes
+  were built from. The two are not the same line: stroke() resamples, wobbles
+  and overshoots what it is given, and the difference between the two is exactly
+  the margin that decides whether a mark lands on the type it is marking. So:
+  enclosing marks (the ovals, box-scrawl) inscribe the largest box of the
+  wrapped thing's proportions that clears every point of ink; the underlines
+  take their floor from the topmost ink; bracket-rows ends where the arms begin;
+  the two points-at marks start a short gap past the tip. strike-out and
+  tick-marks claim the whole canvas, because they are the marks that are
+  supposed to cross what they mark.
+
+  The mark goes on the TYPE, not on the slot rectangle. A table cell is 216
+  canvas units tall for 30-unit figures; an oval stretched onto the rectangle is
+  an oval around empty space. The compositor derives the box from the type
+  metrics — if you place one by hand, do the same.
+
+HOW A MARK LANDS
+  Each mark has an "area" slot: what it wraps. The compositor solves the
+  transform so area lands on the target, and the ink then falls where it was
+  drawn to fall — which is how underline-swipe works without special-casing,
+  its swipe being drawn below its area rather than inside it.
+
+  Two solve modes, in the manifest:
+    both       x and y independently. Only for marks that ENCLOSE — an oval is
+               meant to take its target's proportions.
+    x-uniform  fit the width, same scale for y. For marks whose ink is a line of
+               its own natural thickness. Solving an underline's y independently
+               stretches the swipe into a fat wave.
+
+  And an anchor, for the x-uniform ones:
+    bottom     underlines. Their ink is below the area, so centring would put
+               the swipe through the glyph bottoms.
+    middle     strikes and ticks, which cross what they mark.
+
+  Two size classes, because line weight is a canvas-unit quantity. Wide marks
+  wrap a headline or a row; tight marks wrap one cell or one word and carry
+  ABSOLUTE stroke weights — fractional weights on a small canvas come out as
+  hairlines at use size. Every mark declares inkWeight, and inkWeight x solve
+  has to land between roughly 3.2 and 26 units. The compositor warns when it
+  does not; that warning means "wrong size class", not "adjust grow".
+
+THE SWEEP (the two ovals)
+  A circled word is a SPIRAL, not a closed ellipse: 1.22 turns, opening steadily
+  outward, so the finish passes OUTSIDE the start and the two cross the way a pen
+  carrying on round actually crosses. That crossing is the whole read. Earlier
+  versions held a constant radius and kicked the last 8% outward to fake a
+  pen-lift, which put a radial dogleg in open space beside the start — a mistake,
+  not a gesture. There is no second reinforcing arc either: over a 2.5-radian
+  sweep it hugged the primary closely enough to read as a misregistered second
+  printing. The spiral's own overlap IS the reinforcement, and it lands where a
+  real one does.
+
+  The waver is two or three slow lobes across the whole sweep; per-point noise
+  reads as a lumpy potato. Both lobes are biased OUTWARD — a ring that dips
+  inside its nominal radius reads no differently, and every dip is paid for twice
+  in the box the mark can wrap. The ellipse is tilted a few degrees, because
+  nobody draws one axis-aligned.
+
+  Overshoot ("over") extends a stroke TANGENTIALLY past its last point, so it is
+  measured at the ends where it actually falls, not charged to every angle as
+  clearance.
+
+  Geometric limit, worth knowing before you call for one: an oval wraps about
+  0.55 of its own canvas width, because it has to draw outside what it encloses.
+  A mark solved onto a 900-unit headline therefore needs ~1600 units of canvas —
+  fine at 16:9, impossible in a 1080-wide portrait frame. Underline that headline
+  instead; the compositor's "draws NNNu off the left" error is telling you this.
+
+SEQUENCE
+  Draw it on. 3-5 frames along the stroke's own direction, then hold.
+  Never fade one in and never dissolve between two: a mark that appears by
+  opacity reads as a camera artefact, not as a hand.
+  The mark lands on its anchor word in the voice-over, not before it.
+
+TRAPS
+  * One per frame. Two marks is two attentions, which is no attention.
+  * Do not annotate a row band. The band says "here" and the mark says "this" —
+    together they say it twice. Band the row, then mark the cell.
+  * Do not scrawl on the host. He is a character, not a chart.
+  * A scrawl is not a correction. If the number is wrong, fix the number.

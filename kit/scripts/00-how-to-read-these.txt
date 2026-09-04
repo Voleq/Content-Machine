@@ -1,0 +1,156 @@
+dennis-v2 / scripts — how to read these
+======================================
+
+Thirteen files, one per family. The engine does not read them. They are for the
+operator: which member of a family to reach for, what goes in each slot, and in
+what order slots come up on screen.
+
+Every file has the same four sections:
+
+  USE WHEN      the narrative condition that calls for this family
+  MEMBERS       each asset, and the one thing that distinguishes it
+  SLOTS         what populates each slot, with limits
+  SEQUENCE      reveal order, in beats
+
+Rules that hold across all of them, so they are not repeated in every file:
+
+  * No baked text. If you can read it on screen, it came from a slot. If the
+    copy is missing, render the plate anyway — an empty slot is a blank area,
+    never a placeholder word.
+  * Six periods, always: FY-4, FY-3, FY-2, FY-1, last full year, LTM. head-1
+    through head-6 are those, left to right, oldest first. Do not relabel them
+    per asset and do not drop to five because a number is missing — an empty
+    cell is information.
+  * Attention (#E0A016) once per frame. If two things want it, the frame is
+    two frames. An annotation is drawn in attention and therefore spends it.
+  * up / down are direction only. A number that has no direction is neutral
+    data, even when the story about it is bad news.
+  * THE ROOM IS THE EXCEPTION to all of the above about colour. On a plate,
+    colour carries meaning. In the room, colour is MATERIAL — a terracotta pot,
+    a dying plant, post-it yellow — and none of it means anything. The room's
+    depth comes from value falloff, selective hatch, line weight and contact
+    shadows; never from a tint or a wash, and never over the top of the ground.
+    See scripts/room.txt. The two systems must not be mixed in either direction.
+  * The ink line is the darkest thing in any frame, and Dennis is the
+    highest-contrast object in any frame he is in. Those two outrank every other
+    tonal decision in the kit.
+  * A SURFACE GOES UNDER THE DRAWING. Every asset is bound to its surface in
+    engine/build.js, not by the caller: the plain night card by default, the
+    legal pad only for assets that are notes (the criteria card, the taped
+    strip). Ruled paper under a room draws blue lines through the desk and the
+    host, which is a line over the top of the drawing, not a page beneath it.
+  * Darks are OBJECTS, never filters. If a frame needs more range, find the
+    three or four things in it that really are dark — a recess, the back of a
+    screen, the inside of a bin — and draw them dark. Do not reach for texture.
+  * The fonts ship with the kit, in fonts/. Every typeRoles entry names
+    Archivo Narrow or Courier Prime and nothing else, and both are in that
+    folder with their licences. A manifest that names a font it does not ship
+    renders wrong silently — see fonts/README.txt for which file serves which
+    weight.
+  * maxChars in the manifest is a hard limit, not a hint. The plate reserved
+    that width; over it, the line collides with rules drawn in ink.
+  * Slot coordinates are canvas units, origin top-left. Multiply by
+    exportScale for delivered pixels. exportScale is 2 FOR THE WHOLE LIBRARY —
+    not per family, not per asset, and not an argument a caller can pass. The
+    single authority is EXPORT_SCALE in engine/audit.js; Plate.manifest() reads
+    it and ignores any exportScale handed to it, because that argument is how a
+    per-family scale gets in: one plate gets its own, the manifest faithfully
+    records it, and a shot mixing a room with a card needs a resample step in
+    the middle of a composite. 2 is the floor for the two things this kit is
+    asked to do — a 16:9 room filling a 9:16 frame, and a push-in on a card.
+  * FRAMES ARE OBJECTS, NOT FILENAMES, and this is permanent. Each entry in a
+    manifest's frames[] is {tag, svg, png, boil, ...} — plus mouthOpen and bob
+    on host frames. A bare filename cannot say what a frame IS, so the player
+    was reading meaning out of a string suffix, which is why a static strip and
+    a two-frame loop looked the same to it. Read frames[i].png. Never build a
+    filename out of the asset key and a guessed suffix.
+  * files.png / files.svg ARE THE SAME BYTES as frames[0] — files.baseIsFrame
+    names which frame that is. A base file that is its own separate render pops
+    on the first frame of the loop, and that is exactly what six host poses were
+    doing. Verify with AUDIT, do not assume: engine/audit.js is the shipped
+    metric for both scale and boil, and dennis-v2/audit/report.json is its last
+    run. If a boil figure disagrees with that file, the disagreement is in the
+    metric — a positional diff across two frames with different path counts
+    reports hundreds of units of movement that is not there.
+  * 9:16 is a re-author, not a crop. Same slot names, different geometry, and
+    occasionally a different slot count — figures/compare-side has a detail
+    line in 16:9 and a delta in 9:16. Read the manifest per aspect.
+
+Render order for a composited shot, back to front:
+
+  1  room plate (the set)
+  2  overlays/row-band into any band-N slot that is lit this beat — stretched in
+     x ONLY, native height, centred in the row
+  3  data plate (tables, charts, figures, structure, cards, paper, frames)
+  4  host plate, positioned on the room's host-anchor: scaled to the anchor's
+     HEIGHT with the floor line pinned, never scaled to its width
+  5  text into slots, in the order the family's SEQUENCE section gives
+  6  annotations, on the type rather than on the slot rectangle
+
+This order is not advice. `Dennis v2 - compositor.dc.html` implements it, reads an
+episode file from `dennis-v2/episodes/`, and audits every shot against the limits
+in the manifests. Anything you would otherwise discover in the edit — an overflow,
+two attentions in one frame, a host with no room — it reports before render.
+
+
+MOTION, LINE WEIGHT, AND HOW THE KIT IS LOADED
+==============================================
+
+THE BOIL — flat 2 canvas units, every asset
+  Everything except the data families boils at two frames. The amplitude is an
+  ABSOLUTE: ~2 canvas units of movement per point, on every asset, whatever its
+  size. It is not a percentage of anything.
+
+  A percentage was the wrong unit. Scaled off each stroke's own wobble the same
+  nominal figure gave 1.57u on a room plate and 0.10u on a scrawled oval — a 15x
+  spread with one end invisible. Scaled off frame height it fails the other way:
+  1% of 1080 is 11u, which pulls a mug outline into a different mug between
+  frames. A boil is a hand redrawing the same line, and a hand's variance does
+  not care how big the sheet is. So a 300-unit annotation and a 1920-unit room
+  boil by the same absolute amount, which is what lets them sit in one cut.
+
+  Mechanism: HAND.setBoil(n) in engine/hand.js, one engine-level change, no
+  author touched. Frame 2 is the same drawing re-wobbled — the base wobble keeps
+  its own seed and its own call sequence, and the boil adds a separate small
+  displacement on top. Deliberately excluded: plate randomness (so props do not
+  jump between frames) and paper grain (the sheet is not being redrawn, only the
+  ink on it).
+
+  DATA PLATES DO NOT BOIL: tables, figures, charts, peers, structure, cycles. A
+  figure that moves is a figure being re-read. Declared in build.js.
+
+  BUILD.framesOf(item) returns every frame an asset ships and BUILD.playbackOf()
+  its playback/fps/frameCount. The renderer walks those and never needs to know
+  which case it is in.
+
+LINE WEIGHT — rooms and the host only, and that is finished
+  hand.js takes a width per call on every primitive, so per-element weight was
+  always available; it was an oversight, not a constraint, and it is now done
+  where it means something. Rooms and the host vary weight with distance across
+  a measured 5.3x spread. The other ~95 plates keep their constants on purpose:
+  a data plate has no depth for line weight to describe, and varying it there
+  would be decoration. Nothing outstanding.
+
+  The reason it took four asks to land: the multiplier was widened twice with no
+  visible effect, because the INPUT barely varied. Depth came from height in
+  frame, and almost every prop sits in the same y-band around the desk, so a
+  3.5x multiplier was being fed a 1.4x spread. Fixed by making depth a steep
+  curve over the whole canvas and letting props whose y contradicts their plane
+  state it explicitly.
+
+HOW THE PIPELINE LOADS THIS KIT — engine at ingest, materialising PNGs
+  Run the engine at INGEST and write real files. The renderer never calls JS per
+  frame: ingest walks the library, calls BUILD.draw / BUILD.drawWith once per
+  asset x outfit x boil frame, writes PNG and SVG to disk, and the pipeline then
+  loads flat files exactly as it does today.
+
+  This is why the four extra outfits are not exported by hand. Every asset is an
+  author plus a seed plus arguments — outfit, boil frame and aspect are all
+  arguments — so five outfits x two boil frames x the pose set is a build-time
+  loop, not 300 hand-maintained plates that go stale the next time anything
+  changes. The PNGs in this kit are a CACHE of the default (outfit "shirt"),
+  not the contract. The contract is engine + manifests.
+
+  If the pipeline cannot run JS at ingest, say so and the outfits get exported
+  instead — but then the outfit list has to be frozen first, because every
+  addition after that point is a full re-export.

@@ -124,6 +124,105 @@ def test_the_linter_never_counts_jokes():
     assert voice_lint("Revenue rose. Costs rose more. That is the whole story.") == []
 
 
+def test_a_construction_used_twice_is_flagged_on_the_second():
+    """"One reframe, one simile chain, one bathos drop, one fake-out. Maximum."
+
+    The first use is the licence and the second is the finding — the bible's
+    own account of the failure is that no individual one was bad and the
+    fourth was tired. So the message carries the line of the first, because a
+    writer cannot fix a repeat they cannot see the original of.
+    """
+    once = "That's not capital return, it's topping up the bath with the plug out."
+    assert voice_lint(once) == []
+
+    twice = once + "\nAnd that is not a business, it's a subscription to being poorer."
+    out = voice_lint(twice)
+    assert len(out) == 1 and out[0].line == 2
+    assert "one reframe per script" in out[0].message
+    assert "line 1" in out[0].message
+    assert out[0].severity == "warn"
+
+
+def test_the_fake_out_is_recognised_through_its_beat():
+    """Its shape is a concession, a beat, then one short clause.
+
+    Which means it cannot be found in `script.narration` at all — the
+    tokenizer takes every bracket out of what the voice reads, `[BEAT]`
+    included. `delivery_text` is what puts the pacing marks back.
+    """
+    one = "That defence is real. [BEAT] It's also been four years."
+    assert voice_lint(one) == []
+    out = voice_lint(one + "\nThe bull case holds. [BEAT] It has also been four years.")
+    assert len(out) == 1 and "fake-out" in out[0].message
+
+
+def test_bathos_is_not_matched_and_that_is_deliberate():
+    """The one construction of the four with no surface form.
+
+    A grand setup deflated by something mundane has no lexical marker, and an
+    approximation of it would fire on ordinary sentences — which is how a
+    check gets switched off, taking the three accurate ones with it.
+    """
+    from pipeline.gates import _CONSTRUCTIONS
+
+    assert {name for name, _, _ in _CONSTRUCTIONS} == {"reframe", "simile",
+                                                       "fake-out"}
+    bathos = ("The whole thesis rests on a refinancing in March. There is a "
+              "calendar reminder for it. The reminder says lol.\n"
+              "Everything depends on the covenant test in the fourth quarter. "
+              "There is a second reminder. It says the same thing.")
+    assert voice_lint(bathos) == []
+
+
+def test_twenty_seconds_without_a_turn_is_flagged():
+    """The retention rule, in the only unit a writer can act on: seconds."""
+    straight = (
+        "The company operates a network of regional distribution depots across "
+        "eleven states and licenses dispatch software to the operators who run "
+        "them, charging per seat per month on annual contracts that renew in the "
+        "first quarter and carry a three percent uplift built into the renewal "
+        "schedule, which the filing describes at length in a section on revenue "
+        "recognition that also covers the treatment of implementation fees and "
+        "the amortisation of contract acquisition costs over an estimated "
+        "customer life of four years and a bit.")
+    out = voice_lint(straight)
+    assert len(out) == 1 and "no turn in it" in out[0].message
+    assert out[0].severity == "warn"
+
+    # A turn EARLY in a long sentence ends the run there rather than at the
+    # full stop. Counting by sentence would charge the forty words after "you"
+    # to the stretch before it and report a stretch nobody spoke: here the run
+    # that remains is the one AFTER the turn, and it is shorter.
+    turned = straight.replace("charging per seat per month",
+                              "you pay per seat per month")
+    after = voice_lint(turned)
+    assert len(after) == 1
+    assert after[0].excerpt.startswith("pay per seat")
+    assert float(after[0].message.split("about ")[1].split(" ")[0]) < \
+        float(out[0].message.split("about ")[1].split(" ")[0])
+
+    # Turns in both halves, and there is nothing to report.
+    broken = turned.replace("which the filing describes",
+                            "and I will spare you the rest, which the filing describes")
+    assert voice_lint(broken) == [], [f.message for f in voice_lint(broken)]
+
+
+def test_the_committed_long_fixture_passes_the_v2_linter(settings, long_valid_text):
+    """A check that fires on good writing gets switched off. This is the proof.
+
+    Both new rules are structural, which is exactly the kind that cries wolf,
+    so they are run against the script the repo holds up as the register done
+    properly.
+    """
+    from pipeline.gates import delivery_text
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    text = delivery_text(script)
+    assert "[BEAT]" in text, "the pacing marks did not survive into the lint"
+    assert voice_lint(text) == [], [f.message for f in voice_lint(text)]
+
+
 # --------------------------------------------------------------- freshness
 
 
@@ -149,51 +248,127 @@ def test_a_missing_as_of_date_is_flagged():
     assert check_freshness("", Settings(_env_file=None))
 
 
+# ------------------------------------------------ figures that reach the screen
+
+
+def _long(text, settings):
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    return script
+
+
+def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
+                                                            long_valid_text):
+    """The asymmetry is the point, not an inconsistency.
+
+    A spoken figure is a sentence a viewer hears once and a linter can misread.
+    A figure in a `[PLATE]` slot is a number the director typed, held on screen
+    for six seconds, and screenshotted by anyone who disagrees with it. The
+    voice gets to be as confident as v2 asks precisely because these were
+    verified before anything rendered.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    invented = long_valid_text.replace("row-1=400,452,471,491,496,496",
+                                       "row-1=400,452,471,491,496,720")
+    out = onscreen_fact_check(_long(invented, settings), data)
+    assert out and all(f.severity == "block" for f in out)
+    assert "720" in out[0].message
+
+    spoken = fact_check("Revenue was seven hundred and twenty million.", data)
+    assert spoken and all(f.severity == "warn" for f in spoken)
+
+
+def test_a_real_figure_under_the_wrong_year_is_caught(settings, data,
+                                                      long_valid_text):
+    """The failure a membership test cannot see.
+
+    Every number here is in the series — two of them are just in each other's
+    columns, which is a table that lies about which year each figure belongs
+    to. Six cells under six period heads against a six-period history is a
+    column-by-column comparison or it is nothing.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    swapped = long_valid_text.replace("row-1=400,452,471,491,496,496",
+                                      "row-1=452,400,471,491,496,496")
+    out = onscreen_fact_check(_long(swapped, settings), data)
+    assert len(out) == 2
+    assert "in that column" in out[0].message
+
+
+def test_the_committed_fixture_agrees_with_its_own_data(settings, data,
+                                                        long_valid_text):
+    """Every on-screen figure in the exemplary script, against the sheet.
+
+    It did not, when this gate was written: the four-row sheet, the row
+    spotlight, the unit ladder and the cash-flow statement all carried figures
+    nobody had reconciled against `fixtures/company_data`, and the video
+    rendered clean for as long as nothing checked.
+    """
+    from pipeline.gates import onscreen_fact_check
+
+    out = onscreen_fact_check(_long(long_valid_text, settings), data)
+    assert out == [], [f"{f.excerpt} -> {f.message}" for f in out]
+
+
+def test_a_negative_cell_is_read_as_negative(settings, data):
+    """`extract_numbers` is built for prose and returns the magnitude.
+
+    It reads "-8" as eight, so a loss compared clean against a profit and
+    every negative row on every sheet went through. A cell is not a sentence.
+    """
+    from pipeline.gates import _cell_value
+
+    assert _cell_value("-8") == -8.0
+    assert _cell_value("(8)") == -8.0          # accountants' parentheses
+    assert _cell_value("-1.4B") == -1.4e9
+    assert _cell_value("") is None             # an empty cell means NO DATA
+    assert _cell_value("n/a") is None
+
+
+def test_the_unit_is_read_from_the_kicker_as_well_as_the_slot(settings):
+    """`row-spotlight` carries it as "NET INCOME, $M"; the sheet has a slot.
+
+    Reading only `unit` compared millions against dollars on every spotlight
+    in the library, and blocked every correct one.
+    """
+    from pipeline.gates import _declared_unit
+
+    assert _declared_unit({"unit": "$M"}) == 1e6
+    assert _declared_unit({"kicker": "NET INCOME, $M"}) == 1e6
+    assert _declared_unit({"kicker": "FROM THE HIGH"}) is None
+
+
+def test_cash_the_balance_is_not_matched_by_cash_the_flow(settings, data):
+    """A blocking gate must never block a correct sheet.
+
+    The bare word "cash" is inside "free cash flow", "cash from operations",
+    "cash used investing" and "net change in cash". Matching a flow against a
+    balance would fail every cash-flow statement in the library.
+    """
+    from pipeline.gates import _METRIC_WORDS
+
+    assert "cash" not in _METRIC_WORDS["cash"]
+    assert all("cash" != w for w in _METRIC_WORDS["cash"])
+
+
 # ------------------------------------------------------------- kit doctor
 
 
-def test_kit_doctor_reports_unresolved_keys_and_unused_artwork(
-        long_valid_text, settings):
-    from pipeline.models import TagEvent, TagType
-    from pipeline.parser_long import parse_long_script
-
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.PROP, payload="not-a-real-prop",
-                                  char_offset=0, raw_offset=0))
-    findings, stats = kit_doctor(script, settings)
-    assert any("not-a-real-prop" in f.message for f in findings)
-    assert "[PROP: not-a-real-prop]" in stats["unresolved_keys"]
-    assert stats["kit_size"] >= 384
-    # the useful half: artwork real scripts never reach for
-    assert stats["never_used"], "the never-used report is the point"
-    assert stats["never_used_count"] == len(stats["never_used"])
-
-
-def test_the_kit_doctor_falls_through_to_a_blank_layout_rather_than_nothing(
-        long_valid_text, settings):
-    """A [TERM] with no named artwork still gets a card — the doctor says so
-    rather than reporting it as a lost beat."""
-    from pipeline.models import TagEvent, TagType
-    from pipeline.parser_long import parse_long_script
-
-    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
-    script.events.append(TagEvent(type=TagType.TERM, payload="owner earnings",
-                                  char_offset=0, raw_offset=0))
-    findings, _ = kit_doctor(script, settings)
-    hit = next(f for f in findings if "owner earnings" in f.message)
-    assert "blank layout will carry it" in hit.message
-
-
 def test_the_kit_doctor_runs_without_a_script(settings):
-    """The library-level half — never used, unregistered PNGs, artwork owed —
-    is what an operator goes looking for, and it needs no script."""
+    """The library half — what has been drawn and never reached — is what an
+    operator goes looking for, and it needs no script."""
     from pipeline.gates import kit_doctor_text
 
     report = kit_doctor_text(settings)
     assert "KIT DOCTOR" in report
-    assert "Never used in a recent render" in report
-    assert "PNGs with no registry entry" in report
-    assert "dennis-reads-proxy-talk" in report, "artwork owed is reported"
+    assert "140 plates" in report
+    assert "Never reached in a recent render" in report
+    # It groups by family, because "eighteen room angles unused" is actionable
+    # and a list of 113 keys is not.
+    assert "room:" in report or "none" in report
 
 
 # ------------------------------------------------------------------ suite
@@ -242,3 +417,97 @@ def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):
     draft = run_gates(script, live, data=data, as_of="2026-07-01",
                       skeptic=False, final=False)
     assert [f.severity for f in draft.findings if f.gate == "audio"] == ["warn"]
+
+
+def test_the_doctor_names_the_gap_list_the_next_batch_is_drawn_from(settings):
+    """Three questions: what was asked for and missing, what was left empty,
+    and what has been drawn and never reached."""
+    from pipeline.gates import kit_doctor_text
+
+    text = kit_doctor_text(settings)
+    assert "Unresolved plate names" in text
+    assert "Slots a script left unfilled" in text
+    assert "Never reached in a recent render" in text
+
+
+def test_an_unknown_plate_blocks_and_is_named(settings):
+    from pipeline.gates import kit_doctor
+    from pipeline.models import TagEvent, TagType
+
+    class _S:
+        events = [TagEvent(type=TagType.PLATE, payload="tables/not-a-plate",
+                           char_offset=0, raw_offset=0)]
+
+    findings, stats = kit_doctor(_S(), settings)
+    assert stats["unresolved_keys"] == ["[PLATE: not-a-plate]"]
+    assert any(f.severity == "block" for f in findings)
+
+
+# --------------------------------------------------------------------------
+# What nothing can reach — a class of defect, not an instance.
+# --------------------------------------------------------------------------
+
+
+def test_the_doctor_reports_what_no_template_can_reach(settings):
+    """`room/high-desk-down` sat in the kit with no template naming its role.
+
+    Not an error, not a warning, no failing test: an angle that simply never
+    appeared, found by somebody noticing. Noticing is not a method, so the
+    doctor walks every shot file, every chapter type and the renderer's own
+    literals and says which plates have a route to the screen.
+    """
+    from pipeline.gates import kit_doctor_text
+
+    text = kit_doctor_text(settings)
+    assert "No shot template reaches" in text
+
+
+def test_a_plate_named_only_through_a_room_role_is_reachable(settings):
+    """A template writes `room/talk`, not `room/desk-front-16x9`.
+
+    A walk that only read plate keys would report all nine angles as
+    unreachable and bury the one that actually is.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("room/desk-front-16x9", "room/low-desk-height-16x9",
+                "room/high-desk-down-16x9", "room/desk-front-9x16"):
+        assert key in routes["template"], f"{key} has no route through a role"
+
+
+def test_a_plate_the_renderer_reaches_by_name_is_not_a_gap(settings):
+    """The annotations, the media frames and the row band are the renderer's.
+
+    No template mentions them and none should: a director writes `[SCRIBBLE]`,
+    not `[PLATE: annotations/strike-out]`, and the row band is named by another
+    plate's own slot. Counting those as gaps would bury the real ones under
+    twenty entries nobody can act on.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    for key in ("annotations/strike-out", "overlays/row-band",
+                "frames/capture-frame-16x9", "frames/media-frame-t1-16x9"):
+        assert key in routes["code"], f"{key} reads as unreachable"
+
+
+def test_a_tag_route_is_not_credited_for_the_set_or_the_host(settings):
+    """The chapter curation lists `room/` and `host/` as universal.
+
+    Every chapter has a set and a host — but a director does not write a
+    [PLATE] for either, the renderer does. Crediting that curation as a tag
+    route made this report say every plate had a way to the screen while
+    `room/high-desk-down` demonstrably did not.
+    """
+    from pipeline.gates import reachable_plates
+    from pipeline.plates import load_plates
+
+    reg = load_plates(settings.assets_dir)
+    routes = reachable_plates(reg)
+    assert not [k for k in routes["tag"]
+                if k.split("/", 1)[0] in ("room", "host", "annotations")]

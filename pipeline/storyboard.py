@@ -23,9 +23,9 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from config import Settings, detect_ffmpeg
-from pipeline.kit import load_kit
-from pipeline.models import KIT_TAG_FAMILIES, TagType, WordTimestamp
-from pipeline.rasters import BG, BORDER, CARD, INK, MONO, MONO_BOLD, MUTED, RED, load_font
+from pipeline.models import TagType, WordTimestamp
+from pipeline.plates import load_plates
+from pipeline.rasters import ARCHIVO, COURIER, COURIER_BOLD, load_font, role
 
 log = logging.getLogger(__name__)
 
@@ -35,9 +35,11 @@ THUMB_H = 190
 PAD = 14
 COLS = 4
 
-# Segment kinds whose thumbnail comes from the design kit rather than from
-# the content engine.
-_KIT_KINDS = {t.value.lower(): fam for t, fam in KIT_TAG_FAMILIES.items()}
+# The kinds whose thumbnail comes from the plate registry rather than from the
+# content engine. A [PLATE] beat names its own plate, so there is nothing to
+# search — which is the whole change: the storyboard shows what the director
+# chose, not what the resolver would have picked.
+_PLATE_KINDS = {"plate", "chapter"}
 
 
 def spoken_between(words: list[WordTimestamp], start: float, end: float,
@@ -70,22 +72,29 @@ def _thumbnail_for(seg, settings: Settings, content, tmp: Path, idx: int,
     storyboard cannot illustrate is exactly what the operator needs to see."""
     kind = seg.kind
     value = str(seg.payload.get("value", ""))
-    kit = load_kit(settings.assets_dir)
+    reg = load_plates(settings.assets_dir)
 
     try:
         if kind == "host":
             from pipeline.host import pick_shot
 
-            shot = pick_shot(kit, "beat", idx)
-            # the open-mouth twin: a storyboard of closed mouths reads as a
-            # video with no host in it, which is the thing being checked
-            p = shot.open_.path if shot else None
+            shot = pick_shot(reg, "beat", idx)
+            # The talk strip's open mouth: a storyboard of closed mouths reads
+            # as a video with no host in it, which is the thing being checked.
+            plate = (shot.talk or shot.pose) if shot else None
+            p = plate.frame_paths()[0] if plate else None
             return (Image.open(p).convert("RGBA") if p else None), "Dennis (talking)"
 
-        if kind in _KIT_KINDS:
-            p = kit.resolve(_KIT_KINDS[kind], value)
-            label = f"{kind}: {value}" + ("" if p else "  ← NOT IN KIT")
-            return (Image.open(p).convert("RGBA") if p else None), label
+        if kind in _PLATE_KINDS:
+            from pipeline.plate_frames import render_still
+
+            plate = reg.get(value)
+            if plate is None:
+                return None, f"{kind}: {value}  ← NOT IN THE KIT"
+            # Rendered with its slot values, so the sheet shows the beat the
+            # director wrote rather than an empty plate.
+            values = dict(seg.payload.get("values") or {})
+            return render_still(plate, values, settings, reg), f"{kind}: {value}"
 
         if kind == "filing":
             p = (workspace / value) if workspace else None
@@ -115,36 +124,41 @@ def _draw_tile(sheet: Image.Image, settings: Settings, box: tuple[int, int],
                index: int) -> None:
     x, y = box
     d = ImageDraw.Draw(sheet)
-    d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], fill=CARD, outline=BORDER)
+    ground = role(settings, "ground")
+    ground2 = role(settings, "second-ground")
+    ink = role(settings, "structure")
+    muted = role(settings, "neutral-data")
+    bad = role(settings, "down")
+    d.rectangle([x, y, x + TILE_W - 1, y + TILE_H - 1], fill=ground, outline=ground2)
 
     # thumbnail, contained (never cropped — the point is to see the asset)
     inner = (TILE_W - 2 * PAD, THUMB_H)
     frame_box = [x + PAD, y + PAD, x + PAD + inner[0], y + PAD + inner[1]]
-    d.rectangle(frame_box, fill=BG, outline=BORDER)
+    d.rectangle(frame_box, fill=ground, outline=ground2)
     if thumb is not None:
         t = thumb.copy()
         t.thumbnail(inner, Image.LANCZOS)
         sheet.paste(t, (x + PAD + (inner[0] - t.width) // 2,
                         y + PAD + (inner[1] - t.height) // 2), t)
     else:
-        f = load_font(settings, MONO_BOLD, 22)
+        f = load_font(settings, COURIER_BOLD, 22)
         d.text((x + PAD + 16, y + PAD + inner[1] // 2 - 12), "no preview",
-               font=f, fill=RED)
+               font=f, fill=bad)
 
-    mono = load_font(settings, MONO_BOLD, 17)
-    small = load_font(settings, MONO, 15)
+    mono = load_font(settings, COURIER_BOLD, 17)
+    small = load_font(settings, COURIER, 15)
     ty = y + PAD + THUMB_H + 8
     text_w = TILE_W - 2 * PAD
     layout = seg.payload.get("layout", "")
     head = f"{index:02d}  {seg.length:5.1f}s  {layout}" if layout else \
            f"{index:02d}  {seg.length:5.1f}s"
-    d.text((x + PAD, ty), head, font=mono, fill=INK)
+    d.text((x + PAD, ty), head, font=mono, fill=ink)
     for line in _fit(d, label, small, text_w, 1):
         d.text((x + PAD, ty + 22), line, font=small,
-               fill=RED if "←" in label else MUTED)
+               fill=bad if "←" in label else muted)
     if caption:
         for i, line in enumerate(_fit(d, f"“{caption}”", small, text_w, 2)):
-            d.text((x + PAD, ty + 42 + i * 18), line, font=small, fill=MUTED)
+            d.text((x + PAD, ty + 42 + i * 18), line, font=small, fill=muted)
 
 
 def _fit(d: ImageDraw.ImageDraw, text: str, font, width: int,
@@ -194,20 +208,22 @@ def build_storyboard(
     out_path.parent.mkdir(parents=True, exist_ok=True)
     rows = (len(segments) + cols - 1) // cols
     header_h = 78
-    sheet = Image.new("RGBA", (cols * TILE_W, header_h + rows * TILE_H), (*BG, 255))
+    sheet = Image.new("RGBA", (cols * TILE_W, header_h + rows * TILE_H),
+                      (*role(settings, "ground"), 255))
     d = ImageDraw.Draw(sheet)
 
     total = sum(s.length for s in segments)
-    head_font = load_font(settings, MONO_BOLD, 28)
-    sub_font = load_font(settings, MONO, 18)
-    d.text((PAD + 4, 16), title or "storyboard", font=head_font, fill=INK)
+    head_font = load_font(settings, ARCHIVO, 28)
+    sub_font = load_font(settings, COURIER, 18)
+    d.text((PAD + 4, 16), title or "storyboard", font=head_font,
+           fill=role(settings, "structure"))
     kinds: dict[str, int] = {}
     for s in segments:
         kinds[s.kind] = kinds.get(s.kind, 0) + 1
     mix = "  ".join(f"{k}×{n}" for k, n in sorted(kinds.items()))
     d.text((PAD + 4, 50),
            f"{len(segments)} beats · {total / 60:.1f} min · {mix}",
-           font=sub_font, fill=MUTED)
+           font=sub_font, fill=role(settings, "neutral-data"))
 
     problems: list[str] = []
     with tempfile.TemporaryDirectory(prefix="storyboard_") as td:

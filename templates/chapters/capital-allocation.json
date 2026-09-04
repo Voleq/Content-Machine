@@ -1,0 +1,40 @@
+{
+  "chapter": "capital-allocation",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room/talk",
+      "host": {
+        "pose": "panel",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "structure/unit-ladder-16x9",
+      "max_hold_s": 7,
+      "captions": true,
+      "bind": {
+        "kicker": "?numbers.unit",
+        "top-label": "?numbers.label.0",
+        "top-value": "numbers.headline_figure",
+        "out-label": "?numbers.label.1"
+      },
+      "notes": "What a capital-allocation chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+    },
+    {
+      "id": "land",
+      "plate": "room/talk",
+      "host": {
+        "pose": "to-camera",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 5,
+      "captions": true,
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
+    }
+  ]
+}

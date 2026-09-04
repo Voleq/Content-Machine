@@ -1,0 +1,34 @@
+shorts — hook cards
+===================
+
+USE WHEN
+  The first two seconds of a vertical cut. These exist to stop a scroll and
+  nothing else. 9:16 only; there is no landscape hook.
+
+MEMBERS
+  hook-card-t1   ticker, move, hook, sub. The standard: symbol and the move
+                 that justifies the video.
+  hook-card-t2   same slots, different weight. Alternate so a channel's
+                 cards do not all look identical.
+  hook-card-t3   ticker, huge, hook, sub. huge replaces move — for a single
+                 dominant number rather than a percentage change.
+
+SLOTS
+  ticker   the symbol. Always populated.
+  move     the change, with sign. Takes up or down — the only slot in the
+           family that carries direction.
+  huge     (t3) the number itself, largest element on the plate.
+  hook     the question or claim. Under ten words; a hook that needs reading
+           has already failed.
+  sub      the qualifier — period, basis, or the "despite".
+
+SEQUENCE
+  All four slots land on frame one. There is no reveal on a hook card; a
+  build costs the attention it was made to capture. Hold two seconds, then
+  cut to the room.
+
+TRAPS
+  * move without a sign is not a move.
+  * The hook must be answered in the video. A hook card whose question the
+    script does not resolve is the one thing that loses a returning viewer.
+  * Do not put the host on a hook card. He arrives on the cut after.

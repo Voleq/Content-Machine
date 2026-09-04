@@ -1,0 +1,34 @@
+frames — for other people's material
+====================================
+
+USE WHEN
+  Something not drawn by this engine has to appear on screen: a filing
+  excerpt, a screenshot, a photograph, a chart from a source.
+
+MEMBERS
+  media-frame-t1/t2/t3   a bordered area with caption and source. Three
+                         weights; pick by how much the frame should compete
+                         with what is in it. t1 for a busy image, t3 for a
+                         sparse one.
+  capture-frame          for text captures. Has headline, body and a mark —
+                         the mark is what you are pointing at inside the
+                         capture.
+
+SLOTS
+  media-frame     media (the area the asset drops into — nothing drawn) /
+                  caption / source
+  capture-frame   source / headline / body / mark / caption
+
+SEQUENCE
+  media-frame   frame up, media in, caption, then source. Source is never
+                omitted.
+  capture-frame source, headline, body, then mark last — the mark is the
+                point of the frame and lands after the reader has read.
+
+TRAPS
+  * media is an area, not a slot to draw in. Fit the asset to it; do not
+    scale the frame to the asset.
+  * The frame does not crop. If the source material is the wrong aspect,
+    letterbox it inside media rather than filling.
+  * capture-frame's body is an excerpt, not a summary. Summaries go in
+    caption.

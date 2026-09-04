@@ -1,0 +1,33 @@
+overlays — row-band
+===================
+
+USE WHEN
+  A row in a table or a step in a ladder is being spoken about. This is the
+  only sanctioned way to emphasise a row.
+
+MEMBER
+  row-band   1744 x 112 canvas, one slot: area. Second ground hatch, bracketed
+             top and bottom in structure. The rules are not decoration: the
+             numbers sheet zebra-stripes its even rows in ground2 already, so a
+             ground2 band alone is invisible on half the sheet.
+
+SLOTS
+  area   the band's own extent. Composite into the target's band-N slot,
+         stretched in x ONLY: keep the band's native 112-unit height and centre
+         it in the row. Stretched in y as well, the hatch degenerates into a
+         solid slab and the row reads as filled in rather than pointed at.
+
+SEQUENCE
+  Lit on the beat the voiceover reaches the row. Off before the next row
+  lights. One at a time, without exception — a table with three bands lit has
+  emphasised nothing.
+
+TRAPS
+  * The band is second ground (#CBBC9B) and carries no meaning. It says
+    "here", not "good" or "bad". Direction stays in the cells, and attention
+    belongs to annotations. (It was drawn in attention until the compositor put
+    a band and a scrawl in the same frame and the frame had two attentions.)
+  * Do not tint cell backgrounds as an alternative. The band exists so that
+    emphasis and meaning never use the same channel.
+  * Valid targets: any band-N in tables/*, structure/unit-ladder. Nothing
+    else has a band slot, and nothing else should be given one.

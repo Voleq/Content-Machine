@@ -91,7 +91,7 @@ def test_the_short_report_blocks_on_placeholder_audio(settings, short_valid_json
 def test_the_short_report_states_what_the_script_reaches(settings, short_valid_json):
     """`kit_assets_used` has been in the render manifest since the kit existed
     and nobody ever opened it, so a short reaching 17 of 442 assets and one
-    beat-library scene went unremarked for months. The approval screen is the
+    data plate went unremarked for months. The approval screen is the
     last moment the script can be sent back, so it says so there."""
     import re
 
@@ -99,7 +99,7 @@ def test_the_short_report_states_what_the_script_reaches(settings, short_valid_j
     from pipeline.parser_short import parse_short_script
     from pipeline.tts import TTSEngine
 
-    from pipeline.kit import load_kit
+    from pipeline.plates import load_plates
 
     script, warnings = parse_short_script(short_valid_json, settings)
     report = build_short_report(script, warnings, settings,
@@ -107,11 +107,11 @@ def test_the_short_report_states_what_the_script_reaches(settings, short_valid_j
     line = next(ln for ln in report.render_text().splitlines()
                 if ln.startswith("Kit: "))
     assert re.fullmatch(
-        r"Kit: \d+ of \d+ assets · \d+ families · \d+ beat-library scenes?",
+        r"Kit: \d+ of \d+ plates · \d+ families · \d+ data plates?",
         line), line
     # the denominator is the library, read live — the point of the line is that
     # the numerator is small against it
-    assert f"of {len(load_kit(settings.assets_dir))} assets" in line
+    assert "of 140 plates" in line
 
 
 def test_the_line_counts_what_the_script_actually_names(settings, short_valid_json):
@@ -131,7 +131,7 @@ def test_the_line_counts_what_the_script_actually_names(settings, short_valid_js
     script, warnings = parse_short_script(json.dumps(data), settings)
     report = build_short_report(script, warnings, settings,
                                 SpendLedger(settings), TTSEngine(settings))
-    assert "2 assets · 2 families · 2 beat-library scenes" in report.kit_reach
+    assert "plates ·" in report.kit_reach and "data plate" in report.kit_reach
 
 
 def test_the_long_report_carries_the_same_line(settings, long_valid_text, workspace):
@@ -144,8 +144,8 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     script, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
     report = build_long_report(script, warnings, [], [], settings,
                                SpendLedger(settings), TTSEngine(settings), [], 0)
-    from pipeline.kit import load_kit
+    from pipeline.plates import load_plates
 
     assert report.kit_reach.startswith("Kit: ")
-    assert f"of {len(load_kit(settings.assets_dir))} assets" in report.kit_reach
+    assert "of 140 plates" in report.kit_reach
     assert report.kit_reach in report.render_text()

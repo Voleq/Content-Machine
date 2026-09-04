@@ -21,7 +21,7 @@ Two kinds of source, and only one of them is the writer's:
   `channel.*` from settings. The writer never sees these and must never be
   asked to invent them.
 
-The budget is the point. `templates/budgets.json` is measured by running the
+The budget is the point. It is the kit's own `maxChars` per slot, measured by
 real fitter against the real templates; the same numbers gate the render
 (`compose.check_budgets`) and describe the field here, so a field cannot be
 advertised at a length the frame will refuse.
@@ -39,7 +39,15 @@ from pipeline.shots import available_formats, expand_sequences, load_format
 # and asking a writer for it is how a hallucinated figure reaches a frame.
 WRITER_ROOTS = ("script", "chapter")
 
-BUDGETS_PATH = Path("templates") / "budgets.json"
+# THE BUDGET COMES FROM THE KIT, NOT FROM A MEASUREMENT OF THIS CODE.
+#
+# It used to live in `templates/budgets.json`, produced by running the type
+# fitter over the templates and re-measured on every test run so the two could
+# not drift. That file existed because the old renderer drew every line of
+# copy itself over artwork with no opinion about type. The v2 plates declare a
+# `maxChars` per slot ROLE, measured against the face and size that slot is
+# actually set in — so the budget is a property of the drawing, and asking the
+# drawing is both shorter and true by construction.
 
 
 @dataclass(frozen=True)
@@ -61,11 +69,45 @@ class Field:
         return self.src.split(".", 1)[0] in WRITER_ROOTS
 
 
-def _budgets(root: Path | str = ".") -> dict:
-    path = Path(root) / BUDGETS_PATH
-    if not path.exists():
+def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
+    """`fill:<slot>` -> characters, read off the plates the format names."""
+    try:
+        from config import Settings
+        from pipeline.compose import resolve_plate
+        from pipeline.plate_frames import type_role
+        from pipeline.plates import load_plates
+    except Exception:                              # noqa: BLE001
         return {}
-    return json.loads(path.read_text(encoding="utf-8")).get("formats", {})
+    try:
+        reg = load_plates(Settings(_env_file=None).assets_dir)
+        fmt = load_format(name, root)
+    except Exception:                              # noqa: BLE001
+        return {}
+
+    out: dict[str, int] = {}
+    for shot in fmt.shots:
+        if not shot.plate:
+            continue
+        try:
+            plate = resolve_plate(reg, shot.plate, fmt.aspect)
+        except Exception:                          # noqa: BLE001
+            plate = None
+        if plate is None:
+            continue
+        for slot_name in (shot.bind or {}):
+            slot = plate.slot(slot_name)
+            if slot is None:
+                continue
+            tr = type_role(plate, slot)
+            limit = tr.get("maxChars")
+            if not limit:
+                # A wrapping slot says how many lines and how wide each is.
+                lines, per = tr.get("maxLines"), tr.get("maxCharsPerLine")
+                limit = int(lines) * int(per) if lines and per else None
+            if limit:
+                key = f"fill:{slot_name}"
+                out[key] = min(out.get(key, int(limit)), int(limit))
+    return out
 
 
 def form_for(name: str, root: Path | str = ".") -> list[Field]:
@@ -77,7 +119,7 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
     """
     fmt = expand_sequences(load_format(name, root),
                            lambda _src: ["a", "b", "c", "d"])
-    mine = _budgets(root).get(name, {})
+    mine = _budgets(name, root)
 
     seen: dict[str, tuple[list[str], list[str]]] = {}
 

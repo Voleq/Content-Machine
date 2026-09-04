@@ -1,10 +1,10 @@
 {
  "ticker": "EXMPL",
  "format": "earnings",
- "beats": 10,
- "shots_count": 10,
- "anchored_shots": 2,
- "register": "marker",
+ "beats": 8,
+ "shots_count": 8,
+ "anchored_shots": 1,
+ "kit": "v2-plates",
  "duration_s": 64.458,
  "frame": {
   "w": 1080,
@@ -13,179 +13,132 @@
  "shots": [
   {
    "id": "open",
-   "plate": "room-wide",
+   "plate": "shorts/hook-card-t2",
    "start_s": 0.0,
-   "end_s": 7.346,
+   "end_s": 8.057,
    "anchored": true,
-   "max_hold_s": 6.0,
+   "max_hold_s": 7.0,
    "layers": [
     "open:ground",
-    "open:plate:room-wide",
-    "open:host:talking-at-screen",
-    "open:panel:hook",
-    "open:text:hook"
+    "open:plate:shorts/hook-card-t2"
    ]
   },
   {
    "id": "the-print",
-   "plate": "desk-top-down",
-   "start_s": 7.346,
-   "end_s": 14.692,
+   "plate": "figures/big-number-l1-9x16",
+   "start_s": 8.057,
+   "end_s": 16.115,
    "anchored": false,
-   "max_hold_s": 6.0,
+   "max_hold_s": 7.0,
    "layers": [
     "the-print:ground",
-    "the-print:plate:desk-top-down",
-    "the-print:fill:pages",
-    "the-print:panel:headline",
-    "the-print:text:headline",
-    "the-print:panel:meaning",
-    "the-print:text:meaning"
+    "the-print:plate:figures/big-number-l1-9x16",
+    "the-print:caption"
    ]
   },
   {
    "id": "vs-expected",
-   "plate": "compare-plate",
-   "start_s": 14.692,
-   "end_s": 21.037,
+   "plate": "figures/compare-stacked-9x16",
+   "start_s": 16.115,
+   "end_s": 24.172,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "vs-expected:ground",
-    "vs-expected:plate:compare-plate",
-    "vs-expected:fill:left",
-    "vs-expected:fill:right",
-    "vs-expected:fill:gap",
-    "vs-expected:panel:gap-read",
-    "vs-expected:text:gap-read"
+    "vs-expected:plate:figures/compare-stacked-9x16",
+    "vs-expected:caption"
    ]
   },
   {
-   "id": "the-verdict",
-   "plate": "stamp",
-   "start_s": 21.037,
-   "end_s": 26.383,
+   "id": "the-sheet",
+   "plate": "tables/numbers-sheet-4r-9x16",
+   "start_s": 24.172,
+   "end_s": 32.229,
    "anchored": false,
-   "max_hold_s": 4.0,
+   "max_hold_s": 7.0,
    "layers": [
-    "the-verdict:ground",
-    "the-verdict:plate:stamp",
-    "the-verdict:fill:stamp-text"
-   ]
-  },
-  {
-   "id": "line-moved-1",
-   "plate": "sheet-tall",
-   "start_s": 26.383,
-   "end_s": 32.729,
-   "anchored": false,
-   "max_hold_s": 5.0,
-   "layers": [
-    "line-moved-1:ground",
-    "line-moved-1:plate:sheet-tall",
-    "line-moved-1:fill:row-1",
-    "line-moved-1:fill:row-2",
-    "line-moved-1:host:pointing-at-sheet",
-    "line-moved-1:mark:scribble"
-   ]
-  },
-  {
-   "id": "line-moved-2",
-   "plate": "sheet-tall",
-   "start_s": 32.729,
-   "end_s": 39.075,
-   "anchored": false,
-   "max_hold_s": 5.0,
-   "layers": [
-    "line-moved-2:ground",
-    "line-moved-2:plate:sheet-tall",
-    "line-moved-2:fill:row-1",
-    "line-moved-2:fill:row-2",
-    "line-moved-2:host:pointing-at-sheet",
-    "line-moved-2:mark:scribble"
+    "the-sheet:ground",
+    "the-sheet:plate:tables/numbers-sheet-4r-9x16",
+    "the-sheet:caption"
    ]
   },
   {
    "id": "guidance",
-   "plate": "card-guidance",
-   "start_s": 39.075,
-   "end_s": 45.421,
+   "plate": "cards/definition-9x16",
+   "start_s": 32.229,
+   "end_s": 40.286,
    "anchored": false,
-   "max_hold_s": 5.0,
+   "max_hold_s": 7.0,
    "layers": [
     "guidance:ground",
-    "guidance:plate:card-guidance",
-    "guidance:panel:guidance-line",
-    "guidance:text:guidance-line",
-    "guidance:panel:guidance-read",
-    "guidance:text:guidance-read"
+    "guidance:plate:cards/definition-9x16",
+    "guidance:caption"
    ]
   },
   {
-   "id": "the-reaction",
-   "plate": "screen-full",
-   "start_s": 45.421,
-   "end_s": 52.766,
+   "id": "the-turn",
+   "plate": "room/talk",
+   "start_s": 40.286,
+   "end_s": 48.344,
    "anchored": false,
-   "max_hold_s": 6.0,
+   "max_hold_s": 7.0,
    "layers": [
-    "the-reaction:ground",
-    "the-reaction:enter:underline-swipe",
-    "the-reaction:plate:screen-full",
-    "the-reaction:fill:screen",
-    "the-reaction:mark:extreme-ring"
+    "the-turn:ground",
+    "the-turn:plate:room/desk-corner-9x16",
+    "the-turn:host:close-up",
+    "the-turn:caption"
    ]
   },
   {
    "id": "so-what",
-   "plate": "room-wide",
-   "start_s": 52.766,
-   "end_s": 59.112,
-   "anchored": true,
-   "max_hold_s": 5.0,
+   "plate": "structure/both-true-9x16",
+   "start_s": 48.344,
+   "end_s": 56.401,
+   "anchored": false,
+   "max_hold_s": 7.0,
    "layers": [
     "so-what:ground",
-    "so-what:plate:room-wide",
-    "so-what:host:talking-to-camera",
-    "so-what:panel:so-what",
-    "so-what:text:so-what"
+    "so-what:plate:structure/both-true-9x16",
+    "so-what:caption"
    ]
   },
   {
    "id": "close",
-   "plate": "room-wide",
-   "start_s": 59.112,
+   "plate": "structure/closing-9x16",
+   "start_s": 56.401,
    "end_s": 64.458,
    "anchored": false,
-   "max_hold_s": 4.0,
+   "max_hold_s": 7.0,
    "layers": [
     "close:ground",
-    "close:plate:room-wide",
-    "close:host:sitting-with-mug",
-    "close:panel:handle",
-    "close:text:handle"
+    "close:plate:structure/closing-9x16",
+    "close:caption"
    ]
   }
  ],
- "layers": 55,
- "kit_assets_used": [
-  "card-guidance--marker",
-  "compare-plate--marker",
-  "desk-top-down--marker",
-  "page-corporate--marker",
-  "pointing-at-sheet--marker",
-  "room-wide--marker",
-  "screen-full--marker",
-  "sheet-tall--marker",
-  "sitting-with-mug--marker",
-  "stamp--marker",
-  "talking-at-screen--marker",
-  "talking-to-camera--marker",
-  "underline-swipe--marker"
+ "layers": 24,
+ "plates_used": [
+  "cards/definition-9x16",
+  "figures/big-number-l1-9x16",
+  "figures/compare-stacked-9x16",
+  "host/close-up",
+  "room/desk-corner-9x16",
+  "shorts/hook-card-t2",
+  "structure/both-true-9x16",
+  "structure/closing-9x16",
+  "tables/numbers-sheet-4r-9x16"
  ],
- "kit_reach": "Kit: 13 entries in marker, 13 concepts, 18 animated layers",
- "skipped": [],
+ "kit_reach": "Kit: 9 of 140 plates, 7 families, 4 animated layers",
+ "skipped": [
+  "vs-expected.caption <- script.cheap_or_trap",
+  "the-sheet.unit <- numbers.unit",
+  "the-sheet.label-3 <- numbers.label.2",
+  "the-sheet.row-3 <- numbers.figures.2",
+  "the-sheet.label-4 <- numbers.label.3",
+  "the-sheet.row-4 <- numbers.figures.3",
+  "so-what.caption <- script.cheap_or_trap"
+ ],
  "dropped_shots": [],
  "text_overflow": {},
- "longest_layer_hold_s": 0.0
+ "longest_layer_hold_s": 8.057
 }

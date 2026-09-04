@@ -1,0 +1,38 @@
+cards — the aside
+=================
+
+USE WHEN
+  The narration has to stop and define, quote, or test something before it
+  can continue. A card is a deliberate interruption; the host does not
+  appear on one.
+
+MEMBERS
+  definition   kicker, term, body, example. For a term the reader cannot be
+               assumed to know. The example slot is not optional — a
+               definition without one has not been made concrete.
+  quote-pull   body, attribution, source. For management's own words. Use
+               verbatim; if it needs an ellipsis, the quote is too long for
+               the frame.
+  criteria     title, three check/row pairs, caption. A test being applied.
+               check-N takes a mark, row-N the condition.
+
+SLOTS
+  definition   kicker / term / body / example
+  quote-pull   body / attribution / source
+  criteria     title / check-1 / row-1 / check-2 / row-2 / check-3 / row-3 /
+               caption
+
+SEQUENCE
+  definition   kicker, term, body, then example on its own beat.
+  quote-pull   body first and whole — the reader reads before they are told
+               who said it. Then attribution, then source.
+  criteria     title, then row-N and its check-N together, one pair per beat.
+               Never all three checks at once; the suspense of each check is
+               the frame's only movement.
+
+TRAPS
+  * criteria checks take up or down. Three ups is not a test, it is a claim.
+  * quote-pull's source is the filing or call, with a date. "Company" is not
+    a source.
+  * Cards do not stack. Two definitions in a row means the script needs
+    rewriting, not a second card.

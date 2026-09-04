@@ -889,3 +889,67 @@ def test_bookkeeping_never_fails_a_shipped_video(core, settings, monkeypatch):
                         lambda *a, **k: (_ for _ in ()).throw(RuntimeError("disk")))
     core._record_thesis(JobRecord(id="j3", kind=JobKind.RENDER_SHORT,
                                   ticker="EXMPL", workdate=ws.workdate))
+
+
+# ------------------------------------------------------------ the confession ledger
+
+
+def _ledger(tmp_path):
+    from config import Settings
+    from pipeline.standing import ConfessionLedger
+
+    s = Settings(MOCK_MODE=True, _env_file=None)
+    s = s.model_copy(update={"state_dir": tmp_path})
+    return ConfessionLedger(s)
+
+
+def test_a_silent_video_is_recorded_too(tmp_path):
+    """"Roughly one video in three" is a question about the other two.
+
+    A ledger holding only the admissions can say what has been used; it cannot
+    say how long it has been, which is the half of the rule that decides
+    whether to write one at all.
+    """
+    led = _ledger(tmp_path)
+    assert led.videos_since_last() == 0 and not led.due()
+
+    led.note("AAA", kind="financial", text="I bought it at nineteen. It is four.")
+    assert led.videos_since_last() == 0 and not led.due()
+
+    led.note("BBB")
+    assert led.videos_since_last() == 1 and not led.due()
+    led.note("CCC")
+    assert led.videos_since_last() == 2 and led.due()
+
+    assert [c.ticker for c in led.confessions()] == ["AAA"]
+    assert len(led.entries()) == 3
+
+
+def test_the_same_admission_cannot_be_told_twice(tmp_path):
+    """Not the same wording — the same STORY, with the nouns moved.
+
+    "A repetition rule someone has to remember will fail; a ledger makes it
+    impossible."
+    """
+    led = _ledger(tmp_path)
+    led.note("AAA", kind="financial",
+             text="I bought it at nineteen. It is four. I have had a lot of "
+                  "time to think about that.")
+
+    retold = ("I paid nineteen for it and it is four now. I have had a lot of "
+              "time to think about that one.")
+    assert [c.ticker for c in led.repeats(retold)] == ["AAA"]
+
+    fresh = ("There are several other things people use to predict this that I "
+             "genuinely do not understand.")
+    assert led.repeats(fresh) == []
+
+
+def test_the_six_kinds_are_the_only_kinds():
+    from pipeline.models import ScriptConfession
+    from pipeline.standing import CONFESSION_KINDS
+
+    assert len(CONFESSION_KINDS) == 6
+    assert ScriptConfession(kind="Epistemic", text="x").kind == "epistemic"
+    with pytest.raises(Exception):
+        ScriptConfession(kind="sad", text="x")

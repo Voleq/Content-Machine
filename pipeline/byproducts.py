@@ -267,10 +267,21 @@ def check_report(diffs: Sequence[FrameDiff]) -> str:
 # The other two caps stay ceilings. Reading them as asks would invent a debt
 # nobody incurred: they were deliberately set above what ships so a full
 # family is never trimmed.
-BYPRODUCT_FAMILIES: dict[str, tuple[tuple[str, ...], int, int | None]] = {
-    "thumbnails": (("thumbnails",), 8, 8),
-    "social": (("restyled/channel", "restyled/brand-scenes"), 20, None),
-    "end_screens": (("chapters/resigned-close",), 12, None),
+# What each by-product is built FROM, now that "thumbnails" and "scenes" are
+# not families anybody ships.
+#
+# The old table asked for eight thumbnail layouts across ("thumbnails",
+# "scenes") — neither of which exists in v2 — and reported a shortfall of eight
+# for ever. There is no layout family to draw from now: a cover is composed from
+# a room and a host, which is what pipeline.thumbnail does, and a social card is
+# the same composition at a different size. So the count is what the ROOM
+# ANGLES can supply, and it is reported honestly rather than padded against a
+# number nobody can reach.
+BYPRODUCT_SOURCES: dict[str, tuple[str, int]] = {
+    # label: (room role the composition is shot in, cap)
+    "thumbnails": ("establish", 6),
+    "social": ("talk", 8),
+    "end_screens": ("exit", 4),
 }
 
 
@@ -308,32 +319,40 @@ def build_byproducts(workspace: Path, settings: Settings, *,
     Best-effort per item — one unfillable layout must not cost the other
     twenty-one.
     """
-    from pipeline.kit import load_kit
+    from pipeline.plates import PlateError, load_plates
 
-    kit = load_kit(settings.assets_dir)
     out_dir = workspace / "byproducts"
     out_dir.mkdir(parents=True, exist_ok=True)
     result = ByProducts()
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError as exc:
+        log.warning("by-products: the kit is not ingested (%s)", exc)
+        for label in BYPRODUCT_SOURCES:
+            result.shortfall[label] = {"wanted": 0, "found": 0,
+                                       "families": [], "made": 0}
+        return result
 
-    for label, (families, cap, wanted) in BYPRODUCT_FAMILIES.items():
+    for label, (room_role, cap) in BYPRODUCT_SOURCES.items():
         made: list[str] = []
-        found = [a for fam in families for a in kit.family(fam)]
-        result.shortfall[label] = {"wanted": wanted, "found": len(found),
-                                   "families": list(families), "made": 0}
-        if wanted is None:
-            result.shortfall[label]["wanted"] = len(found)  # no ask: the kit is the answer
-        assets = found[:cap]
-        for asset in assets:
-            src = kit.path(asset)
-            if src is None:
+        # Every room angle in this role, in both aspects — that is the real
+        # supply, and the honest number to report.
+        stems = reg.room_roles.get(room_role, ())
+        found = [k for stem in stems for a in ("16x9", "9x16")
+                 if (k := reg.aspect_key(stem, a))]
+        result.shortfall[label] = {"wanted": len(found), "found": len(found),
+                                   "families": list(stems), "made": 0}
+        for key in found[:cap]:
+            plate = reg.get(key)
+            if plate is None:
                 continue
-            dest = out_dir / f"{label}_{asset.rsplit('/', 1)[-1]}.png"
+            dest = out_dir / f"{label}_{plate.name}.png"
             try:
-                _compose(src, dest, ticker=ticker or "", settings=settings,
-                         script=script, data=data)
+                _compose(plate.path, dest, ticker=ticker or "",
+                         settings=settings, script=script, data=data)
                 made.append(dest.name)
             except Exception as e:  # noqa: BLE001 - one layout, not all of them
-                log.warning("by-product %s failed: %s", asset, e)
+                log.warning("by-product %s failed: %s", key, e)
         setattr(result, label, made)
         result.shortfall[label]["made"] = len(made)
 

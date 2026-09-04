@@ -78,13 +78,14 @@ def test_it_flags_a_beat_whose_asset_is_missing(planned, settings, tmp_path):
     assert any(str(filings[0].payload["value"]) in p for p in problems)
 
 
-def test_an_unresolvable_kit_key_is_reported(settings, tmp_path):
+def test_an_unresolvable_plate_is_reported(settings, tmp_path):
     from pipeline.timeline import Segment
 
-    seg = Segment(start=0.0, end=6.0, kind="term",
-                  payload={"value": "not-a-real-term", "layout": "two-shot"})
+    seg = Segment(start=0.0, end=6.0, kind="plate",
+                  payload={"value": "tables/not-a-real-plate",
+                           "layout": "two-shot"})
     _, problems = build_storyboard([seg], [], tmp_path / "sb.png", settings)
-    assert problems and "NOT IN KIT" in problems[0]
+    assert problems and "NOT IN THE KIT" in problems[0]
 
 
 def test_host_beats_illustrate_with_the_rig(settings, tmp_path):

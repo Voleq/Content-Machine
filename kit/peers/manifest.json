@@ -1,0 +1,594 @@
+{
+ "family": "peers",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "plate draws the ledger and reserves the bar column; every ticker, move and multiple is a slot, and engine/series.js draws the bars from the data",
+ "slotKinds": {
+  "region": "a graphic region for code to draw into, not a text box (bars)"
+ },
+ "assets": {
+  "peers/peer-strip-16x9": {
+   "author": "peerStrip",
+   "seed": 77,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "peer-strip-16x9.svg",
+     "png": "peer-strip-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "peer-strip-16x9.png",
+    "svg": "peer-strip-16x9.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 190,
+     "y": 88,
+     "w": 1540,
+     "h": 30
+    },
+    "head-move": {
+     "align": "right",
+     "role": "period",
+     "x": 991,
+     "y": 185,
+     "w": 394,
+     "h": 30
+    },
+    "head-fwd": {
+     "align": "right",
+     "role": "period",
+     "x": 1405,
+     "y": 185,
+     "w": 325,
+     "h": 30
+    },
+    "bars": {
+     "role": "bars",
+     "region": true,
+     "renderer": "series.rowBars",
+     "rows": 5,
+     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data",
+     "x": 621,
+     "y": 241,
+     "w": 360,
+     "h": 665
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 159,
+     "y": 243,
+     "w": 1601,
+     "h": 129
+    },
+    "ticker-1": {
+     "align": "left",
+     "role": "tickerSubject",
+     "x": 190,
+     "y": 265,
+     "w": 396,
+     "h": 85
+    },
+    "move-1": {
+     "align": "right",
+     "role": "move",
+     "x": 991,
+     "y": 258,
+     "w": 394,
+     "h": 98
+    },
+    "fwd-1": {
+     "align": "right",
+     "role": "fwd",
+     "x": 1405,
+     "y": 265,
+     "w": 325,
+     "h": 85
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 159,
+     "y": 376,
+     "w": 1601,
+     "h": 129
+    },
+    "ticker-2": {
+     "align": "left",
+     "role": "ticker",
+     "x": 190,
+     "y": 398,
+     "w": 396,
+     "h": 85
+    },
+    "move-2": {
+     "align": "right",
+     "role": "move",
+     "x": 991,
+     "y": 391,
+     "w": 394,
+     "h": 98
+    },
+    "fwd-2": {
+     "align": "right",
+     "role": "fwd",
+     "x": 1405,
+     "y": 398,
+     "w": 325,
+     "h": 85
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 159,
+     "y": 509,
+     "w": 1601,
+     "h": 129
+    },
+    "ticker-3": {
+     "align": "left",
+     "role": "ticker",
+     "x": 190,
+     "y": 531,
+     "w": 396,
+     "h": 85
+    },
+    "move-3": {
+     "align": "right",
+     "role": "move",
+     "x": 991,
+     "y": 524,
+     "w": 394,
+     "h": 98
+    },
+    "fwd-3": {
+     "align": "right",
+     "role": "fwd",
+     "x": 1405,
+     "y": 531,
+     "w": 325,
+     "h": 85
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 159,
+     "y": 642,
+     "w": 1601,
+     "h": 129
+    },
+    "ticker-4": {
+     "align": "left",
+     "role": "ticker",
+     "x": 190,
+     "y": 664,
+     "w": 396,
+     "h": 85
+    },
+    "move-4": {
+     "align": "right",
+     "role": "move",
+     "x": 991,
+     "y": 657,
+     "w": 394,
+     "h": 98
+    },
+    "fwd-4": {
+     "align": "right",
+     "role": "fwd",
+     "x": 1405,
+     "y": 664,
+     "w": 325,
+     "h": 85
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 159,
+     "y": 775,
+     "w": 1601,
+     "h": 129
+    },
+    "ticker-5": {
+     "align": "left",
+     "role": "ticker",
+     "x": 190,
+     "y": 797,
+     "w": 396,
+     "h": 85
+    },
+    "move-5": {
+     "align": "right",
+     "role": "move",
+     "x": 991,
+     "y": 790,
+     "w": 394,
+     "h": 98
+    },
+    "fwd-5": {
+     "align": "right",
+     "role": "fwd",
+     "x": 1405,
+     "y": 797,
+     "w": 325,
+     "h": 85
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 190,
+     "y": 966,
+     "w": 1540,
+     "h": 30
+    }
+   },
+   "aspect": "16x9",
+   "family": "peers",
+   "type": "peer-strip",
+   "rows": 5,
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 600,
+     "colour": "structure",
+     "opacity": 0.68,
+     "tracking": "0.06em",
+     "maxChars": 12
+    },
+    "tickerSubject": {
+     "font": "Courier Prime",
+     "size": 56,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 48,
+     "weight": 700,
+     "colour": "otherParty",
+     "maxChars": 7
+    },
+    "move": {
+     "font": "Courier Prime",
+     "size": 62,
+     "weight": 700,
+     "colour": "down",
+     "maxChars": 7
+    },
+    "moveUp": {
+     "font": "Courier Prime",
+     "size": 62,
+     "weight": 700,
+     "colour": "up",
+     "maxChars": 7
+    },
+    "fwd": {
+     "font": "Courier Prime",
+     "size": 48,
+     "weight": 700,
+     "colour": "otherParty",
+     "maxChars": 7
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",
+   "subjectNote": "row 1 is the subject — its ticker role is tickerSubject (structure). Rows 2+ are otherParty."
+  },
+  "peers/peer-strip-9x16": {
+   "author": "peerStrip",
+   "seed": 77,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "peer-strip-9x16.svg",
+     "png": "peer-strip-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "peer-strip-9x16.png",
+    "svg": "peer-strip-9x16.svg"
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 84,
+     "y": 186,
+     "w": 912,
+     "h": 30
+    },
+    "head-move": {
+     "align": "right",
+     "role": "period",
+     "x": 558,
+     "y": 698,
+     "w": 209,
+     "h": 28
+    },
+    "head-fwd": {
+     "align": "right",
+     "role": "period",
+     "x": 803,
+     "y": 698,
+     "w": 193,
+     "h": 28
+    },
+    "bars": {
+     "role": "bars",
+     "region": true,
+     "renderer": "series.rowBars",
+     "rows": 4,
+     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data",
+     "x": 357,
+     "y": 771,
+     "w": 183,
+     "h": 524
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 773,
+     "w": 1020,
+     "h": 127
+    },
+    "ticker-1": {
+     "align": "left",
+     "role": "tickerSubject",
+     "x": 84,
+     "y": 795,
+     "w": 210,
+     "h": 84
+    },
+    "move-1": {
+     "align": "right",
+     "role": "move",
+     "x": 558,
+     "y": 788,
+     "w": 209,
+     "h": 97
+    },
+    "fwd-1": {
+     "align": "right",
+     "role": "fwd",
+     "x": 803,
+     "y": 795,
+     "w": 193,
+     "h": 84
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 904,
+     "w": 1020,
+     "h": 127
+    },
+    "ticker-2": {
+     "align": "left",
+     "role": "ticker",
+     "x": 84,
+     "y": 926,
+     "w": 210,
+     "h": 84
+    },
+    "move-2": {
+     "align": "right",
+     "role": "move",
+     "x": 558,
+     "y": 919,
+     "w": 209,
+     "h": 97
+    },
+    "fwd-2": {
+     "align": "right",
+     "role": "fwd",
+     "x": 803,
+     "y": 926,
+     "w": 193,
+     "h": 84
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 1035,
+     "w": 1020,
+     "h": 127
+    },
+    "ticker-3": {
+     "align": "left",
+     "role": "ticker",
+     "x": 84,
+     "y": 1057,
+     "w": 210,
+     "h": 84
+    },
+    "move-3": {
+     "align": "right",
+     "role": "move",
+     "x": 558,
+     "y": 1050,
+     "w": 209,
+     "h": 97
+    },
+    "fwd-3": {
+     "align": "right",
+     "role": "fwd",
+     "x": 803,
+     "y": 1057,
+     "w": 193,
+     "h": 84
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 1166,
+     "w": 1020,
+     "h": 127
+    },
+    "ticker-4": {
+     "align": "left",
+     "role": "ticker",
+     "x": 84,
+     "y": 1188,
+     "w": 210,
+     "h": 84
+    },
+    "move-4": {
+     "align": "right",
+     "role": "move",
+     "x": 558,
+     "y": 1181,
+     "w": 209,
+     "h": 97
+    },
+    "fwd-4": {
+     "align": "right",
+     "role": "fwd",
+     "x": 803,
+     "y": 1188,
+     "w": 193,
+     "h": 84
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 84,
+     "y": 1740,
+     "w": 912,
+     "h": 30
+    }
+   },
+   "aspect": "9x16",
+   "family": "peers",
+   "type": "peer-strip",
+   "rows": 4,
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 24,
+     "weight": 600,
+     "colour": "structure",
+     "opacity": 0.68,
+     "tracking": "0.06em",
+     "maxChars": 12
+    },
+    "tickerSubject": {
+     "font": "Courier Prime",
+     "size": 52,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 7
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 700,
+     "colour": "otherParty",
+     "maxChars": 7
+    },
+    "move": {
+     "font": "Courier Prime",
+     "size": 58,
+     "weight": 700,
+     "colour": "down",
+     "maxChars": 7
+    },
+    "moveUp": {
+     "font": "Courier Prime",
+     "size": 58,
+     "weight": 700,
+     "colour": "up",
+     "maxChars": 7
+    },
+    "fwd": {
+     "font": "Courier Prime",
+     "size": 44,
+     "weight": 700,
+     "colour": "otherParty",
+     "maxChars": 7
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",
+   "subjectNote": "row 1 is the subject — its ticker role is tickerSubject (structure). Rows 2+ are otherParty."
+  }
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

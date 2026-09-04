@@ -1,0 +1,53 @@
+structure — the shape of the argument
+====================================
+
+USE WHEN
+  The beat is about how things relate, not what they measure. These are the
+  only plates that carry reasoning rather than quantities.
+
+MEMBERS
+  both-true         two statements that appear to conflict and are both true.
+                    The spine of the whole format. mark-1 / mark-2 take
+                    up / down — one of each, or the frame has no tension.
+  unit-ladder       a top-line quantity walked down to an outcome, five
+                    steps. Use for a bridge: revenue to free cash flow,
+                    guidance to actual.
+  row-spotlight     one row of a table, pulled out, six periods. Use
+                    immediately after the sheet it came from, same
+                    head labels.
+  flow              input, three boxes, output. 16:9 only — a left-to-right
+                    process has no portrait form. If the shot is 9:16, use
+                    timeline or unit-ladder instead.
+  timeline          six dated events. For a sequence of decisions or
+                    disclosures, not for a financial series.
+  closing           three lines and a date. The last plate of a section.
+
+SLOTS
+  kicker / caption  frame and basis, on all members
+  both-true         statement-1 / detail-1 / mark-1, statement-2 / detail-2 /
+                    mark-2
+  unit-ladder       top-label / top-value, then step-N-label / step-N-value
+                    with band-N behind each, then out-label / out-value
+  row-spotlight     label, head-1..6, cell-1..6
+  flow              input, box-1..3, arrow-1..4, output
+  timeline          date-N / label-N, six
+  closing           line-1..3, date-label, date
+
+SEQUENCE
+  both-true    kicker, statement 1 and its detail and mark, beat, then
+               statement 2 complete. The pause between them is the frame.
+  unit-ladder  top, then each step top to bottom with its band, then out.
+               One step per beat.
+  row-spotlight  label and heads, then cells left to right.
+  flow         input, then box-arrow-box-arrow along the chain, output last.
+  timeline     oldest first, always.
+  closing      lines 1-3 in order, then the date. Hold on the date.
+
+TRAPS
+  * both-true with two marks the same direction is not both-true; it is one
+    claim with two pieces of evidence, which is a figure or a table.
+  * unit-ladder steps are subtractions from the line above. If a step adds,
+    the ladder is the wrong plate — use flow.
+  * row-spotlight must reuse the sheet's head labels verbatim. Different
+    period labels on the same series inside one section destroys the
+    reader's trust in both frames.

@@ -1,235 +1,126 @@
 {
-  "format": "earnings",
-  "aspect": "9:16",
+  "aspect": "9x16",
   "frame": {
     "w": 1080,
     "h": 1920
   },
+  "format": "earnings",
   "notes": [
-    "Ten shots. Same engine as the SHORT, same audio clock, same register",
-    "rule — this file is the whole of the difference between the two formats.",
+    "EARNINGS, on the v2 plate kit. The print against what was expected, what",
+    "moved, and what it means \u2014 in the vertical set only.",
     "",
-    "The verdict is a stamp with one text slot, and it is the only shot in any",
-    "format so far that is a card alone on the ground. The two 'line that",
-    "moved' shots use the sheet the way the SHORT's numbers shots do: every",
-    "row visible, one lit, the rest ghosted back.",
+    "There is no stamp. A verdict card is a CALL, and the register is",
+    "anti-Cramer by construction: he describes and the viewer decides. What",
+    "was a stamp is the closing plate's own line now.",
     "",
-    "TRANSITIONS DO NOT COVER THE FRAME. ink-wipe sweeps to 100% black,",
-    "and two of those in a paper-white video reads as a different show",
-    "interrupting — it also makes the transition the loudest thing in a",
-    "format built on restraint. underline-swipe is a stroke, not a wall.",
-    "Full coverage is reserved for a chapter boundary in the LONG, where",
-    "a hard reset is the point."
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one."
   ],
   "shots": [
     {
       "id": "open",
-      "plate": "room-wide",
-      "host": {
-        "pose": "talking-at-screen",
-        "slot": "figure"
-      },
+      "plate": "shorts/hook-card-t2",
+      "max_hold_s": 7,
       "anchor": "hook",
       "captions": false,
-      "max_hold_s": 6,
-      "text": [
-        {
-          "name": "hook",
-          "src": "script.hook_text",
-          "size_fh": 0.085,
-          "align": "top",
-          "max_lines": 3,
-          "draw_on_s": 0.6
-        }
-      ]
+      "bind": {
+        "hook": "script.hook_text",
+        "sub": "?script.move_summary",
+        "ticker": "script.ticker"
+      },
+      "notes": "The hook card, second treatment \u2014 earnings is not the daily short and should not open on the same picture."
     },
     {
       "id": "the-print",
-      "plate": "desk-top-down",
-      "anchor": "headline",
-      "max_hold_s": 6,
+      "plate": "figures/big-number-l1-9x16",
+      "max_hold_s": 7,
+      "anchor": "reported",
       "bind": {
-        "pages": "plate.page-corporate"
+        "kicker": "?numbers.headline_kicker",
+        "value": "compare.reported",
+        "label": "?numbers.headline_label",
+        "caption": "?script.move_summary"
       },
-      "text": [
-        {
-          "name": "headline",
-          "src": "script.headlines.0.text",
-          "size_fh": 0.05,
-          "align": "0.30",
-          "max_lines": 2
-        },
-        {
-          "name": "meaning",
-          "src": "script.headlines.0.meaning",
-          "size_fh": 0.04,
-          "align": "0.60",
-          "max_lines": 3
-        }
-      ],
-      "notes": "The page is a PROP, not a page you read: page-corporate's headline slot is 825x171 on a 1080-wide canvas, which holds nineteen characters at the readability floor, and a headline is thirty to forty. So the page sits on the desk and the words that have to be READ go on paper of their own over it. Host absent — the page is the subject."
+      "notes": "The number that printed, at the size it deserves."
     },
     {
       "id": "vs-expected",
-      "plate": "compare-plate",
+      "plate": "figures/compare-stacked-9x16",
+      "max_hold_s": 7,
       "anchor": "expected",
-      "max_hold_s": 5,
       "bind": {
-        "left": "compare.reported",
-        "right": "compare.expected",
-        "gap": "compare.versus"
+        "kicker": "?compare.kicker",
+        "label-1": "?numbers.headline_label",
+        "value-1": "compare.reported",
+        "label-2": "?compare.expected_label",
+        "value-2": "?compare.expected",
+        "caption": "?script.cheap_or_trap"
       },
-      "text": [
-        {
-          "name": "gap-read",
-          "src": "script.move_summary",
-          "size_fh": 0.04,
-          "align": "0.78",
-          "max_lines": 3
-        }
-      ],
-      "notes": "Printed against expected. The gap slot carries the word between them.",
-      "stagger_s": 0.8
+      "notes": "Print against consensus, stacked. The delta slot holds eight characters and takes the gap."
     },
     {
-      "id": "the-verdict",
-      "plate": "stamp",
-      "anchor": "verdict",
-      "captions": false,
-      "max_hold_s": 4,
-      "bind": {
-        "stamp-text": "script.verdict"
-      },
-      "notes": "A card alone on the ground. One word or one clause, stamped."
-    },
-    {
-      "id": "line-moved-1",
-      "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
-      },
+      "id": "the-sheet",
+      "plate": "tables/numbers-sheet-4r-9x16",
+      "max_hold_s": 7,
       "anchor": "numbers",
-      "max_hold_s": 5,
-      "lit": "row-1",
+      "lit": "all",
       "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
+        "unit": "?numbers.unit",
+        "head": "numbers.years",
+        "label-1": "numbers.label.0",
+        "row-1": "numbers.figures.0",
+        "label-2": "?numbers.label.1",
+        "row-2": "?numbers.figures.1",
+        "label-3": "?numbers.label.2",
+        "row-3": "?numbers.figures.2",
+        "label-4": "?numbers.label.3",
+        "row-4": "?numbers.figures.3"
       },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-1"
-        }
-      ]
-    },
-    {
-      "id": "line-moved-2",
-      "plate": "sheet-tall",
-      "host": {
-        "pose": "pointing-at-sheet",
-        "slot": "figure"
-      },
-      "max_hold_s": 5,
-      "lit": "row-2",
-      "bind": {
-        "row-1": "numbers.row.0",
-        "row-2": "?numbers.row.1",
-        "row-3": "?numbers.row.2",
-        "row-4": "?numbers.row.3",
-        "row-5": "?numbers.row.4",
-        "row-6": "?numbers.row.5"
-      },
-      "marks": [
-        {
-          "kind": "scribble",
-          "target": "row-2"
-        }
-      ]
+      "notes": "Every row up at once \u2014 an earnings cut has no time for a walk down them."
     },
     {
       "id": "guidance",
-      "plate": "card-guidance",
+      "plate": "cards/definition-9x16",
+      "max_hold_s": 7,
       "anchor": "guidance",
-      "max_hold_s": 5,
-      "text": [
-        {
-          "name": "guidance-line",
-          "src": "script.guidance",
-          "size_fh": 0.055,
-          "align": "0.30",
-          "max_lines": 2
-        },
-        {
-          "name": "guidance-read",
-          "src": "script.numbers_comment",
-          "size_fh": 0.038,
-          "align": "0.76",
-          "max_lines": 6
-        }
-      ],
-      "notes": "What they said about next quarter. card-guidance's own label slot renders 35px type at frame scale — a marker slot, not a text slot — so the phrase is set beside the card rather than crammed into it."
+      "bind": {
+        "kicker": "?compare.kicker",
+        "term": "?numbers.headline_label",
+        "body": "script.guidance"
+      },
+      "notes": "What they said about next year, in the card drawn for a term and its meaning."
     },
     {
-      "id": "the-reaction",
-      "plate": "screen-full",
-      "enter": "underline-swipe",
-      "anchor": "move",
-      "max_hold_s": 6,
-      "bind": {
-        "screen": "chart.price"
+      "id": "the-turn",
+      "plate": "room/talk",
+      "max_hold_s": 7,
+      "anchor": "turn",
+      "host": {
+        "pose": "host/close-up",
+        "slot": "host-anchor"
       },
-      "marks": [
-        {
-          "kind": "ring",
-          "target": "chart.extreme_candle",
-          "name": "extreme-ring"
-        }
-      ],
-      "notes": "What the tape did with it. Chart full bleed."
+      "notes": "The line the print actually means, told to camera in close-up."
     },
     {
       "id": "so-what",
-      "plate": "room-wide",
-      "anchor": "conclusion",
-      "captions": true,
-      "max_hold_s": 5,
-      "text": [
-        {
-          "name": "so-what",
-          "src": "script.conclusion",
-          "size_fh": 0.06,
-          "align": "top",
-          "max_lines": 4,
-          "draw_on_s": 0.5
-        }
-      ],
-      "notes": "Said to camera, in the room. Not a caption on paper.",
-      "host": {
-        "pose": "talking-to-camera",
-        "slot": "figure"
+      "plate": "structure/both-true-9x16",
+      "max_hold_s": 7,
+      "anchor": "cheap_or_trap",
+      "bind": {
+        "kicker": "?compare.kicker",
+        "statement-1": "compare.heavy",
+        "statement-2": "compare.light",
+        "caption": "?script.cheap_or_trap"
       }
     },
     {
       "id": "close",
-      "plate": "room-wide",
-      "host": {
-        "pose": "sitting-with-mug",
-        "slot": "figure"
-      },
-      "max_hold_s": 4,
-      "text": [
-        {
-          "name": "handle",
-          "src": "channel.handle",
-          "size_fh": 0.045,
-          "align": "0.82"
-        }
-      ]
+      "plate": "structure/closing-9x16",
+      "max_hold_s": 7,
+      "bind": {
+        "kicker": "?script.ticker",
+        "line-1": "script.conclusion",
+        "date-label": "?channel.handle"
+      }
     }
   ]
 }

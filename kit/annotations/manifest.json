@@ -1,0 +1,811 @@
+{
+ "family": "annotations",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "alpha cut-outs, no ground: the mark is composited onto whatever it wraps",
+ "slotKinds": {
+  "region": "what the mark wraps or points at (area) — solved onto the target, never written into",
+  "caption": "the mark's own words (note), set in the caption role declared on every mark in this family"
+ },
+ "assets": {
+  "annotations/scrawl-oval-wide": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1200,
+    230
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2400,
+    460
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "scrawl-oval-wide_f01.svg",
+     "png": "scrawl-oval-wide_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "scrawl-oval-wide_f02.svg",
+     "png": "scrawl-oval-wide_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "scrawl-oval-wide.png",
+    "svg": "scrawl-oval-wide.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type",
+     "x": 263,
+     "y": 73,
+     "w": 674,
+     "h": 84
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 61,
+     "y": 241,
+     "w": 1077,
+     "h": 72
+    }
+   },
+   "family": "annotations",
+   "type": "scrawl-oval-wide",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 59,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 11.4
+  },
+  "annotations/scrawl-oval-tight": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    340,
+    150
+   ],
+   "exportScale": 2,
+   "delivered": [
+    680,
+    300
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "scrawl-oval-tight_f01.svg",
+     "png": "scrawl-oval-tight_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "scrawl-oval-tight_f02.svg",
+     "png": "scrawl-oval-tight_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "scrawl-oval-tight.png",
+    "svg": "scrawl-oval-tight.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type",
+     "x": 76,
+     "y": 44,
+     "w": 188,
+     "h": 63
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 12,
+     "y": 162,
+     "w": 316,
+     "h": 70
+    }
+   },
+   "family": "annotations",
+   "type": "scrawl-oval-tight",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 29,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 17,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 11
+  },
+  "annotations/underline-swipe": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1000,
+    140
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2000,
+    280
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "underline-swipe_f01.svg",
+     "png": "underline-swipe_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "underline-swipe_f02.svg",
+     "png": "underline-swipe_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "underline-swipe.png",
+    "svg": "underline-swipe.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the line of type sitting above the swipe — the floor is the topmost ink, so descenders clear the stroke",
+     "x": 0,
+     "y": 0,
+     "w": 1000,
+     "h": 44
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 12,
+     "y": 128,
+     "w": 986,
+     "h": 55
+    }
+   },
+   "family": "annotations",
+   "type": "underline-swipe",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 23,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 64,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "x-uniform",
+   "anchor": "bottom",
+   "inkWeight": 9
+  },
+  "annotations/underline-tight": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    300,
+    90
+   ],
+   "exportScale": 2,
+   "delivered": [
+    600,
+    180
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "underline-tight_f01.svg",
+     "png": "underline-tight_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "underline-tight_f02.svg",
+     "png": "underline-tight_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "underline-tight.png",
+    "svg": "underline-tight.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the figure sitting above the swipe — for a cell or a single word",
+     "x": 0,
+     "y": 0,
+     "w": 300,
+     "h": 23
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 0,
+     "y": 93,
+     "w": 300,
+     "h": 82
+    }
+   },
+   "family": "annotations",
+   "type": "underline-tight",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 13,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "x-uniform",
+   "anchor": "bottom",
+   "inkWeight": 13
+  },
+  "annotations/strike-out": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    320,
+    90
+   ],
+   "exportScale": 2,
+   "delivered": [
+    640,
+    180
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "strike-out_f01.svg",
+     "png": "strike-out_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "strike-out_f02.svg",
+     "png": "strike-out_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "strike-out.png",
+    "svg": "strike-out.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "what is being struck out — the ink crosses it by definition, so this is the whole canvas",
+     "x": 0,
+     "y": 0,
+     "w": 320,
+     "h": 90
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 0,
+     "y": 90,
+     "w": 320,
+     "h": 82
+    }
+   },
+   "family": "annotations",
+   "type": "strike-out",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 13,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "x-uniform",
+   "anchor": "middle",
+   "inkWeight": 13
+  },
+  "annotations/box-scrawl": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1000,
+    320
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2000,
+    640
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "box-scrawl_f01.svg",
+     "png": "box-scrawl_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "box-scrawl_f02.svg",
+     "png": "box-scrawl_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "box-scrawl.png",
+    "svg": "box-scrawl.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the cell or block being boxed, inside the drawn sides",
+     "x": 83,
+     "y": 47,
+     "w": 833,
+     "h": 225
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 0,
+     "y": 337,
+     "w": 995,
+     "h": 55
+    }
+   },
+   "family": "annotations",
+   "type": "box-scrawl",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 23,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 64,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 9
+  },
+  "annotations/bracket-rows": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    220,
+    700
+   ],
+   "exportScale": 2,
+   "delivered": [
+    440,
+    1400
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "bracket-rows_f01.svg",
+     "png": "bracket-rows_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "bracket-rows_f02.svg",
+     "png": "bracket-rows_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "bracket-rows.png",
+    "svg": "bracket-rows.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the rows being grouped — they run off to the left and end where the bracket's arms begin",
+     "x": -880,
+     "y": 0,
+     "w": 918,
+     "h": 700
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "what the group is — sits outside the plate, to the right",
+     "x": 224,
+     "y": 252,
+     "w": 418,
+     "h": 196
+    }
+   },
+   "family": "annotations",
+   "type": "bracket-rows",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 29,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 11,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 11
+  },
+  "annotations/arrow-elbow": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    760,
+    520
+   ],
+   "exportScale": 2,
+   "delivered": [
+    1520,
+    1040
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "arrow-elbow_f01.svg",
+     "png": "arrow-elbow_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "arrow-elbow_f02.svg",
+     "png": "arrow-elbow_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "arrow-elbow.png",
+    "svg": "arrow-elbow.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the scrawled words, at the arrow's tail",
+     "x": 15,
+     "y": -94,
+     "w": 380,
+     "h": 94
+    },
+    "area": {
+     "role": "points-at",
+     "region": true,
+     "note": "what the arrow lands on — a short gap past the tip, so the head arrives at it and never crosses it",
+     "x": 680,
+     "y": 473,
+     "w": 380,
+     "h": 125
+    }
+   },
+   "family": "annotations",
+   "type": "arrow-elbow",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 40,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 10.6
+  },
+  "annotations/caret-note": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    620,
+    300
+   ],
+   "exportScale": 2,
+   "delivered": [
+    1240,
+    600
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "caret-note_f01.svg",
+     "png": "caret-note_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "caret-note_f02.svg",
+     "png": "caret-note_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "caret-note.png",
+    "svg": "caret-note.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "note": {
+     "align": "center",
+     "role": "caption",
+     "note": "the words above the caret",
+     "x": 37,
+     "y": 18,
+     "w": 546,
+     "h": 120
+    },
+    "area": {
+     "role": "points-at",
+     "region": true,
+     "note": "the gap in the type the caret points up into — it starts below the apex, so the caret never sits on the glyphs",
+     "x": 236,
+     "y": 253,
+     "w": 149,
+     "h": 60
+    }
+   },
+   "family": "annotations",
+   "type": "caret-note",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 35,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "both",
+   "anchor": "middle",
+   "inkWeight": 9.9
+  },
+  "annotations/tick-marks": {
+   "author": "annotation",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    720,
+    220
+   ],
+   "exportScale": 2,
+   "delivered": [
+    1440,
+    440
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "tick-marks_f01.svg",
+     "png": "tick-marks_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "tick-marks_f02.svg",
+     "png": "tick-marks_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "tick-marks.png",
+    "svg": "tick-marks.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the three things being ticked, evenly spaced — the ticks land on them, so this is the whole canvas",
+     "x": 0,
+     "y": 0,
+     "w": 720,
+     "h": 220
+    },
+    "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
+     "x": 91,
+     "y": 181,
+     "w": 566,
+     "h": 62
+    }
+   },
+   "family": "annotations",
+   "type": "tick-marks",
+   "cutout": true,
+   "alpha": true,
+   "over": "any plate",
+   "stretch": "both",
+   "colourRule": "drawn in attention — an annotated frame has spent its one attention",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "attention",
+     "tracking": ".01em",
+     "maxLines": 2,
+     "maxCharsPerLine": 41,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+    }
+   },
+   "solve": "x-uniform",
+   "anchor": "middle",
+   "inkWeight": 10.1
+  }
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

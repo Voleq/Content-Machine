@@ -50,11 +50,15 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | A `/proof` **cannot** spend — it raises at the boundary rather than reaching ElevenLabs, so $0 survives a mistyped command | `TTSEngine.guard_free_only` (`free_only=True`), asserted again immediately before the paid branch |
 | Draft audio can never become a final render (its word timings are interpolated) | `render_long` / `render_short` refuse `tts.draft` |
 | Mock and draft audio is never loudness-normalised (normalising a placeholder tone is what made a render come out silent) | `CompositeSpec.normalise_audio`; the limiter stays on either way |
-| A SHORT without its host, backdrop or signature cards fails the render rather than degrading | `Kit.require`; `render_short` raises `KitError` |
-| A PNG in an asset folder with no registry entry fails the ingest | `scripts/ingest_kit.py`, `Kit.verify`, `/kit doctor` |
+| A plate name that resolves to nothing fails the build rather than drawing an empty area | `Registry.require`; `compose.build_layers` raises `TemplateError` |
+| A value with no slot, a row whose length disagrees with its header, or a plate a chapter TYPE may not use is rejected before a frame is drawn | `pipeline/plate_tags.py` `check_bound`, `Registry.plates_for_chapter` |
+| A room plate that declares neither a host anchor nor `hostAnchor: false` fails `Registry.verify` | `pipeline/plates.py`; a refusal is data, an omission is a bug |
+| A PNG on disk the registry does not name, or a frame it names and cannot find, fails the ingest | `scripts/ingest_kit.py --check`, `Registry.verify`, `/kit doctor` |
+| Every plate is reachable by a template, a chapter type or the renderer — artwork with no route to the screen is reported | `pipeline/gates.py` `reachable_plates`, `/kit doctor` |
 | Visuals: owned library → cache → fetch → filler; a missing item **never** aborts a render | `pipeline/broll.py` content engine, `pipeline/memes.py` |
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
-| `[ASSET]` tags **block** the render until the designed file exists | `validate_long_script` + `assets/custom/` |
+| `[SCREENGRAB]` tags **block** the render until the operator's capture exists | `validate_long_script` + `assets/custom/` |
+| Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
@@ -64,97 +68,155 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 
 ---
 
+## What the bot checks before you approve
+
+Six gates run unprompted between the script landing and any spend. Silence
+means proceed; every finding carries a line reference. They are notes and
+blocks, never rewrites — the writer decides.
+
+| Gate | What it reads | Blocks? |
+|---|---|---|
+| **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData` | warns |
+| **on-screen fact-check** | every figure in a `[PLATE]`'s cells, against the same export, with the plate's own `unit=` applied — the numbers a viewer can pause on | warns |
+| **voice linter** | what `assets/voice_bible.md` forbids: hype adjectives, exclamation marks, anything that reads as a call, a construction used twice in one script, and ~20 seconds of explanation with no turn in it. A data vendor named on screen is the one **block** — it would be spoken and captioned | mostly warns |
+| **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
+| **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
+| **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
+| **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
+| **skeptic** | an LLM read of the finished script as a hostile investor. Notes only, never offline | never |
+
+---
+
 ## Repository map
+
+Every path below is checked by `tests/test_docs.py`. A map that names a file
+which is not there sends a reader hunting for a module that was deleted a
+fortnight ago, which is exactly what this one did.
 
 ```
 config.py                typed settings (pydantic-settings) — every cap/knob,
                          voice placeholder + audition shortlist
 main.py                  bot entrypoint
 pipeline/
-  models.py              data contracts: ShortScript ("Noise or signal?"
-                         strict JSON), LongScript + Dennis tag grammar,
-                         CompanyData (latest + 5y history), CostReport,
-                         JobRecord, Candidate — no verdict enum anywhere
-  parser_short.py        tolerant JSON extraction + the SHORT's full inline
-                         tag grammar (evidence, marks, delivery direction)
-  kit.py                 the design-kit registry — 387 assets under family/asset
-                         keys with frames, playback, canvas, exportScale and
-                         slot geometry; aliases collapse the duplicate names,
-                         require() raises rather than degrading
-  kit_frames.py          the generic frame player (static/boil/one-shot/loop)
-                         and the slot filler (exportScale, slotFrameDelta)
-  host.py                Dennis on screen: the kit's -talk pairs, flapped to
-                         the voice-over, in banks per role; -blink / -idle /
-                         -idle-b strips resolve by the same naming convention.
-                         Every strip's f01 IS the shot's own still, byte for
-                         byte, so a blink starts and lands without a pop —
-                         Kit.micro_motion_drift() fails the ingest otherwise
-  parser_long.py         offset-aware tag tokenizer + ASSET-prompt trailer
-  tagging.py             the shared tag tokenizer (both formats) + chart style
+  models.py              data contracts: ShortScript (strict JSON), LongScript
+                         + the Dennis tag grammar, CompanyData (six periods),
+                         CostReport, JobRecord, Candidate
+  parser_short.py        tolerant JSON extraction + the SHORT's inline tags
+  parser_long.py         offset-aware tag tokenizer + the chapter trailer
+  tagging.py             the shared tag tokenizer, for both formats
+
+  plates.py              THE PLATE REGISTRY — the read side of the design kit.
+                         140 plates keyed family/name, each with its canvas,
+                         exportScale, frames, playback, slot geometry and type
+                         roles; the palette's eight colour roles; the host and
+                         room ROLES; the sixteen chapter types and what each
+                         may use. `require()` raises rather than degrading
+  plate_tags.py          `[PLATE: …]` — the director names the plate and writes
+                         what goes on it. Rejects an unknown plate, an
+                         undeclared slot, a row whose length disagrees with its
+                         header, and a plate the chapter type may not use
+  plate_frames.py        playing plates and filling their slots: type is set in
+                         the face, size, weight and colour role the KIT
+                         declares, and `maxChars` is a hard limit
+  shots.py               shot templates — a FORMAT is an ordered list of SHOTS
+                         and it is data. Spans, anchors, `max_hold_s` ceilings
+  compose.py             the template and the script, turned into an ordered
+                         list of layers; the two-shot split, the room-angle
+                         rotation, the invariants and the kit's own budgets
+  host.py                Dennis on screen — a cut-out solved onto a room's
+                         host-anchor, or a FRAMING (close-up, medium) placed on
+                         its eye line; the glance, the wardrobe, the flap
+  marks.py               hand-drawn line primitives and type fitting
+  media_frames.py        foreign media gets a frame (`frames/` family)
+  peers.py               the peer percentiles, on screen
+  chart.py               the data path for a declared chart region — and
+                         nothing else; the plate draws the furniture
+  rasters.py             what the kit does not draw: captions, alpha clips,
+                         figure animation, and solving a mark onto its target
+
   tts.py                 ElevenLabs with-timestamps client + cache + budgets
-  timeline.py            THE MASTER CLOCK: beats/anchors -> cue times,
-                         fast-cut segment planner, doodle/scribble overlays
-  prices.py              Yahoo price history behind an interface (cached,
-                         synthetic floor) — feeds the branded chart
-  chart.py               branded price chart, crude "marker" napkin chart,
-                         multi-year metric charts
-  rasters.py             the SHORT kit: headline cards, numbers sheet,
-                         scribbles, zoom-punch, stingers, karaoke captions,
-                         doodle boil
+  local_tts.py           the free draft voice (Piper) + sentence-anchored timings
+  timeline.py            THE MASTER CLOCK: beats/anchors -> cue times
+  segments.py            per-segment encoding: content-hash cache, parallel,
+                         resumable
   render_common.py       ffmpeg wrappers, encode profiles, compositing engine
-  render_short.py        9:16 "Noise or signal?" — hosted bookends, the full
-                         tag grammar, motion on arrival, light theme throughout
-  render_long.py         16:9 fast-cut concat engine (draft + final)
-  broll.py               the content engine: [CLIP] Pexels palette,
-                         [IMG]/[PRODUCT] Wikimedia + company site,
-                         [MEME] owned library + fallbacks, [CHART] auto,
-                         [SCREENGRAB]/[ASSET] custom files — cached, attributed
-  memes.py               owned meme library (meme_index.json) + providers
-  doodles.py             owned doodle library (doodles_index.json) + boil
+  render_short.py        the vertical formats, from a shot template and the
+                         audio clock — SHORT, EARNINGS, MACRO
+  render_long_shots.py   the LONG from chapter templates, through that same
+                         engine — a resolver and an entry point, no compositor
+  render_long.py         the tag-driven LONG: fast-cut concat engine, the
+                         two-shot, the scribble solver (rewritten in Stage 3)
+  storyboard.py          storyboard contact sheet — see the cut before paying
+  reach.py               how much of the plate library a script actually reaches
+
+  gates.py               the automated gates: fact-check (spoken AND on-screen
+                         figures, re-read against the export), the voice linter,
+                         the confession ledger, data freshness, placeholder
+                         audio, and `/kit doctor` — including which plates no
+                         template, chapter type or renderer can reach
+  form.py                what the writer is asked for, DERIVED from the shot
+                         templates and the kit's own character budgets
+  llm.py                 LLM routing — local first, hosted as the fallback
+
+  prices.py              Yahoo price history behind an interface (cached)
   company_data.py        two-sheet Excel export reader + filing screenshots
   excel_refresh.py       drives Excel over COM to refresh the data itself
-  local_tts.py           the free draft voice (Piper) + sentence-anchored timings
-  standing.py            thesis book, ranked idea queue, overnight batch
-  alerts.py              intraday watch: moves, volume, earnings, filings —
-                         de-duplicated, quiet-hours aware, one-tap /short
-  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS,
-                         optional Whisper — cached, rate-limited, degrading
-  youtube.py             upload (private/scheduled, never public) + retention
-                         mapped onto chapters
-  byproducts.py          golden-frame regression + the kit's thumbnails,
-                         social cards and end screens
-  status_page.py         read-only localhost view (loopback, no auth)
-  script_edit.py         in-chat revision: line/range edits, find-replace, undo
-  cost.py                spend ledger, gates, report builders
+  filings.py             10-K auto-screenshot pipeline
+  article_lookup.py      the real article behind a headline the script wrote
+  broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
+                         [SCREENGRAB] — cached, attributed
+  memes.py               owned meme library (meme_index.json) + providers
+  sources.py             free feeds: 8-K + EX-99.1, Form 4, 13F, FRED, IR RSS
+  audio_assets.py        where the sound came from, and whether it is real
+  screener.py            Yahoo + StockTwits lanes + digest + move context
+  alerts.py              intraday watch: moves, volume, earnings, filings
+  standing.py            thesis book, confession ledger, ranked idea queue
+
   jobs.py                persisted async job queue (one render at a time)
+  cost.py                spend ledger, gates, report builders
+  workspace.py           per-ticker/date dirs, approvals, chat context
+  script_edit.py         in-chat revision: line/range edits, find-replace, undo
+  publish.py             subtitles and the upload metadata package
+  youtube.py             upload (private/scheduled, never public) + retention
   delivery.py            gdrive (default) / s3 / telegram / local
   repurpose.py           best ~58s of a LONG -> 9:16 SHORT (free)
-  thumbnail.py           auto YouTube thumbnail (ticker + shock metric)
-  screener.py            Yahoo + StockTwits lanes + digest + move context
+  thumbnail.py           the cover — a frame from the video
+  byproducts.py          golden-frame regression + thumbnails and end screens
+  status_page.py         read-only localhost view (loopback, no auth)
   cleanup.py             RETENTION_DAYS disk hygiene (keeps caches)
-  workspace.py           per-ticker/date dirs, approvals, chat context
 bot/
   handlers.py            BotCore (all logic, Telegram-free) + PTB glue
-  prompts.py             master-prompt placeholder filling + the kit catalog
-                         generated from the manifest (never a hand-kept list)
+  prompts.py             master-prompt filling + the plate catalogue, generated
+                         from the registry (never a hand-kept list)
   keyboards.py           Approve / Swap clip / Cancel, candidate buttons
-assets/                  fonts, backgrounds, overlays, sfx, music,
-                         hook_bank.json, meme_library/ (16 owned memes +
-                         index), doodle_library — doodles/ (14 crude marker
-                         overlays + index), broll_library/ (drop owned clips),
-                         custom/ (Claude-Design [ASSET] + [SCREENGRAB] files)
-templates/               master prompts + dennis_data_template.xlsx
+kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
+                         generator), per-family manifest.json, roles.json,
+                         fonts/, INGEST.md. The PNGs under assets/plates/ are
+                         built from this and are not edited by hand
+assets/
+  plates/                the materialised kit: 140 plates in fourteen families
+                         plus plates-registry.json, written by the ingest
+  voice_bible.md         the voice, and what the linter checks against
+  fonts, brand, channel, backgrounds, overlays, sfx, music, broll_library,
+  meme_library, custom/ ([SCREENGRAB] drops), hook_bank.json
+templates/
+  shots/                 one file per FORMAT: short, earnings, macro, long
+  chapters/              one file per chapter TYPE — all sixteen
+  master_prompt_*.md     the writing prompts
+  dennis_data_template.xlsx
 fixtures/                mock scripts / Pexels / Wikimedia / TTS / prices /
                          screener JSON / company data
-samples/                 sample SHORT + LONG MP4s rendered from fixtures
+samples/                 sample MP4s + their manifests, rendered from fixtures
 deploy/                  systemd units + cleanup timer + bootstrap.sh
-scripts/                 gen_assets.py, gen_fixtures.py, render_samples.py
-  ingest_kit.py          rebuild assets/kit/ from a design delivery: registry
-                         first, meta files left behind, duplicates aliased,
-                         unportable paths refused
-  restyle_dark_cards.py  map the seven dark cards onto the light palette
-                         (--check fails if one comes back)
-  export_design_kit.py   the .dc.html -> PNG exporter (build script)
+scripts/
+  ingest_kit.py          run the kit's own engine, reconcile what it emits
+                         against the signed-off manifests, install the PNGs and
+                         write plates-registry.json. `--check` verifies an
+                         installed kit without rebuilding it
+  kit_engine.js          the node entry point the ingest drives
+  render_samples.py      render the committed samples from fixtures
+  gen_assets.py          procedural placeholders for everything not drawn
+  gen_fixtures.py, fetch_sfx.py, contact_sheet.py, audit_placement.py
 workspace|cache|state/   runtime (gitignored)
 ```
 
@@ -730,22 +792,34 @@ env var, case-insensitive).
   the feed dies) — never a TradingView screenshot. Two styles: the clean
   branded card and a crude hand-drawn "marker" napkin chart on black;
   a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
-- **Hand-drawn overlay language**: `[DOODLE: key]` drops a crude marker
-  overlay (stick-figure reactions, arrows, a scribble explosion — 14 in
-  `assets/doodles/`, indexed like the memes, resolved locally, given a
-  frame-to-frame "boil"); `[SCRIBBLE: style -> target]` draws a mark plus a
-  target callout on a number/point. The styles ARE the twelve drawings in the
-  kit's `marks/` family — `circle`, `oval`, `bracket`, `star`, `question`,
-  `check`, `cross-out`, `redaction`, `underline`, `jab`, `arrow-down`,
-  `arrow-curve-down` — mapped in `rasters.SCRIBBLE_MARKS`, listed in every
-  writing prompt off the kit on disk, and drawn from the real artwork with a
-  procedural stroke as the fallback. Both parse in the SHORT (inline in
-  `audio_script`, stripped before TTS) and the LONG, and composite as the TOP
-  layer over charts, screenshots and b-roll.
+- **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M
+  | head=FY21,…,LTM | label-1=Revenue | row-1=400,452,471,491,496,496 |
+  band=3]` — the tag carries its own content and the renderer only places it.
+  Four things are rejected rather than shipped wrong: an unknown plate, an
+  undeclared slot, a row whose length disagrees with its header, and a plate
+  the chapter's TYPE is not allowed to use. The compact forms expand against
+  the slots the plate declares, so an expansion cannot invent one.
+- **Chapters are a type plus a title.** Sixteen fixed generic types
+  (`cold-open`, `the-numbers`, `moat`, `filing-walk`, `short-interest`, … )
+  gate the plate library; the title is free text and the only thing that
+  reaches the screen. A type may appear twice under different titles, and
+  there is no ordinal anywhere — which is what stopped a chapter being moved,
+  repeated or cut without redrawing it.
+- **Hand-drawn overlay language**: `[SCRIBBLE: style -> target]` draws a mark
+  on a figure or a phrase already on screen. The styles ARE the ten drawings
+  in the kit's `annotations/` family — `scrawl-oval-wide`,
+  `scrawl-oval-tight`, `underline-swipe`, `underline-tight`, `strike-out`,
+  `box-scrawl`, `bracket-rows`, `arrow-elbow`, `caret-note`, `tick-marks` —
+  mapped in `rasters.SCRIBBLE_MARKS`, listed in every writing prompt off the
+  registry on disk, and drawn from the real artwork with a procedural stroke
+  as the fallback. A mark is solved onto the TYPE rather than onto the slot
+  rectangle, and the VARIANT is chosen by how wide that target turns out to
+  be: a wide oval around a four-character cell is a hairline, so the tight one
+  is drawn instead. Both formats parse it, and it composites as the top layer.
 - **Screen-grab backbone**: `[SCREENGRAB: slug]` composites an operator-
   supplied capture (a broker app, a portfolio P&L, a Google search) —
   image or short screen-record dropped into `assets/custom/`, pad-fit
-  (never cover-cropped). Same missing-file block as `[ASSET]`; the bot
+  (never cover-cropped). It blocks the render until the file exists; the bot
   routes a matching-slug upload straight into `custom/`.
 - **Captions are libass karaoke** (`subtitles` filter) generated from the
   word timestamps — words punch in as they are spoken. LONG captions are
@@ -761,12 +835,15 @@ env var, case-insensitive).
 - **Mock TTS** synthesizes a low hum at a deterministic words-per-second
   rate (2.7 SHORT / 2.3 LONG) with linear word timestamps, so mock
   renders have realistic pacing and the full timeline logic is exercised.
-- **Placeholder kit assets are generated procedurally**
-  (`scripts/gen_assets.py`, seeded — including the 14 crude marker doodles
-  drawn with wobbly Pillow strokes). Replace `assets/sfx`, `assets/music`,
-  the backgrounds, and the meme + doodle placeholders with the
-  Claude-Design / licensed kit for production polish; everything is
-  normalized on ingest.
+- **The kit is built by its own engine, at ingest.** `kit/` is the delivery:
+  a node generator, a signed-off `manifest.json` per family, and
+  `roles.json`. `scripts/ingest_kit.py` runs the engine, reconciles what it
+  emits against those manifests, refuses the install if the two disagree, and
+  writes `assets/plates/` plus `plates-registry.json`. Nothing under
+  `assets/plates/` is edited by hand and no PNG is committed from anywhere
+  else. Everything the kit does NOT draw — sfx, music, b-roll, memes — is
+  still procedurally placeheld by `scripts/gen_assets.py` and meant to be
+  replaced.
 - **Placeholder AUDIO cannot be published.** Every wav in `assets/sfx` is an
   ffmpeg oscillator until `scripts/fetch_sfx.py` replaces it — that script
   pulls licence-clean effects for all 14 cue keys plus the room bed,
@@ -802,7 +879,7 @@ gritted teeth rather than a stamp.
 ## Testing
 
 ```bash
-.venv/bin/python -m pytest tests/    # ~190 tests, fully offline
+.venv/bin/python -m pytest tests/    # ~990 tests, fully offline
 ```
 
 A conftest guard fails any test that opens a non-localhost socket. The
@@ -810,8 +887,9 @@ renderer smoke tests produce real MP4s (reduced resolution) from mock
 audio and then assert the cue times that reached the actual FFmpeg
 filtergraph match the timeline — the "no hardcoded timings" invariant is
 executable. Dedicated tests pin the deletion of the verdict system and
-the desk scene, the vendor-name block, the meme cap, and the `[ASSET]`
-blocking loop.
+the desk scene, the vendor-name block, the meme cap, and the `[SCREENGRAB]`
+blocking loop. `tests/test_docs.py` pins this README against the code: the
+command reference in both directions, and every path in the repository map.
 
 Sample artifacts (committed): `samples/sample_short_EXMPL.mp4`
 (9:16 "Noise or signal?") and `samples/sample_long_EXMPL.mp4` (16:9

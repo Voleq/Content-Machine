@@ -107,7 +107,7 @@ dennis_data.xlsx if Excel isn't available) → run the prompt in Claude/GPT →
 here → review the validation & cost report → tweak it in chat if you want
 (/script, /edit, /replace — every revision re-runs the gates and re-prices)
 → Approve ✅ → /render. Nothing paid happens before Approve, and the approval
-is pinned to the exact version you approved. If a LONG uses [ASSET] tags, paste the appended
+is pinned to the exact version you approved. If a LONG uses [SCREENGRAB] tags, drop the
 prompt into Claude Design and upload the exported PNG here — the render
 stays blocked until every asset file exists."""
 
@@ -717,8 +717,12 @@ class BotCore:
             return {}
         custom = self.settings.assets_dir / "custom"
         out: dict[str, str] = {}
-        for kind, slugs in (("asset", script.asset_slugs()),
-                            ("screengrab", script.screengrab_slugs())):
+        # [SCREENGRAB] only. [ASSET] is gone — it blocked a render until an
+        # operator pasted a prompt into Claude Design, exported a PNG and
+        # uploaded it, which does not scale to daily shorts and was the slowest
+        # step in the loop. An operator-supplied CAPTURE of something real is a
+        # different thing and still blocks.
+        for kind, slugs in (("screengrab", script.screengrab_slugs()),):
             for slug in slugs:
                 if not (custom.is_dir() and list(custom.glob(f"{slug}.*"))):
                     out[slug] = kind
@@ -992,7 +996,7 @@ class BotCore:
             (v_blocking if f.severity == "block" else v_warnings).append(f.render())
         ws.save_long(script, raw)
         ws.clear_awaiting_angle()  # a script is on file — past the angle stage
-        prompt_files = self._save_asset_prompts(ws, script)
+        prompt_files: list = []
         plan = self.content.plan(script, company_data=data,
                                  overrides=ws.broll_overrides())
         filing_count = len({e.payload for e in script.events_of(TagType.SHOW_FILING)})
@@ -1009,20 +1013,6 @@ class BotCore:
             photo=sheet,
             files=prompt_files,
         )
-
-    def _save_asset_prompts(self, ws: Workspace, script) -> list[Path]:
-        """Persist appended Claude Design prompts as paste-ready .txt files
-        the operator receives with the report."""
-        out: list[Path] = []
-        if not script.asset_prompts:
-            return out
-        pdir = ws.path / "asset_prompts"
-        pdir.mkdir(exist_ok=True)
-        for slug, prompt in script.asset_prompts.items():
-            f = pdir / f"{slug}.claude-design.txt"
-            f.write_text(prompt + "\n", encoding="utf-8")
-            out.append(f)
-        return out
 
     @staticmethod
     def _long_clip_keys(script) -> list[str]:
@@ -1501,8 +1491,26 @@ class BotCore:
             ThesisBook(self.settings).record(
                 job.ticker, summary, data, workdate=job.workdate, fmt=fmt,
                 **said)
+            self._note_confession(job, script, fmt)
         except Exception as e:  # noqa: BLE001 - never fail a shipped video
             log.warning("thesis bookkeeping failed for %s: %s", job.ticker, e)
+
+    def _note_confession(self, job: JobRecord, script, fmt: str) -> None:
+        """Add this video to the confession ledger — including a silent one.
+
+        EVERY shipped video is noted, not only the ones that confessed. "Roughly
+        one video in three" is a question about the two that did not, and a
+        ledger holding only the admissions can say what has been used but not
+        how long it has been, which is the half that decides whether to write
+        one at all.
+        """
+        from pipeline.standing import ConfessionLedger
+
+        said = getattr(script, "confession", None)
+        ConfessionLedger(self.settings).note(
+            job.ticker, fmt=fmt, workdate=job.workdate,
+            kind=getattr(said, "kind", "") or "",
+            text=getattr(said, "text", "") or "")
 
     # --------------------------------------------- standing state (P3.3)
     def queue_text(self, limit: int = 10) -> Reply:

@@ -1,0 +1,3340 @@
+{
+ "family": "room",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "assets": {
+  "room/wide-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wide-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wide-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wide-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
+     "x": 672,
+     "y": 70,
+     "w": 576,
+     "h": 250
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 634
+     },
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-wide",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "wide",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 480,
+     "y": 529,
+     "r": 845
+    },
+    "monitor": {
+     "x": 787,
+     "y": 434,
+     "r": 691
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 451,
+     "y": 634
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wide-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wide-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wide-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
+     "x": 378,
+     "y": 70,
+     "w": 324,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 1114
+     },
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-wide",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "wide",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 270,
+     "y": 1009,
+     "r": 475
+    },
+    "monitor": {
+     "x": 443,
+     "y": 914,
+     "r": 389
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 254,
+     "y": 1114
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-tight-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wide-tight-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wide-tight-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wide-tight-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
+     "x": 672,
+     "y": 70,
+     "w": 576,
+     "h": 250
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 531
+     },
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-wide-tight",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "wide-tight",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 480,
+     "y": 378,
+     "r": 845
+    },
+    "monitor": {
+     "x": 787,
+     "y": 268,
+     "r": 691
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 451,
+     "y": 531
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wide-tight-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wide-tight-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wide-tight-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wide-tight-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
+     "x": 378,
+     "y": 70,
+     "w": 324,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 1011
+     },
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-wide-tight",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "wide-tight",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 270,
+     "y": 858,
+     "r": 475
+    },
+    "monitor": {
+     "x": 443,
+     "y": 748,
+     "r": 389
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 254,
+     "y": 1011
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-front-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "desk-front-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "desk-front-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "desk-front-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 576,
+     "y": 56,
+     "w": 576,
+     "h": 210
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 355,
+      "y": 634
+     },
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-desk-front",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "desk-front",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 346,
+     "y": 499,
+     "r": 806
+    },
+    "monitor": {
+     "x": 806,
+     "y": 404,
+     "r": 730
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 355,
+     "y": 634
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-front-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "desk-front-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "desk-front-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "desk-front-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 324,
+     "y": 56,
+     "w": 324,
+     "h": 260
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 200,
+      "y": 1114
+     },
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-desk-front",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "desk-front",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 194,
+     "y": 979,
+     "r": 454
+    },
+    "monitor": {
+     "x": 454,
+     "y": 884,
+     "r": 410
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 200,
+     "y": 1114
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-corner-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "desk-corner-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "desk-corner-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "desk-corner-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 960,
+     "y": 120,
+     "w": 806,
+     "h": 260
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 960,
+     "y": 420,
+     "w": 806,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-desk-corner",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "desk-corner",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 1766,
+     "y": 357,
+     "r": 1190
+    },
+    "monitor": {
+     "x": -230,
+     "y": 197,
+     "r": 1536
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/desk-corner-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "desk-corner-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "desk-corner-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "desk-corner-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 540,
+     "y": 120,
+     "w": 454,
+     "h": 320
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 540,
+     "y": 480,
+     "w": 454,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-desk-corner",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "desk-corner",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 994,
+     "y": 837,
+     "r": 670
+    },
+    "monitor": {
+     "x": -130,
+     "y": 677,
+     "r": 864
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/from-behind-the-monitor-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "from-behind-the-monitor-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "from-behind-the-monitor-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "from-behind-the-monitor-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 154,
+     "y": 100,
+     "w": 960,
+     "h": 280
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-from-behind-the-monitor",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "from-behind-the-monitor",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 1862,
+     "y": 474,
+     "r": 1152
+    },
+    "monitor": {
+     "x": 634,
+     "y": 424,
+     "r": 960
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/from-behind-the-monitor-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "from-behind-the-monitor-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "from-behind-the-monitor-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "from-behind-the-monitor-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 86,
+     "y": 100,
+     "w": 540,
+     "h": 320
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-from-behind-the-monitor",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "from-behind-the-monitor",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 1048,
+     "y": 954,
+     "r": 648
+    },
+    "monitor": {
+     "x": 356,
+     "y": 904,
+     "r": 540
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/whiteboard-wall-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "whiteboard-wall-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "whiteboard-wall-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "whiteboard-wall-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 1267,
+     "y": 626,
+     "w": 538,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 221,
+      "y": 634
+     },
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-whiteboard-wall",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "whiteboard-wall",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 365,
+     "y": 504,
+     "r": 883
+    },
+    "monitor": {
+     "x": 1382,
+     "y": 514,
+     "r": 691
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 221,
+     "y": 634
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/whiteboard-wall-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "whiteboard-wall-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "whiteboard-wall-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "whiteboard-wall-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 86,
+     "y": 998,
+     "w": 540,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 124,
+      "y": 1114
+     },
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-whiteboard-wall",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "whiteboard-wall",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 205,
+     "y": 984,
+     "r": 497
+    },
+    "monitor": {
+     "x": 778,
+     "y": 994,
+     "r": 389
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, left end",
+     "x": 124,
+     "y": 1114
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/printer-corner-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "printer-corner-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "printer-corner-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "printer-corner-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 1037,
+     "y": 120,
+     "w": 730,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 269,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-printer-corner",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "printer-corner",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 2074,
+     "y": 344,
+     "r": 1344
+    },
+    "monitor": {
+     "x": -115,
+     "y": 434,
+     "r": 1190
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/printer-corner-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "printer-corner-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "printer-corner-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "printer-corner-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 86,
+     "y": 120,
+     "w": 648,
+     "h": 320
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 151,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-printer-corner",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "printer-corner",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 1166,
+     "y": 824,
+     "r": 756
+    },
+    "monitor": {
+     "x": -65,
+     "y": 914,
+     "r": 670
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/doorway-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "doorway-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "doorway-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "doorway-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 230,
+     "y": 540,
+     "w": 691,
+     "h": 260
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 1190,
+     "y": 302,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-doorway",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "doorway",
+   "floorLineY": 864,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 1363,
+     "y": 540,
+     "r": 960
+    },
+    "monitor": {
+     "x": -192,
+     "y": 564,
+     "r": 960
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 864,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/doorway-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "doorway-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "doorway-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "doorway-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 76,
+     "y": 960,
+     "w": 540,
+     "h": 300
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "x": 670,
+     "y": 346,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-doorway",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "doorway",
+   "floorLineY": 1344,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 562,
+     "y": 768,
+     "r": 540
+    },
+    "monitor": {
+     "x": -108,
+     "y": 1044,
+     "r": 540
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1344,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": null,
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/corner-perspective-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "corner-perspective-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "corner-perspective-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "corner-perspective-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 67,
+     "y": 518,
+     "w": 461,
+     "h": 210
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 67,
+     "y": 734,
+     "w": 422,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, near end",
+      "x": 350,
+      "y": 717
+     },
+     "x": 96,
+     "y": 237,
+     "w": 653,
+     "h": 562
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-corner-perspective",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "corner-perspective",
+   "floorLineY": 799,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 622,
+     "y": 544,
+     "r": 845
+    },
+    "monitor": {
+     "x": 935,
+     "y": 468,
+     "r": 653
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 562,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 799,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, near end",
+     "x": 350,
+     "y": 717
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/corner-perspective-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "corner-perspective-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "corner-perspective-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "corner-perspective-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 54,
+     "y": 806,
+     "w": 432,
+     "h": 250
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 54,
+     "y": 1152,
+     "w": 378,
+     "h": 64
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, near end",
+      "x": 92,
+      "y": 1144
+     },
+     "x": 54,
+     "y": 269,
+     "w": 367,
+     "h": 998
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-corner-perspective",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "corner-perspective",
+   "floorLineY": 1267,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 333,
+     "y": 875,
+     "r": 475
+    },
+    "monitor": {
+     "x": 540,
+     "y": 783,
+     "r": 367
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 998,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1267,
+    "floorInFrame": true,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, near end",
+     "x": 92,
+     "y": 1144
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/low-desk-height-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "low-desk-height-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "low-desk-height-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "low-desk-height-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 806,
+     "y": 270,
+     "w": 614,
+     "h": 200
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 806,
+      "y": 678
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=1361 on a canvas 1080 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
+     "x": 518,
+     "y": 216,
+     "w": 499,
+     "h": 1145
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-low-desk-height",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "low-desk-height",
+   "floorLineY": 1361,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 422,
+     "y": 562,
+     "r": 960
+    },
+    "monitor": {
+     "x": 1190,
+     "y": 454,
+     "r": 768
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 1145,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 1361,
+    "floorInFrame": false,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, far edge",
+     "x": 806,
+     "y": 678
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/low-desk-height-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "low-desk-height-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "low-desk-height-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "low-desk-height-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 65,
+     "y": 557,
+     "w": 540,
+     "h": 240
+    },
+    "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 454,
+      "y": 1122
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=2419 on a canvas 1920 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
+     "x": 292,
+     "y": 384,
+     "w": 281,
+     "h": 2035
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-low-desk-height",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "low-desk-height",
+   "floorLineY": 2419,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 238,
+     "y": 922,
+     "r": 540
+    },
+    "monitor": {
+     "x": 670,
+     "y": 730,
+     "r": 432
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": {
+    "targetHeight": 2035,
+    "scales": "host.floorLineY - host.slots.figure.y",
+    "pin": "host.floorLineY onto this plate's floorLineY",
+    "floorLineY": 2419,
+    "floorInFrame": false,
+    "widthIsAdvisory": true,
+    "contact": {
+     "pose": "leaning-on-desk",
+     "surface": "desk top, far edge",
+     "x": 454,
+     "y": 1122
+    },
+    "light": "light the cut-out from this plate's meta.light — same two sources, same sides"
+   },
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/high-desk-down-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "high-desk-down-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "high-desk-down-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "high-desk-down-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 115,
+     "y": 97,
+     "w": 576,
+     "h": 220
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 115,
+     "y": 302,
+     "w": 499,
+     "h": 64
+    }
+   },
+   "aspect": "16x9",
+   "family": "room",
+   "type": "room-high-desk-down",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 22
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "high-desk-down",
+   "floorLineY": 2376,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 346,
+     "y": 281,
+     "r": 1114
+    },
+    "monitor": {
+     "x": 1651,
+     "y": 130,
+     "r": 845
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.",
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/high-desk-down-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "high-desk-down-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "high-desk-down-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "high-desk-down-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "title": {
+     "align": "left",
+     "role": "title",
+     "x": 65,
+     "y": 134,
+     "w": 475,
+     "h": 250
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 65,
+     "y": 384,
+     "w": 432,
+     "h": 64
+    }
+   },
+   "aspect": "9x16",
+   "family": "room",
+   "type": "room-high-desk-down",
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 3,
+     "maxCharsPerLine": 16
+    },
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "angle": "high-desk-down",
+   "floorLineY": 4224,
+   "light": {
+    "key": "a desk lamp and a monitor at three in the morning, expressed as VALUE FALLOFF only — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more. No tint and no wash: the ground colour is visible everywhere in frame.",
+    "lamp": {
+     "x": 194,
+     "y": 499,
+     "r": 626
+    },
+    "monitor": {
+     "x": 929,
+     "y": 230,
+     "r": 475
+    },
+    "line": "the ink line is the darkest thing in frame; only contact shadows go darker",
+    "host": "a host cut-out composited here must be the highest-contrast object in the frame — he is the reason anyone is watching. Do not add tone to the room that closes that gap."
+   },
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.",
+   "author": "room",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wall-of-calls-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wall-of-calls-16x9_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wall-of-calls-16x9_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wall-of-calls-16x9.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 150,
+     "y": 100,
+     "w": 1620,
+     "h": 54
+    },
+    "ticker-1": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 231,
+     "w": 356,
+     "h": 64
+    },
+    "date-1": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 246,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-1": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 231,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-2": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 339,
+     "w": 356,
+     "h": 64
+    },
+    "date-2": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 354,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-2": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 339,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-3": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 446,
+     "w": 356,
+     "h": 64
+    },
+    "date-3": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 461,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-3": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 446,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-4": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 553,
+     "w": 356,
+     "h": 64
+    },
+    "date-4": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 568,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-4": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 553,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-5": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 660,
+     "w": 356,
+     "h": 64
+    },
+    "date-5": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 675,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-5": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 660,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-6": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 767,
+     "w": 356,
+     "h": 64
+    },
+    "date-6": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 782,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-6": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 767,
+     "w": 680,
+     "h": 64
+    },
+    "ticker-7": {
+     "align": "left",
+     "role": "ticker",
+     "x": 160,
+     "y": 874,
+     "w": 356,
+     "h": 64
+    },
+    "date-7": {
+     "align": "left",
+     "role": "date",
+     "x": 571,
+     "y": 889,
+     "w": 356,
+     "h": 54
+    },
+    "outcome-7": {
+     "align": "right",
+     "role": "outcome",
+     "x": 1057,
+     "y": 874,
+     "w": 680,
+     "h": 64
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "pin-1",
+     "x": 875,
+     "y": 208,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-2",
+     "x": 1102,
+     "y": 315,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-3",
+     "x": 1329,
+     "y": 422,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-4",
+     "x": 648,
+     "y": 529,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-5",
+     "x": 875,
+     "y": 637,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-6",
+     "x": 1102,
+     "y": 744,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-7",
+     "x": 1329,
+     "y": 851,
+     "w": 40,
+     "h": 34
+    }
+   ],
+   "aspect": "16x9",
+   "family": "room",
+   "type": "wall-of-calls",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 40,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.75,
+     "maxChars": 8
+    },
+    "outcome": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 600,
+     "colour": "structure",
+     "maxChars": 12
+    }
+   },
+   "rows": 7,
+   "floorLineY": 994,
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. A wall of call tickers is a full-frame data plate, not a set: cut to it over his voice. floorLineY is still declared because the wall meets a floor, but nothing should be stood on it.",
+   "author": "wallOfCalls",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  },
+  "room/wall-of-calls-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "boil": 1,
+     "tag": "_f01",
+     "png": "wall-of-calls-9x16_f01.png",
+     "svg": null
+    },
+    {
+     "boil": 2,
+     "tag": "_f02",
+     "png": "wall-of-calls-9x16_f02.png",
+     "svg": null
+    }
+   ],
+   "files": {
+    "png": "wall-of-calls-9x16.png",
+    "svg": null,
+    "baseIsFrame": "_f01"
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 80,
+     "y": 200,
+     "w": 920,
+     "h": 54
+    },
+    "ticker-1": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 359,
+     "w": 202,
+     "h": 118
+    },
+    "date-1": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 387,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-1": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 359,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-2": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 557,
+     "w": 202,
+     "h": 118
+    },
+    "date-2": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 584,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-2": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 557,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-3": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 754,
+     "w": 202,
+     "h": 118
+    },
+    "date-3": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 781,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-3": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 754,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-4": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 951,
+     "w": 202,
+     "h": 118
+    },
+    "date-4": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 978,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-4": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 951,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-5": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 1148,
+     "w": 202,
+     "h": 118
+    },
+    "date-5": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 1176,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-5": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 1148,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-6": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 1345,
+     "w": 202,
+     "h": 118
+    },
+    "date-6": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 1373,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-6": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 1345,
+     "w": 386,
+     "h": 118
+    },
+    "ticker-7": {
+     "align": "left",
+     "role": "ticker",
+     "x": 90,
+     "y": 1542,
+     "w": 202,
+     "h": 118
+    },
+    "date-7": {
+     "align": "left",
+     "role": "date",
+     "x": 319,
+     "y": 1570,
+     "w": 202,
+     "h": 99
+    },
+    "outcome-7": {
+     "align": "right",
+     "role": "outcome",
+     "x": 595,
+     "y": 1542,
+     "w": 386,
+     "h": 118
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "pin-1",
+     "x": 483,
+     "y": 318,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-2",
+     "x": 612,
+     "y": 515,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-3",
+     "x": 741,
+     "y": 712,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-4",
+     "x": 354,
+     "y": 909,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-5",
+     "x": 483,
+     "y": 1107,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-6",
+     "x": 612,
+     "y": 1304,
+     "w": 40,
+     "h": 34
+    },
+    {
+     "label": "pin-7",
+     "x": 741,
+     "y": 1501,
+     "w": 40,
+     "h": 34
+    }
+   ],
+   "aspect": "9x16",
+   "family": "room",
+   "type": "wall-of-calls",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "ticker": {
+     "font": "Courier Prime",
+     "size": 34,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "date": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.75,
+     "maxChars": 8
+    },
+    "outcome": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "maxChars": 12
+    }
+   },
+   "rows": 7,
+   "floorLineY": 1766,
+   "hostAnchor": false,
+   "hostAnchorNote": "Deliberately none. A wall of call tickers is a full-frame data plate, not a set: cut to it over his voice. floorLineY is still declared because the wall meets a floor, but nothing should be stood on it.",
+   "author": "wallOfCalls",
+   "seed": 1,
+   "surface": "night-card",
+   "dir": "room/"
+  }
+ },
+ "hostAnchorContract": "the host-anchor region's HEIGHT is the host's target height, and the quantity it scales is (host.floorLineY - host.slots.figure.y) — not the raw figure box, which runs past the floor line to carry the shoes. Then sit host.floorLineY on the region's bottom edge. Width is advisory: the figure box includes arms meant to pass it. See meta.hostAnchor on every plate.",
+ "tone": "The ground stays the ground: the surface colour is visible everywhere in frame and nothing goes over the top of it globally. Light is VALUE FALLOFF — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more, and the falloff follows the shapes of objects rather than sitting behind them in a rectangle. No tint, no wash, no colour layer. The ink line is the darkest thing in frame; only contact shadows go darker, and they are small and tight (the size of the object's footprint, never a halo). Hatch is SELECTIVE: furniture that needs weight carries a neutral ink hatch (max 0.19), paper and the wall and the floor are left as ground — texture is only depth when some things have it and some do not.",
+ "hostContrast": "Dennis is the highest-contrast object in any frame he is in. The room is built to give way to him: nothing in the set is allowed to reach his value. The test is the composite — if your eye does not go to him first, the room is too loud.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "shadow": "Darks read as SHADOW, not as objects: each is densest where it meets what casts it, fades away from it, ends in a ragged edge rather than a drawn outline, and lets the ground show through. A shadow is the surface in shade, not a new object on top of it — drawn as a uniform fill with a line round it, the under-desk mass and the foreground crop became the biggest darks in frame and pulled the eye off the host.",
+ "lineWeight": "Weight varies with distance across roughly a 5x spread. The multiplier was widened twice in earlier revisions with no visible effect, because the INPUT barely varied: depth came from height in frame and almost every prop sits in the same y-band. Depth is now a steep curve over the whole canvas, and props whose y contradicts their plane (wall-mounted binders, the cropped foreground) state their plane explicitly.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "regeneratedFrom": "engine/build.js at delta 08. Deltas 05-07 changed this family and were not shipped as archives, so this section is the ENGINE's own emission rather than a signed-off delivery snapshot. The reconcile check in scripts/ingest_kit.py compares the two and has nothing independent to compare against for room until delta 05's room/manifest.json arrives."
+}

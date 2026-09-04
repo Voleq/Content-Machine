@@ -74,7 +74,7 @@ def render_short_sample() -> Path:
     return render_vertical_sample("short")
 
 
-def _long_inputs():
+def _long_inputs(fixture: str = "long_sample"):
     """Script, workspace and data export for the deep-dive fixture.
 
     Shared by both long renderers so the two are driven by identical inputs
@@ -85,41 +85,63 @@ def _long_inputs():
 
     settings = _settings()
     # a denser, purpose-built deep-dive that showcases the kit (charts,
-    # doodles, scribbles, memes); long_valid.txt stays the parser fixture
-    raw = (ROOT / "fixtures" / "scripts" / "long_sample.txt").read_text(encoding="utf-8")
+    # The sample and the parser fixture are the same script now. They diverged
+    # so the sample could exercise tags the parser fixture did not carry, and
+    # then the sample kept exercising tags that no longer exist — which is how
+    # `scripts/render_samples.py long` was the last thing in the repo still
+    # emitting [DOODLE].
+    raw = (ROOT / "fixtures" / "scripts" / f"{fixture}.txt").read_text(
+        encoding="utf-8")
     script, warnings = parse_long_script(raw, "EXMPL", settings)
     for w in warnings:
         print(f"  warning: {w}")
-    ws = WORK / "EXMPL" / "sample"
+    ws = WORK / "EXMPL" / ("sample" if fixture == "long_sample"
+                           else f"sample_{fixture}")
     ws.mkdir(parents=True, exist_ok=True)
     # the two-sheet data export feeds [CHART] + the corner bug's as-of
     shutil.copy(ROOT / "fixtures" / "company_data" / "dennis_data.xlsx",
                 ws / "dennis_data.xlsx")
     data = load_company_data(ws)
-    # the fixture references one filing screenshot — synthesize it (the
-    # renderer adds the generic "FROM THE 10-K" chip; no vendor anywhere)
-    shot = ws / "income_statement.png"
-    if not shot.exists():
-        from PIL import Image, ImageDraw
-        img = Image.new("RGB", (1600, 900), (16, 20, 28))
+    # The fixture quotes two filings and shows both — synthesise them. They are
+    # deliberately flat grey documents: a filing screenshot is FOREIGN MEDIA,
+    # and the point of the frames/ family is that it can carry something that
+    # was not drawn by this engine without destroying the surface around it.
+    from PIL import Image, ImageDraw
+
+    _shots = {
+        "income_statement.png": [
+            "EXMPL — Income Statement (mock screenshot)",
+            "Revenue TTM            496,000,000   (+1.0% YoY)",
+            "Net income TTM         -89,000,000   (margin -18%)",
+        ],
+        "risk_factors.png": [
+            "EXMPL — Item 1A, Risk Factors (mock screenshot)",
+            "Our credit agreement contains a covenant tested on",
+            "trailing twelve-month adjusted EBITDA, and we may not",
+            "remain in compliance.",
+        ],
+    }
+    for name, lines in _shots.items():
+        shot = ws / name
+        if shot.exists():
+            continue
+        img = Image.new("RGB", (1600, 900), (238, 236, 231))
         d = ImageDraw.Draw(img)
         for y in range(80, 860, 52):
-            d.line([40, y, 1560, y], fill=(46, 54, 66), width=1)
-        d.text((60, 30), "EXMPL — Income Statement (mock screenshot)",
-               fill=(210, 214, 220))
-        d.text((60, 120), "Revenue TTM            496,000,000   (+1.0% YoY)", fill=(210, 214, 220))
-        d.text((60, 172), "Net income TTM         -89,000,000   (margin -18%)", fill=(235, 90, 90))
+            d.line([40, y, 1560, y], fill=(206, 202, 192), width=1)
+        for i, line in enumerate(lines):
+            d.text((60, 30 + i * 52), line, fill=(42, 44, 48))
         img.save(shot)
     tts = TTSEngine(settings).synthesize(script.narration, "long")
     print(f"  mock audio: {tts.duration_s:.1f}s, {len(tts.words)} words")
     return settings, script, ws, data, tts
 
 
-def render_long_sample() -> Path:
+def render_long_sample(fixture: str = "long_sample") -> Path:
     from pipeline.broll import ContentManager
     from pipeline.render_long import render_long
 
-    settings, script, ws, data, tts = _long_inputs()
+    settings, script, ws, data, tts = _long_inputs(fixture)
     t0 = time.time()
     out, manifest = render_long(script, tts, ws, settings,
                                 content=ContentManager(settings),
@@ -127,18 +149,20 @@ def render_long_sample() -> Path:
                                 company_data=data)
     print(f"  rendered in {time.time() - t0:.0f}s")
     SAMPLES.mkdir(exist_ok=True)
-    dest = SAMPLES / "sample_long_EXMPL.mp4"
+    stem = ("sample_long_EXMPL" if fixture == "long_sample"
+            else f"sample_{fixture}_EXMPL")
+    dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / "sample_long_EXMPL.manifest.json")
+    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
     return dest
 
 
-def render_long_shots_sample() -> Path:
-    """The LONG through the shot engine — nine chapters, one compositor."""
+def render_long_shots_sample(fixture: str = "long_sample") -> Path:
+    """The LONG through the shot engine — sixteen chapters, one compositor."""
     from pipeline.broll import ContentManager
     from pipeline.render_long_shots import render_long_shots
 
-    settings, script, ws, data, tts = _long_inputs()
+    settings, script, ws, data, tts = _long_inputs(fixture)
     t0 = time.time()
     out, manifest = render_long_shots(script, tts, ws, settings,
                                       content=ContentManager(settings),
@@ -146,9 +170,11 @@ def render_long_shots_sample() -> Path:
                                       out_name="long_shots_final.mp4")
     print(f"  rendered in {time.time() - t0:.0f}s")
     SAMPLES.mkdir(exist_ok=True)
-    dest = SAMPLES / "sample_long_shots_EXMPL.mp4"
+    stem = ("sample_long_shots_EXMPL" if fixture == "long_sample"
+            else f"sample_{fixture}_shots_EXMPL")
+    dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / "sample_long_shots_EXMPL.manifest.json")
+    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
     return dest
 
 
@@ -164,3 +190,13 @@ if __name__ == "__main__":
     if what == "long":
         print("LONG sample (old renderer):")
         print(" ->", render_long_sample())
+    # AT THE LENGTH THE FORMAT IS FOR. `long_sample` is 590 words of narration
+    # in four minutes; a clean thesis is about sixteen hundred and runs
+    # twelve. Events per minute measured on the short fixture is an
+    # extrapolation, and the number decides whether the format works.
+    if what == "long-full":
+        print("LONG sample (old renderer, full length):")
+        print(" ->", render_long_sample("long_full"))
+    if what == "long-shots-full":
+        print("LONG sample (shot engine, full length):")
+        print(" ->", render_long_shots_sample("long_full"))

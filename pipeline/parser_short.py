@@ -27,7 +27,9 @@ from pipeline.models import (
     TagType,
     parse_scribble_payload,
 )
-from pipeline.tagging import parse_chart_payload, parse_slot_values
+from pipeline.plate_tags import build_fill
+from pipeline.plates import load_plates
+from pipeline.tagging import parse_chart_payload
 from pipeline.tagging import tokenize_tags
 
 log = logging.getLogger(__name__)
@@ -167,34 +169,23 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     is a legitimate choice on some drawings and this is the person who can
     say so.
     """
-    from pipeline.kit import load_kit
-    from pipeline.kit_frames import bind_slot_values
-    from pipeline.models import KIT_TAG_FAMILIES, KIT_TAG_BLANKS
+    from pipeline.plate_tags import check_bound
+    from pipeline.plates import PlateError, load_plates
 
     out: list[str] = []
-    kit = load_kit(settings.assets_dir)
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return out
     for e in script.inline_events:
-        families = KIT_TAG_FAMILIES.get(e.type)
-        if not families or not len(kit):
+        if e.type is not TagType.PLATE:
             continue
-        asset = kit.resolve_asset(families, e.payload)
-        if asset is not None:
-            for w in bind_slot_values(asset, e.values)[1]:
-                out.append(f"[{e.type.value}: {e.payload}] — {w}")
-            continue
-        blank = KIT_TAG_BLANKS.get(e.type)
-        if blank and blank in kit:
-            out.append(
-                f'[{e.type.value}: {e.payload}] has no named artwork — the '
-                f'blank layout will be filled with your text instead')
-        else:
-            options = ", ".join(
-                n.rsplit("/", 1)[-1]
-                for fam in families for n in kit.family(fam)[:6])
-            out.append(
-                f'[{e.type.value}: {e.payload}] is not in '
-                f'{" / ".join(families)} — the beat will be skipped. '
-                f"Available: {options}…")
+        # The payload is already the registry key and the values are already
+        # bound — re-parsing here would find a name with no assignments and
+        # report every plate as empty.
+        fill = check_bound(reg, e.payload, e.values)
+        out.extend(fill.problems)
+        out.extend(fill.warnings)
 
     if not script.delivery_events():
         out.append(
@@ -265,12 +256,19 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                 )
                 continue
             payload, style, values = rt.payload, "", {}
-            if rt.type not in DELIVERY_TAG_TYPES:
+            if rt.type is TagType.PLATE:
+                # The tag carries its own content. Resolved here so a bad plate
+                # name or a mis-sized row is caught at parse time rather than
+                # discovered as a blank rectangle in the finished cut.
+                fill = build_fill(load_plates(settings.assets_dir), rt.payload,
+                                  aspect="9x16")
+                payload, values = fill.key or fill.name, fill.values
+                inline_warnings.extend(fill.warnings)
+                if not fill.ok:
+                    inline_warnings.extend(fill.problems)
+                    continue
+            elif rt.type not in DELIVERY_TAG_TYPES:
                 payload, style = parse_chart_payload(rt.payload)
-                # `= value` binds the asset's text slots. Without it, named
-                # artwork renders with every box empty — Dennis crushed under
-                # a blank rectangle — and 74 slots stay unreachable.
-                payload, values = parse_slot_values(payload)
             if (rt.type not in DELIVERY_TAG_TYPES
                     and rt.type not in SELF_RESOLVING_TAG_TYPES
                     and not payload):
@@ -317,12 +315,12 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
             f"audio_script is {script.word_count} words (target ~180–210 for "
             f"60–75s) — pacing may be off"
         )
-    year_counts = {len(row.values) for row in script.numbers}
-    if script.years and max(year_counts) != len(script.years):
-        warnings.append(
-            f"years has {len(script.years)} labels but the widest numbers row "
-            f"has {max(year_counts)} values — the sheet will align right"
-        )
+    # Every row is six wide — the model enforces that — so what matters here is
+    # how many of those six carry a FIGURE. An empty cell means NO DATA and is
+    # legitimate; three empty cells in a row of six is a series too short to
+    # show direction, which is a different thing and worth saying.
+    year_counts = {sum(1 for v in row.values if str(v).strip())
+                   for row in script.numbers}
     if any(c < 3 for c in year_counts):
         warnings.append(
             "some numbers rows carry fewer than 3 years — direction is the "

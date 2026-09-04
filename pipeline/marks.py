@@ -164,7 +164,34 @@ def face_for(size_fh: float) -> str:
     return DISPLAY_FONT if size_fh >= DISPLAY_FROM_FH else BODY_FONT
 
 _FONT_DIR = Path("assets/fonts")
+
+# Inter is not vendored. Neither face above has ever been on disk, so every
+# line of type in this renderer is actually set in its stand-in — and the
+# stand-in used to be "whichever file sorts first in assets/fonts". The day
+# the kit's own Archivo Narrow landed in that directory, every short in the
+# repo silently re-set itself in a narrow italic, and `templates/budgets.json`
+# — measured against the old face — went on claiming numbers that were half
+# again too small. A directory listing is not a typographic decision, so each
+# face names its substitute here.
+_SUBSTITUTES = {
+    "Inter-Regular.ttf": "DejaVuSans-Bold.ttf",
+    "Inter-Bold.ttf": "DejaVuSans-Bold.ttf",
+}
+
 _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
+
+
+def font_file(name: str) -> Path | None:
+    """The file a face name actually draws from, or None if nothing does.
+
+    Split out from `load_font` so a test can pin it: the budgets are measured
+    against whatever this returns, and if it starts returning something else
+    the numbers the writing prompt hands out stop being true.
+    """
+    for candidate in (name, _SUBSTITUTES.get(name)):
+        if candidate and (_FONT_DIR / candidate).exists():
+            return _FONT_DIR / candidate
+    return None
 
 
 def load_font(name: str, size: int) -> ImageFont.FreeTypeFont:
@@ -172,15 +199,16 @@ def load_font(name: str, size: int) -> ImageFont.FreeTypeFont:
     hit = _font_cache.get(key)
     if hit is not None:
         return hit
-    path = _FONT_DIR / name
+    path = font_file(name)
     try:
         f = ImageFont.truetype(str(path), int(size))
-    except OSError:
+    except (OSError, TypeError):
+        # Nothing named is on disk — a checkout without the fonts at all.
+        # Last resort only; anything drawn here is the wrong shape by
+        # definition, so it stays a fallback rather than a substitution.
         candidates = sorted(_FONT_DIR.glob("*.ttf")) + sorted(_FONT_DIR.glob("*.otf"))
-        if not candidates:
-            f = ImageFont.load_default()
-        else:
-            f = ImageFont.truetype(str(candidates[0]), int(size))
+        f = (ImageFont.truetype(str(candidates[0]), int(size)) if candidates
+             else ImageFont.load_default())
     _font_cache[key] = f
     return f
 

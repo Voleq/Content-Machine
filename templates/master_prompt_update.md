@@ -60,27 +60,27 @@ Operator-uploaded screenshots available for [SHOW FILING: file]:
 Vetted b-roll palette — [CLIP: key] / [BROLL: key]:
 {{broll_palette}}
 
-Owned doodles — [DOODLE: key] (crude hand-drawn overlays; punctuation only):
-{{doodle_catalog}}
 
 Owned memes — [MEME: key] (HARD CAP 1–2 per video):
 {{meme_catalog}}
 
 Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below:
-{{kit_catalog}}
+{{plate_catalogue}}
+
+{{chapter_types}}
+
+{{tagging_density}}
 
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
 
 ## TAG GRAMMAR — identical to the long-form prompt; place inline, immediately before the word it should hit
-[IMG: query] · [PRODUCT: query] · [MEME: key] · [CLIP: key] · [CHART: metric] (add `style=marker` for the napkin chart) · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [DOODLE: key] · [SCRIBBLE: style -> target] · [TERM: key = definition] · [BIGNUM: key = figure] · [TABLE: kind] · [PROP: key = value] · [ALERT: kind] · [ASSET: slug]
+[PLATE: name | slot=value | …] · [IMG: query] · [PRODUCT: query] · [MEME: key] · [CLIP: key] · [CHART: metric] · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [SCRIBBLE: mark -> target]
 
 Scribble styles: {{scribble_styles}}
 
 WRITE THE VALUE INTO THE CARD — a key on its own renders the box EMPTY:
-  [BIGNUM: margin = 65.2%]                                one slot, one value
-  [PROP: see-saw-two-numbers = heavy:$1.1B, light:$40M]   name each slot when there is more than one
-  [PROP: numbers-raining = -8%, -12%, -3%]                a bare list fills them in order
+  [PLATE: big-number-l1-16x9 | kicker=GROSS MARGIN | value=65.2% | label=at the midpoint of guidance]
 
 **The before-and-after is this format's own visual.** A number that moved is two numbers, and the kit has drawings built for exactly that — reach for the two-figure and many-figure scenes in the catalog above rather than showing today's figure alone. A [CHART] on the metric that decided it is close to mandatory in movement 2.
 
@@ -102,10 +102,19 @@ This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to y
 ## OUTPUT
 The narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin on the claim.
 
-Then append a `=== CHAPTERS ===` trailer, one `mm:ss Title` per line, first line `00:00`. These titles go ON SCREEN as full-frame stingers, so write them as titles a viewer reads mid-video — short, lowercase, in voice. Then append `=== ASSET PROMPTS ===` ONLY if you used [ASSET] tags.
+Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.
+
+**CHAPTER TITLES CARRY THE VOICE.** Every one appears on screen. "The number that fell ninety percent." "Six dollars and what's left of it." Those are punchlines. Writing them as topics — "was I right" — wastes a free joke each. A line without the `type |` prefix is not a chapter and is dropped.
 
 === CHAPTERS ===
-00:00 What I said
-mm:ss What actually happened
-mm:ss Was I right
-mm:ss What would have to be true now
+00:00 cold-open | what I said, and what it is worth now
+mm:ss how-we-got-here | the part I got right
+mm:ss the-numbers | and the part I did not
+mm:ss guidance-estimates | what would have to be true now
+mm:ss resigned-close | marking it
+
+Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line, `kind | the admission`, using one of the six kinds. Leave the block out when there is nothing to admit.
+
+An update is the format where a confession is most likely to be earned — "I was wrong" is the premise, not an aside — but "most likely" is still not "always", and the ledger below says what has already been used.
+
+{{confession_ledger}}

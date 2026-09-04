@@ -151,11 +151,11 @@ SHORT_EVENTS_PER_75S = (22, 30)
 
 # Which tag kinds are read and which are registered.
 SHORT_DATA_TAGS = frozenset({
-    TagType.BIGNUM, TagType.TERM, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.PLATE, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
     TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT,
 })
 SHORT_PUNCT_TAGS = frozenset({
-    TagType.PROP, TagType.MEME, TagType.CLIP, TagType.BROLL,
+    TagType.MEME, TagType.CLIP, TagType.BROLL,
 })
 
 # Punctuation that RIDES OVER the frame instead of claiming it.
@@ -172,7 +172,7 @@ SHORT_PUNCT_TAGS = frozenset({
 # They are COUNTED here and scheduled nowhere. Each one is anchored to the
 # word it fires on, which is the entire job — putting them through the pacing
 # pass would move them off it.
-_OVERLAY_PUNCT_KINDS = (CueKind.DOODLE, CueKind.SCRIBBLE,
+_OVERLAY_PUNCT_KINDS = (CueKind.SCRIBBLE,
                         CueKind.MEME, CueKind.CUTAWAY)
 
 # A clause boundary the trap read can be cut on. Sentences first; a long
@@ -217,9 +217,7 @@ def _first_figure(line: str) -> str:
 
 
 _SHORT_TAG_TO_KIND = {
-    TagType.BIGNUM: CueKind.BIGNUM,
-    TagType.TERM: CueKind.TERM,
-    TagType.PROP: CueKind.PROP,
+    TagType.PLATE: CueKind.PLATE,
     TagType.SHOW_FILING: CueKind.FILING,
     TagType.SHOW_ARTICLE: CueKind.ARTICLE,
     TagType.SCREENGRAB: CueKind.SCREENGRAB,
@@ -243,6 +241,13 @@ _SHORT_NO_CUE_REASONS: dict[TagType, str] = {
     # their own holds — not by the evidence loop.
     **{t: "overlay — cued by its own pass, not the evidence loop"
        for t in OVERLAY_TAG_TYPES},
+    # The SHORT opens on the price chart and holds it from the stage open to
+    # the gut check — one of the longest single holds in the format — so the
+    # chart is a FIXED beat in the template rather than something a tag places.
+    # [CHART] in a short's audio_script is therefore redundant rather than
+    # unsupported, and saying so is more use than drawing a second chart.
+    TagType.CHART: ("the short's chart is a fixed beat held from the open, "
+                    "not a tag-placed cutaway"),
 }
 
 # The fixed beats that are themselves data — they count for adjacency.
@@ -426,13 +431,9 @@ def build_short_timeline(
         cues.append(Cue(t=t, kind=CueKind.CUTAWAY, fallback=fb,
                         payload={"key": script.broll.key, "duration": cutaway_hold_s}))
 
-    # ---- inline [DOODLE]/[SCRIBBLE] overlays, word-anchored to their
-    #      position in the (clean) audio_script — composited on top, so
-    #      they never disturb the beat structure
-    for e in script.doodle_events():
-        t = clamp(char_offset_time(words, e.char_offset), duration)
-        cues.append(Cue(t=t, kind=CueKind.DOODLE,
-                        payload={"value": e.payload, "hold": doodle_hold_s}))
+    # ---- inline [SCRIBBLE] overlays, word-anchored to their position in the
+    #      (clean) audio_script — composited on top, so they never disturb the
+    #      beat structure
     for e in script.scribble_events():
         t = clamp(char_offset_time(words, e.char_offset), duration)
         cues.append(Cue(t=t, kind=CueKind.SCRIBBLE,
@@ -515,12 +516,6 @@ def build_short_timeline(
                      "class": "data" if is_data else "punct",
                      "hold": lo, "min_hold": lo, "max_hold": hi},
         ))
-
-    # ---- 8. [ALERT] lower-thirds ride over whatever is on screen
-    for e in script.alert_events():
-        t = clamp(char_offset_time(words, e.char_offset), duration)
-        cues.append(Cue(t=t, kind=CueKind.ALERT,
-                        payload={"value": e.payload, "hold": 2.4}))
 
     cues.sort(key=lambda c: c.t)
     return cues
@@ -712,14 +707,9 @@ _TAG_TO_KIND = {
     TagType.SHOW_FILING: CueKind.FILING,
     TagType.SCREENGRAB: CueKind.SCREENGRAB,
     TagType.SOUND: CueKind.SOUND,
-    TagType.ASSET: CueKind.ASSET,
-    TagType.DOODLE: CueKind.DOODLE,
+    TagType.PLATE: CueKind.PLATE,
     TagType.SCRIBBLE: CueKind.SCRIBBLE,
-    TagType.TERM: CueKind.TERM,
-    TagType.BIGNUM: CueKind.BIGNUM,
-    TagType.TABLE: CueKind.TABLE,
-    TagType.PROP: CueKind.PROP,
-    TagType.ALERT: CueKind.ALERT,
+
 }
 
 # Tag types that draw nothing on the LONG timeline BY DESIGN, and why.
@@ -775,15 +765,12 @@ def unrenderable_long_tags(script: LongScript) -> list[tuple[TagEvent, str]]:
 # cue kinds that claim a visual segment on the LONG timeline (the base
 # frame). DOODLE/SCRIBBLE are overlays; SOUND is audio — none claim a cut.
 VISUAL_CUE_KINDS = (CueKind.CLIP, CueKind.IMG, CueKind.MEME, CueKind.CHART,
-                    CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET,
-                    CueKind.TERM, CueKind.BIGNUM, CueKind.TABLE, CueKind.PROP)
+                    CueKind.FILING, CueKind.SCREENGRAB, CueKind.PLATE)
 
-# how long a hand-drawn overlay stays on screen before it lifts off
-DOODLE_HOLD_S = 2.0
-
-# a lower-third alert holds 3-4s per the kit's own note — long enough to
-# read the correction, short enough not to sit on the shot
-ALERT_HOLD_S = 3.5
+# How long an annotation stays on screen before it lifts off. An annotation is
+# drawn in ATTENTION and spends the frame's one attention, so it is a beat in
+# its own right rather than decoration that can linger.
+SCRIBBLE_HOLD_S = 2.0
 
 
 def build_long_timeline(
@@ -809,11 +796,8 @@ def build_long_timeline(
                    "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
-        if kind in (CueKind.SCRIBBLE, CueKind.DOODLE):
-            payload["hold"] = DOODLE_HOLD_S
-        elif kind is CueKind.ALERT:
-            # a lower-third interjection: long enough to read, never longer
-            payload["hold"] = ALERT_HOLD_S
+        if kind is CueKind.SCRIBBLE:
+            payload["hold"] = SCRIBBLE_HOLD_S
         cues.append(Cue(t=t, kind=kind, payload=payload))
     cues.sort(key=lambda c: (c.t, c.payload.get("order", 0)))
     return cues
@@ -848,26 +832,22 @@ DEFAULT_HOLDS = {
     CueKind.CHART: 7.0,
     CueKind.FILING: 6.0,
     CueKind.SCREENGRAB: 6.0,
-    CueKind.ASSET: 8.0,
+    CueKind.PLATE: 7.0,
     CueKind.MEME: 3.0,
     # the design-kit cards: a term definition and a table are READ
-    CueKind.TERM: 7.0,
-    CueKind.BIGNUM: 6.0,
-    CueKind.TABLE: 8.0,
-    CueKind.PROP: 5.0,
+
 }
 
 # Kinds carrying data a viewer has to READ rather than glance at. These never
 # cut early: a later visual is pushed back rather than truncating one of
 # these, and the voice-over simply keeps running underneath.
-READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB, CueKind.ASSET,
-                  CueKind.TERM, CueKind.BIGNUM, CueKind.TABLE)
+READABLE_KINDS = (CueKind.CHART, CueKind.FILING, CueKind.SCREENGRAB,
+                  CueKind.PLATE)
 MIN_READABLE_S = 5.0
 
 # Designed panels sit BESIDE Dennis (the two-shot); real photographs,
 # footage, filings and memes take the whole frame raw.
-TWO_SHOT_KINDS = (CueKind.CHART, CueKind.ASSET, CueKind.TERM, CueKind.BIGNUM,
-                  CueKind.TABLE, CueKind.PROP)
+TWO_SHOT_KINDS = (CueKind.CHART, CueKind.PLATE)
 
 # Dennis bookends every chapter: this much host on each side of a chapter
 # boundary is reserved, so a chapter always opens and closes on his face.

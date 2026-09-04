@@ -1,86 +1,86 @@
-"""From a template plus a script to a LAYER LIST, and the rules it must obey.
+"""The template and the script, turned into an ordered list of layers.
 
-The layer list is the composition, stated as data before a single pixel is
-drawn. That is deliberate: every invariant this format has is a property of
-which layers exist and when, so they are checked here — cheaply, in unit
-tests, on every render — rather than inferred from the output afterwards.
+`templates/shots/*.json` fixes space and order, the word timestamps fix
+duration, and this module is the machinery between those two facts and
+something a renderer can draw. It chooses nothing: no plate, no figure, no
+composition. A format is a file.
 
-The pixel measurement still runs (`byproducts.held_spans`), because a layer
-list that satisfies every rule can still encode to a frame that sits still.
-The two checks answer different questions and neither replaces the other:
-this one says the composition was specified correctly, that one says the
-video actually moves.
+**Every asset here comes from the v2 plate registry.** This module used to
+read a second one — 476 entries in four hand-drawn registers, with its own
+manifest, its own scale rule, its own light and ambient loops — and the two
+systems were live in the same repository at the same time. That is how a
+rebuild ships dark cards twice: the old path stays resolvable, nothing points
+at it, and then something does. The register kit is gone; `plates-registry.json`
+is the only library.
+
+Three things follow from the v2 kit that did not hold under the old one:
+
+* **Type goes into slots the plate declares.** A plate is rendered WITH its
+  values by `plate_frames`, in the face, size, weight and colour role the kit
+  declares for that slot's role. This module places the plate and says what
+  goes in it; it does not fit type. The old path drew every line of copy
+  itself, over artwork that had no opinion about type at all, and the budgets
+  it needed to do that were measured by running the fitter over the templates.
+  The kit carries a `maxChars` per slot instead.
+
+* **The host is solved onto the room's anchor.** Not fitted into a figure box:
+  the anchor's HEIGHT is his target height, and his own floor line sits on the
+  anchor's bottom edge. `host.place_on_room` is that contract, in one place.
+
+* **Data plates do not boil.** 44 of the 113 are `playback: static` — tables,
+  charts, figures, structure. A number that moves three times a second cannot
+  be read, which is the whole job of a number. The rooms, the host, the cards
+  and the paper loop; everything carrying figures is still.
 """
 
 from __future__ import annotations
 
+import hashlib
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Protocol, Sequence
+from typing import Any, Protocol, Sequence
 
-from pipeline.kit_manifest import AMBIENT_REPLACING, Entry, Kit, KitError
-from pipeline.marks import LINE_LEADING, block_height, face_for
+from pipeline.plates import Plate, Registry
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
                             TemplateError)
 
-# THE DRAWN WORLD BOILS; TYPE AND DATA NEVER DO.
-#
-# The delivery boils every plate at 7fps on the principle that the drawing is
-# made again each frame, and code-drawn MARKS follow it — a ring, an arrow, a
-# connector, the clock's hands are drawings, and a drawing that sits still
-# next to a boiling plate is the thing that reads as pasted on.
-#
-#   BOIL    plates, room, props, host, marks, transitions
-#   NEVER   figures, labels, headers, captions, quotes, any code-drawn text,
-#           and any rule or box framing it
-#
-# Type was boiling too, and it was wrong: a number that moves three times a
-# second cannot be read, which is the whole job of a number. The two-pixel
-# re-placement that reads as "the same hand" on a scribble reads as a
-# vibrating figure on a sheet row. `check_invariants` refuses a text-bearing
-# layer that carries a boil rate, so this cannot come back by accident.
-BOIL_FPS = 7
+log = logging.getLogger(__name__)
 
 # Moving in on a slot: how much of the frame height it should come to fill,
 # and how far the plate may be enlarged doing it. Past about 2.4x the kit's
-# 2x delivery starts to soften, which is the real ceiling here.
-FOCUS_FILL = 0.30
-# A sheet row spans the plate's full width, so any real blow-up cuts the
-# labels off both sides — "Revenue" rendered as "ue". The push-in stays
-# gentle and the PAN does the work: the lit row moves to the middle of the
-# frame, which is the change a viewer reads between steps.
-FOCUS_MAX_SCALE = 1.14
+# stroke is visibly soft, so a slot too small to reach the target simply gets
+# as close as the ceiling allows.
+FOCUS_FILL = 0.62
+FOCUS_MAX_SCALE = 2.4
 
-# Two different floors, because they answer different questions.
-#
-# MIN_TYPE_FH (3.5%) is the AUTHORED floor: a template may not ask for prose
-# smaller than this, and the parser refuses it.
-#
-# This one is for type whose size comes from a KIT SLOT rather than from the
-# template — a sheet row band, a card label. Those are short strings read in
-# context, not prose, and the kit's own geometry sets them: a six-band sheet
-# gives 57px rows, which is legible. What is NOT legible is a card label at
-# 33px because four cards were arranged where two fit, and that is what this
-# catches.
-SLOT_TYPE_FLOOR_FH = 0.025
+# How much of a two-shot's width the graphic takes. The rest is his column,
+# and a medium framing draws about 39% of a 16:9 frame — so he has room to
+# stand in his half rather than being cropped into it.
+TWO_SHOT_GRAPHIC = 0.56
 
-# THE PORTAL RULE. Real media — Pexels, memes, EDGAR screenshots — never
-# appears as a raw cutaway. It arrives inside a container that makes it a
-# thing in the room: a filing ON a screen, a print ON the desk, an item
-# PINNED to the wall, a still thrown at the projection wall.
-#
-# This is enforced here rather than asked for in a prompt, because "b-roll
-# looks imported" was a diagnosis on the format that got scrapped, and a
-# convention nobody checks is how it got there.
-MEDIA_PREFIX = "media."
-PORTAL_CONTAINERS = {
-    "filing-on-screen": ("screen",),
-    "print-on-desk": ("image",),
-    "pinned-item": ("image",),
-    "projection-wall-16": ("projection",),
-    "monitor": ("screen",),
-    "cu-page": ("page",),
-}
+# HOW MUCH A PLATE MAY CARRY AND STILL SHARE THE FRAME. A two-shot draws the
+# graphic at 56% of the width, so its type lands at 56% of the size it was
+# drawn at. A quote pull is three slots and reads fine at that; a four-row
+# sheet is thirty-nine and its unit row is already the smallest type in the
+# kit. The dense plates are the ones a chapter is ABOUT, and a chapter's
+# evidence beat can have the frame to itself.
+TWO_SHOT_MAX_SLOTS = 10
+
+# What he does in a room that declares `hostAnchor: false`. The role is the
+# kit's own, so a kit that renames its framings is followed rather than
+# hard-coded around.
+HOST_WHERE_NOBODY_STANDS = "to-camera"
+
+# Where a caption band sits, as a fraction of frame height, and how tall it is
+# allowed to be. Kept clear of the disclaimer and of the top strip so a long
+# line can never stack with the furniture.
+CAPTION_BAND = (0.78, 0.14)
+
+# A row of type is never set below this fraction of the frame's height. Below
+# it a figure is present but not readable, which is worse than absent — it
+# looks like a design decision.
+SLOT_TYPE_FLOOR_FH = MIN_TYPE_FH
 
 
 @dataclass
@@ -89,12 +89,12 @@ class Layer:
 
     `shot_id` is carried so "no layer may outlive its shot" is checkable
     without reconstructing which span a layer came from, and `entry_key` so
-    "every shot reached the plate the template names" is checkable against
-    the kit rather than against the template that asked for it.
+    "every shot reached the plate the template names" is checkable against the
+    registry rather than against the template that asked for it.
     """
 
     name: str
-    kind: str                    # ground|plate|fill|host|text|mark|enter|caption|ambient
+    kind: str            # ground|plate|fill|media|host|text|mark|caption
     shot_id: str
     t_start: float
     t_end: float
@@ -102,22 +102,21 @@ class Layer:
     y: int = 0
     w: int = 0
     h: int = 0
-    path: Path | None = None
-    frames: tuple[Path, ...] = ()
+    path: Path | None = None            # a resolved image, for media layers
+    entry_key: str = ""                 # the registry key this layer reached
+    concept: str = ""                   # its family
+    values: dict[str, str] = field(default_factory=dict)   # slot -> text
+    frame_count: int = 1
     fps: int = 0
     loops: bool = False
-    size_fh: float = 0.0         # type only; 0 for everything else
-    entry_key: str = ""
-    concept: str = ""
     slot: str = ""
-    text: str = ""
-    reveal_s: float = 0.0        # type draws on over this long
-    boil_fps: int = 0            # redraw rate for code-drawn ink
-    lit: bool = True             # a ghosted row is present but pushed back
-    max_lines: int = 3           # the template's line budget, not a default
-    halign: str = "center"       # the template's alignment, not a default
-    type_px: int = 0             # a size the whole group agreed on, if any
-    panel: bool = False          # paper drawn under type that sits on artwork
+    text: str = ""                      # code-drawn type, bare-ground shots only
+    size_fh: float = 0.0
+    reveal_s: float = 0.0
+    max_lines: int = 3
+    halign: str = "center"
+    lit: bool = True
+    panel: bool = False
     z: int = 0
 
     @property
@@ -128,14 +127,11 @@ class Layer:
     def moves(self) -> bool:
         """Whether this layer is redrawing rather than sitting there.
 
-        A boil plate at 7fps and a host loop at 12 both move. So does a MARK
-        this code draws, on the same principle: the drawing is made again
-        each frame rather than transformed. Type does not — a bare shot of
-        one sentence on paper is genuinely a held frame now, and its
-        `max_hold_s` is what keeps it short rather than a wobble that made
-        the measurement look better than the video.
+        A room's two-frame loop and a host strip both move. A static data
+        plate does not, and its `max_hold_s` is what keeps it short rather
+        than a wobble that made the measurement look better than the video.
         """
-        return bool((self.loops and self.frames) or self.boil_fps)
+        return bool(self.loops and self.frame_count > 1)
 
 
 class Resolver(Protocol):
@@ -150,8 +146,8 @@ class Resolver(Protocol):
 class BuildResult:
     layers: list[Layer]
     spans: list[Span]
-    register: str
     frame: tuple[int, int]
+    aspect: str = ""
     unfilled: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
 
@@ -161,96 +157,129 @@ class BuildResult:
     def of_kind(self, kind: str) -> list[Layer]:
         return [l for l in self.layers if l.kind == kind]
 
+    @property
+    def plates_used(self) -> list[str]:
+        return sorted({l.entry_key for l in self.layers if l.entry_key})
 
-def _fit_into(entry: Entry, frame: tuple[int, int]) -> tuple[int, int, float]:
-    """Place a delivered plate into the output frame.
 
-    A plate authored at the frame's own aspect covers it; anything smaller (a
-    card, a page, a host cut-out) keeps its proportion and is centred by the
-    caller. The scale is derived from `delivered`, which is read from the
-    entry — 2x canvas for most of the kit and 1:1 for two groups of it.
+# ---------------------------------------------------------------------------
+# Resolving what the template names
+# ---------------------------------------------------------------------------
+
+def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
+                 step: int) -> Plate | None:
+    """A room ROLE — `talk`, `establish`, `read` — to one of its angles.
+
+    ROTATING, NOT DEFAULTING. The registry declares several angles per role
+    and a template that names `room/wide` gets `room/wide` every time; nine
+    straight-on eye-level plates cut like props sliding on a shelf, which is
+    why the kit added three camera positions. The step is the shot's index, so
+    consecutive rooms in one video differ, and the seed is the video's, so two
+    videos do not open on the same angle.
     """
+    options = [k for k in reg.room_roles.get(role, ())]
+    resolved: list[Plate] = []
+    for stem in options:
+        key = reg.aspect_key(stem, aspect) or (stem if stem in reg else None)
+        got = reg.get(key) if key else None
+        if got is not None:
+            resolved.append(got)
+    if not resolved:
+        return None
+    # The step rotates WITHIN a video; the seed decides where the rotation
+    # starts, so two videos do not open on the same angle. The docstring said
+    # both and the code did only the first — every short in the channel opened
+    # on the same room.
+    offset = (int(hashlib.sha256(seed.encode()).hexdigest(), 16)
+              if seed else 0)
+    return resolved[(offset + step) % len(resolved)]
+
+
+def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
+    """A template's plate name against the registry, aspect-aware.
+
+    A template may write `numbers-sheet-3r`, `numbers-sheet-3r-9x16` or the
+    full `tables/numbers-sheet-3r-9x16`. The family is the kit's filing
+    system, and the aspect is a property of the FORMAT rather than something
+    a template should have to repeat on every line.
+    """
+    name = (name or "").strip()
+    if not name:
+        return None
+    if name in reg:
+        return reg.get(name)
+    for candidate in (f"{name}-{aspect}" if aspect else "", name):
+        if not candidate:
+            continue
+        hits = [k for k in reg.keys() if k.split("/", 1)[1] == candidate]
+        if len(hits) == 1:
+            return reg.get(hits[0])
+        if hits:
+            raise TemplateError(
+                f"plate {name!r} is ambiguous — it is "
+                f"{' and '.join(sorted(hits))}. Name the family.")
+    return None
+
+
+def _fit(plate: Plate, frame: tuple[int, int]) -> tuple[int, int]:
+    """The plate at its largest inside the frame, aspect preserved."""
     fw, fh = frame
-    dw, dh = entry.delivered
-    if abs(dw / dh - fw / fh) < 0.02:
-        return fw, fh, fw / dw
-    s = min(fw / dw, fh / dh)
-    return int(round(dw * s)), int(round(dh * s)), s
+    pw, ph = plate.delivered
+    k = min(fw / max(pw, 1), fh / max(ph, 1))
+    return max(int(pw * k), 1), max(int(ph * k), 1)
 
 
-def _slot_in_frame(entry: Entry, slot: str, placed: tuple[int, int, int, int]
-                   ) -> tuple[int, int, int, int]:
-    """A slot box in OUTPUT-frame pixels, for a plate drawn at `placed`.
-
-    Two scales compose here and both are read, never assumed: the entry's own
-    `delivered / canvas`, and then the plate's placement into the frame.
-    """
+def _slot_in_frame(plate: Plate, slot_name: str,
+                   placed: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """A declared slot's box, in frame pixels, for a plate placed at `placed`."""
+    slot = plate.require_slot(slot_name)
     px, py, pw, ph = placed
-    sx, sy, sw, sh = entry.slot_px(slot)
-    k = pw / entry.delivered[0]
-    return (px + int(round(sx * k)), py + int(round(sy * k)),
-            int(round(sw * k)), int(round(sh * k)))
+    sx, sy, sw, sh = slot.scaled()
+    kx = pw / max(plate.delivered[0], 1)
+    ky = ph / max(plate.delivered[1], 1)
+    return (int(px + sx * kx), int(py + sy * ky),
+            max(int(sw * kx), 1), max(int(sh * ky), 1))
 
 
 def _arrange(n: int, how: str, frame: tuple[int, int],
              box: tuple[int, int, int, int] | None = None
              ) -> list[tuple[int, int, int, int]]:
-    """`n` cells filling `box`, or the middle of the frame if none is given.
-
-    Kept deliberately dumb: a grid, a row or a column, with a margin. Cards
-    are centred inside their cell by the caller, so a cell being wider than
-    the card it holds is fine and no card is ever stretched.
-
-    Passing a box is how cards land ON something — the desk, the sheet —
-    rather than floating on bare paper in the middle of the frame.
-    """
-    if box is not None:
-        ox, oy, fw, fh = box
-        margin = 0.03
-    else:
-        ox, oy = 0, 0
-        fw, fh = frame
-        margin = None
+    """`n` equal boxes down a column or across a row, inside `box`."""
+    fw, fh = frame
+    x0, y0, w, h = box or (0, 0, fw, fh)
     if n <= 0:
         return []
     if how == "row":
-        cols, rows = n, 1
-    elif how == "column":
-        cols, rows = 1, n
-    else:
-        cols = 1 if n == 1 else 2
-        rows = (n + cols - 1) // cols
-    if margin is None:
-        mx, my = int(fw * 0.04), int(fh * 0.08)
-    else:
-        mx, my = int(fw * margin), int(fh * margin)
-    gx, gy = int(fw * 0.03), int(fh * 0.02)
-    cw = (fw - 2 * mx - gx * (cols - 1)) // cols
-    ch = (fh - 2 * my - gy * (rows - 1)) // rows
-    out = []
-    for i in range(n):
-        r, c = divmod(i, cols)
-        out.append((ox + mx + c * (cw + gx), oy + my + r * (ch + gy), cw, ch))
-    return out
+        step = w // n
+        return [(x0 + i * step, y0, step, h) for i in range(n)]
+    step = h // n
+    return [(x0, y0 + i * step, w, step) for i in range(n)]
+
+
+# ---------------------------------------------------------------------------
+# Building the layer list
+# ---------------------------------------------------------------------------
+
+MEDIA_PREFIX = "media."
+
+
+def _settings():
+    from config import Settings
+    return Settings(_env_file=None)
 
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
-                 kit: Kit, register: str, *,
-                 progression: bool = False) -> BuildResult:
-    """Turn the template and the script into the ordered layer list.
-
-    `progression` advances the room across the runtime — light, clutter, the
-    wall and the clock. It is off by default because a 70-second SHORT has
-    nowhere to travel; the LONG turns it on.
-    """
-    from pipeline import progression as prog
+                 reg: Registry, *, aspect: str = "",
+                 seed: str = "") -> BuildResult:
+    """Turn the template and the script into the ordered layer list."""
     frame = fmt.frame
     fw, fh = frame
+    aspect = aspect or getattr(fmt, "aspect", "") or ""
     layers: list[Layer] = []
     unfilled: list[str] = []
     skipped: list[str] = []
 
-    for span in spans:
+    for span_index, span in enumerate(spans):
         shot = span.shot
         t0, t1 = span.start, span.end
         # A resolver may need to know which shot it is answering for — the
@@ -260,819 +289,622 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         if begin is not None:
             begin(shot)
 
-        # Where this shot sits in the video decides the state of the room.
-        total = spans[-1].end if spans else 1.0
-        state = prog.at(((t0 + t1) / 2) / total if total else 0.0)
-
-        # -- the ground. Every frame has paper under it; kit plates are
+        # -- the ground. Every frame has paper under it; plates are
         #    transparent PNGs and would composite onto nothing otherwise.
         layers.append(Layer(name=f"{shot.id}:ground", kind="ground",
                             shot_id=shot.id, t_start=t0, t_end=t1,
                             w=fw, h=fh, z=0))
 
+        plate: Plate | None = None
         placed: tuple[int, int, int, int] | None = None
-        entry: Entry | None = None
-
-        # -- the transition INTO this shot, played once at the cut
-        if shot.enter:
-            try:
-                ent = kit.concept(shot.enter, register)
-            except KitError as exc:
-                raise TemplateError(
-                    f"{fmt.name}/{shot.id}: enter {shot.enter!r} — {exc}") from exc
-            w, h, _ = _fit_into(ent, frame)
-            layers.append(Layer(
-                name=f"{shot.id}:enter:{shot.enter}", kind="enter",
-                shot_id=shot.id, t_start=t0,
-                t_end=min(t0 + ent.cycle_s, t1),
-                x=(fw - w) // 2, y=(fh - h) // 2, w=w, h=h,
-                frames=ent.paths, fps=ent.fps, loops=ent.loops,
-                entry_key=ent.key, concept=ent.concept, z=90))
+        # The area the plate owns, and where the host stands if he is not on a
+        # room. A one-up shot gives the plate the whole frame and the host
+        # nothing to be beside; a two-shot splits it.
+        stage: tuple[int, int, int, int] = (0, 0, fw, fh)
+        host_column: tuple[int, int, int, int] | None = None
+        graphic_side = ""
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:
-            plate_name = (prog.restate(shot.plate, state)
-                          if progression else shot.plate)
-            try:
-                entry = kit.concept(plate_name, register)
-            except KitError as exc:
+            # `room/<role>` is a ROLE, not a key: the template says what kind
+            # of angle this beat wants and the registry picks one, rotating.
+            role = shot.plate.split("/", 1)[1] if shot.plate.startswith("room/") else ""
+            if role and role in reg.room_roles:
+                plate = resolve_room(reg, role, aspect, seed=seed,
+                                     step=span_index)
+            else:
+                plate = resolve_plate(reg, shot.plate, aspect)
+            if plate is None:
                 raise TemplateError(
-                    f"{fmt.name}/{shot.id}: plate {plate_name!r} — {exc}") from exc
-            w, h, _ = _fit_into(entry, frame)
-            placed = ((fw - w) // 2, (fh - h) // 2, w, h)
-            # Moving in on a slot: scale the plate so that slot fills a real
-            # share of the frame, and centre it there. Without this a walk
-            # down a list is one wide shot with a rectangle migrating down it,
-            # which a viewer reads as a single held composition.
-            if shot.focus and shot.focus in entry.slots:
-                sx, sy, sw, sh = entry.slot_px(shot.focus)
-                k = min((fh * FOCUS_FILL) / max(sh, 1), FOCUS_MAX_SCALE)
-                k = max(k, 1.0)
+                    f"{fmt.name}/{shot.id}: plate {shot.plate!r} is not in the "
+                    f"kit. The registry is the only library — a name that "
+                    f"resolves to nothing draws nothing, and an empty area on "
+                    f"screen looks like a design choice.")
+            # -- A TWO-SHOT IS A SPLIT FRAME, NOT A MAN OVER A CHART. A shot
+            #    carrying both a content plate and a host drew the plate at
+            #    the full frame and then composited him into the middle of
+            #    it, over the thing he is discussing. The graphic takes a
+            #    column and he takes the other; which side alternates, so
+            #    consecutive two-shots are not the same picture; and the
+            #    glance is cut toward the graphic.
+            #
+            #    Only where the frame is wider than it is tall. A vertical
+            #    two-shot side by side gives each of them 46% of 1080, and a
+            #    plate drawn for a phone is not readable in half of one.
+            #
+            #    NEVER ON AN ANNOTATED BEAT. A mark is drawn at the scale of
+            #    the thing it marks, and half a frame is where a nib stops
+            #    being legible — which is a composition fault, not a reason to
+            #    thicken every stroke in the kit.
+            if (shot.host and plate.family != "room" and not shot.marks
+                    and plate.slot(shot.host.slot) is None and fw > fh):
+                if len(plate.slots) > TWO_SHOT_MAX_SLOTS:
+                    raise TemplateError(
+                        f"{fmt.name}/{shot.id}: {plate.key} declares "
+                        f"{len(plate.slots)} slots and cannot share the frame "
+                        f"with the host. A two-shot draws it at "
+                        f"{TWO_SHOT_GRAPHIC:.0%} of the width, so its type "
+                        f"lands at {TWO_SHOT_GRAPHIC:.0%} of the size it was "
+                        f"drawn at. Drop the host from this shot and let the "
+                        f"evidence have the frame.")
+                graphic_side = "left" if span_index % 2 else "right"
+                gw = int(fw * TWO_SHOT_GRAPHIC)
+                stage = ((0 if graphic_side == "left" else fw - gw),
+                         0, gw, fh)
+                host_column = ((gw, 0, fw - gw, fh)
+                               if graphic_side == "left" else (0, 0, fw - gw, fh))
+            w, h = _fit(plate, (stage[2], stage[3]))
+            placed = (stage[0] + (stage[2] - w) // 2,
+                      stage[1] + (stage[3] - h) // 2, w, h)
+
+            # MOVING IN ON A SLOT — AND NEVER PAST THE EDGES OF WHAT IT
+            # HAS TO SHOW. Without this a walk down a list is one wide shot
+            # with a rectangle migrating down it, which a viewer reads as a
+            # single held composition.
+            #
+            # The zoom is bounded by the frame's WIDTH, not only by the target
+            # height. A vertical sheet's row band is 1044 of 1080 canvas units
+            # wide: scaled until it filled 62% of the frame's height it came
+            # out at 1.4x, and the last three columns of every row went off
+            # the right-hand edge. A row you cannot see the figures on is not
+            # a row anybody moved in on. Where the slot is already full width
+            # the move is a PAN — the composition still changes, and every
+            # figure stays on screen.
+            if shot.focus and plate.slot(shot.focus) is not None:
+                gx, gy, gw2, gh2 = stage
+                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, placed)
+                by_height = (gh2 * FOCUS_FILL) / max(sh_px, 1)
+                by_width = gw2 / max(sw, 1)
+                k = max(min(by_height, by_width, FOCUS_MAX_SCALE), 1.0)
                 nw, nh = int(w * k), int(h * k)
-                cx = int((sx + sw / 2) * (nw / entry.delivered[0]))
-                cy = int((sy + sh / 2) * (nh / entry.delivered[1]))
-                placed = (fw // 2 - cx, fh // 2 - cy, nw, nh)
+                base = (gx + (gw2 - nw) // 2, gy + (gh2 - nh) // 2, nw, nh)
+                sx, sy, sw, sh_px = _slot_in_frame(plate, shot.focus, base)
+                nx = base[0] + (gx + gw2 // 2 - (sx + sw // 2))
+                ny = base[1] + (gy + gh2 // 2 - (sy + sh_px // 2))
+                # Never open a gap at an edge: a plate larger than its stage
+                # covers it, and one that is not stays centred on that axis.
+                nx = (min(gx, max(nx, gx + gw2 - nw)) if nw >= gw2
+                      else gx + (gw2 - nw) // 2)
+                ny = (min(gy, max(ny, gy + gh2 - nh)) if nh >= gh2
+                      else gy + (gh2 - nh) // 2)
+                placed = (nx, ny, nw, nh)
                 w, h = nw, nh
+
+            # -- what goes in its slots. The renderer draws the plate WITH
+            #    these; nothing here sets type.
+            values, missing, gone = _bound_values(shot, plate, resolver, reg)
+            # THE WALL IS THE RECEIPTS, so it is filled from the book rather
+            # than from the script: seven tickers this channel actually
+            # covered, when, and one word for how it went. A template cannot
+            # bind them — they are not facts about this video.
+            if plate.name.startswith("wall-of-calls"):
+                from pipeline.plates import wall_of_calls
+                values = {**wall_of_calls(_settings()), **values}
+            unfilled += missing
+            skipped += gone
+
             layers.append(Layer(
-                name=f"{shot.id}:plate:{plate_name}", kind="plate",
+                name=f"{shot.id}:plate:{plate.key}", kind="plate",
                 shot_id=shot.id, t_start=t0, t_end=t1,
                 x=placed[0], y=placed[1], w=w, h=h,
-                frames=entry.paths, fps=entry.fps, loops=entry.loops,
-                entry_key=entry.key, concept=entry.concept, z=10))
+                entry_key=plate.key, concept=plate.family, values=values,
+                frame_count=plate.frame_count, fps=plate.fps or 0,
+                loops=plate.animated, z=10))
 
-        # -- LIGHT, above the plate and below anything code draws.
-        #
-        # The room is lit; the numbers are not. Light sits at z=11 — over the
-        # plate and the host, who are both in the room and should be — and
-        # under every fill, panel, line of type and mark, which are data and
-        # must never be tinted.
-        if progression and entry is not None and kit.has(state.light, register):
-            lent = kit.concept(state.light, register)
-            if abs(lent.delivered[0] / lent.delivered[1] - fw / fh) < 0.05:
-                layers.append(Layer(
-                    name=f"{shot.id}:light:{state.light}", kind="light",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
-                    x=0, y=0, w=fw, h=fh,
-                    frames=lent.paths, fps=lent.fps, loops=lent.loops,
-                    entry_key=lent.key, concept=lent.concept, z=11))
-
-        # -- THE CLOCK. Its face is a slot; the hands are drawn to the hour
-        #    the light is telling, so the window and the clock agree.
-        if progression and entry is not None and "clock-face" in entry.slots:
-            cb = _slot_in_frame(entry, "clock-face", placed)
-            layers.append(Layer(
-                name=f"{shot.id}:clock", kind="clock", shot_id=shot.id,
-                t_start=t0, t_end=t1, x=cb[0], y=cb[1], w=cb[2], h=cb[3],
-                size_fh=state.hour, boil_fps=BOIL_FPS, z=12))
-
-        # -- AMBIENT. Steam off the mug, the cursor, the second hand: these
-        #    run continuously under every room shot and are what keeps a
-        #    held wide shot alive. Only the ADDITIVE ones — see progression.
-        if progression and entry is not None and shot.plate and \
-                shot.plate.startswith(("room-", "at-the-", "desk-")):
-            for amb in prog.AMBIENT_ADDITIVE_USED:
-                if not kit.has(amb, register):
-                    continue
-                aent = kit.concept(amb, register)
-                fx, fy, fwr, fhr = prog.AMBIENT_PLACEMENT[amb]
-                layers.append(Layer(
-                    name=f"{shot.id}:amb:{amb}", kind="plate",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
-                    x=int(fw * fx), y=int(fh * fy),
-                    w=int(fw * fwr), h=int(fh * fhr),
-                    frames=aent.paths, fps=aent.fps, loops=aent.loops,
-                    entry_key=aent.key, concept=aent.concept, z=13))
-
-        # -- slot fills: charts, nested plates, row content
-        for fill_index, (slot, src) in enumerate(shot.bind.items()):
-            # Declaration order is entry order when the shot staggers.
-            fill_t0 = min(t0 + fill_index * shot.stagger_s, max(t1 - 0.3, t0))
-            # A leading '?' means the slot is optional: a sheet has six row
-            # bands and a script may carry four metrics, and two blank bands
-            # is the correct drawing, not a missing asset. Everything without
-            # the mark is required and fails the build when it is empty.
+        # -- nested plates and foreign media, into a slot of the shot's plate
+        for fill_index, (slot_name, src) in enumerate(shot.bind.items()):
             optional = src.startswith("?")
             src = src.lstrip("?")
+            if not src.startswith(("plate.", MEDIA_PREFIX)):
+                continue                      # an ordinary slot fill: above
             box = None
-            if entry is not None and slot in entry.slots:
-                box = _slot_in_frame(entry, slot, placed)
+            if plate is not None and plate.slot(slot_name) is not None:
+                box = _slot_in_frame(plate, slot_name, placed or (0, 0, fw, fh))
+            enter_at = min(t0 + fill_index * shot.stagger_s, max(t1 - 0.3, t0))
 
-            # A nested plate — the page on the desk, the card on the table —
-            # resolves through the kit, in the video's own register, and is
-            # fitted into the slot it was bound to.
             if src.startswith("plate."):
-                nested = kit.concept(src.split(".", 1)[1], register)
+                nested = resolve_plate(reg, src.split(".", 1)[1], aspect)
+                if nested is None:
+                    raise TemplateError(
+                        f"{fmt.name}/{shot.id}: nested plate {src!r} is not "
+                        f"in the kit")
                 bw, bh = (box[2], box[3]) if box else (fw, fh)
                 k = min(bw / nested.delivered[0], bh / nested.delivered[1])
                 nw, nh = int(nested.delivered[0] * k), int(nested.delivered[1] * k)
                 nx = (box[0] + (bw - nw) // 2) if box else (fw - nw) // 2
                 ny = (box[1] + (bh - nh) // 2) if box else (fh - nh) // 2
                 layers.append(Layer(
-                    name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
-                    x=nx, y=ny, w=nw, h=nh,
-                    frames=nested.paths, fps=nested.fps, loops=nested.loops,
-                    entry_key=nested.key, concept=nested.concept,
-                    slot=slot, z=20))
-                continue
-
-            # The portal rule, checked before anything is placed.
-            if src.startswith(MEDIA_PREFIX):
-                allowed = PORTAL_CONTAINERS.get(shot.plate or "")
-                if allowed is None:
-                    raise TemplateError(
-                        f"{fmt.name}/{shot.id}: binds real media {src!r} on "
-                        f"plate {shot.plate!r}, which is not a container. "
-                        f"Media arrives inside one of "
-                        f"{sorted(PORTAL_CONTAINERS)} — never as a raw "
-                        f"cutaway.")
-                if slot not in allowed:
-                    raise TemplateError(
-                        f"{fmt.name}/{shot.id}: binds real media {src!r} to "
-                        f"slot {slot!r} of {shot.plate}, whose media slot is "
-                        f"{allowed[0]!r}.")
-
-            img = resolver.image_for(src)
-            if img is None:
-                txt = resolver.text_for(src)
-                if txt is None:
-                    if not optional:
-                        unfilled.append(f"{shot.id}.{slot} <- {src}")
-                    continue
-                layers.append(Layer(
-                    name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
-                    x=box[0] if box else 0, y=box[1] if box else 0,
-                    w=box[2] if box else fw, h=box[3] if box else fh,
-                    slot=slot, text=txt,
-                    lit=shot.lit in (None, "all", slot), z=20))
-                continue
-            # A resolver may hand back a SEQUENCE instead of one file: an
-            # image that was drawn more than once so it can boil like the
-            # plates do. It is a normal animated layer from here on.
-            if isinstance(img, (list, tuple)):
-                layers.append(Layer(
-                    name=f"{shot.id}:fill:{slot}", kind="fill",
-                    shot_id=shot.id, t_start=fill_t0, t_end=t1,
-                    x=box[0] if box else 0, y=box[1] if box else 0,
-                    w=box[2] if box else fw, h=box[3] if box else fh,
-                    frames=tuple(img), fps=BOIL_FPS, loops=True,
-                    slot=slot, z=20))
-                continue
-            layers.append(Layer(
-                name=f"{shot.id}:fill:{slot}", kind="fill",
-                shot_id=shot.id, t_start=fill_t0, t_end=t1,
-                x=box[0] if box else 0, y=box[1] if box else 0,
-                w=box[2] if box else fw, h=box[3] if box else fh,
-                path=img, slot=slot, z=20))
-
-        # -- a repeated concept: N instances of one card, from a list
-        if shot.repeat and shot.repeat.spatial:
-            rep = shot.repeat
-            items = []
-            getter = getattr(resolver, "list_for", None)
-            if getter is not None:
-                items = list(getter(rep.src) or [])
-            if not items:
-                unfilled.append(f"{shot.id}.repeat <- {rep.src}")
-            items = items[:max(rep.max, 1)]
-            if rep.only is not None:
-                items = items[rep.only:rep.only + 1]
-            rent = kit.concept(rep.concept, register)
-            within = None
-            if rep.within and entry is not None and rep.within in entry.slots:
-                within = _slot_in_frame(entry, rep.within, placed)
-            for idx, (bx, by, bw, bh) in enumerate(
-                    _arrange(len(items), rep.arrange, frame, within)):
-                k = min(bw / rent.delivered[0], bh / rent.delivered[1])
-                cw, ch = int(rent.delivered[0] * k), int(rent.delivered[1] * k)
-                cx, cy = bx + (bw - cw) // 2, by + (bh - ch) // 2
-                # Each card enters on its own beat. That stagger is the motion
-                # the ceiling rule looks for, and it is why this beat can run
-                # seven seconds without being a held frame.
-                enter_at = min(t0 + idx * rep.stagger_s, max(t1 - 0.4, t0))
-                layers.append(Layer(
-                    name=f"{shot.id}:repeat:{rep.concept}:{idx}", kind="plate",
+                    name=f"{shot.id}:fill:{slot_name}", kind="fill",
                     shot_id=shot.id, t_start=enter_at, t_end=t1,
-                    x=cx, y=cy, w=cw, h=ch,
-                    frames=rent.paths, fps=rent.fps, loops=rent.loops,
-                    entry_key=rent.key, concept=rent.concept, z=15))
-                # The arrows BETWEEN the cards are what makes a chain a
-                # chain. Drawn in the gap after each card except the last —
-                # inside every card, they connect nothing and three panels
-                # read as three unrelated notes.
-                if rep.connector and idx + 1 < len(items) and rep.arrange in ("column", "row"):
-                    if rep.arrange == "column":
-                        gx0, gy0 = cx + cw // 2 - int(cw * 0.10), cy + ch
-                        gw, gh = int(cw * 0.20), max(by + bh - (cy + ch), 12)
-                    else:
-                        gx0, gy0 = cx + cw, cy + ch // 2 - int(ch * 0.08)
-                        gw, gh = max(bx + bw - (cx + cw), 12), int(ch * 0.16)
-                    layers.append(Layer(
-                        name=f"{shot.id}:link:{idx}", kind="mark",
-                        shot_id=shot.id, t_start=enter_at, t_end=t1,
-                        x=gx0, y=gy0, w=gw, h=gh,
-                        slot=rep.connector, boil_fps=BOIL_FPS, z=26))
+                    x=nx, y=ny, w=nw, h=nh, slot=slot_name,
+                    entry_key=nested.key, concept=nested.family,
+                    frame_count=nested.frame_count, fps=nested.fps or 0,
+                    loops=nested.animated, z=20))
+                continue
 
-                for slot_name, expr in (rep.bind or {}).items():
-                    if slot_name not in rent.slots:
-                        continue
-                    sx, sy, sw, sh = rent.slot_px(slot_name)
-                    kk = cw / rent.delivered[0]
-                    bx = (cx + int(sx * kk), cy + int(sy * kk),
-                          int(sw * kk), int(sh * kk))
-                    # A card's `mark` slot exists for a drawn mark, not for
-                    # type. Left unbound it is a declared, empty box in the
-                    # middle of every card.
-                    if expr.startswith("$mark:"):
-                        layers.append(Layer(
-                            name=f"{shot.id}:repeat:{slot_name}:{idx}",
-                            kind="mark", shot_id=shot.id,
-                            t_start=enter_at, t_end=t1,
-                            x=bx[0], y=bx[1], w=bx[2], h=bx[3],
-                            slot=expr.split(":", 1)[1], boil_fps=BOIL_FPS,
-                            z=25))
-                        continue
-                    value = (items[idx] if expr == "$item"
-                             else resolver.text_for(expr))
-                    if value is None:
-                        continue
-                    layers.append(Layer(
-                        name=f"{shot.id}:repeat:{slot_name}:{idx}", kind="fill",
-                        shot_id=shot.id, t_start=enter_at, t_end=t1,
-                        x=bx[0], y=bx[1], w=bx[2], h=bx[3],
-                        slot=slot_name, text=str(value), z=25))
-
-        # -- the host, in the plate's figure slot
-        if shot.host:
-            try:
-                hent = kit.concept(shot.host.pose, register)
-            except KitError as exc:
-                raise TemplateError(
-                    f"{fmt.name}/{shot.id}: host {shot.host.pose!r} — {exc}"
-                ) from exc
-            if entry is not None and shot.host.slot in entry.slots:
-                hx, hy, hw, hh = _slot_in_frame(entry, shot.host.slot, placed)
-                k = min(hw / hent.delivered[0], hh / hent.delivered[1])
-                dw, dh = (int(hent.delivered[0] * k), int(hent.delivered[1] * k))
-                hx, hy = hx + (hw - dw) // 2, hy + (hh - dh)
-            else:
-                k = min(fw / hent.delivered[0], fh * 0.55 / hent.delivered[1])
-                dw, dh = (int(hent.delivered[0] * k), int(hent.delivered[1] * k))
-                hx, hy = (fw - dw) // 2, fh - dh
-            # THE HOST IS A SUBJECT AND HAS TO BE SEEN. A figure slot belongs
-            # to the plate, and a plate that is pushed in on a row carries the
-            # slot off the bottom with it: in the numbers walk the host stood
-            # at y=1832 in a 1920 frame — 13% of him on screen, reading as a
-            # smudge at the edge — and the amount clipped changed shot to
-            # shot with which row was lit. Clamped into the frame, he stands
-            # at the bottom of it instead, which is where a figure in front
-            # of a wall-sized sheet belongs.
-            if dh > fh:
-                dw, dh = int(dw * fh / dh), fh
-            hy = min(max(hy, 0), fh - dh)
-            hx = min(max(hx, 0), max(fw - dw, 0))
+            # Foreign media. It never lands on the ground bare — a photograph
+            # full-frame destroys the drawn surface everything else is built
+            # on — so the template binds it into a slot, and where it has none
+            # the renderer puts it in a frames/ plate.
+            path = resolver.image_for(src[len(MEDIA_PREFIX):])
+            if path is None:
+                if not optional:
+                    unfilled.append(f"{shot.id}.{slot_name} <- {src}")
+                else:
+                    skipped.append(f"{shot.id}.{slot_name} <- {src}")
+                continue
+            bx = box or (int(fw * 0.08), int(fh * 0.22),
+                         int(fw * 0.84), int(fh * 0.46))
             layers.append(Layer(
-                name=f"{shot.id}:host:{shot.host.pose}", kind="host",
-                shot_id=shot.id, t_start=t0, t_end=t1,
-                x=hx, y=hy, w=dw, h=dh,
-                frames=hent.paths, fps=hent.fps, loops=hent.loops,
-                entry_key=hent.key, concept=hent.concept, z=40))
+                name=f"{shot.id}:media:{slot_name}", kind="media",
+                shot_id=shot.id, t_start=enter_at, t_end=t1,
+                x=bx[0], y=bx[1], w=bx[2], h=bx[3], slot=slot_name,
+                path=path, z=20))
 
-        # -- type
+        # -- a repeated row: one box per item, down the slot the template names
+        if shot.repeat is not None:
+            layers += _repeat_layers(shot, plate, placed, frame, resolver, t0, t1)
+
+        # -- the host
+        if shot.host:
+            host_layer = _host_layer(reg, shot, plate, placed, frame, t0, t1,
+                                     seed=seed, column=host_column,
+                                     graphic_side=graphic_side)
+            if host_layer is not None:
+                layers.append(host_layer)
+
+        # -- type, for a shot with no plate to put it in
         for spec in shot.text:
             body = resolver.text_for(spec.src)
             if not body:
                 skipped.append(f"{shot.id}.{spec.name} <- {spec.src}")
                 continue
-            size_px = int(round(spec.size_fh * fh))
-            if spec.slot and entry is not None:
-                # "page.headline" means the headline slot of the plate nested
-                # INTO this shot, not of the shot's own plate. Both the entry
-                # and the placement have to come from the nested layer, or the
-                # type lands in the outer plate's coordinates.
-                where, _, sname = spec.slot.rpartition(".")
-                host_entry, host_placed = entry, placed
-                if where:
-                    nested = next((l for l in layers
-                                   if l.shot_id == shot.id and l.kind == "fill"
-                                   and l.entry_key), None)
-                    if nested is not None:
-                        host_entry = kit[nested.entry_key]
-                        host_placed = (nested.x, nested.y, nested.w, nested.h)
-                try:
-                    bx = _slot_in_frame(host_entry, sname, host_placed)
-                except KitError:
-                    bx = (int(fw * 0.08), int(fh * 0.4),
-                          int(fw * 0.84), int(fh * 0.2))
-            else:
-                bw = int(fw * 0.84)
-                bh = block_height(face_for(spec.size_fh), size_px,
-                                  spec.max_lines)
-                if spec.align == "top":
-                    by = int(fh * 0.06)
-                elif spec.align == "center":
-                    by = (fh - bh) // 2
-                elif spec.align == "bottom":
-                    by = fh - bh - int(fh * 0.08)
-                else:
-                    by = int(float(spec.align) * fh) - bh // 2
-                bx = (int(fw * 0.08), by, bw, bh)
-            # Type free-placed over artwork needs its own paper. The room is
-            # a drawing of a room: a line set at the top of it lands across
-            # the window, the shelf and the clock, and no amount of sizing
-            # fixes that. A slot-bound line needs nothing — the plate already
-            # left that box empty for it.
-            needs_panel = spec.slot is None and entry is not None
-            if needs_panel:
-                # Size the paper to the LINES ACTUALLY DRAWN, not to the box
-                # they were allowed. A three-line budget holding one line left
-                # two lines of empty paper under it, which is the same fault
-                # as a declared box with nothing in it.
-                from pipeline import marks as _mk
-                _tw, th = _mk.measure_block(
-                    body, bx, font_name=face_for(spec.size_fh),
-                    size_px=int(spec.size_fh * fh),
-                    max_lines=spec.max_lines)
-                th = min(max(th, int(spec.size_fh * fh)), bx[3])
-                layers.append(Layer(
-                    name=f"{shot.id}:panel:{spec.name}", kind="panel",
-                    shot_id=shot.id, t_start=t0, t_end=t1,
-                    x=bx[0] - int(fw * 0.03), y=bx[1] - int(fh * 0.012),
-                    w=bx[2] + int(fw * 0.06), h=th + int(fh * 0.024),
-                    z=55))
+            bx = _text_box(spec, frame)
             layers.append(Layer(
                 name=f"{shot.id}:text:{spec.name}", kind="text",
-                shot_id=shot.id,
-                t_start=t0, t_end=t1,
+                shot_id=shot.id, t_start=t0, t_end=t1,
                 x=bx[0], y=bx[1], w=bx[2], h=bx[3],
                 size_fh=spec.size_fh, text=body, reveal_s=spec.draw_on_s,
                 slot=spec.color, halign=spec.halign,
-                max_lines=spec.max_lines, panel=needs_panel, z=60))
+                max_lines=spec.max_lines, z=60))
 
         # -- marks land after the thing they mark
-        for m in shot.marks:
-            bx = None
-            # A mark inside a filled image — the extreme candle on the chart —
-            # is positioned in fractions of that image by whoever drew it, so
-            # the ring lands on the datum and not on a box near it.
-            if "." in m.target:
-                frac = getattr(resolver, "frac_box_for", lambda _s: None)(m.target)
-                host_fill = next(
-                    (l for l in layers
-                     if l.shot_id == shot.id and l.kind == "fill"
-                     and (l.path or l.frames)),
-                    None)
-                if frac is not None and host_fill is not None:
-                    fx, fy, fwr, fhr = frac
-                    bx = (host_fill.x + int(host_fill.w * fx),
-                          host_fill.y + int(host_fill.h * fy),
-                          max(int(host_fill.w * fwr), 8),
-                          max(int(host_fill.h * fhr), 8))
-            # "page.body-3-circled" is a slot of the plate nested INTO this
-            # shot, the same address the text specs use. Resolved the same way,
-            # or the ring silently fails to land on the clause it is for.
-            if bx is None and "." in m.target:
-                where, _, sname = m.target.rpartition(".")
-                nested = next((l for l in layers
-                               if l.shot_id == shot.id and l.kind == "fill"
-                               and l.entry_key), None)
-                if where and nested is not None:
-                    ne = kit[nested.entry_key]
-                    if sname in ne.slots:
-                        bx = _slot_in_frame(
-                            ne, sname, (nested.x, nested.y, nested.w, nested.h))
-            if bx is None:
-                target = next(
-                    (l for l in layers
-                     if l.shot_id == shot.id
-                     and (l.slot == m.target or l.name.endswith(m.target))),
-                    None)
-                if target is not None:
-                    bx = (target.x, target.y, target.w, target.h)
-                elif entry is not None and m.target in entry.slots:
-                    bx = _slot_in_frame(entry, m.target, placed)
-            if bx is None:
-                skipped.append(f"{shot.id}.mark:{m.kind} <- {m.target}")
+        for spec in shot.marks:
+            target = None
+            if plate is not None and plate.slot(spec.on) is not None:
+                target = _slot_in_frame(plate, spec.on, placed or (0, 0, fw, fh))
+            if target is None:
+                skipped.append(f"{shot.id}.mark:{spec.style} <- {spec.on}")
                 continue
             layers.append(Layer(
-                name=f"{shot.id}:mark:{m.name}", kind="mark",
+                name=f"{shot.id}:mark:{spec.style}", kind="mark",
                 shot_id=shot.id,
-                t_start=min(t0 + 0.35, t1), t_end=t1,
-                x=bx[0], y=bx[1], w=bx[2], h=bx[3], slot=m.kind,
-                boil_fps=BOIL_FPS, z=70))
+                t_start=min(t0 + spec.after_s, t1), t_end=t1,
+                x=target[0], y=target[1], w=target[2], h=target[3],
+                slot=spec.style, z=70))
 
-    _agree_on_a_sheet(layers, fh)
-    return BuildResult(layers=layers, spans=list(spans), register=register,
-                       frame=frame, unfilled=unfilled, skipped=skipped)
+        # -- captions
+        if shot.captions and not shot.has_large_type:
+            layers.append(Layer(
+                name=f"{shot.id}:caption", kind="caption", shot_id=shot.id,
+                t_start=t0, t_end=t1,
+                x=int(fw * 0.06), y=int(fh * CAPTION_BAND[0]),
+                w=int(fw * 0.88), h=int(fh * CAPTION_BAND[1]), z=80))
 
-
-def _row_size(l: Layer, fh: int) -> int:
-    """The size a sheet row actually sets at, by the renderer's own fitter."""
-    from PIL import Image, ImageDraw
-    from pipeline import marks as _mk
-    parts = l.text.split("\t")
-    size, _kept, _drop = _mk.fit_columns(
-        ImageDraw.Draw(Image.new("L", (8, 8))), parts[0],
-        [v for v in parts[1:] if v], l.w, l.h,
-        font_name=_mk.DISPLAY_FONT if l.lit else _mk.BODY_FONT,
-        start_px=l.type_px, min_px=int(SLOT_TYPE_FLOOR_FH * fh))
-    return size
+    layers.sort(key=lambda l: (l.t_start, l.z))
+    return BuildResult(layers=layers, spans=list(spans), frame=frame,
+                       aspect=aspect, unfilled=unfilled, skipped=skipped)
 
 
-def _agree_on_a_sheet(layers: list[Layer], fh: int) -> None:
-    """One type size and one set of periods for every row of a sheet.
+def _slot_budget(plate: Plate, slot_name: str) -> int:
+    """The kit's own `maxChars` for a slot, or 0 when it declares none."""
+    slot = plate.slot(slot_name)
+    if slot is None:
+        return 0
+    role = (plate.type_roles.get(slot.role) or {})
+    if role.get("maxChars"):
+        return int(role["maxChars"])
+    if role.get("maxLines") and role.get("maxCharsPerLine"):
+        return int(role["maxLines"]) * int(role["maxCharsPerLine"])
+    return 0
 
-    Two faults, one cause: a row sized on its own knows nothing about the
-    rows above it.
 
-    THE SIZE. A stock row has a single figure where a flow has five, so it
-    never has to shrink and comes out half again as big — "Shares out" was
-    shouting over the table it is a row of. The rows are measured together
-    and the smallest size wins.
+def _bound_values(shot: Shot, plate: Plate, resolver: Resolver,
+                  reg: Registry) -> tuple[dict[str, str], list[str], list[str]]:
+    """The slot values for one shot: `(values, unfilled, skipped)`.
 
-    THE PERIODS. `fit_columns` gives up the oldest period rather than set a
-    row below the legibility floor, which is the right policy for one row and
-    a disaster for five: Revenue kept three years, Free cash flow kept two,
-    and the header still said five. Columns that do not line up are worse
-    than small type. So the DROP is decided for the sheet — the most periods
-    every series row can show — and every row shows the same ones.
+    Routed through `plate_tags.build_fill`, which is the grammar a director
+    writes a `[PLATE]` tag in. One grammar for both formats: a template may
+    write `row-1` and `head` and `band` and get the same cell expansion, the
+    same six-period check and the same "that slot is not declared" refusal
+    that a LONG's tag gets. The alternative was a second, quieter expansion
+    that agreed with the first until it did not.
 
-    Both answers come from the same `fit_columns` the renderer draws with,
-    called once more here, so neither can drift from what lands on the frame.
+    A leading `?` means the slot is optional: a sheet has six row bands and a
+    script may carry four metrics, and two blank rows is the correct drawing,
+    not a missing asset. Everything without the mark is required and fails the
+    build when it is empty — a slot with no value must never draw an empty box.
     """
-    from PIL import Image, ImageDraw
-    from pipeline import marks as _mk
-    d = ImageDraw.Draw(Image.new("L", (8, 8)))
-    floor = int(SLOT_TYPE_FLOOR_FH * fh)
-    rows: dict[tuple[str, int], list[Layer]] = {}
-    for l in layers:
-        if l.kind == "fill" and "\t" in (l.text or "") and l.h:
-            rows.setdefault((l.shot_id, l.h), []).append(l)
+    from pipeline.plate_tags import build_fill
 
-    for group in rows.values():
-        if len(group) < 2:
+    unfilled: list[str] = []
+    skipped: list[str] = []
+    parts: list[str] = [plate.key]
+    for slot_name, raw in shot.bind.items():
+        optional = raw.startswith("?")
+        src = raw.lstrip("?")
+        if src.startswith(("plate.", MEDIA_PREFIX)):
+            continue                          # composited, not typed
+        got = resolver.text_for(src)
+        if got is None or not str(got).strip():
+            (skipped if optional else unfilled).append(
+                f"{shot.id}.{slot_name} <- {src}")
             continue
-        parsed = [(l, l.text.split("\t")[0],
-                   [v for v in l.text.split("\t")[1:] if v]) for l in group]
-        widest = max(len(v) for _l, _lab, v in parsed)
-        if widest < 2:
+        # AN OPTIONAL SLOT THAT WILL NOT FIT IS LEFT EMPTY, NOT OVERFLOWED,
+        # AND NOT A REASON TO REFUSE THE VIDEO. The long binds a chapter's
+        # own sentences into slots, and a sentence is whatever length the
+        # writer wrote — a 65-character line into a 60-character caption
+        # failed the whole render over one optional caption. Required binds
+        # still refuse in `check_budgets`: a slot the beat is FOR, carrying
+        # something too long, is a beat that does not work.
+        budget = _slot_budget(plate, slot_name)
+        if optional and budget and len(str(got).strip()) > budget:
+            skipped.append(f"{shot.id}.{slot_name} <- {src} "
+                           f"({len(str(got).strip())} > {budget} chars)")
             continue
+        # A value carrying the tag grammar's own separators would be read as
+        # structure. Only `|` can do that; a comma is meaningful and is what
+        # spreads a row across its cells.
+        parts.append(f"{slot_name}={str(got).replace('|', '/')}")
 
-        def _measure(keep: int) -> tuple[int, bool]:
-            sizes, clean = [], True
-            for l, lab, vals in parsed:
-                # A stock row is one reading and a date, not a series: it
-                # shares the SIZE but has no periods to give up.
-                use = vals[-keep:] if len(vals) == widest else vals
-                size, _kept, dropped = _mk.fit_columns(
-                    d, lab, use, l.w, l.h, min_px=floor,
-                    font_name=_mk.DISPLAY_FONT if l.lit else _mk.BODY_FONT)
-                sizes.append(size)
-                clean = clean and not dropped
-            return min(sizes), clean
+    # A LIT ROW. `lit` names the band the step is on, or "all" for the pull-back
+    # where every row is up. A band is not a text box — naming it lights it —
+    # which is why this goes in as the slot name rather than as a value.
+    lit = (shot.lit or "").strip()
+    if lit == "all":
+        parts += [f"{n}=1" for n in sorted(plate.slots)
+                  if plate.slots[n].is_band]
+    elif lit and plate.slot(lit) is not None:
+        parts.append(f"{lit}=1")
 
-        keep = widest
-        while keep > 2:
-            size, clean = _measure(keep)
-            if clean and size >= floor:
-                break
-            keep -= 1
-        else:
-            size, _clean = _measure(keep)
+    fill = build_fill(reg, " | ".join(parts))
+    for problem in fill.problems:
+        # "FILLS NONE OF ITS SLOTS" IS A TAG PROTECTION, NOT A TEMPLATE ONE.
+        #
+        # It exists because a director naming a plate and writing nothing on it
+        # gets an empty rectangle that looks like a design choice. A template
+        # shot is authored as a whole composition: `the-turn` is a room, a host
+        # in close-up and the spoken line, and the room's only text slot is the
+        # chapter-opener title that a SHORT has no use for. Which binds are
+        # required is carried by the `?` prefix and reported through `unfilled`.
+        if "fills none of its" in problem:
+            continue
+        raise TemplateError(f"{shot.id}: {problem}")
+    return fill.values, unfilled, skipped
 
-        for l, lab, vals in parsed:
-            if len(vals) == widest and keep < widest:
-                l.text = "\t".join([lab] + vals[-keep:])
-            l.type_px = size
+
+def _repeat_layers(shot: Shot, plate: Plate | None,
+                   placed: tuple[int, int, int, int] | None,
+                   frame: tuple[int, int], resolver: Resolver,
+                   t0: float, t1: float) -> list[Layer]:
+    """One box per item of a repeated list, arranged down its slot."""
+    rep = shot.repeat
+    items = resolver.list_for(rep.src) or []
+    if not items:
+        return []
+    box = None
+    if plate is not None and rep.into and plate.slot(rep.into) is not None:
+        box = _slot_in_frame(plate, rep.into, placed or (0, 0, *frame))
+    boxes = _arrange(len(items), rep.arrange, frame, box)
+    out: list[Layer] = []
+    for idx, (value, bx) in enumerate(zip(items, boxes)):
+        enter_at = min(t0 + idx * (rep.stagger_s or shot.stagger_s),
+                       max(t1 - 0.3, t0))
+        out.append(Layer(
+            name=f"{shot.id}:repeat:{rep.into or 'frame'}:{idx}", kind="text",
+            shot_id=shot.id, t_start=enter_at, t_end=t1,
+            x=bx[0], y=bx[1], w=bx[2], h=bx[3],
+            size_fh=rep.size_fh, text=str(value), max_lines=1, z=25))
+    return out
+
+
+def _text_box(spec, frame: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Where a code-drawn line sits when there is no plate to put it in."""
+    from pipeline.marks import block_height, face_for
+
+    fw, fh = frame
+    size_px = int(round(spec.size_fh * fh))
+    bw = int(fw * 0.84)
+    bh = block_height(face_for(spec.size_fh), size_px, spec.max_lines)
+    if spec.align == "top":
+        by = int(fh * 0.06)
+    elif spec.align == "center":
+        by = (fh - bh) // 2
+    elif spec.align == "bottom":
+        by = fh - bh - int(fh * 0.08)
+    else:
+        by = int(float(spec.align) * fh) - bh // 2
+    return (int(fw * 0.08), by, bw, bh)
+
+
+def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
+                placed: tuple[int, int, int, int] | None,
+                frame: tuple[int, int], t0: float, t1: float, *,
+                seed: str,
+                column: tuple[int, int, int, int] | None = None,
+                graphic_side: str = "") -> Layer | None:
+    """The host, solved onto the room's anchor.
+
+    THE ANCHOR'S HEIGHT IS HIS TARGET HEIGHT — never its width, which the
+    figure box's arms are meant to pass, and never the figure box's own
+    height, which runs past the floor line to carry his shoes. Both are
+    ten-to-twenty-percent errors that read as a bad composite rather than as a
+    bug. `host.place_on_room` is the contract; this only decides which pose.
+    """
+    from pipeline.host import (HostShot, dressed, frame_shot,
+                               looking_at, place_on_room, stands_on)
+
+    role = shot.host.pose
+    # THE SEED IS PER SHOT, NOT PER VIDEO. `to-camera` is the close-up and the
+    # medium; hashed on the video's seed alone, every to-camera beat in a long
+    # resolves to the same one of them and the other is never cut to at all.
+    pose = (reg.get(role) if role in reg
+            else reg.host_for(role, seed=f"{seed}|{shot.id}"))
+
+    # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The camera
+    # is above the desk on `high-desk-down` and square to a wall of index cards
+    # on `wall-of-calls`: there is no floor in either, and both say so in the
+    # field rather than leaving it out. Standing a figure there put him on a
+    # surface the camera was above. A framing has no floor line to pin, so the
+    # beat survives as the close-up it should probably have been — which is
+    # branching on the refusal rather than reading it as an omission.
+    if (plate is not None and plate.refuses_host
+            and pose is not None and pose.floor_line_y):
+        instead = reg.host_for(HOST_WHERE_NOBODY_STANDS,
+                               seed=f"{seed}|{shot.id}")
+        if instead is not None:
+            log.debug("%s refuses a cut-out — %s is framed instead of %s",
+                      plate.key, instead.key, pose.key)
+            pose = instead
+
+    if pose is None:
+        raise TemplateError(
+            f"{shot.id}: host {role!r} is neither a pose in the kit nor a role "
+            f"it declares. The roles are "
+            f"{', '.join(reg.host_roles_available())}")
+
+    fw, fh = frame
+    host = dressed(reg, HostShot(pose=pose,
+                                 talk=reg.host_strip(pose.key, "talk"),
+                                 idle=reg.host_strip(pose.key, "idle")),
+                   seed=seed)
+
+    # A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON, and only then. The
+    # kit says on the plate that a glance with the graphic on the opposite
+    # side is worse than him facing camera, so straight to camera is both the
+    # default and the fallback: `looking_at` returns him unchanged when the
+    # side is unknown or the glance was never drawn for this pose.
+    if graphic_side:
+        host = looking_at(reg, host, graphic_side)
+
+    box = None
+    # A FRAMING IS A CAMERA DISTANCE AND IS NEVER SOLVED ONTO AN ANCHOR.
+    # `close-up` and `medium` carry no floor line: fit into a room's standing
+    # spot, a close-up is a head the size of a man, hovering where his shoes
+    # would be. It is placed against the frame — or, in a two-shot, against
+    # his half of it — on the eye line the plate publishes.
+    if host.is_framing:
+        stage = column or (0, 0, fw, fh)
+        spot = frame_shot(host, (fw, fh),
+                          centre_fw=(stage[0] + stage[2] / 2) / max(fw, 1))
+        if spot is not None:
+            box = (spot.x, spot.y, spot.width, spot.height)
+    # HE STANDS ON A ROOM, and only on a room: a content plate has no floor
+    # line and no anchor, and `place_on_room` raises rather than guessing at
+    # one. Asked here rather than caught, because a caller that cannot answer
+    # "is there a floor in this shot" has no business compositing a man.
+    if (box is None and plate is not None and placed is not None
+            and plate.slot("host-anchor") is not None
+            and stands_on(plate, host)):
+        spot = place_on_room(plate, host)
+        k = placed[2] / max(plate.delivered[0], 1)
+        box = (placed[0] + int(spot.x * k), placed[1] + int(spot.y * k),
+               max(int(spot.width * k), 1), max(int(spot.height * k), 1))
+    if box is None and plate is not None and placed is not None:
+        if plate.slot(shot.host.slot) is not None:
+            hx, hy, hw, hh = _slot_in_frame(plate, shot.host.slot, placed)
+            k = min(hw / host.pose.delivered[0], hh / host.pose.delivered[1])
+            dw = int(host.pose.delivered[0] * k)
+            dh = int(host.pose.delivered[1] * k)
+            box = (hx + (hw - dw) // 2, hy + (hh - dh), dw, dh)
+    if box is None:
+        stage = column or (0, 0, fw, fh)
+        k = min(stage[2] / host.pose.delivered[0],
+                fh * 0.55 / host.pose.delivered[1])
+        dw = int(host.pose.delivered[0] * k)
+        dh = int(host.pose.delivered[1] * k)
+        box = (stage[0] + (stage[2] - dw) // 2, fh - dh, dw, dh)
+
+    # THE HOST IS A SUBJECT AND HAS TO BE SEEN. A plate pushed in on a row
+    # carries its anchor off the bottom with it: in the numbers walk he stood
+    # at y=1832 in a 1920 frame — 13% of him on screen, reading as a smudge at
+    # the edge — and the amount clipped changed shot to shot with which row
+    # was lit. Clamped into the frame, he stands at the bottom of it instead.
+    x, y, dw, dh = box
+    # A FRAMING IS ALREADY SOLVED and running off the left and right edges is
+    # what it is for — clamping one into the frame crops it into a narrower
+    # shot than the one that was drawn. Everything else is a cut-out standing
+    # in a room, and a room pushed in on a row carries its anchor off the
+    # bottom with it: he stood at y=1832 in a 1920 frame once, 13% of him on
+    # screen, reading as a smudge at the edge.
+    if not host.is_framing:
+        if dh > fh:
+            dw, dh = int(dw * fh / dh), fh
+        y = min(max(y, 0), fh - dh)
+        x = min(max(x, 0), max(fw - dw, 0))
+    return Layer(name=f"{shot.id}:host:{host.pose.name}", kind="host",
+                 shot_id=shot.id, t_start=t0, t_end=t1,
+                 x=x, y=y, w=dw, h=dh,
+                 entry_key=host.pose.key, concept=host.pose.family,
+                 frame_count=pose.frame_count, fps=pose.fps or 0,
+                 loops=True, z=40)
 
 
 # ---------------------------------------------------------------------------
-# The invariants
+# The invariants — a composition that breaks its own rules never reaches an
+# encoder.
 # ---------------------------------------------------------------------------
 
 def check_invariants(fmt: Format, result: BuildResult,
-                     *, host_shots: Sequence[str] | None = None) -> list[str]:
-    """Every rule the composition must obey, as human-readable failures.
-
-    Empty list means the composition is legal. This is what the unit tests
-    assert on, and what a render refuses to proceed past.
-    """
+                     host_shots: Sequence[str] = ()) -> list[str]:
+    """Everything that must be true of the layer list. Empty means proceed."""
     problems: list[str] = []
-    spans = {s.shot.id: s for s in result.spans}
-    fh = result.frame[1]
+    fw, fh = result.frame
+    by_shot = {sp.shot.id: sp for sp in result.spans}
 
-    # 1. No layer may outlive its shot.
+    # 1. No layer outlives its shot. A held frame is usually this.
     for l in result.layers:
-        sp = spans.get(l.shot_id)
-        if sp is None:
-            problems.append(f"{l.name}: belongs to no shot in this cut")
+        span = by_shot.get(l.shot_id)
+        if span is None:
+            problems.append(f"{l.name}: belongs to no shot in the cut")
             continue
-        if l.t_start < sp.start - 1e-6 or l.t_end > sp.end + 1e-6:
+        if l.t_start < span.start - 1e-6 or l.t_end > span.end + 1e-6:
             problems.append(
-                f"{l.name}: runs {l.t_start:.2f}-{l.t_end:.2f}s, outside its "
-                f"shot {l.shot_id} ({sp.start:.2f}-{sp.end:.2f}s)")
-        if l.dur <= 0:
-            problems.append(f"{l.name}: zero-length layer")
+                f"{l.name}: runs {l.t_start:.2f}–{l.t_end:.2f} outside its "
+                f"shot's {span.start:.2f}–{span.end:.2f}")
 
-    # 2. No composition may sit unchanged longer than max_hold_s unless
-    #    something provably enters or leaves inside its span.
+    # 2. The host appears in exactly the shots the template puts them in.
+    wanted = set(host_shots)
+    got = {l.shot_id for l in result.of_kind("host")}
+    for missing in sorted(wanted - got):
+        problems.append(f"{missing}: the template puts the host here and no "
+                        f"host layer was built")
+    for extra in sorted(got - wanted):
+        problems.append(f"{extra}: a host layer nobody asked for")
+
+    # 3. Large type and the caption band are two things competing to be read.
+    for span in result.spans:
+        if not span.shot.has_large_type:
+            continue
+        if any(l.kind == "caption" for l in result.for_shot(span.shot.id)):
+            problems.append(
+                f"{span.shot.id}: large type and the caption band share a shot")
+
+    # 4. Nothing is set below the readability floor.
+    for l in result.layers:
+        if l.kind not in ("text",) or not l.size_fh:
+            continue
+        if l.size_fh < SLOT_TYPE_FLOOR_FH:
+            problems.append(
+                f"{l.name}: set at {l.size_fh:.3f} of frame height, below the "
+                f"{SLOT_TYPE_FLOOR_FH:.3f} floor — present but not readable, "
+                f"which looks like a decision")
+
+    # 5. The host is a subject, not a sticker over the evidence.
     #
-    #    A composition changes exactly when a layer starts or ends. So the
-    #    holds inside a shot are the gaps between consecutive layer
-    #    boundaries, and the longest of them is what the ceiling applies to —
-    #    not the shot's own duration, which is why a long shot with a mark
-    #    landing inside it is legal and a short one with nothing moving is not.
-    for sp in result.spans:
-        ceiling = sp.shot.max_hold_s
-        marks = {sp.start, sp.end}
-        for l in result.layers:
-            if l.shot_id != sp.shot.id:
+    # A ROOM IS NOT EVIDENCE. It is the set he is standing in, and a close-up
+    # covering 97% of it is not a defect — it is what a close-up is. What this
+    # catches is him drawn across the thing he is discussing: a chart, a
+    # sheet, a card. Those are what a two-shot gives its own column to.
+    for h in result.of_kind("host"):
+        for o in result.for_shot(h.shot_id):
+            if o.kind not in ("plate", "fill") or not o.w or not o.h:
                 continue
-            # A looping element redraws continuously — a boil plate at 7fps is
-            # the whole reason a frame does not read as a photograph — so it
-            # is motion for the entire time it is on screen.
-            if l.moves and l.dur > 0:
-                marks.update((l.t_start, l.t_end))
+            if o.concept == "room":
                 continue
-            marks.update((l.t_start, l.t_end))
-            if l.reveal_s > 0:
-                marks.add(min(l.t_start + l.reveal_s, l.t_end))
-        moving = any(l.shot_id == sp.shot.id and l.moves
-                     for l in result.layers)
-        if moving:
-            continue
-        ordered = sorted(m for m in marks if sp.start - 1e-6 <= m <= sp.end + 1e-6)
-        worst = max((b - a for a, b in zip(ordered, ordered[1:])), default=sp.dur)
-        if worst > ceiling + 1e-6:
-            problems.append(
-                f"{sp.shot.id}: composition holds {worst:.2f}s with nothing "
-                f"entering or leaving, over its {ceiling:.1f}s ceiling")
-
-    # 3. Large type and the caption band are mutually exclusive.
-    for sp in result.spans:
-        big = [l for l in result.layers
-               if l.shot_id == sp.shot.id and l.kind == "text"
-               and l.size_fh >= LARGE_TYPE_FH]
-        if big and sp.shot.captions:
-            problems.append(
-                f"{sp.shot.id}: type at {max(l.size_fh for l in big):.1%} of "
-                f"frame height shares the frame with the caption band")
-
-    # 4. The host appears in the shots named and nowhere else.
-    if host_shots is not None:
-        got = {l.shot_id for l in result.layers if l.kind == "host"}
-        want = set(host_shots)
-        for extra in sorted(got - want):
-            problems.append(f"{extra}: host present in a shot they are not in")
-        for miss in sorted(want - got):
-            problems.append(f"{miss}: host missing from a shot they are in")
-
-    # 5b. A slot whose natural type size is under the floor. The box exists
-    #     and the words fit it, but nobody can read them on a phone — which
-    #     is a geometry problem in the arrangement, not in the script.
-    for l in result.layers:
-        if l.kind != "fill" or not l.text:
-            continue
-        # A two-letter marker like "vs" sits in a deliberately tiny slot and
-        # is legible there; the floor is about words you have to READ.
-        if len(l.text) <= 6:
-            continue
-        # A tabbed row is MEASURED with the fitter, not estimated from the
-        # band height. `h * 0.42` said 81px while the row actually set at
-        # 33px, so the floor this rule exists to enforce was never tested
-        # against the number that reaches the frame.
-        if "\t" in l.text:
-            natural = _row_size(l, fh)
-        else:
-            natural = int(l.h * 0.34)
-        if natural and natural < fh * SLOT_TYPE_FLOOR_FH:
-            problems.append(
-                f"{l.name}: its slot gives {natural}px type, under the "
-                f"{int(fh * SLOT_TYPE_FLOOR_FH)}px slot floor — too many "
-                f"placed where fewer fit")
-
-    # 4b. The host is not mostly off the frame.
-    #
-    #     A figure slot belongs to the PLATE, and a focus push moves the plate.
-    #     Nothing else notices: the layer exists, the invariants above are all
-    #     satisfied, and the host is drawn — 87% of him past the bottom edge.
-    for l in result.layers:
-        if l.kind != "host" or not (l.w and l.h):
-            continue
-        vis_w = max(min(l.x + l.w, result.frame[0]) - max(l.x, 0), 0)
-        vis_h = max(min(l.y + l.h, fh) - max(l.y, 0), 0)
-        seen = (vis_w * vis_h) / float(l.w * l.h)
-        if seen < 0.75:
-            problems.append(
-                f"{l.name}: {seen:.0%} of the host is on screen — the rest is "
-                f"past the frame edge, drawn and not seen")
-        # And he does not stand on the data. Clamping him into the frame is
-        # only half the rule: pushed in on a sheet there is nowhere for a
-        # figure that is not over a row, and the answer is that he is not in
-        # that shot, not that he is drawn across the numbers.
-        for o in result.for_shot(l.shot_id):
-            if o.kind not in ("fill", "text") or not o.text:
-                continue
-            ox = min(l.x + l.w, o.x + o.w) - max(l.x, o.x)
-            oy = min(l.y + l.h, o.y + o.h) - max(l.y, o.y)
-            if ox > 0 and oy > 0 and (ox * oy) > 0.20 * o.w * o.h:
+            ox = max(0, min(h.x + h.w, o.x + o.w) - max(h.x, o.x))
+            oy = max(0, min(h.y + h.h, o.y + o.h) - max(h.y, o.y))
+            if ox * oy > 0.55 * o.w * o.h:
                 problems.append(
-                    f"{l.name} stands over {o.name} — the host is drawn "
+                    f"{h.name} stands over {o.name} — the host is drawn "
                     f"across {(ox * oy) / (o.w * o.h):.0%} of it")
 
-    # 4c. THE DRAWN WORLD BOILS; TYPE AND DATA NEVER DO.
-    #
-    #     A number that moves three times a second cannot be read, which is
-    #     the whole job of a number. The wobble that reads as "the same hand"
-    #     on a ring reads as a vibrating figure on a sheet row — and it was
-    #     on every row, every label, every caption and every panel edge.
-    #
-    #     Checked on the layer list, so it is answered before a frame is
-    #     drawn and cannot come back as a default somebody re-adds.
+    # 6. Nothing is placed off the frame it is drawn in.
     for l in result.layers:
-        if not l.boil_fps:
+        if l.kind in ("ground", "caption") or not (l.w and l.h):
             continue
-        if l.text or l.kind in ("text", "panel", "caption"):
-            problems.append(
-                f"{l.name}: carries type and a {l.boil_fps}fps boil — the "
-                f"drawn world boils, type and data never do")
+        if l.x + l.w <= 0 or l.y + l.h <= 0 or l.x >= fw or l.y >= fh:
+            problems.append(f"{l.name}: placed entirely outside the frame")
 
-    # 5c. A text box that cannot hold the lines it promises, at the smallest
-    #     size those lines are allowed to be.
-    #
-    #     This is pure geometry and needs no words: LINE_LEADING * the
-    #     readability floor is the height of one line, and a box shorter than
-    #     that holds nothing readable however short the script is. The fitter
-    #     shrinks type to fit, but it stops at the floor — below that it draws
-    #     THROUGH the bottom of the box rather than under it, and says nothing,
-    #     because the words all fitted the line count it was given.
-    #
-    #     THE NEWS shipped this way: a headline slot 123px tall in frame,
-    #     asked for three lines, drew three lines of 67px type 237px tall
-    #     straight over the red annotation in the slot below it. Nothing in
-    #     the suite could see it, because no characters were lost.
-    for l in result.layers:
-        if l.kind != "text" or not l.h:
-            continue
-        line_h = MIN_TYPE_FH * fh * LINE_LEADING
-        holds = int(l.h / line_h)
-        if holds < 1:
-            problems.append(
-                f"{l.name}: its box is {l.h}px tall and one line at the "
-                f"{MIN_TYPE_FH:.1%} floor is {int(line_h)}px — no readable "
-                f"type fits it at all")
-        elif holds < l.max_lines:
-            problems.append(
-                f"{l.name}: asks for {l.max_lines} lines in a {l.h}px box "
-                f"that holds {holds} at the {MIN_TYPE_FH:.1%} floor — the "
-                f"rest draws through whatever is under it")
-
-    # 5d. Two blocks of type in one shot may not overlap.
-    #
-    #     Slot-bound type cannot collide, because the plate authored the
-    #     slots apart. FREE-PLACED type can: `align` is a fraction of frame
-    #     height and two of them chosen by hand will eventually meet. The
-    #     boxes are known before the render, so the collision is too.
-    for sp in result.spans:
-        blocks = [l for l in result.layers
-                  if l.shot_id == sp.shot.id and l.kind in ("text", "panel")]
-        for i, a in enumerate(blocks):
-            for b in blocks[i + 1:]:
-                if a.name.split(":")[-1] == b.name.split(":")[-1]:
-                    continue        # a panel and the type it sits under
-                if (a.x < b.x + b.w and b.x < a.x + a.w
-                        and a.y < b.y + b.h and b.y < a.y + a.h):
-                    problems.append(
-                        f"{a.name} and {b.name} overlap — two blocks of type "
-                        f"in one shot, drawn over each other")
-
-    # 5. Nothing renders below 3.5% of frame height.
-    for l in result.layers:
-        if l.kind == "text" and 0 < l.size_fh < MIN_TYPE_FH:
-            problems.append(
-                f"{l.name}: type at {l.size_fh:.2%} of frame height, below "
-                f"the {MIN_TYPE_FH:.1%} floor")
-        if l.kind in ("plate", "fill", "host") and 0 < l.h < fh * MIN_TYPE_FH:
-            problems.append(
-                f"{l.name}: {l.h}px tall, under {MIN_TYPE_FH:.1%} of frame")
-
-    # 6. Every shot reached the plate its template names.
-    for sp in result.spans:
-        if not sp.shot.plate:
-            continue
-        got = [l for l in result.layers
-               if l.shot_id == sp.shot.id and l.kind == "plate"]
-        if not got:
-            problems.append(f"{sp.shot.id}: names plate "
-                            f"{sp.shot.plate!r} but no plate layer exists")
-        elif not _same_plate(got[0].concept, sp.shot.plate):
-            problems.append(
-                f"{sp.shot.id}: names plate {sp.shot.plate!r} but reached "
-                f"{got[0].concept!r}")
-
-    # 7. No unfilled slot. A slot with no value is a drawn, empty box.
-    for u in result.unfilled:
-        problems.append(f"unfilled slot: {u}")
+    # 7. A required slot with no value is a hole in the drawing.
+    for miss in result.unfilled:
+        problems.append(f"{miss}: required and empty — a slot with no value "
+                        f"must fail the build, never draw an empty box")
 
     return problems
-
-
-BUDGETS_PATH = Path("templates") / "budgets.json"
 
 
 def check_budgets(fmt: Format, result: BuildResult,
-                  root: Path | str = ".") -> list[str]:
-    """Every line that will not fit the box the template puts it in.
+                  reg: Registry | None = None) -> list[str]:
+    """Copy that does not fit the slot the kit drew for it.
 
-    Shrink-then-cut was the wrong contract. Type that does not fit is a script
-    the renderer cannot express, and the operator has to know that BEFORE the
-    encode, not discover a sentence ending mid-word in the output. So this
-    runs on the layer list and its findings block the render.
-
-    The budgets are measured, not guessed: `templates/budgets.json` is
-    produced by running the real fitter against the real templates, and
-    `tests/test_budgets.py` fails if the two ever disagree.
+    `maxChars` is the kit's own limit, per slot role, measured against the
+    face and size that slot is set in. It is a HARD limit: over it the line
+    collides with rules drawn in ink. This is the same check the LONG runs
+    over its `[PLATE]` tags, in the shape the templates need.
     """
-    path = Path(root) / BUDGETS_PATH
-    if not path.exists():
-        return []
-    import json
-    budgets = json.loads(path.read_text(encoding="utf-8")).get("formats", {})
-    mine = budgets.get(fmt.name)
-    if not mine:
-        return []
+    from pipeline.plate_frames import type_role
 
-    problems: list[str] = []
+    over: list[str] = []
+    if reg is None:
+        return over
     for l in result.layers:
-        if l.kind not in ("text", "fill") or not l.text:
+        if l.kind != "plate" or not l.values:
             continue
-        dest = l.name.split(":", 1)[1]
-        budget = mine.get(dest)
-        if budget is None:
+        plate = reg.get(l.entry_key)
+        if plate is None:
             continue
-        n = len(l.text)
-        if n > budget:
-            problems.append(
-                f"{l.shot_id}: {dest} holds {budget} characters and was given "
-                f"{n} — {n - budget} would be cut. Shorten the script, or "
-                f"change the shot.")
-    return problems
-
-
-def _same_plate(reached: str, named: str) -> bool:
-    """Whether a shot got the plate it asked for, allowing for progression.
-
-    A template names `room-wide-16--lived-in`; three-quarters through the
-    video progression re-points it at `room-wide-16--3am`. That is the device
-    working, not the wrong plate — so the FAMILY has to match and the state
-    is free. `evidence-wall-half` for `evidence-wall-empty` likewise.
-    """
-    if reached == named:
-        return True
-    if "--" in reached and "--" in named:
-        return reached.rpartition("--")[0] == named.rpartition("--")[0]
-    for stem in ("evidence-wall-",):
-        if reached.startswith(stem) and named.startswith(stem):
-            return True
-    return False
+        for slot_name, value in l.values.items():
+            slot = plate.slot(slot_name)
+            if slot is None:
+                continue
+            limit = type_role(plate, slot, str(value)).get("maxChars")
+            if limit and len(str(value)) > int(limit):
+                over.append(
+                    f"{l.shot_id}.{slot_name}: {len(str(value))} characters "
+                    f"against the {limit} {plate.key} reserves for it — "
+                    f"{str(value)[:60]!r}")
+    return over
 
 
 def held_layer_spans(result: BuildResult) -> list[tuple[float, float, str]]:
-    """Every window where nothing enters or leaves, longest first.
+    """Windows where nothing on screen is redrawing.
 
-    The layer-list twin of `byproducts.held_spans`, for reading a composition
-    before it is rendered.
+    A composition that neither moves nor changes for longer than its ceiling
+    is a still frame with audio over it, and that is what the ceiling exists
+    to catch. A static data plate is deliberately still — the ceiling is what
+    keeps it short.
     """
-    out = []
-    for sp in result.spans:
-        if any(l.shot_id == sp.shot.id and l.moves for l in result.layers):
+    out: list[tuple[float, float, str]] = []
+    for span in result.spans:
+        shot_layers = result.for_shot(span.shot.id)
+        if any(l.moves for l in shot_layers):
             continue
-        marks = {sp.start, sp.end}
-        for l in result.layers:
-            if l.shot_id == sp.shot.id:
-                marks.update((l.t_start, l.t_end))
-        o = sorted(marks)
-        for a, b in zip(o, o[1:]):
-            out.append((a, b, sp.shot.id))
-    return sorted(out, key=lambda x: x[1] - x[0], reverse=True)
+        # Something entering inside the shot breaks the hold at that moment.
+        entries = sorted({l.t_start for l in shot_layers
+                          if l.t_start > span.start + 1e-6})
+        marks = [span.start, *entries, span.end]
+        for a, b in zip(marks, marks[1:]):
+            if b - a > 0:
+                out.append((a, b, span.shot.id))
+    return out

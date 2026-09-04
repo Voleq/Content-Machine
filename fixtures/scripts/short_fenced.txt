@@ -13,12 +13,12 @@ Sure! Here's the short-form script for BORV in the requested JSON format:
       "meaning": "Record backlog — deposits in hand, the least imaginary kind of revenue."
     }
   ],
-  "years": ["2021", "2022", "2023", "2024", "2025"],
+  "years": ["FY21", "FY22", "FY23", "FY24", "FY25", "LTM"],
   "numbers": [
-    {"label": "Revenue", "values": ["$1.1B", "$1.2B", "$1.3B", "$1.5B", "$1.6B"]},
-    {"label": "Op margin", "values": ["14%", "15%", "16%", "17%", "18%"]},
-    {"label": "Free cash flow", "values": ["$140M", "$168M", "$195M", "$228M", "$262M"]},
-    {"label": "Shares out", "values": ["210M", "205M", "199M", "194M", "190M"]}
+    {"label": "Revenue", "values": ["", "$1.1B", "$1.2B", "$1.3B", "$1.5B", "$1.6B"]},
+    {"label": "Op margin", "values": ["", "14%", "15%", "16%", "17%", "18%"]},
+    {"label": "Free cash flow", "values": ["", "$140M", "$168M", "$195M", "$228M", "$262M"]},
+    {"label": "Shares out", "values": ["", "210M", "205M", "199M", "194M", "190M"]}
   ],
   "numbers_comment": "Five straight years of growing revenue, expanding margins, compounding cash flow and a shrinking share count. It is the rarest chart on this channel: everything pointing the right way.",
   "conclusion": "Signal. Through gritted teeth: the boring machine keeps printing, and it did not need your attention to do it.",

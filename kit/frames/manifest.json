@@ -1,0 +1,880 @@
+{
+ "family": "frames",
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "assets": {
+  "frames/media-frame-t1-16x9": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t1-16x9_f01.svg",
+     "png": "media-frame-t1-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t1-16x9_f02.svg",
+     "png": "media-frame-t1-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t1-16x9.png",
+    "svg": "media-frame-t1-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 307,
+     "y": 130,
+     "w": 1306,
+     "h": 648
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 307,
+     "y": 848,
+     "w": 1306,
+     "h": 70
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 307,
+     "y": 932,
+     "w": 1306,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "tape-1",
+     "x": 257,
+     "y": 58,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-2",
+     "x": 1503,
+     "y": 64,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-3",
+     "x": 263,
+     "y": 728,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-4",
+     "x": 1497,
+     "y": 734,
+     "w": 170,
+     "h": 100
+    }
+   ],
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "media-frame-t1",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 1
+  },
+  "frames/media-frame-t1-9x16": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t1-9x16_f01.svg",
+     "png": "media-frame-t1-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t1-9x16_f02.svg",
+     "png": "media-frame-t1-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t1-9x16.png",
+    "svg": "media-frame-t1-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 97,
+     "y": 499,
+     "w": 886,
+     "h": 845
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 97,
+     "y": 1414,
+     "w": 886,
+     "h": 90
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 97,
+     "y": 1518,
+     "w": 886,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "tape-1",
+     "x": 47,
+     "y": 427,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-2",
+     "x": 873,
+     "y": 433,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-3",
+     "x": 53,
+     "y": 1294,
+     "w": 170,
+     "h": 100
+    },
+    {
+     "label": "tape-4",
+     "x": 867,
+     "y": 1300,
+     "w": 170,
+     "h": 100
+    }
+   ],
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "media-frame-t1",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 1
+  },
+  "frames/media-frame-t2-16x9": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t2-16x9_f01.svg",
+     "png": "media-frame-t2-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t2-16x9_f02.svg",
+     "png": "media-frame-t2-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t2-16x9.png",
+    "svg": "media-frame-t2-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 307,
+     "y": 130,
+     "w": 1306,
+     "h": 648
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 307,
+     "y": 928,
+     "w": 1306,
+     "h": 70
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 307,
+     "y": 1012,
+     "w": 1306,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "stand",
+     "x": 830,
+     "y": 816,
+     "w": 260,
+     "h": 92
+    }
+   ],
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "media-frame-t2",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 2
+  },
+  "frames/media-frame-t2-9x16": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t2-9x16_f01.svg",
+     "png": "media-frame-t2-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t2-9x16_f02.svg",
+     "png": "media-frame-t2-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t2-9x16.png",
+    "svg": "media-frame-t2-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 97,
+     "y": 499,
+     "w": 886,
+     "h": 845
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 97,
+     "y": 1494,
+     "w": 886,
+     "h": 90
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 97,
+     "y": 1598,
+     "w": 886,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "stand",
+     "x": 410,
+     "y": 1382,
+     "w": 260,
+     "h": 92
+    }
+   ],
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "media-frame-t2",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 2
+  },
+  "frames/media-frame-t3-16x9": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t3-16x9_f01.svg",
+     "png": "media-frame-t3-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t3-16x9_f02.svg",
+     "png": "media-frame-t3-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t3-16x9.png",
+    "svg": "media-frame-t3-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 307,
+     "y": 130,
+     "w": 1306,
+     "h": 648
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 307,
+     "y": 848,
+     "w": 1306,
+     "h": 70
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 307,
+     "y": 932,
+     "w": 1306,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "pin",
+     "x": 926,
+     "y": 66,
+     "w": 68,
+     "h": 68
+    }
+   ],
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "media-frame-t3",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 3
+  },
+  "frames/media-frame-t3-9x16": {
+   "author": "mediaFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "media-frame-t3-9x16_f01.svg",
+     "png": "media-frame-t3-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "media-frame-t3-9x16_f02.svg",
+     "png": "media-frame-t3-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "media-frame-t3-9x16.png",
+    "svg": "media-frame-t3-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
+     "x": 97,
+     "y": 499,
+     "w": 886,
+     "h": 845
+    },
+    "caption": {
+     "align": "left",
+     "role": "label",
+     "x": 97,
+     "y": 1414,
+     "w": 886,
+     "h": 90
+    },
+    "source": {
+     "align": "left",
+     "role": "caption",
+     "x": 97,
+     "y": 1518,
+     "w": 886,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "pin",
+     "x": 506,
+     "y": 435,
+     "w": 68,
+     "h": 68
+    }
+   ],
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "media-frame-t3",
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 30
+    }
+   },
+   "treatment": 3
+  },
+  "frames/capture-frame-16x9": {
+   "author": "captureFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "capture-frame-16x9_f01.svg",
+     "png": "capture-frame-16x9_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "capture-frame-16x9_f02.svg",
+     "png": "capture-frame-16x9_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "capture-frame-16x9.png",
+    "svg": "capture-frame-16x9.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 435,
+     "y": 206,
+     "w": 1050,
+     "h": 52
+    },
+    "headline": {
+     "align": "left",
+     "role": "headline",
+     "x": 435,
+     "y": 280,
+     "w": 1050,
+     "h": 140
+    },
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 435,
+     "y": 470,
+     "w": 1050,
+     "h": 190
+    },
+    "mark": {
+     "role": "highlight-band",
+     "region": true,
+     "overlay": "overlays/row-band",
+     "x": 421,
+     "y": 462,
+     "w": 1078,
+     "h": 70
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 365,
+     "y": 990,
+     "w": 1190,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "staple",
+     "x": 383,
+     "y": 148,
+     "w": 68,
+     "h": 44
+    }
+   ],
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "capture-frame",
+   "typeRoles": {
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "headline": {
+     "font": "Archivo Narrow",
+     "size": 52,
+     "weight": 700,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 40
+    },
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 3,
+     "maxCharsPerLine": 62
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  },
+  "frames/capture-frame-9x16": {
+   "author": "captureFrame",
+   "seed": 1,
+   "surface": "night-card",
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 2,
+   "fps": 2,
+   "playback": "loop",
+   "frames": [
+    {
+     "tag": "_f01",
+     "svg": "capture-frame-9x16_f01.svg",
+     "png": "capture-frame-9x16_f01.png",
+     "boil": 1
+    },
+    {
+     "tag": "_f02",
+     "svg": "capture-frame-9x16_f02.svg",
+     "png": "capture-frame-9x16_f02.png",
+     "boil": 2
+    }
+   ],
+   "files": {
+    "png": "capture-frame-9x16.png",
+    "svg": "capture-frame-9x16.svg",
+    "baseIsFrame": "_f01",
+    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "source": {
+     "align": "left",
+     "role": "source",
+     "x": 122,
+     "y": 448,
+     "w": 837,
+     "h": 52
+    },
+    "headline": {
+     "align": "left",
+     "role": "headline",
+     "x": 122,
+     "y": 516,
+     "w": 837,
+     "h": 180
+    },
+    "body": {
+     "align": "left",
+     "role": "body",
+     "x": 122,
+     "y": 750,
+     "w": 837,
+     "h": 260
+    },
+    "mark": {
+     "role": "highlight-band",
+     "region": true,
+     "overlay": "overlays/row-band",
+     "x": 108,
+     "y": 742,
+     "w": 865,
+     "h": 84
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 76,
+     "y": 1634,
+     "w": 929,
+     "h": 56
+    }
+   },
+   "decorBoxes": [
+    {
+     "label": "staple",
+     "x": 94,
+     "y": 402,
+     "w": 68,
+     "h": 44
+    }
+   ],
+   "aspect": "9x16",
+   "family": "structure",
+   "type": "capture-frame",
+   "typeRoles": {
+    "source": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    },
+    "headline": {
+     "font": "Archivo Narrow",
+     "size": 46,
+     "weight": 700,
+     "colour": "structure",
+     "maxLines": 2,
+     "maxCharsPerLine": 26
+    },
+    "body": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "maxLines": 3,
+     "maxCharsPerLine": 38
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   }
+  }
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+}

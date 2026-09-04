@@ -1,0 +1,40 @@
+{
+  "chapter": "resigned-close",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room/exit",
+      "host": {
+        "pose": "close",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "structure/closing-16x9",
+      "max_hold_s": 7,
+      "captions": true,
+      "bind": {
+        "kicker": "?script.ticker",
+        "line-1": "chapter.line.0",
+        "line-2": "?chapter.line.1",
+        "line-3": "?chapter.line.2"
+      },
+      "notes": "What a resigned-close chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+    },
+    {
+      "id": "land",
+      "plate": "room/exit",
+      "host": {
+        "pose": "to-camera",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 5,
+      "captions": true,
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
+    }
+  ]
+}

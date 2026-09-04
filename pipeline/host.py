@@ -1,50 +1,52 @@
-"""Dennis on screen — a composed shot, mouth-flapped to the voice-over.
+"""Dennis on screen — a cut-out placed on the room, flapped to the voice-over.
 
-The kit ships the host as *pairs*: a composed frame and a ``-talk`` twin drawn
-with his mouth open. Talking is therefore frame swapping, and the swap schedule
-comes from the voice-over word timestamps — ``tts.words``, the same master
-clock every other cue reads. The mouth is open while a word is sounding and
-closed in the gaps.
+The kit ships six poses, each as three two-frame strips: the base (a hold), a
+``-talk`` strip whose first frame has the mouth open, and an ``-idle`` strip
+whose second frame bobs three canvas units. Talking is frame swapping, and the
+swap schedule comes from the voice-over word timestamps — ``tts.words``, the
+same master clock every other cue reads.
 
-Twenty-one assets ship a ``-talk`` twin and twenty of them are usable. The
-twenty-first, ``chapters/management/dennis-reads-proxy-talk``, is byte-identical
-to the frame it is supposed to differ from, so flapping it animates nothing;
-:meth:`pipeline.kit.Kit.talk_pair` returns ``None`` for it and the shot holds
-still instead of pretending. That is a gap in the artwork, and the kit doctor
-reports it as one.
+WHICH POSE SERVES WHICH SHOT COMES OFF THE REGISTRY, not out of a list here.
+``kit/roles.json`` declares the roles (open, beat, panel, close) and which poses
+fill them, and ingest stamps that into the registry. A new kit with a different
+set of poses drops in by shipping its own ``roles.json`` and no Python changes —
+which is the test the previous version failed: ``HOST_BANKS`` named twenty
+specific v1 asset paths, so the kit could not be replaced without editing this
+file.
 
-Four more things move, so a held host shot never reads as a still:
+The registry also carries what a pose may DO. ``head-in-hands`` and
+``walking-out-of-frame`` ship talk frames for continuity of the file set and
+declare ``talks: false``, because using them looks like a mistake; and
+``head-in-hands`` declares ``limit: 1``, because it is the cost of being right
+and not a reaction to a mild loss. Both are honoured from the declaration.
 
-* **He blinks.** A ``-blink`` strip plays every three to six seconds, the
-  interval redrawn each time and seeded per shot so two shots never blink
-  together, and never over an open mouth — the strip always lands inside a
-  closed run, which is the checkable form of "not mid-flap".
-* **He settles.** A ``-idle`` strip loops through the long non-speaking spans
-  — the ones ``MAX_HOST_BEAT_S`` creates in long-form — so a face waiting out
-  a chart shifts its weight instead of holding a pose.
-* **The line boils.** Several of the shots are two-frame boil pairs, and held
-  frames alternate between them — the same hand-drawn shimmer the doodles use.
-* **The shot changes.** Consecutive host beats step through a bank, so a long
-  cut never returns to an identical frame.
+PLACEMENT IS THE ANCHOR CONTRACT, and it is the one thing here that is silently
+wrong if approximated. A room declares ``floorLineY`` and a ``host-anchor``
+region. The region's HEIGHT is the host's target height:
 
-The first two are resolved by naming convention through the registry, the same
-way ``-talk`` is, so an artwork batch adds them with no code change. A shot
-that ships neither boils exactly as before: nothing in the micro-motion path
-may raise or block a render, because a face is never worth a failed cut.
+    scale so that (host.floorLineY - host.slots.figure.y) == anchor.h
+    then sit the host's floorLineY on the anchor's bottom edge
 
-Everything degrades to ``None`` when the kit cannot supply a shot, so a render
-never fails for want of a host — but the SHORT engine treats that as an error
-rather than a shrug, because a short with no host is the bug this replaced.
+Never scale to the anchor's WIDTH, and never to the figure box's height. The
+figure box runs past the floor line to carry the shoes, and it includes the arms,
+which are meant to pass the anchor. Both mistakes put him at a plausible-looking
+size that is wrong by ten to twenty percent, standing slightly above or below the
+floor — which reads as a bad composite rather than as an error.
+
+Everything degrades to ``None`` when the registry cannot supply a pose, so a
+render never fails for want of a host — but the SHORT engine treats that as an
+error rather than a shrug, because a short with no host is the bug this replaced.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import random
 from dataclasses import dataclass
 from pathlib import Path
 
-from pipeline.kit import Asset, Kit
+from pipeline.plates import Plate, Registry
 from pipeline.models import WordTimestamp
 
 log = logging.getLogger(__name__)
@@ -110,164 +112,369 @@ IDLE_HZ = 3.0
 # `close` he is talking to camera after the payoff
 # `panel` the two-shot: him beside the thing being discussed
 # `beat`  a mid-video return to his face
-HOST_BANKS: dict[str, tuple[str, ...]] = {
-    "open": (
-        "chapters/cold-open/at-desk-open",
-        "chapters/cold-open/establishing",
-        "chapters/cold-open/desk-lean",
-        "chapters/cold-open/title-room",
-        "chapters/cold-open/reframe",
-        "chapters/cold-open/at-desk-tired",
-    ),
-    "close": (
-        "chapters/resigned-close/dennis-shrug-out",
-        "chapters/resigned-close/dennis-defeated",
-        "chapters/resigned-close/closing-card",
-        "chapters/resigned-close/outro-subscribe",
-    ),
-    "panel": (
-        "chapters/the-numbers/chart-annotated",
-        "chapters/the-numbers/chart-bars",
-        "chapters/valuation/pe-history",
-        "chapters/valuation/dennis-weighing",
-        "chapters/bull-vs-bear/dennis-both-hands",
-        "chapters/moat/dennis-inspects",
-        "chapters/short-interest/dennis-eyes-the-squeeze",
-    ),
-    "beat": (
-        "chapters/how-we-got-here/dennis-narrates",
-        "chapters/valuation/dennis-shrug-value",
-        "chapters/bull-vs-bear/dennis-torn",
-        "chapters/cold-open/desk-lean",
-        "chapters/the-numbers/chart-annotated",
-    ),
-}
-
-# The two-shot figure: a CUT-OUT, not a card.
-#
-# Every entry in HOST_BANKS is a complete 16:9 scene — Dennis plus a headline
-# plus, often, its own illustration. They are slides, and they are right when
-# they ARE the frame. Insetting one beside a piece of evidence stacks two
-# finished compositions in one frame, which is what made the long cut read as
-# a collage: a designed backdrop, an evidence card, and a second slide
-# carrying "So... which is it?" over the top of it.
-#
-# These are the 1:1 mascot poses: 98% transparent, no background, no copy. A
-# figure standing next to the evidence on the same sheet of paper is a
-# two-shot. A slide pasted onto a slide is not.
-#
-# WHOLE FIGURES ONLY. Half the `mascot/` family is components for the old
-# layer rig — `arm-gesture` is two arm strokes, `layer-body` is a headless
-# torso, `face-*` is a head — and one of them in this list put a pair of
-# disembodied arms next to the evidence. `_FIGURE_PARTS` is the guard.
-PANEL_FIGURES: tuple[str, ...] = (
-    "mascot/pointing",
-    "mascot/deadpan",
-    "mascot/tired-explaining",
-    "mascot/shrug",
-    "mascot/exasperated",
-    "mascot/smug-told-you",
-)
-
-# Name prefixes that are pieces of a figure rather than a figure.
-_FIGURE_PARTS = ("arm-", "face-", "mouth-", "layer-")
-
-
-def panel_figure(kit: Kit, index: int = 0) -> Asset | None:
-    """One cut-out pose for a two-shot, stepped so a cut never repeats."""
-    options = [
-        a for k in PANEL_FIGURES
-        if not k.rsplit("/", 1)[-1].startswith(_FIGURE_PARTS)
-        and (a := kit.get(k)) is not None
-    ]
-    if not options:
-        return None
-    return options[index % len(options)]
-
-
 @dataclass(frozen=True)
 class HostShot:
-    """One composed shot: the closed-mouth asset and its open-mouth twin.
+    """One pose, as the three strips a beat plays: hold, talk, idle."""
 
-    `blink` and `idle` are the optional micro-motion strips. They are None on
-    every shot the artwork has not reached yet, and the shot boils as before.
-    """
-
-    closed: Asset
-    open_: Asset
-    blink: Asset | None = None
-    idle: Asset | None = None
-    idle_b: Asset | None = None
+    pose: Plate                     # the base strip — a hold, and the cut frame
+    talk: Plate | None = None       # mouth open on f01; None when talks=false
+    idle: Plate | None = None       # f02 bobs three canvas units
 
     @property
     def key(self) -> str:
-        return self.closed.key
+        return self.pose.key
+
+    @property
+    def floor_line_y(self) -> int:
+        return int(self.pose.floor_line_y or self.pose.canvas[1])
+
+    @property
+    def is_framing(self) -> bool:
+        """Whether this is a camera DISTANCE rather than a figure in a room.
+
+        `close-up` and `medium` publish `floorLineY: false`: they are head-and-
+        shoulders and waist-up crops, so there is no floor line to pin and no
+        anchor to solve them onto. A framing IS the shot. Treating one as a
+        cut-out puts a disembodied head standing on a desk.
+        """
+        return not self.pose.floor_line_y
+
+    @property
+    def glance(self) -> str:
+        """Where he is looking: `to camera`, `camera-left`, `camera-right`."""
+        return str(getattr(self.pose, "glance", "") or "to camera")
 
 
-# A bank that may borrow from another once its own shots are exhausted.
-#
-# `beat` is five shots. On a short that is plenty; on a forty-minute cut with
-# a host beat every twelve seconds it wraps every minute, and the repetition
-# is the most visible thing in the video. The `panel` shots are also just
-# Dennis presenting, so they extend the rotation without changing the register.
-BANK_EXTENSIONS: dict[str, tuple[str, ...]] = {
-    "beat": ("panel",),
-}
+def shots(reg: Registry, role: str = "open") -> list[HostShot]:
+    """Every usable pose for a shot role, in the order the registry declares.
 
-
-def shots(kit: Kit, role: str = "open") -> list[HostShot]:
-    """Every usable shot in a bank, in bank order.
-
-    A bank listed in `BANK_EXTENSIONS` continues into its extension, so the
-    rotation is long enough for the runtime rather than long enough for the
-    bank. Its own shots always come first, and a shot is never listed twice.
-
-    A shot whose baked furniture cannot be stripped is not usable, whatever the
-    bank says. These are full-frame cards composited onto a frame that draws its
-    own chip and disclaimer, so the one on the card is a second copy of both —
-    it is the reason the long sample prints "Opinion / entertainment. Not
-    financial advice." twice, in two different faces. Five of the twenty banked
-    keys are in that state; the shot is dropped here rather than at the pixels,
-    and `/kit doctor` names the artwork owed.
+    A pose that declares ``talks: false`` still appears — it is a perfectly good
+    hold — but its talk strip is None, so a speaking beat will not choose it.
     """
     out: list[HostShot] = []
-    seen: set[str] = set()
-    for bank in (role, *BANK_EXTENSIONS.get(role, ())):
-        for key in HOST_BANKS.get(bank, ()):
-            if not kit.placeable(key):
-                log.debug("host shot %s keeps its baked furniture — skipped", key)
-                continue
-            pair = kit.talk_pair(key)
-            if pair is None:
-                log.debug("host shot %s has no usable talk twin — skipped", key)
-                continue
-            if pair[0].key in seen:
-                continue
-            seen.add(pair[0].key)
-            out.append(HostShot(
-                closed=pair[0], open_=pair[1],
-                blink=kit.micro_motion(key, "-blink"),
-                idle=kit.micro_motion(key, "-idle"),
-                idle_b=kit.micro_motion(key, "-idle-b"),
-            ))
+    for key in reg.host_roles.get(role, ()):
+        pose = reg.get(key)
+        if pose is None:
+            log.debug("host role %s names %s, which the kit does not ship", role, key)
+            continue
+        out.append(HostShot(pose=pose,
+                            talk=reg.host_strip(key, "talk"),
+                            idle=reg.host_strip(key, "idle")))
     return out
 
 
-def pick_shot(kit: Kit, role: str, index: int = 0) -> HostShot | None:
-    """The `index`-th shot of a bank, wrapping.
+def pick_shot(reg: Registry, role: str, index: int = 0, *,
+              speaking: bool = False, used: dict[str, int] | None = None
+              ) -> HostShot | None:
+    """The `index`-th pose of a role, wrapping.
 
     Stepping rather than hashing: consecutive host beats in one video must not
     repeat, and a counter guarantees that where a hash only makes it likely.
+
+    `used` carries how often each pose has already appeared, so a pose that
+    declares a ``limit`` is not chosen past it. head-in-hands is capped at one
+    per video by the kit itself: it is the cost of being right, and a second one
+    turns it into a running joke.
     """
-    bank = shots(kit, role)
+    bank = [s for s in shots(reg, role) if not speaking or s.talk is not None]
+    if used:
+        allowed = []
+        for shot in bank:
+            cap = reg.host_limit(shot.key)
+            if cap is not None and used.get(shot.key, 0) >= cap:
+                continue
+            allowed.append(shot)
+        bank = allowed or bank
     if not bank:
         return None
     return bank[index % len(bank)]
 
 
-def available(kit: Kit, role: str = "open") -> bool:
-    """True when the kit can supply a lip-synced shot for this role."""
-    return bool(shots(kit, role))
+def available(reg: Registry, role: str = "open") -> bool:
+    """True when the registry can supply a pose for this role."""
+    return bool(shots(reg, role))
+
+
+# --------------------------------------------------------------------------
+# Placement — the anchor contract.
+# --------------------------------------------------------------------------
+class HostPlacementError(Exception):
+    """The host cannot be placed, and improvising is worse than stopping.
+
+    Everything in this module used to degrade to None so a render never failed
+    for want of a host. That is the right instinct for a MISSING pose and the
+    wrong one for a placement that cannot be solved: the frame still gets
+    drawn, with him at a size and a position nobody chose.
+    """
+
+
+@dataclass(frozen=True)
+class Placement:
+    """Where a host cut-out goes on a room, in DELIVERED pixels."""
+
+    scale: float
+    x: int                      # left edge of the scaled host plate
+    y: int                      # top edge of the scaled host plate
+    width: int
+    height: int
+
+
+def stands_on(room: Plate, host: HostShot) -> bool:
+    """Whether this pose is a cut-out this room has a floor for.
+
+    The two DECLARED cases, both of which are data rather than a failure:
+
+    * `room.refuses_host` — `room/high-desk-down` is the camera above the desk
+      and `room/wall-of-calls` is a wall of index cards. Neither has a floor
+      in shot, and both say so in the field rather than leaving it out.
+    * `host.is_framing` — a close-up is a camera distance, not a cut-out.
+      There is no floor line on it to pin.
+
+    A caller asks this and then places him, or frames him, or leaves him out.
+    """
+    return not room.refuses_host and not host.is_framing
+
+
+def place_on_room(room: Plate, host: HostShot) -> Placement:
+    """Solve the host onto a room's ``host-anchor``. Raises rather than shrugs.
+
+    The anchor's HEIGHT is the target: scale so that
+    ``(host.floorLineY - figure.y)`` equals it, then sit the host's floor line
+    on the anchor's bottom edge.
+
+    Never the anchor's width — the figure box includes the arms, which are meant
+    to pass it, so fitting the width makes him small and puts his feet in the
+    air. Never the figure box's own height either: the box runs past the floor
+    line to carry the shoes, so matching it sinks him into the floor by the
+    height of his feet. Both are ten-to-twenty-percent errors that read as a bad
+    composite rather than as a bug, which is why the rule is written on the
+    plate and repeated here.
+
+    THIS USED TO RETURN NONE AND THE CALLERS IMPROVISED. A close-up handed to
+    it came back as nothing, and the caller fitted a head into a body-sized
+    anchor; a room with no anchor came back as nothing, and the caller stood
+    him at a guessed column. Both read as compositing bugs and neither was
+    visible until somebody watched the frame. Every one of those is a caller
+    that should have asked `stands_on` first, so every one of them is a raise
+    now and shows up on the first render.
+    """
+    if not stands_on(room, host):
+        raise HostPlacementError(
+            f"{host.key} cannot stand on {room.key}: "
+            + ("the room declares hostAnchor: false — nobody stands here"
+               if room.refuses_host else
+               f"{host.key} is a {host.pose.framing or 'framing'}, a camera "
+               f"distance with no floor line — frame it with `frame_shot`")
+            + ". Ask `stands_on` before placing.")
+    anchor = room.slot("host-anchor")
+    figure = host.pose.slot("figure")
+    if anchor is None:
+        raise HostPlacementError(
+            f"{room.key} declares neither a host-anchor nor `hostAnchor: "
+            f"false` — `Registry.verify` refuses that, so this registry is "
+            f"stale: re-run `python scripts/ingest_kit.py kit`")
+    if figure is None:
+        raise HostPlacementError(
+            f"{host.key} has no `figure` slot, so there is nothing to measure "
+            f"his standing height from")
+
+    # Everything in DELIVERED pixels from here. Mixing canvas units and
+    # delivered pixels in this calculation is the exportScale trap the manifest
+    # warns about, and it comes out as a host at exactly half or double his
+    # intended size — on a composite that otherwise looks entirely plausible.
+    hs = host.pose.export_scale
+    standing = (host.floor_line_y - figure.y) * hs   # delivered px, host plate
+    if standing <= 0:
+        raise HostPlacementError(
+            f"{host.key}: floorLineY {host.floor_line_y} is at or above the "
+            f"figure box's top ({figure.y}) — he has no height to scale")
+
+    ax, ay, aw, ah = anchor.scaled()                 # delivered px, room plate
+    scale = ah / standing
+
+    width = int(round(host.pose.delivered[0] * scale))
+    height = int(round(host.pose.delivered[1] * scale))
+
+    # Sit his floor line on the anchor's bottom edge.
+    floor_px = host.floor_line_y * hs * scale
+    y = int(round(ay + ah - floor_px))
+    # WHERE HE STANDS LATERALLY. The anchor's width is advisory — it says how
+    # much lateral room he has, and it never decides his size — so on its own
+    # he is centred in it, which on a wide angle is a man standing in open
+    # floor beside a desk he is not touching.
+    #
+    # Twelve room plates publish a `contact` point: which pose makes contact at
+    # this angle, what he is touching, and where his hand lands. His own rig
+    # publishes `forearmY` but no forearm X, so what this can do soundly is put
+    # him AT the furniture rather than beside it: his figure box is centred on
+    # the contact point. The height rule above is untouched — the anchor
+    # decides his size, and nothing here is allowed to argue with it.
+    contact = room.host_contact
+    if contact.get("x") is not None:
+        fig_mid = (figure.x + figure.w / 2) * hs * scale
+        x = int(round(float(contact["x"]) * room.export_scale - fig_mid))
+    else:
+        x = int(round(ax + (aw - width) / 2))
+    return Placement(scale=scale, x=x, y=y, width=width, height=height)
+
+
+# A FRAMING IS PLACED ON THE EYE LINE. The head is the fraction of frame
+# height the shot wants; the eye line sits on the frame's upper third. Both
+# numbers are the kit's, and the plate carries them.
+CLOSE_UP_HEAD_FH = 0.49         # the kit's band is 0.42-0.56: this is its centre
+EYE_LINE_FH = 1.0 / 3.0
+
+# THE MEDIUM'S BAND AND ITS CROP DISAGREE, AND THE CROP WINS. The kit asks for
+# a head at 0.16-0.22 of frame height, but on both framings the ink runs to the
+# plate's bottom edge — `figure` is y=40 h=1400 on a 1440 canvas, and the fit
+# block says the hands leave frame there. Scaled to a 0.19 head, the medium is
+# 0.61 of frame height, so that cut edge floats a quarter of the frame above
+# the bottom and shows as a straight line across him. Sitting the crop on the
+# frame's bottom edge instead puts his head at 0.31 — larger than the band,
+# and the only reading of the two rules that does not draw the cut.
+MEDIUM_HEAD_FH = 0.31
+
+
+def frame_shot(host: HostShot, frame: tuple[int, int], *,
+               head_fh: float = 0.0,
+               centre_fw: float = 0.5) -> Placement | None:
+    """Place a framing against the FRAME. None if this pose is not one.
+
+    `close-up` and `medium` are camera distances. They have no floor line and
+    no anchor to solve onto, and the manifest is explicit about what they take
+    instead: scale so `slots.head` is the fraction of frame height the shot
+    wants, then put `fit.eyeLineY` on the frame's upper third.
+
+    THE WIDTH IS NOT A BOUND. Both framings run off the left and right edges
+    by design — cropping to the width re-frames the shot into something
+    narrower than what was drawn — so `x` here may be negative and `x + width`
+    may pass the frame's right edge. `centre_fw` moves his head, not his
+    bounding box: in a two-shot he sits at a third and the graphic takes the
+    rest.
+    """
+    if not host.is_framing:
+        return None
+    head = host.pose.slot("head")
+    fit = host.pose.fit or {}
+    if head is None or not fit.get("eyeLineY"):
+        return None
+
+    fw, fh = frame
+    hs = host.pose.export_scale
+    if not head_fh:
+        head_fh = MEDIUM_HEAD_FH if host.pose.framing == "medium" else CLOSE_UP_HEAD_FH
+    scale = (fh * head_fh) / max(head.h * hs, 1)
+
+    width = int(round(host.pose.delivered[0] * scale))
+    height = int(round(host.pose.delivered[1] * scale))
+    # His eyes on the upper third, and his head — not the plate — on centre_fw.
+    y = int(round(fh * EYE_LINE_FH - float(fit["eyeLineY"]) * hs * scale))
+    # NEVER FLOAT THE CROP. The ink reaches the plate's bottom edge on both
+    # framings, so that edge has to be at or below the frame's — a framing
+    # lifted to put its eye line on the third would otherwise draw a straight
+    # cut across his hands in the middle of the picture.
+    y = min(y, fh - height)
+    head_mid = (head.x + head.w / 2) * hs * scale
+    x = int(round(fw * centre_fw - head_mid))
+    return Placement(scale=scale, x=x, y=y, width=width, height=height)
+
+
+# How often the medium framing is the robe instead of the tee. One in three
+# episodes: the robe is the late one, and a thing that happens every time is
+# not a thing anybody notices.
+WARDROBE_ALT_ONE_IN = 3
+
+
+def wardrobe_gaps(reg: Registry, rule: dict) -> list[str]:
+    """Poses this outfit is not drawn for. Empty means it dresses a whole cut.
+
+    ONE OUTFIT PER EPISODE IS A PROPERTY OF THE ARTWORK, NOT OF THE PICKER.
+    `host/medium-robe` is one key: there is no robe close-up and no robe
+    figure, so a video that chooses it and then cuts to the close-up — which
+    every chapter does, on the line it rests on — has him in two outfits in
+    one cut. That is a more visible break of the rule than the missing glance
+    is, and it is not something the seed can be careful about.
+
+    So the alt is offered only when the kit can dress every shot in it. This
+    reads the registry rather than a list, which means the day the robe
+    variants ship the outfit turns itself on with no code change.
+    """
+    default, alt = str(rule.get("default") or ""), str(rule.get("alt") or "")
+    if not default or not alt or not alt.startswith(default):
+        return [default or "(no default declared)"]
+    suffix = alt[len(default):]                   # "-robe"
+    gaps = []
+    for key in reg.keys():
+        if not key.startswith("host/"):
+            continue
+        if key.endswith(("-talk", "-idle")) or key.endswith(suffix):
+            continue
+        if f"{key}{suffix}" not in reg:
+            gaps.append(key)
+    return gaps
+
+
+def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
+    """The same shot in this episode's clothes.
+
+    ONE OUTFIT PER EPISODE, THE SAME IN EVERY FRAME OF IT. The figure poses
+    are settled at ingest — the outfit is baked into the artwork by
+    `--outfit` — but the robe is a different KEY rather than an engine
+    argument, because a garment with a shawl collar, crossing panels and its
+    own cuff is drawn and not recoloured. So that one choice is the
+    pipeline's, and it is made from the video's seed. Picked per shot he
+    would change clothes mid-sentence.
+
+    Which is exactly what one key on its own does, over a cut: see
+    `wardrobe_gaps`. Until the alt covers every pose, this returns the shot
+    it was given, and a consistent tee beats a wardrobe that changes halfway
+    through.
+    """
+    rule = (getattr(reg, "wardrobe", None) or {}).get("medium") or {}
+    alt = rule.get("alt")
+    if not alt or host.key != rule.get("default"):
+        return host
+    gaps = wardrobe_gaps(reg, rule)
+    if gaps:
+        log.debug("%s dresses %d of the poses in the kit — not offered "
+                  "(missing: %s)", alt, len(reg.host_poses) - len(gaps),
+                  ", ".join(sorted(gaps)[:4]))
+        return host
+    picked = int(hashlib.sha256(f"wardrobe|{seed}".encode()).hexdigest(), 16)
+    if picked % WARDROBE_ALT_ONE_IN != 0 or reg.get(alt) is None:
+        return host
+    return HostShot(pose=reg.require(alt),
+                    talk=reg.host_strip(alt, "talk"),
+                    idle=reg.host_strip(alt, "idle"))
+
+
+def looking_at(reg: Registry, host: HostShot, side: str) -> HostShot:
+    """The same shot, glancing toward `side` ("left"/"right"), if one exists.
+
+    A GLANCE IS CUT AGAINST THE SIDE THE GRAPHIC IS ON. The kit says it on the
+    plate: using one with the graphic on the opposite side is worse than him
+    facing camera. So this returns the host unchanged unless the side is known
+    and the glance was actually drawn — straight to camera is the default and
+    the fallback both.
+    """
+    if side not in ("left", "right") or not host.pose.framing:
+        return host
+    pose = reg.get(f"{host.pose.key}-glance-{side}")
+    if pose is None:
+        return host
+    return HostShot(pose=pose,
+                    talk=reg.host_strip(pose.key, "talk"),
+                    idle=reg.host_strip(pose.key, "idle"))
+
+
+def composite_on_room(room_img, host_img, placement: Placement):
+    """Paste a scaled host cut-out onto a room frame, in place."""
+    from PIL import Image
+
+    scaled = host_img.convert("RGBA").resize(
+        (max(placement.width, 1), max(placement.height, 1)), Image.LANCZOS)
+    room_img.alpha_composite(scaled, (placement.x, placement.y))
+    return room_img
 
 
 def speaking_spans(words: list[WordTimestamp], start: float,
@@ -386,125 +593,99 @@ def build_host_clip(
     end: float,
     out_path: Path,
     *,
-    kit: Kit,
+    reg: Registry,
     settings,
     display_w: int | None = None,
     display_h: int | None = None,
     fps: int = 30,
     role: str = "open",
     shot_index: int = 0,
-    strip_furniture: bool = False,
+    used: dict[str, int] | None = None,
     report: dict | None = None,
 ) -> tuple[Path, tuple[int, int]] | None:
     """Composite a talking Dennis into an alpha clip for [start, end).
 
     Returns (clip_path, (w, h)) so the caller can place him, or None when the
-    kit has no usable shot for the role.
+    registry has no usable pose for the role.
 
-    `strip_furniture` is for the 9:16 shorts: the host shots are long-form
-    chapter cards with a ticker chip and a disclaimer painted into them, and
-    the short draws its own. Left on, every short opens and closes with a
-    placeholder ticker from the design file on screen next to ours.
+    There is no furniture to strip any more. The v1 host shots were full-frame
+    chapter cards with a ticker chip and a disclaimer painted into them, so a
+    short that drew its own printed both — twice, in two faces. The v2 host is
+    an alpha cut-out with no baked text at all, which is what that whole code
+    path existed to work around.
 
-    `report`, when given, is filled with what the shot actually did — the key,
-    how many blinks were scheduled, whether the idle strip played — so the
-    manifest can say whether the face moved rather than the operator having to
-    watch for it.
+    `report`, when given, is filled with what the shot actually did — the pose,
+    whether it spoke, how many idle frames played — so the manifest can say
+    whether the face moved rather than the operator having to watch for it.
     """
     from PIL import Image
 
-    from pipeline.kit_frames import _resize, strip_baked_furniture
+    from pipeline.plate_frames import _resize_to
     from pipeline.rasters import frames_to_alpha_clip
 
-    shot = pick_shot(kit, role, shot_index)
+    speaking = any(start <= w.start < end for w in words)
+    shot = pick_shot(reg, role, shot_index, speaking=speaking, used=used)
     if shot is None or end <= start:
         return None
 
-    def variants(asset: Asset) -> list[Image.Image]:
+    def variants(plate: Plate) -> list["Image.Image"]:
         imgs = []
-        for frame in asset.frames:
+        for frame in plate.frame_paths():
             img = Image.open(frame).convert("RGBA")
-            if strip_furniture:
-                img = strip_baked_furniture(img, asset)
             if display_w or display_h:
-                img = _resize(img, display_w, display_h)
+                img = _resize_to(img, display_w, display_h)
             imgs.append(img)
         return imgs
 
-    closed = variants(shot.closed)
-    open_ = variants(shot.open_)
-    if not closed or not open_:
+    hold = variants(shot.pose)
+    if not hold:
         return None
 
-    # The micro-motion strips, if this shot has them. A strip that fails to
-    # load is the same as a strip that was never delivered: the shot boils.
-    def optional(asset: Asset | None) -> list[Image.Image]:
-        if asset is None:
+    def optional(plate: Plate | None) -> list["Image.Image"]:
+        if plate is None:
             return []
         try:
-            return variants(asset)
+            return variants(plate)
         except Exception as exc:  # noqa: BLE001 — a face is never fatal
-            log.warning("host %s: %s did not load (%s) — boiling instead",
-                        shot.key, asset.key, exc)
+            log.warning("host %s: %s did not load (%s) — holding instead",
+                        shot.key, plate.key, exc)
             return []
 
-    blink = optional(shot.blink)
-    # Two idle cycles where the artwork ships both — the second leans the
-    # other way and settles off-phase. Alternated per quiet span so a long
-    # hold never reads as one loop repeating, which is what the six
-    # longest-held shots got a second cycle for.
-    idle_cycles = [c for c in (optional(shot.idle), optional(shot.idle_b)) if c]
+    talk = optional(shot.talk)
+    idle = optional(shot.idle)
 
-    plan = mouth_schedule(words, start, end, fps)
-    # Which output frame each blink starts on. The strip plays straight
-    # through from there — three frames at 30fps is a tenth of a second,
-    # which is what a blink is.
-    blink_at = set()
-    if blink:
-        blink_at = set(blink_schedule(
-            plan, fps, seed=f"{shot.key}|{shot_index}", length=len(blink)))
-    # Long quiet stretches — where the idle strip shifts his weight rather
-    # than the boil twitching a line.
+    plan = mouth_schedule(words, start, end, fps) if talk else [False] * max(
+        int(round((end - start) * fps)), 1)
     quiet = [(a, b) for a, b in quiet_spans(words, start, end)
-             if b - a >= IDLE_MIN_SPAN_S] if idle_cycles else []
+             if b - a >= IDLE_MIN_SPAN_S] if idle else []
 
-    frames: list[Image.Image] = []
-    blinking = -1          # frames remaining in the blink currently playing
-    blinks_played = 0
+    frames: list["Image.Image"] = []
     idle_frames = 0
+    talk_frames = 0
     for i, is_open in enumerate(plan):
-        pool = open_ if is_open else closed
-        # The boil only applies to held frames; a mouth mid-flap is already
-        # moving and a second jitter on top reads as noise.
-        held = i > 0 and plan[i - 1] == is_open
-        if blinking < 0 and i in blink_at:
-            blinking = 0
-            blinks_played += 1
-        if 0 <= blinking < len(blink):
-            frames.append(blink[blinking])
-            blinking += 1
-            if blinking >= len(blink):
-                blinking = -1
-            continue
-        blinking = -1
         t = start + i / fps
-        span = next((n for n, (a, b) in enumerate(quiet) if a <= t < b), None)
-        if idle_cycles and not is_open and span is not None:
-            cycle = idle_cycles[span % len(idle_cycles)]
-            frames.append(cycle[int(t * IDLE_HZ) % len(cycle)])
+        if talk and is_open:
+            # f01 is the open mouth. Cut hard — a dissolve between two boil
+            # frames reads as a camera artefact, not as a hand redrawing a line.
+            frames.append(talk[0])
+            talk_frames += 1
+            continue
+        in_quiet = any(a <= t < b for a, b in quiet)
+        if idle and in_quiet:
+            frames.append(idle[int(t * IDLE_HZ) % len(idle)])
             idle_frames += 1
             continue
-        idx = int(i / fps * BOIL_HZ) % len(pool) if held and len(pool) > 1 else 0
-        frames.append(pool[idx])
+        pool = talk if (talk and not is_open and talk_frames) else hold
+        frames.append(pool[int(t * BOIL_HZ) % len(pool)])
 
     if report is not None:
         report.update({
-            "shot": shot.key,
-            "blinks": blinks_played,
+            "pose": shot.key,
+            "spoke": bool(talk) and talk_frames > 0,
+            "talk_frames": talk_frames,
             "idle_frames": idle_frames,
-            "has_blink": bool(blink),
-            "has_idle": bool(idle_cycles),
-            "idle_cycles": len(idle_cycles),
+            "has_talk": bool(talk),
+            "has_idle": bool(idle),
         })
 
     frames_to_alpha_clip(frames, fps, out_path)

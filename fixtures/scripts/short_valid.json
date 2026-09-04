@@ -2,7 +2,7 @@
   "ticker": "EXMPL",
   "format": "short",
   "hook_text": "EXMPL is up 29% today. The business is not.",
-  "audio_script": "EXMPL is [PROP: chart-ride-up = +29%] up twenty nine percent today, on five times average volume, so the internet has decided it is a [DOODLE: injokes/rocket-to-the-moon] technology company again. [BEAT] The news is an AI partnership. A press release, not a purchase order, and [PROP: c-press-release-crumple] nobody has attached a revenue number to it yet. Plus [DOODLE: concepts/hype-vs-reality] squeeze chatter, because eleven percent of the float was betting against it. [DRY] Gut check. I read the filings so you don't have to. Revenue went four hundred million to four ninety six in five years, which is [PROP: c-number-deflate = $496M] growth you need a [DOODLE: concepts/zzz-boring] magnifying glass to find. Losses got wider every single year, and [PROP: chart-off-cliff = -$89M] eighty nine million went out the door last time. Free cash flow turned negative in twenty two and [PROP: b-long-fall-line = -$15M] stayed there. Then the share count. [PROP: see-saw-two-numbers = heavy:365M, light:298M] Two hundred and ninety eight million shares became three hundred and sixty five, which is how management quietly sends you the [DOODLE: injokes/holding-the-bag] bill. [SIGH] Eleven times earnings, and every number underneath it is [PROP: numbers-raining = -$8M, -$25M, -$49M, -$70M, -$89M, -$11M, -$15M] going the wrong way. Cheap only counts if the sliding stops. The chart went vertical. The business went [DOODLE: poses/shrug-idk-man] sideways. [BEAT] Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+  "audio_script": "EXMPL is up twenty nine percent today, on five times average volume, so the internet has decided it is a technology company again. [PLATE: hook-card-t1 | ticker=EXMPL | move=+29% | hook=a plateau in a costume | sub=on five times volume] [BEAT] The news is an AI partnership. A press release, not a purchase order, and nobody has attached a revenue number to it yet. Plus squeeze chatter, because eleven percent of the float was betting against it. [DRY] Gut check. I read the filings so you don't have to. [PLATE: numbers-sheet-4r-9x16 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=400,431,458,472,486,496 | label-2=Net income | row-2=-8,-25,-49,-70,-89,-94 | label-3=Free cash flow | row-3=12,-3,-31,-52,-68,-71 | label-4=Share count | row-4=298,312,328,344,358,365 | band=2] Revenue went four hundred million to four ninety six in six years, which is growth you need a magnifying glass to find. Losses got [SCRIBBLE: scrawl-oval-tight -> Net income] wider every single year, and ninety four million went out the door last time. Free cash flow turned negative in twenty twenty two and stayed there. [PLATE: big-number-l1-9x16 | kicker=FREE CASH FLOW, LTM | value=-$71M | label=the fourth negative year running | caption=From the filing] Then the share count. Two hundred and ninety eight million shares became three hundred and sixty five, which is how management quietly sends you the bill. [PLATE: compare-stacked-9x16 | kicker=SHARE COUNT | label-1=FY21 | value-1=298M | label-2=LTM | value-2=365M | delta=+22% | caption=Dilution is a cost with no line item] [SIGH] Eleven times earnings, and every number underneath it is going the wrong way. Cheap only counts if the sliding stops. The chart went vertical. The business went sideways. [BEAT] Noise. A press release and a squeeze, stapled to six years of drift. [PLATE: closing-9x16 | kicker=THE CLOSE | line-1=The chart went vertical. | line-2=The business went sideways. | line-3=Set a reminder for the next 10-Q. | date-label=Next filing | date=14 May] Set a reminder for the next 10-Q.",
   "move_summary": "+29% today · 5× average volume",
   "headlines": [
     {
@@ -15,20 +15,22 @@
     }
   ],
   "years": [
-    "2021",
-    "2022",
-    "2023",
-    "2024",
-    "2025"
+    "FY21",
+    "FY22",
+    "FY23",
+    "FY24",
+    "FY25",
+    "LTM"
   ],
   "numbers": [
     {
       "label": "Revenue",
       "values": [
         "$400M",
-        "$452M",
-        "$471M",
-        "$491M",
+        "$431M",
+        "$458M",
+        "$472M",
+        "$486M",
         "$496M"
       ]
     },
@@ -39,34 +41,37 @@
         "-$25M",
         "-$49M",
         "-$70M",
-        "-$89M"
+        "-$89M",
+        "-$94M"
       ]
     },
     {
       "label": "Free cash flow",
       "values": [
         "$12M",
-        "-$2M",
-        "-$6M",
-        "-$11M",
-        "-$15M"
+        "-$3M",
+        "-$31M",
+        "-$52M",
+        "-$68M",
+        "-$71M"
       ]
     },
     {
-      "label": "Shares out",
+      "label": "Share count",
       "values": [
         "298M",
-        "315M",
-        "330M",
-        "346M",
+        "312M",
+        "328M",
+        "344M",
+        "358M",
         "365M"
       ]
     }
   ],
-  "numbers_comment": "Revenue flat three years, losses widening, share count up six percent a year. Business sideways; stock vertical.",
+  "numbers_comment": "Revenue flat for three years, losses widening every year, share count up six percent a year. Business sideways; stock vertical.",
   "cheap_or_trap": "Cheap only counts if the sliding stops.",
   "turn_line": "A press release, not a purchase order.",
-  "conclusion": "Noise. A press release and a squeeze, stapled to five years of drift. Set a reminder for the next 10-Q.",
+  "conclusion": "Noise. A press release and a squeeze, stapled to six years of drift. Set a reminder for the next 10-Q.",
   "meme": {
     "key": "fomo-stages-wish-i-bought-doodle",
     "anchor_word": "vertical"

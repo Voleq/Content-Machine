@@ -1,0 +1,169 @@
+room — the set
+==============
+
+USE WHEN
+  Establishing where we are, and any beat where the host is on screen. The
+  room is the bottom layer of every composited shot.
+
+MEMBERS (9 angles x 2 aspects)
+  wide                     the establishing shot. Opens a section.
+  wide-tight               same set, closer. The far wall stops being drawn —
+                           use it when a headline band needs the top third.
+  desk-front               straight on at the desk. The workhorse for
+                           talking-to-camera beats.
+  desk-corner              three-quarter on the desk. Has a caption slot; use
+                           it when an object in the set needs naming.
+  from-behind-the-monitor  over the screen backs, toward him. For the beat
+                           where he is reading, not addressing us.
+  whiteboard-wall          for a structure plate. The wall gives the diagram
+                           a reason to exist in the room.
+  printer-corner           for paper — a filing, a transcript, a printout.
+  doorway                  arrival and exit. Pairs with
+                           host/walking-out-of-frame.
+  wall-of-calls            the receipts wall. Its own slot set (below); this
+                           is a content plate that happens to be a room.
+
+SURFACE
+  Rooms are drawn on the plain NIGHT CARD, never on the legal pad. A surface
+  goes under the drawing; the pad's blue rules and red margin are furniture of
+  the page, and on a room plate they run straight through the desk, the props
+  and the host. A rule crossing a man's chest is not a surface he is standing
+  on. The binding lives in engine/build.js (NOTE_SURFACES) so a caller cannot
+  choose wrongly — ruled paper is for things that ARE notes.
+
+SHADOW
+  A dark reads as shadow, not as an object, when three things are true: it is
+  densest where it meets whatever casts it and lightens away from it, its edge
+  is ragged rather than a drawn outline, and the ground shows through it. A
+  shadow is the surface in shade — not a new object sitting on top of one. The
+  first version of the under-desk mass and the foreground crop had none of the
+  three, and as flat slabs of uniform hatch they became the biggest darks in
+  frame and pulled attention off the host.
+
+VALUE RANGE
+  Three or four genuinely dark OBJECTS carry the frame: the shadow under the
+  desk, the back of the monitor, the inside of the bin, the gap behind the
+  printer. They are things that really are dark, drawn at a value that shows it
+  — not a filter, not a wash, and not more texture. Revision 02 ran 80–232 with
+  a mean of 208, so almost everything sat in the top quarter of the range and
+  the room read as a light drawing with texture on it.
+
+LINE WEIGHT
+  Heavier pen on what is close, lighter on what is far, across a 3.5x range.
+  Revisions 01 and 02 both varied it across 1.7x, which reads as uniform. This
+  alone is most of what makes the depth legible.
+
+COMPOSITION
+  One object sits clearly in the FOREGROUND, cropped by the frame edge, in every
+  angle. The crop is the depth cue — a frame edge can only cut what is close —
+  and it is what stops the set reading as props laid along one horizontal line.
+  The back wall is the lightest plane in the room and stays out of the way.
+
+TONE
+  The ground stays the ground. The surface colour is what everything sits on,
+  and nothing goes over the top of it globally — if a viewer cannot see the
+  paper colour in the frame, the treatment is wrong. There is no wash, no tint
+  and no global colour layer anywhere in this family.
+
+  Light is VALUE FALLOFF, not a colour layer. A lamp does not tint a room; it
+  makes things near it lighter and things far from it darker, and the falloff
+  follows the SHAPES of the objects rather than sitting behind them in a
+  rectangle. So the only thing a declared source does here is change how much
+  hatch a surface carries: near the lamp, less hatch and more bare ground; two
+  metres away, more. Every plate declares its source positions in meta.light so
+  a renderer can see where the falloff came from.
+
+  THE INK LINE IS ALWAYS THE DARKEST THING IN FRAME. That is what makes a
+  drawing read. Everything else is lighter than it — including the shadows,
+  with exactly one exception: contact shadows, which are small and dark, the
+  size of the object's footprint rather than a halo around it, and which may go
+  darker than the line.
+
+  HATCH SELECTIVELY. Furniture that needs weight — the desk apron and legs, the
+  chair, the printer, the bin, the monitor shell — carries a neutral ink hatch,
+  capped well below the line's value. The wall, the floor, the paper props and
+  the desk surface are left as ground. Texture is only depth when some things
+  have it and some do not; hatching everything at one density cancels itself
+  out.
+
+  Colour in the room is material only — a terracotta pot, a dying plant, post-it
+  yellow. The plate palette's data roles (down, up, attention, other-party) do
+  not appear here, and nothing red goes anywhere it could be read as a loss. Two
+  earlier passes broke this: a mug ring drawn in `down`, and a sparkline on a
+  background monitor drawn in `down` too. Both are now ink.
+
+  WHAT NOT TO ADD, learned the expensive way:
+    * No global wash. Revision 01 put a flat night tone under the whole frame
+      and rebuilt the room on top of it. Once the paper is gone, every value in
+      the drawing has to be found again against a tone that should not be there,
+      and the line stops being the darkest thing in frame.
+    * No glow pools. A soft radial warm or cold pool behind a prop is not light;
+      it is coloured paper taped to the wall. A lamp shows up by taking hatch
+      OFF nearby surfaces.
+    * No dark window. A solid black rectangle becomes the subject and pulls the
+      eye off the host every time. The window is closed blinds in the wood
+      colour, with the night showing in a few of the gaps between slats.
+    * No orange doorway. A lit opening is drawn by LEAVING THE PAPER ALONE and
+      hatching only the top of the opening, where the hall light does not reach.
+
+DENNIS OUTRANKS THE ROOM
+  He is the highest-contrast object in any frame he is in, because he is the
+  reason anyone is watching. Nothing in the set is allowed to reach his value,
+  and he is NOT lit to match the room — an earlier revision tinted him from the
+  room's sources and that is precisely what made him the same value as the desk
+  behind him.
+
+  The test, and it outranks everything above: composite a host cut-out onto a
+  room plate and look at the two together. If your eye does not go to him
+  first, the room is too loud.
+
+SLOTS
+  All angles:
+    title        section title, upper area. Optional — most beats leave it
+                 empty and carry the title on a paper/headline-band instead.
+    host-anchor  where the host plate's figure goes. Not a point: an area,
+                 sized for the 9:16 host at the depth this angle implies.
+
+                 The region's HEIGHT is the host's target height. Scale the
+                 host plate until its `figure` slot height equals this
+                 height, then sit the host's floorLineY on this region's
+                 bottom edge (which is this plate's floorLineY). The width is
+                 advisory — it says how much lateral room he has — and is
+                 never used to scale him. meta.hostAnchor repeats this
+                 contract per plate, so the renderer never has to guess how
+                 big Dennis is.
+  desk-corner adds:
+    caption      names an object in the set. Lower area, small.
+  wall-of-calls (22):
+    kicker                      one line above the wall
+    ticker-N / date-N / outcome-N   seven rows, top to bottom
+                                ticker = the symbol; date = when the call was
+                                made; outcome = what happened. outcome takes
+                                up or down, never neutral — a call that went
+                                nowhere does not go on this wall.
+
+SEQUENCE
+  1  room plate up on the cut
+  2  title, if this beat carries one
+  3  host in, on host-anchor
+  4  data plate over the room, if any
+  For wall-of-calls: kicker, then rows top to bottom, one row per beat. Seven
+  rows is seven beats — do not reveal the wall at once, the whole point is
+  the accumulation.
+
+TRAPS
+  * Do not crop a 16:9 room to get 9:16. The 9:16 plate is re-authored: the
+    far wall, the desk depth and the host-anchor are all different.
+  * wide and wide-tight are not interchangeable at the same beat — the eyeline
+    changes. Cut between them only across a beat boundary.
+  * The screens in the set are set dressing and carry no slots. Anything
+    readable goes on a data plate composited over the room, not on the monitor.
+    The monitor panel is a source, so it is left as BARE GROUND inside its
+    bezel — the lightest thing in frame. Revision 01 hatched it cold blue,
+    which made the brightest object in the room a mid-tone.
+  * Do not add a third light. Two sources are what make the depth legible; a
+    third flattens the room back out and there is nothing in the set at this
+    hour that would cast one.
+  * Props overlap on purpose — a mug half behind a monitor, papers over the
+    keyboard, a cable crossing the desk edge. Do not "tidy" an angle by
+    separating them into a row; the overlap is the depth.

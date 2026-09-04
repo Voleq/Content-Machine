@@ -1,0 +1,39 @@
+{
+  "chapter": "risk",
+  "shots": [
+    {
+      "id": "open",
+      "plate": "room/read",
+      "host": {
+        "pose": "beat",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 6,
+      "captions": true,
+      "notes": "The room and the host. The chapter's title belongs to the opener, not to a slot here."
+    },
+    {
+      "id": "evidence",
+      "plate": "cards/quote-pull-16x9",
+      "max_hold_s": 7,
+      "captions": true,
+      "bind": {
+        "body": "chapter.line.0",
+        "attribution": "?numbers.headline_label",
+        "source": "?script.ticker"
+      },
+      "notes": "What a risk chapter is for, in a plate the kit allows it. Prose goes in prose slots: a label holds thirty characters and is for a metric name, not a sentence."
+    },
+    {
+      "id": "land",
+      "plate": "room/read",
+      "host": {
+        "pose": "to-camera",
+        "slot": "host-anchor"
+      },
+      "max_hold_s": 5,
+      "captions": true,
+      "notes": "Back to him to land it. `to-camera` is the close-up and the medium \u2014 the framings carry the lines that matter."
+    }
+  ]
+}
