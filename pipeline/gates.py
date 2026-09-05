@@ -825,6 +825,71 @@ def _first_hit(text: str, words: tuple[str, ...]) -> str:
     return text[start: end if end > 0 else len(text)].strip()
 
 
+# --------------------------------------------------------------------------
+# Type budgets, at the gate rather than at the end of the render.
+# --------------------------------------------------------------------------
+
+
+def budget_check(script, settings: Settings) -> list[Finding]:
+    """Copy that does not fit the box the kit drew for it. BLOCKING.
+
+    THE BUDGET IS CHECKED HERE BECAUSE HERE IS WHERE IT IS CHEAP. The SHORT
+    already refused an over-budget fill at render time, and for a 75-second
+    video that is a tolerable place to find out. A LONG is forty minutes: the
+    same failure arriving as a `RenderError` after the encode costs the whole
+    build to learn that one label is six characters too long. It is a property
+    of the SCRIPT, it is knowable before a frame is drawn, and a script gate is
+    where the writer can still do something about it.
+
+    So this is the same check `compose.check_budgets` makes, moved to where the
+    fact-check gate runs and reported as a named finding against the slot. The
+    render-time check stays as a backstop rather than as the only line: a SHORT
+    fills some slots from its template and its resolvers rather than from the
+    script, and those values never pass through here.
+
+    `maxChars` is read off the BOX the copy lands in, with the role's narrowest
+    box as the floor behind it — one role is set in boxes of very different
+    widths on the same plate, and the role's number alone is wrong in one of
+    them by construction.
+    """
+    from pipeline.models import TagType
+    from pipeline.plate_frames import budget
+    from pipeline.plates import PlateError, load_plates
+
+    findings: list[Finding] = []
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return findings
+
+    events = list(getattr(script, "events", None)
+                  or getattr(script, "inline_events", None) or [])
+    for event in events:
+        if getattr(event, "type", None) is not TagType.PLATE:
+            continue
+        plate = reg.get(str(getattr(event, "payload", "") or ""))
+        if plate is None:
+            continue                    # an unresolved plate is the kit gate's
+        for name, value in (getattr(event, "values", None) or {}).items():
+            slot = plate.slot(name)
+            if slot is None:
+                continue                # an undeclared slot is the kit gate's
+            limit = budget(plate, slot, str(value)).get("maxChars")
+            text = str(value)
+            if not limit or len(text) <= int(limit):
+                continue
+            findings.append(Finding(
+                gate="budget",
+                severity="block",
+                message=(
+                    f"{plate.key} {name}: {len(text)} characters against the "
+                    f"{limit} that box holds — the plate reserved that width "
+                    f"and the line collides with the rule beside it. Cut it to "
+                    f"{limit} or move it to a slot drawn wider."),
+                excerpt=text[:140]))
+    return findings
+
+
 def confession_lint(script, settings: Settings) -> list[Finding]:
     """The same admission, told twice.
 
@@ -1358,6 +1423,7 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += voice_lint(delivery_text(script))
     report.findings += confession_lint(script, settings)
     report.findings += valuation_moves(script, settings)
+    report.findings += budget_check(script, settings)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
     report.findings += check_audio(settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)

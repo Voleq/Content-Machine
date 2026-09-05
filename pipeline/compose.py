@@ -860,8 +860,15 @@ def check_budgets(fmt: Format, result: BuildResult,
 
     `maxChars` is the kit's own limit, derived from the box the copy lands in
     and the face it is set in. It is a HARD limit: over it the line collides
-    with rules drawn in ink. This is the same check the LONG runs over its
-    `[PLATE]` tags, in the shape the templates need.
+    with rules drawn in ink.
+
+    A BACKSTOP, NOT THE ONLY LINE. `gates.budget_check` makes the same check
+    against the script, before anything renders, because a script is where the
+    writer can still fix it — refusing a six-character overrun after a
+    forty-minute encode is a true answer arriving at the most expensive
+    possible moment. This one stays because a SHORT fills some slots from its
+    template and its resolvers rather than from the script, and those values
+    never pass through the gate.
 
     THE BUDGET IS PER BOX, NOT PER ROLE. `structure/flow-16x9` sets `caption`
     in a 1620-unit strip and again in a 104-unit arrow label; reading the role

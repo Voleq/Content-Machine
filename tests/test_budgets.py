@@ -94,7 +94,8 @@ def test_the_loader_rejects_an_unaccounted_engine_file(tmp_path):
     (kit / "engine").mkdir(parents=True)
     for js in (KIT / "engine").glob("*.js"):
         (kit / "engine" / js.name).write_bytes(js.read_bytes())
-    (kit / "engine" / "zz-unnamed.js").write_text("// arrived with a pack\n")
+    (kit / "engine" / "zz-unnamed.js").write_text(
+        "// arrived with a pack\n", encoding="utf-8")
 
     proc = subprocess.run(
         ["node", str(ROOT / "scripts" / "kit_engine.js"),
@@ -230,6 +231,66 @@ def test_the_derivation_does_not_leak_one_plates_floor_into_another(reg):
         f"four plates sharing one role object all report the same floor "
         f"{floors} — the derivation is mutating a shared spec again")
     assert floors["structure/flow-16x9"] == 6, floors
+
+
+# --------------------------------------------------------------------------
+# The budget is refused at the GATE, not at the end of a forty-minute render.
+# --------------------------------------------------------------------------
+def test_the_gate_blocks_copy_that_does_not_fit_its_box(settings):
+    """A property of the script, knowable before a frame is drawn.
+
+    The SHORT refused this at render time, which is affordable for 75 seconds
+    and not for a long: the same failure after the encode costs the whole build
+    to learn that one label is six characters too long.
+    """
+    from pipeline.gates import budget_check
+    from pipeline.models import TagEvent, TagType
+
+    class _Script:
+        narration = "x"
+        events = [TagEvent(type=TagType.PLATE, payload="structure/flow-16x9",
+                           values={"box-3": "Renewal in twelve months"},
+                           char_offset=0, raw_offset=0)]
+
+    findings = budget_check(_Script(), settings)
+    assert findings, "24 characters went into a box that holds 18"
+    assert findings[0].severity == "block"
+    assert findings[0].gate == "budget"
+    assert "box-3" in findings[0].message
+
+
+def test_the_gate_measures_each_box_and_not_the_role(settings):
+    """40 characters is fine in flow's 1620-unit caption strip and four times
+    over budget in its 104-unit arrow labels. One number per role reports
+    either both or neither."""
+    from pipeline.gates import budget_check
+    from pipeline.models import TagEvent, TagType
+
+    class _Script:
+        narration = "x"
+        events = [TagEvent(
+            type=TagType.PLATE, payload="structure/flow-16x9",
+            values={"arrow-1": "x" * 40, "caption": "x" * 40},
+            char_offset=0, raw_offset=0)]
+
+    named = {f.message.split()[1].rstrip(":")
+             for f in budget_check(_Script(), settings)}
+    assert named == {"arrow-1"}, named
+
+
+def test_the_gate_does_not_measure_a_region_as_text(settings):
+    """`marker-N` carries `t` and `median`, has no budget, and is not copy."""
+    from pipeline.gates import budget_check
+    from pipeline.models import TagEvent, TagType
+
+    class _Script:
+        narration = "x"
+        events = [TagEvent(type=TagType.PLATE,
+                           payload="tables/multiples-strip-16x9",
+                           values={"marker-1": "t:0.94,median:0.41"},
+                           char_offset=0, raw_offset=0)]
+
+    assert budget_check(_Script(), settings) == []
 
 
 # --------------------------------------------------------------------------

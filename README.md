@@ -82,6 +82,7 @@ blocks, never rewrites — the writer decides.
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
 | **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
+| **type budgets** | every figure and line a `[PLATE]` writes, against the `maxChars` the kit derived for THAT box — the role's narrowest box is the floor behind it. Checked here because it is a property of the script: the same failure at render time costs a forty-minute build to learn a label is six characters too long | blocks |
 | **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
 | **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
 | **skeptic** | an LLM read of the finished script as a hostile investor. Notes only, never offline | never |
