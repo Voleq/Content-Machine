@@ -132,7 +132,6 @@ pipeline/
                          its eye line; the glance, the wardrobe, the flap
   marks.py               hand-drawn line primitives and type fitting
   media_frames.py        foreign media gets a frame (`frames/` family)
-  peers.py               the peer percentiles, on screen
   chart.py               the data path for a declared chart region, and the
                          range marks on a multiples strip — nothing else; the
                          plate draws the furniture
