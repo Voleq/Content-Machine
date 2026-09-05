@@ -1,6 +1,6 @@
 """How much of the plate library a script actually reaches.
 
-The library is 113 plates. A script that names six of them will look like the
+The library is 143 plates. A script that names six of them will look like the
 last script that named six of them, and it did that for months without anybody
 noticing, because the number existed only inside a render manifest nobody
 opens. Nothing measured it before the render, nothing printed it after, so "the

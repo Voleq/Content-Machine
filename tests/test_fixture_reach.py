@@ -34,7 +34,7 @@ from pipeline.tts import TTSEngine
 #
 # ANIMATED IS A LOWER FLOOR THAN IT WAS, ON PURPOSE. The old delivery re-baked
 # every still plate as a three-frame boil, so everything on screen moved. 44 of
-# the 140 v2 plates are `playback: static` — tables, charts, figures,
+# the 143 v2 plates are `playback: static` — tables, charts, figures,
 # structure — because a figure that moves is a figure being re-read. What moves
 # in a vertical cut is the room, the host and the cards.
 MIN_PLATES = 8

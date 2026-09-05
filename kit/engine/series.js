@@ -268,6 +268,68 @@
     return { svg: out.join(""), bars: bars, zeroX: zeroX, domain: d };
   }
 
-  g.SERIES = { line: line, sparkBars: sparkBars, cycleArc: cycleArc, rowBars: rowBars, domain: domain, ticksOf: ticksOf, niceStep: niceStep };
+  // ---- the range mark ----------------------------------------------------
+  // tables/multiples-strip reserves marker-N and draws the rail under it. This
+  // is what sits on the rail, and it arrives here rather than in the plate for
+  // the usual reason: a percentile is data, and a plate that drew a position
+  // would be inventing one.
+  //
+  // t is a POSITION, not a value: 0 at the low end of the peer range, 1 at the
+  // high end. The caller does that division, because only the caller knows
+  // whether the range is the peer min/max, the interquartile band or five years
+  // of the subject's own history — three different claims that all land on the
+  // same rail.
+  //
+  // NO DIRECTION COLOUR. The subject is structure and the median is otherParty,
+  // the same two roles the strip's figures use. A marker in `down` because it
+  // sits high would argue the short before the script does.
+  //
+  // OFF THE RANGE IS A READING, NOT AN ERROR. A subject priced above every peer
+  // is the most interesting case this plate has, so t > 1 clamps the dot to the
+  // end tick and adds a chevron past it. Dropping the mark, or letting it draw
+  // outside the region, would both lose the one row worth talking about.
+  function rangeMark(o) {
+    const b = o.box, p = o.pal, seed = o.seed || 1600;
+    const cy = b.y + b.h / 2;
+    const r = Math.max(9, b.h * 0.3);
+    const clamp = (v) => Math.max(0, Math.min(1, v));
+    // The scale is INSET BY THE MARK'S OWN RADIUS, which is the difference
+    // between a position and a dot at a position. Mapped edge to edge, a subject
+    // level with the top peer draws a dot centred on the high end tick: it hides
+    // the tick it is being measured against and half of it lands outside the
+    // region the plate reserved. Inset, t = 1 sits tangent to that tick, nothing
+    // paints past the box, and the two ends stay readable as ends.
+    const xAt = (t) => b.x + r + clamp(t) * (b.w - r * 2);
+    const out = [];
+
+    // The median as a TICK, not a second dot: two dots on one rail read as two
+    // subjects, and the peer set is not a subject.
+    if (typeof o.median === "number") {
+      out.push(H.line(xAt(o.median), cy - b.h * 0.4, xAt(o.median), cy + b.h * 0.4, {
+        stroke: p.otherParty, width: Math.max(3.4, r * 0.42), opacity: 0.9,
+        step: 5, cap: "butt", amp: 1.2, over: 2, seed: seed + 3,
+      }));
+    }
+
+    const t = typeof o.t === "number" ? o.t : 0.5;
+    const off = t > 1 ? 1 : t < 0 ? -1 : 0;
+    // Off the range: the dot is pushed against its end tick from the INSIDE and
+    // a chevron points out past it, both still inside the region. The first
+    // version drew the chevron beyond the end, which put ink outside the box the
+    // plate reserved and stuck the arrow onto the side of the dot.
+    const x = xAt(t) - off * r * 1.9;
+    out.push(dot(x, cy, r, p.structure, seed));
+    if (off) {
+      const tip = xAt(t) + off * r * 0.85;
+      out.push(H.stroke([
+        { x: tip - off * r * 0.8, y: cy - r * 0.6 },
+        { x: tip, y: cy },
+        { x: tip - off * r * 0.8, y: cy + r * 0.6 },
+      ], { stroke: p.structure, width: Math.max(2.6, r * 0.2), opacity: 0.9, amp: 1.1, over: 3, seed: seed + 9 }));
+    }
+    return { svg: out.join(""), x: x, cy: cy, r: r, t: t, offRange: off !== 0 };
+  }
+
+  g.SERIES = { line: line, sparkBars: sparkBars, cycleArc: cycleArc, rowBars: rowBars, rangeMark: rangeMark, domain: domain, ticksOf: ticksOf, niceStep: niceStep };
   if (typeof module !== "undefined") module.exports = g.SERIES;
 })(typeof window !== "undefined" ? window : globalThis);

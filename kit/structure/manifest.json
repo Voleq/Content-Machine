@@ -5,11 +5,16 @@
  "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
  "bakedText": false,
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "bridgeNote": "structure/multiple-bridge walks one multiple into another — three figures, two removals. It is not structure/unit-ladder with the rows turned sideways: the ladder subtracts line items from one figure in one unit, the bridge changes the denominator at every step, so the figures cannot stack in a column and be read as arithmetic.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote).",
  "assets": {
   "structure/both-true-16x9": {
-   "author": "bothTrue",
-   "seed": 3,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -32,7 +37,9 @@
    ],
    "files": {
     "png": "both-true-16x9.png",
-    "svg": "both-true-16x9.svg"
+    "svg": "both-true-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -161,12 +168,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
-  },
-  "structure/both-true-9x16": {
+   },
    "author": "bothTrue",
    "seed": 3,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "structure/both-true-9x16": {
    "canvas": [
     1080,
     1920
@@ -189,7 +196,9 @@
    ],
    "files": {
     "png": "both-true-9x16.png",
-    "svg": "both-true-9x16.svg"
+    "svg": "both-true-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -318,12 +327,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "bothTrue",
+   "seed": 3,
+   "surface": "night-card"
   },
   "structure/unit-ladder-16x9": {
-   "author": "unitLadder",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -346,7 +355,9 @@
    ],
    "files": {
     "png": "unit-ladder-16x9.png",
-    "svg": "unit-ladder-16x9.svg"
+    "svg": "unit-ladder-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -571,12 +582,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
-  },
-  "structure/unit-ladder-9x16": {
+   },
    "author": "unitLadder",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "structure/unit-ladder-9x16": {
    "canvas": [
     1080,
     1920
@@ -599,7 +610,9 @@
    ],
    "files": {
     "png": "unit-ladder-9x16.png",
-    "svg": "unit-ladder-9x16.svg"
+    "svg": "unit-ladder-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -824,12 +837,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "unitLadder",
+   "seed": 1,
+   "surface": "night-card"
   },
   "structure/closing-16x9": {
-   "author": "closingPlate",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -852,7 +865,9 @@
    ],
    "files": {
     "png": "closing-16x9.png",
-    "svg": "closing-16x9.svg"
+    "svg": "closing-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -965,12 +980,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
-  },
-  "structure/closing-9x16": {
+   },
    "author": "closingPlate",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "structure/closing-9x16": {
    "canvas": [
     1080,
     1920
@@ -993,7 +1008,9 @@
    ],
    "files": {
     "png": "closing-9x16.png",
-    "svg": "closing-9x16.svg"
+    "svg": "closing-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -1106,12 +1123,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "closingPlate",
+   "seed": 1,
+   "surface": "night-card"
   },
   "structure/row-spotlight-16x9": {
-   "author": "rowSpotlight",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -1134,7 +1151,9 @@
    ],
    "files": {
     "png": "row-spotlight-16x9.png",
-    "svg": "row-spotlight-16x9.svg"
+    "svg": "row-spotlight-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -1319,12 +1338,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
-  },
-  "structure/row-spotlight-9x16": {
+   },
    "author": "rowSpotlight",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "structure/row-spotlight-9x16": {
    "canvas": [
     1080,
     1920
@@ -1347,7 +1366,9 @@
    ],
    "files": {
     "png": "row-spotlight-9x16.png",
-    "svg": "row-spotlight-9x16.svg"
+    "svg": "row-spotlight-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -1532,12 +1553,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "rowSpotlight",
+   "seed": 1,
+   "surface": "night-card"
   },
   "structure/flow-16x9": {
-   "author": "flowPlate",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -1560,7 +1581,9 @@
    ],
    "files": {
     "png": "flow-16x9.png",
-    "svg": "flow-16x9.svg"
+    "svg": "flow-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -1713,12 +1736,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "flowPlate",
+   "seed": 1,
+   "surface": "night-card"
   },
   "structure/timeline-16x9": {
-   "author": "timeline",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -1741,7 +1764,9 @@
    ],
    "files": {
     "png": "timeline-16x9.png",
-    "svg": "timeline-16x9.svg"
+    "svg": "timeline-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -1894,12 +1919,12 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
-  },
-  "structure/timeline-9x16": {
+   },
    "author": "timeline",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "structure/timeline-9x16": {
    "canvas": [
     1080,
     1920
@@ -1922,7 +1947,9 @@
    ],
    "files": {
     "png": "timeline-9x16.png",
-    "svg": "timeline-9x16.svg"
+    "svg": "timeline-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "kicker": {
@@ -2075,13 +2102,181 @@
      "opacity": 0.72,
      "maxChars": 60
     }
-   }
+   },
+   "author": "timeline",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "structure/multiple-bridge-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "multiple-bridge-16x9.svg",
+     "png": "multiple-bridge-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "multiple-bridge-16x9.png",
+    "svg": "multiple-bridge-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "kicker": {
+     "align": "left",
+     "role": "kicker",
+     "x": 150,
+     "y": 110,
+     "w": 1620,
+     "h": 32
+    },
+    "step-1-figure": {
+     "align": "center",
+     "role": "waypoint",
+     "x": 137,
+     "y": 436,
+     "w": 376,
+     "h": 111
+    },
+    "step-1-label": {
+     "align": "center",
+     "role": "step",
+     "x": 137,
+     "y": 584,
+     "w": 376,
+     "h": 74
+    },
+    "link-1-note": {
+     "align": "left",
+     "role": "strike",
+     "x": 528,
+     "y": 718,
+     "w": 283,
+     "h": 65
+    },
+    "step-2-figure": {
+     "align": "center",
+     "role": "waypoint",
+     "x": 772,
+     "y": 436,
+     "w": 376,
+     "h": 111
+    },
+    "step-2-label": {
+     "align": "center",
+     "role": "step",
+     "x": 772,
+     "y": 584,
+     "w": 376,
+     "h": 74
+    },
+    "link-2-note": {
+     "align": "left",
+     "role": "strike",
+     "x": 1163,
+     "y": 718,
+     "w": 283,
+     "h": 65
+    },
+    "step-3-figure": {
+     "align": "center",
+     "role": "outcome",
+     "x": 1407,
+     "y": 436,
+     "w": 376,
+     "h": 137
+    },
+    "step-3-label": {
+     "align": "center",
+     "role": "step",
+     "x": 1407,
+     "y": 584,
+     "w": 376,
+     "h": 74
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 150,
+     "y": 950,
+     "w": 1620,
+     "h": 30
+    }
+   },
+   "aspect": "16x9",
+   "family": "structure",
+   "type": "multiple-bridge",
+   "typeRoles": {
+    "kicker": {
+     "font": "Courier Prime",
+     "size": 28,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.7,
+     "tracking": ".16em",
+     "transform": "uppercase",
+     "maxChars": 34
+    },
+    "waypoint": {
+     "font": "Courier Prime",
+     "size": 96,
+     "weight": 700,
+     "colour": "neutralData",
+     "maxChars": 6
+    },
+    "outcome": {
+     "font": "Courier Prime",
+     "size": 118,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 5
+    },
+    "step": {
+     "font": "Archivo Narrow",
+     "size": 32,
+     "weight": 500,
+     "colour": "structure",
+     "opacity": 0.9,
+     "maxLines": 2,
+     "maxCharsPerLine": 22
+    },
+    "strike": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 400,
+     "colour": "down",
+     "maxLines": 2,
+     "maxCharsPerLine": 26
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "stepsNote": "three steps and two connectors, fixed. A fourth step is a different plate: structure/unit-ladder subtracts line items from one figure in one unit, this converts one multiple into another and every step has a different denominator.",
+   "weightNote": "steps 1 and 2 are neutralData at one size (waypoints, same job); step 3 is structure and larger (the number the chapter argues for). Sizing the three 3-2-1 would draw the multiple shrinking, and nothing shrank — the denominator changed.",
+   "linkNote": "link-N-note is what was REMOVED to get to the next figure — drawn in down with a minus beside it and a drop line to the connector it belongs to. The removals are the only direction colour on the plate: a multiple is not up or down, a subtraction is.",
+   "aspectNote": "16:9 only. Three figures side by side need the width, and a trailing-to-forward walk does not belong in seventy-five seconds.",
+   "author": "multipleBridge",
+   "seed": 23,
+   "surface": "night-card"
   }
- },
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "exportScale": 2,
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ }
 }

@@ -788,6 +788,83 @@
     return P;
   }
 
+  // ---------------- multiple bridge ----------------
+  // USE WHEN a headline multiple is not the multiple the argument is about. One
+  // figure walked into another, and what came out at each step.
+  //
+  // This is the clearest move in the valuation chapter and there was no way to
+  // draw it. A trailing P/E crushed by deal amortisation says nothing useful; the
+  // whole argument is the walk down to the forward number, and a walk is three
+  // anchors and two removals.
+  //
+  // NOT A UNIT LADDER, which already exists two functions up and looks similar
+  // enough to confuse. unit-ladder subtracts line items from ONE figure and the
+  // rows are all in the same unit — dollars out of a dollar. Here every step is a
+  // DIFFERENT multiple against a different denominator, so the steps cannot stack
+  // in a column and be read as arithmetic. They sit side by side and the removal
+  // goes in the gap.
+  //
+  // WEIGHTING. Steps 1 and 2 are the same size in neutralData: they are waypoints
+  // doing the same job. Step 3 is larger and in structure, because it is the
+  // number the chapter argues for. Two sizes for two jobs — the walk-down itself
+  // is not a third job, and sizing the figures 3-2-1 to "show the fall" would draw
+  // a chart of the multiple shrinking, which is not what happened: nothing fell,
+  // the denominator changed.
+  //
+  // The removals are the only marks on this plate carrying direction colour. A
+  // multiple is not up or down; a subtraction is.
+  function multipleBridge(o) {
+    const w = o.w, h = o.h;
+    const roles = {
+      kicker: TR.kicker,
+      // Courier advances at ~0.6em, so maxChars is the inner box width divided by
+      // size*0.6 — picked from the geometry rather than hoped for.
+      waypoint: { font: "Courier Prime", size: 96, weight: 700, colour: "neutralData", maxChars: 6 },
+      outcome: { font: "Courier Prime", size: 118, weight: 700, colour: "structure", maxChars: 5 },
+      step: { font: "Archivo Narrow", size: 32, weight: 500, colour: "structure", opacity: 0.9, maxLines: 2, maxCharsPerLine: 22 },
+      strike: { font: "Archivo Narrow", size: 28, weight: 400, colour: "down", maxLines: 2, maxCharsPerLine: 26 },
+      caption: TR.caption,
+    };
+    const P = base(o, "multiple-bridge", roles), p = o.pal;
+    P.meta.stepsNote = "three steps and two connectors, fixed. A fourth step is a different plate: structure/unit-ladder subtracts line items from one figure in one unit, this converts one multiple into another and every step has a different denominator.";
+    P.meta.weightNote = "steps 1 and 2 are neutralData at one size (waypoints, same job); step 3 is structure and larger (the number the chapter argues for). Sizing the three 3-2-1 would draw the multiple shrinking, and nothing shrank — the denominator changed.";
+    P.meta.linkNote = "link-N-note is what was REMOVED to get to the next figure — drawn in down with a minus beside it and a drop line to the connector it belongs to. The removals are the only direction colour on the plate: a multiple is not up or down, a subtraction is.";
+    P.meta.aspectNote = "16:9 only. Three figures side by side need the width, and a trailing-to-forward walk does not belong in seventy-five seconds.";
+
+    const boxes = 3, boxW = 420, gap = 215, boxH = 260;
+    const startX = Math.round((w - (boxW * boxes + gap * (boxes - 1))) / 2);
+    const midY = Math.round(h * 0.5);
+    const boxT = midY - boxH / 2, boxB = midY + boxH / 2;
+    P.slot("kicker", 150, 110, w - 300, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+
+    for (let i = 1; i <= boxes; i++) {
+      const x = startX + (boxW + gap) * (i - 1);
+      const last = i === boxes;
+      P.colourAdd(H.hatch(H.polyRect(x, boxT, boxW, boxH), { color: p.ground2, opacity: 0.5, gap: 8, width: 13, angle: -3, over: 18, seed: 820 + i }));
+      P.inkAdd(H.outline(H.polyRect(x, boxT, boxW, boxH), { stroke: p.structure, width: last ? 5.2 : 3.6, opacity: last ? 0.95 : 0.82, amp: 3.4, over: 12, seed: 830 + i }));
+      P.slot(`step-${i}-figure`, x + 22, boxT + 26, boxW - 44, blockH(last ? roles.outcome : roles.waypoint, 1), { align: "center", role: last ? "outcome" : "waypoint" });
+      P.slot(`step-${i}-label`, x + 22, boxT + 174, boxW - 44, blockH(roles.step, 2), { align: "center", role: "step" });
+      P.inkAdd(H.line(x + 60, boxT + 158, x + boxW - 60, boxT + 155, { stroke: p.structure, width: 1.9, opacity: 0.34, amp: 2.4, over: 7, seed: 840 + i }));
+
+      if (i === boxes) continue;
+      // the connector, then the removal hung under it
+      const ax = x + boxW, bx = x + boxW + gap, cx = Math.round((ax + bx) / 2);
+      P.inkAdd(H.stroke([{ x: ax + 18, y: midY }, { x: bx - 20, y: midY }], { stroke: p.structure, width: 3.6, amp: 2.4, over: 6, seed: 850 + i }));
+      P.inkAdd(H.stroke([{ x: bx - 44, y: midY - 17 }, { x: bx - 20, y: midY }, { x: bx - 44, y: midY + 17 }], { stroke: p.structure, width: 3.6, amp: 1.8, over: 4, seed: 860 + i }));
+      const noteW = gap + 120, noteY = boxB + 48;
+      // the tie, from the connector down to the removal it belongs to. Slanted
+      // rather than dropped on the centre: the note reads left to right from its
+      // minus, so the line has to land on the minus and not in the middle of a
+      // sentence.
+      P.inkAdd(H.line(cx - 6, midY + 24, cx - noteW / 2 + 4, noteY + 10, { stroke: p.structure, width: 1.8, opacity: 0.3, amp: 2.2, over: 5, seed: 870 + i }));
+      // a drawn minus, in down, so the subtraction is visible without narration
+      P.colourAdd(H.stroke([{ x: cx - noteW / 2, y: noteY + 20 }, { x: cx - noteW / 2 + 34, y: noteY + 19 }], { stroke: p.down, width: 6.4, amp: 2, over: 5, seed: 880 + i }));
+      P.slot(`link-${i}-note`, cx - noteW / 2 + 52, noteY, noteW - 52, blockH(roles.strike, 2), { align: "left", role: "strike" });
+    }
+    P.slot("caption", 150, h - 130, w - 300, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    return P;
+  }
+
   // ---------------- single figure ----------------
   function figRoles(land, big) {
     return {
@@ -1109,6 +1186,162 @@
       P.slot(`move-${i}`, moveL, y + rowH * 0.13, moveW - Math.round(u * 1.2), rowH * 0.74, { align: "right", role: "move" });
       P.slot(`fwd-${i}`, fwdX, y + rowH * 0.18, R - fwdX, rowH * 0.64, { align: "right", role: "fwd" });
       leader(P, barsX, moveL - Math.round(u * 0.6), y + rowH * 0.5, 740 + i * 37, 0.22);
+    }
+    P.slot("caption", L, h - m.b - capH, R - L, capH, { align: "left", role: "caption" });
+    return P;
+  }
+
+  // ---------------- multiples strip: relative pricing, in one frame ----------------
+  // USE WHEN the claim is what the subject COSTS against its peers.
+  //
+  // peers/peer-strip is the wrong shape for this and it was the first thing
+  // checked. Its rows are COMPANIES — a ticker each, with a move and a forward
+  // multiple — so it answers "what did the complex do today". The valuation
+  // chapter asks the inverse: one company against a peer set on several metrics
+  // at once. So here the rows are METRICS and the columns are subject, peer
+  // median, and where the subject sits between them.
+  //
+  // THE MARKER IS THE WHOLE POINT. A figure beside a median is a table; a figure
+  // with a POSITION is an argument, and it is what turns "94th percentile on P/E"
+  // from a statistic into a picture.
+  //
+  // Which is why the rail is drawn and the marker is not. The extent of a peer
+  // range is structural — it is what the two ends of the rail MEAN — so the plate
+  // draws the rail and its end ticks and the rows keep their shape with no data
+  // in them. Everything between the ticks is data: marker-N is a region and
+  // series.rangeMark puts the subject on it at a 0–1 position, with the median's
+  // own position optional beside it. A plate cannot know a percentile.
+  //
+  // NO DIRECTION COLOUR ANYWHERE ON IT. Cheap is not up and expensive is not
+  // down: a low multiple is a price, not a rise, and drawing the marker in `down`
+  // when it sits high would make the plate argue the short before the script
+  // does. The subject is structure and the peer median is otherParty, exactly as
+  // on the peer strip, so the row is legible with no highlight at all and band-N
+  // stays free for the row the voice-over is on.
+  // Character advance as a fraction of point size. Courier Prime is monospaced,
+  // so 0.6 is its metric rather than an estimate; Archivo Narrow is proportional
+  // and 0.47 is an average over mixed-case Latin — good enough to size a budget,
+  // never precise enough to promise a fit.
+  const MONO_ADV = 0.6, NARROW_ADV = 0.47;
+
+  function multiplesStrip(o) {
+    const w = o.w, h = o.h, land = w > h, p = o.pal;
+    const rows = land ? 6 : 3;
+    const roles = {
+      unit: { font: "Courier Prime", size: 26, weight: 400, colour: "structure", opacity: 0.72, tracking: "0.04em", maxChars: land ? 46 : 38 },
+      column: { font: "Archivo Narrow", size: land ? 26 : 28, weight: 600, colour: "structure", opacity: 0.68, tracking: "0.06em", maxChars: 10 },
+      // 40 portrait against 36 landscape: still larger, and the four points came
+      // off because the box has to hold "EV / EBITDA (fwd)" — the longest metric
+      // name a valuation chapter writes — rather than the shortest one.
+      metric: { font: "Archivo Narrow", size: land ? 36 : 40, weight: 500, colour: "structure", maxChars: land ? 24 : 16 },
+      subject: { font: "Courier Prime", size: land ? 58 : 62, weight: 700, colour: "structure", maxChars: 7 },
+      median: { font: "Courier Prime", size: 46, weight: 700, colour: "otherParty", maxChars: 7 },
+      caption: { font: "Courier Prime", size: 26, weight: 400, colour: "structure", opacity: 0.72, maxChars: 60 },
+    };
+    // THREE COLUMNS IN PORTRAIT, and it is a cut rather than a squeeze. The
+    // portrait boxes are ~0.56 of the landscape ones while the type is LARGER;
+    // four columns of it capacity out at about half the declared string, so the
+    // renderer's fit-to-box would shrink a 62pt figure to roughly 35pt and land
+    // the portrait figures SMALLER than the landscape ones — the exact opposite
+    // of what the variant exists for, and silently.
+    //
+    // So the peer median stops being a column here. It is not lost: rangeMark
+    // already puts the median's own tick on the rail, which is where a phone
+    // reads a comparison anyway. A short is where you cut things.
+    if (!land) delete roles.median;
+    const P = H.Plate({
+      key: o.key, w, h, seed: o.seed || 21, pal: p,
+      meta: {
+        aspect: land ? "16x9" : "9x16", family: "tables", type: "multiples-strip", rows, typeRoles: roles,
+        markerNote: "marker-N is a REGION, not artwork. The plate draws the rail and its two end ticks; series.rangeMark({ box: slots['marker-3'], t, median, pal }) draws what sits on it — t is 0 at the low end of the peer range and 1 at the high end, median the same scale. A t outside 0–1 is a real reading (the subject is off the peer range) and the renderer clamps the dot to the end and marks it, rather than dropping it.",
+        columnNote: land
+          ? "subject-N is the subject's own value, in structure; median-N is the peer set's, in otherParty. Same rule as peers/peer-strip: the row you are in is legible with no highlight at all, which keeps band-N free for the row the voice-over is on."
+          : "THREE COLUMNS: metric, subject, rail. There is no median-N and no head-median on this aspect — pass median to series.rangeMark and the tick it puts on the rail IS the peer number. Four columns at portrait width cannot hold the type this plate declares, and the renderer would silently shrink the figures below the landscape ones to fit.",
+        budgetNote: "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+        directionNote: "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
+        rowsNote: land ? "six metric rows: the relative-pricing half of a valuation chapter in one frame." : "three rows, not six. A short's cheap-or-trap beat wants the same picture with less in it, and three rows of larger type is that picture — not the 16:9 sheet scaled down.",
+      },
+    });
+    P.colourAdd(surfaceFurniture(P, SURFACES[p.surfaceKey]));
+
+    const u = unitOf(h);
+    const m = { l: land ? 150 : 84, r: land ? 150 : 84, t: land ? 92 : 186, b: land ? 96 : 150 };
+    const L = m.l, R = w - m.r;
+    const unitH = blockH(roles.unit, 1);
+    P.slot("unit", L, m.t, R - L, unitH, { align: "left", role: "unit" });
+
+    const headH = blockH(roles.column, 1);
+    const capH = blockH(roles.caption, 1);
+    // Row height is a multiple of the figure in it, never the frame divided by
+    // the row count — the lesson the peer strip paid for. Measure the type, stack
+    // it, then centre the block in what is left.
+    const availTop = m.t + unitH + Math.round(u * (land ? 2.2 : 3));
+    const availBot = h - m.b - capH - Math.round(u * 1.8);
+    const headGap = Math.round(u * 1.5);
+    // Landscape measures the type and stacks it — six rows of it fill the frame
+    // on their own. Portrait has three rows in twice the height, so the same
+    // arithmetic leaves the strip a narrow band floating in a tall frame with the
+    // rail squeezed beside it. Every other 9:16 plate in the kit fills its safe
+    // band, so this one takes the height it is given and divides it.
+    const rowH = land
+      ? Math.round(blockH(roles.subject, 1) * 1.62)
+      : Math.max(Math.round(blockH(roles.subject, 1) * 2.1), Math.floor((availBot - availTop - headH - headGap) / rows));
+    const headY = availTop + Math.max(0, Math.round((availBot - availTop - (headH + headGap + rowH * rows)) / 2));
+    const bodyTop = headY + headH + headGap;
+    const bodyBot = bodyTop + rowH * rows;
+
+    // Portrait spends the width the median column freed on the rail, not on the
+    // two text columns: three columns exist so the rail can be read at arm's
+    // length, and a 200-unit rail with a dot on it is a decoration.
+    const labelW = Math.round((R - L) * (land ? 0.29 : 0.38));
+    const subjW = Math.round((R - L) * (land ? 0.15 : 0.3));
+    const medW = land ? Math.round((R - L) * 0.13) : 0;
+    const figL = L + labelW;
+    const medX = figL + subjW;
+    const trackX = medX + medW + Math.round(u * 1.6);
+
+    // Type budgets are derived from the boxes that were just measured, not
+    // authored beside the point sizes: Courier Prime is monospaced so its advance
+    // is exact, and Archivo Narrow gets an average-width estimate that the
+    // manifest labels as one. A maxChars that disagrees with its own box is a
+    // budget a writer cannot spend.
+    const labelBox = labelW - Math.round(u * 1.4), subjBox = subjW - Math.round(u * 1.2), medBox = medW - Math.round(u * 1.2);
+    roles.subject.maxChars = Math.floor(subjBox / (roles.subject.size * MONO_ADV));
+    roles.metric.maxChars = Math.floor(labelBox / (roles.metric.size * NARROW_ADV));
+    roles.column.maxChars = Math.floor(subjBox / (roles.column.size * NARROW_ADV));
+    if (roles.median) roles.median.maxChars = Math.floor(medBox / (roles.median.size * MONO_ADV));
+
+    P.slot("head-subject", figL, headY, subjBox, headH, { align: "right", role: "column" });
+    if (land) P.slot("head-median", medX, headY, medBox, headH, { align: "right", role: "column" });
+    P.inkAdd(H.line(L - 14, bodyTop - Math.round(u * 0.6), R + 14, bodyTop - Math.round(u * 0.6) - 4, { stroke: p.structure, width: 4.6, opacity: 0.9, amp: 4, over: 16, seed: 601 }));
+    // the ledger closes at the foot, or the last row's figures hang off the
+    // bottom of nothing and the strip reads as a fragment of a longer list
+    P.inkAdd(H.line(L - 14, bodyBot + Math.round(u * 0.5), R + 14, bodyBot + Math.round(u * 0.5) - 3, { stroke: p.structure, width: 2.6, opacity: 0.5, amp: 3.4, over: 12, seed: 603 }));
+    P.inkAdd(H.line(figL - Math.round(u * 0.8), headY - 8, figL - Math.round(u * 0.8), bodyBot + Math.round(u * 0.2), { stroke: p.structure, width: 2.3, opacity: 0.32, amp: 4.4, over: 6, seed: 607 }));
+    // and a lighter divide before the rail column. Both figure columns are
+    // right-aligned Courier; without it "99.0x 21.4x" reads as one number, the
+    // same defect the peer strip found between its move and forward columns.
+    P.inkAdd(H.line(trackX - Math.round(u * 0.8), bodyTop + 4, trackX - Math.round(u * 0.8), bodyBot - 4, { stroke: p.structure, width: 1.9, opacity: 0.2, amp: 4, over: 5, seed: 609 }));
+
+    for (let i = 1; i <= rows; i++) {
+      const y = bodyTop + (i - 1) * rowH;
+      const cy = y + rowH * 0.5;
+      P.slot(`band-${i}`, L - Math.round(u * 1.8), y + 2, R - L + Math.round(u * 3.6), rowH - 4, { role: "highlight-band", overlay: "overlays/row-band" });
+      P.slot(`label-${i}`, L, y + rowH * 0.18, labelBox, rowH * 0.64, { align: "left", role: "metric" });
+      P.slot(`subject-${i}`, figL, y + rowH * 0.13, subjBox, rowH * 0.74, { align: "right", role: "subject" });
+      if (land) P.slot(`median-${i}`, medX, y + rowH * 0.18, medBox, rowH * 0.64, { align: "right", role: "median" });
+      // THE RAIL, drawn: a light rule between two end ticks. The ticks are the
+      // low and the high of the peer range, which is structure rather than data —
+      // the range is what the rail is.
+      const tickH = Math.round(u * 0.62);
+      P.inkAdd(H.line(trackX, cy, R, cy - 1, { stroke: p.structure, width: 2.2, opacity: 0.3, amp: 2.6, over: 6, seed: 620 + i }));
+      [trackX, R].forEach(function (x, n) {
+        P.inkAdd(H.line(x, cy - tickH, x, cy + tickH, { stroke: p.structure, width: 2.8, opacity: 0.5, amp: 1.8, over: 3, seed: 640 + i * 3 + n }));
+      });
+      P.slot(`marker-${i}`, trackX, cy - Math.round(rowH * 0.3), R - trackX, Math.round(rowH * 0.6), {
+        role: "marker", region: true, renderer: "series.rangeMark",
+        note: "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+      });
     }
     P.slot("caption", L, h - m.b - capH, R - L, capH, { align: "left", role: "caption" });
     return P;
@@ -4112,5 +4345,5 @@
   const ROOM_CAMERA_ANGLES = ["corner-perspective", "low-desk-height", "high-desk-down"];
   const HOST_FRAMINGS = ["close-up", "medium"];
 
-  g.PLATES = { ROLES, SURFACES, pal, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
+  g.PLATES = { ROLES, SURFACES, pal, multiplesStrip, multipleBridge, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
 })(typeof window !== "undefined" ? window : globalThis);

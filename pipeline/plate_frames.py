@@ -2,14 +2,14 @@
 
 Two jobs that have to agree with each other, so they live together.
 
-**Playback.** 70 of the 113 plates are two-frame loops; the other 43 are data
+**Playback.** 96 of the 143 plates are two-frame loops; the other 47 are data
 plates that deliberately never boil, because a figure that moves is a figure
 being re-read. The registry says which is which, at what rate and over how many
 frames, and :func:`frame_indices` turns that into one source-frame index per
 output frame. There is no per-family branch anywhere in this module: the next
 delivery adds artwork, not code.
 
-**Slots.** 1,287 declared boxes across the library, and every word on screen
+**Slots.** 1,444 declared boxes across the library, and every word on screen
 comes out of one — the plates carry no baked text at all. Filling one honours
 the plate's own ``typeRoles``: font, size, weight, colour ROLE, tracking, case
 and ``maxChars``.
@@ -60,7 +60,7 @@ _STATIC = {
 _FALLBACK = "CourierPrime-Regular.ttf"
 
 # When a plate declares no size for a role, the box decides — but that is the
-# exception, not the mechanism. 94 of 113 plates carry a typeRoles table.
+# exception, not the mechanism. 103 of 143 plates carry a typeRoles table.
 _MIN_PT = 8
 _FIT_STEPS = 48
 

@@ -1,6 +1,6 @@
 """The plate registry — the read side of the materialised design kit.
 
-``assets/plates/plates-registry.json`` is the single source of truth: 113
+``assets/plates/plates-registry.json`` is the single source of truth: 143
 addressable plates under ``family/name`` keys, each declaring its frames,
 playback, canvas, ``exportScale`` and its slots. ``scripts/ingest_kit.py``
 writes it by running the kit's own engine; this module reads it and *only* it.
@@ -210,6 +210,14 @@ class Plate:
     anchor: str = ""
     ink_weight: float = 0.0
     columns: int = 0
+    # HOW MANY ROWS THE PLATE WAS AUTHORED FOR, off the manifest.
+    #
+    # `tables/multiples-strip` ships 6 rows in 16:9 and 3 in 9:16 — the
+    # portrait plate is a re-author with fewer rows AND one fewer column, not
+    # the landscape one cropped. A director that picks six metrics for a short
+    # has picked a plate that cannot hold them, and the honest place to say so
+    # is against the number the plate itself declares.
+    rows: int = 0
     # A CAMERA DISTANCE, NOT A CUT-OUT. `close-up` and `medium` declare a
     # `framing` and no floor line: they are not figures to stand somewhere,
     # they are the shot itself, and `fit` says how to place one — on the eye
@@ -409,6 +417,7 @@ class Registry:
             anchor=str(e.get("anchor", "")),
             ink_weight=float(e.get("inkWeight") or 0.0),
             columns=int(e.get("columns") or 0),
+            rows=int(e.get("rows") or 0),
             framing=str(e.get("framing") or ""),
             glance=str(e.get("glance") or ""),
             fit=dict(e.get("fit") or {}),

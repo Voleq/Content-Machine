@@ -229,7 +229,8 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             # parse time, not discovered as a blank rectangle in the cut.
             # `values` is slot -> text, and the renderer does nothing but place
             # it: it never picks the plate and never computes a figure.
-            fill = build_fill(load_plates(settings.assets_dir), payload)
+            fill = build_fill(load_plates(settings.assets_dir), payload,
+                              aspect="16x9")
             payload = fill.key or fill.name
             values = fill.values
             warnings.extend(fill.warnings)
@@ -453,7 +454,7 @@ def validate_long_script(
             # plate costs nothing — but against the BOUND values, not the raw
             # payload. The parser has already replaced the payload with the
             # registry key, so re-parsing finds a name with no assignments.
-            fill = check_bound(reg, e.payload, e.values)
+            fill = check_bound(reg, e.payload, e.values, aspect="16x9")
             blocking.extend(fill.problems)
             warnings.extend(fill.warnings)
         elif e.type is TagType.SCRIBBLE:

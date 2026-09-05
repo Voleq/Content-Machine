@@ -326,6 +326,7 @@
     "cycles/",
     "charts/line-6y",
     "peers/",
+    "structure/multiple-bridge",
     "tables/"
    ]
   },
@@ -372,6 +373,7 @@
   "tables/numbers-sheet-6r-spark": "six rows with a sparkline column; labels must be abbreviated, the spark takes real width",
   "tables/numbers-sheet-4r-spark": "four rows with a sparkline column; labels must be abbreviated",
   "tables/cash-flow": "the cash-flow statement — three groups, subtotals, a total",
+  "tables/multiples-strip": "the subject against the peer set on several multiples at once — rows are METRICS, columns are subject / peer median / position on the peer range. Six rows in 16:9; the 9:16 re-author takes THREE rows and has no median column, so the peer number reaches the plate through marker-N's median argument instead. The inverse of peers/peer-strip, never a substitute for it",
   "charts/line-6y": "six periods, points labelled. The default series chart. Always after a table of the same series",
   "charts/bars-6y": "six periods as bars. When the periods are independent quantities rather than a path",
   "charts/line-dense": "many observations, four period heads, three marks. A price or daily series",
@@ -387,6 +389,7 @@
   "structure/unit-ladder": "a top-line quantity walked down to an outcome in five steps",
   "structure/row-spotlight": "one row of a table pulled out, six periods. Use straight after the sheet it came from",
   "structure/flow": "input, three boxes, output. 16:9 only — in 9:16 use timeline or unit-ladder",
+  "structure/multiple-bridge": "one multiple walked into another — trailing figure, what came out, forward figure, with the removal named on each connector. Three steps and two connectors, fixed. 16:9 only: there is no portrait bridge",
   "structure/timeline": "six dated events. For decisions or disclosures, never a financial series",
   "structure/closing": "three lines and a date. The last plate of a section",
   "peers/peer-strip": "one moment across several names — the move and the multiple. Not for comparing fundamentals",

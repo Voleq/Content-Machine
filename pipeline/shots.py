@@ -625,7 +625,7 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
             # ground shot is motionless once its type has drawn on, so
             # extending it is the one thing the ceiling exists to prevent.
             # But "has a plate" was too coarse a test for alive: 44 of the
-            # 140 plates are `playback: static` by design — a figure that
+            # 47 of the 143 plates are `playback: static` by design — a figure that
             # moves is a figure being re-read — so an even share put a data
             # plate on screen for 15.4 seconds in a twelve-minute cut while
             # the room beside it, with a man talking in it, took the same.

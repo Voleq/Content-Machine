@@ -67,7 +67,7 @@ def test_news_parsing_skips_blanks_and_coerces_dates(workspace):
 def test_peer_percentiles_parsing_and_block_separation(workspace):
     data = load_company_data(workspace)
     pcts = data.peer_percentiles
-    assert len(pcts) == 8
+    assert len(pcts) == 10
     by_metric = {p["metric"]: p for p in pcts}
     # values + a 0-1 percentile fraction + direction + read
     pe = by_metric["P/E (TTM)"]
@@ -224,7 +224,7 @@ def test_missing_news_sheet_degrades(workspace):
     data = load_company_data(workspace)
     assert data.news == []
     # the other optional blocks are unaffected
-    assert data.has_peers and len(data.peer_percentiles) == 8
+    assert data.has_peers and len(data.peer_percentiles) == 10
 
 
 def test_prompt_block_carries_history_and_dashboard(workspace):
@@ -319,9 +319,16 @@ def test_the_shipped_template_parses_structurally(tmp_path):
     unknown = [k for k in pairs if k not in ALL_DATA_FIELDS]
     assert not unknown, f"template has field_keys the model doesn't know: {unknown}"
 
+    # THE HISTORY CONTRACT IS ITS SHAPE, NOT ITS CONTENT. A blank template
+    # holds formulas and no cached values — which is what the docstring above
+    # says and what a template SHOULD be. This used to assert `has_history`,
+    # and it passed only because the committed workbook still carried one
+    # ticker's cached refresh; the delta-09b template ships without it, so the
+    # assertion was reading somebody's leftover Alphabet numbers as proof that
+    # the parser worked. The periods are the part that must survive a revision.
     data = load_company_data(d)
-    assert data.has_history
     assert data.history_years == ["FY-4", "FY-3", "FY-2", "FY-1", "FY-0", "LTM"]
+    assert set(data.history), "the History sheet lost its field_key rows"
 
 
 def test_the_shipped_template_peer_table_maps_every_field():
@@ -359,8 +366,13 @@ def test_the_shipped_template_peer_table_maps_every_field():
     assert not any(t.startswith("cln") for t in titles.values()), titles
     assert "cagr" in titles["rev_growth"] and "ltm" not in titles["rev_growth"]
 
+    # Same reasoning as the History assertion above: a blank template's auto
+    # table is a PEERS() spill with nothing cached in it, so the number of rows
+    # it happens to carry is whichever refresh was last saved into the file —
+    # not the contract. What must hold is that every row it DOES carry reads a
+    # name and keeps the revenue feeds out of the metrics.
     peers = _read_peers(ws)
-    assert len(peers) > 1 and all(p["name"] for p in peers)
+    assert all(p["name"] for p in peers)
     # per row, the two revenue feeds must not appear in any metric — that is
     # exactly what the fixed-offset read did (`Rev LTM (now)` ≈ 1e5 arriving
     # as a net-debt/EBITDA ratio).

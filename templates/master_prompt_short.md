@@ -84,6 +84,38 @@ does nothing else — it never picks a plate and it never works out a number.
 SIX PERIODS, ALWAYS: four fiscal years, the last full year, LTM. A row whose
 length does not match the header is rejected, as is an unknown plate, an
 undeclared slot, and a plate this chapter's type may not use.
+
+**`marker-N` takes NUMBERS, not words — and in 9:16 it carries the peer number
+as well as the subject's.** `multiples-strip-9x16` draws a rail per row: the
+peer range low-to-high, with the subject marked on it.
+
+```
+[PLATE: multiples-strip-9x16 | unit=Multiples, current | head-subject=EXMPL
+  | label-1=P/E | subject-1=58.2x | marker-1=t:0.94, median:0.41
+  | label-2=EV / EBITDA | subject-2=42.7x | marker-2=t:0.88, median:0.38
+  | label-3=P/S | subject-3=28.4x | marker-3=t:1.4, median:0.44
+  | caption=Rail ends are p10 and p90 of 8 peers ]
+```
+
+* `t` is the subject's position and `median` is the peer set's, both on one
+  scale: `0` is the peer low, `1` is the peer high. Both come off the data
+  (`Peers!I` and `Peers!J`). Write them named — they look alike.
+* **`median:` IS NOT OPTIONAL HERE.** The portrait strip is three columns —
+  metric, subject, rail — and carries no median column at all. The tick the
+  rail draws IS the peer number, so leaving it out shows a position with
+  nothing to be positioned against. There is no `median-N` and no
+  `head-median` on this plate; writing either is rejected.
+* **THREE ROWS, NOT SIX.** The portrait strip is a re-author, not the landscape
+  one cropped. Pick the three metrics that carry the argument.
+* **`t` outside 0–1 is a real reading — write it as it comes.** The ends are the
+  10th and 90th percentile, so a subject priced above every peer is `t = 1.4`,
+  and that is the row worth saying out loud. The renderer puts the dot on the
+  end tick with a chevron past it. Do not clamp it to be safe.
+* **Never write words into `marker-N`**, and never colour a row `up` or `down`
+  here: cheap is not up and expensive is not down. Position carries the claim.
+* **`structure/multiple-bridge` does not exist in 9:16** — do not reach for it.
+* `multiples-strip` rows are METRICS; `peers/peer-strip` rows are COMPANIES.
+  They are inverses, not variants.
 - `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
 - `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).

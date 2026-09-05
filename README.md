@@ -82,6 +82,7 @@ blocks, never rewrites — the writer decides.
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
 | **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
+| **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
 | **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
 | **skeptic** | an LLM read of the finished script as a hostile investor. Notes only, never offline | never |
 
@@ -106,7 +107,7 @@ pipeline/
   tagging.py             the shared tag tokenizer, for both formats
 
   plates.py              THE PLATE REGISTRY — the read side of the design kit.
-                         140 plates keyed family/name, each with its canvas,
+                         143 plates keyed family/name, each with its canvas,
                          exportScale, frames, playback, slot geometry and type
                          roles; the palette's eight colour roles; the host and
                          room ROLES; the sixteen chapter types and what each
@@ -129,8 +130,9 @@ pipeline/
   marks.py               hand-drawn line primitives and type fitting
   media_frames.py        foreign media gets a frame (`frames/` family)
   peers.py               the peer percentiles, on screen
-  chart.py               the data path for a declared chart region — and
-                         nothing else; the plate draws the furniture
+  chart.py               the data path for a declared chart region, and the
+                         range marks on a multiples strip — nothing else; the
+                         plate draws the furniture
   rasters.py             what the kit does not draw: captions, alpha clips,
                          figure animation, and solving a mark onto its target
 
@@ -194,7 +196,7 @@ kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
                          fonts/, INGEST.md. The PNGs under assets/plates/ are
                          built from this and are not edited by hand
 assets/
-  plates/                the materialised kit: 140 plates in fourteen families
+  plates/                the materialised kit: 143 plates in fourteen families
                          plus plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
   fonts, brand, channel, backgrounds, overlays, sfx, music, broll_library,
@@ -795,10 +797,20 @@ env var, case-insensitive).
 - **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M
   | head=FY21,…,LTM | label-1=Revenue | row-1=400,452,471,491,496,496 |
   band=3]` — the tag carries its own content and the renderer only places it.
-  Four things are rejected rather than shipped wrong: an unknown plate, an
-  undeclared slot, a row whose length disagrees with its header, and a plate
-  the chapter's TYPE is not allowed to use. The compact forms expand against
-  the slots the plate declares, so an expansion cannot invent one.
+  Rejected rather than shipped wrong: an unknown plate, an undeclared slot, a
+  row whose length disagrees with its header, a plate the chapter's TYPE is
+  not allowed to use, and a plate in the wrong aspect. The compact forms
+  expand against the slots the plate declares, so an expansion cannot invent
+  one.
+- **Not every slot value is a string.** `tables/multiples-strip`'s `marker-N`
+  is a REGION, and it takes a pair of numbers — `marker-3 = t:0.82,
+  median:0.41` — where `t` is the subject's position between the peer low and
+  the peer high and `median` is the peer set's, on the same scale. Both come
+  off `Peers!I`/`Peers!J`, which are a VALUE axis and not the rank in column
+  D. A string bound to a region and a pair bound to a text slot are both
+  refused; `t` outside 0–1 is a real reading (the subject is off the peer
+  range) and passes through unclamped — the renderer puts the dot on the end
+  tick and draws a chevron past it.
 - **Chapters are a type plus a title.** Sixteen fixed generic types
   (`cold-open`, `the-numbers`, `moat`, `filing-walk`, `short-interest`, … )
   gate the plate library; the title is free text and the only thing that

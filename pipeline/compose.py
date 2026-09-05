@@ -27,7 +27,7 @@ Three things follow from the v2 kit that did not hold under the old one:
   the anchor's HEIGHT is his target height, and his own floor line sits on the
   anchor's bottom edge. `host.place_on_room` is that contract, in one place.
 
-* **Data plates do not boil.** 44 of the 113 are `playback: static` — tables,
+* **Data plates do not boil.** 47 of the 143 are `playback: static` — tables,
   charts, figures, structure. A number that moves three times a second cannot
   be read, which is the whole job of a number. The rooms, the host, the cards
   and the paper loop; everything carrying figures is still.

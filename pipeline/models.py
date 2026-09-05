@@ -733,6 +733,33 @@ HISTORY_FIELDS: list[str] = [
 ]
 
 
+# Fields the workbook holds as a FRACTION and a writer would otherwise read as a
+# percentage. `Snapshot!D50`/`D51` are 0-1, the same convention `D49`
+# short_interest uses, and `insider_own = 0.08` in a prompt is a line that comes
+# back as "0.08% insider ownership" — a real number, off by a hundred, in a
+# sentence that reads perfectly well.
+#
+# Only the two ownership fields are here. `fcf_yield`, `dividend_yield`,
+# `debt_to_equity` and `short_interest` are fractions in the template too, but
+# the committed fixture still carries them as percentages, so formatting them
+# here would show a 100x error rather than fix one. That disagreement is real
+# and is reported with this pack; it is not silently patched from this end.
+_FRACTION_FIELDS = frozenset({"insider_own", "institutional_own"})
+
+
+def _present(field: str, value):
+    """One snapshot value as the writer should read it.
+
+    A BLANK NEVER REACHES HERE — the caller drops it — and that is the point:
+    ownership legitimately does not resolve for some tickers, and the chapter
+    has to drop the line rather than say "0% insider ownership", which is a
+    claim about the company rather than about the data.
+    """
+    if field in _FRACTION_FIELDS and isinstance(value, (int, float)):
+        return f"{value * 100:.1f}% of shares outstanding (fraction {value:g})"
+    return value
+
+
 class CompanyData(BaseModel):
     """Clean, typed view of the operator's v3 data export.
 
@@ -822,7 +849,7 @@ class CompanyData(BaseModel):
         lines: list[str] = []
         for group, fields in DATA_FIELDS.items():
             present = [
-                f"{f} = {self.values[f]}"
+                f"{f} = {_present(f, self.values[f])}"
                 for f in fields
                 if self.values.get(f) not in (None, "")
             ]

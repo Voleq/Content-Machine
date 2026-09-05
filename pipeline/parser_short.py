@@ -183,7 +183,7 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
         # The payload is already the registry key and the values are already
         # bound — re-parsing here would find a name with no assignments and
         # report every plate as empty.
-        fill = check_bound(reg, e.payload, e.values)
+        fill = check_bound(reg, e.payload, e.values, aspect="9x16")
         out.extend(fill.problems)
         out.extend(fill.warnings)
 

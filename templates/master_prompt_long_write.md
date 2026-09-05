@@ -171,6 +171,54 @@ number.
 * A row whose length does not match the header is REJECTED, as is an unknown
   plate name, an undeclared slot, and a plate this chapter's type may not use.
 
+#### `marker-N` — the one slot that takes NUMBERS, not words
+
+`tables/multiples-strip` draws a rail per row: the peer range, low end to high
+end, with the subject's position marked on it. The rail and its end ticks are
+on the plate. What sits on the rail comes from you, as a PAIR OF NUMBERS:
+
+```
+[PLATE: multiples-strip-16x9 | unit=Multiples, current
+  | head-subject={{ticker}} | head-median=Peer median
+  | label-1=P/E | subject-1=58.2x | median-1=24.1x | marker-1=t:0.94, median:0.41
+  | label-2=EV / EBITDA | subject-2=42.7x | median-2=16.3x | marker-2=t:0.88, median:0.38
+  | caption=Peer set: 8 names. Rail ends are the 10th and 90th percentile. ]
+```
+
+* **`t` is the subject's position, `median` is the peer set's**, both on ONE
+  scale: `0` is the peer low, `1` is the peer high. Both come off the data —
+  `Peers!I` is `t`, `Peers!J` is `median`. Write them named, as above; they look
+  alike, and the wrong way round draws a plausible row that says the opposite.
+* **NEVER write words into `marker-N`.** It is a region, not a text box.
+  `marker-1=82nd percentile` is rejected: a plate cannot know a percentile, so
+  it does not pretend to, and the position comes from the number.
+* **`t` OUTSIDE 0–1 IS A REAL READING — WRITE IT AS IT COMES.** The rail ends
+  are the 10th and 90th percentile of the peer set, not its min and max, so a
+  subject priced above every peer lands at `t = 1.4`. That is the most quotable
+  row on the plate. The renderer puts the dot on the end tick and draws a
+  chevron past it. **Do not clamp it to 1 to be safe** — clamping destroys the
+  finding, and the row stops saying the thing you reached for it to say.
+* **Do not use `median-N` for the peer number on a 9:16 strip.** There is no
+  median column there; see the routing rules below.
+* **Nothing on this plate is drawn in `up` or `down`.** Cheap is not up and
+  expensive is not down — a multiple is a price, not a direction. Do not choose
+  a colour role per row here; position carries the claim.
+
+#### Three routing rules for the valuation plates
+
+* **`tables/multiples-strip` rows are METRICS. `peers/peer-strip` rows are
+  COMPANIES.** They are inverses, not variants. Never substitute one for the
+  other because the shape looks similar.
+* **The portrait strip takes THREE rows and has no median column.** In 16:9 you
+  get six rows and four columns. The `-9x16` re-author has three rows and three
+  — no `head-median`, no `median-N` — and the peer number reaches the plate
+  through `marker-N`'s `median` instead, which is why that half is mandatory
+  there and merely useful here. This is the one place a short needs MORE care
+  than a long.
+* **There is no portrait bridge.** `structure/multiple-bridge` is 16:9 only. A
+  trailing-to-forward walk is three figures and two connectors and does not
+  belong in seventy-five seconds.
+
 ### everything else
 [IMG: query]            real imagery of operations / facilities / people (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        real imagery of the product itself
@@ -221,10 +269,11 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 
 ## RULES
 - Multi-year first: growth rates, margin direction, share count, debt — the history table is the spine of the numbers chapter.
-- MANDATORY VALUATION BEAT — every video, every angle, after the numbers and before the bull-vs-bear / close, using the VALUATION DATA above:
-  - State the "priced for X, has delivered Y" line from the reverse-DCF: the growth the current price bakes in (implied growth) vs the growth the company has ACTUALLY delivered (historical FCF / revenue CAGR).
-  - Say plainly it's a PERPETUITY GUT-CHECK, not a fair value and not a price target.
-  - Fold in the striking peer percentiles where they sharpen it ("90th percentile on price, 20th on margins").
+- MANDATORY VALUATION BEAT — every video, every angle, after the numbers and before the bull-vs-bear / close, using the VALUATION DATA above. **FOUR MOVES, IN THIS ORDER.** The order is the argument: 1 into 2 establishes that the number is contested, 3 says whether it is expensive against anyone else, 4 says what would have to be true. A chapter that does 4 without 3 has skipped the only move that answers "expensive compared to what?".
+  1. **TRAILING MULTIPLES.** P/E, P/S, EV/EBITDA as reported. Put them on a `numbers-sheet-*`.
+  2. **FORWARD MULTIPLES — and SAY THE DENOMINATOR CHANGED.** Forward P/E and forward PEG. A forward multiple is a smaller number because somebody took something out of the denominator, and a chapter that quotes it without saying what came out is quoting a number it has not earned. That walk IS `structure/multiple-bridge`: trailing figure → what came out → forward figure, with the removals named on the connectors (`link-N-note`, drawn as a subtraction). 16:9 only.
+  3. **PEER PERCENTILES — where the subject sits against the peer set, per metric.** `tables/multiples-strip`: six rows in the LONG, three in the SHORT. This is the move that has been getting skipped, and it is the one this chapter exists for — "expensive" is meaningless without the set it is expensive against. Reach for the rows where the position is striking, and say the off-the-range ones out loud: a subject past the 90th percentile of its peers is the most quotable row on the plate.
+  4. **REVERSE DCF.** State the "priced for X, has delivered Y" line: the growth the current price bakes in (implied growth) vs the growth the company has ACTUALLY delivered (historical FCF / revenue CAGR). Say plainly it is a PERPETUITY GUT-CHECK, not a fair value and not a price target.
   - Answer "is it priced in?" explicitly against that number — the question is never "good or bad", it's "better or worse than what the price already assumes".
   - Honest both ways: a cheap-looking name can still be a value trap; a dear one can still be worth it. Describe what the price assumes — do not issue a call.
 - At least: one [IMG]/[PRODUCT] on what they do, one [CHART] on the defining metric, and a [SHOW FILING] on every filing you quote.

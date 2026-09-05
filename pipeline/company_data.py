@@ -816,10 +816,29 @@ def _read_peer_percentiles(ws) -> list[dict]:
     """The SECOND block on the Peers sheet — the subject's self-score vs its
     peers — which lives beneath the auto table (`_read_peers` handles that).
     Anchor on the header row whose col-A cell equals `Metric`
-    (Metric | Subject | Peer median | Percentile | Higher is | Read); metric
-    rows follow until the first blank metric. `percentile` is a 0–1 fraction;
-    `direction` is the polarity of the "Higher is" column; `read` is the
-    plain-text verdict ("expensive vs peers" / "strong vs peers" / …)."""
+    (Metric | Subject | Peer median | Percentile | Higher is | Read | Peer low
+    | Peer high | t (subject) | t (median)); metric rows follow until the first
+    blank metric. `percentile` is a 0–1 fraction; `direction` is the polarity
+    of the "Higher is" column; `read` is the plain-text verdict ("expensive vs
+    peers" / "strong vs peers" / …).
+
+    **`t` IS NOT `percentile`, AND SUBSTITUTING ONE FOR THE OTHER IS THE
+    MISTAKE THIS BLOCK IS SHAPED TO PREVENT.** `tables/multiples-strip`'s rail
+    is a VALUE axis: `t` is where the subject's number falls between the peer
+    low and the peer high, which is what `Peers!I` and `Peers!J` compute.
+    `percentile` (column D) is RANK-based, and feeding it to the rail computes
+    `t_median` to 0.5 on every row — every median tick dead centre, which is
+    both wrong and the death of the one comparison the plate exists to make.
+
+    The ends are p10 and p90 rather than min and max on purpose: one peer on a
+    900x P/E would otherwise own the axis and squash every subject to t = 0.02.
+    **So `t` can legitimately fall outside 0–1, and nothing here clamps it** —
+    off the peer range is the most quotable row on the plate, and the renderer
+    draws it as a dot on the end tick with a chevron past it.
+
+    Column E ("higher is better/worse") is for the caption, never the rail: the
+    rail is a position, and a position is not inverted by the metric's polarity.
+    """
     rows = _rows(ws)
     hr = _header_row(rows, "metric")
     if hr is None:
@@ -831,6 +850,10 @@ def _read_peer_percentiles(ws) -> list[dict]:
     pct_c = _col_of(header, "percentile")
     dir_c = _col_of(header, "higher is")
     read_c = _col_of(header, "read")
+    low_c = _col_of(header, "peer low")
+    high_c = _col_of(header, "peer high")
+    t_c = _col_of(header, "t (subject)")
+    tmed_c = _col_of(header, "t (median)")
     if m_c is None:
         return []
 
@@ -849,6 +872,11 @@ def _read_peer_percentiles(ws) -> list[dict]:
             "percentile": _num(_cell(row, pct_c)),
             "direction": _percentile_direction(_cell(row, dir_c)),
             "read": _text_or_none(_cell(row, read_c)),
+            # The rail. Read as written, unclamped — see the docstring.
+            "peer_low": _num(_cell(row, low_c)),
+            "peer_high": _num(_cell(row, high_c)),
+            "t": _num(_cell(row, t_c)),
+            "t_median": _num(_cell(row, tmed_c)),
         })
     return out
 

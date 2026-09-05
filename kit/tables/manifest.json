@@ -6,11 +6,2321 @@
  "bakedText": false,
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
  "sparkNote": "the -spark variants are not the plain sheet with a column bolted on: the sparkline column takes real width, so figures and labels are re-sized to what is left and labels must be abbreviated",
+ "multiplesNote": "tables/multiples-strip is the INVERSE of peers/peer-strip and not a variant of it: the peer strip's rows are companies (a ticker each, with a move and a forward multiple), the multiples strip's rows are metrics and its columns are subject / peer median / position. marker-N is a region — the plate draws the rail, engine/series.js rangeMark draws what sits on it. Nothing on it is drawn in up or down: cheap is not up.",
+ "rowCounts": "3, 4, 5 and 6 rows in both aspects, six periods throughout. A four-row script has something to use in 16:9 and a three-row short has something at all — the first batch shipped only 6r-16x9 and 4r-9x16, which left both of those with nothing.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "exportScale": 2,
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote).",
  "assets": {
-  "tables/numbers-sheet-6r-16x9": {
+  "tables/numbers-sheet-3r-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-3r-16x9.svg",
+     "png": "numbers-sheet-3r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-3r-16x9.png",
+    "svg": "numbers-sheet-3r-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 228
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 325,
+     "w": 479,
+     "h": 158
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 325,
+     "w": 181,
+     "h": 158
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 522,
+     "w": 1744,
+     "h": 228
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 557,
+     "w": 479,
+     "h": 158
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 557,
+     "w": 181,
+     "h": 158
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 754,
+     "w": 1744,
+     "h": 228
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 789,
+     "w": 479,
+     "h": 158
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 789,
+     "w": 181,
+     "h": 158
+    }
+   },
+   "aspect": "16x9",
+   "rows": 3,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   },
    "author": "numbersSheet",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-3r-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-3r-9x16.svg",
+     "png": "numbers-sheet-3r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-3r-9x16.png",
+    "svg": "numbers-sheet-3r-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 420
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 496,
+     "w": 210,
+     "h": 288
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 496,
+     "w": 109,
+     "h": 288
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 854,
+     "w": 1044,
+     "h": 420
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 920,
+     "w": 210,
+     "h": 288
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 920,
+     "w": 109,
+     "h": 288
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1278,
+     "w": 1044,
+     "h": 420
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1344,
+     "w": 210,
+     "h": 288
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1344,
+     "w": 109,
+     "h": 288
+    }
+   },
+   "aspect": "9x16",
+   "rows": 3,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-4r-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-4r-16x9.svg",
+     "png": "numbers-sheet-4r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-4r-16x9.png",
+    "svg": "numbers-sheet-4r-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 170
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 316,
+     "w": 479,
+     "h": 118
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 316,
+     "w": 181,
+     "h": 118
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 464,
+     "w": 1744,
+     "h": 170
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 490,
+     "w": 479,
+     "h": 118
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 490,
+     "w": 181,
+     "h": 118
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 638,
+     "w": 1744,
+     "h": 170
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 664,
+     "w": 479,
+     "h": 118
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 664,
+     "w": 181,
+     "h": 118
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 812,
+     "w": 1744,
+     "h": 170
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 838,
+     "w": 479,
+     "h": 118
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 838,
+     "w": 181,
+     "h": 118
+    }
+   },
+   "aspect": "16x9",
+   "rows": 4,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-4r-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-4r-9x16.svg",
+     "png": "numbers-sheet-4r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-4r-9x16.png",
+    "svg": "numbers-sheet-4r-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 314
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 479,
+     "w": 210,
+     "h": 216
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 479,
+     "w": 109,
+     "h": 216
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 748,
+     "w": 1044,
+     "h": 314
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 797,
+     "w": 210,
+     "h": 216
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 797,
+     "w": 109,
+     "h": 216
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1066,
+     "w": 1044,
+     "h": 314
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1115,
+     "w": 210,
+     "h": 216
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1115,
+     "w": 109,
+     "h": 216
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1384,
+     "w": 1044,
+     "h": 314
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1433,
+     "w": 210,
+     "h": 216
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1433,
+     "w": 109,
+     "h": 216
+    }
+   },
+   "aspect": "9x16",
+   "rows": 4,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-5r-16x9": {
+   "canvas": [
+    1920,
+    1080
+   ],
+   "exportScale": 2,
+   "delivered": [
+    3840,
+    2160
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-5r-16x9.svg",
+     "png": "numbers-sheet-5r-16x9.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-5r-16x9.png",
+    "svg": "numbers-sheet-5r-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 118,
+     "y": 92,
+     "w": 1684,
+     "h": 42
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 631,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 828,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 1024,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 1221,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 1417,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 1614,
+     "y": 192,
+     "w": 181,
+     "h": 54
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 290,
+     "w": 1744,
+     "h": 135
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 310,
+     "w": 479,
+     "h": 95
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 310,
+     "w": 181,
+     "h": 95
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 429,
+     "w": 1744,
+     "h": 135
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 449,
+     "w": 479,
+     "h": 95
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 449,
+     "w": 181,
+     "h": 95
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 568,
+     "w": 1744,
+     "h": 135
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 589,
+     "w": 479,
+     "h": 95
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 589,
+     "w": 181,
+     "h": 95
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 708,
+     "w": 1744,
+     "h": 135
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 728,
+     "w": 479,
+     "h": 95
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 728,
+     "w": 181,
+     "h": 95
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 88,
+     "y": 847,
+     "w": 1744,
+     "h": 135
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 118,
+     "y": 867,
+     "w": 479,
+     "h": 95
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 631,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 828,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 1024,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 1221,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 1417,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 1614,
+     "y": 867,
+     "w": 181,
+     "h": 95
+    }
+   },
+   "aspect": "16x9",
+   "rows": 5,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 30,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 7
+    }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-5r-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "numbers-sheet-5r-9x16.svg",
+     "png": "numbers-sheet-5r-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "numbers-sheet-5r-9x16.png",
+    "svg": "numbers-sheet-5r-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 48,
+     "y": 200,
+     "w": 984,
+     "h": 50
+    },
+    "head-1": {
+     "align": "right",
+     "role": "period",
+     "x": 292,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-2": {
+     "align": "right",
+     "role": "period",
+     "x": 417,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-3": {
+     "align": "right",
+     "role": "period",
+     "x": 541,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-4": {
+     "align": "right",
+     "role": "period",
+     "x": 666,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-5": {
+     "align": "right",
+     "role": "period",
+     "x": 791,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "head-6": {
+     "align": "right",
+     "role": "period",
+     "x": 915,
+     "y": 324,
+     "w": 109,
+     "h": 58
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 430,
+     "w": 1044,
+     "h": 250
+    },
+    "label-1": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 469,
+     "w": 210,
+     "h": 173
+    },
+    "cell-1-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "cell-1-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 469,
+     "w": 109,
+     "h": 173
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 684,
+     "w": 1044,
+     "h": 250
+    },
+    "label-2": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 723,
+     "w": 210,
+     "h": 173
+    },
+    "cell-2-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "cell-2-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 723,
+     "w": 109,
+     "h": 173
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 939,
+     "w": 1044,
+     "h": 250
+    },
+    "label-3": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 978,
+     "w": 210,
+     "h": 173
+    },
+    "cell-3-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "cell-3-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 978,
+     "w": 109,
+     "h": 173
+    },
+    "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1193,
+     "w": 1044,
+     "h": 250
+    },
+    "label-4": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1232,
+     "w": 210,
+     "h": 173
+    },
+    "cell-4-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "cell-4-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1232,
+     "w": 109,
+     "h": 173
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1448,
+     "w": 1044,
+     "h": 250
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1486,
+     "w": 210,
+     "h": 173
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1486,
+     "w": 109,
+     "h": 173
+    }
+   },
+   "aspect": "9x16",
+   "rows": 5,
+   "columns": 6,
+   "family": "tables",
+   "type": "numbers-sheet",
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 38
+    },
+    "period": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 600,
+     "colour": "structure",
+     "tracking": "0.02em",
+     "maxChars": 6
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 28,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 18
+    },
+    "figure": {
+     "font": "Courier Prime",
+     "size": 30,
+     "weight": 400,
+     "colour": "structure",
+     "lastColumnWeight": 700,
+     "maxChars": 6
+    }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-6r-16x9": {
    "canvas": [
     1920,
     1080
@@ -33,7 +2343,9 @@
    ],
    "files": {
     "png": "numbers-sheet-6r-16x9.png",
-    "svg": "numbers-sheet-6r-16x9.svg"
+    "svg": "numbers-sheet-6r-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -515,12 +2827,12 @@
      "lastColumnWeight": 700,
      "maxChars": 7
     }
-   }
-  },
-  "tables/numbers-sheet-4r-9x16": {
+   },
    "author": "numbersSheet",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-6r-9x16": {
    "canvas": [
     1080,
     1920
@@ -536,14 +2848,16 @@
    "frames": [
     {
      "tag": null,
-     "svg": "numbers-sheet-4r-9x16.svg",
-     "png": "numbers-sheet-4r-9x16.png",
+     "svg": "numbers-sheet-6r-9x16.svg",
+     "png": "numbers-sheet-6r-9x16.png",
      "boil": 0
     }
    ],
    "files": {
-    "png": "numbers-sheet-4r-9x16.png",
-    "svg": "numbers-sheet-4r-9x16.svg"
+    "png": "numbers-sheet-6r-9x16.png",
+    "svg": "numbers-sheet-6r-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -608,259 +2922,387 @@
      "x": 18,
      "y": 430,
      "w": 1044,
-     "h": 314
+     "h": 208
     },
     "label-1": {
      "align": "left",
      "role": "label",
      "x": 48,
-     "y": 479,
+     "y": 462,
      "w": 210,
-     "h": 216
+     "h": 144
     },
     "cell-1-1": {
      "align": "right",
      "role": "figure",
      "x": 292,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-1-2": {
      "align": "right",
      "role": "figure",
      "x": 417,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-1-3": {
      "align": "right",
      "role": "figure",
      "x": 541,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-1-4": {
      "align": "right",
      "role": "figure",
      "x": 666,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-1-5": {
      "align": "right",
      "role": "figure",
      "x": 791,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-1-6": {
      "align": "right",
      "role": "figure",
      "x": 915,
-     "y": 479,
+     "y": 462,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "band-2": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
      "x": 18,
-     "y": 748,
+     "y": 642,
      "w": 1044,
-     "h": 314
+     "h": 208
     },
     "label-2": {
      "align": "left",
      "role": "label",
      "x": 48,
-     "y": 797,
+     "y": 674,
      "w": 210,
-     "h": 216
+     "h": 144
     },
     "cell-2-1": {
      "align": "right",
      "role": "figure",
      "x": 292,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-2-2": {
      "align": "right",
      "role": "figure",
      "x": 417,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-2-3": {
      "align": "right",
      "role": "figure",
      "x": 541,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-2-4": {
      "align": "right",
      "role": "figure",
      "x": 666,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-2-5": {
      "align": "right",
      "role": "figure",
      "x": 791,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-2-6": {
      "align": "right",
      "role": "figure",
      "x": 915,
-     "y": 797,
+     "y": 674,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "band-3": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
      "x": 18,
-     "y": 1066,
+     "y": 854,
      "w": 1044,
-     "h": 314
+     "h": 208
     },
     "label-3": {
      "align": "left",
      "role": "label",
      "x": 48,
-     "y": 1115,
+     "y": 886,
      "w": 210,
-     "h": 216
+     "h": 144
     },
     "cell-3-1": {
      "align": "right",
      "role": "figure",
      "x": 292,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-3-2": {
      "align": "right",
      "role": "figure",
      "x": 417,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-3-3": {
      "align": "right",
      "role": "figure",
      "x": 541,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-3-4": {
      "align": "right",
      "role": "figure",
      "x": 666,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-3-5": {
      "align": "right",
      "role": "figure",
      "x": 791,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-3-6": {
      "align": "right",
      "role": "figure",
      "x": 915,
-     "y": 1115,
+     "y": 886,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "band-4": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
      "x": 18,
-     "y": 1384,
+     "y": 1066,
      "w": 1044,
-     "h": 314
+     "h": 208
     },
     "label-4": {
      "align": "left",
      "role": "label",
      "x": 48,
-     "y": 1433,
+     "y": 1098,
      "w": 210,
-     "h": 216
+     "h": 144
     },
     "cell-4-1": {
      "align": "right",
      "role": "figure",
      "x": 292,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-4-2": {
      "align": "right",
      "role": "figure",
      "x": 417,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-4-3": {
      "align": "right",
      "role": "figure",
      "x": 541,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-4-4": {
      "align": "right",
      "role": "figure",
      "x": 666,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-4-5": {
      "align": "right",
      "role": "figure",
      "x": 791,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
     },
     "cell-4-6": {
      "align": "right",
      "role": "figure",
      "x": 915,
-     "y": 1433,
+     "y": 1098,
      "w": 109,
-     "h": 216
+     "h": 144
+    },
+    "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1278,
+     "w": 1044,
+     "h": 208
+    },
+    "label-5": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1310,
+     "w": 210,
+     "h": 144
+    },
+    "cell-5-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "cell-5-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1310,
+     "w": 109,
+     "h": 144
+    },
+    "band-6": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 18,
+     "y": 1490,
+     "w": 1044,
+     "h": 208
+    },
+    "label-6": {
+     "align": "left",
+     "role": "label",
+     "x": 48,
+     "y": 1522,
+     "w": 210,
+     "h": 144
+    },
+    "cell-6-1": {
+     "align": "right",
+     "role": "figure",
+     "x": 292,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-2": {
+     "align": "right",
+     "role": "figure",
+     "x": 417,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-3": {
+     "align": "right",
+     "role": "figure",
+     "x": 541,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-4": {
+     "align": "right",
+     "role": "figure",
+     "x": 666,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-5": {
+     "align": "right",
+     "role": "figure",
+     "x": 791,
+     "y": 1522,
+     "w": 109,
+     "h": 144
+    },
+    "cell-6-6": {
+     "align": "right",
+     "role": "figure",
+     "x": 915,
+     "y": 1522,
+     "w": 109,
+     "h": 144
     }
    },
    "aspect": "9x16",
-   "rows": 4,
+   "rows": 6,
    "columns": 6,
    "family": "tables",
    "type": "numbers-sheet",
@@ -897,12 +3339,12 @@
      "lastColumnWeight": 700,
      "maxChars": 6
     }
-   }
+   },
+   "author": "numbersSheet",
+   "seed": 1,
+   "surface": "night-card"
   },
   "tables/numbers-sheet-6r-spark-16x9": {
-   "author": "numbersSheet",
-   "seed": 5,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -925,7 +3367,9 @@
    ],
    "files": {
     "png": "numbers-sheet-6r-spark-16x9.png",
-    "svg": "numbers-sheet-6r-spark-16x9.svg"
+    "svg": "numbers-sheet-6r-spark-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -1475,12 +3919,12 @@
      "lastColumnWeight": 700,
      "maxChars": 7
     }
-   }
-  },
-  "tables/numbers-sheet-4r-spark-9x16": {
+   },
    "author": "numbersSheet",
    "seed": 5,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "tables/numbers-sheet-4r-spark-9x16": {
    "canvas": [
     1080,
     1920
@@ -1503,7 +3947,9 @@
    ],
    "files": {
     "png": "numbers-sheet-4r-spark-9x16.png",
-    "svg": "numbers-sheet-4r-spark-9x16.svg"
+    "svg": "numbers-sheet-4r-spark-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -1905,12 +4351,12 @@
      "lastColumnWeight": 700,
      "maxChars": 6
     }
-   }
+   },
+   "author": "numbersSheet",
+   "seed": 5,
+   "surface": "night-card"
   },
   "tables/cash-flow-16x9": {
-   "author": "cashFlow",
-   "seed": 1,
-   "surface": "night-card",
    "canvas": [
     1920,
     1080
@@ -1933,7 +4379,9 @@
    ],
    "files": {
     "png": "cash-flow-16x9.png",
-    "svg": "cash-flow-16x9.svg"
+    "svg": "cash-flow-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -2683,12 +5131,12 @@
      "colour": "structure",
      "maxChars": 7
     }
-   }
-  },
-  "tables/cash-flow-9x16": {
+   },
    "author": "cashFlow",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "tables/cash-flow-9x16": {
    "canvas": [
     1080,
     1920
@@ -2711,7 +5159,9 @@
    ],
    "files": {
     "png": "cash-flow-9x16.png",
-    "svg": "cash-flow-9x16.svg"
+    "svg": "cash-flow-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
@@ -3653,12 +6103,12 @@
      "colour": "structure",
      "maxChars": 7
     }
-   }
-  },
-  "tables/numbers-sheet-3r-16x9": {
-   "author": "numbersSheet",
+   },
+   "author": "cashFlow",
    "seed": 1,
-   "surface": "night-card",
+   "surface": "night-card"
+  },
+  "tables/multiples-strip-16x9": {
    "canvas": [
     1920,
     1080
@@ -3674,2372 +6124,524 @@
    "frames": [
     {
      "tag": null,
-     "svg": "numbers-sheet-3r-16x9.svg",
-     "png": "numbers-sheet-3r-16x9.png",
+     "svg": "multiples-strip-16x9.svg",
+     "png": "multiples-strip-16x9.png",
      "boil": 0
     }
    ],
    "files": {
-    "png": "numbers-sheet-3r-16x9.png",
-    "svg": "numbers-sheet-3r-16x9.svg"
+    "png": "multiples-strip-16x9.png",
+    "svg": "multiples-strip-16x9.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "unit": {
      "align": "left",
      "role": "unit",
-     "x": 118,
+     "x": 150,
      "y": 92,
-     "w": 1684,
-     "h": 42
+     "w": 1620,
+     "h": 30
     },
-    "head-1": {
+    "head-subject": {
      "align": "right",
-     "role": "period",
-     "x": 631,
-     "y": 192,
-     "w": 181,
-     "h": 54
+     "role": "column",
+     "x": 620,
+     "y": 186,
+     "w": 223,
+     "h": 30
     },
-    "head-2": {
+    "head-median": {
      "align": "right",
-     "role": "period",
-     "x": 828,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 1024,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 1221,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 1417,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 1614,
-     "y": 192,
-     "w": 181,
-     "h": 54
+     "role": "column",
+     "x": 863,
+     "y": 186,
+     "w": 191,
+     "h": 30
     },
     "band-1": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 290,
-     "w": 1744,
-     "h": 228
+     "x": 119,
+     "y": 244,
+     "w": 1681,
+     "h": 105
     },
     "label-1": {
      "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 325,
-     "w": 479,
-     "h": 158
+     "role": "metric",
+     "x": 150,
+     "y": 262,
+     "w": 446,
+     "h": 70
     },
-    "cell-1-1": {
+    "subject-1": {
      "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 325,
-     "w": 181,
-     "h": 158
+     "role": "subject",
+     "x": 620,
+     "y": 256,
+     "w": 223,
+     "h": 81
     },
-    "cell-1-2": {
+    "median-1": {
      "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 325,
-     "w": 181,
-     "h": 158
+     "role": "median",
+     "x": 863,
+     "y": 262,
+     "w": 191,
+     "h": 70
     },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 325,
-     "w": 181,
-     "h": 158
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 325,
-     "w": 181,
-     "h": 158
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 325,
-     "w": 181,
-     "h": 158
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 325,
-     "w": 181,
-     "h": 158
+    "marker-1": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 264,
+     "w": 669,
+     "h": 65
     },
     "band-2": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 522,
-     "w": 1744,
-     "h": 228
+     "x": 119,
+     "y": 353,
+     "w": 1681,
+     "h": 105
     },
     "label-2": {
      "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 557,
-     "w": 479,
-     "h": 158
+     "role": "metric",
+     "x": 150,
+     "y": 371,
+     "w": 446,
+     "h": 70
     },
-    "cell-2-1": {
+    "subject-2": {
      "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 557,
-     "w": 181,
-     "h": 158
+     "role": "subject",
+     "x": 620,
+     "y": 365,
+     "w": 223,
+     "h": 81
     },
-    "cell-2-2": {
+    "median-2": {
      "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 557,
-     "w": 181,
-     "h": 158
+     "role": "median",
+     "x": 863,
+     "y": 371,
+     "w": 191,
+     "h": 70
     },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 557,
-     "w": 181,
-     "h": 158
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 557,
-     "w": 181,
-     "h": 158
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 557,
-     "w": 181,
-     "h": 158
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 557,
-     "w": 181,
-     "h": 158
+    "marker-2": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 373,
+     "w": 669,
+     "h": 65
     },
     "band-3": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 754,
-     "w": 1744,
-     "h": 228
+     "x": 119,
+     "y": 462,
+     "w": 1681,
+     "h": 105
     },
     "label-3": {
      "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 789,
-     "w": 479,
-     "h": 158
+     "role": "metric",
+     "x": 150,
+     "y": 480,
+     "w": 446,
+     "h": 70
     },
-    "cell-3-1": {
+    "subject-3": {
      "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 789,
-     "w": 181,
-     "h": 158
+     "role": "subject",
+     "x": 620,
+     "y": 474,
+     "w": 223,
+     "h": 81
     },
-    "cell-3-2": {
+    "median-3": {
      "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 789,
-     "w": 181,
-     "h": 158
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 789,
-     "w": 181,
-     "h": 158
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 789,
-     "w": 181,
-     "h": 158
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 789,
-     "w": 181,
-     "h": 158
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 789,
-     "w": 181,
-     "h": 158
-    }
-   },
-   "aspect": "16x9",
-   "rows": 3,
-   "columns": 6,
-   "family": "tables",
-   "type": "numbers-sheet",
-   "typeRoles": {
-    "unit": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "tracking": "0.04em",
-     "maxChars": 46
-    },
-    "period": {
-     "font": "Archivo Narrow",
-     "size": 30,
-     "weight": 600,
-     "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 34,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 26
-    },
-    "figure": {
-     "font": "Courier Prime",
-     "size": 46,
-     "weight": 400,
-     "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 7
-    }
-   }
-  },
-  "tables/numbers-sheet-3r-9x16": {
-   "author": "numbersSheet",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1080,
-    1920
-   ],
-   "exportScale": 2,
-   "delivered": [
-    2160,
-    3840
-   ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "numbers-sheet-3r-9x16.svg",
-     "png": "numbers-sheet-3r-9x16.png",
-     "boil": 0
-    }
-   ],
-   "files": {
-    "png": "numbers-sheet-3r-9x16.png",
-    "svg": "numbers-sheet-3r-9x16.svg"
-   },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 48,
-     "y": 200,
-     "w": 984,
-     "h": 50
-    },
-    "head-1": {
-     "align": "right",
-     "role": "period",
-     "x": 292,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-2": {
-     "align": "right",
-     "role": "period",
-     "x": 417,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 541,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 666,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 791,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 915,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "band-1": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 430,
-     "w": 1044,
-     "h": 420
-    },
-    "label-1": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 496,
-     "w": 210,
-     "h": 288
-    },
-    "cell-1-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "cell-1-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 496,
-     "w": 109,
-     "h": 288
-    },
-    "band-2": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 854,
-     "w": 1044,
-     "h": 420
-    },
-    "label-2": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 920,
-     "w": 210,
-     "h": 288
-    },
-    "cell-2-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "cell-2-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 920,
-     "w": 109,
-     "h": 288
-    },
-    "band-3": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1278,
-     "w": 1044,
-     "h": 420
-    },
-    "label-3": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1344,
-     "w": 210,
-     "h": 288
-    },
-    "cell-3-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    },
-    "cell-3-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1344,
-     "w": 109,
-     "h": 288
-    }
-   },
-   "aspect": "9x16",
-   "rows": 3,
-   "columns": 6,
-   "family": "tables",
-   "type": "numbers-sheet",
-   "typeRoles": {
-    "unit": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "tracking": "0.04em",
-     "maxChars": 38
-    },
-    "period": {
-     "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 600,
-     "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 18
-    },
-    "figure": {
-     "font": "Courier Prime",
-     "size": 30,
-     "weight": 400,
-     "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 6
-    }
-   }
-  },
-  "tables/numbers-sheet-4r-16x9": {
-   "author": "numbersSheet",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1920,
-    1080
-   ],
-   "exportScale": 2,
-   "delivered": [
-    3840,
-    2160
-   ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "numbers-sheet-4r-16x9.svg",
-     "png": "numbers-sheet-4r-16x9.png",
-     "boil": 0
-    }
-   ],
-   "files": {
-    "png": "numbers-sheet-4r-16x9.png",
-    "svg": "numbers-sheet-4r-16x9.svg"
-   },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 118,
-     "y": 92,
-     "w": 1684,
-     "h": 42
-    },
-    "head-1": {
-     "align": "right",
-     "role": "period",
-     "x": 631,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-2": {
-     "align": "right",
-     "role": "period",
-     "x": 828,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 1024,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 1221,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 1417,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 1614,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "band-1": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 290,
-     "w": 1744,
-     "h": 170
-    },
-    "label-1": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 316,
-     "w": 479,
-     "h": 118
-    },
-    "cell-1-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "cell-1-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 316,
-     "w": 181,
-     "h": 118
-    },
-    "band-2": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 464,
-     "w": 1744,
-     "h": 170
-    },
-    "label-2": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 490,
-     "w": 479,
-     "h": 118
-    },
-    "cell-2-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "cell-2-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 490,
-     "w": 181,
-     "h": 118
-    },
-    "band-3": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 638,
-     "w": 1744,
-     "h": 170
-    },
-    "label-3": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 664,
-     "w": 479,
-     "h": 118
-    },
-    "cell-3-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 664,
-     "w": 181,
-     "h": 118
-    },
-    "cell-3-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 664,
-     "w": 181,
-     "h": 118
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 664,
-     "w": 181,
-     "h": 118
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 664,
-     "w": 181,
-     "h": 118
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 664,
-     "w": 181,
-     "h": 118
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 664,
-     "w": 181,
-     "h": 118
+     "role": "median",
+     "x": 863,
+     "y": 480,
+     "w": 191,
+     "h": 70
+    },
+    "marker-3": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 482,
+     "w": 669,
+     "h": 65
     },
     "band-4": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 812,
-     "w": 1744,
-     "h": 170
+     "x": 119,
+     "y": 571,
+     "w": 1681,
+     "h": 105
     },
     "label-4": {
      "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 838,
-     "w": 479,
-     "h": 118
-    },
-    "cell-4-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    },
-    "cell-4-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    },
-    "cell-4-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    },
-    "cell-4-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    },
-    "cell-4-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    },
-    "cell-4-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 838,
-     "w": 181,
-     "h": 118
-    }
-   },
-   "aspect": "16x9",
-   "rows": 4,
-   "columns": 6,
-   "family": "tables",
-   "type": "numbers-sheet",
-   "typeRoles": {
-    "unit": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "tracking": "0.04em",
-     "maxChars": 46
-    },
-    "period": {
-     "font": "Archivo Narrow",
-     "size": 30,
-     "weight": 600,
-     "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 34,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 26
-    },
-    "figure": {
-     "font": "Courier Prime",
-     "size": 46,
-     "weight": 400,
-     "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 7
-    }
-   }
-  },
-  "tables/numbers-sheet-5r-16x9": {
-   "author": "numbersSheet",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1920,
-    1080
-   ],
-   "exportScale": 2,
-   "delivered": [
-    3840,
-    2160
-   ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "numbers-sheet-5r-16x9.svg",
-     "png": "numbers-sheet-5r-16x9.png",
-     "boil": 0
-    }
-   ],
-   "files": {
-    "png": "numbers-sheet-5r-16x9.png",
-    "svg": "numbers-sheet-5r-16x9.svg"
-   },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 118,
-     "y": 92,
-     "w": 1684,
-     "h": 42
-    },
-    "head-1": {
-     "align": "right",
-     "role": "period",
-     "x": 631,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-2": {
-     "align": "right",
-     "role": "period",
-     "x": 828,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 1024,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 1221,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 1417,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 1614,
-     "y": 192,
-     "w": 181,
-     "h": 54
-    },
-    "band-1": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 290,
-     "w": 1744,
-     "h": 135
-    },
-    "label-1": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 310,
-     "w": 479,
-     "h": 95
-    },
-    "cell-1-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "cell-1-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 310,
-     "w": 181,
-     "h": 95
-    },
-    "band-2": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 429,
-     "w": 1744,
-     "h": 135
-    },
-    "label-2": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 449,
-     "w": 479,
-     "h": 95
-    },
-    "cell-2-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "cell-2-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 449,
-     "w": 181,
-     "h": 95
-    },
-    "band-3": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 568,
-     "w": 1744,
-     "h": 135
-    },
-    "label-3": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
+     "role": "metric",
+     "x": 150,
      "y": 589,
-     "w": 479,
-     "h": 95
+     "w": 446,
+     "h": 70
     },
-    "cell-3-1": {
+    "subject-4": {
      "align": "right",
-     "role": "figure",
-     "x": 631,
+     "role": "subject",
+     "x": 620,
+     "y": 583,
+     "w": 223,
+     "h": 81
+    },
+    "median-4": {
+     "align": "right",
+     "role": "median",
+     "x": 863,
      "y": 589,
-     "w": 181,
-     "h": 95
+     "w": 191,
+     "h": 70
     },
-    "cell-3-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 589,
-     "w": 181,
-     "h": 95
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 589,
-     "w": 181,
-     "h": 95
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 589,
-     "w": 181,
-     "h": 95
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 589,
-     "w": 181,
-     "h": 95
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 589,
-     "w": 181,
-     "h": 95
-    },
-    "band-4": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 708,
-     "w": 1744,
-     "h": 135
-    },
-    "label-4": {
-     "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 728,
-     "w": 479,
-     "h": 95
-    },
-    "cell-4-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 728,
-     "w": 181,
-     "h": 95
-    },
-    "cell-4-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 728,
-     "w": 181,
-     "h": 95
-    },
-    "cell-4-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 728,
-     "w": 181,
-     "h": 95
-    },
-    "cell-4-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 728,
-     "w": 181,
-     "h": 95
-    },
-    "cell-4-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 728,
-     "w": 181,
-     "h": 95
-    },
-    "cell-4-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 728,
-     "w": 181,
-     "h": 95
+    "marker-4": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 591,
+     "w": 669,
+     "h": 65
     },
     "band-5": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 88,
-     "y": 847,
-     "w": 1744,
-     "h": 135
+     "x": 119,
+     "y": 680,
+     "w": 1681,
+     "h": 105
     },
     "label-5": {
      "align": "left",
-     "role": "label",
-     "x": 118,
-     "y": 867,
-     "w": 479,
-     "h": 95
-    },
-    "cell-5-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 631,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    },
-    "cell-5-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 828,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    },
-    "cell-5-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 1024,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    },
-    "cell-5-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 1221,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    },
-    "cell-5-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 1417,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    },
-    "cell-5-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 1614,
-     "y": 867,
-     "w": 181,
-     "h": 95
-    }
-   },
-   "aspect": "16x9",
-   "rows": 5,
-   "columns": 6,
-   "family": "tables",
-   "type": "numbers-sheet",
-   "typeRoles": {
-    "unit": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "tracking": "0.04em",
-     "maxChars": 46
-    },
-    "period": {
-     "font": "Archivo Narrow",
-     "size": 30,
-     "weight": 600,
-     "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 34,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 26
-    },
-    "figure": {
-     "font": "Courier Prime",
-     "size": 46,
-     "weight": 400,
-     "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 7
-    }
-   }
-  },
-  "tables/numbers-sheet-5r-9x16": {
-   "author": "numbersSheet",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1080,
-    1920
-   ],
-   "exportScale": 2,
-   "delivered": [
-    2160,
-    3840
-   ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "numbers-sheet-5r-9x16.svg",
-     "png": "numbers-sheet-5r-9x16.png",
-     "boil": 0
-    }
-   ],
-   "files": {
-    "png": "numbers-sheet-5r-9x16.png",
-    "svg": "numbers-sheet-5r-9x16.svg"
-   },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 48,
-     "y": 200,
-     "w": 984,
-     "h": 50
-    },
-    "head-1": {
-     "align": "right",
-     "role": "period",
-     "x": 292,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-2": {
-     "align": "right",
-     "role": "period",
-     "x": 417,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 541,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 666,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 791,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 915,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "band-1": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 430,
-     "w": 1044,
-     "h": 250
-    },
-    "label-1": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 469,
-     "w": 210,
-     "h": 173
-    },
-    "cell-1-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "cell-1-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 469,
-     "w": 109,
-     "h": 173
-    },
-    "band-2": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 684,
-     "w": 1044,
-     "h": 250
-    },
-    "label-2": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 723,
-     "w": 210,
-     "h": 173
-    },
-    "cell-2-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "cell-2-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 723,
-     "w": 109,
-     "h": 173
-    },
-    "band-3": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 939,
-     "w": 1044,
-     "h": 250
-    },
-    "label-3": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 978,
-     "w": 210,
-     "h": 173
-    },
-    "cell-3-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "cell-3-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 978,
-     "w": 109,
-     "h": 173
-    },
-    "band-4": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1193,
-     "w": 1044,
-     "h": 250
-    },
-    "label-4": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1232,
-     "w": 210,
-     "h": 173
-    },
-    "cell-4-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "cell-4-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "cell-4-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "cell-4-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "cell-4-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "cell-4-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1232,
-     "w": 109,
-     "h": 173
-    },
-    "band-5": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1448,
-     "w": 1044,
-     "h": 250
-    },
-    "label-5": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1486,
-     "w": 210,
-     "h": 173
-    },
-    "cell-5-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    },
-    "cell-5-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    },
-    "cell-5-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    },
-    "cell-5-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    },
-    "cell-5-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    },
-    "cell-5-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1486,
-     "w": 109,
-     "h": 173
-    }
-   },
-   "aspect": "9x16",
-   "rows": 5,
-   "columns": 6,
-   "family": "tables",
-   "type": "numbers-sheet",
-   "typeRoles": {
-    "unit": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "tracking": "0.04em",
-     "maxChars": 38
-    },
-    "period": {
-     "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 600,
-     "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 18
-    },
-    "figure": {
-     "font": "Courier Prime",
-     "size": 30,
-     "weight": 400,
-     "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 6
-    }
-   }
-  },
-  "tables/numbers-sheet-6r-9x16": {
-   "author": "numbersSheet",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1080,
-    1920
-   ],
-   "exportScale": 2,
-   "delivered": [
-    2160,
-    3840
-   ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "numbers-sheet-6r-9x16.svg",
-     "png": "numbers-sheet-6r-9x16.png",
-     "boil": 0
-    }
-   ],
-   "files": {
-    "png": "numbers-sheet-6r-9x16.png",
-    "svg": "numbers-sheet-6r-9x16.svg"
-   },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 48,
-     "y": 200,
-     "w": 984,
-     "h": 50
-    },
-    "head-1": {
-     "align": "right",
-     "role": "period",
-     "x": 292,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-2": {
-     "align": "right",
-     "role": "period",
-     "x": 417,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-3": {
-     "align": "right",
-     "role": "period",
-     "x": 541,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-4": {
-     "align": "right",
-     "role": "period",
-     "x": 666,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-5": {
-     "align": "right",
-     "role": "period",
-     "x": 791,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "head-6": {
-     "align": "right",
-     "role": "period",
-     "x": 915,
-     "y": 324,
-     "w": 109,
-     "h": 58
-    },
-    "band-1": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 430,
-     "w": 1044,
-     "h": 208
-    },
-    "label-1": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 462,
-     "w": 210,
-     "h": 144
-    },
-    "cell-1-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "cell-1-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "cell-1-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "cell-1-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "cell-1-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "cell-1-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 462,
-     "w": 109,
-     "h": 144
-    },
-    "band-2": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 642,
-     "w": 1044,
-     "h": 208
-    },
-    "label-2": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 674,
-     "w": 210,
-     "h": 144
-    },
-    "cell-2-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "cell-2-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "cell-2-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "cell-2-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "cell-2-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "cell-2-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 674,
-     "w": 109,
-     "h": 144
-    },
-    "band-3": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 854,
-     "w": 1044,
-     "h": 208
-    },
-    "label-3": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 886,
-     "w": 210,
-     "h": 144
-    },
-    "cell-3-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "cell-3-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "cell-3-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "cell-3-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "cell-3-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "cell-3-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 886,
-     "w": 109,
-     "h": 144
-    },
-    "band-4": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1066,
-     "w": 1044,
-     "h": 208
-    },
-    "label-4": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1098,
-     "w": 210,
-     "h": 144
-    },
-    "cell-4-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "cell-4-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "cell-4-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "cell-4-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "cell-4-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "cell-4-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1098,
-     "w": 109,
-     "h": 144
-    },
-    "band-5": {
-     "role": "highlight-band",
-     "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1278,
-     "w": 1044,
-     "h": 208
-    },
-    "label-5": {
-     "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1310,
-     "w": 210,
-     "h": 144
-    },
-    "cell-5-1": {
-     "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1310,
-     "w": 109,
-     "h": 144
-    },
-    "cell-5-2": {
-     "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1310,
-     "w": 109,
-     "h": 144
-    },
-    "cell-5-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1310,
-     "w": 109,
-     "h": 144
-    },
-    "cell-5-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1310,
-     "w": 109,
-     "h": 144
-    },
-    "cell-5-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1310,
-     "w": 109,
-     "h": 144
-    },
-    "cell-5-6": {
-     "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1310,
-     "w": 109,
-     "h": 144
+     "role": "metric",
+     "x": 150,
+     "y": 698,
+     "w": 446,
+     "h": 70
+    },
+    "subject-5": {
+     "align": "right",
+     "role": "subject",
+     "x": 620,
+     "y": 692,
+     "w": 223,
+     "h": 81
+    },
+    "median-5": {
+     "align": "right",
+     "role": "median",
+     "x": 863,
+     "y": 698,
+     "w": 191,
+     "h": 70
+    },
+    "marker-5": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 700,
+     "w": 669,
+     "h": 65
     },
     "band-6": {
      "role": "highlight-band",
      "overlay": "overlays/row-band",
-     "x": 18,
-     "y": 1490,
-     "w": 1044,
-     "h": 208
+     "x": 119,
+     "y": 789,
+     "w": 1681,
+     "h": 105
     },
     "label-6": {
      "align": "left",
-     "role": "label",
-     "x": 48,
-     "y": 1522,
-     "w": 210,
-     "h": 144
+     "role": "metric",
+     "x": 150,
+     "y": 807,
+     "w": 446,
+     "h": 70
     },
-    "cell-6-1": {
+    "subject-6": {
      "align": "right",
-     "role": "figure",
-     "x": 292,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+     "role": "subject",
+     "x": 620,
+     "y": 801,
+     "w": 223,
+     "h": 81
     },
-    "cell-6-2": {
+    "median-6": {
      "align": "right",
-     "role": "figure",
-     "x": 417,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+     "role": "median",
+     "x": 863,
+     "y": 807,
+     "w": 191,
+     "h": 70
     },
-    "cell-6-3": {
-     "align": "right",
-     "role": "figure",
-     "x": 541,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+    "marker-6": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 1101,
+     "y": 809,
+     "w": 669,
+     "h": 65
     },
-    "cell-6-4": {
-     "align": "right",
-     "role": "figure",
-     "x": 666,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 150,
+     "y": 954,
+     "w": 1620,
+     "h": 30
+    }
+   },
+   "aspect": "16x9",
+   "family": "tables",
+   "type": "multiples-strip",
+   "rows": 6,
+   "typeRoles": {
+    "unit": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "tracking": "0.04em",
+     "maxChars": 46
     },
-    "cell-6-5": {
-     "align": "right",
-     "role": "figure",
-     "x": 791,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+    "column": {
+     "font": "Archivo Narrow",
+     "size": 26,
+     "weight": 600,
+     "colour": "structure",
+     "opacity": 0.68,
+     "tracking": "0.06em",
+     "maxChars": 18
     },
-    "cell-6-6": {
+    "metric": {
+     "font": "Archivo Narrow",
+     "size": 36,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 26
+    },
+    "subject": {
+     "font": "Courier Prime",
+     "size": 58,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "median": {
+     "font": "Courier Prime",
+     "size": 46,
+     "weight": 700,
+     "colour": "otherParty",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 60
+    }
+   },
+   "markerNote": "marker-N is a REGION, not artwork. The plate draws the rail and its two end ticks; series.rangeMark({ box: slots['marker-3'], t, median, pal }) draws what sits on it — t is 0 at the low end of the peer range and 1 at the high end, median the same scale. A t outside 0–1 is a real reading (the subject is off the peer range) and the renderer clamps the dot to the end and marks it, rather than dropping it.",
+   "columnNote": "subject-N is the subject's own value, in structure; median-N is the peer set's, in otherParty. Same rule as peers/peer-strip: the row you are in is legible with no highlight at all, which keeps band-N free for the row the voice-over is on.",
+   "budgetNote": "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+   "directionNote": "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
+   "rowsNote": "six metric rows: the relative-pricing half of a valuation chapter in one frame.",
+   "author": "multiplesStrip",
+   "seed": 21,
+   "surface": "night-card"
+  },
+  "tables/multiples-strip-9x16": {
+   "canvas": [
+    1080,
+    1920
+   ],
+   "exportScale": 2,
+   "delivered": [
+    2160,
+    3840
+   ],
+   "frameCount": 1,
+   "fps": null,
+   "playback": "static",
+   "frames": [
+    {
+     "tag": null,
+     "svg": "multiples-strip-9x16.svg",
+     "png": "multiples-strip-9x16.png",
+     "boil": 0
+    }
+   ],
+   "files": {
+    "png": "multiples-strip-9x16.png",
+    "svg": "multiples-strip-9x16.svg",
+    "baseIsFrame": null,
+    "note": "The base file is the SAME RENDER as frame one, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+   },
+   "slots": {
+    "unit": {
+     "align": "left",
+     "role": "unit",
+     "x": 84,
+     "y": 186,
+     "w": 912,
+     "h": 30
+    },
+    "head-subject": {
      "align": "right",
-     "role": "figure",
-     "x": 915,
-     "y": 1522,
-     "w": 109,
-     "h": 144
+     "role": "column",
+     "x": 431,
+     "y": 307,
+     "w": 238,
+     "h": 32
+    },
+    "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 386,
+     "w": 1020,
+     "h": 430
+    },
+    "label-1": {
+     "align": "left",
+     "role": "metric",
+     "x": 84,
+     "y": 462,
+     "w": 305,
+     "h": 278
+    },
+    "subject-1": {
+     "align": "right",
+     "role": "subject",
+     "x": 431,
+     "y": 440,
+     "w": 238,
+     "h": 321
+    },
+    "marker-1": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 753,
+     "y": 471,
+     "w": 243,
+     "h": 260
+    },
+    "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 820,
+     "w": 1020,
+     "h": 430
+    },
+    "label-2": {
+     "align": "left",
+     "role": "metric",
+     "x": 84,
+     "y": 896,
+     "w": 305,
+     "h": 278
+    },
+    "subject-2": {
+     "align": "right",
+     "role": "subject",
+     "x": 431,
+     "y": 874,
+     "w": 238,
+     "h": 321
+    },
+    "marker-2": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 753,
+     "y": 905,
+     "w": 243,
+     "h": 260
+    },
+    "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
+     "x": 30,
+     "y": 1254,
+     "w": 1020,
+     "h": 430
+    },
+    "label-3": {
+     "align": "left",
+     "role": "metric",
+     "x": 84,
+     "y": 1330,
+     "w": 305,
+     "h": 278
+    },
+    "subject-3": {
+     "align": "right",
+     "role": "subject",
+     "x": 431,
+     "y": 1308,
+     "w": 238,
+     "h": 321
+    },
+    "marker-3": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.rangeMark",
+     "note": "the subject's position between the peer low and the peer high, 0 to 1. engine/series.js draws it from the data; the rail under it is the plate's.",
+     "x": 753,
+     "y": 1339,
+     "w": 243,
+     "h": 260
+    },
+    "caption": {
+     "align": "left",
+     "role": "caption",
+     "x": 84,
+     "y": 1740,
+     "w": 912,
+     "h": 30
     }
    },
    "aspect": "9x16",
-   "rows": 6,
-   "columns": 6,
    "family": "tables",
-   "type": "numbers-sheet",
+   "type": "multiples-strip",
+   "rows": 3,
    "typeRoles": {
     "unit": {
      "font": "Courier Prime",
@@ -6050,37 +6652,46 @@
      "tracking": "0.04em",
      "maxChars": 38
     },
-    "period": {
+    "column": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 600,
      "colour": "structure",
-     "tracking": "0.02em",
-     "maxChars": 6
-    },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 28,
-     "weight": 500,
-     "colour": "structure",
+     "opacity": 0.68,
+     "tracking": "0.06em",
      "maxChars": 18
     },
-    "figure": {
+    "metric": {
+     "font": "Archivo Narrow",
+     "size": 40,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 16
+    },
+    "subject": {
      "font": "Courier Prime",
-     "size": 30,
+     "size": 62,
+     "weight": 700,
+     "colour": "structure",
+     "maxChars": 6
+    },
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
      "weight": 400,
      "colour": "structure",
-     "lastColumnWeight": 700,
-     "maxChars": 6
+     "opacity": 0.72,
+     "maxChars": 60
     }
-   }
+   },
+   "markerNote": "marker-N is a REGION, not artwork. The plate draws the rail and its two end ticks; series.rangeMark({ box: slots['marker-3'], t, median, pal }) draws what sits on it — t is 0 at the low end of the peer range and 1 at the high end, median the same scale. A t outside 0–1 is a real reading (the subject is off the peer range) and the renderer clamps the dot to the end and marks it, rather than dropping it.",
+   "columnNote": "THREE COLUMNS: metric, subject, rail. There is no median-N and no head-median on this aspect — pass median to series.rangeMark and the tick it puts on the rail IS the peer number. Four columns at portrait width cannot hold the type this plate declares, and the renderer would silently shrink the figures below the landscape ones to fit.",
+   "budgetNote": "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+   "directionNote": "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
+   "rowsNote": "three rows, not six. A short's cheap-or-trap beat wants the same picture with less in it, and three rows of larger type is that picture — not the 16:9 sheet scaled down.",
+   "author": "multiplesStrip",
+   "seed": 21,
+   "surface": "night-card"
   }
- },
- "rowCounts": "3, 4, 5 and 6 rows in both aspects, six periods throughout. A four-row script has something to use in 16:9 and a three-row short has something at all — the first batch shipped only 6r-16x9 and 4r-9x16, which left both of those with nothing.",
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "exportScale": 2,
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ }
 }

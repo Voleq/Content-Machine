@@ -279,6 +279,23 @@
     ],
     both("tables", "tables/cash-flow", "cashFlow", {}),
 
+    // THE VALUATION CHAPTER. Two plates, and neither is a variant of anything
+    // already here.
+    //
+    // The multiples strip is the inverse of peers/peer-strip and that is why it
+    // is a new author rather than an argument to that one: the peer strip's rows
+    // are companies, this one's rows are metrics. Six rows in 16:9, three in
+    // 9:16 — the short's cheap-or-trap beat is the same picture with less in it,
+    // not the sheet scaled down.
+    [
+      A("tables", "tables/multiples-strip-16x9", "multiplesStrip", L16, 21),
+      A("tables", "tables/multiples-strip-9x16", "multiplesStrip", P916, 21),
+    ],
+    // 16:9 only by design, for the same reason the flow plate is: three figures
+    // side by side need the width, and a trailing-to-forward walk is not a
+    // seventy-five-second beat.
+    [A("structure", "structure/multiple-bridge-16x9", "multipleBridge", L16, 23)],
+
     both("peers", "peers/peer-strip", "peerStrip", {}, 77),
     both("cycles", "cycles/cycle-frame", "cycleFrame", {}, 88)
   );
@@ -288,8 +305,285 @@
   // always a real downscale of the delivered plate, never a redraw at tile size.
   const THUMBS = { host: 300, room: 320 };
 
+  // THE FAMILY HEADERS, which are the part of a manifest a human reads first and
+  // the part that had nothing checking it: they were typed into whichever writer
+  // script emitted the family. Declared here, beside the assets they describe,
+  // so RENDER.manifestFor emits a complete file — header and assets from one
+  // source — and a delta pack's manifest is a REPLACE rather than a patch.
+  const FAMILY_NOTES = {
+    "annotations": {
+      "family": "annotations",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "dataPolicy": "alpha cut-outs, no ground: the mark is composited onto whatever it wraps",
+      "slotKinds": {
+        "region": "what the mark wraps or points at (area) — solved onto the target, never written into",
+        "caption": "the mark's own words (note), set in the caption role declared on every mark in this family"
+      },
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "cards": {
+      "family": "cards",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "charts": {
+      "family": "charts",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "dataPolicy": "plate draws axes/ticks/gridlines/frame only; code draws the data path inside plot-area",
+      "slotKinds": {
+        "container": "a region other slots legitimately sit inside (plot-area)",
+        "region": "a graphic region for code to draw into, not a text box (bar-N, point-N, mark-*)"
+      },
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "cycles": {
+      "family": "cycles",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "dataPolicy": "plate draws the plot furniture, the moment anchors and the ties; engine/series.js draws the path inside `path` from the data",
+      "slotKinds": {
+        "region": "a graphic region for code to draw into (path), or a figure whose position only the data knows (trough)"
+      },
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "figures": {
+      "family": "figures",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "frames": {
+      "family": "frames",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "host": {
+      "family": "host",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "dataPolicy": "alpha cut-out figure, placed on a room host-anchor by height with the floor line pinned",
+      "anchorContract": "a room's host-anchor region gives the target HEIGHT: scale this plate so (floorLineY - slots.figure.y) equals that height, then sit floorLineY on the region's bottom edge. Never scale to the anchor's width.",
+      "tone": "The cut-out is NOT lit to match the room. He is the highest-contrast object in any frame he is in — his material hatch and the neutral ink pass on each part's turned side sit above the room's heaviest furniture, and his contact pool is small and tight. An earlier revision tinted him from the room's two sources and that is exactly what put him at the same value as the desk behind him.",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "wardrobe": {
+        "outfits": [
+          "shirt",
+          "cardigan",
+          "rolled",
+          "jumper",
+          "gilet"
+        ],
+        "shipped": "shirt",
+        "render": "BUILD.drawWith(item, outfit)",
+        "rule": "every frame of one episode uses the SAME outfit; all five keep a mid-to-dark torso and the darkest cloth at the trousers, varying hue and detail rather than value"
+      },
+      "head": "The head carries the heaviest outline on the plate, with a jaw shadow and a turned plane on the skull. With the shirt and trousers fixed but the head still cream on a cream wall, the eye landed on his chest instead of his face.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "character": {
+        "revision": "08 — side-glance and the robe (visual system closed)",
+        "reads": "deadpan, tired, self-aware. Never the target of the joke — the one telling it.",
+        "expression": "resting face is neutral to tired: flat mouth with one corner dropped, level brow, half-lidded eyes. No smile in any pose or framing.",
+        "fatigue": "under-eye pouch and crease, hollow under the cheekbone, uneven stubble. Deliberately faint — shading heavy enough to read as bruising makes him look beaten, which is over the line.",
+        "dress": "washed-out tee, collar stretched out of shape. Never a shirt and tie. Hair flattened on the slept-on side, glasses slightly crooked and smudged on one lens.",
+        "posture": "asymmetric and slumped AT THE RIG, not at the outline. Revision 06 dipped the torso polygon while the skeleton stayed vertical and mirrored, so nothing read. The armature now carries a curved spine, a weight-bearing leg with the loaded hip raised, shoulders counter-tilting to the hips at the JOINTS, and per-pose asymmetric arms. See meta.rig on any pose plate.",
+        "authoredIn": "engine/plates.js — hostFace(), shared by hostFigure and hostHead so the full figure and the close-up cannot disagree about who he is.",
+        "eyeline": "The six full-figure poses and the two straight-to-camera framings look down the lens. The glance keys look off to camera-left or camera-right: match meta.glance to the side the graphic is on. A glance cut against a graphic on the opposite side is worse than him facing camera.",
+        "wardrobe": "One outfit per episode. 'tee' is the default and covers every pose; 'robe' exists at medium only, for the episodes shot at the worst hour. Both read at the size he occupies in frame; the retired shirt/cardigan/rolled/jumper/gilet still resolve for anything already cut against them."
+      },
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "overlays": {
+      "family": "overlays",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "paper": {
+      "family": "paper",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
+      "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "peers": {
+      "family": "peers",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "dataPolicy": "plate draws the ledger and reserves the bar column; every ticker, move and multiple is a slot, and engine/series.js draws the bars from the data",
+      "slotKinds": {
+        "region": "a graphic region for code to draw into, not a text box (bars)"
+      },
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "room": {
+      "family": "room",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "hostAnchorContract": "the host-anchor region's HEIGHT is the host's target height, and the quantity it scales is (host.floorLineY - host.slots.figure.y) — not the raw figure box, which runs past the floor line to carry the shoes. Then sit host.floorLineY on the region's bottom edge. Width is advisory: the figure box includes arms meant to pass it. See meta.hostAnchor on every plate.",
+      "tone": "The ground stays the ground: the surface colour is visible everywhere in frame and nothing goes over the top of it globally. Light is VALUE FALLOFF — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more, and the falloff follows the shapes of objects rather than sitting behind them in a rectangle. No tint, no wash, no colour layer. The ink line is the darkest thing in frame; only contact shadows go darker, and they are small and tight (the size of the object's footprint, never a halo). Hatch is SELECTIVE: furniture that needs weight carries a neutral ink hatch (max 0.19), paper and the wall and the floor are left as ground — texture is only depth when some things have it and some do not.",
+      "hostContrast": "Dennis is the highest-contrast object in any frame he is in. The room is built to give way to him: nothing in the set is allowed to reach his value. The test is the composite — if your eye does not go to him first, the room is too loud.",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "shadow": "Darks read as SHADOW, not as objects: each is densest where it meets what casts it, fades away from it, ends in a ragged edge rather than a drawn outline, and lets the ground show through. A shadow is the surface in shade, not a new object on top of it — drawn as a uniform fill with a line round it, the under-desk mass and the foreground crop became the biggest darks in frame and pulled the eye off the host.",
+      "lineWeight": "Weight varies with distance across roughly a 5x spread. The multiplier was widened twice in earlier revisions with no visible effect, because the INPUT barely varied: depth came from height in frame and almost every prop sits in the same y-band. Depth is now a steep curve over the whole canvas, and props whose y contradicts their plane (wall-mounted binders, the cropped foreground) state their plane explicitly.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "shorts": {
+      "family": "shorts",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "structure": {
+      "family": "structure",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "bridgeNote": "structure/multiple-bridge walks one multiple into another — three figures, two removals. It is not structure/unit-ladder with the rows turned sideways: the ladder subtracts line items from one figure in one unit, the bridge changes the denominator at every step, so the figures cannot stack in a column and be read as arithmetic.",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    },
+    "tables": {
+      "family": "tables",
+      "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+      "coordinateOrigin": "top-left of canvas",
+      "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+      "bakedText": false,
+      "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+      "sparkNote": "the -spark variants are not the plain sheet with a column bolted on: the sparkline column takes real width, so figures and labels are re-sized to what is left and labels must be abbreviated",
+      "multiplesNote": "tables/multiples-strip is the INVERSE of peers/peer-strip and not a variant of it: the peer strip's rows are companies (a ticker each, with a move and a forward multiple), the multiples strip's rows are metrics and its columns are subject / peer median / position. marker-N is a region — the plate draws the rail, engine/series.js rangeMark draws what sits on it. Nothing on it is drawn in up or down: cheap is not up.",
+      "rowCounts": "3, 4, 5 and 6 rows in both aspects, six periods throughout. A four-row script has something to use in 16:9 and a three-row short has something at all — the first batch shipped only 6r-16x9 and 4r-9x16, which left both of those with nothing.",
+      "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+      "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+      "exportScale": 2,
+      "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+      "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+      "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+    }
+  };
+
   g.BUILD = {
     LIB: LIB,
+    FAMILY_NOTES: FAMILY_NOTES,
     THUMBS: THUMBS,
     of: function (dir) { return LIB.filter((x) => x.dir === dir); },
     dirs: function () { return LIB.map((x) => x.dir).filter((d, i, a) => a.indexOf(d) === i); },

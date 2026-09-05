@@ -725,6 +725,106 @@ def onscreen_fact_check(script, data) -> list[Finding]:
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# The valuation chapter's four moves, in order.
+# --------------------------------------------------------------------------
+
+# Move 2 — a forward multiple is being quoted. A forward number is a smaller
+# number because something came out of the denominator.
+_FORWARD_WORDS = (
+    "forward p/e", "forward pe", "forward multiple", "forward earnings",
+    "forward peg", "next year's earnings", "next year's estimates",
+    "on forward numbers", "fwd p/e",
+)
+
+# Move 3 — the subject placed against the peer set. Any of these is the move
+# being made; the plate is the strongest signal and the language is the rest.
+_PEER_WORDS = (
+    "percentile", "peer", "peers", "against the group", "versus the group",
+    "vs the group", "in its sector", "comparable companies", "comps",
+    "cheaper than", "dearer than", "more expensive than", "trades above",
+    "trades below", "rest of the industry",
+)
+
+# Move 4 — the reverse DCF. The line this chapter has always been able to
+# reach for, and the one it reaches for INSTEAD of move 3.
+_REVERSE_DCF_WORDS = (
+    "priced for", "implied growth", "priced in", "baked in", "bakes in",
+    "has to grow", "would have to grow", "what has to be true",
+    "reverse dcf", "already assumes", "the price assumes",
+)
+
+# The plates that ARE move 3 and move 2. A director who reached for either has
+# made the move whatever the narration calls it.
+_PEER_PLATES = ("tables/multiples-strip", "peers/peer-strip")
+_BRIDGE_PLATE = "structure/multiple-bridge"
+
+
+def valuation_moves(script, settings: Settings) -> list[Finding]:
+    """The valuation chapter's four moves, in order. BLOCKING on a skipped 3.
+
+    1 trailing multiples, 2 forward multiples (and SAY the denominator
+    changed), 3 where the subject sits against the peer set, 4 the reverse DCF.
+
+    The order is the argument: 1 into 2 establishes that the number is
+    contested, 3 says whether it is expensive against anyone else, and 4 says
+    what would have to be true. **A chapter that does 4 without 3 is the old
+    behaviour** — it quotes a forward multiple, jumps straight to "the price is
+    priced for 25% growth", and never answers the question a viewer actually
+    has, which is "expensive compared to what?". That jump is the thing the
+    whole multiples-strip pack exists to end, so it blocks.
+
+    It fires only on the exact signature: forward multiples present, reverse
+    DCF present, peer comparison absent in BOTH the narration and the plates.
+    A chapter that never reaches move 2 or move 4 is a different shape and is
+    not this gate's business — a script is not failed here for being short.
+    """
+    from pipeline.models import TagType
+
+    narration = (getattr(script, "narration", None)
+                 or getattr(script, "audio_script", "") or "")
+    low = narration.lower()
+
+    keys = {str(getattr(e, "payload", "") or "")
+            for e in (getattr(script, "events", None)
+                      or getattr(script, "inline_events", None) or [])
+            if getattr(e, "type", None) is TagType.PLATE}
+
+    did_forward = (any(w in low for w in _FORWARD_WORDS)
+                   or any(k.startswith(_BRIDGE_PLATE) for k in keys))
+    did_reverse_dcf = any(w in low for w in _REVERSE_DCF_WORDS)
+    did_peers = (any(w in low for w in _PEER_WORDS)
+                 or any(k.startswith(_PEER_PLATES) for k in keys))
+
+    if not (did_forward and did_reverse_dcf) or did_peers:
+        return []
+    return [Finding(
+        gate="valuation",
+        severity="block",
+        message=(
+            "the valuation chapter goes from forward multiples straight to the "
+            "reverse DCF and never places the subject against its peer set — "
+            "move 3 of four is missing. 'Priced for growth' answers 'expensive "
+            "compared to what?' with nothing. Add the peer comparison: "
+            "`tables/multiples-strip` (six rows in a long, three in a short) "
+            "carries it, one row per metric, with the subject's position on "
+            "the peer range. `Peers!I` and `Peers!J` are the two numbers each "
+            "row's `marker-N` takes."),
+        excerpt=_first_hit(narration, _REVERSE_DCF_WORDS)[:140],
+    )]
+
+
+def _first_hit(text: str, words: tuple[str, ...]) -> str:
+    """The sentence a phrase landed in, so the finding points somewhere."""
+    low = text.lower()
+    best = min((low.find(w) for w in words if low.find(w) >= 0), default=-1)
+    if best < 0:
+        return ""
+    start = max(low.rfind(".", 0, best) + 1, 0)
+    end = low.find(".", best)
+    return text[start: end if end > 0 else len(text)].strip()
+
+
 def confession_lint(script, settings: Settings) -> list[Finding]:
     """The same admission, told twice.
 
@@ -1037,10 +1137,20 @@ def kit_doctor(script, settings: Settings) -> tuple[list[Finding], dict]:
 
     events = list(getattr(script, "events", [])
                   or getattr(script, "inline_events", []))
+    # The format decides the aspect. `ShortScript` declares `inline_events` and
+    # `LongScript` declares `events` — neither declares both — and nothing else
+    # in either model names the cut, so this reads which field the model HAS
+    # rather than whether it happens to be populated.
+    aspect = "9x16" if (hasattr(script, "inline_events")
+                        and not hasattr(script, "events")) else "16x9"
     for e in events:
         if e.type is not TagType.PLATE:
             continue
-        fill = check_bound(reg, e.payload, e.values)
+        # A SHORT is 9:16 and a LONG is 16:9, and the gate is the last place
+        # that can say so before a render: `structure/multiple-bridge` ships
+        # 16:9 only, so a portrait cut reaching for it has nothing to fall back
+        # to and must fail here rather than draw an empty frame.
+        fill = check_bound(reg, e.payload, e.values, aspect=aspect)
         if not fill.ok:
             unresolved.append(f"[PLATE: {fill.name}]")
             for problem in fill.problems:
@@ -1247,6 +1357,7 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += onscreen_fact_check(script, data)
     report.findings += voice_lint(delivery_text(script))
     report.findings += confession_lint(script, settings)
+    report.findings += valuation_moves(script, settings)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
     report.findings += check_audio(settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)
