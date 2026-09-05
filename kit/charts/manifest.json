@@ -10,6 +10,8 @@
   "container": "a region other slots legitimately sit inside (plot-area)",
   "region": "a graphic region for code to draw into, not a text box (bar-N, point-N, mark-*)"
  },
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "charts/line-6y-16x9": {
    "author": "chartFrame",
@@ -46,7 +48,8 @@
      "x": 118,
      "y": 92,
      "w": 1672,
-     "h": 42
+     "h": 42,
+     "maxChars": 100
     },
     "plot-area": {
      "role": "plot-area",
@@ -63,7 +66,8 @@
      "x": 40,
      "y": 884,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-2": {
      "align": "right",
@@ -71,7 +75,8 @@
      "x": 40,
      "y": 704,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-3": {
      "align": "right",
@@ -79,7 +84,8 @@
      "x": 40,
      "y": 524,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-4": {
      "align": "right",
@@ -87,7 +93,8 @@
      "x": 40,
      "y": 344,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-5": {
      "align": "right",
@@ -95,7 +102,8 @@
      "x": 40,
      "y": 196,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "point-1": {
      "role": "point-column",
@@ -112,7 +120,8 @@
      "x": 124,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-1": {
      "align": "center",
@@ -120,7 +129,8 @@
      "x": 116,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "point-2": {
      "role": "point-column",
@@ -137,7 +147,8 @@
      "x": 442,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-2": {
      "align": "center",
@@ -145,7 +156,8 @@
      "x": 434,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "point-3": {
      "role": "point-column",
@@ -162,7 +174,8 @@
      "x": 760,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-3": {
      "align": "center",
@@ -170,7 +183,8 @@
      "x": 752,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "point-4": {
      "role": "point-column",
@@ -187,7 +201,8 @@
      "x": 1078,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-4": {
      "align": "center",
@@ -195,7 +210,8 @@
      "x": 1070,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "point-5": {
      "role": "point-column",
@@ -212,7 +228,8 @@
      "x": 1396,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-5": {
      "align": "center",
@@ -220,7 +237,8 @@
      "x": 1388,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "point-6": {
      "role": "point-column",
@@ -237,7 +255,8 @@
      "x": 1714,
      "y": 140,
      "w": 152,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-6": {
      "align": "center",
@@ -245,7 +264,8 @@
      "x": 1706,
      "y": 940,
      "w": 168,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     }
    },
    "aspect": "16x9",
@@ -260,14 +280,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -275,14 +297,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 34,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 7"
     }
    },
    "seriesRoles": {
@@ -329,7 +353,8 @@
      "x": 60,
      "y": 200,
      "w": 930,
-     "h": 50
+     "h": 50,
+     "maxChars": 55
     },
     "plot-area": {
      "role": "plot-area",
@@ -346,7 +371,8 @@
      "x": 20,
      "y": 1474,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-2": {
      "align": "right",
@@ -354,7 +380,8 @@
      "x": 20,
      "y": 1182,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-3": {
      "align": "right",
@@ -362,7 +389,8 @@
      "x": 20,
      "y": 889,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-4": {
      "align": "right",
@@ -370,7 +398,8 @@
      "x": 20,
      "y": 597,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-5": {
      "align": "right",
@@ -378,7 +407,8 @@
      "x": 20,
      "y": 336,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "point-1": {
      "role": "point-column",
@@ -395,7 +425,8 @@
      "x": 83,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-1": {
      "align": "center",
@@ -403,7 +434,8 @@
      "x": 88,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     },
     "point-2": {
      "role": "point-column",
@@ -420,7 +452,8 @@
      "x": 251,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-2": {
      "align": "center",
@@ -428,7 +461,8 @@
      "x": 256,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     },
     "point-3": {
      "role": "point-column",
@@ -445,7 +479,8 @@
      "x": 419,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-3": {
      "align": "center",
@@ -453,7 +488,8 @@
      "x": 424,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     },
     "point-4": {
      "role": "point-column",
@@ -470,7 +506,8 @@
      "x": 587,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-4": {
      "align": "center",
@@ -478,7 +515,8 @@
      "x": 592,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     },
     "point-5": {
      "role": "point-column",
@@ -495,7 +533,8 @@
      "x": 755,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-5": {
      "align": "center",
@@ -503,7 +542,8 @@
      "x": 760,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     },
     "point-6": {
      "role": "point-column",
@@ -520,7 +560,8 @@
      "x": 923,
      "y": 280,
      "w": 134,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-6": {
      "align": "center",
@@ -528,7 +569,8 @@
      "x": 928,
      "y": 1530,
      "w": 124,
-     "h": 52
+     "h": 52,
+     "maxChars": 10
     }
    },
    "aspect": "9x16",
@@ -543,14 +585,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 55,
+     "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 26,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -558,14 +602,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 30,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 7"
     }
    },
    "seriesRoles": {
@@ -612,7 +658,8 @@
      "x": 118,
      "y": 92,
      "w": 1672,
-     "h": 42
+     "h": 42,
+     "maxChars": 100
     },
     "plot-area": {
      "role": "plot-area",
@@ -629,7 +676,8 @@
      "x": 40,
      "y": 884,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-2": {
      "align": "right",
@@ -637,7 +685,8 @@
      "x": 40,
      "y": 644,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-3": {
      "align": "right",
@@ -645,7 +694,8 @@
      "x": 40,
      "y": 404,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-4": {
      "align": "right",
@@ -653,7 +703,8 @@
      "x": 40,
      "y": 196,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "head-1": {
      "align": "center",
@@ -663,7 +714,8 @@
      "x": 55,
      "y": 940,
      "w": 289,
-     "h": 52
+     "h": 52,
+     "maxChars": 22
     },
     "head-2": {
      "align": "center",
@@ -673,7 +725,8 @@
      "x": 634,
      "y": 940,
      "w": 289,
-     "h": 52
+     "h": 52,
+     "maxChars": 22
     },
     "head-3": {
      "align": "center",
@@ -683,7 +736,8 @@
      "x": 1212,
      "y": 940,
      "w": 289,
-     "h": 52
+     "h": 52,
+     "maxChars": 22
     },
     "head-4": {
      "align": "center",
@@ -693,7 +747,8 @@
      "x": 1619,
      "y": 940,
      "w": 289,
-     "h": 52
+     "h": 52,
+     "maxChars": 22
     },
     "mark-high": {
      "align": "right",
@@ -738,14 +793,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 22,
+     "budget": "derived from the slot boxes that set this role; 22 is the floor (narrowest of 4), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -753,14 +810,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 4), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 34,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     }
    },
    "seriesRoles": {
@@ -807,7 +866,8 @@
      "x": 60,
      "y": 200,
      "w": 930,
-     "h": 50
+     "h": 50,
+     "maxChars": 55
     },
     "plot-area": {
      "role": "plot-area",
@@ -824,7 +884,8 @@
      "x": 20,
      "y": 1474,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-2": {
      "align": "right",
@@ -832,7 +893,8 @@
      "x": 20,
      "y": 1084,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-3": {
      "align": "right",
@@ -840,7 +902,8 @@
      "x": 20,
      "y": 694,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-4": {
      "align": "right",
@@ -848,7 +911,8 @@
      "x": 20,
      "y": 336,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "head-1": {
      "align": "center",
@@ -858,7 +922,8 @@
      "x": 74,
      "y": 1530,
      "w": 153,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "head-2": {
      "align": "center",
@@ -868,7 +933,8 @@
      "x": 379,
      "y": 1530,
      "w": 153,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "head-3": {
      "align": "center",
@@ -878,7 +944,8 @@
      "x": 685,
      "y": 1530,
      "w": 153,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "head-4": {
      "align": "center",
@@ -888,7 +955,8 @@
      "x": 914,
      "y": 1530,
      "w": 153,
-     "h": 52
+     "h": 52,
+     "maxChars": 12
     },
     "mark-high": {
      "align": "right",
@@ -933,14 +1001,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 55,
+     "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 26,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 4), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -948,14 +1018,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 4), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 30,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     }
    },
    "seriesRoles": {
@@ -1002,7 +1074,8 @@
      "x": 118,
      "y": 92,
      "w": 1672,
-     "h": 42
+     "h": 42,
+     "maxChars": 100
     },
     "plot-area": {
      "role": "plot-area",
@@ -1019,7 +1092,8 @@
      "x": 40,
      "y": 884,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-2": {
      "align": "right",
@@ -1027,7 +1101,8 @@
      "x": 40,
      "y": 704,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-3": {
      "align": "right",
@@ -1035,7 +1110,8 @@
      "x": 40,
      "y": 524,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-4": {
      "align": "right",
@@ -1043,7 +1119,8 @@
      "x": 40,
      "y": 344,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "y-5": {
      "align": "right",
@@ -1051,7 +1128,8 @@
      "x": 40,
      "y": 196,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 8
     },
     "bar-1": {
      "role": "bar",
@@ -1069,7 +1147,8 @@
      "x": 200,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-1": {
      "align": "center",
@@ -1077,7 +1156,8 @@
      "x": 200,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     },
     "bar-2": {
      "role": "bar",
@@ -1095,7 +1175,8 @@
      "x": 465,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-2": {
      "align": "center",
@@ -1103,7 +1184,8 @@
      "x": 465,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     },
     "bar-3": {
      "role": "bar",
@@ -1121,7 +1203,8 @@
      "x": 730,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-3": {
      "align": "center",
@@ -1129,7 +1212,8 @@
      "x": 730,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     },
     "bar-4": {
      "role": "bar",
@@ -1147,7 +1231,8 @@
      "x": 995,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-4": {
      "align": "center",
@@ -1155,7 +1240,8 @@
      "x": 995,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     },
     "bar-5": {
      "role": "bar",
@@ -1173,7 +1259,8 @@
      "x": 1260,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-5": {
      "align": "center",
@@ -1181,7 +1268,8 @@
      "x": 1260,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     },
     "bar-6": {
      "role": "bar",
@@ -1199,7 +1287,8 @@
      "x": 1525,
      "y": 140,
      "w": 265,
-     "h": 46
+     "h": 46,
+     "maxChars": 12
     },
     "head-6": {
      "align": "center",
@@ -1207,7 +1296,8 @@
      "x": 1525,
      "y": 940,
      "w": 265,
-     "h": 52
+     "h": 52,
+     "maxChars": 20
     }
    },
    "aspect": "16x9",
@@ -1222,14 +1312,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 100,
+     "budget": "derived from the slot boxes that set this role; 100 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 6), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -1237,14 +1329,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 5), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 34,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 7"
     }
    },
    "seriesRoles": {
@@ -1291,7 +1385,8 @@
      "x": 60,
      "y": 200,
      "w": 930,
-     "h": 50
+     "h": 50,
+     "maxChars": 55
     },
     "plot-area": {
      "role": "plot-area",
@@ -1308,7 +1403,8 @@
      "x": 20,
      "y": 1474,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-2": {
      "align": "right",
@@ -1316,7 +1412,8 @@
      "x": 20,
      "y": 1182,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-3": {
      "align": "right",
@@ -1324,7 +1421,8 @@
      "x": 20,
      "y": 889,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-4": {
      "align": "right",
@@ -1332,7 +1430,8 @@
      "x": 20,
      "y": 597,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "y-5": {
      "align": "right",
@@ -1340,7 +1439,8 @@
      "x": 20,
      "y": 336,
      "w": 112,
-     "h": 52
+     "h": 52,
+     "maxChars": 7
     },
     "bar-1": {
      "role": "bar",
@@ -1358,7 +1458,8 @@
      "x": 150,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-1": {
      "align": "center",
@@ -1366,7 +1467,8 @@
      "x": 150,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     },
     "bar-2": {
      "role": "bar",
@@ -1384,7 +1486,8 @@
      "x": 290,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-2": {
      "align": "center",
@@ -1392,7 +1495,8 @@
      "x": 290,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     },
     "bar-3": {
      "role": "bar",
@@ -1410,7 +1514,8 @@
      "x": 430,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-3": {
      "align": "center",
@@ -1418,7 +1523,8 @@
      "x": 430,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     },
     "bar-4": {
      "role": "bar",
@@ -1436,7 +1542,8 @@
      "x": 570,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-4": {
      "align": "center",
@@ -1444,7 +1551,8 @@
      "x": 570,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     },
     "bar-5": {
      "role": "bar",
@@ -1462,7 +1570,8 @@
      "x": 710,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-5": {
      "align": "center",
@@ -1470,7 +1579,8 @@
      "x": 710,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     },
     "bar-6": {
      "role": "bar",
@@ -1488,7 +1598,8 @@
      "x": 850,
      "y": 280,
      "w": 140,
-     "h": 46
+     "h": 46,
+     "maxChars": 7
     },
     "head-6": {
      "align": "center",
@@ -1496,7 +1607,8 @@
      "x": 850,
      "y": 1530,
      "w": 140,
-     "h": 52
+     "h": 52,
+     "maxChars": 11
     }
    },
    "aspect": "9x16",
@@ -1511,14 +1623,16 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 55,
+     "budget": "derived from the slot boxes that set this role; 55 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 26,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 6), authored was 6"
     },
     "axis": {
      "font": "Courier Prime",
@@ -1526,14 +1640,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.7,
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 5), authored was 7"
     },
     "value": {
      "font": "Courier Prime",
      "size": 30,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 7"
     }
    },
    "seriesRoles": {

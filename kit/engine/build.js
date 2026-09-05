@@ -310,6 +310,12 @@
   // script emitted the family. Declared here, beside the assets they describe,
   // so RENDER.manifestFor emits a complete file — header and assets from one
   // source — and a delta pack's manifest is a REPLACE rather than a patch.
+  // ONE note, not fourteen typed copies. It describes the compositor that
+  // exists — which ERRORS on an over-budget fill rather than shrinking type to
+  // fit — and the derivation in engine/budget.js that every manifest's numbers
+  // now come from. It was already wrong once by being edited in one place.
+  const MAXCHARS_NOTE = "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.";
+
   const FAMILY_NOTES = {
     "annotations": {
       "family": "annotations",
@@ -330,7 +336,7 @@
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
       "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "cards": {
       "family": "cards",
@@ -345,7 +351,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "charts": {
       "family": "charts",
@@ -365,7 +371,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "cycles": {
       "family": "cycles",
@@ -384,7 +390,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "figures": {
       "family": "figures",
@@ -399,7 +405,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "frames": {
       "family": "frames",
@@ -414,7 +420,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "host": {
       "family": "host",
@@ -456,7 +462,7 @@
         "eyeline": "The six full-figure poses and the two straight-to-camera framings look down the lens. The glance keys look off to camera-left or camera-right: match meta.glance to the side the graphic is on. A glance cut against a graphic on the opposite side is worse than him facing camera.",
         "wardrobe": "One outfit per episode. 'tee' is the default and covers every pose; 'robe' exists at medium only, for the episodes shot at the worst hour. Both read at the size he occupies in frame; the retired shirt/cardigan/rolled/jumper/gilet still resolve for anything already cut against them."
       },
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "overlays": {
       "family": "overlays",
@@ -471,7 +477,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "paper": {
       "family": "paper",
@@ -488,7 +494,7 @@
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
       "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
       "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "peers": {
       "family": "peers",
@@ -507,7 +513,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "room": {
       "family": "room",
@@ -527,7 +533,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "shorts": {
       "family": "shorts",
@@ -543,7 +549,7 @@
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
       "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "structure": {
       "family": "structure",
@@ -559,7 +565,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     },
     "tables": {
       "family": "tables",
@@ -577,7 +583,7 @@
       "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
       "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
       "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
-      "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote)."
+      "maxCharsNote": MAXCHARS_NOTE
     }
   };
 

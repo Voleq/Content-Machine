@@ -9,6 +9,8 @@
  "slotKinds": {
   "region": "a graphic region for code to draw into, not a text box (bars)"
  },
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "peers/peer-strip-16x9": {
    "author": "peerStrip",
@@ -45,7 +47,8 @@
      "x": 190,
      "y": 88,
      "w": 1540,
-     "h": 30
+     "h": 30,
+     "maxChars": 92
     },
     "head-move": {
      "align": "right",
@@ -53,7 +56,8 @@
      "x": 991,
      "y": 185,
      "w": 394,
-     "h": 30
+     "h": 30,
+     "maxChars": 28
     },
     "head-fwd": {
      "align": "right",
@@ -61,7 +65,8 @@
      "x": 1405,
      "y": 185,
      "w": 325,
-     "h": 30
+     "h": 30,
+     "maxChars": 23
     },
     "bars": {
      "role": "bars",
@@ -88,7 +93,8 @@
      "x": 190,
      "y": 265,
      "w": 396,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "move-1": {
      "align": "right",
@@ -96,7 +102,8 @@
      "x": 991,
      "y": 258,
      "w": 394,
-     "h": 98
+     "h": 98,
+     "maxChars": 10
     },
     "fwd-1": {
      "align": "right",
@@ -104,7 +111,8 @@
      "x": 1405,
      "y": 265,
      "w": 325,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "band-2": {
      "role": "highlight-band",
@@ -120,7 +128,8 @@
      "x": 190,
      "y": 398,
      "w": 396,
-     "h": 85
+     "h": 85,
+     "maxChars": 13
     },
     "move-2": {
      "align": "right",
@@ -128,7 +137,8 @@
      "x": 991,
      "y": 391,
      "w": 394,
-     "h": 98
+     "h": 98,
+     "maxChars": 10
     },
     "fwd-2": {
      "align": "right",
@@ -136,7 +146,8 @@
      "x": 1405,
      "y": 398,
      "w": 325,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "band-3": {
      "role": "highlight-band",
@@ -152,7 +163,8 @@
      "x": 190,
      "y": 531,
      "w": 396,
-     "h": 85
+     "h": 85,
+     "maxChars": 13
     },
     "move-3": {
      "align": "right",
@@ -160,7 +172,8 @@
      "x": 991,
      "y": 524,
      "w": 394,
-     "h": 98
+     "h": 98,
+     "maxChars": 10
     },
     "fwd-3": {
      "align": "right",
@@ -168,7 +181,8 @@
      "x": 1405,
      "y": 531,
      "w": 325,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "band-4": {
      "role": "highlight-band",
@@ -184,7 +198,8 @@
      "x": 190,
      "y": 664,
      "w": 396,
-     "h": 85
+     "h": 85,
+     "maxChars": 13
     },
     "move-4": {
      "align": "right",
@@ -192,7 +207,8 @@
      "x": 991,
      "y": 657,
      "w": 394,
-     "h": 98
+     "h": 98,
+     "maxChars": 10
     },
     "fwd-4": {
      "align": "right",
@@ -200,7 +216,8 @@
      "x": 1405,
      "y": 664,
      "w": 325,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "band-5": {
      "role": "highlight-band",
@@ -216,7 +233,8 @@
      "x": 190,
      "y": 797,
      "w": 396,
-     "h": 85
+     "h": 85,
+     "maxChars": 13
     },
     "move-5": {
      "align": "right",
@@ -224,7 +242,8 @@
      "x": 991,
      "y": 790,
      "w": 394,
-     "h": 98
+     "h": 98,
+     "maxChars": 10
     },
     "fwd-5": {
      "align": "right",
@@ -232,7 +251,8 @@
      "x": 1405,
      "y": 797,
      "w": 325,
-     "h": 85
+     "h": 85,
+     "maxChars": 11
     },
     "caption": {
      "align": "left",
@@ -240,7 +260,8 @@
      "x": 190,
      "y": 966,
      "w": 1540,
-     "h": 30
+     "h": 30,
+     "maxChars": 98
     }
    },
    "aspect": "16x9",
@@ -255,7 +276,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 92,
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -264,42 +286,48 @@
      "colour": "structure",
      "opacity": 0.68,
      "tracking": "0.06em",
-     "maxChars": 12
+     "maxChars": 23,
+     "budget": "derived from the slot boxes that set this role; 23 is the floor (narrowest of 2), authored was 12"
     },
     "tickerSubject": {
      "font": "Courier Prime",
      "size": 56,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 1), authored was 7"
     },
     "ticker": {
      "font": "Courier Prime",
      "size": 48,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 7
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 4), authored was 7"
     },
     "move": {
      "font": "Courier Prime",
      "size": 62,
      "weight": 700,
      "colour": "down",
-     "maxChars": 7
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 5), authored was 7"
     },
     "moveUp": {
      "font": "Courier Prime",
      "size": 62,
      "weight": 700,
      "colour": "up",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     },
     "fwd": {
      "font": "Courier Prime",
      "size": 48,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 7
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 5), authored was 7"
     },
     "caption": {
      "font": "Courier Prime",
@@ -307,7 +335,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 98,
+     "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), authored was 60"
     }
    },
    "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",
@@ -348,7 +377,8 @@
      "x": 84,
      "y": 186,
      "w": 912,
-     "h": 30
+     "h": 30,
+     "maxChars": 54
     },
     "head-move": {
      "align": "right",
@@ -356,7 +386,8 @@
      "x": 558,
      "y": 698,
      "w": 209,
-     "h": 28
+     "h": 28,
+     "maxChars": 16
     },
     "head-fwd": {
      "align": "right",
@@ -364,7 +395,8 @@
      "x": 803,
      "y": 698,
      "w": 193,
-     "h": 28
+     "h": 28,
+     "maxChars": 15
     },
     "bars": {
      "role": "bars",
@@ -391,7 +423,8 @@
      "x": 84,
      "y": 795,
      "w": 210,
-     "h": 84
+     "h": 84,
+     "maxChars": 6
     },
     "move-1": {
      "align": "right",
@@ -399,7 +432,8 @@
      "x": 558,
      "y": 788,
      "w": 209,
-     "h": 97
+     "h": 97,
+     "maxChars": 6
     },
     "fwd-1": {
      "align": "right",
@@ -407,7 +441,8 @@
      "x": 803,
      "y": 795,
      "w": 193,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "band-2": {
      "role": "highlight-band",
@@ -423,7 +458,8 @@
      "x": 84,
      "y": 926,
      "w": 210,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "move-2": {
      "align": "right",
@@ -431,7 +467,8 @@
      "x": 558,
      "y": 919,
      "w": 209,
-     "h": 97
+     "h": 97,
+     "maxChars": 6
     },
     "fwd-2": {
      "align": "right",
@@ -439,7 +476,8 @@
      "x": 803,
      "y": 926,
      "w": 193,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "band-3": {
      "role": "highlight-band",
@@ -455,7 +493,8 @@
      "x": 84,
      "y": 1057,
      "w": 210,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "move-3": {
      "align": "right",
@@ -463,7 +502,8 @@
      "x": 558,
      "y": 1050,
      "w": 209,
-     "h": 97
+     "h": 97,
+     "maxChars": 6
     },
     "fwd-3": {
      "align": "right",
@@ -471,7 +511,8 @@
      "x": 803,
      "y": 1057,
      "w": 193,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "band-4": {
      "role": "highlight-band",
@@ -487,7 +528,8 @@
      "x": 84,
      "y": 1188,
      "w": 210,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "move-4": {
      "align": "right",
@@ -495,7 +537,8 @@
      "x": 558,
      "y": 1181,
      "w": 209,
-     "h": 97
+     "h": 97,
+     "maxChars": 6
     },
     "fwd-4": {
      "align": "right",
@@ -503,7 +546,8 @@
      "x": 803,
      "y": 1188,
      "w": 193,
-     "h": 84
+     "h": 84,
+     "maxChars": 7
     },
     "caption": {
      "align": "left",
@@ -511,7 +555,8 @@
      "x": 84,
      "y": 1740,
      "w": 912,
-     "h": 30
+     "h": 30,
+     "maxChars": 58
     }
    },
    "aspect": "9x16",
@@ -526,7 +571,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 54,
+     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -535,42 +581,48 @@
      "colour": "structure",
      "opacity": 0.68,
      "tracking": "0.06em",
-     "maxChars": 12
+     "maxChars": 15,
+     "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 2), authored was 12"
     },
     "tickerSubject": {
      "font": "Courier Prime",
      "size": 52,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), authored was 7"
     },
     "ticker": {
      "font": "Courier Prime",
      "size": 46,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 3), authored was 7"
     },
     "move": {
      "font": "Courier Prime",
      "size": 58,
      "weight": 700,
      "colour": "down",
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 4), authored was 7"
     },
     "moveUp": {
      "font": "Courier Prime",
      "size": 58,
      "weight": 700,
      "colour": "up",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     },
     "fwd": {
      "font": "Courier Prime",
      "size": 44,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 4), authored was 7"
     },
     "caption": {
      "font": "Courier Prime",
@@ -578,7 +630,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 58,
+     "budget": "derived from the slot boxes that set this role; 58 is the floor (narrowest of 1), authored was 60"
     }
    },
    "moveNote": "move-N is authored in the down colour, because a peer strip is called for when a complex moves together and that move is almost always red. A green row is a role override on the shot: boxes['move-2'] = { …rect, role: 'moveUp' }.",

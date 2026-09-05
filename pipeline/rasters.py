@@ -65,20 +65,6 @@ def load_font(settings: Settings, name: str, size: int) -> ImageFont.FreeTypeFon
     return ImageFont.truetype(str(settings.fonts_dir / name), size)
 
 
-def _wrap(draw: ImageDraw.ImageDraw, text: str, font, max_width: int) -> list[str]:
-    lines: list[str] = []
-    for para in text.split("\n"):
-        words = para.split()
-        cur = ""
-        for w in words:
-            trial = f"{cur} {w}".strip()
-            if draw.textlength(trial, font=font) <= max_width or not cur:
-                cur = trial
-            else:
-                lines.append(cur)
-                cur = w
-        lines.append(cur)
-    return lines
 def simple_text(
     settings: Settings,
     text: str,

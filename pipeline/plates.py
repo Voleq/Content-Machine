@@ -101,6 +101,19 @@ class Slot:
     sets_type: bool = False       # the plate declares a typeRole for its role
     export_scale: int = 2
     note: str = ""
+    # THE BUDGET FOR THIS BOX, not for this role. 0 means the slot declares none
+    # and the role's floor applies.
+    #
+    # One role is set in boxes of different widths on the same plate:
+    # `structure/flow-16x9` sets `caption` in a 1620-unit strip AND in a
+    # 104-unit arrow label. A single number per role is wrong in one of them by
+    # construction — sized for the strip it waves through copy that collides in
+    # the arrow, sized for the arrow it refuses a caption that fits. So the kit
+    # derives a budget per SLOT from the box it is set in, and the role keeps
+    # the narrowest of them as a floor.
+    max_chars: int = 0
+    max_chars_per_line: int = 0
+    max_lines: int = 0
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -151,6 +164,9 @@ class Slot:
             sets_type=bool((type_roles or {}).get(role)),
             export_scale=export_scale,
             note=str(raw.get("note", "")),
+            max_chars=int(raw.get("maxChars") or 0),
+            max_chars_per_line=int(raw.get("maxCharsPerLine") or 0),
+            max_lines=int(raw.get("maxLines") or 0),
         )
 
 

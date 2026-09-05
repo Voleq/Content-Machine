@@ -118,7 +118,9 @@ pipeline/
                          header, and a plate the chapter type may not use
   plate_frames.py        playing plates and filling their slots: type is set in
                          the face, size, weight and colour role the KIT
-                         declares, and `maxChars` is a hard limit
+                         declares, and `maxChars` is a hard limit — read off
+                         the BOX the copy lands in, with the role's narrowest
+                         box as the fallback floor
   shots.py               shot templates — a FORMAT is an ordered list of SHOTS
                          and it is data. Spans, anchors, `max_hold_s` ceilings
   compose.py             the template and the script, turned into an ordered
@@ -802,6 +804,13 @@ env var, case-insensitive).
   not allowed to use, and a plate in the wrong aspect. The compact forms
   expand against the slots the plate declares, so an expansion cannot invent
   one.
+- **The type budget belongs to the box, not the role.** `slots[name].maxChars`
+  is derived from that box's width and the face it is set in;
+  `typeRoles[role].maxChars` is the FLOOR — the narrowest slot on the plate
+  that sets the role — and stands in where a slot declares none. One number per
+  role cannot be right twice: `structure/flow-16x9` sets `caption` in a
+  1620-unit strip and again in four 104-unit arrow labels, which hold 103
+  characters and 6.
 - **Not every slot value is a string.** `tables/multiples-strip`'s `marker-N`
   is a REGION, and it takes a pair of numbers — `marker-3 = t:0.82,
   median:0.41` — where `t` is the subject's position between the peer low and

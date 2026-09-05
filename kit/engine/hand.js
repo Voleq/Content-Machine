@@ -45,9 +45,28 @@
   // care how big the sheet is. So: 2 units, flat. A 300-unit annotation and a
   // 1920-unit room boil by the same absolute amount, which is what makes them
   // sit together in one cut.
+  // ...AND IT IS 2 UNITS ON THE PLATE, WHICH IS NOT WHERE IT IS WATCHED.
+  //
+  // A flat authored amplitude was right about the hand and wrong about the shot.
+  // An asset that is COMPOSITED AT ITS AUTHORED SIZE boils at what it says here;
+  // an asset that gets solved onto a target boils at amp x solve, because the
+  // stretch scales the wobble along with the drawing. overlays/row-band is
+  // authored 1744x112 and drops into a 9:16 band slot of 1044x314 — 2.8x in y,
+  // 3.75x on the 3-row sheet — so a 2-unit authored wobble is a 5.6-to-7.5-unit
+  // wobble in the frame, under type that is not moving at all.
+  //
+  // This is the same mistake the inkWeight check already caught once: solve
+  // scale is not a detail of compositing, it is a multiplier on every canvas-unit
+  // quantity the plate declares. Weight learned that. Boil had not.
+  //
+  // So amplitude is now PER ASSET, declared next to the asset in build.js as the
+  // amount that should survive to the frame divided by the solve it will get.
+  // 2.0 stays the default and every unstretched plate keeps it, so nothing that
+  // was right has changed.
   let BOIL = 0;
-  const BOIL_AMP = 2.0;
-  function setBoil(n) { BOIL = n | 0; }
+  let BOIL_AMP = 2.0;
+  const BOIL_AMP_DEFAULT = 2.0;
+  function setBoil(n, amp) { BOIL = n | 0; BOIL_AMP = amp == null ? BOIL_AMP_DEFAULT : amp; }
 
   function rng(seed) {
     let a = (seed | 0) >>> 0 || 1;
@@ -318,6 +337,41 @@
       // an exportScale passed in here is ignored on purpose.
       const scale = (g.AUDIT && g.AUDIT.EXPORT_SCALE) || 2;
       const name = P.key.split("/").pop();
+      // TYPE BUDGETS COME OFF THE BOXES, HERE, FOR EVERY PLATE. maxChars is
+      // enforced — the compositor errors on an over-budget fill and the shot
+      // does not render — so a number typed beside a point size either passes
+      // copy that collides with the rule beside it or stops copy that fits.
+      // engine/budget.js measures the box with the real face (hmtx) and writes
+      // the budget onto the slot, leaving the role holding the narrowest.
+      if (g.BUDGET && P.meta && P.meta.typeRoles) {
+        // DERIVE ONTO THIS PLATE'S OWN COPY OF THE ROLE TABLE.
+        //
+        // BUDGET.derive() writes the floor back onto the role spec it is
+        // handed, and plates.js hands out SHARED objects: `TR` goes into every
+        // structure plate by reference, and `TR.caption` is reused as
+        // cards/definition's `example`, cards/quote-pull's `source` and
+        // figures/big-fraction's `caption`. One mutable spec, many plates.
+        //
+        // Deriving in place is invisible when each manifest is serialised the
+        // instant its plate is drawn, and wrong when they are collected and
+        // written at the end — which is what kit_engine.js does. The last
+        // derive to touch TR.caption won, so 139 of 425 role floors came out
+        // as one library-wide constant instead of that plate's narrowest box:
+        // structure/flow's caption floor emitted as 103 ("narrowest of 1")
+        // against the 6 its four 104-unit arrow labels actually allow. 96 of
+        // the 139 were LOOSER than the delivery — the direction that lets copy
+        // through to collide with the rule beside it.
+        //
+        // The per-slot budgets were right throughout, because those are
+        // written onto slot objects, which are per plate. Only the floor was
+        // shared, and the floor is the fallback for every slot that has none.
+        const own = {};
+        Object.keys(P.meta.typeRoles).forEach(function (rn) {
+          own[rn] = Object.assign({}, P.meta.typeRoles[rn]);
+        });
+        P.meta.typeRoles = own;
+        P.budgets = g.BUDGET.derive(P.slots, own);
+      }
       return Object.assign({
         canvas: [P.w, P.h],
         exportScale: scale,
@@ -337,5 +391,5 @@
     return P;
   }
 
-  g.HAND = { rng, wobble, stroke, line, hatch, fillRect, polyRect, outline, toPath, Plate, num, speckle, setBoil };
+  g.HAND = { rng, wobble, stroke, line, hatch, fillRect, polyRect, outline, toPath, Plate, num, speckle, setBoil, boilAmp: () => BOIL_AMP };
 })(typeof window !== "undefined" ? window : globalThis);

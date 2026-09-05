@@ -5,8 +5,13 @@
  "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
  "bakedText": false,
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "overlays/row-band": {
+   "author": "rowBand",
+   "seed": 1,
+   "surface": "night-card",
    "canvas": [
     1744,
     112
@@ -22,13 +27,13 @@
    "frames": [
     {
      "tag": null,
-     "png": "row-band.png",
-     "svg": null
+     "svg": "row-band.svg",
+     "png": "row-band.png"
     }
    ],
    "files": {
     "png": "row-band.png",
-    "svg": null,
+    "svg": "row-band.svg",
     "baseIsFrame": null
    },
    "slots": {
@@ -46,10 +51,10 @@
    "stretch": "x-only",
    "colourRule": "second ground, bracketed in structure. The band says HERE, never good or bad — direction stays in the cells, and attention belongs to annotations.",
    "why": "ground2 hatch alone is invisible on the sheet's own ground2 zebra stripe, so the row is bracketed top and bottom in structure. That reads on a striped row and an unstriped one alike.",
-   "author": "rowBand",
-   "seed": 1,
-   "surface": "night-card",
-   "dir": "overlays/"
+   "boil": {
+    "amp": 0,
+    "note": "DOES NOT BOIL. row-band composites into a band-N slot behind figures that are deliberately static, so a boiling band breaks the no-movement-under-read-type rule from the other side: the data plate obeys it, the overlay drawn on top of it did not. It also takes the worst stretch in the library — up to 3.75x in y on the 3-row sheet — so its authored 2-unit wobble read as 7.5 units in frame."
+   }
   }
  },
  "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
@@ -57,6 +62,5 @@
  "exportScale": 2,
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "regeneratedFrom": "engine/build.js at delta 08. The engine makes overlays/row-band static: it composites INTO a band-N slot behind figures that are deliberately still, and a boiling band under a frozen row breaks the no-movement-under-type rule from the other side. Deltas 05-07 were not shipped as archives, so this section is the engine's own emission rather than a signed-off delivery snapshot."
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
 }

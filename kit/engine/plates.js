@@ -1218,11 +1218,6 @@
   // does. The subject is structure and the peer median is otherParty, exactly as
   // on the peer strip, so the row is legible with no highlight at all and band-N
   // stays free for the row the voice-over is on.
-  // Character advance as a fraction of point size. Courier Prime is monospaced,
-  // so 0.6 is its metric rather than an estimate; Archivo Narrow is proportional
-  // and 0.47 is an average over mixed-case Latin — good enough to size a budget,
-  // never precise enough to promise a fit.
-  const MONO_ADV = 0.6, NARROW_ADV = 0.47;
 
   function multiplesStrip(o) {
     const w = o.w, h = o.h, land = w > h, p = o.pal;
@@ -1257,7 +1252,7 @@
         columnNote: land
           ? "subject-N is the subject's own value, in structure; median-N is the peer set's, in otherParty. Same rule as peers/peer-strip: the row you are in is legible with no highlight at all, which keeps band-N free for the row the voice-over is on."
           : "THREE COLUMNS: metric, subject, rail. There is no median-N and no head-median on this aspect — pass median to series.rangeMark and the tick it puts on the rail IS the peer number. Four columns at portrait width cannot hold the type this plate declares, and the renderer would silently shrink the figures below the landscape ones to fit.",
-        budgetNote: "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+        budgetNote: "This plate no longer carries its own budget arithmetic and no longer needs to be the exception: engine/budget.js derives maxChars from the slot boxes for EVERY family, off the real hmtx advances rather than an 0.47em average. What is still worth knowing here is that the figure columns are Courier (monospaced, so the count is exact) and the metric column is Archivo Narrow set in a box cut to hold 'EV / EBITDA (fwd)'. See the family's maxCharsNote.",
         directionNote: "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
         rowsNote: land ? "six metric rows: the relative-pricing half of a valuation chapter in one frame." : "three rows, not six. A short's cheap-or-trap beat wants the same picture with less in it, and three rows of larger type is that picture — not the 16:9 sheet scaled down.",
       },
@@ -1300,16 +1295,12 @@
     const medX = figL + subjW;
     const trackX = medX + medW + Math.round(u * 1.6);
 
-    // Type budgets are derived from the boxes that were just measured, not
-    // authored beside the point sizes: Courier Prime is monospaced so its advance
-    // is exact, and Archivo Narrow gets an average-width estimate that the
-    // manifest labels as one. A maxChars that disagrees with its own box is a
-    // budget a writer cannot spend.
+    // This plate used to derive its own budgets here, off an 0.47em average for
+    // Archivo Narrow. It no longer needs to: Plate.manifest() runs
+    // engine/budget.js over every plate in the library, measuring each slot with
+    // the real face. The boxes are still cut here — the budget is what is
+    // computed from them, not the geometry.
     const labelBox = labelW - Math.round(u * 1.4), subjBox = subjW - Math.round(u * 1.2), medBox = medW - Math.round(u * 1.2);
-    roles.subject.maxChars = Math.floor(subjBox / (roles.subject.size * MONO_ADV));
-    roles.metric.maxChars = Math.floor(labelBox / (roles.metric.size * NARROW_ADV));
-    roles.column.maxChars = Math.floor(subjBox / (roles.column.size * NARROW_ADV));
-    if (roles.median) roles.median.maxChars = Math.floor(medBox / (roles.median.size * MONO_ADV));
 
     P.slot("head-subject", figL, headY, subjBox, headH, { align: "right", role: "column" });
     if (land) P.slot("head-median", medX, headY, medBox, headH, { align: "right", role: "column" });

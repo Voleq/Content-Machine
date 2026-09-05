@@ -10,6 +10,8 @@
   "region": "what the mark wraps or points at (area) — solved onto the target, never written into",
   "caption": "the mark's own words (note), set in the caption role declared on every mark in this family"
  },
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "annotations/scrawl-oval-wide": {
    "author": "annotation",
@@ -64,7 +66,9 @@
      "x": 61,
      "y": 241,
      "w": 1077,
-     "h": 72
+     "h": 72,
+     "maxCharsPerLine": 58,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -82,8 +86,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 59,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 58,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 58 is the floor (narrowest of 1), authored was 59"
     }
    },
    "solve": "both",
@@ -143,7 +148,9 @@
      "x": 12,
      "y": 162,
      "w": 316,
-     "h": 70
+     "h": 70,
+     "maxCharsPerLine": 17,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -162,7 +169,8 @@
      "tracking": ".01em",
      "maxLines": 2,
      "maxCharsPerLine": 17,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 17 is the floor (narrowest of 1), authored was 17"
     }
    },
    "solve": "both",
@@ -222,7 +230,9 @@
      "x": 12,
      "y": 128,
      "w": 986,
-     "h": 55
+     "h": 55,
+     "maxCharsPerLine": 70,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -240,13 +250,20 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 64,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 70,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 70 is the floor (narrowest of 1), authored was 64"
     }
    },
    "solve": "x-uniform",
    "anchor": "bottom",
-   "inkWeight": 9
+   "inkWeight": 9,
+   "boil": {
+    "amp": 0.32,
+    "platedMean": 0.249,
+    "platedPeak": 0.57,
+    "note": "Authored amplitude is per asset, in canvas units ON THE PLATE. This asset is SOLVED onto a target, so what the frame sees is amp x solve — the authored figure is the ~1.75 units that should survive, divided by the solve it actually gets. Default is 2.0 and every unstretched plate keeps it."
+   }
   },
   "annotations/underline-tight": {
    "author": "annotation",
@@ -301,7 +318,9 @@
      "x": 0,
      "y": 93,
      "w": 300,
-     "h": 82
+     "h": 82,
+     "maxCharsPerLine": 14,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -319,13 +338,20 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 13,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 14,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 14 is the floor (narrowest of 1), authored was 13"
     }
    },
    "solve": "x-uniform",
    "anchor": "bottom",
-   "inkWeight": 13
+   "inkWeight": 13,
+   "boil": {
+    "amp": 0.78,
+    "platedMean": 0.421,
+    "platedPeak": 1.41,
+    "note": "Authored amplitude is per asset, in canvas units ON THE PLATE. This asset is SOLVED onto a target, so what the frame sees is amp x solve — the authored figure is the ~1.75 units that should survive, divided by the solve it actually gets. Default is 2.0 and every unstretched plate keeps it."
+   }
   },
   "annotations/strike-out": {
    "author": "annotation",
@@ -380,7 +406,9 @@
      "x": 0,
      "y": 90,
      "w": 320,
-     "h": 82
+     "h": 82,
+     "maxCharsPerLine": 15,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -398,13 +426,20 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 13,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 15,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 1), authored was 13"
     }
    },
    "solve": "x-uniform",
    "anchor": "middle",
-   "inkWeight": 13
+   "inkWeight": 13,
+   "boil": {
+    "amp": 0.58,
+    "platedMean": 0.433,
+    "platedPeak": 1.16,
+    "note": "Authored amplitude is per asset, in canvas units ON THE PLATE. This asset is SOLVED onto a target, so what the frame sees is amp x solve — the authored figure is the ~1.75 units that should survive, divided by the solve it actually gets. Default is 2.0 and every unstretched plate keeps it."
+   }
   },
   "annotations/box-scrawl": {
    "author": "annotation",
@@ -459,7 +494,9 @@
      "x": 0,
      "y": 337,
      "w": 995,
-     "h": 55
+     "h": 55,
+     "maxCharsPerLine": 70,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -477,8 +514,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 64,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 70,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 70 is the floor (narrowest of 1), authored was 64"
     }
    },
    "solve": "both",
@@ -538,7 +576,9 @@
      "x": 224,
      "y": 252,
      "w": 418,
-     "h": 196
+     "h": 196,
+     "maxCharsPerLine": 23,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -556,8 +596,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 11,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 23,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 23 is the floor (narrowest of 1), authored was 11"
     }
    },
    "solve": "both",
@@ -608,7 +649,9 @@
      "x": 15,
      "y": -94,
      "w": 380,
-     "h": 94
+     "h": 94,
+     "maxCharsPerLine": 22,
+     "maxLines": 2
     },
     "area": {
      "role": "points-at",
@@ -635,8 +678,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 40,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 22,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 22 is the floor (narrowest of 1), authored was 40"
     }
    },
    "solve": "both",
@@ -687,7 +731,9 @@
      "x": 37,
      "y": 18,
      "w": 546,
-     "h": 120
+     "h": 120,
+     "maxCharsPerLine": 34,
+     "maxLines": 2
     },
     "area": {
      "role": "points-at",
@@ -714,8 +760,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 35,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 34,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 1), authored was 35"
     }
    },
    "solve": "both",
@@ -775,7 +822,9 @@
      "x": 91,
      "y": 181,
      "w": 566,
-     "h": 62
+     "h": 62,
+     "maxCharsPerLine": 35,
+     "maxLines": 2
     }
    },
    "family": "annotations",
@@ -793,8 +842,9 @@
      "colour": "attention",
      "tracking": ".01em",
      "maxLines": 2,
-     "maxCharsPerLine": 41,
-     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second"
+     "maxCharsPerLine": 35,
+     "note": "the mark's own words, in the mark's own colour — an annotated frame has already spent its one attention, so a caption never introduces a second",
+     "budget": "derived from the slot boxes that set this role; 35 is the floor (narrowest of 1), authored was 41"
     }
    },
    "solve": "x-uniform",
@@ -807,5 +857,6 @@
  "exportScale": 2,
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one."
 }

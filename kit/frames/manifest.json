@@ -5,6 +5,8 @@
  "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
  "bakedText": false,
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "frames/media-frame-t1-16x9": {
    "author": "mediaFrame",
@@ -59,7 +61,8 @@
      "x": 307,
      "y": 848,
      "w": 1306,
-     "h": 70
+     "h": 70,
+     "maxChars": 95
     },
     "source": {
      "align": "left",
@@ -67,7 +70,8 @@
      "x": 307,
      "y": 932,
      "w": 1306,
-     "h": 56
+     "h": 56,
+     "maxChars": 83
     }
    },
    "decorBoxes": [
@@ -110,14 +114,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 1
@@ -175,7 +181,8 @@
      "x": 97,
      "y": 1414,
      "w": 886,
-     "h": 90
+     "h": 90,
+     "maxChars": 64
     },
     "source": {
      "align": "left",
@@ -183,7 +190,8 @@
      "x": 97,
      "y": 1518,
      "w": 886,
-     "h": 56
+     "h": 56,
+     "maxChars": 56
     }
    },
    "decorBoxes": [
@@ -226,14 +234,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 1
@@ -291,7 +301,8 @@
      "x": 307,
      "y": 928,
      "w": 1306,
-     "h": 70
+     "h": 70,
+     "maxChars": 95
     },
     "source": {
      "align": "left",
@@ -299,7 +310,8 @@
      "x": 307,
      "y": 1012,
      "w": 1306,
-     "h": 56
+     "h": 56,
+     "maxChars": 83
     }
    },
    "decorBoxes": [
@@ -321,14 +333,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 2
@@ -386,7 +400,8 @@
      "x": 97,
      "y": 1494,
      "w": 886,
-     "h": 90
+     "h": 90,
+     "maxChars": 64
     },
     "source": {
      "align": "left",
@@ -394,7 +409,8 @@
      "x": 97,
      "y": 1598,
      "w": 886,
-     "h": 56
+     "h": 56,
+     "maxChars": 56
     }
    },
    "decorBoxes": [
@@ -416,14 +432,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 2
@@ -481,7 +499,8 @@
      "x": 307,
      "y": 848,
      "w": 1306,
-     "h": 70
+     "h": 70,
+     "maxChars": 95
     },
     "source": {
      "align": "left",
@@ -489,7 +508,8 @@
      "x": 307,
      "y": 932,
      "w": 1306,
-     "h": 56
+     "h": 56,
+     "maxChars": 83
     }
    },
    "decorBoxes": [
@@ -511,14 +531,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 3
@@ -576,7 +598,8 @@
      "x": 97,
      "y": 1414,
      "w": 886,
-     "h": 90
+     "h": 90,
+     "maxChars": 64
     },
     "source": {
      "align": "left",
@@ -584,7 +607,8 @@
      "x": 97,
      "y": 1518,
      "w": 886,
-     "h": 56
+     "h": 56,
+     "maxChars": 56
     }
    },
    "decorBoxes": [
@@ -606,14 +630,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
     }
    },
    "treatment": 3
@@ -661,7 +687,8 @@
      "x": 435,
      "y": 206,
      "w": 1050,
-     "h": 52
+     "h": 52,
+     "maxChars": 67
     },
     "headline": {
      "align": "left",
@@ -669,7 +696,9 @@
      "x": 435,
      "y": 280,
      "w": 1050,
-     "h": 140
+     "h": 140,
+     "maxCharsPerLine": 48,
+     "maxLines": 2
     },
     "body": {
      "align": "left",
@@ -677,7 +706,9 @@
      "x": 435,
      "y": 470,
      "w": 1050,
-     "h": 190
+     "h": 190,
+     "maxCharsPerLine": 87,
+     "maxLines": 3
     },
     "mark": {
      "role": "highlight-band",
@@ -694,7 +725,8 @@
      "x": 365,
      "y": 990,
      "w": 1190,
-     "h": 56
+     "h": 56,
+     "maxChars": 76
     }
    },
    "decorBoxes": [
@@ -716,7 +748,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 67,
+     "budget": "derived from the slot boxes that set this role; 67 is the floor (narrowest of 1), authored was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -724,7 +757,8 @@
      "weight": 700,
      "colour": "structure",
      "maxLines": 2,
-     "maxCharsPerLine": 40
+     "maxCharsPerLine": 48,
+     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), authored was 40"
     },
     "body": {
      "font": "Archivo Narrow",
@@ -732,7 +766,8 @@
      "weight": 400,
      "colour": "structure",
      "maxLines": 3,
-     "maxCharsPerLine": 62
+     "maxCharsPerLine": 87,
+     "budget": "derived from the slot boxes that set this role; 87 is the floor (narrowest of 1), authored was 62"
     },
     "caption": {
      "font": "Courier Prime",
@@ -740,7 +775,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 76,
+     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), authored was 60"
     }
    }
   },
@@ -787,7 +823,8 @@
      "x": 122,
      "y": 448,
      "w": 837,
-     "h": 52
+     "h": 52,
+     "maxChars": 53
     },
     "headline": {
      "align": "left",
@@ -795,7 +832,9 @@
      "x": 122,
      "y": 516,
      "w": 837,
-     "h": 180
+     "h": 180,
+     "maxCharsPerLine": 43,
+     "maxLines": 2
     },
     "body": {
      "align": "left",
@@ -803,7 +842,9 @@
      "x": 122,
      "y": 750,
      "w": 837,
-     "h": 260
+     "h": 260,
+     "maxCharsPerLine": 75,
+     "maxLines": 3
     },
     "mark": {
      "role": "highlight-band",
@@ -820,7 +861,8 @@
      "x": 76,
      "y": 1634,
      "w": 929,
-     "h": 56
+     "h": 56,
+     "maxChars": 59
     }
    },
    "decorBoxes": [
@@ -842,7 +884,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 53,
+     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 1), authored was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -850,7 +893,8 @@
      "weight": 700,
      "colour": "structure",
      "maxLines": 2,
-     "maxCharsPerLine": 26
+     "maxCharsPerLine": 43,
+     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), authored was 26"
     },
     "body": {
      "font": "Archivo Narrow",
@@ -858,7 +902,8 @@
      "weight": 400,
      "colour": "structure",
      "maxLines": 3,
-     "maxCharsPerLine": 38
+     "maxCharsPerLine": 75,
+     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), authored was 38"
     },
     "caption": {
      "font": "Courier Prime",
@@ -866,7 +911,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 60"
     }
    }
   }

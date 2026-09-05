@@ -5,6 +5,8 @@
  "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
  "bakedText": false,
  "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "paper/headline-band-t1-16x9": {
    "author": "headlineBand",
@@ -49,7 +51,8 @@
      "x": 150,
      "y": 323,
      "w": 1620,
-     "h": 44
+     "h": 44,
+     "maxChars": 76
     },
     "headline": {
      "align": "left",
@@ -57,7 +60,9 @@
      "x": 150,
      "y": 385,
      "w": 1620,
-     "h": 250
+     "h": 250,
+     "maxCharsPerLine": 42,
+     "maxLines": 2
     },
     "sub": {
      "align": "left",
@@ -65,7 +70,9 @@
      "x": 150,
      "y": 683,
      "w": 1296,
-     "h": 92
+     "h": 92,
+     "maxCharsPerLine": 95,
+     "maxLines": 2
     }
    },
    "aspect": "16x9",
@@ -81,7 +88,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 76,
+     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -89,8 +97,9 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxLines": 3,
-     "maxCharsPerLine": 30
+     "maxLines": 2,
+     "maxCharsPerLine": 42,
+     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 1), authored was 30"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -99,8 +108,16 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 62
+     "maxCharsPerLine": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 62"
     }
+   },
+   "boil": {
+    "amp": 2,
+    "platedMean": 1.3,
+    "platedPeak": 4.06,
+    "changedPixels": "0.88%",
+    "note": "Rebuilt in patch8. This plate had ONE drawn ink element, so it posted an in-spec amplitude while being visibly frozen — amplitude says how far a moved point moves, never how much of the plate moves. Ink added in the treatment's own vocabulary (a rule drawn over twice, a kicker tick, a closing rule), never a hatched panel or box, because that is what makes this plate a different treatment."
    }
   },
   "paper/headline-band-t1-9x16": {
@@ -146,7 +163,8 @@
      "x": 80,
      "y": 681,
      "w": 920,
-     "h": 50
+     "h": 50,
+     "maxChars": 40
     },
     "headline": {
      "align": "left",
@@ -154,7 +172,9 @@
      "x": 80,
      "y": 755,
      "w": 920,
-     "h": 330
+     "h": 330,
+     "maxCharsPerLine": 27,
+     "maxLines": 3
     },
     "sub": {
      "align": "left",
@@ -162,7 +182,9 @@
      "x": 80,
      "y": 1133,
      "w": 736,
-     "h": 110
+     "h": 110,
+     "maxCharsPerLine": 57,
+     "maxLines": 2
     }
    },
    "aspect": "9x16",
@@ -178,7 +200,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 40,
+     "budget": "derived from the slot boxes that set this role; 40 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -187,7 +210,8 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxLines": 3,
-     "maxCharsPerLine": 20
+     "maxCharsPerLine": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 1), authored was 20"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -196,8 +220,16 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 40
+     "maxCharsPerLine": 57,
+     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), authored was 40"
     }
+   },
+   "boil": {
+    "amp": 2,
+    "platedMean": 1.29,
+    "platedPeak": 4.06,
+    "changedPixels": "0.71%",
+    "note": "Rebuilt in patch8. This plate had ONE drawn ink element, so it posted an in-spec amplitude while being visibly frozen — amplitude says how far a moved point moves, never how much of the plate moves. Ink added in the treatment's own vocabulary (a rule drawn over twice, a kicker tick, a closing rule), never a hatched panel or box, because that is what makes this plate a different treatment."
    }
   },
   "paper/headline-band-t2-16x9": {
@@ -243,7 +275,8 @@
      "x": 150,
      "y": 315,
      "w": 1620,
-     "h": 44
+     "h": 44,
+     "maxChars": 76
     },
     "headline": {
      "align": "left",
@@ -251,7 +284,9 @@
      "x": 150,
      "y": 377,
      "w": 1620,
-     "h": 250
+     "h": 250,
+     "maxCharsPerLine": 42,
+     "maxLines": 2
     },
     "sub": {
      "align": "left",
@@ -259,7 +294,9 @@
      "x": 150,
      "y": 657,
      "w": 1393,
-     "h": 92
+     "h": 92,
+     "maxCharsPerLine": 102,
+     "maxLines": 2
     }
    },
    "aspect": "16x9",
@@ -275,7 +312,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 76,
+     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -283,8 +321,9 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxLines": 3,
-     "maxCharsPerLine": 30
+     "maxLines": 2,
+     "maxCharsPerLine": 42,
+     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 1), authored was 30"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -293,7 +332,8 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 62
+     "maxCharsPerLine": 102,
+     "budget": "derived from the slot boxes that set this role; 102 is the floor (narrowest of 1), authored was 62"
     }
    }
   },
@@ -340,7 +380,8 @@
      "x": 80,
      "y": 663,
      "w": 920,
-     "h": 50
+     "h": 50,
+     "maxChars": 40
     },
     "headline": {
      "align": "left",
@@ -348,7 +389,9 @@
      "x": 80,
      "y": 739,
      "w": 920,
-     "h": 330
+     "h": 330,
+     "maxCharsPerLine": 27,
+     "maxLines": 3
     },
     "sub": {
      "align": "left",
@@ -356,7 +399,9 @@
      "x": 80,
      "y": 1105,
      "w": 791,
-     "h": 110
+     "h": 110,
+     "maxCharsPerLine": 62,
+     "maxLines": 2
     }
    },
    "aspect": "9x16",
@@ -372,7 +417,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 40,
+     "budget": "derived from the slot boxes that set this role; 40 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -381,7 +427,8 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxLines": 3,
-     "maxCharsPerLine": 20
+     "maxCharsPerLine": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 1), authored was 20"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -390,7 +437,8 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 40
+     "maxCharsPerLine": 62,
+     "budget": "derived from the slot boxes that set this role; 62 is the floor (narrowest of 1), authored was 40"
     }
    }
   },
@@ -437,7 +485,8 @@
      "x": 150,
      "y": 345,
      "w": 1620,
-     "h": 44
+     "h": 44,
+     "maxChars": 76
     },
     "headline": {
      "align": "left",
@@ -445,7 +494,9 @@
      "x": 150,
      "y": 405,
      "w": 1620,
-     "h": 250
+     "h": 250,
+     "maxCharsPerLine": 42,
+     "maxLines": 2
     },
     "sub": {
      "align": "left",
@@ -453,7 +504,9 @@
      "x": 150,
      "y": 681,
      "w": 1458,
-     "h": 84
+     "h": 84,
+     "maxCharsPerLine": 107,
+     "maxLines": 2
     }
    },
    "decorBoxes": [
@@ -485,7 +538,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 76,
+     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -493,8 +547,9 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxLines": 3,
-     "maxCharsPerLine": 30
+     "maxLines": 2,
+     "maxCharsPerLine": 42,
+     "budget": "derived from the slot boxes that set this role; 42 is the floor (narrowest of 1), authored was 30"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -503,7 +558,8 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 62
+     "maxCharsPerLine": 107,
+     "budget": "derived from the slot boxes that set this role; 107 is the floor (narrowest of 1), authored was 62"
     }
    }
   },
@@ -550,7 +606,8 @@
      "x": 80,
      "y": 703,
      "w": 920,
-     "h": 50
+     "h": 50,
+     "maxChars": 40
     },
     "headline": {
      "align": "left",
@@ -558,7 +615,9 @@
      "x": 80,
      "y": 777,
      "w": 920,
-     "h": 330
+     "h": 330,
+     "maxCharsPerLine": 27,
+     "maxLines": 3
     },
     "sub": {
      "align": "left",
@@ -566,7 +625,9 @@
      "x": 80,
      "y": 1139,
      "w": 828,
-     "h": 100
+     "h": 100,
+     "maxCharsPerLine": 64,
+     "maxLines": 2
     }
    },
    "decorBoxes": [
@@ -598,7 +659,8 @@
      "opacity": 0.7,
      "tracking": ".16em",
      "transform": "uppercase",
-     "maxChars": 34
+     "maxChars": 40,
+     "budget": "derived from the slot boxes that set this role; 40 is the floor (narrowest of 1), authored was 34"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -607,7 +669,8 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxLines": 3,
-     "maxCharsPerLine": 20
+     "maxCharsPerLine": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 1), authored was 20"
     },
     "sub": {
      "font": "Archivo Narrow",
@@ -616,7 +679,8 @@
      "colour": "structure",
      "opacity": 0.85,
      "maxLines": 2,
-     "maxCharsPerLine": 40
+     "maxCharsPerLine": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 40"
     }
    }
   }
@@ -626,5 +690,7 @@
  "exportScale": 2,
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
+ "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3."
 }

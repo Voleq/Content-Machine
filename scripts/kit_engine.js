@@ -34,7 +34,21 @@ const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
 
-const ENGINE_FILES = ["hand.js", "plates.js", "series.js", "audit.js", "build.js"];
+// budget.js FIRST: `Plate.manifest()` in hand.js calls `g.BUDGET.derive(...)`
+// behind an `if (g.BUDGET && ...)` guard, so a BUDGET that has not loaded by
+// then is not an error — the derivation is simply skipped and the engine
+// emits slots with no budgets while the delivered manifests carry them.
+// `_reconcile` then fails on 103 of 143 assets for what looks like a
+// geometry disagreement. Order is load-bearing here, not cosmetic.
+const ENGINE_FILES = ["budget.js", "hand.js", "plates.js", "series.js", "audit.js", "build.js"];
+
+/* Engine files that ship in the delivery and are DELIBERATELY not loaded here.
+ *
+ * `render.js` emits manifests and `sheet.js` draws contact sheets; both are the
+ * delivery's own authoring tools and neither is on the ingest path. They are
+ * named rather than merely absent from ENGINE_FILES so that the check below can
+ * tell "we decided not to load this" apart from "nobody noticed this arrived". */
+const ENGINE_NOT_LOADED = ["render.js", "sheet.js"];
 
 function die(msg) {
   process.stderr.write("kit_engine: " + msg + "\n");
@@ -63,11 +77,42 @@ function loadEngine(kitDir) {
   const ctx = { console: console };
   ctx.globalThis = ctx;
   vm.createContext(ctx);
+  /* A NEW ENGINE FILE MUST BE A DECISION, NOT A NO-OP.
+   *
+   * `budget.js` arrived in delta-10a carrying the whole type-budget derivation,
+   * and `Plate.manifest()` calls it behind `if (g.BUDGET && ...)`. Not naming it
+   * here did not fail: BUDGET was simply undefined, the derivation was skipped,
+   * and the engine emitted slots with no budgets while the delivered manifests
+   * carried them — surfacing 103 files later as "slots disagrees with the
+   * shipped manifest", which reads like a geometry problem and is not one.
+   *
+   * The missing feature was not the bug. Nothing saying anything was. So an
+   * engine file that is in neither list stops the build here, where the message
+   * can name the actual choice. */
+  const known = new Set([...ENGINE_FILES, ...ENGINE_NOT_LOADED]);
+  const stray = fs.readdirSync(engineDir)
+    .filter((f) => f.endsWith(".js") && !known.has(f))
+    .sort();
+  if (stray.length) {
+    die(
+      "engine file(s) not accounted for: " + stray.join(", ") + "\n" +
+      "  Every .js in " + engineDir + " must be named in kit_engine.js — in\n" +
+      "  ENGINE_FILES to load it (order matters: a file whose globals another\n" +
+      "  file reads at load time goes first), or in ENGINE_NOT_LOADED to say it\n" +
+      "  is authoring tooling the ingest does not run.\n" +
+      "  An unnamed file loads NOTHING and fails no check, so whatever it was\n" +
+      "  meant to add is simply absent from every manifest this build emits."
+    );
+  }
+
   for (const f of ENGINE_FILES) {
     const p = path.join(engineDir, f);
     if (!fs.existsSync(p)) die("missing engine file " + p);
     vm.runInContext(fs.readFileSync(p, "utf8"), ctx, { filename: f });
   }
+  /* BUDGET is loaded but its hook is guarded, so "loaded" and "ran" are not the
+   * same claim. This is the one global whose absence is silent downstream. */
+  if (!ctx.BUDGET) die("budget.js loaded but BUDGET is not defined — the type-budget derivation would be skipped and every manifest would emit slots with no maxChars");
   if (!ctx.BUILD || !ctx.PLATES || !ctx.HAND) die("engine loaded but BUILD/PLATES/HAND are not defined");
   return ctx;
 }

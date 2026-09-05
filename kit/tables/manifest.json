@@ -14,7 +14,8 @@
  "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
  "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
  "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
- "maxCharsNote": "maxChars (and maxCharsPerLine × maxLines) is EDITORIAL GUIDANCE, not a promise about the box: the compositor fits type into the slot, starting near the box height and shrinking until the string fits, so over-long copy never clips — it renders smaller than the role declares, with no warning. Across most of this library the number was authored beside the point size rather than derived from the box, and on some portrait plates the two disagree by more than half. Treat a budget as a target and check the render. tables/multiples-strip is the exception and says so: its maxChars is computed from its own slot boxes (budgetNote).",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "tables/numbers-sheet-3r-16x9": {
    "canvas": [
@@ -50,7 +51,8 @@
      "x": 118,
      "y": 92,
      "w": 1684,
-     "h": 42
+     "h": 42,
+     "maxChars": 101
     },
     "head-1": {
      "align": "right",
@@ -58,7 +60,8 @@
      "x": 631,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-2": {
      "align": "right",
@@ -66,7 +69,8 @@
      "x": 828,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-3": {
      "align": "right",
@@ -74,7 +78,8 @@
      "x": 1024,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-4": {
      "align": "right",
@@ -82,7 +87,8 @@
      "x": 1221,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-5": {
      "align": "right",
@@ -90,7 +96,8 @@
      "x": 1417,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-6": {
      "align": "right",
@@ -98,7 +105,8 @@
      "x": 1614,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "band-1": {
      "role": "highlight-band",
@@ -114,7 +122,8 @@
      "x": 118,
      "y": 325,
      "w": 479,
-     "h": 158
+     "h": 158,
+     "maxChars": 34
     },
     "cell-1-1": {
      "align": "right",
@@ -122,7 +131,8 @@
      "x": 631,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -130,7 +140,8 @@
      "x": 828,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -138,7 +149,8 @@
      "x": 1024,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -146,7 +158,8 @@
      "x": 1221,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -154,7 +167,8 @@
      "x": 1417,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -162,7 +176,8 @@
      "x": 1614,
      "y": 325,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -178,7 +193,8 @@
      "x": 118,
      "y": 557,
      "w": 479,
-     "h": 158
+     "h": 158,
+     "maxChars": 34
     },
     "cell-2-1": {
      "align": "right",
@@ -186,7 +202,8 @@
      "x": 631,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -194,7 +211,8 @@
      "x": 828,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -202,7 +220,8 @@
      "x": 1024,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -210,7 +229,8 @@
      "x": 1221,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -218,7 +238,8 @@
      "x": 1417,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -226,7 +247,8 @@
      "x": 1614,
      "y": 557,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -242,7 +264,8 @@
      "x": 118,
      "y": 789,
      "w": 479,
-     "h": 158
+     "h": 158,
+     "maxChars": 34
     },
     "cell-3-1": {
      "align": "right",
@@ -250,7 +273,8 @@
      "x": 631,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -258,7 +282,8 @@
      "x": 828,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -266,7 +291,8 @@
      "x": 1024,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -274,7 +300,8 @@
      "x": 1221,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -282,7 +309,8 @@
      "x": 1417,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -290,7 +318,8 @@
      "x": 1614,
      "y": 789,
      "w": 181,
-     "h": 158
+     "h": 158,
+     "maxChars": 6
     }
    },
    "aspect": "16x9",
@@ -306,7 +335,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 101,
+     "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -314,14 +344,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 26
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 3), authored was 26"
     },
     "figure": {
      "font": "Courier Prime",
@@ -329,7 +361,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 18), authored was 7"
     }
    },
    "author": "numbersSheet",
@@ -370,7 +403,8 @@
      "x": 48,
      "y": 200,
      "w": 984,
-     "h": 50
+     "h": 50,
+     "maxChars": 59
     },
     "head-1": {
      "align": "right",
@@ -378,7 +412,8 @@
      "x": 292,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-2": {
      "align": "right",
@@ -386,7 +421,8 @@
      "x": 417,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-3": {
      "align": "right",
@@ -394,7 +430,8 @@
      "x": 541,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-4": {
      "align": "right",
@@ -402,7 +439,8 @@
      "x": 666,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-5": {
      "align": "right",
@@ -410,7 +448,8 @@
      "x": 791,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
@@ -418,7 +457,8 @@
      "x": 915,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "band-1": {
      "role": "highlight-band",
@@ -434,7 +474,8 @@
      "x": 48,
      "y": 496,
      "w": 210,
-     "h": 288
+     "h": 288,
+     "maxChars": 18
     },
     "cell-1-1": {
      "align": "right",
@@ -442,7 +483,8 @@
      "x": 292,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -450,7 +492,8 @@
      "x": 417,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -458,7 +501,8 @@
      "x": 541,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -466,7 +510,8 @@
      "x": 666,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -474,7 +519,8 @@
      "x": 791,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -482,7 +528,8 @@
      "x": 915,
      "y": 496,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -498,7 +545,8 @@
      "x": 48,
      "y": 920,
      "w": 210,
-     "h": 288
+     "h": 288,
+     "maxChars": 18
     },
     "cell-2-1": {
      "align": "right",
@@ -506,7 +554,8 @@
      "x": 292,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -514,7 +563,8 @@
      "x": 417,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -522,7 +572,8 @@
      "x": 541,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -530,7 +581,8 @@
      "x": 666,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -538,7 +590,8 @@
      "x": 791,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -546,7 +599,8 @@
      "x": 915,
      "y": 920,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -562,7 +616,8 @@
      "x": 48,
      "y": 1344,
      "w": 210,
-     "h": 288
+     "h": 288,
+     "maxChars": 18
     },
     "cell-3-1": {
      "align": "right",
@@ -570,7 +625,8 @@
      "x": 292,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -578,7 +634,8 @@
      "x": 417,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -586,7 +643,8 @@
      "x": 541,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -594,7 +652,8 @@
      "x": 666,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -602,7 +661,8 @@
      "x": 791,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -610,7 +670,8 @@
      "x": 915,
      "y": 1344,
      "w": 109,
-     "h": 288
+     "h": 288,
+     "maxChars": 6
     }
    },
    "aspect": "9x16",
@@ -626,7 +687,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -634,14 +696,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 18
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 3), authored was 18"
     },
     "figure": {
      "font": "Courier Prime",
@@ -649,7 +713,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 18), authored was 6"
     }
    },
    "author": "numbersSheet",
@@ -690,7 +755,8 @@
      "x": 118,
      "y": 92,
      "w": 1684,
-     "h": 42
+     "h": 42,
+     "maxChars": 101
     },
     "head-1": {
      "align": "right",
@@ -698,7 +764,8 @@
      "x": 631,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-2": {
      "align": "right",
@@ -706,7 +773,8 @@
      "x": 828,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-3": {
      "align": "right",
@@ -714,7 +782,8 @@
      "x": 1024,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-4": {
      "align": "right",
@@ -722,7 +791,8 @@
      "x": 1221,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-5": {
      "align": "right",
@@ -730,7 +800,8 @@
      "x": 1417,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-6": {
      "align": "right",
@@ -738,7 +809,8 @@
      "x": 1614,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "band-1": {
      "role": "highlight-band",
@@ -754,7 +826,8 @@
      "x": 118,
      "y": 316,
      "w": 479,
-     "h": 118
+     "h": 118,
+     "maxChars": 34
     },
     "cell-1-1": {
      "align": "right",
@@ -762,7 +835,8 @@
      "x": 631,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -770,7 +844,8 @@
      "x": 828,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -778,7 +853,8 @@
      "x": 1024,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -786,7 +862,8 @@
      "x": 1221,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -794,7 +871,8 @@
      "x": 1417,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -802,7 +880,8 @@
      "x": 1614,
      "y": 316,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -818,7 +897,8 @@
      "x": 118,
      "y": 490,
      "w": 479,
-     "h": 118
+     "h": 118,
+     "maxChars": 34
     },
     "cell-2-1": {
      "align": "right",
@@ -826,7 +906,8 @@
      "x": 631,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -834,7 +915,8 @@
      "x": 828,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -842,7 +924,8 @@
      "x": 1024,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -850,7 +933,8 @@
      "x": 1221,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -858,7 +942,8 @@
      "x": 1417,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -866,7 +951,8 @@
      "x": 1614,
      "y": 490,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -882,7 +968,8 @@
      "x": 118,
      "y": 664,
      "w": 479,
-     "h": 118
+     "h": 118,
+     "maxChars": 34
     },
     "cell-3-1": {
      "align": "right",
@@ -890,7 +977,8 @@
      "x": 631,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -898,7 +986,8 @@
      "x": 828,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -906,7 +995,8 @@
      "x": 1024,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -914,7 +1004,8 @@
      "x": 1221,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -922,7 +1013,8 @@
      "x": 1417,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -930,7 +1022,8 @@
      "x": 1614,
      "y": 664,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -946,7 +1039,8 @@
      "x": 118,
      "y": 838,
      "w": 479,
-     "h": 118
+     "h": 118,
+     "maxChars": 34
     },
     "cell-4-1": {
      "align": "right",
@@ -954,7 +1048,8 @@
      "x": 631,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -962,7 +1057,8 @@
      "x": 828,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -970,7 +1066,8 @@
      "x": 1024,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -978,7 +1075,8 @@
      "x": 1221,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -986,7 +1084,8 @@
      "x": 1417,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -994,7 +1093,8 @@
      "x": 1614,
      "y": 838,
      "w": 181,
-     "h": 118
+     "h": 118,
+     "maxChars": 6
     }
    },
    "aspect": "16x9",
@@ -1010,7 +1110,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 101,
+     "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -1018,14 +1119,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 26
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 4), authored was 26"
     },
     "figure": {
      "font": "Courier Prime",
@@ -1033,7 +1136,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 24), authored was 7"
     }
    },
    "author": "numbersSheet",
@@ -1074,7 +1178,8 @@
      "x": 48,
      "y": 200,
      "w": 984,
-     "h": 50
+     "h": 50,
+     "maxChars": 59
     },
     "head-1": {
      "align": "right",
@@ -1082,7 +1187,8 @@
      "x": 292,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-2": {
      "align": "right",
@@ -1090,7 +1196,8 @@
      "x": 417,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-3": {
      "align": "right",
@@ -1098,7 +1205,8 @@
      "x": 541,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-4": {
      "align": "right",
@@ -1106,7 +1214,8 @@
      "x": 666,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-5": {
      "align": "right",
@@ -1114,7 +1223,8 @@
      "x": 791,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
@@ -1122,7 +1232,8 @@
      "x": 915,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "band-1": {
      "role": "highlight-band",
@@ -1138,7 +1249,8 @@
      "x": 48,
      "y": 479,
      "w": 210,
-     "h": 216
+     "h": 216,
+     "maxChars": 18
     },
     "cell-1-1": {
      "align": "right",
@@ -1146,7 +1258,8 @@
      "x": 292,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -1154,7 +1267,8 @@
      "x": 417,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -1162,7 +1276,8 @@
      "x": 541,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -1170,7 +1285,8 @@
      "x": 666,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -1178,7 +1294,8 @@
      "x": 791,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -1186,7 +1303,8 @@
      "x": 915,
      "y": 479,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -1202,7 +1320,8 @@
      "x": 48,
      "y": 797,
      "w": 210,
-     "h": 216
+     "h": 216,
+     "maxChars": 18
     },
     "cell-2-1": {
      "align": "right",
@@ -1210,7 +1329,8 @@
      "x": 292,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -1218,7 +1338,8 @@
      "x": 417,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -1226,7 +1347,8 @@
      "x": 541,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -1234,7 +1356,8 @@
      "x": 666,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -1242,7 +1365,8 @@
      "x": 791,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -1250,7 +1374,8 @@
      "x": 915,
      "y": 797,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -1266,7 +1391,8 @@
      "x": 48,
      "y": 1115,
      "w": 210,
-     "h": 216
+     "h": 216,
+     "maxChars": 18
     },
     "cell-3-1": {
      "align": "right",
@@ -1274,7 +1400,8 @@
      "x": 292,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -1282,7 +1409,8 @@
      "x": 417,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -1290,7 +1418,8 @@
      "x": 541,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -1298,7 +1427,8 @@
      "x": 666,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -1306,7 +1436,8 @@
      "x": 791,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -1314,7 +1445,8 @@
      "x": 915,
      "y": 1115,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -1330,7 +1462,8 @@
      "x": 48,
      "y": 1433,
      "w": 210,
-     "h": 216
+     "h": 216,
+     "maxChars": 18
     },
     "cell-4-1": {
      "align": "right",
@@ -1338,7 +1471,8 @@
      "x": 292,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -1346,7 +1480,8 @@
      "x": 417,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -1354,7 +1489,8 @@
      "x": 541,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -1362,7 +1498,8 @@
      "x": 666,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -1370,7 +1507,8 @@
      "x": 791,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -1378,7 +1516,8 @@
      "x": 915,
      "y": 1433,
      "w": 109,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     }
    },
    "aspect": "9x16",
@@ -1394,7 +1533,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -1402,14 +1542,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 18
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 4), authored was 18"
     },
     "figure": {
      "font": "Courier Prime",
@@ -1417,7 +1559,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 24), authored was 6"
     }
    },
    "author": "numbersSheet",
@@ -1458,7 +1601,8 @@
      "x": 118,
      "y": 92,
      "w": 1684,
-     "h": 42
+     "h": 42,
+     "maxChars": 101
     },
     "head-1": {
      "align": "right",
@@ -1466,7 +1610,8 @@
      "x": 631,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-2": {
      "align": "right",
@@ -1474,7 +1619,8 @@
      "x": 828,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-3": {
      "align": "right",
@@ -1482,7 +1628,8 @@
      "x": 1024,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-4": {
      "align": "right",
@@ -1490,7 +1637,8 @@
      "x": 1221,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-5": {
      "align": "right",
@@ -1498,7 +1646,8 @@
      "x": 1417,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-6": {
      "align": "right",
@@ -1506,7 +1655,8 @@
      "x": 1614,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "band-1": {
      "role": "highlight-band",
@@ -1522,7 +1672,8 @@
      "x": 118,
      "y": 310,
      "w": 479,
-     "h": 95
+     "h": 95,
+     "maxChars": 34
     },
     "cell-1-1": {
      "align": "right",
@@ -1530,7 +1681,8 @@
      "x": 631,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -1538,7 +1690,8 @@
      "x": 828,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -1546,7 +1699,8 @@
      "x": 1024,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -1554,7 +1708,8 @@
      "x": 1221,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -1562,7 +1717,8 @@
      "x": 1417,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -1570,7 +1726,8 @@
      "x": 1614,
      "y": 310,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -1586,7 +1743,8 @@
      "x": 118,
      "y": 449,
      "w": 479,
-     "h": 95
+     "h": 95,
+     "maxChars": 34
     },
     "cell-2-1": {
      "align": "right",
@@ -1594,7 +1752,8 @@
      "x": 631,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -1602,7 +1761,8 @@
      "x": 828,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -1610,7 +1770,8 @@
      "x": 1024,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -1618,7 +1779,8 @@
      "x": 1221,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -1626,7 +1788,8 @@
      "x": 1417,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -1634,7 +1797,8 @@
      "x": 1614,
      "y": 449,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -1650,7 +1814,8 @@
      "x": 118,
      "y": 589,
      "w": 479,
-     "h": 95
+     "h": 95,
+     "maxChars": 34
     },
     "cell-3-1": {
      "align": "right",
@@ -1658,7 +1823,8 @@
      "x": 631,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -1666,7 +1832,8 @@
      "x": 828,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -1674,7 +1841,8 @@
      "x": 1024,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -1682,7 +1850,8 @@
      "x": 1221,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -1690,7 +1859,8 @@
      "x": 1417,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -1698,7 +1868,8 @@
      "x": 1614,
      "y": 589,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -1714,7 +1885,8 @@
      "x": 118,
      "y": 728,
      "w": 479,
-     "h": 95
+     "h": 95,
+     "maxChars": 34
     },
     "cell-4-1": {
      "align": "right",
@@ -1722,7 +1894,8 @@
      "x": 631,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -1730,7 +1903,8 @@
      "x": 828,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -1738,7 +1912,8 @@
      "x": 1024,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -1746,7 +1921,8 @@
      "x": 1221,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -1754,7 +1930,8 @@
      "x": 1417,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -1762,7 +1939,8 @@
      "x": 1614,
      "y": 728,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "band-5": {
      "role": "highlight-band",
@@ -1778,7 +1956,8 @@
      "x": 118,
      "y": 867,
      "w": 479,
-     "h": 95
+     "h": 95,
+     "maxChars": 34
     },
     "cell-5-1": {
      "align": "right",
@@ -1786,7 +1965,8 @@
      "x": 631,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-5-2": {
      "align": "right",
@@ -1794,7 +1974,8 @@
      "x": 828,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-5-3": {
      "align": "right",
@@ -1802,7 +1983,8 @@
      "x": 1024,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-5-4": {
      "align": "right",
@@ -1810,7 +1992,8 @@
      "x": 1221,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-5-5": {
      "align": "right",
@@ -1818,7 +2001,8 @@
      "x": 1417,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     },
     "cell-5-6": {
      "align": "right",
@@ -1826,7 +2010,8 @@
      "x": 1614,
      "y": 867,
      "w": 181,
-     "h": 95
+     "h": 95,
+     "maxChars": 6
     }
    },
    "aspect": "16x9",
@@ -1842,7 +2027,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 101,
+     "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -1850,14 +2036,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 26
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 5), authored was 26"
     },
     "figure": {
      "font": "Courier Prime",
@@ -1865,7 +2053,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 30), authored was 7"
     }
    },
    "author": "numbersSheet",
@@ -1906,7 +2095,8 @@
      "x": 48,
      "y": 200,
      "w": 984,
-     "h": 50
+     "h": 50,
+     "maxChars": 59
     },
     "head-1": {
      "align": "right",
@@ -1914,7 +2104,8 @@
      "x": 292,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-2": {
      "align": "right",
@@ -1922,7 +2113,8 @@
      "x": 417,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-3": {
      "align": "right",
@@ -1930,7 +2122,8 @@
      "x": 541,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-4": {
      "align": "right",
@@ -1938,7 +2131,8 @@
      "x": 666,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-5": {
      "align": "right",
@@ -1946,7 +2140,8 @@
      "x": 791,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
@@ -1954,7 +2149,8 @@
      "x": 915,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "band-1": {
      "role": "highlight-band",
@@ -1970,7 +2166,8 @@
      "x": 48,
      "y": 469,
      "w": 210,
-     "h": 173
+     "h": 173,
+     "maxChars": 18
     },
     "cell-1-1": {
      "align": "right",
@@ -1978,7 +2175,8 @@
      "x": 292,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -1986,7 +2184,8 @@
      "x": 417,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -1994,7 +2193,8 @@
      "x": 541,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -2002,7 +2202,8 @@
      "x": 666,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -2010,7 +2211,8 @@
      "x": 791,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -2018,7 +2220,8 @@
      "x": 915,
      "y": 469,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -2034,7 +2237,8 @@
      "x": 48,
      "y": 723,
      "w": 210,
-     "h": 173
+     "h": 173,
+     "maxChars": 18
     },
     "cell-2-1": {
      "align": "right",
@@ -2042,7 +2246,8 @@
      "x": 292,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -2050,7 +2255,8 @@
      "x": 417,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -2058,7 +2264,8 @@
      "x": 541,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -2066,7 +2273,8 @@
      "x": 666,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -2074,7 +2282,8 @@
      "x": 791,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -2082,7 +2291,8 @@
      "x": 915,
      "y": 723,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -2098,7 +2308,8 @@
      "x": 48,
      "y": 978,
      "w": 210,
-     "h": 173
+     "h": 173,
+     "maxChars": 18
     },
     "cell-3-1": {
      "align": "right",
@@ -2106,7 +2317,8 @@
      "x": 292,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -2114,7 +2326,8 @@
      "x": 417,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -2122,7 +2335,8 @@
      "x": 541,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -2130,7 +2344,8 @@
      "x": 666,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -2138,7 +2353,8 @@
      "x": 791,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -2146,7 +2362,8 @@
      "x": 915,
      "y": 978,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -2162,7 +2379,8 @@
      "x": 48,
      "y": 1232,
      "w": 210,
-     "h": 173
+     "h": 173,
+     "maxChars": 18
     },
     "cell-4-1": {
      "align": "right",
@@ -2170,7 +2388,8 @@
      "x": 292,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -2178,7 +2397,8 @@
      "x": 417,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -2186,7 +2406,8 @@
      "x": 541,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -2194,7 +2415,8 @@
      "x": 666,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -2202,7 +2424,8 @@
      "x": 791,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -2210,7 +2433,8 @@
      "x": 915,
      "y": 1232,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "band-5": {
      "role": "highlight-band",
@@ -2226,7 +2450,8 @@
      "x": 48,
      "y": 1486,
      "w": 210,
-     "h": 173
+     "h": 173,
+     "maxChars": 18
     },
     "cell-5-1": {
      "align": "right",
@@ -2234,7 +2459,8 @@
      "x": 292,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-5-2": {
      "align": "right",
@@ -2242,7 +2468,8 @@
      "x": 417,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-5-3": {
      "align": "right",
@@ -2250,7 +2477,8 @@
      "x": 541,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-5-4": {
      "align": "right",
@@ -2258,7 +2486,8 @@
      "x": 666,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-5-5": {
      "align": "right",
@@ -2266,7 +2495,8 @@
      "x": 791,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     },
     "cell-5-6": {
      "align": "right",
@@ -2274,7 +2504,8 @@
      "x": 915,
      "y": 1486,
      "w": 109,
-     "h": 173
+     "h": 173,
+     "maxChars": 6
     }
    },
    "aspect": "9x16",
@@ -2290,7 +2521,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -2298,14 +2530,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 18
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 5), authored was 18"
     },
     "figure": {
      "font": "Courier Prime",
@@ -2313,7 +2547,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 30), authored was 6"
     }
    },
    "author": "numbersSheet",
@@ -2354,7 +2589,8 @@
      "x": 118,
      "y": 92,
      "w": 1684,
-     "h": 42
+     "h": 42,
+     "maxChars": 101
     },
     "head-1": {
      "align": "right",
@@ -2362,7 +2598,8 @@
      "x": 631,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-2": {
      "align": "right",
@@ -2370,7 +2607,8 @@
      "x": 828,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-3": {
      "align": "right",
@@ -2378,7 +2616,8 @@
      "x": 1024,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-4": {
      "align": "right",
@@ -2386,7 +2625,8 @@
      "x": 1221,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-5": {
      "align": "right",
@@ -2394,7 +2634,8 @@
      "x": 1417,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "head-6": {
      "align": "right",
@@ -2402,7 +2643,8 @@
      "x": 1614,
      "y": 192,
      "w": 181,
-     "h": 54
+     "h": 54,
+     "maxChars": 12
     },
     "band-1": {
      "role": "highlight-band",
@@ -2418,7 +2660,8 @@
      "x": 118,
      "y": 307,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-1-1": {
      "align": "right",
@@ -2426,7 +2669,8 @@
      "x": 631,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -2434,7 +2678,8 @@
      "x": 828,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -2442,7 +2687,8 @@
      "x": 1024,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -2450,7 +2696,8 @@
      "x": 1221,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -2458,7 +2705,8 @@
      "x": 1417,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -2466,7 +2714,8 @@
      "x": 1614,
      "y": 307,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -2482,7 +2731,8 @@
      "x": 118,
      "y": 423,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-2-1": {
      "align": "right",
@@ -2490,7 +2740,8 @@
      "x": 631,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -2498,7 +2749,8 @@
      "x": 828,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -2506,7 +2758,8 @@
      "x": 1024,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -2514,7 +2767,8 @@
      "x": 1221,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -2522,7 +2776,8 @@
      "x": 1417,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -2530,7 +2785,8 @@
      "x": 1614,
      "y": 423,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -2546,7 +2802,8 @@
      "x": 118,
      "y": 539,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-3-1": {
      "align": "right",
@@ -2554,7 +2811,8 @@
      "x": 631,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -2562,7 +2820,8 @@
      "x": 828,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -2570,7 +2829,8 @@
      "x": 1024,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -2578,7 +2838,8 @@
      "x": 1221,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -2586,7 +2847,8 @@
      "x": 1417,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -2594,7 +2856,8 @@
      "x": 1614,
      "y": 539,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -2610,7 +2873,8 @@
      "x": 118,
      "y": 655,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-4-1": {
      "align": "right",
@@ -2618,7 +2882,8 @@
      "x": 631,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -2626,7 +2891,8 @@
      "x": 828,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -2634,7 +2900,8 @@
      "x": 1024,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -2642,7 +2909,8 @@
      "x": 1221,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -2650,7 +2918,8 @@
      "x": 1417,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -2658,7 +2927,8 @@
      "x": 1614,
      "y": 655,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "band-5": {
      "role": "highlight-band",
@@ -2674,7 +2944,8 @@
      "x": 118,
      "y": 771,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-5-1": {
      "align": "right",
@@ -2682,7 +2953,8 @@
      "x": 631,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-5-2": {
      "align": "right",
@@ -2690,7 +2962,8 @@
      "x": 828,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-5-3": {
      "align": "right",
@@ -2698,7 +2971,8 @@
      "x": 1024,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-5-4": {
      "align": "right",
@@ -2706,7 +2980,8 @@
      "x": 1221,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-5-5": {
      "align": "right",
@@ -2714,7 +2989,8 @@
      "x": 1417,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-5-6": {
      "align": "right",
@@ -2722,7 +2998,8 @@
      "x": 1614,
      "y": 771,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "band-6": {
      "role": "highlight-band",
@@ -2738,7 +3015,8 @@
      "x": 118,
      "y": 887,
      "w": 479,
-     "h": 79
+     "h": 79,
+     "maxChars": 34
     },
     "cell-6-1": {
      "align": "right",
@@ -2746,7 +3024,8 @@
      "x": 631,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-6-2": {
      "align": "right",
@@ -2754,7 +3033,8 @@
      "x": 828,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-6-3": {
      "align": "right",
@@ -2762,7 +3042,8 @@
      "x": 1024,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-6-4": {
      "align": "right",
@@ -2770,7 +3051,8 @@
      "x": 1221,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-6-5": {
      "align": "right",
@@ -2778,7 +3060,8 @@
      "x": 1417,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     },
     "cell-6-6": {
      "align": "right",
@@ -2786,7 +3069,8 @@
      "x": 1614,
      "y": 887,
      "w": 181,
-     "h": 79
+     "h": 79,
+     "maxChars": 6
     }
    },
    "aspect": "16x9",
@@ -2802,7 +3086,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 101,
+     "budget": "derived from the slot boxes that set this role; 101 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -2810,14 +3095,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 26
+     "maxChars": 34,
+     "budget": "derived from the slot boxes that set this role; 34 is the floor (narrowest of 6), authored was 26"
     },
     "figure": {
      "font": "Courier Prime",
@@ -2825,7 +3112,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 7
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 36), authored was 7"
     }
    },
    "author": "numbersSheet",
@@ -2866,7 +3154,8 @@
      "x": 48,
      "y": 200,
      "w": 984,
-     "h": 50
+     "h": 50,
+     "maxChars": 59
     },
     "head-1": {
      "align": "right",
@@ -2874,7 +3163,8 @@
      "x": 292,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-2": {
      "align": "right",
@@ -2882,7 +3172,8 @@
      "x": 417,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-3": {
      "align": "right",
@@ -2890,7 +3181,8 @@
      "x": 541,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-4": {
      "align": "right",
@@ -2898,7 +3190,8 @@
      "x": 666,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-5": {
      "align": "right",
@@ -2906,7 +3199,8 @@
      "x": 791,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
@@ -2914,7 +3208,8 @@
      "x": 915,
      "y": 324,
      "w": 109,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "band-1": {
      "role": "highlight-band",
@@ -2930,7 +3225,8 @@
      "x": 48,
      "y": 462,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-1-1": {
      "align": "right",
@@ -2938,7 +3234,8 @@
      "x": 292,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -2946,7 +3243,8 @@
      "x": 417,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -2954,7 +3252,8 @@
      "x": 541,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -2962,7 +3261,8 @@
      "x": 666,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -2970,7 +3270,8 @@
      "x": 791,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -2978,7 +3279,8 @@
      "x": 915,
      "y": 462,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "band-2": {
      "role": "highlight-band",
@@ -2994,7 +3296,8 @@
      "x": 48,
      "y": 674,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-2-1": {
      "align": "right",
@@ -3002,7 +3305,8 @@
      "x": 292,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -3010,7 +3314,8 @@
      "x": 417,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -3018,7 +3323,8 @@
      "x": 541,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -3026,7 +3332,8 @@
      "x": 666,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -3034,7 +3341,8 @@
      "x": 791,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -3042,7 +3350,8 @@
      "x": 915,
      "y": 674,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "band-3": {
      "role": "highlight-band",
@@ -3058,7 +3367,8 @@
      "x": 48,
      "y": 886,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-3-1": {
      "align": "right",
@@ -3066,7 +3376,8 @@
      "x": 292,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -3074,7 +3385,8 @@
      "x": 417,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -3082,7 +3394,8 @@
      "x": 541,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -3090,7 +3403,8 @@
      "x": 666,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -3098,7 +3412,8 @@
      "x": 791,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -3106,7 +3421,8 @@
      "x": 915,
      "y": 886,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "band-4": {
      "role": "highlight-band",
@@ -3122,7 +3438,8 @@
      "x": 48,
      "y": 1098,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-4-1": {
      "align": "right",
@@ -3130,7 +3447,8 @@
      "x": 292,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -3138,7 +3456,8 @@
      "x": 417,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -3146,7 +3465,8 @@
      "x": 541,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -3154,7 +3474,8 @@
      "x": 666,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -3162,7 +3483,8 @@
      "x": 791,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -3170,7 +3492,8 @@
      "x": 915,
      "y": 1098,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "band-5": {
      "role": "highlight-band",
@@ -3186,7 +3509,8 @@
      "x": 48,
      "y": 1310,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-5-1": {
      "align": "right",
@@ -3194,7 +3518,8 @@
      "x": 292,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-5-2": {
      "align": "right",
@@ -3202,7 +3527,8 @@
      "x": 417,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-5-3": {
      "align": "right",
@@ -3210,7 +3536,8 @@
      "x": 541,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-5-4": {
      "align": "right",
@@ -3218,7 +3545,8 @@
      "x": 666,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-5-5": {
      "align": "right",
@@ -3226,7 +3554,8 @@
      "x": 791,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-5-6": {
      "align": "right",
@@ -3234,7 +3563,8 @@
      "x": 915,
      "y": 1310,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "band-6": {
      "role": "highlight-band",
@@ -3250,7 +3580,8 @@
      "x": 48,
      "y": 1522,
      "w": 210,
-     "h": 144
+     "h": 144,
+     "maxChars": 18
     },
     "cell-6-1": {
      "align": "right",
@@ -3258,7 +3589,8 @@
      "x": 292,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-6-2": {
      "align": "right",
@@ -3266,7 +3598,8 @@
      "x": 417,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-6-3": {
      "align": "right",
@@ -3274,7 +3607,8 @@
      "x": 541,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-6-4": {
      "align": "right",
@@ -3282,7 +3616,8 @@
      "x": 666,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-6-5": {
      "align": "right",
@@ -3290,7 +3625,8 @@
      "x": 791,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     },
     "cell-6-6": {
      "align": "right",
@@ -3298,7 +3634,8 @@
      "x": 915,
      "y": 1522,
      "w": 109,
-     "h": 144
+     "h": 144,
+     "maxChars": 6
     }
    },
    "aspect": "9x16",
@@ -3314,7 +3651,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 59,
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -3322,14 +3660,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 28,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 18
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 6), authored was 18"
     },
     "figure": {
      "font": "Courier Prime",
@@ -3337,7 +3677,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 36), authored was 6"
     }
    },
    "author": "numbersSheet",
@@ -3378,7 +3719,8 @@
      "x": 118,
      "y": 92,
      "w": 1448,
-     "h": 42
+     "h": 42,
+     "maxChars": 87
     },
     "head-1": {
      "align": "right",
@@ -3386,7 +3728,8 @@
      "x": 502,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-2": {
      "align": "right",
@@ -3394,7 +3737,8 @@
      "x": 681,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-3": {
      "align": "right",
@@ -3402,7 +3746,8 @@
      "x": 859,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-4": {
      "align": "right",
@@ -3410,7 +3755,8 @@
      "x": 1038,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-5": {
      "align": "right",
@@ -3418,7 +3764,8 @@
      "x": 1217,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-6": {
      "align": "right",
@@ -3426,7 +3773,8 @@
      "x": 1395,
      "y": 192,
      "w": 163,
-     "h": 54
+     "h": 54,
+     "maxChars": 11
     },
     "head-spark": {
      "align": "left",
@@ -3434,7 +3782,8 @@
      "x": 1596,
      "y": 192,
      "w": 198,
-     "h": 54
+     "h": 54,
+     "maxChars": 13
     },
     "band-1": {
      "role": "highlight-band",
@@ -3450,7 +3799,8 @@
      "x": 118,
      "y": 307,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-1-1": {
      "align": "right",
@@ -3458,7 +3808,8 @@
      "x": 502,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-1-2": {
      "align": "right",
@@ -3466,7 +3817,8 @@
      "x": 681,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-1-3": {
      "align": "right",
@@ -3474,7 +3826,8 @@
      "x": 859,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-1-4": {
      "align": "right",
@@ -3482,7 +3835,8 @@
      "x": 1038,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-1-5": {
      "align": "right",
@@ -3490,7 +3844,8 @@
      "x": 1217,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-1-6": {
      "align": "right",
@@ -3498,7 +3853,8 @@
      "x": 1395,
      "y": 307,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-1": {
      "role": "spark",
@@ -3524,7 +3880,8 @@
      "x": 118,
      "y": 423,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-2-1": {
      "align": "right",
@@ -3532,7 +3889,8 @@
      "x": 502,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-2-2": {
      "align": "right",
@@ -3540,7 +3898,8 @@
      "x": 681,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-2-3": {
      "align": "right",
@@ -3548,7 +3907,8 @@
      "x": 859,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-2-4": {
      "align": "right",
@@ -3556,7 +3916,8 @@
      "x": 1038,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-2-5": {
      "align": "right",
@@ -3564,7 +3925,8 @@
      "x": 1217,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-2-6": {
      "align": "right",
@@ -3572,7 +3934,8 @@
      "x": 1395,
      "y": 423,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-2": {
      "role": "spark",
@@ -3598,7 +3961,8 @@
      "x": 118,
      "y": 539,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-3-1": {
      "align": "right",
@@ -3606,7 +3970,8 @@
      "x": 502,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-3-2": {
      "align": "right",
@@ -3614,7 +3979,8 @@
      "x": 681,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-3-3": {
      "align": "right",
@@ -3622,7 +3988,8 @@
      "x": 859,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-3-4": {
      "align": "right",
@@ -3630,7 +3997,8 @@
      "x": 1038,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-3-5": {
      "align": "right",
@@ -3638,7 +4006,8 @@
      "x": 1217,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-3-6": {
      "align": "right",
@@ -3646,7 +4015,8 @@
      "x": 1395,
      "y": 539,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-3": {
      "role": "spark",
@@ -3672,7 +4042,8 @@
      "x": 118,
      "y": 655,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-4-1": {
      "align": "right",
@@ -3680,7 +4051,8 @@
      "x": 502,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-4-2": {
      "align": "right",
@@ -3688,7 +4060,8 @@
      "x": 681,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-4-3": {
      "align": "right",
@@ -3696,7 +4069,8 @@
      "x": 859,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-4-4": {
      "align": "right",
@@ -3704,7 +4078,8 @@
      "x": 1038,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-4-5": {
      "align": "right",
@@ -3712,7 +4087,8 @@
      "x": 1217,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-4-6": {
      "align": "right",
@@ -3720,7 +4096,8 @@
      "x": 1395,
      "y": 655,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-4": {
      "role": "spark",
@@ -3746,7 +4123,8 @@
      "x": 118,
      "y": 771,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-5-1": {
      "align": "right",
@@ -3754,7 +4132,8 @@
      "x": 502,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-5-2": {
      "align": "right",
@@ -3762,7 +4141,8 @@
      "x": 681,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-5-3": {
      "align": "right",
@@ -3770,7 +4150,8 @@
      "x": 859,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-5-4": {
      "align": "right",
@@ -3778,7 +4159,8 @@
      "x": 1038,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-5-5": {
      "align": "right",
@@ -3786,7 +4168,8 @@
      "x": 1217,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-5-6": {
      "align": "right",
@@ -3794,7 +4177,8 @@
      "x": 1395,
      "y": 771,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-5": {
      "role": "spark",
@@ -3820,7 +4204,8 @@
      "x": 118,
      "y": 887,
      "w": 350,
-     "h": 79
+     "h": 79,
+     "maxChars": 27
     },
     "cell-6-1": {
      "align": "right",
@@ -3828,7 +4213,8 @@
      "x": 502,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-6-2": {
      "align": "right",
@@ -3836,7 +4222,8 @@
      "x": 681,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-6-3": {
      "align": "right",
@@ -3844,7 +4231,8 @@
      "x": 859,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-6-4": {
      "align": "right",
@@ -3852,7 +4240,8 @@
      "x": 1038,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-6-5": {
      "align": "right",
@@ -3860,7 +4249,8 @@
      "x": 1217,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "cell-6-6": {
      "align": "right",
@@ -3868,7 +4258,8 @@
      "x": 1395,
      "y": 887,
      "w": 163,
-     "h": 79
+     "h": 79,
+     "maxChars": 7
     },
     "spark-6": {
      "role": "spark",
@@ -3894,7 +4285,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 87,
+     "budget": "derived from the slot boxes that set this role; 87 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -3902,14 +4294,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 7), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 32,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 21
+     "maxChars": 27,
+     "budget": "derived from the slot boxes that set this role; 27 is the floor (narrowest of 6), authored was 21"
     },
     "figure": {
      "font": "Courier Prime",
@@ -3917,7 +4311,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 7
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 36), authored was 7"
     }
    },
    "author": "numbersSheet",
@@ -3958,7 +4353,8 @@
      "x": 48,
      "y": 200,
      "w": 817,
-     "h": 50
+     "h": 50,
+     "maxChars": 49
     },
     "head-1": {
      "align": "right",
@@ -3966,7 +4362,8 @@
      "x": 211,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-2": {
      "align": "right",
@@ -3974,7 +4371,8 @@
      "x": 321,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-3": {
      "align": "right",
@@ -3982,7 +4380,8 @@
      "x": 432,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-4": {
      "align": "right",
@@ -3990,7 +4389,8 @@
      "x": 542,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-5": {
      "align": "right",
@@ -3998,7 +4398,8 @@
      "x": 652,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-6": {
      "align": "right",
@@ -4006,7 +4407,8 @@
      "x": 763,
      "y": 324,
      "w": 94,
-     "h": 58
+     "h": 58,
+     "maxChars": 7
     },
     "head-spark": {
      "align": "left",
@@ -4014,7 +4416,8 @@
      "x": 887,
      "y": 324,
      "w": 139,
-     "h": 58
+     "h": 58,
+     "maxChars": 10
     },
     "band-1": {
      "role": "highlight-band",
@@ -4030,7 +4433,8 @@
      "x": 48,
      "y": 479,
      "w": 129,
-     "h": 216
+     "h": 216,
+     "maxChars": 13
     },
     "cell-1-1": {
      "align": "right",
@@ -4038,7 +4442,8 @@
      "x": 211,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-2": {
      "align": "right",
@@ -4046,7 +4451,8 @@
      "x": 321,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-3": {
      "align": "right",
@@ -4054,7 +4460,8 @@
      "x": 432,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-4": {
      "align": "right",
@@ -4062,7 +4469,8 @@
      "x": 542,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-5": {
      "align": "right",
@@ -4070,7 +4478,8 @@
      "x": 652,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-1-6": {
      "align": "right",
@@ -4078,7 +4487,8 @@
      "x": 763,
      "y": 479,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "spark-1": {
      "role": "spark",
@@ -4104,7 +4514,8 @@
      "x": 48,
      "y": 797,
      "w": 129,
-     "h": 216
+     "h": 216,
+     "maxChars": 13
     },
     "cell-2-1": {
      "align": "right",
@@ -4112,7 +4523,8 @@
      "x": 211,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-2": {
      "align": "right",
@@ -4120,7 +4532,8 @@
      "x": 321,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-3": {
      "align": "right",
@@ -4128,7 +4541,8 @@
      "x": 432,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-4": {
      "align": "right",
@@ -4136,7 +4550,8 @@
      "x": 542,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-5": {
      "align": "right",
@@ -4144,7 +4559,8 @@
      "x": 652,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-2-6": {
      "align": "right",
@@ -4152,7 +4568,8 @@
      "x": 763,
      "y": 797,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "spark-2": {
      "role": "spark",
@@ -4178,7 +4595,8 @@
      "x": 48,
      "y": 1115,
      "w": 129,
-     "h": 216
+     "h": 216,
+     "maxChars": 13
     },
     "cell-3-1": {
      "align": "right",
@@ -4186,7 +4604,8 @@
      "x": 211,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-2": {
      "align": "right",
@@ -4194,7 +4613,8 @@
      "x": 321,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-3": {
      "align": "right",
@@ -4202,7 +4622,8 @@
      "x": 432,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-4": {
      "align": "right",
@@ -4210,7 +4631,8 @@
      "x": 542,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-5": {
      "align": "right",
@@ -4218,7 +4640,8 @@
      "x": 652,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-3-6": {
      "align": "right",
@@ -4226,7 +4649,8 @@
      "x": 763,
      "y": 1115,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "spark-3": {
      "role": "spark",
@@ -4252,7 +4676,8 @@
      "x": 48,
      "y": 1433,
      "w": 129,
-     "h": 216
+     "h": 216,
+     "maxChars": 13
     },
     "cell-4-1": {
      "align": "right",
@@ -4260,7 +4685,8 @@
      "x": 211,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-2": {
      "align": "right",
@@ -4268,7 +4694,8 @@
      "x": 321,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-3": {
      "align": "right",
@@ -4276,7 +4703,8 @@
      "x": 432,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-4": {
      "align": "right",
@@ -4284,7 +4712,8 @@
      "x": 542,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-5": {
      "align": "right",
@@ -4292,7 +4721,8 @@
      "x": 652,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "cell-4-6": {
      "align": "right",
@@ -4300,7 +4730,8 @@
      "x": 763,
      "y": 1433,
      "w": 94,
-     "h": 216
+     "h": 216,
+     "maxChars": 6
     },
     "spark-4": {
      "role": "spark",
@@ -4326,7 +4757,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 49,
+     "budget": "derived from the slot boxes that set this role; 49 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
@@ -4334,14 +4766,16 @@
      "weight": 600,
      "colour": "structure",
      "tracking": "0.02em",
-     "maxChars": 6
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 7), authored was 6"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 24,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 11
+     "maxChars": 13,
+     "budget": "derived from the slot boxes that set this role; 13 is the floor (narrowest of 4), authored was 11"
     },
     "figure": {
      "font": "Courier Prime",
@@ -4349,7 +4783,8 @@
      "weight": 400,
      "colour": "structure",
      "lastColumnWeight": 700,
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 24), authored was 6"
     }
    },
    "author": "numbersSheet",
@@ -4390,7 +4825,8 @@
      "x": 118,
      "y": 78,
      "w": 1684,
-     "h": 40
+     "h": 40,
+     "maxChars": 108
     },
     "head-1": {
      "align": "right",
@@ -4398,7 +4834,8 @@
      "x": 697,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "head-2": {
      "align": "right",
@@ -4406,7 +4843,8 @@
      "x": 882,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "head-3": {
      "align": "right",
@@ -4414,7 +4852,8 @@
      "x": 1067,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "head-4": {
      "align": "right",
@@ -4422,7 +4861,8 @@
      "x": 1253,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "head-5": {
      "align": "right",
@@ -4430,7 +4870,8 @@
      "x": 1438,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "head-6": {
      "align": "right",
@@ -4438,7 +4879,8 @@
      "x": 1623,
      "y": 148,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 14
     },
     "group-1": {
      "align": "left",
@@ -4446,7 +4888,8 @@
      "x": 118,
      "y": 228,
      "w": 553,
-     "h": 49
+     "h": 49,
+     "maxChars": 38
     },
     "band-1-1": {
      "role": "highlight-band",
@@ -4462,7 +4905,8 @@
      "x": 144,
      "y": 283,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-1-1-1": {
      "align": "right",
@@ -4470,7 +4914,8 @@
      "x": 697,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-1-2": {
      "align": "right",
@@ -4478,7 +4923,8 @@
      "x": 882,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-1-3": {
      "align": "right",
@@ -4486,7 +4932,8 @@
      "x": 1067,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-1-4": {
      "align": "right",
@@ -4494,7 +4941,8 @@
      "x": 1253,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-1-5": {
      "align": "right",
@@ -4502,7 +4950,8 @@
      "x": 1438,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-1-6": {
      "align": "right",
@@ -4510,7 +4959,8 @@
      "x": 1623,
      "y": 283,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "band-1-2": {
      "role": "highlight-band",
@@ -4526,7 +4976,8 @@
      "x": 144,
      "y": 333,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-1-2-1": {
      "align": "right",
@@ -4534,7 +4985,8 @@
      "x": 697,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-2-2": {
      "align": "right",
@@ -4542,7 +4994,8 @@
      "x": 882,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-2-3": {
      "align": "right",
@@ -4550,7 +5003,8 @@
      "x": 1067,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-2-4": {
      "align": "right",
@@ -4558,7 +5012,8 @@
      "x": 1253,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-2-5": {
      "align": "right",
@@ -4566,7 +5021,8 @@
      "x": 1438,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-1-2-6": {
      "align": "right",
@@ -4574,7 +5030,8 @@
      "x": 1623,
      "y": 333,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-label-1": {
      "align": "left",
@@ -4582,7 +5039,8 @@
      "x": 144,
      "y": 383,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "subtotal-1-1": {
      "align": "right",
@@ -4590,7 +5048,8 @@
      "x": 697,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-1-2": {
      "align": "right",
@@ -4598,7 +5057,8 @@
      "x": 882,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-1-3": {
      "align": "right",
@@ -4606,7 +5066,8 @@
      "x": 1067,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-1-4": {
      "align": "right",
@@ -4614,7 +5075,8 @@
      "x": 1253,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-1-5": {
      "align": "right",
@@ -4622,7 +5084,8 @@
      "x": 1438,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-1-6": {
      "align": "right",
@@ -4630,7 +5093,8 @@
      "x": 1623,
      "y": 383,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "group-2": {
      "align": "left",
@@ -4638,7 +5102,8 @@
      "x": 118,
      "y": 446,
      "w": 553,
-     "h": 49
+     "h": 49,
+     "maxChars": 38
     },
     "band-2-1": {
      "role": "highlight-band",
@@ -4654,7 +5119,8 @@
      "x": 144,
      "y": 501,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-2-1-1": {
      "align": "right",
@@ -4662,7 +5128,8 @@
      "x": 697,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-1-2": {
      "align": "right",
@@ -4670,7 +5137,8 @@
      "x": 882,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-1-3": {
      "align": "right",
@@ -4678,7 +5146,8 @@
      "x": 1067,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-1-4": {
      "align": "right",
@@ -4686,7 +5155,8 @@
      "x": 1253,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-1-5": {
      "align": "right",
@@ -4694,7 +5164,8 @@
      "x": 1438,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-1-6": {
      "align": "right",
@@ -4702,7 +5173,8 @@
      "x": 1623,
      "y": 501,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "band-2-2": {
      "role": "highlight-band",
@@ -4718,7 +5190,8 @@
      "x": 144,
      "y": 551,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-2-2-1": {
      "align": "right",
@@ -4726,7 +5199,8 @@
      "x": 697,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-2-2": {
      "align": "right",
@@ -4734,7 +5208,8 @@
      "x": 882,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-2-3": {
      "align": "right",
@@ -4742,7 +5217,8 @@
      "x": 1067,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-2-4": {
      "align": "right",
@@ -4750,7 +5226,8 @@
      "x": 1253,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-2-5": {
      "align": "right",
@@ -4758,7 +5235,8 @@
      "x": 1438,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-2-2-6": {
      "align": "right",
@@ -4766,7 +5244,8 @@
      "x": 1623,
      "y": 551,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-label-2": {
      "align": "left",
@@ -4774,7 +5253,8 @@
      "x": 144,
      "y": 601,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "subtotal-2-1": {
      "align": "right",
@@ -4782,7 +5262,8 @@
      "x": 697,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-2-2": {
      "align": "right",
@@ -4790,7 +5271,8 @@
      "x": 882,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-2-3": {
      "align": "right",
@@ -4798,7 +5280,8 @@
      "x": 1067,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-2-4": {
      "align": "right",
@@ -4806,7 +5289,8 @@
      "x": 1253,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-2-5": {
      "align": "right",
@@ -4814,7 +5298,8 @@
      "x": 1438,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-2-6": {
      "align": "right",
@@ -4822,7 +5307,8 @@
      "x": 1623,
      "y": 601,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "group-3": {
      "align": "left",
@@ -4830,7 +5316,8 @@
      "x": 118,
      "y": 663,
      "w": 553,
-     "h": 49
+     "h": 49,
+     "maxChars": 38
     },
     "band-3-1": {
      "role": "highlight-band",
@@ -4846,7 +5333,8 @@
      "x": 144,
      "y": 719,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-3-1-1": {
      "align": "right",
@@ -4854,7 +5342,8 @@
      "x": 697,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-1-2": {
      "align": "right",
@@ -4862,7 +5351,8 @@
      "x": 882,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-1-3": {
      "align": "right",
@@ -4870,7 +5360,8 @@
      "x": 1067,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-1-4": {
      "align": "right",
@@ -4878,7 +5369,8 @@
      "x": 1253,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-1-5": {
      "align": "right",
@@ -4886,7 +5378,8 @@
      "x": 1438,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-1-6": {
      "align": "right",
@@ -4894,7 +5387,8 @@
      "x": 1623,
      "y": 719,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "band-3-2": {
      "role": "highlight-band",
@@ -4910,7 +5404,8 @@
      "x": 144,
      "y": 768,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "cell-3-2-1": {
      "align": "right",
@@ -4918,7 +5413,8 @@
      "x": 697,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-2-2": {
      "align": "right",
@@ -4926,7 +5422,8 @@
      "x": 882,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-2-3": {
      "align": "right",
@@ -4934,7 +5431,8 @@
      "x": 1067,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-2-4": {
      "align": "right",
@@ -4942,7 +5440,8 @@
      "x": 1253,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-2-5": {
      "align": "right",
@@ -4950,7 +5449,8 @@
      "x": 1438,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "cell-3-2-6": {
      "align": "right",
@@ -4958,7 +5458,8 @@
      "x": 1623,
      "y": 768,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-label-3": {
      "align": "left",
@@ -4966,7 +5467,8 @@
      "x": 144,
      "y": 819,
      "w": 521,
-     "h": 38
+     "h": 38,
+     "maxChars": 52
     },
     "subtotal-3-1": {
      "align": "right",
@@ -4974,7 +5476,8 @@
      "x": 697,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-3-2": {
      "align": "right",
@@ -4982,7 +5485,8 @@
      "x": 882,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-3-3": {
      "align": "right",
@@ -4990,7 +5494,8 @@
      "x": 1067,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-3-4": {
      "align": "right",
@@ -4998,7 +5503,8 @@
      "x": 1253,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-3-5": {
      "align": "right",
@@ -5006,7 +5512,8 @@
      "x": 1438,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "subtotal-3-6": {
      "align": "right",
@@ -5014,7 +5521,8 @@
      "x": 1623,
      "y": 819,
      "w": 173,
-     "h": 38
+     "h": 38,
+     "maxChars": 11
     },
     "total-label": {
      "align": "left",
@@ -5022,7 +5530,8 @@
      "x": 118,
      "y": 889,
      "w": 553,
-     "h": 44
+     "h": 44,
+     "maxChars": 38
     },
     "total-1": {
      "align": "right",
@@ -5030,7 +5539,8 @@
      "x": 697,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     },
     "total-2": {
      "align": "right",
@@ -5038,7 +5548,8 @@
      "x": 882,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     },
     "total-3": {
      "align": "right",
@@ -5046,7 +5557,8 @@
      "x": 1067,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     },
     "total-4": {
      "align": "right",
@@ -5054,7 +5566,8 @@
      "x": 1253,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     },
     "total-5": {
      "align": "right",
@@ -5062,7 +5575,8 @@
      "x": 1438,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     },
     "total-6": {
      "align": "right",
@@ -5070,7 +5584,8 @@
      "x": 1623,
      "y": 889,
      "w": 173,
-     "h": 44
+     "h": 44,
+     "maxChars": 8
     }
    },
    "aspect": "16x9",
@@ -5085,14 +5600,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 46
+     "maxChars": 108,
+     "budget": "derived from the slot boxes that set this role; 108 is the floor (narrowest of 1), authored was 46"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 26,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 14,
+     "budget": "derived from the slot boxes that set this role; 14 is the floor (narrowest of 6), authored was 6"
     },
     "group": {
      "font": "Archivo Narrow",
@@ -5101,35 +5618,40 @@
      "colour": "structure",
      "tracking": ".08em",
      "transform": "uppercase",
-     "maxChars": 24
+     "maxChars": 38,
+     "budget": "derived from the slot boxes that set this role; 38 is the floor (narrowest of 4), authored was 24"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 25,
      "weight": 400,
      "colour": "structure",
-     "maxChars": 30
+     "maxChars": 52,
+     "budget": "derived from the slot boxes that set this role; 52 is the floor (narrowest of 9), authored was 30"
     },
     "figure": {
      "font": "Courier Prime",
      "size": 26,
      "weight": 400,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 36), authored was 7"
     },
     "subtotal": {
      "font": "Courier Prime",
      "size": 26,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 11,
+     "budget": "derived from the slot boxes that set this role; 11 is the floor (narrowest of 18), authored was 7"
     },
     "total": {
      "font": "Courier Prime",
      "size": 36,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 6), authored was 7"
     }
    },
    "author": "cashFlow",
@@ -5170,7 +5692,8 @@
      "x": 48,
      "y": 180,
      "w": 984,
-     "h": 40
+     "h": 40,
+     "maxChars": 63
     },
     "head-1": {
      "align": "right",
@@ -5178,7 +5701,8 @@
      "x": 349,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "head-2": {
      "align": "right",
@@ -5186,7 +5710,8 @@
      "x": 464,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "head-3": {
      "align": "right",
@@ -5194,7 +5719,8 @@
      "x": 579,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "head-4": {
      "align": "right",
@@ -5202,7 +5728,8 @@
      "x": 694,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "head-5": {
      "align": "right",
@@ -5210,7 +5737,8 @@
      "x": 808,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "head-6": {
      "align": "right",
@@ -5218,7 +5746,8 @@
      "x": 923,
      "y": 280,
      "w": 103,
-     "h": 48
+     "h": 48,
+     "maxChars": 8
     },
     "group-1": {
      "align": "left",
@@ -5226,7 +5755,8 @@
      "x": 48,
      "y": 368,
      "w": 275,
-     "h": 72
+     "h": 72,
+     "maxChars": 15
     },
     "band-1-1": {
      "role": "highlight-band",
@@ -5242,7 +5772,8 @@
      "x": 66,
      "y": 449,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-1-1-1": {
      "align": "right",
@@ -5250,7 +5781,8 @@
      "x": 349,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-1-2": {
      "align": "right",
@@ -5258,7 +5790,8 @@
      "x": 464,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-1-3": {
      "align": "right",
@@ -5266,7 +5799,8 @@
      "x": 579,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-1-4": {
      "align": "right",
@@ -5274,7 +5808,8 @@
      "x": 694,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-1-5": {
      "align": "right",
@@ -5282,7 +5817,8 @@
      "x": 808,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-1-6": {
      "align": "right",
@@ -5290,7 +5826,8 @@
      "x": 923,
      "y": 449,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-1-2": {
      "role": "highlight-band",
@@ -5306,7 +5843,8 @@
      "x": 66,
      "y": 520,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-1-2-1": {
      "align": "right",
@@ -5314,7 +5852,8 @@
      "x": 349,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-2-2": {
      "align": "right",
@@ -5322,7 +5861,8 @@
      "x": 464,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-2-3": {
      "align": "right",
@@ -5330,7 +5870,8 @@
      "x": 579,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-2-4": {
      "align": "right",
@@ -5338,7 +5879,8 @@
      "x": 694,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-2-5": {
      "align": "right",
@@ -5346,7 +5888,8 @@
      "x": 808,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-2-6": {
      "align": "right",
@@ -5354,7 +5897,8 @@
      "x": 923,
      "y": 520,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-1-3": {
      "role": "highlight-band",
@@ -5370,7 +5914,8 @@
      "x": 66,
      "y": 592,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-1-3-1": {
      "align": "right",
@@ -5378,7 +5923,8 @@
      "x": 349,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-3-2": {
      "align": "right",
@@ -5386,7 +5932,8 @@
      "x": 464,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-3-3": {
      "align": "right",
@@ -5394,7 +5941,8 @@
      "x": 579,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-3-4": {
      "align": "right",
@@ -5402,7 +5950,8 @@
      "x": 694,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-3-5": {
      "align": "right",
@@ -5410,7 +5959,8 @@
      "x": 808,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-1-3-6": {
      "align": "right",
@@ -5418,7 +5968,8 @@
      "x": 923,
      "y": 592,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-label-1": {
      "align": "left",
@@ -5426,7 +5977,8 @@
      "x": 66,
      "y": 666,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "subtotal-1-1": {
      "align": "right",
@@ -5434,7 +5986,8 @@
      "x": 349,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-1-2": {
      "align": "right",
@@ -5442,7 +5995,8 @@
      "x": 464,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-1-3": {
      "align": "right",
@@ -5450,7 +6004,8 @@
      "x": 579,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-1-4": {
      "align": "right",
@@ -5458,7 +6013,8 @@
      "x": 694,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-1-5": {
      "align": "right",
@@ -5466,7 +6022,8 @@
      "x": 808,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-1-6": {
      "align": "right",
@@ -5474,7 +6031,8 @@
      "x": 923,
      "y": 666,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "group-2": {
      "align": "left",
@@ -5482,7 +6040,8 @@
      "x": 48,
      "y": 757,
      "w": 275,
-     "h": 72
+     "h": 72,
+     "maxChars": 15
     },
     "band-2-1": {
      "role": "highlight-band",
@@ -5498,7 +6057,8 @@
      "x": 66,
      "y": 838,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-2-1-1": {
      "align": "right",
@@ -5506,7 +6066,8 @@
      "x": 349,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-1-2": {
      "align": "right",
@@ -5514,7 +6075,8 @@
      "x": 464,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-1-3": {
      "align": "right",
@@ -5522,7 +6084,8 @@
      "x": 579,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-1-4": {
      "align": "right",
@@ -5530,7 +6093,8 @@
      "x": 694,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-1-5": {
      "align": "right",
@@ -5538,7 +6102,8 @@
      "x": 808,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-1-6": {
      "align": "right",
@@ -5546,7 +6111,8 @@
      "x": 923,
      "y": 838,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-2-2": {
      "role": "highlight-band",
@@ -5562,7 +6128,8 @@
      "x": 66,
      "y": 910,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-2-2-1": {
      "align": "right",
@@ -5570,7 +6137,8 @@
      "x": 349,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-2-2": {
      "align": "right",
@@ -5578,7 +6146,8 @@
      "x": 464,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-2-3": {
      "align": "right",
@@ -5586,7 +6155,8 @@
      "x": 579,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-2-4": {
      "align": "right",
@@ -5594,7 +6164,8 @@
      "x": 694,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-2-5": {
      "align": "right",
@@ -5602,7 +6173,8 @@
      "x": 808,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-2-6": {
      "align": "right",
@@ -5610,7 +6182,8 @@
      "x": 923,
      "y": 910,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-2-3": {
      "role": "highlight-band",
@@ -5626,7 +6199,8 @@
      "x": 66,
      "y": 982,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-2-3-1": {
      "align": "right",
@@ -5634,7 +6208,8 @@
      "x": 349,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-3-2": {
      "align": "right",
@@ -5642,7 +6217,8 @@
      "x": 464,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-3-3": {
      "align": "right",
@@ -5650,7 +6226,8 @@
      "x": 579,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-3-4": {
      "align": "right",
@@ -5658,7 +6235,8 @@
      "x": 694,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-3-5": {
      "align": "right",
@@ -5666,7 +6244,8 @@
      "x": 808,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-2-3-6": {
      "align": "right",
@@ -5674,7 +6253,8 @@
      "x": 923,
      "y": 982,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-label-2": {
      "align": "left",
@@ -5682,7 +6262,8 @@
      "x": 66,
      "y": 1055,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "subtotal-2-1": {
      "align": "right",
@@ -5690,7 +6271,8 @@
      "x": 349,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-2-2": {
      "align": "right",
@@ -5698,7 +6280,8 @@
      "x": 464,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-2-3": {
      "align": "right",
@@ -5706,7 +6289,8 @@
      "x": 579,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-2-4": {
      "align": "right",
@@ -5714,7 +6298,8 @@
      "x": 694,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-2-5": {
      "align": "right",
@@ -5722,7 +6307,8 @@
      "x": 808,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-2-6": {
      "align": "right",
@@ -5730,7 +6316,8 @@
      "x": 923,
      "y": 1055,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "group-3": {
      "align": "left",
@@ -5738,7 +6325,8 @@
      "x": 48,
      "y": 1147,
      "w": 275,
-     "h": 72
+     "h": 72,
+     "maxChars": 15
     },
     "band-3-1": {
      "role": "highlight-band",
@@ -5754,7 +6342,8 @@
      "x": 66,
      "y": 1227,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-3-1-1": {
      "align": "right",
@@ -5762,7 +6351,8 @@
      "x": 349,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-1-2": {
      "align": "right",
@@ -5770,7 +6360,8 @@
      "x": 464,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-1-3": {
      "align": "right",
@@ -5778,7 +6369,8 @@
      "x": 579,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-1-4": {
      "align": "right",
@@ -5786,7 +6378,8 @@
      "x": 694,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-1-5": {
      "align": "right",
@@ -5794,7 +6387,8 @@
      "x": 808,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-1-6": {
      "align": "right",
@@ -5802,7 +6396,8 @@
      "x": 923,
      "y": 1227,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-3-2": {
      "role": "highlight-band",
@@ -5818,7 +6413,8 @@
      "x": 66,
      "y": 1299,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-3-2-1": {
      "align": "right",
@@ -5826,7 +6422,8 @@
      "x": 349,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-2-2": {
      "align": "right",
@@ -5834,7 +6431,8 @@
      "x": 464,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-2-3": {
      "align": "right",
@@ -5842,7 +6440,8 @@
      "x": 579,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-2-4": {
      "align": "right",
@@ -5850,7 +6449,8 @@
      "x": 694,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-2-5": {
      "align": "right",
@@ -5858,7 +6458,8 @@
      "x": 808,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-2-6": {
      "align": "right",
@@ -5866,7 +6467,8 @@
      "x": 923,
      "y": 1299,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "band-3-3": {
      "role": "highlight-band",
@@ -5882,7 +6484,8 @@
      "x": 66,
      "y": 1371,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "cell-3-3-1": {
      "align": "right",
@@ -5890,7 +6493,8 @@
      "x": 349,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-3-2": {
      "align": "right",
@@ -5898,7 +6502,8 @@
      "x": 464,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-3-3": {
      "align": "right",
@@ -5906,7 +6511,8 @@
      "x": 579,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-3-4": {
      "align": "right",
@@ -5914,7 +6520,8 @@
      "x": 694,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-3-5": {
      "align": "right",
@@ -5922,7 +6529,8 @@
      "x": 808,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "cell-3-3-6": {
      "align": "right",
@@ -5930,7 +6538,8 @@
      "x": 923,
      "y": 1371,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-label-3": {
      "align": "left",
@@ -5938,7 +6547,8 @@
      "x": 66,
      "y": 1444,
      "w": 255,
-     "h": 55
+     "h": 55,
+     "maxChars": 21
     },
     "subtotal-3-1": {
      "align": "right",
@@ -5946,7 +6556,8 @@
      "x": 349,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-3-2": {
      "align": "right",
@@ -5954,7 +6565,8 @@
      "x": 464,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-3-3": {
      "align": "right",
@@ -5962,7 +6574,8 @@
      "x": 579,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-3-4": {
      "align": "right",
@@ -5970,7 +6583,8 @@
      "x": 694,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-3-5": {
      "align": "right",
@@ -5978,7 +6592,8 @@
      "x": 808,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "subtotal-3-6": {
      "align": "right",
@@ -5986,7 +6601,8 @@
      "x": 923,
      "y": 1444,
      "w": 103,
-     "h": 55
+     "h": 55,
+     "maxChars": 5
     },
     "total-label": {
      "align": "left",
@@ -5994,7 +6610,8 @@
      "x": 48,
      "y": 1548,
      "w": 275,
-     "h": 65
+     "h": 65,
+     "maxChars": 15
     },
     "total-1": {
      "align": "right",
@@ -6002,7 +6619,8 @@
      "x": 349,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     },
     "total-2": {
      "align": "right",
@@ -6010,7 +6628,8 @@
      "x": 464,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     },
     "total-3": {
      "align": "right",
@@ -6018,7 +6637,8 @@
      "x": 579,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     },
     "total-4": {
      "align": "right",
@@ -6026,7 +6646,8 @@
      "x": 694,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     },
     "total-5": {
      "align": "right",
@@ -6034,7 +6655,8 @@
      "x": 808,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     },
     "total-6": {
      "align": "right",
@@ -6042,7 +6664,8 @@
      "x": 923,
      "y": 1548,
      "w": 103,
-     "h": 65
+     "h": 65,
+     "maxChars": 3
     }
    },
    "aspect": "9x16",
@@ -6057,14 +6680,16 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 38
+     "maxChars": 63,
+     "budget": "derived from the slot boxes that set this role; 63 is the floor (narrowest of 1), authored was 38"
     },
     "period": {
      "font": "Archivo Narrow",
      "size": 26,
      "weight": 600,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 8,
+     "budget": "derived from the slot boxes that set this role; 8 is the floor (narrowest of 6), authored was 6"
     },
     "group": {
      "font": "Archivo Narrow",
@@ -6073,35 +6698,40 @@
      "colour": "structure",
      "tracking": ".08em",
      "transform": "uppercase",
-     "maxChars": 24
+     "maxChars": 15,
+     "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 4), authored was 24"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 30,
      "weight": 400,
      "colour": "structure",
-     "maxChars": 22
+     "maxChars": 21,
+     "budget": "derived from the slot boxes that set this role; 21 is the floor (narrowest of 12), authored was 22"
     },
     "figure": {
      "font": "Courier Prime",
      "size": 32,
      "weight": 400,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 54), authored was 7"
     },
     "subtotal": {
      "font": "Courier Prime",
      "size": 32,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 18), authored was 7"
     },
     "total": {
      "font": "Courier Prime",
      "size": 44,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 7
+     "maxChars": 3,
+     "budget": "derived from the slot boxes that set this role; 3 is the floor (narrowest of 6), authored was 7"
     }
    },
    "author": "cashFlow",
@@ -6142,7 +6772,8 @@
      "x": 150,
      "y": 92,
      "w": 1620,
-     "h": 30
+     "h": 30,
+     "maxChars": 97
     },
     "head-subject": {
      "align": "right",
@@ -6150,7 +6781,8 @@
      "x": 620,
      "y": 186,
      "w": 223,
-     "h": 30
+     "h": 30,
+     "maxChars": 18
     },
     "head-median": {
      "align": "right",
@@ -6158,7 +6790,8 @@
      "x": 863,
      "y": 186,
      "w": 191,
-     "h": 30
+     "h": 30,
+     "maxChars": 15
     },
     "band-1": {
      "role": "highlight-band",
@@ -6174,7 +6807,8 @@
      "x": 150,
      "y": 262,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-1": {
      "align": "right",
@@ -6182,7 +6816,8 @@
      "x": 620,
      "y": 256,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-1": {
      "align": "right",
@@ -6190,7 +6825,8 @@
      "x": 863,
      "y": 262,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-1": {
      "role": "marker",
@@ -6216,7 +6852,8 @@
      "x": 150,
      "y": 371,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-2": {
      "align": "right",
@@ -6224,7 +6861,8 @@
      "x": 620,
      "y": 365,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-2": {
      "align": "right",
@@ -6232,7 +6870,8 @@
      "x": 863,
      "y": 371,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-2": {
      "role": "marker",
@@ -6258,7 +6897,8 @@
      "x": 150,
      "y": 480,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-3": {
      "align": "right",
@@ -6266,7 +6906,8 @@
      "x": 620,
      "y": 474,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-3": {
      "align": "right",
@@ -6274,7 +6915,8 @@
      "x": 863,
      "y": 480,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-3": {
      "role": "marker",
@@ -6300,7 +6942,8 @@
      "x": 150,
      "y": 589,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-4": {
      "align": "right",
@@ -6308,7 +6951,8 @@
      "x": 620,
      "y": 583,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-4": {
      "align": "right",
@@ -6316,7 +6960,8 @@
      "x": 863,
      "y": 589,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-4": {
      "role": "marker",
@@ -6342,7 +6987,8 @@
      "x": 150,
      "y": 698,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-5": {
      "align": "right",
@@ -6350,7 +6996,8 @@
      "x": 620,
      "y": 692,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-5": {
      "align": "right",
@@ -6358,7 +7005,8 @@
      "x": 863,
      "y": 698,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-5": {
      "role": "marker",
@@ -6384,7 +7032,8 @@
      "x": 150,
      "y": 807,
      "w": 446,
-     "h": 70
+     "h": 70,
+     "maxChars": 30
     },
     "subject-6": {
      "align": "right",
@@ -6392,7 +7041,8 @@
      "x": 620,
      "y": 801,
      "w": 223,
-     "h": 81
+     "h": 81,
+     "maxChars": 6
     },
     "median-6": {
      "align": "right",
@@ -6400,7 +7050,8 @@
      "x": 863,
      "y": 807,
      "w": 191,
-     "h": 70
+     "h": 70,
+     "maxChars": 6
     },
     "marker-6": {
      "role": "marker",
@@ -6418,7 +7069,8 @@
      "x": 150,
      "y": 954,
      "w": 1620,
-     "h": 30
+     "h": 30,
+     "maxChars": 103
     }
    },
    "aspect": "16x9",
@@ -6433,7 +7085,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 97,
+     "budget": "derived from the slot boxes that set this role; 97 is the floor (narrowest of 1), authored was 46"
     },
     "column": {
      "font": "Archivo Narrow",
@@ -6442,28 +7095,32 @@
      "colour": "structure",
      "opacity": 0.68,
      "tracking": "0.06em",
-     "maxChars": 18
+     "maxChars": 15,
+     "budget": "derived from the slot boxes that set this role; 15 is the floor (narrowest of 2), authored was 18"
     },
     "metric": {
      "font": "Archivo Narrow",
      "size": 36,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 26
+     "maxChars": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 6), authored was 26"
     },
     "subject": {
      "font": "Courier Prime",
      "size": 58,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 6), authored was 6"
     },
     "median": {
      "font": "Courier Prime",
      "size": 46,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 6), authored was 6"
     },
     "caption": {
      "font": "Courier Prime",
@@ -6471,12 +7128,13 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 103,
+     "budget": "derived from the slot boxes that set this role; 103 is the floor (narrowest of 1), authored was 60"
     }
    },
    "markerNote": "marker-N is a REGION, not artwork. The plate draws the rail and its two end ticks; series.rangeMark({ box: slots['marker-3'], t, median, pal }) draws what sits on it — t is 0 at the low end of the peer range and 1 at the high end, median the same scale. A t outside 0–1 is a real reading (the subject is off the peer range) and the renderer clamps the dot to the end and marks it, rather than dropping it.",
    "columnNote": "subject-N is the subject's own value, in structure; median-N is the peer set's, in otherParty. Same rule as peers/peer-strip: the row you are in is legible with no highlight at all, which keeps band-N free for the row the voice-over is on.",
-   "budgetNote": "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+   "budgetNote": "This plate no longer carries its own budget arithmetic and no longer needs to be the exception: engine/budget.js derives maxChars from the slot boxes for EVERY family, off the real hmtx advances rather than an 0.47em average. What is still worth knowing here is that the figure columns are Courier (monospaced, so the count is exact) and the metric column is Archivo Narrow set in a box cut to hold 'EV / EBITDA (fwd)'. See the family's maxCharsNote.",
    "directionNote": "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
    "rowsNote": "six metric rows: the relative-pricing half of a valuation chapter in one frame.",
    "author": "multiplesStrip",
@@ -6517,7 +7175,8 @@
      "x": 84,
      "y": 186,
      "w": 912,
-     "h": 30
+     "h": 30,
+     "maxChars": 54
     },
     "head-subject": {
      "align": "right",
@@ -6525,7 +7184,8 @@
      "x": 431,
      "y": 307,
      "w": 238,
-     "h": 32
+     "h": 32,
+     "maxChars": 18
     },
     "band-1": {
      "role": "highlight-band",
@@ -6541,7 +7201,8 @@
      "x": 84,
      "y": 462,
      "w": 305,
-     "h": 278
+     "h": 278,
+     "maxChars": 18
     },
     "subject-1": {
      "align": "right",
@@ -6549,7 +7210,8 @@
      "x": 431,
      "y": 440,
      "w": 238,
-     "h": 321
+     "h": 321,
+     "maxChars": 6
     },
     "marker-1": {
      "role": "marker",
@@ -6575,7 +7237,8 @@
      "x": 84,
      "y": 896,
      "w": 305,
-     "h": 278
+     "h": 278,
+     "maxChars": 18
     },
     "subject-2": {
      "align": "right",
@@ -6583,7 +7246,8 @@
      "x": 431,
      "y": 874,
      "w": 238,
-     "h": 321
+     "h": 321,
+     "maxChars": 6
     },
     "marker-2": {
      "role": "marker",
@@ -6609,7 +7273,8 @@
      "x": 84,
      "y": 1330,
      "w": 305,
-     "h": 278
+     "h": 278,
+     "maxChars": 18
     },
     "subject-3": {
      "align": "right",
@@ -6617,7 +7282,8 @@
      "x": 431,
      "y": 1308,
      "w": 238,
-     "h": 321
+     "h": 321,
+     "maxChars": 6
     },
     "marker-3": {
      "role": "marker",
@@ -6635,7 +7301,8 @@
      "x": 84,
      "y": 1740,
      "w": 912,
-     "h": 30
+     "h": 30,
+     "maxChars": 58
     }
    },
    "aspect": "9x16",
@@ -6650,7 +7317,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 54,
+     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), authored was 38"
     },
     "column": {
      "font": "Archivo Narrow",
@@ -6659,21 +7327,24 @@
      "colour": "structure",
      "opacity": 0.68,
      "tracking": "0.06em",
-     "maxChars": 18
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 1), authored was 18"
     },
     "metric": {
      "font": "Archivo Narrow",
      "size": 40,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 16
+     "maxChars": 18,
+     "budget": "derived from the slot boxes that set this role; 18 is the floor (narrowest of 3), authored was 16"
     },
     "subject": {
      "font": "Courier Prime",
      "size": 62,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 3), authored was 6"
     },
     "caption": {
      "font": "Courier Prime",
@@ -6681,12 +7352,13 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 58,
+     "budget": "derived from the slot boxes that set this role; 58 is the floor (narrowest of 1), authored was 60"
     }
    },
    "markerNote": "marker-N is a REGION, not artwork. The plate draws the rail and its two end ticks; series.rangeMark({ box: slots['marker-3'], t, median, pal }) draws what sits on it — t is 0 at the low end of the peer range and 1 at the high end, median the same scale. A t outside 0–1 is a real reading (the subject is off the peer range) and the renderer clamps the dot to the end and marks it, rather than dropping it.",
    "columnNote": "THREE COLUMNS: metric, subject, rail. There is no median-N and no head-median on this aspect — pass median to series.rangeMark and the tick it puts on the rail IS the peer number. Four columns at portrait width cannot hold the type this plate declares, and the renderer would silently shrink the figures below the landscape ones to fit.",
-   "budgetNote": "maxChars on every role here is DERIVED from the slot box that role is set in: exact for the Courier Prime roles (monospaced, 0.6em advance), an average-width estimate for the Archivo Narrow ones (0.47em) and to be read as guidance. It is a budget you can spend, not a number authored beside the point size. Library-wide, maxChars is NOT box-derived — see the family's maxCharsNote.",
+   "budgetNote": "This plate no longer carries its own budget arithmetic and no longer needs to be the exception: engine/budget.js derives maxChars from the slot boxes for EVERY family, off the real hmtx advances rather than an 0.47em average. What is still worth knowing here is that the figure columns are Courier (monospaced, so the count is exact) and the metric column is Archivo Narrow set in a box cut to hold 'EV / EBITDA (fwd)'. See the family's maxCharsNote.",
    "directionNote": "nothing on this plate is drawn in up or down. Cheap is not up and expensive is not down — a multiple is a price, not a direction — and a red marker high on the rail would argue the short before the script does. Position carries the claim.",
    "rowsNote": "three rows, not six. A short's cheap-or-trap beat wants the same picture with less in it, and three rows of larger type is that picture — not the 16:9 sheet scaled down.",
    "author": "multiplesStrip",

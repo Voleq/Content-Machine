@@ -140,6 +140,31 @@ def type_role(plate: Plate, slot: Slot, value: str = "") -> dict:
     return roles.get(slot.role, {}) or {}
 
 
+def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
+    """The type spec for this slot, with the budget for THIS BOX applied.
+
+    `maxChars` lives in two places and they mean different things:
+
+    * ``slots[name].maxChars`` is the number for that box, derived from its own
+      width and the face it is set in. It is what an audit must read.
+    * ``typeRoles[role].maxChars`` is the FLOOR — the narrowest slot on the
+      plate that sets the role.
+
+    So the slot's own number wins where it has one, and the role's stands in
+    where it does not. Keeping the floor as the fallback is what makes a reader
+    that only knows about roles stay inside every box rather than silently go
+    loose: too wide a budget waves through copy that collides with the rule
+    beside it, which is the direction that breaks a render.
+    """
+    spec = dict(type_role(plate, slot, value))
+    for key, own in (("maxChars", slot.max_chars),
+                     ("maxCharsPerLine", slot.max_chars_per_line),
+                     ("maxLines", slot.max_lines)):
+        if own:
+            spec[key] = own
+    return spec
+
+
 def _positive(value: str) -> bool:
     """Whether a written figure reads as a rise. Unparseable is not a rise."""
     text = str(value or "").strip()
@@ -247,7 +272,7 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     if not text:
         return warnings
 
-    tr = type_role(plate, slot, text)
+    tr = budget(plate, slot, text)
     transform = str(tr.get("transform", "")).lower()
     if transform == "uppercase":
         text = text.upper()

@@ -858,12 +858,19 @@ def check_budgets(fmt: Format, result: BuildResult,
                   reg: Registry | None = None) -> list[str]:
     """Copy that does not fit the slot the kit drew for it.
 
-    `maxChars` is the kit's own limit, per slot role, measured against the
-    face and size that slot is set in. It is a HARD limit: over it the line
-    collides with rules drawn in ink. This is the same check the LONG runs
-    over its `[PLATE]` tags, in the shape the templates need.
+    `maxChars` is the kit's own limit, derived from the box the copy lands in
+    and the face it is set in. It is a HARD limit: over it the line collides
+    with rules drawn in ink. This is the same check the LONG runs over its
+    `[PLATE]` tags, in the shape the templates need.
+
+    THE BUDGET IS PER BOX, NOT PER ROLE. `structure/flow-16x9` sets `caption`
+    in a 1620-unit strip and again in a 104-unit arrow label; reading the role
+    alone is wrong in one of them whichever number the role holds. The role's
+    figure is the floor — the narrowest box on the plate — and is the fallback,
+    so a slot with no budget of its own is still measured against something it
+    fits inside.
     """
-    from pipeline.plate_frames import type_role
+    from pipeline.plate_frames import budget
 
     over: list[str] = []
     if reg is None:
@@ -878,7 +885,7 @@ def check_budgets(fmt: Format, result: BuildResult,
             slot = plate.slot(slot_name)
             if slot is None:
                 continue
-            limit = type_role(plate, slot, str(value)).get("maxChars")
+            limit = budget(plate, slot, str(value)).get("maxChars")
             if limit and len(str(value)) > int(limit):
                 over.append(
                     f"{l.shot_id}.{slot_name}: {len(str(value))} characters "
