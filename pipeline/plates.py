@@ -1,6 +1,6 @@
 """The plate registry — the read side of the materialised design kit.
 
-``assets/plates/plates-registry.json`` is the single source of truth: 113
+``assets/plates/plates-registry.json`` is the single source of truth: 143
 addressable plates under ``family/name`` keys, each declaring its frames,
 playback, canvas, ``exportScale`` and its slots. ``scripts/ingest_kit.py``
 writes it by running the kit's own engine; this module reads it and *only* it.
@@ -101,6 +101,19 @@ class Slot:
     sets_type: bool = False       # the plate declares a typeRole for its role
     export_scale: int = 2
     note: str = ""
+    # THE BUDGET FOR THIS BOX, not for this role. 0 means the slot declares none
+    # and the role's floor applies.
+    #
+    # One role is set in boxes of different widths on the same plate:
+    # `structure/flow-16x9` sets `caption` in a 1620-unit strip AND in a
+    # 104-unit arrow label. A single number per role is wrong in one of them by
+    # construction — sized for the strip it waves through copy that collides in
+    # the arrow, sized for the arrow it refuses a caption that fits. So the kit
+    # derives a budget per SLOT from the box it is set in, and the role keeps
+    # the narrowest of them as a floor.
+    max_chars: int = 0
+    max_chars_per_line: int = 0
+    max_lines: int = 0
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -151,6 +164,9 @@ class Slot:
             sets_type=bool((type_roles or {}).get(role)),
             export_scale=export_scale,
             note=str(raw.get("note", "")),
+            max_chars=int(raw.get("maxChars") or 0),
+            max_chars_per_line=int(raw.get("maxCharsPerLine") or 0),
+            max_lines=int(raw.get("maxLines") or 0),
         )
 
 
@@ -210,6 +226,14 @@ class Plate:
     anchor: str = ""
     ink_weight: float = 0.0
     columns: int = 0
+    # HOW MANY ROWS THE PLATE WAS AUTHORED FOR, off the manifest.
+    #
+    # `tables/multiples-strip` ships 6 rows in 16:9 and 3 in 9:16 — the
+    # portrait plate is a re-author with fewer rows AND one fewer column, not
+    # the landscape one cropped. A director that picks six metrics for a short
+    # has picked a plate that cannot hold them, and the honest place to say so
+    # is against the number the plate itself declares.
+    rows: int = 0
     # A CAMERA DISTANCE, NOT A CUT-OUT. `close-up` and `medium` declare a
     # `framing` and no floor line: they are not figures to stand somewhere,
     # they are the shot itself, and `fit` says how to place one — on the eye
@@ -409,6 +433,7 @@ class Registry:
             anchor=str(e.get("anchor", "")),
             ink_weight=float(e.get("inkWeight") or 0.0),
             columns=int(e.get("columns") or 0),
+            rows=int(e.get("rows") or 0),
             framing=str(e.get("framing") or ""),
             glance=str(e.get("glance") or ""),
             fit=dict(e.get("fit") or {}),

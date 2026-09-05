@@ -254,6 +254,85 @@ def draw_row_bars(img, area: PlotArea, values: list[float | None],
                fill=(*colour[:3], 235), width=max(int(row_h * 0.34), 4))
 
 
+def draw_range_mark(img, area: PlotArea, t: float, median: float | None,
+                    reg: Registry, *, seed: str = "mark") -> bool:
+    """`series.rangeMark` — where the subject sits on the peer range, and where
+    the peer set does. Returns whether anything was drawn.
+
+    The plate draws the rail and its two end ticks, so the row holds its shape
+    with no data on it; this is what sits ON the rail. `t` is 0 at the peer low
+    and 1 at the peer high, `median` is the peer set on that same scale, and
+    both are written by the director off `Peers!I` and `Peers!J` — the renderer
+    computes neither.
+
+    Three rules, and each of them is a decision rather than an implementation
+    detail:
+
+    * **The scale is inset by the mark's own radius.** Mapped edge to edge, a
+      subject level with the top peer draws a dot centred on the high end tick:
+      it hides the tick it is being measured against and half of it lands
+      outside the region the plate reserved. Inset, `t = 1` sits tangent to
+      that tick and nothing paints past the box.
+    * **Off the range is a READING, not an error.** The peer ends are p10 and
+      p90, so a subject priced above every peer is `t > 1` — the most quotable
+      row on the plate. The dot is pushed against its end tick from the inside
+      and a chevron points out past it, both still inside the region. Dropping
+      the mark, or clamping it silently, loses the one row worth talking about.
+    * **Nothing here is drawn in `up` or `down`.** Cheap is not up and
+      expensive is not down: a multiple is a price, not a direction, and a red
+      dot high on the rail would argue the short before the script does.
+      Position carries the claim. The subject is `structure`, the peer set is
+      `other-party` — the same pairing as every other plate in the library.
+    """
+    if t is None:
+        return False
+    cy = area.y + area.h / 2.0
+    # THE MARK IS CAPPED AGAINST THE RAIL IT SITS ON, not only against the
+    # region's height — and this is a deliberate divergence from
+    # `series.rangeMark`, which sizes it as `max(9, h * 0.3)` alone.
+    #
+    # That formula was tuned on the landscape rail, which is 669x65 canvas
+    # units: 10.3:1, a dot 6% of the rail's length, 94% of it left to position
+    # against. 09b's F3 fix made the portrait rows 430 units tall to fill the
+    # safe band, which took its marker region to 243x260 — very nearly square.
+    # `h * 0.3` there is a radius of 78 on a rail 243 long: a dot covering 64%
+    # of its own scale, hiding the median tick it is being compared with, and
+    # squeezing the entire 0-to-1 range into the 87 units left over.
+    #
+    # The cap leaves 16:9 EXACTLY as the engine draws it (19.5 either way) and
+    # gives 9:16 a dot of 22 with 82% of the rail to move along. Design owns
+    # the real fix — it belongs in series.js so the proofs agree — and this is
+    # in the report that goes back with this pack.
+    r = min(max(9.0, area.h * 0.3), area.w * 0.09)
+    span = max(area.w - r * 2.0, 1.0)
+
+    def x_at(v: float) -> float:
+        return area.x + r + max(0.0, min(1.0, v)) * span
+
+    rng = random.Random(seed)
+    d = ImageDraw.Draw(img)
+
+    # The median as a TICK, not a second dot: two dots on one rail read as two
+    # subjects, and the peer set is not a subject.
+    if median is not None:
+        mx = x_at(median)
+        other = reg.colour("other-party")
+        d.line(_wobble((mx, cy - area.h * 0.4), (mx, cy + area.h * 0.4), rng),
+               fill=(*other[:3], 230), width=max(int(r * 0.42), 4))
+
+    off = 1 if t > 1.0 else -1 if t < 0.0 else 0
+    subject = reg.colour("structure")
+    cx = x_at(t) - off * r * 1.9
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=(*subject[:3], 255))
+    if off:
+        tip = x_at(t) + off * r * 0.85
+        d.line(_wobble((tip - off * r * 0.8, cy - r * 0.6), (tip, cy), rng),
+               fill=(*subject[:3], 235), width=max(int(r * 0.2), 3))
+        d.line(_wobble((tip, cy), (tip - off * r * 0.8, cy + r * 0.6), rng),
+               fill=(*subject[:3], 235), width=max(int(r * 0.2), 3))
+    return True
+
+
 def draw_cycle_arc(img, area: PlotArea, values: list[float | None], colour,
                    *, seed: str = "cycle") -> tuple[int, float] | None:
     """`series.cycleArc` — every period between the two moments, one colour.
@@ -329,6 +408,37 @@ def declared_series(plate: Plate, values: dict[str, str],
     return []
 
 
+def _draw_range_marks(reg: Registry, plate: Plate, values: dict[str, str],
+                      img, *, seed: str = "") -> bool:
+    """Every `marker-N` the director wrote a pair into. True if any drew.
+
+    An unwritten marker draws NOTHING and that is correct: the plate's own rail
+    and end ticks are already there, so the row keeps its shape. A rail with no
+    mark is a metric nobody had peer data for, which is information; a mark at
+    a made-up position would not be.
+    """
+    from pipeline.plate_tags import parse_marker
+
+    drew = False
+    for name, slot in sorted(plate.slots.items()):
+        if not (slot.region and slot.renderer.rsplit(".", 1)[-1] == "rangeMark"):
+            continue
+        raw = str(values.get(name) or "").strip()
+        if not raw:
+            continue
+        pair, why = parse_marker(raw)
+        if pair is None:
+            # The parser and the gate both refuse this shape, so reaching here
+            # means something bound a value behind their backs. Say so and draw
+            # nothing rather than guessing at a position.
+            log.warning("%s %s: %s — no mark drawn (%r)", plate.key, name, why, raw)
+            continue
+        x, y, w, h = slot.scaled()
+        drew |= draw_range_mark(img, PlotArea(x, y, w, h), pair.t, pair.median,
+                                reg, seed=f"{seed or plate.key}|{name}")
+    return drew
+
+
 def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
                   *, seed: str = "") -> bool:
     """Draw a plate's data region from its own slot values. True if it drew.
@@ -337,10 +447,17 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
     than a set of labels around an empty box: the plate reserves the region, the
     director writes the figures, and the path goes through them.
     """
+    # A PLATE MAY RESERVE MANY REGIONS, NOT ONE. `tables/multiples-strip`
+    # declares a rail per row — six of them — and each takes its own pair, so
+    # the single-region lookup below would have drawn the first row and left
+    # the other five as empty rails. They are drawn first and independently:
+    # a plate can carry both a series region and a column of range marks.
+    drew = _draw_range_marks(reg, plate, values, img, seed=seed)
+
     slot = next((s for s in plate.slots.values()
                  if s.role in ("plot-area", "bars", "path")), None)
     if slot is None:
-        return False
+        return drew
     # A series written straight onto the region wins: some plates reserve a
     # shape and have no per-period slot for it, because the intervening figures
     # are a path rather than type.
@@ -350,7 +467,7 @@ def draw_declared(reg: Registry, plate: Plate, values: dict[str, str], img,
     else:
         series = declared_series(plate, values, slot.role)
     if not series or sum(1 for v in series if v is not None) < 2:
-        return False
+        return drew
     x, y, w, h = slot.scaled()
     area = PlotArea(x, y, w, h)
     if slot.role == "bars":

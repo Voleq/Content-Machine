@@ -27,7 +27,7 @@ Three things follow from the v2 kit that did not hold under the old one:
   the anchor's HEIGHT is his target height, and his own floor line sits on the
   anchor's bottom edge. `host.place_on_room` is that contract, in one place.
 
-* **Data plates do not boil.** 44 of the 113 are `playback: static` — tables,
+* **Data plates do not boil.** 47 of the 143 are `playback: static` — tables,
   charts, figures, structure. A number that moves three times a second cannot
   be read, which is the whole job of a number. The rooms, the host, the cards
   and the paper loop; everything carrying figures is still.
@@ -858,12 +858,26 @@ def check_budgets(fmt: Format, result: BuildResult,
                   reg: Registry | None = None) -> list[str]:
     """Copy that does not fit the slot the kit drew for it.
 
-    `maxChars` is the kit's own limit, per slot role, measured against the
-    face and size that slot is set in. It is a HARD limit: over it the line
-    collides with rules drawn in ink. This is the same check the LONG runs
-    over its `[PLATE]` tags, in the shape the templates need.
+    `maxChars` is the kit's own limit, derived from the box the copy lands in
+    and the face it is set in. It is a HARD limit: over it the line collides
+    with rules drawn in ink.
+
+    A BACKSTOP, NOT THE ONLY LINE. `gates.budget_check` makes the same check
+    against the script, before anything renders, because a script is where the
+    writer can still fix it — refusing a six-character overrun after a
+    forty-minute encode is a true answer arriving at the most expensive
+    possible moment. This one stays because a SHORT fills some slots from its
+    template and its resolvers rather than from the script, and those values
+    never pass through the gate.
+
+    THE BUDGET IS PER BOX, NOT PER ROLE. `structure/flow-16x9` sets `caption`
+    in a 1620-unit strip and again in a 104-unit arrow label; reading the role
+    alone is wrong in one of them whichever number the role holds. The role's
+    figure is the floor — the narrowest box on the plate — and is the fallback,
+    so a slot with no budget of its own is still measured against something it
+    fits inside.
     """
-    from pipeline.plate_frames import type_role
+    from pipeline.plate_frames import budget
 
     over: list[str] = []
     if reg is None:
@@ -878,7 +892,7 @@ def check_budgets(fmt: Format, result: BuildResult,
             slot = plate.slot(slot_name)
             if slot is None:
                 continue
-            limit = type_role(plate, slot, str(value)).get("maxChars")
+            limit = budget(plate, slot, str(value)).get("maxChars")
             if limit and len(str(value)) > int(limit):
                 over.append(
                     f"{l.shot_id}.{slot_name}: {len(str(value))} characters "

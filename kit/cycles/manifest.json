@@ -9,6 +9,8 @@
  "slotKinds": {
   "region": "a graphic region for code to draw into (path), or a figure whose position only the data knows (trough)"
  },
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
  "assets": {
   "cycles/cycle-frame-16x9": {
    "author": "cycleFrame",
@@ -45,7 +47,8 @@
      "x": 190,
      "y": 88,
      "w": 1540,
-     "h": 30
+     "h": 30,
+     "maxChars": 92
     },
     "caption": {
      "align": "left",
@@ -53,7 +56,8 @@
      "x": 190,
      "y": 966,
      "w": 1540,
-     "h": 30
+     "h": 30,
+     "maxChars": 98
     },
     "metric": {
      "align": "left",
@@ -61,7 +65,8 @@
      "x": 190,
      "y": 186,
      "w": 647,
-     "h": 79
+     "h": 79,
+     "maxChars": 24
     },
     "then-date": {
      "align": "left",
@@ -69,7 +74,8 @@
      "x": 190,
      "y": 306,
      "w": 647,
-     "h": 35
+     "h": 35,
+     "maxChars": 30
     },
     "then-value": {
      "align": "left",
@@ -77,7 +83,8 @@
      "x": 190,
      "y": 351,
      "w": 647,
-     "h": 195
+     "h": 195,
+     "maxChars": 9
     },
     "now-date": {
      "align": "left",
@@ -85,7 +92,8 @@
      "x": 190,
      "y": 600,
      "w": 647,
-     "h": 35
+     "h": 35,
+     "maxChars": 30
     },
     "now-value": {
      "align": "left",
@@ -93,7 +101,8 @@
      "x": 190,
      "y": 645,
      "w": 647,
-     "h": 195
+     "h": 195,
+     "maxChars": 6
     },
     "head-1": {
      "align": "center",
@@ -101,7 +110,8 @@
      "x": 804,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "head-2": {
      "align": "center",
@@ -109,7 +119,8 @@
      "x": 972,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "head-3": {
      "align": "center",
@@ -117,7 +128,8 @@
      "x": 1141,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "head-4": {
      "align": "center",
@@ -125,7 +137,8 @@
      "x": 1309,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "head-5": {
      "align": "center",
@@ -133,7 +146,8 @@
      "x": 1477,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "head-6": {
      "align": "center",
@@ -141,7 +155,8 @@
      "x": 1646,
      "y": 820,
      "w": 168,
-     "h": 30
+     "h": 30,
+     "maxChars": 10
     },
     "path": {
      "role": "path",
@@ -175,7 +190,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 46
+     "maxChars": 92,
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), authored was 46"
     },
     "metric": {
      "font": "Archivo Narrow",
@@ -183,7 +199,8 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxChars": 30
+     "maxChars": 24,
+     "budget": "derived from the slot boxes that set this role; 24 is the floor (narrowest of 1), authored was 30"
     },
     "moment": {
      "font": "Courier Prime",
@@ -192,7 +209,8 @@
      "colour": "structure",
      "opacity": 0.7,
      "tracking": "0.1em",
-     "maxChars": 14
+     "maxChars": 30,
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 2), authored was 14"
     },
     "period": {
      "font": "Courier Prime",
@@ -200,28 +218,32 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.66,
-     "maxChars": 6
+     "maxChars": 10,
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), authored was 6"
     },
     "then": {
      "font": "Courier Prime",
      "size": 112,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 6
+     "maxChars": 9,
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 1), authored was 6"
     },
     "now": {
      "font": "Courier Prime",
      "size": 168,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), authored was 6"
     },
     "trough": {
      "font": "Courier Prime",
      "size": 46,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     },
     "caption": {
      "font": "Courier Prime",
@@ -229,7 +251,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 98,
+     "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), authored was 60"
     }
    },
    "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."
@@ -269,7 +292,8 @@
      "x": 90,
      "y": 186,
      "w": 900,
-     "h": 30
+     "h": 30,
+     "maxChars": 54
     },
     "caption": {
      "align": "left",
@@ -277,7 +301,8 @@
      "x": 90,
      "y": 1740,
      "w": 900,
-     "h": 30
+     "h": 30,
+     "maxChars": 57
     },
     "metric": {
      "align": "left",
@@ -285,7 +310,8 @@
      "x": 90,
      "y": 453,
      "w": 900,
-     "h": 72
+     "h": 72,
+     "maxChars": 36
     },
     "then-date": {
      "align": "left",
@@ -293,7 +319,8 @@
      "x": 90,
      "y": 603,
      "w": 396,
-     "h": 32
+     "h": 32,
+     "maxChars": 20
     },
     "then-value": {
      "align": "left",
@@ -301,7 +328,8 @@
      "x": 90,
      "y": 653,
      "w": 396,
-     "h": 172
+     "h": 172,
+     "maxChars": 6
     },
     "now-date": {
      "align": "right",
@@ -309,7 +337,8 @@
      "x": 594,
      "y": 603,
      "w": 396,
-     "h": 32
+     "h": 32,
+     "maxChars": 20
     },
     "now-value": {
      "align": "right",
@@ -317,7 +346,8 @@
      "x": 594,
      "y": 653,
      "w": 396,
-     "h": 172
+     "h": 172,
+     "maxChars": 4
     },
     "head-1": {
      "align": "center",
@@ -325,7 +355,8 @@
      "x": 0,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "head-2": {
      "align": "center",
@@ -333,7 +364,8 @@
      "x": 180,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "head-3": {
      "align": "center",
@@ -341,7 +373,8 @@
      "x": 360,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "head-4": {
      "align": "center",
@@ -349,7 +382,8 @@
      "x": 540,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "head-5": {
      "align": "center",
@@ -357,7 +391,8 @@
      "x": 720,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "head-6": {
      "align": "center",
@@ -365,7 +400,8 @@
      "x": 900,
      "y": 1475,
      "w": 180,
-     "h": 28
+     "h": 28,
+     "maxChars": 12
     },
     "path": {
      "role": "path",
@@ -399,7 +435,8 @@
      "colour": "structure",
      "opacity": 0.72,
      "tracking": "0.04em",
-     "maxChars": 38
+     "maxChars": 54,
+     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), authored was 38"
     },
     "metric": {
      "font": "Archivo Narrow",
@@ -407,7 +444,8 @@
      "weight": 700,
      "colour": "structure",
      "tracking": "-.02em",
-     "maxChars": 24
+     "maxChars": 36,
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), authored was 24"
     },
     "moment": {
      "font": "Courier Prime",
@@ -416,7 +454,8 @@
      "colour": "structure",
      "opacity": 0.7,
      "tracking": "0.1em",
-     "maxChars": 14
+     "maxChars": 20,
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 2), authored was 14"
     },
     "period": {
      "font": "Courier Prime",
@@ -424,28 +463,32 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.66,
-     "maxChars": 6
+     "maxChars": 12,
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
     },
     "then": {
      "font": "Courier Prime",
      "size": 100,
      "weight": 700,
      "colour": "otherParty",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), authored was 6"
     },
     "now": {
      "font": "Courier Prime",
      "size": 148,
      "weight": 700,
      "colour": "structure",
-     "maxChars": 6
+     "maxChars": 4,
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), authored was 6"
     },
     "trough": {
      "font": "Courier Prime",
      "size": 42,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6
+     "maxChars": 6,
+     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
     },
     "caption": {
      "font": "Courier Prime",
@@ -453,7 +496,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 60
+     "maxChars": 57,
+     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), authored was 60"
     }
    },
    "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."

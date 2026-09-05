@@ -74,7 +74,7 @@ def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
     try:
         from config import Settings
         from pipeline.compose import resolve_plate
-        from pipeline.plate_frames import type_role
+        from pipeline.plate_frames import budget
         from pipeline.plates import load_plates
     except Exception:                              # noqa: BLE001
         return {}
@@ -98,7 +98,10 @@ def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
             slot = plate.slot(slot_name)
             if slot is None:
                 continue
-            tr = type_role(plate, slot)
+            # The budget for THIS box, falling back to the role's floor — the
+            # same resolution `check_budgets` uses, so a field cannot advertise
+            # a length the compositor will then refuse.
+            tr = budget(plate, slot)
             limit = tr.get("maxChars")
             if not limit:
                 # A wrapping slot says how many lines and how wide each is.

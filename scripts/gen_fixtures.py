@@ -75,8 +75,15 @@ EXMPL_SNAPSHOT = [
     ("", "goodwill_intang", "Goodwill & Intangibles", NA, "TR.GoodwillGross"),
     ("", "tangible_bv", "Tangible BV / Share", NA, "TR.TangibleBVPerShare"),
     ("Ownership & Risk", "short_interest", "Short Interest (% float)", 11.0, "TR.ShortInterestPercentOfFloat"),
-    ("", "insider_own", "Insider Ownership (%)", 8.0, "TR.InsiderPercentHeld"),
-    ("", "institutional_own", "Institutional Own (%)", 62.0, "TR.InstitutionsPercentHeld"),
+    # FRACTIONS, 0-1, the same convention `short_interest` uses — and computed
+    # from the resolver block at G47:M51 rather than read from a vendor field,
+    # because `TR.InsiderPercentHeld` and `TR.InstitutionsPercentHeld` do not
+    # resolve through the add-in on this licence. `Snapshot!D50`/`D51` are
+    # still the field cells and have not moved.
+    ("", "insider_own", "Insider Ownership (% of shares out)", 0.08,
+     "computed: L50 normalised — see the resolver at G47"),
+    ("", "institutional_own", "Institutional Own (% of shares out)", 0.62,
+     "computed: L51 normalised — see the resolver at G47"),
 ]
 
 # --- History: 6 periods, oldest -> newest (FY-4..FY-0, LTM) -------------------
@@ -174,20 +181,45 @@ def _peer_rev_cagr_3y(now: float, ago: float) -> float:
 # --- Peers · self-scoring percentile block (BELOW the auto table) -------------
 # A DISTINCT second block: the subject's percentile within each cleaned peer
 # column. Percentile is a 0-1 fraction; "Higher is" carries the polarity.
+# `t` IS NOT `Percentile`. Percentile (D) is rank-based; `t` (I) and `t (median)`
+# (J) are positions on a VALUE axis running from the peer 10th percentile to the
+# peer 90th, which is what `tables/multiples-strip`'s rail is. Feeding D in as
+# `t` puts every median tick dead centre.
+#
+# The ends are p10/p90 rather than min/max so one peer on a 900x P/E cannot own
+# the axis — which means `t` CAN fall outside 0-1, legitimately. `P/S` below is
+# exactly that case and is in the fixture on purpose.
 EXMPL_PEER_PCTL_HEADER = ["Metric", "Subject", "Peer median", "Percentile",
-                          "Higher is", "Read"]
+                          "Higher is", "Read",
+                          "Peer low (p10)", "Peer high (p90)",
+                          "t (subject)", "t (median)"]
 _WORSE = "worse (expensive/levered)"
 _BETTER = "better"
 EXMPL_PEER_PCTL = [
-    # metric, subject, peer median, percentile (0-1), higher-is, read
-    ("P/E (TTM)", 34.0, 37.5, 0.42, _WORSE, "mid-pack"),
-    ("EV/EBITDA", 22.0, 24.0, 0.40, _WORSE, "mid-pack"),
-    ("P/S (TTM)", 9.1, 5.4, 0.85, _WORSE, "expensive vs peers"),
-    ("Rev growth % (3Y CAGR)", 18.0, 12.0, 0.80, _BETTER, "strong vs peers"),
-    ("Gross margin %", 71.0, 62.0, 0.86, _BETTER, "strong vs peers"),
-    ("Net margin %", 6.0, -4.0, 0.90, _BETTER, "strong vs peers"),
-    ("FCF yield %", 2.1, 1.2, 0.75, _BETTER, "strong vs peers"),
-    ("Net debt / EBITDA", 0.4, 1.8, 0.45, _WORSE, "mid-pack"),
+    # metric, subject, peer median, percentile (0-1), higher-is, read,
+    # peer low (p10), peer high (p90), t (subject), t (median)
+    ("P/E (TTM)", 34.0, 37.5, 0.42, _WORSE, "mid-pack",
+     18.0, 52.0, 0.4706, 0.5735),
+    ("EV/EBITDA", 22.0, 24.0, 0.40, _WORSE, "mid-pack",
+     11.0, 33.0, 0.5000, 0.5909),
+    ("P/S (TTM)", 9.1, 5.4, 0.85, _WORSE, "expensive vs peers",
+     2.0, 8.0, 1.1833, 0.5667),
+    ("Rev growth % (3Y CAGR)", 18.0, 12.0, 0.80, _BETTER, "strong vs peers",
+     4.0, 21.0, 0.8235, 0.4706),
+    ("Gross margin %", 71.0, 62.0, 0.86, _BETTER, "strong vs peers",
+     48.0, 74.0, 0.8846, 0.5385),
+    ("Net margin %", 6.0, -4.0, 0.90, _BETTER, "strong vs peers",
+     -12.0, 9.0, 0.8571, 0.3810),
+    ("FCF yield %", 2.1, 1.2, 0.75, _BETTER, "strong vs peers",
+     0.3, 3.1, 0.6429, 0.3214),
+    ("Net debt / EBITDA", 0.4, 1.8, 0.45, _WORSE, "mid-pack",
+     -0.5, 3.4, 0.2308, 0.5897),
+    # New this round — the two forward multiples move 2 of the valuation
+    # chapter reaches for.
+    ("Forward P/E", 26.5, 21.0, 0.72, _WORSE, "expensive vs peers",
+     14.0, 30.0, 0.7813, 0.4375),
+    ("Forward PEG", 1.1, 1.6, 0.28, _WORSE, "cheap vs peers",
+     0.7, 2.4, 0.2353, 0.5294),
 ]
 
 # --- Valuation · auto WACC (CAPM) + reverse-DCF block -------------------------

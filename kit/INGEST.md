@@ -12,7 +12,7 @@ byte for byte. **The engine is the source; the PNGs are a cache.**
 | path | what |
 |---|---|
 | `engine/` | `hand.js` (the drawing hand), `plates.js` (every plate author), `series.js` (data renderers), `build.js` (the declared library — author + seed per asset), `audit.js` |
-| `*/manifest.json` | 14 families, 113 assets, 1,287 slots. Geometry, playback, type roles. Emitted by the same call that draws the plate. |
+| `*/manifest.json` | 14 families, 143 assets, 1,444 slots. Geometry, playback, type roles. Emitted by the same call that draws the plate. |
 | `fonts/` | Archivo Narrow + Courier Prime, every weight the manifests reference |
 | `_reference/` | 27 downscaled PNGs, one or two per family, so you can see what a plate looks like without the full pack |
 | `scripts/` | per-family notes on what each plate is for |

@@ -2,14 +2,14 @@
 
 Two jobs that have to agree with each other, so they live together.
 
-**Playback.** 70 of the 113 plates are two-frame loops; the other 43 are data
+**Playback.** 96 of the 143 plates are two-frame loops; the other 47 are data
 plates that deliberately never boil, because a figure that moves is a figure
 being re-read. The registry says which is which, at what rate and over how many
 frames, and :func:`frame_indices` turns that into one source-frame index per
 output frame. There is no per-family branch anywhere in this module: the next
 delivery adds artwork, not code.
 
-**Slots.** 1,287 declared boxes across the library, and every word on screen
+**Slots.** 1,444 declared boxes across the library, and every word on screen
 comes out of one — the plates carry no baked text at all. Filling one honours
 the plate's own ``typeRoles``: font, size, weight, colour ROLE, tracking, case
 and ``maxChars``.
@@ -60,7 +60,7 @@ _STATIC = {
 _FALLBACK = "CourierPrime-Regular.ttf"
 
 # When a plate declares no size for a role, the box decides — but that is the
-# exception, not the mechanism. 94 of 113 plates carry a typeRoles table.
+# exception, not the mechanism. 103 of 143 plates carry a typeRoles table.
 _MIN_PT = 8
 _FIT_STEPS = 48
 
@@ -138,6 +138,31 @@ def type_role(plate: Plate, slot: Slot, value: str = "") -> dict:
     if up and _positive(value):
         return up or {}
     return roles.get(slot.role, {}) or {}
+
+
+def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
+    """The type spec for this slot, with the budget for THIS BOX applied.
+
+    `maxChars` lives in two places and they mean different things:
+
+    * ``slots[name].maxChars`` is the number for that box, derived from its own
+      width and the face it is set in. It is what an audit must read.
+    * ``typeRoles[role].maxChars`` is the FLOOR — the narrowest slot on the
+      plate that sets the role.
+
+    So the slot's own number wins where it has one, and the role's stands in
+    where it does not. Keeping the floor as the fallback is what makes a reader
+    that only knows about roles stay inside every box rather than silently go
+    loose: too wide a budget waves through copy that collides with the rule
+    beside it, which is the direction that breaks a render.
+    """
+    spec = dict(type_role(plate, slot, value))
+    for key, own in (("maxChars", slot.max_chars),
+                     ("maxCharsPerLine", slot.max_chars_per_line),
+                     ("maxLines", slot.max_lines)):
+        if own:
+            spec[key] = own
+    return spec
 
 
 def _positive(value: str) -> bool:
@@ -247,7 +272,7 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     if not text:
         return warnings
 
-    tr = type_role(plate, slot, text)
+    tr = budget(plate, slot, text)
     transform = str(tr.get("transform", "")).lower()
     if transform == "uppercase":
         text = text.upper()

@@ -176,7 +176,7 @@ def test_a_hold_that_spans_a_cut_is_not_one_composition():
 
     This replaces a test that guarded the boil sampling constants against the
     old defaults — the argument being that a kit where every plate boiled
-    over-reported holds at 96x171. That kit is gone: 44 of the 140 v2 plates
+    over-reported holds at 96x171. That kit is gone: 47 of the 143 v2 plates
     are deliberately static, and the measurement's blind spot is the opposite
     one. It cannot see a line of type change on a full-frame card, so a run of
     four cards reads as one held composition, and the manifest is what knows

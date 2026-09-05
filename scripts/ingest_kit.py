@@ -106,12 +106,60 @@ def _reconcile(built: dict, shipped: dict) -> list[str]:
         problems.append(f"{key}: the engine drew it, no manifest declares it")
     for key in sorted(set(built) & set(shipped)):
         b, s = built[key], shipped[key]
-        for field in ("canvas", "exportScale", "playback", "frameCount", "slots"):
+        # `typeRoles` IS RECONCILED, and learning that cost a silent 139.
+        #
+        # It carries the type every word on screen is set in AND the role-level
+        # `maxChars` floor, which is the budget every slot without one of its
+        # own is measured against. delta-10a's `BUDGET.derive` writes that floor
+        # back onto the role spec it is handed, and `plates.js` hands out shared
+        # objects — so with the manifests collected and written at the end, the
+        # last plate to derive won for all of them. 139 of 425 floors came out
+        # as a library-wide constant, 96 of them LOOSER than the delivery, and
+        # every geometry field agreed perfectly the whole time.
+        for field in ("canvas", "exportScale", "playback", "frameCount",
+                      "slots"):
             if b.get(field) != s.get(field):
                 problems.append(
                     f"{key}: {field} disagrees with the shipped manifest "
                     f"(engine {b.get(field)!r} vs delivery {s.get(field)!r})")
+        for role, got, want in _role_diffs(b, s):
+            problems.append(
+                f"{key}: typeRoles[{role!r}] disagrees with the shipped "
+                f"manifest (engine {got!r} vs delivery {want!r})")
     return problems
+
+
+# Keys inside a typeRole that DESCRIBE the numbers rather than being them. The
+# engine writes "…, was 40" where the delivery says "…, authored was 40", and a
+# sentence that differs by two words is not a contract violation — reconciling
+# on it would train everyone to ignore this check, which is how the thing it
+# was added to catch got through in the first place.
+_ROLE_PROSE = frozenset({"budget", "note", "why"})
+
+
+def _role_diffs(built: dict, shipped: dict) -> list[tuple[str, dict, dict]]:
+    """Per-role type-spec disagreements, prose excluded.
+
+    A typeRole carries the face, size, weight, colour role and tracking every
+    word on screen is set in — and the role-level `maxChars` FLOOR, which is
+    the budget every slot without one of its own is measured against. All of it
+    is contract, and none of it was reconciled until a shared role object in
+    the engine put 139 of 425 floors out by up to 17x with every geometry field
+    agreeing perfectly.
+    """
+    def bare(spec) -> dict:
+        if not isinstance(spec, dict):
+            return {}
+        return {k: v for k, v in spec.items() if k not in _ROLE_PROSE}
+
+    b_roles = built.get("typeRoles") or {}
+    s_roles = shipped.get("typeRoles") or {}
+    out = []
+    for role in sorted(set(b_roles) | set(s_roles)):
+        got, want = bare(b_roles.get(role)), bare(s_roles.get(role))
+        if got != want:
+            out.append((role, got, want))
+    return out
 
 
 def _install(built: dict, delivery: Path, staged: Path, dest: Path,

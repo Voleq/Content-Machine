@@ -2,7 +2,7 @@
 
 THE VISUAL HALF OF THIS SCRIPT IS GONE. It generated placeholder backdrops,
 doodles, memes and kit assets, all of which existed because the pipeline had no
-real artwork. It has 113 drawn plates now, built at ingest from the kit's own
+real artwork. It has 143 drawn plates now, built at ingest from the kit's own
 engine, and a procedural stand-in beside them is not a fallback — it is a second
 visual language that ships when the first one is missing, which is exactly how a
 placeholder reaches a published video.
