@@ -207,6 +207,40 @@ def test_twenty_seconds_without_a_turn_is_flagged():
     assert voice_lint(broken) == [], [f.message for f in voice_lint(broken)]
 
 
+def test_a_figure_written_for_the_eye_warns_and_never_blocks():
+    """One `$1,234.56` reaching TTS is read wrong, out loud, on a figure the
+    on-screen fact-check gate has already verified — two verification systems
+    that never meet.
+
+    It is a WARNING because whether the number is RIGHT is `fact_check`'s
+    question and it has already been asked. This is only how it is spelled.
+    """
+    findings = voice_lint("Revenue was $1,234.56, down 59.6% on the year.")
+    assert findings, "the figures went through unflagged"
+    assert all(f.severity == "warn" for f in findings), \
+        "a dollar sign must never stop a render"
+    said = " ".join(f.message for f in findings)
+    assert "one thousand two hundred and thirty-four dollars and fifty-six cents" in said
+    assert "fifty-nine point six percent" in said
+
+
+def test_a_figure_already_spoken_is_left_alone():
+    """A check that fires on good writing gets switched off. The bible's own
+    examples are written this way."""
+    assert voice_lint(
+        "Revenue fell fifty-nine point six percent, to a hundred and sixty-two "
+        "million, in 2024, across 8 sites.") == []
+
+
+def test_the_number_check_is_about_the_spelling_not_the_figure():
+    """A bare integer is read the same either way, so flagging every year and
+    every count would make the check noise and the noise would get it turned
+    off. Only the four things a voice actually gets wrong."""
+    assert voice_lint("They opened 8 sites in 2024 and closed 12.") == []
+    for eye in ("$40M", "18%", "1,400 stores", "3.2 turns of leverage"):
+        assert voice_lint(f"The filing says {eye}."), f"{eye} went unflagged"
+
+
 def test_the_committed_long_fixture_passes_the_v2_linter(settings, long_valid_text):
     """A check that fires on good writing gets switched off. This is the proof.
 

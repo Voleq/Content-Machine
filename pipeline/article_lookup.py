@@ -124,13 +124,42 @@ def workspace_news(workspace: Path) -> list:
         return []
 
 
+def row_url(news: list, n: int) -> str | None:
+    """The URL of the nth news row, 1-based, or None if there isn't one.
+
+    Out of range is a MISS, not an error: it falls back to the token match
+    like any other unresolved beat, because a screenshot is a visual and no
+    visual in this pipeline fails a render.
+    """
+    rows = [r for r in news or [] if isinstance(r, dict)]
+    if not 1 <= n <= len(rows):
+        log.warning("article lookup: [SHOW ARTICLE: %d] — the export carries "
+                    "%d news row(s), so there is no row %d. Falling back to "
+                    "matching the story by its words", n, len(rows), n)
+        return None
+    url = str(rows[n - 1].get("url") or "").strip()
+    if not url.lower().startswith(("http://", "https://")):
+        log.warning("article lookup: news row %d has no usable url — falling "
+                    "back to matching the story by its words", n)
+        return None
+    return url
+
+
 def article_url(value: str, script, workspace: Path) -> tuple[str, str] | None:
     """`(url, how)` for a `[SHOW ARTICLE]` beat, or None. Never raises.
 
-    Three ways a beat gets its URL, in order of how much the writer said:
+    Four ways a beat gets its URL, in order of how much the writer said:
       * they pasted one                       -> `pasted`
+      * they numbered the row                 -> `row`, `[SHOW ARTICLE: 2]`
       * they named the story in the payload   -> `named`
       * they wrote a bare `[SHOW ARTICLE]`    -> `auto`, off the lead headline
+
+    The number exists because self-resolution is a token overlap, and when two
+    of the week's headlines cover the same theme it can pick the wrong one
+    SILENTLY: the screenshot is of a real, current, adjacent story, and
+    nothing about the frame says it is the wrong one. A row number is the
+    cheapest way for a writer who can see the export to say which. Bare stays
+    exactly as it was — requiring a payload is what stopped this being used.
     """
     value = (value or "").strip()
     if value.lower().startswith(("http://", "https://")):
@@ -142,6 +171,12 @@ def article_url(value: str, script, workspace: Path) -> tuple[str, str] | None:
             log.info("article lookup: %r is not a url and the export carried "
                      "no news — falling back to the headline card", value[:60])
         return None
+
+    if value.isdigit():
+        url = row_url(news, int(value))
+        if url:
+            return url, "row"
+        value = ""      # out of range: nothing left to match on, so self-resolve
 
     if value:
         url = resolve_url(value, news, ticker=str(getattr(script, "ticker", "")))

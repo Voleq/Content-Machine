@@ -166,6 +166,12 @@ def _chapter_plan(script, duration: float,
 
 _INPUT_LABEL_RE = re.compile(r"\[(\d+):v\]")
 
+# How far AHEAD of the chapter opener its cue fires. Audio leading the visual
+# makes a cue ANNOUNCE the image rather than react to it — the same reasoning
+# as the record-scratch pre-roll on the first meme, which lands 0.35s before
+# the freeze it is rewinding into.
+CHAPTER_CUE_LEAD_S = 0.15
+
 
 def _globalise(chain: str, offset: int, index: int) -> str:
     """A locally-indexed segment chain, re-numbered for the single graph.
@@ -209,6 +215,61 @@ def _hold_still_chain(i: int, seg_len: float, W: int, H: int, tail: str) -> str:
         f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
         f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=0xF2F2EF{tail}"
     )
+
+
+def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
+    """One cue per chapter opener that actually landed, or none at all.
+
+    `CHAPTER_CUE_SFX` blank turns the whole thing off, and an unknown key is a
+    warning and nothing else — the same contract as `[SOUND: …]`, because the
+    alternative is a forty-minute render dying over a typo'd effect name.
+
+    Gain matches the meme boom (`sfx_gain_db + 2`) so the cue sits above the
+    bed rather than inside it: a signpost the viewer has to strain for is not
+    a signpost.
+    """
+    key = (settings.chapter_cue_sfx or "").strip()
+    if not key:
+        return []
+    if key not in SFX_KEYS:
+        log.warning("CHAPTER_CUE_SFX=%r is not in the sfx library (%s) — "
+                    "chapter openers get no cue", key, ", ".join(SFX_KEYS))
+        return []
+    path = settings.assets_dir / "sfx" / f"{key}.wav"
+    if not path.exists():
+        log.warning("CHAPTER_CUE_SFX=%r has no file at %s — chapter openers "
+                    "get no cue", key, path)
+        return []
+    return [
+        AudioTrack(path=path,
+                   start_s=max(float(s["t"]) - CHAPTER_CUE_LEAD_S, 0.0),
+                   gain_db=settings.sfx_gain_db + 2,
+                   name=f"chapter_cue@{s['t']:.2f}")
+        for s in stingers
+    ]
+
+
+def _silent_spans(stingers: list[dict], duration: float,
+                  types: list[str]) -> list[tuple[float, float]]:
+    """The windows where the music bed goes quiet, from the openers on screen.
+
+    A chapter runs from its own opener to the NEXT one — which is what the
+    viewer sees, and is why this reads the landed openers rather than the
+    script's requested times. The last chapter runs to the end of the video.
+    """
+    wanted = {t.strip().lower() for t in types if str(t).strip()}
+    if not wanted or not stingers:
+        return []
+    marks = sorted(stingers, key=lambda s: float(s["t"]))
+    spans: list[tuple[float, float]] = []
+    for i, s in enumerate(marks):
+        if str(s.get("type", "")).strip().lower() not in wanted:
+            continue
+        start = float(s["t"])
+        end = float(marks[i + 1]["t"]) if i + 1 < len(marks) else duration
+        if end > start:
+            spans.append((round(start, 3), round(min(end, duration), 3)))
+    return spans
 
 
 def render_long(
@@ -1295,15 +1356,33 @@ def render_long(
     ), encoding="utf-8")
 
     # ------------------------------------------------------------- audio
-    audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True)]
+    #
+    # THE MIX REACTS TO STRUCTURE. Two of the tracks below are keyed off the
+    # chapter openers rather than off the narration: a cue announces each one,
+    # and the bed leaves under the chapter TYPES that are supposed to be
+    # quiet. Both read off `stinger_meta`, which is what actually landed on
+    # screen — a chapter with no cut to land on was skipped above, and a cue
+    # for an opener nobody sees would be a sound with no picture.
+    audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True,
+                        name="voice")]
     music = settings.assets_dir / "music" / "dennis_bed.m4a"
     if music.exists():
-        audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db, loop=True))
-    # The room, under everything. A forty-minute cut with digital silence
-    # between words is the clearest tell that it was assembled.
+        audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db,
+                                loop=True, name="music",
+                                mute_windows=_silent_spans(
+                                    stinger_meta, duration,
+                                    settings.music_silent_chapters)))
+    # The room, under everything — including under the windows where the bed
+    # has gone. That is what makes the drop read as a register change rather
+    # than a dropout: something is still there.
     room = settings.assets_dir / "sfx" / ROOM_TONE_NAME
     if room.exists():
-        audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB, loop=True))
+        audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB,
+                                loop=True, name="room_tone"))
+    # A chapter opener gets an audible cue. The opener is otherwise visual
+    # only, held 1.6s, and a viewer who looks away misses that a new argument
+    # started — so this is a navigation signpost, not atmosphere.
+    audio += _chapter_cues(stinger_meta, settings)
     banner = audio_banner(settings)
     if banner:
         log.warning("%s", banner)
@@ -1311,7 +1390,9 @@ def render_long(
         if c.kind is CueKind.SOUND and c.payload.get("value") in SFX_KEYS:
             sfx = settings.assets_dir / "sfx" / f"{c.payload['value']}.wav"
             if sfx.exists():
-                audio.append(AudioTrack(path=sfx, start_s=c.t, gain_db=settings.sfx_gain_db))
+                audio.append(AudioTrack(path=sfx, start_s=c.t,
+                                        gain_db=settings.sfx_gain_db,
+                                        name=f"{c.payload['value']}@{c.t:.2f}"))
     # meme stings: boom on every meme; the FIRST meme gets the occasional
     # record-scratch rewind treatment
     boom = settings.assets_dir / "sfx" / "vine_boom.wav"
@@ -1320,11 +1401,13 @@ def render_long(
     for j, seg in enumerate(meme_segs):
         if boom.exists():
             audio.append(AudioTrack(path=boom, start_s=seg.start,
-                                    gain_db=settings.sfx_gain_db + 2))
+                                    gain_db=settings.sfx_gain_db + 2,
+                                    name=f"vine_boom@{seg.start:.2f}"))
         if j == 0 and scratch.exists():
             audio.append(AudioTrack(path=scratch,
                                     start_s=max(seg.start - 0.35, 0.0),
-                                    gain_db=settings.sfx_gain_db))
+                                    gain_db=settings.sfx_gain_db,
+                                    name=f"record_scratch@{seg.start:.2f}"))
 
     # ------------------------------------------------------------ encode
     spec = CompositeSpec(
@@ -1380,6 +1463,21 @@ def render_long(
             {"name": l.name, "t_start": l.t_start, "t_end": l.t_end,
              "x": l.x, "y": l.y}
             for l in layers
+        ],
+        # WHAT THE MIX ACTUALLY DID. The bed leaving under a chapter and a cue
+        # on every opener are both decisions taken from `stingers` below, and
+        # neither leaves a trace in the picture — so they go here, where the
+        # operator (and the suite) can read them without opening the audio in
+        # something that draws waveforms.
+        #
+        # Named by SOURCE AND TIME, because the same file fires repeatedly: a
+        # boom on every meme and a cue on every opener are several rows that
+        # would otherwise be indistinguishable from one another.
+        "audio": [
+            {"name": a.name or a.path.stem, "start": round(a.start_s, 2),
+             "gain_db": round(a.gain_db, 1), "loop": a.loop,
+             "mute_windows": [list(w) for w in a.mute_windows]}
+            for a in audio
         ],
         "marks": mark_solves,
         "marks_out_of_band": [m for m in mark_solves if m["warnings"]],

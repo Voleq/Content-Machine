@@ -522,8 +522,8 @@ class Chapter(BaseModel):
     @field_validator("type")
     @classmethod
     def _known_type(cls, v: str) -> str:
-        from pipeline.plates import CHAPTER_TYPES
-        t = v.strip().lower().replace(" ", "-").replace("_", "-")
+        from pipeline.plates import CHAPTER_TYPES, fold_chapter_type
+        t = fold_chapter_type(v)
         if t not in CHAPTER_TYPES:
             raise ValueError(
                 f"{v!r} is not one of the sixteen chapter types: "

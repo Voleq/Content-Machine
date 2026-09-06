@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from pipeline.models import WordTimestamp
+from pipeline.plates import fold_chapter_type
 
 log = logging.getLogger(__name__)
 
@@ -121,20 +122,45 @@ class UploadPackage:
         return "\n".join(lines)
 
 
-def normalise_chapters(chapters: str, duration_s: float = 0.0) -> list[tuple[str, str]]:
-    """The `mm:ss Title` trailer as (timestamp, title) pairs.
+def normalise_chapters(chapters: str,
+                       duration_s: float = 0.0) -> list[tuple[str, str, str]]:
+    """The `mm:ss type | Title` trailer as (timestamp, title, type) triples.
 
     YouTube only renders chapters when the first one is at 00:00 and there
     are at least three, so a malformed trailer is worth catching here rather
     than discovering on the upload.
+
+    THE TYPE IS SPLIT OFF, and that is not cosmetic. The trailer's grammar is
+    `type | Display Title`; this used to take everything after the timestamp
+    as the title, so the description YouTube renders read "00:00 cold-open |
+    nobody cares anymore" — an internal slug, on screen, in the chapter list.
+    The same string became the retention record's chapter name, which is why
+    `chapter_type_evidence` could only ever bucket one video per key: it was
+    aggregating on a title, and titles are deliberately unique per video.
+
+    The type is folded to the kit's spelling the way the parser folds it, so
+    the record and the renderer cannot end up holding "resigned close" and
+    "resigned-close" for the same chapter.
+
+    A line with no `|` is a title with no type. Nothing is guessed for it —
+    the type stays empty and the aggregation skips it, because a guessed type
+    is worse than a missing one in something whose whole output is a claim
+    about evidence.
     """
-    out: list[tuple[str, str]] = []
+    out: list[tuple[str, str, str]] = []
     for line in (chapters or "").splitlines():
         m = _CHAPTER_RE.match(line)
-        if m:
-            out.append((m.group(1).strip(), m.group(2).strip()))
+        if not m:
+            continue
+        rest, ctype = m.group(2).strip(), ""
+        if "|" in rest:
+            head, _, tail = rest.partition("|")
+            head, tail = head.strip(), tail.strip()
+            if head and tail:
+                ctype, rest = fold_chapter_type(head), tail
+        out.append((m.group(1).strip(), rest, ctype))
     if out and not out[0][0].startswith("00:00"):
-        out[0] = ("00:00", out[0][1])
+        out[0] = ("00:00", out[0][1], out[0][2])
     return out
 
 
@@ -163,7 +189,7 @@ def build_package(script, settings, *, ticker: str = "",
     body = [hook, ""]
     if chapters:
         body.append("Chapters")
-        body += [f"{ts} {title}" for ts, title in chapters]
+        body += [f"{ts} {title}" for ts, title, _ in chapters]
         body.append("")
     body += [
         settings.disclaimer_text,

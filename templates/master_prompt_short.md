@@ -117,7 +117,7 @@ peer range low-to-high, with the subject marked on it.
 * `multiples-strip` rows are METRICS; `peers/peer-strip` rows are COMPANIES.
   They are inverses, not variants.
 - `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
-- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
+- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: 2]` picks the SECOND news row in the data above by number — use it when two of this week's headlines cover the same theme and the match could go either way; `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows in words; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
 - `[IMG: query]` / `[PRODUCT: query]` — real imagery.
 - `[MEME: key]` / `[CLIP: key]` — from the catalogs above, sparingly.
@@ -150,6 +150,7 @@ Dennis is on camera at the open, at the close, and every four or five beats in b
 10. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
 11. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
 12. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
+13. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
