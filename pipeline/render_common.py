@@ -137,6 +137,12 @@ def ffprobe_duration(path: Path | str) -> float:
 
 HARDWARE_ENCODER = "h264_nvenc"
 
+# The smoke-encode frame. Big enough to clear NVENC's minimum frame dimension,
+# which a 128x128 probe did not: the encoder initialised and refused the size,
+# the probe read that as "no GPU", and the card sat idle through every render.
+# Small enough that the probe still costs nothing.
+PROBE_FRAME = "640x360"
+
 
 @dataclass(frozen=True)
 class EncodeProfile:
@@ -181,6 +187,20 @@ def detect_hardware_encoder() -> str | None:
     probe that can throw would take the render with it. Every failure mode,
     including the timeout, resolves to None and therefore to libx264.
 
+    The probe frame is a REALISTIC size, and that is the whole of it. This
+    probed at 128x128 and therefore answered None on every machine it was
+    meant to say yes on: NVENC has a minimum frame dimension and a current
+    driver refuses anything under it before it ever looks at the stream —
+
+        [h264_nvenc] InitializeEncoder failed: invalid param (8):
+                     Frame Dimension less than the minimum supported value.
+
+    which is an encoder that loaded, initialised, and rejected the question.
+    Not the `Cannot load libcuda.so.1` case above, and not distinguishable
+    from it in the log, so an RTX 3060 with a working driver spent every
+    render on libx264. 640x360 is a size no encoder objects to and still
+    finishes instantly.
+
     Only NVENC is probed. VAAPI used to be in this list and could never have
     been selected: encoding software frames through `h264_vaapi` needs
     `-vaapi_device` plus a `format=nv12,hwupload` filter, and neither the
@@ -206,7 +226,7 @@ def detect_hardware_encoder() -> str | None:
     try:
         probe = subprocess.run(
             [ffmpeg, "-hide_banner", "-loglevel", "error", "-f", "lavfi",
-             "-i", "color=c=black:s=128x128:d=0.1",
+             "-i", f"color=c=black:s={PROBE_FRAME}:d=0.1",
              "-c:v", HARDWARE_ENCODER, "-pix_fmt", "yuv420p",
              "-preset", "p4", "-f", "null", "-"],
             capture_output=True, text=True, timeout=60,
@@ -225,11 +245,18 @@ def detect_hardware_encoder() -> str | None:
                  HARDWARE_ENCODER)
         return HARDWARE_ENCODER
 
-    # Expected on any box without the driver; the reason is worth one line at
-    # debug, but this is a normal outcome and not a warning.
+    # Expected on any box without the driver, so not a warning — but the
+    # REASON goes out at info, not debug. "listed but a smoke encode failed"
+    # reads as "no GPU" and closes the investigation; it was the sentence a
+    # working 3060 got while the probe was asking for a frame NVENC would
+    # never accept. The encoder's own line is what tells an absent driver
+    # apart from a probe this code got wrong, and nobody turns on debug
+    # logging to answer a question they do not know they have.
     log.info("hardware encoder: %s is listed but a smoke encode failed — "
              "using libx264", HARDWARE_ENCODER)
-    log.debug("hardware encoder: probe said %s", (probe.stderr or "").strip()[:300])
+    reason = (probe.stderr or "").strip()
+    if reason:
+        log.info("hardware encoder: probe said %s", reason[:300])
     return None
 
 

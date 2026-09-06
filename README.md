@@ -230,14 +230,38 @@ workspace|cache|state/   runtime (gitignored)
 
 ### Local (development)
 
+**Install `git-lfs` before you clone.** `samples/*.mp4` are Git LFS objects.
+A clone made without it silently gets 132-byte pointer files instead of video,
+and the fifteen sample measurements in `tests/test_short_holds.py` then fail on
+`moov atom not found` and `could not convert string to float: ''` — which read
+like a broken FFmpeg and are nothing of the sort.
+
 ```bash
-sudo apt install ffmpeg fonts-dejavu-core   # FFmpeg 6+
+sudo apt install git-lfs && git lfs install
+git clone <your-repo-url> dennis && cd dennis
+# already cloned without it? `git lfs pull` fetches the media in place.
+```
+
+Then:
+
+```bash
+sudo apt install ffmpeg nodejs npm fonts-dejavu-core  # FFmpeg 6+, Node 18+
 python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
-.venv/bin/python scripts/gen_assets.py      # deterministic placeholder kit
+npm ci                                      # the kit's rasteriser (build-time only)
+.venv/bin/python scripts/gen_assets.py      # placeholder sfx, music, b-roll, memes
+.venv/bin/python scripts/ingest_kit.py kit  # the 143 drawn plates -> assets/plates
 .venv/bin/python -m pytest tests/           # offline, zero network calls
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
+
+**`ingest_kit.py` is not optional.** `gen_assets.py` draws placeholders for
+everything the kit does *not* draw; the plates themselves come from the kit's
+own JS engine and are a build product, not a commit. Skip the ingest and
+`load_plates()` raises `PlateError: no plates-registry.json in …`, which fails
+about 180 tests and every render. Node is build-time only — nothing under
+`pipeline/` shells out to it, so no published video depends on it — but it is
+needed here and by `tests/test_budgets.py`, which drives the engine directly.
 
 ### Windows (the render box) — see the full runbook below
 
@@ -263,6 +287,14 @@ failure, including a wedged driver that never returns, falls back to libx264
 silently. If the GPU runs out of encode sessions partway through a parallel
 render, the remaining segments finish on the CPU rather than losing the job.
 
+The probe encodes a **640×360** frame, and the size is load-bearing. It used
+to probe 128×128, which NVENC refuses outright — `InitializeEncoder failed:
+invalid param (8): Frame Dimension less than the minimum supported value` —
+so a working RTX 3060 was reported as having no usable encoder and every
+render on it went to libx264. When the probe does fail, the encoder's own
+reason is logged at `info`, not `debug`: "listed but a smoke encode failed"
+on its own reads as "no GPU" and ends the investigation.
+
 ### VPS (production)
 
 Identical:
@@ -273,12 +305,19 @@ sudo nano /opt/dennis/.env
 sudo systemctl enable --now dennis
 ```
 
-The bootstrap checks everything up front — root, apt, a Python ≥ 3.11,
-FFmpeg 6+, the destination filesystem — and aborts with one readable message
-naming the fix rather than half-installing. Then: apt deps, the venv from the
+The bootstrap checks everything up front — root, apt, a Python ≥ 3.11 the
+service user can execute, FFmpeg 6+, Node 18+, the destination filesystem —
+and aborts with one readable message naming the fix rather than
+half-installing. Then: apt deps, any missing Git LFS media, the venv from the
 **pinned** `pyproject.toml`, headless Chromium *and its system libraries*,
-generated assets, the free local voice, the offline suite, and the service +
-daily cleanup timer. It is idempotent — safe to re-run after a pull.
+generated assets, **the design kit** (`npm ci` + `scripts/ingest_kit.py`), the
+free local voice, the offline suite, and the service + daily cleanup timer. It
+is idempotent — safe to re-run after a pull.
+
+**The kit is built before the suite is run, and that ordering is the point.**
+`assets/plates/` is a build product, not a commit, and the suite checks it —
+so an installer that ran the tests without building it reported ~180 failures
+on every clean install and told the operator they were real.
 
 **What it will and will not stop for.** A step aborts the run only if the bot
 cannot work without it. Headless Chromium and the local Piper voice are
@@ -305,6 +344,13 @@ an **aggregate**: the parallel segment encoder divides it among its workers
 thing. Tune with `RENDER_THREAD_FRACTION`, `RENDER_THREADS` (0 = derive) and
 `RENDER_BELOW_NORMAL_PRIORITY` in `.env`.
 
+**These stay on when NVENC does.** The cap covers `-filter_threads` and
+`-filter_complex_threads`, not just the encode, and the filtergraph is the
+bottleneck in this pipeline — moving the encode to the GPU leaves the CPU work
+that the cap exists to bound, and makes it a larger share of what is left.
+Raising the fraction on a GPU box is a measurement, not a consequence of
+having one.
+
 ### Running it on Windows — the full sequence
 
 **You run it inside WSL2, not natively.** That is not a workaround: the render
@@ -326,8 +372,10 @@ Reboot when it asks. Open **Ubuntu** from the Start menu and set your Linux
 username and password. Everything from here is typed in that Ubuntu window,
 not in PowerShell.
 
-**2. Turn systemd on.** WSL ships with it off, and without it the bot cannot
-run as a service that survives a reboot. Inside Ubuntu:
+**2. Turn systemd on, and give the VM swap.** Two files, one restart.
+
+*Systemd* — WSL ships with it off, and without it the bot cannot run as a
+service that survives a reboot. Inside Ubuntu:
 
 ```bash
 sudo nano /etc/wsl.conf
@@ -338,22 +386,44 @@ sudo nano /etc/wsl.conf
 systemd=true
 ```
 
-Save, then back in **PowerShell**:
+*Memory and swap* — this one is not optional on a render box, and its failure
+mode gives you nothing to read. WSL2 defaults to half the host's RAM **and no
+swap at all**, so a render-heavy test run does not fail: the kernel kills the
+VM, and your Ubuntu window closes with no message, no traceback and no exit
+code. With swap configured the same run gets slow instead of fatal. In
+**PowerShell**, create `%UserProfile%\.wslconfig`:
+
+```ini
+[wsl2]
+memory=24GB
+swap=24GB
+processors=4
+```
+
+Scale `memory` to the machine (roughly half the host's RAM) and keep `swap` at
+least equal to it. Then, still in **PowerShell**:
 
 ```powershell
 wsl --shutdown
 ```
 
-Reopen Ubuntu. `ps -p 1 -o comm=` should now print `systemd`.
+Reopen Ubuntu. `ps -p 1 -o comm=` should now print `systemd`, and
+`free -h` should show a non-zero Swap row.
 
 **3. Clone onto the Linux filesystem.** Under your Linux home — `~/` — and
 **never** under `/mnt/c`. See the warning below; this is the single most
 expensive mistake available here.
 
 ```bash
-sudo apt update && sudo apt install -y git
+sudo apt update && sudo apt install -y git git-lfs
+git lfs install
 git clone <your-repo-url> ~/dennis
 ```
+
+`git-lfs` goes in **before** the clone: `samples/*.mp4` are LFS objects, and a
+clone made without it gets 132-byte pointer files that fail fifteen tests with
+errors pointing at FFmpeg rather than at the download. If you have already
+cloned without it, `cd ~/dennis && git lfs pull` fixes it in place.
 
 **4. Run the bootstrap.** It is the same installer as the VPS, and the
 differences are detected rather than configured.
@@ -362,13 +432,16 @@ differences are detected rather than configured.
 sudo bash ~/dennis/deploy/bootstrap.sh /opt/dennis
 ```
 
-It checks root, apt, Python ≥ 3.11, FFmpeg 6+ and the destination filesystem
-up front, and aborts with one readable message naming the fix rather than
-half-installing. It installs to `/opt/dennis` and runs the bot as a dedicated
-`dennis` service user, which is why the commands below are `sudo -u dennis`. Then: apt dependencies, the venv from the pinned
-`pyproject.toml`, headless Chromium and its system libraries, generated
-assets, the offline test suite, and the service plus the daily cleanup timer.
-It is idempotent — safe to re-run after every `git pull`.
+It checks root, apt, Python ≥ 3.11, FFmpeg 6+, Node 18+, that the `dennis`
+service user can actually execute the interpreter it picked, and the
+destination filesystem — up front, and aborts with one readable message naming
+the fix rather than half-installing. It installs to `/opt/dennis` and runs the
+bot as a dedicated `dennis` service user, which is why the commands below are
+`sudo -u dennis`. Then: apt dependencies, any missing LFS media, the venv from
+the pinned `pyproject.toml`, headless Chromium and its system libraries,
+generated assets, **the design kit built from its own engine**, the offline
+test suite, and the service plus the daily cleanup timer. It is idempotent —
+safe to re-run after every `git pull`.
 
 **5. Configure.**
 
@@ -757,9 +830,10 @@ just less directly. Set the var once you know which macro your box has.
 | `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
-| `USD_PER_1K_CHARS` | 0.15 | TTS cost estimate for reports |
+| `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash/v3 $0.05, multilingual_v2 $0.10. Set it only when a price moves or the model is one that table does not know. This is not a display figure — `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
 | `MONTHLY_SPEND_CAP` | 50.0 | hard code-level gate |
-| `ELEVEN_USE_PREMIUM` | false | Turbo tier by default (~half credit cost) |
+| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. v3 is the only one that honours the `[SIGH]` audio tag rather than having it read aloud, and it now costs the same as turbo |
+| `ELEVEN_USE_PREMIUM` | false | **deprecated** — picks between turbo and multilingual_v2, and only when `ELEVEN_MODEL_ID` is unset. Prefer naming the model |
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
@@ -900,8 +974,16 @@ gritted teeth rather than a stamp.
 ## Testing
 
 ```bash
-.venv/bin/python -m pytest tests/    # ~990 tests, fully offline
+.venv/bin/python -m pytest tests/    # ~1050 tests, fully offline
 ```
+
+**The suite needs the kit built and the LFS media fetched.** Both are the
+Setup section above: without `assets/plates/` about 180 tests fail on
+`PlateError`, and without the real `samples/*.mp4` fifteen more fail on
+`moov atom not found`. Neither is a broken checkout — they are build steps that
+have not been run. Node is needed too: `tests/test_budgets.py` drives
+`scripts/kit_engine.js` directly to prove the loader rejects an engine file
+nothing accounts for.
 
 A conftest guard fails any test that opens a non-localhost socket. The
 renderer smoke tests produce real MP4s (reduced resolution) from mock
@@ -923,6 +1005,33 @@ network calls:
 
 ## Troubleshooting
 
+- **`PlateError: no plates-registry.json in …/assets/plates`, and ~180 tests
+  fail** — the design kit was never built. `assets/plates/` is a build product
+  (`.gitignore`d, ~850MB of PNGs) and comes from the kit's own engine:
+  `npm ci && .venv/bin/python scripts/ingest_kit.py kit`. `scripts/gen_assets.py`
+  does *not* produce it — it draws placeholders for the things the kit does not
+  draw. `deploy/bootstrap.sh` does this for you, before the test suite.
+- **`kit_engine: @resvg/resvg-js is not installed`** — `npm ci`. It is a
+  build-time dependency of the ingest only; nothing in the render path uses
+  Node.
+- **`node is not on PATH`** — `apt install nodejs npm`, Node 18+. Ubuntu 22.04
+  still ships Node 12 in its own repository; take a current release from
+  NodeSource if the version check refuses.
+- **15 failures in `test_short_holds.py` (`moov atom not found`,
+  `could not convert string to float: ''`)** — `samples/*.mp4` are Git LFS
+  pointer files, not video. `apt install git-lfs && git lfs install &&
+  git lfs pull`. This is a missing prerequisite, not a broken FFmpeg.
+- **`sudo: '.venv/bin/python': command not found`, for a file that is plainly
+  there** — the `dennis` service user cannot traverse to the interpreter the
+  venv points at. Usual cause: a uv-installed Python under a home directory
+  created mode 750. `chmod o+x ~` and `chmod -R o+rX ~/.local/share/uv`, or
+  install an interpreter system-wide. The same cause shows up separately as
+  `cannot execute '…/.venv/bin/piper': Permission denied`; the bootstrap now
+  checks for it in preflight.
+- **The bootstrap says "No usable Python found" right after `uv python
+  install`** — `sudo` resets `PATH` to `secure_path`, which does not include
+  `~/.local/bin`. Link the interpreter somewhere `secure_path` covers:
+  `sudo ln -sf "$(uv python find 3.13)" /usr/local/bin/python3.13`.
 - **`ffmpeg/ffprobe not found`** — `apt install ffmpeg` (6+ required).
 - **Bot replies "Not authorized"** — it prints the chat id to add to
   `OPERATOR_CHAT_IDS`.
@@ -960,9 +1069,20 @@ network calls:
   check crosses the 9p translation layer, which is exactly the operation that
   is supposed to make a re-render cheap. Move `WORKSPACE_DIR`, `CACHE_DIR` and
   `STATE_DIR` onto the Linux side; the bot warns about this at startup.
+- **The Ubuntu window vanishes mid-render, with no error** — the VM ran out of
+  memory and was killed. WSL2 defaults to half the host's RAM and **no swap**,
+  so there is nothing to page into and nothing to print. Set `memory` and
+  `swap` in `%UserProfile%\.wslconfig` (step 2 above) and `wsl --shutdown`;
+  the same run then gets slow rather than fatal.
 - **`Cannot load libcuda.so.1` in the logs** — the GPU is not passed through
   to WSL. Nothing to fix: the encoder falls back to libx264 and the render
   finishes.
+- **The GPU is definitely there, `nvidia-smi` works, and renders still use
+  libx264** — check the log line after "listed but a smoke encode failed": the
+  encoder's own reason is printed at `info`. `Frame Dimension less than the
+  minimum supported value` means the probe frame was too small, which is a bug
+  in this repo rather than in your driver — the probe is 640×360 and anything
+  smaller can be refused outright.
 - **The bot stops answering overnight** — Windows slept or shut down, which
   takes WSL with it. Expected. Reopen Ubuntu and the service comes back;
   anything queued with `/batch` is still queued.
