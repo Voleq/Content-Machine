@@ -164,8 +164,12 @@ def test_the_tts_rate_follows_the_model(monkeypatch):
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_multilingual_v2")
     assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
 
-    # v3 is turbo's price now, which is what makes the audio tags free
+    # v3 is TWICE turbo, and the audio tags are what the difference buys.
+    # `eleven_v3_conversational` is the $0.05 one and is a different model.
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
+
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3_conversational")
     assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.05
 
 
@@ -180,7 +184,10 @@ def test_the_shipped_dotenv_example_actually_loads():
     """
     example = Path(__file__).resolve().parents[1] / ".env.example"
     s = Settings(_env_file=example)
+    from config import ELEVEN_USD_PER_1K_CHARS
+
     assert s.mock_mode is True, "the shipped example must not start live"
-    assert s.active_eleven_model in ("eleven_turbo_v2_5",
-                                     "eleven_multilingual_v2", "eleven_v3")
+    # Read off the table rather than a list here: an example that names a model
+    # the pricing table does not know would raise at the first cost estimate.
+    assert s.active_eleven_model in ELEVEN_USD_PER_1K_CHARS
     assert s.tts_usd_per_1k_chars > 0

@@ -835,9 +835,9 @@ just less directly. Set the var once you know which macro your box has.
 | `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
-| `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash/v3 $0.05, multilingual_v2 $0.10. Set it only when a price moves or the model is one that table does not know. This is not a display figure — `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
+| `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash and v3-conversational $0.05, v3 and multilingual_v2 $0.10. Lookup is **exact** and a model the table does not know **raises** rather than defaulting — a guessed rate is how a spend cap comes to meter at the wrong speed. Set this when a price moves or a model is newer than the table. Not a display figure: `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
 | `MONTHLY_SPEND_CAP` | 50.0 | hard code-level gate |
-| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there, and it costs the same as turbo. See *Delivery direction* below |
+| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there — and it is twice turbo's price; the tags are what that buys. `eleven_v3_conversational` is a *different*, cheaper model for the Agents Platform, not a v3 variant. See *Delivery direction* below |
 | `ELEVEN_USE_PREMIUM` | false | **deprecated** — picks between turbo and multilingual_v2, and only when `ELEVEN_MODEL_ID` is unset. Prefer naming the model |
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |

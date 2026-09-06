@@ -28,25 +28,55 @@ BASE_DIR = Path(__file__).resolve().parent
 
 # ElevenLabs list price, USD per 1,000 characters, by model id.
 #
-# This lives beside the model setting rather than in a separate number an
-# operator has to keep in step, because a separate number does not stay in
-# step. The one that used to be here was 0.15 for every model, which was the
-# price of neither: turbo/flash bills at $0.05 and multilingual_v2 at $0.10,
-# so every estimate read 3x or 1.5x high and - because SpendLedger meters
-# against the same figure - a $50 monthly cap actually stopped paid calls
-# after about $16.67 of real spend.
+# EXACT MATCH ONLY, and never a default. Both halves of that are the lesson
+# from the two ways this has already been wrong.
 #
-# v3 is on this table at turbo's price on purpose: it is the only model that
-# honours the [SIGH] audio tag instead of reading it aloud, and there is no
-# longer a premium to pay for it.
+# It began as a hardcoded 0.15 for every model, which was the price of none of
+# them. That erred SAFE: it overstated, so a $50 cap stopped paid calls at
+# about $16.67 of real spend. Annoying, and not dangerous.
 #
-# Prices move. USD_PER_1K_CHARS overrides the lot when they do.
+# It was then corrected to 0.05 for `eleven_v3`, which erred the other way and
+# is much worse. `eleven_v3` is $0.10; it is `eleven_v3_conversational` that is
+# $0.05, and they are separate models with separate included-character
+# allowances (220,000 vs 440,000 on Creator). Pricing v3 at half its rate makes
+# SpendLedger meter at half speed, so the same $50 cap would wave through
+# roughly $100 of real spend. The cap is the only hard stop in this system and
+# it must never fail in that direction.
+#
+# WHICH IS WHY LOOKUP IS EXACT. `eleven_v3_conversational` starts with
+# `eleven_v3` and costs half as much, so any prefix or substring match is wrong
+# by construction — it would price the dearer model at the cheaper one's rate,
+# which is precisely the failure above. Note that `direction.performs_audio_tags`
+# DOES substring-match, and is right to: both models perform audio tags. The two
+# questions look alike and must not share a lookup.
+#
+# An id that is not here raises rather than defaulting, because a missing entry
+# and a wrong one are indistinguishable at runtime, and the guess is what caused
+# the harm both times. USD_PER_1K_CHARS is the escape hatch when a price moves
+# or a model is newer than this table.
 ELEVEN_USD_PER_1K_CHARS: dict[str, float] = {
     "eleven_turbo_v2_5": 0.05,
     "eleven_flash_v2_5": 0.05,
-    "eleven_v3": 0.05,
+    # The narration model, and the one this pipeline chose: the selection guide
+    # puts narration here. Twice turbo's price, and the audio tags are what the
+    # difference buys.
+    "eleven_v3": 0.10,
+    # NOT the same model, and not interchangeable with it. This is the Agents
+    # Platform model, tuned for ~280ms latency — which buys an unattended batch
+    # render exactly nothing. Recorded so the distinction stays recorded rather
+    # than being rediscovered by a cap that failed open.
+    "eleven_v3_conversational": 0.05,
     "eleven_multilingual_v2": 0.10,
 }
+
+
+class UnknownModelPriceError(RuntimeError):
+    """No list price for the selected model, and no override to stand in.
+
+    Deliberately fatal. Guessing a rate is how a spend cap comes to meter at
+    the wrong speed, and a cap that meters at the wrong speed is worse than no
+    cap at all — it reports a number the operator trusts.
+    """
 
 
 class Settings(BaseSettings):
@@ -117,8 +147,13 @@ class Settings(BaseSettings):
     # so - not .env.example, not the README - and the boolean quietly decided
     # between the other two regardless, so `eleven_v3` was unreachable in
     # practice. v3 is the only model that honours [SIGH] instead of having it
-    # read aloud (see pipeline/tts.py) and it now costs the same as turbo, so
-    # what that cost was the register the voice bible is built on.
+    # read aloud (see pipeline/tts.py), so what that cost was the register the
+    # voice bible is built on.
+    #
+    # It is NOT free: v3 is $0.10/1k against turbo's $0.05, and the audio tags
+    # are what the difference buys. `eleven_v3_conversational` is the $0.05
+    # one, and it is a different model — the Agents Platform's, tuned for
+    # ~280ms latency, which is worth nothing to an unattended batch render.
     eleven_model_id: str = Field(default="", alias="ELEVEN_MODEL_ID")
     # The two tier defaults, and DEPRECATED with the boolean that picks between
     # them. Kept, rather than folded into constants, so an .env that already
@@ -625,18 +660,36 @@ class Settings(BaseSettings):
         """What a thousand characters actually costs, for the selected model.
 
         Derived rather than configured. A single hardcoded number cannot stay
-        true across two models at two prices, and the one that was here was
-        true of neither - which mattered because the spend cap is metered with
-        it, not just the approval screen.
+        true across models at different prices, and the one that was here was
+        true of none of them - which mattered because the spend cap is metered
+        with it, not just the approval screen.
 
-        An unknown model bills at the dearest rate this table knows. Guessing
-        high stops paid work early and asks a question; guessing low overspends
-        a cap the operator set precisely so it could not be overspent.
+        An unknown model RAISES. It used to bill at the dearest known rate on
+        the reasoning that guessing high is the safe direction - but a guess is
+        still a guess, and the guess that actually shipped was in the other
+        direction and would have let a $50 cap through about $100 of spend.
+        A missing entry and a wrong one look identical at runtime; only one of
+        them announces itself.
         """
         if self.usd_per_1k_chars is not None:
             return self.usd_per_1k_chars
-        return ELEVEN_USD_PER_1K_CHARS.get(
-            self.active_eleven_model, max(ELEVEN_USD_PER_1K_CHARS.values()))
+        model = self.active_eleven_model
+        try:
+            return ELEVEN_USD_PER_1K_CHARS[model]
+        except KeyError:
+            raise UnknownModelPriceError(
+                f"No list price for ELEVEN_MODEL_ID={model!r}, so the monthly "
+                f"spend cap cannot be metered and nothing here will guess at "
+                f"one.\n\n"
+                f"Priced models: "
+                f"{', '.join(sorted(ELEVEN_USD_PER_1K_CHARS))}\n\n"
+                f"Note that the lookup is EXACT: eleven_v3_conversational is a "
+                f"different model from eleven_v3 at half the price, so a name "
+                f"that merely starts with a known one is not the same model.\n\n"
+                f"Either add {model!r} to ELEVEN_USD_PER_1K_CHARS in config.py "
+                f"with its real rate, or set USD_PER_1K_CHARS in .env to the "
+                f"USD-per-1,000-characters this model actually bills."
+            ) from None
 
     @property
     def fonts_dir(self) -> Path:
