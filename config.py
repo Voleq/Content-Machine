@@ -26,6 +26,58 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
 
+# ElevenLabs list price, USD per 1,000 characters, by model id.
+#
+# EXACT MATCH ONLY, and never a default. Both halves of that are the lesson
+# from the two ways this has already been wrong.
+#
+# It began as a hardcoded 0.15 for every model, which was the price of none of
+# them. That erred SAFE: it overstated, so a $50 cap stopped paid calls at
+# about $16.67 of real spend. Annoying, and not dangerous.
+#
+# It was then corrected to 0.05 for `eleven_v3`, which erred the other way and
+# is much worse. `eleven_v3` is $0.10; it is `eleven_v3_conversational` that is
+# $0.05, and they are separate models with separate included-character
+# allowances (220,000 vs 440,000 on Creator). Pricing v3 at half its rate makes
+# SpendLedger meter at half speed, so the same $50 cap would wave through
+# roughly $100 of real spend. The cap is the only hard stop in this system and
+# it must never fail in that direction.
+#
+# WHICH IS WHY LOOKUP IS EXACT. `eleven_v3_conversational` starts with
+# `eleven_v3` and costs half as much, so any prefix or substring match is wrong
+# by construction — it would price the dearer model at the cheaper one's rate,
+# which is precisely the failure above. Note that `direction.performs_audio_tags`
+# DOES substring-match, and is right to: both models perform audio tags. The two
+# questions look alike and must not share a lookup.
+#
+# An id that is not here raises rather than defaulting, because a missing entry
+# and a wrong one are indistinguishable at runtime, and the guess is what caused
+# the harm both times. USD_PER_1K_CHARS is the escape hatch when a price moves
+# or a model is newer than this table.
+ELEVEN_USD_PER_1K_CHARS: dict[str, float] = {
+    "eleven_turbo_v2_5": 0.05,
+    "eleven_flash_v2_5": 0.05,
+    # The narration model, and the one this pipeline chose: the selection guide
+    # puts narration here. Twice turbo's price, and the audio tags are what the
+    # difference buys.
+    "eleven_v3": 0.10,
+    # NOT the same model, and not interchangeable with it. This is the Agents
+    # Platform model, tuned for ~280ms latency — which buys an unattended batch
+    # render exactly nothing. Recorded so the distinction stays recorded rather
+    # than being rediscovered by a cap that failed open.
+    "eleven_v3_conversational": 0.05,
+    "eleven_multilingual_v2": 0.10,
+}
+
+
+class UnknownModelPriceError(RuntimeError):
+    """No list price for the selected model, and no override to stand in.
+
+    Deliberately fatal. Guessing a rate is how a spend cap comes to meter at
+    the wrong speed, and a cap that meters at the wrong speed is worse than no
+    cap at all — it reports a number the operator trusts.
+    """
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -85,9 +137,28 @@ class Settings(BaseSettings):
     # rate slightly slow. Both formats share the Dennis register now.
     elevenlabs_api_key: str = ""
     eleven_base_url: str = "https://api.elevenlabs.io"
-    # Turbo/Flash tier by default (~half the credit cost per character);
-    # premium multilingual only behind an explicit flag.
-    eleven_model_id: str = "eleven_turbo_v2_5"
+    # THE model setting: name the model you want. The price follows it (see
+    # ELEVEN_USD_PER_1K_CHARS above) and so does audio-tag support. Empty means
+    # "whichever tier the deprecated boolean below picks", which is what every
+    # .env written before this setting existed is asking for.
+    #
+    # Choosing a model used to run through ELEVEN_USE_PREMIUM, a boolean over
+    # two hardcoded ids. The field would have taken any id, but nothing said
+    # so - not .env.example, not the README - and the boolean quietly decided
+    # between the other two regardless, so `eleven_v3` was unreachable in
+    # practice. v3 is the only model that honours [SIGH] instead of having it
+    # read aloud (see pipeline/tts.py), so what that cost was the register the
+    # voice bible is built on.
+    #
+    # It is NOT free: v3 is $0.10/1k against turbo's $0.05, and the audio tags
+    # are what the difference buys. `eleven_v3_conversational` is the $0.05
+    # one, and it is a different model — the Agents Platform's, tuned for
+    # ~280ms latency, which is worth nothing to an unattended batch render.
+    eleven_model_id: str = Field(default="", alias="ELEVEN_MODEL_ID")
+    # The two tier defaults, and DEPRECATED with the boolean that picks between
+    # them. Kept, rather than folded into constants, so an .env that already
+    # sets one keeps working.
+    eleven_default_model_id: str = "eleven_turbo_v2_5"
     eleven_premium_model_id: str = "eleven_multilingual_v2"
     eleven_use_premium: bool = False
     eleven_voice_id_short: str = ""   # placeholder — Dennis voice TBD
@@ -116,7 +187,18 @@ class Settings(BaseSettings):
     tts_chunk_chars: int = 4000
 
     # ------------------------------------------------------------------- cost
-    usd_per_1k_chars: float = Field(default=0.15, alias="USD_PER_1K_CHARS")
+    # An OVERRIDE, not the rate. Unset means "whatever the selected model
+    # costs", which is the only version of this number that cannot go stale
+    # against the model actually being called - see tts_usd_per_1k_chars.
+    #
+    # It was a hardcoded 0.15 that matched neither model the code could select:
+    # turbo is $0.05 and multilingual_v2 is $0.10. That is not a cosmetic
+    # figure on the approval screen. SpendLedger meters against it, so a $50
+    # cap stopped paid calls after about $16.67 of real spend and every cost
+    # report read 3x high. Set this only to correct a price this table has
+    # wrong, or to meter a model it does not know.
+    usd_per_1k_chars: float | None = Field(default=None,
+                                           alias="USD_PER_1K_CHARS")
     monthly_spend_cap_usd: float = Field(default=50.0, alias="MONTHLY_SPEND_CAP")
 
     # ----------------------------------------------------------------- pexels
@@ -483,6 +565,21 @@ class Settings(BaseSettings):
             v = [item.strip().strip("\"'") for item in s.split(",") if item.strip()]
         return v
 
+    @field_validator("usd_per_1k_chars", mode="before")
+    @classmethod
+    def _blank_rate_means_derive(cls, v):
+        """`USD_PER_1K_CHARS=` in a .env is "use the model's price", not a
+        crash.
+
+        A blank key in a .env file arrives as the empty string, and float
+        validation rejects it — so an operator clearing a rate they no longer
+        want to pin would get a pydantic traceback at startup instead of the
+        default they were asking for. .env.example ships this key blank.
+        """
+        if isinstance(v, str) and not v.strip():
+            return None
+        return v
+
     @field_validator("delivery_backend")
     @classmethod
     def _check_backend(cls, v: str) -> str:
@@ -538,7 +635,61 @@ class Settings(BaseSettings):
 
     @property
     def active_eleven_model(self) -> str:
-        return self.eleven_premium_model_id if self.eleven_use_premium else self.eleven_model_id
+        """The model id every paid call and every price uses.
+
+        ELEVEN_MODEL_ID wins when it names anything, because it is the setting
+        that can name ANY model. ELEVEN_USE_PREMIUM is the deprecated path and
+        still decides between exactly the two ids it always decided between,
+        so an .env written before this change does what it always did.
+
+        "Was it set?" is answered by an empty default rather than by
+        model_fields_set, which is not the same question: pydantic-settings
+        records a field as set when it arrives by env var or by field name, but
+        not when it arrives as an alias keyword, and a resolution rule that
+        depends on which of three equivalent spellings the caller used is a
+        rule that will be wrong somewhere.
+        """
+        if self.eleven_model_id:
+            return self.eleven_model_id
+        if self.eleven_use_premium:
+            return self.eleven_premium_model_id
+        return self.eleven_default_model_id
+
+    @property
+    def tts_usd_per_1k_chars(self) -> float:
+        """What a thousand characters actually costs, for the selected model.
+
+        Derived rather than configured. A single hardcoded number cannot stay
+        true across models at different prices, and the one that was here was
+        true of none of them - which mattered because the spend cap is metered
+        with it, not just the approval screen.
+
+        An unknown model RAISES. It used to bill at the dearest known rate on
+        the reasoning that guessing high is the safe direction - but a guess is
+        still a guess, and the guess that actually shipped was in the other
+        direction and would have let a $50 cap through about $100 of spend.
+        A missing entry and a wrong one look identical at runtime; only one of
+        them announces itself.
+        """
+        if self.usd_per_1k_chars is not None:
+            return self.usd_per_1k_chars
+        model = self.active_eleven_model
+        try:
+            return ELEVEN_USD_PER_1K_CHARS[model]
+        except KeyError:
+            raise UnknownModelPriceError(
+                f"No list price for ELEVEN_MODEL_ID={model!r}, so the monthly "
+                f"spend cap cannot be metered and nothing here will guess at "
+                f"one.\n\n"
+                f"Priced models: "
+                f"{', '.join(sorted(ELEVEN_USD_PER_1K_CHARS))}\n\n"
+                f"Note that the lookup is EXACT: eleven_v3_conversational is a "
+                f"different model from eleven_v3 at half the price, so a name "
+                f"that merely starts with a known one is not the same model.\n\n"
+                f"Either add {model!r} to ELEVEN_USD_PER_1K_CHARS in config.py "
+                f"with its real rate, or set USD_PER_1K_CHARS in .env to the "
+                f"USD-per-1,000-characters this model actually bills."
+            ) from None
 
     @property
     def fonts_dir(self) -> Path:

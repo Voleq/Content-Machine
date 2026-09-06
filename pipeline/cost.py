@@ -30,7 +30,15 @@ def month_key(now: datetime | None = None) -> str:
 
 
 def estimate_tts_usd(chars: int, settings: Settings) -> float:
-    return round(chars / 1000.0 * settings.usd_per_1k_chars, 4)
+    """What `chars` characters will cost at the SELECTED model's rate.
+
+    Not at a fixed rate: this used to bill everything at a hardcoded $0.15/1k
+    that matched neither model the code could pick, so the ledger below stopped
+    a $50 cap at roughly $16.67 of real spend and every report read 3x high.
+    An estimate the cap is enforced with has to track the model actually being
+    called.
+    """
+    return round(chars / 1000.0 * settings.tts_usd_per_1k_chars, 4)
 
 
 class SpendLedger:

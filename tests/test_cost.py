@@ -9,8 +9,89 @@ from pipeline.cost import (
 
 
 def test_estimate_math(settings):
-    assert estimate_tts_usd(1000, settings) == settings.usd_per_1k_chars
-    assert estimate_tts_usd(784, settings) == pytest.approx(784 / 1000 * settings.usd_per_1k_chars)
+    rate = settings.tts_usd_per_1k_chars
+    assert estimate_tts_usd(1000, settings) == rate
+    assert estimate_tts_usd(784, settings) == pytest.approx(784 / 1000 * rate)
+
+
+def test_the_rate_is_the_selected_model_s_rate(settings):
+    """A hardcoded rate cannot be true of two models at two prices.
+
+    It was 0.15, and turbo bills at 0.05 - so the ledger below metered a $50
+    cap down to about $16.67 of real spend, and every cost report the operator
+    approved against read three times high. That erred safe. The correction
+    that replaced it did not: see the exactness tests below.
+    """
+    from config import ELEVEN_USD_PER_1K_CHARS
+
+    turbo = settings.model_copy(update={"eleven_model_id": "eleven_turbo_v2_5"})
+    assert estimate_tts_usd(1000, turbo) == ELEVEN_USD_PER_1K_CHARS["eleven_turbo_v2_5"]
+
+    premium = settings.model_copy(
+        update={"eleven_model_id": "eleven_multilingual_v2"})
+    assert estimate_tts_usd(1000, premium) == ELEVEN_USD_PER_1K_CHARS["eleven_multilingual_v2"]
+    assert estimate_tts_usd(1000, premium) > estimate_tts_usd(1000, turbo)
+
+
+def test_an_unknown_model_refuses_to_be_priced(settings):
+    """It used to bill at the dearest known rate, on the reasoning that
+    guessing high is the safe direction. But a guess is a guess, and the one
+    that actually shipped went the other way: v3 priced at v3-conversational's
+    $0.05 would have metered a $50 cap through about $100 of real spend.
+
+    A missing entry and a wrong one are indistinguishable at runtime. Only one
+    of them can be made to announce itself.
+    """
+    from config import UnknownModelPriceError
+
+    unknown = settings.model_copy(update={"eleven_model_id": "eleven_not_yet"})
+    with pytest.raises(UnknownModelPriceError, match="eleven_not_yet"):
+        unknown.tts_usd_per_1k_chars
+
+
+def test_the_price_lookup_is_exact_and_not_a_prefix(settings):
+    """`eleven_v3_conversational` starts with `eleven_v3` and costs HALF as
+    much. Any prefix or substring match would price the dearer model at the
+    cheaper one's rate — which is the exact failure this table already had.
+
+    `direction.performs_audio_tags` substring-matches and is right to: both
+    models perform audio tags. The two questions look alike; the lookups must
+    not be shared.
+    """
+    from config import ELEVEN_USD_PER_1K_CHARS
+
+    v3 = settings.model_copy(update={"eleven_model_id": "eleven_v3"})
+    conv = settings.model_copy(
+        update={"eleven_model_id": "eleven_v3_conversational"})
+    assert v3.tts_usd_per_1k_chars == 0.10
+    assert conv.tts_usd_per_1k_chars == 0.05
+    assert v3.tts_usd_per_1k_chars == 2 * conv.tts_usd_per_1k_chars
+    assert ELEVEN_USD_PER_1K_CHARS["eleven_v3"] > \
+        ELEVEN_USD_PER_1K_CHARS["eleven_v3_conversational"]
+
+
+def test_the_cap_is_never_metered_slower_than_the_real_rate(settings):
+    """The direction that matters. Overstating a rate stops paid work early;
+    understating it lets the only hard stop in the system wave spend through.
+    """
+    from config import ELEVEN_USD_PER_1K_CHARS
+    from pipeline.cost import SpendCapExceededError, SpendLedger
+
+    live = settings.model_copy(update={"eleven_model_id": "eleven_v3",
+                                       "monthly_spend_cap_usd": 1.00})
+    assert live.tts_usd_per_1k_chars == ELEVEN_USD_PER_1K_CHARS["eleven_v3"]
+
+    ledger = SpendLedger(live)
+    # 10,000 characters of v3 is $1.00 exactly — the cap, not a penny under.
+    ledger.record_tts(0.50)
+    with pytest.raises(SpendCapExceededError):
+        ledger.guard_tts_spend(10_000)
+
+
+def test_usd_per_1k_chars_still_overrides_everything(settings):
+    """Prices move; the escape hatch has to keep working."""
+    pinned = settings.model_copy(update={"usd_per_1k_chars": 0.42})
+    assert estimate_tts_usd(1000, pinned) == 0.42
 
 
 def test_ledger_persists_across_instances(settings):
@@ -29,7 +110,7 @@ def test_guard_blocks_over_cap(settings):
     ledger = SpendLedger(tight)
     ledger.record_tts(0.09)
     with pytest.raises(SpendCapExceededError, match="monthly"):
-        ledger.guard_tts_spend(1000)  # ~$0.15 > remaining $0.01
+        ledger.guard_tts_spend(1000)  # ~$0.05 at turbo > remaining $0.01
     # a tiny job that fits still passes
     assert ledger.guard_tts_spend(50) > 0
 
@@ -149,3 +230,41 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     assert report.kit_reach.startswith("Kit: ")
     assert "of 143 plates" in report.kit_reach
     assert report.kit_reach in report.render_text()
+
+
+def test_a_blank_rate_in_a_dotenv_is_not_a_crash(tmp_path):
+    """.env.example ships USD_PER_1K_CHARS blank, and bootstrap.sh copies it.
+
+    A blank key arrives as the empty string; float validation rejects it. An
+    operator clearing a rate they no longer want to pin would have got a
+    pydantic traceback at startup in answer to asking for the default.
+    """
+    from config import Settings
+
+    env = tmp_path / ".env"
+    env.write_text("USD_PER_1K_CHARS=\nELEVEN_MODEL_ID=\n", encoding="utf-8")
+    s = Settings(_env_file=env)
+    assert s.usd_per_1k_chars is None
+    assert s.active_eleven_model == "eleven_turbo_v2_5"
+    assert s.tts_usd_per_1k_chars == 0.05
+
+
+def test_the_refusal_reaches_the_approval_screen(settings, short_valid_json):
+    """A raise is only worth anything if it is not swallowed on the way out.
+
+    The report path runs through several broad `except Exception` handlers on
+    its way to the operator, and the whole point of refusing to guess a rate is
+    that the refusal is louder than a wrong number. So this checks the real
+    builder, not the property.
+    """
+    from config import UnknownModelPriceError
+    from pipeline.cost import build_short_report
+    from pipeline.parser_short import parse_short_script
+    from pipeline.tts import TTSEngine
+
+    unpriced = settings.model_copy(
+        update={"eleven_model_id": "eleven_v3_preview_2026"})
+    script, warnings = parse_short_script(short_valid_json, unpriced)
+    with pytest.raises(UnknownModelPriceError, match="eleven_v3_preview_2026"):
+        build_short_report(script, warnings, unpriced,
+                           SpendLedger(unpriced), TTSEngine(unpriced))

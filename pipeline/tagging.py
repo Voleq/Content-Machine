@@ -61,9 +61,29 @@ def tokenize_tags(
         payload = (m.group(2) or "").strip()
         tag_type = _KNOWN_TYPES.get(type_str)
         if tag_type is None:
-            warnings.append(
-                f"unknown tag [{type_str}: {payload}] at char {m.start()} — skipped"
-            )
+            # A tag the voice bible refuses is named as refused. Stripped
+            # either way — nothing here reaches the audience — but "unknown,
+            # skipped" teaches a writer nothing, and the whole reason these are
+            # listed in pipeline/direction.py is that the first writer to read
+            # the ElevenLabs docs will try them.
+            #
+            # This catches the SHOUTED spelling, which is the one this
+            # grammar matches. The lowercase spelling the ElevenLabs docs use
+            # is not a tag at all by this regex: it survives into the
+            # narration and is caught by gates.direction_lint, where it is a
+            # block, because there it would be spoken and captioned.
+            from pipeline.direction import BANNED_TAGS
+
+            reason = BANNED_TAGS.get(type_str.lower())
+            if reason:
+                warnings.append(
+                    f"[{type_str}] is not an allowed direction — {reason}. "
+                    f"Stripped, so nothing was spoken."
+                )
+            else:
+                warnings.append(
+                    f"unknown tag [{type_str}: {payload}] at char {m.start()} — skipped"
+                )
             continue
         if allowed is not None and tag_type not in allowed:
             warnings.append(

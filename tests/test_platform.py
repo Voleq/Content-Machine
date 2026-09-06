@@ -353,6 +353,77 @@ def test_the_software_equivalent_keeps_the_quality_target():
     assert sw.preset == s.final_preset
 
 
+def test_the_probe_asks_for_a_frame_nvenc_will_accept(monkeypatch,
+                                                     _no_encoder_cache):
+    """The probe used to answer None on hardware that works.
+
+    It encoded 128x128, and NVENC has a minimum frame dimension it enforces
+    before it looks at the stream at all:
+
+        [h264_nvenc] InitializeEncoder failed: invalid param (8):
+                     Frame Dimension less than the minimum supported value.
+
+    An encoder that loaded, initialised and refused the SIZE is indis-
+    tinguishable, at exit code 1, from one that has no driver — so an RTX 3060
+    with a working driver rendered everything on libx264. The frame size is
+    the fix, so the frame size is what is pinned.
+    """
+    from pipeline import render_common
+
+    probes = []
+
+    def run(cmd, **kwargs):
+        if "-encoders" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, 0, " V..... h264_nvenc  NVIDIA NVENC", "")
+        probes.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr(render_common.subprocess, "run", run)
+    assert render_common.detect_hardware_encoder() == "h264_nvenc"
+    assert probes, "the encoder was listed, so it had to be probed"
+
+    source = next(a for a in probes[0] if a.startswith("color="))
+    w, h = (int(n) for n in re.search(r"s=(\d+)x(\d+)", source).groups())
+    assert w > 128 and h > 128, (
+        f"probing at {w}x{h}: 128x128 is a size NVENC refuses outright, and "
+        f"anything at or below it makes this detection answer None on every "
+        f"machine it exists to say yes on")
+
+
+def test_a_failed_probe_says_why_where_someone_will_see_it(
+        monkeypatch, _no_encoder_cache, caplog):
+    """"listed but a smoke encode failed" reads as "no GPU" and ends it.
+
+    That sentence was the whole of the default output while the probe was
+    asking for a frame the encoder would never accept, and the encoder's own
+    explanation went to debug — which nobody turns on for a question they do
+    not know they have.
+    """
+    import logging
+
+    from pipeline import render_common
+
+    def run(cmd, **kwargs):
+        if "-encoders" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, 0, " V..... h264_nvenc  NVIDIA NVENC", "")
+        return subprocess.CompletedProcess(
+            cmd, 1, "", "[h264_nvenc] InitializeEncoder failed: invalid param "
+                        "(8): Frame Dimension less than the minimum supported "
+                        "value.")
+
+    monkeypatch.setattr(render_common.subprocess, "run", run)
+    with caplog.at_level(logging.INFO, logger=render_common.log.name):
+        assert render_common.detect_hardware_encoder() is None
+
+    at_info = "\n".join(r.message for r in caplog.records
+                         if r.levelno >= logging.INFO)
+    assert "Frame Dimension" in at_info, (
+        "the reason the probe failed has to reach a default log level; at "
+        "debug it may as well not exist")
+
+
 def test_vaapi_is_not_offered_at_all(monkeypatch, _no_encoder_cache):
     """It could never work: encoding software frames through h264_vaapi needs
     -vaapi_device plus format=nv12,hwupload, and video_args() emits neither."""

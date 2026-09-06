@@ -127,7 +127,7 @@ Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are n
 **Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
 - `[SCRIBBLE: style -> target]` — a drawn mark plus the target as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
 
-**Delivery — never reaches the screen, only the voice.** `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short. Write them NOW — they change what gets generated, so adding one later means paying for the voice twice.
+**Delivery — never reaches the screen, only the voice.** The vocabulary, the mode each tag serves and the ceilings are in DELIVERY DIRECTION above, generated from the code that performs them. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short is plenty.
 
 Budget: roughly 22–30 visual events across the whole short. Two layers, and they are counted separately because they do different jobs:
 - **4–8 data beats** — a figure, a card, a filing, an article. These are READ, so each holds 3–8 seconds. More than eight and something gets cut short.

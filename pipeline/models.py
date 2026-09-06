@@ -64,9 +64,24 @@ class TagType(str, Enum):
     SCREENGRAB = "SCREENGRAB"    # operator-supplied app/screen capture (blocks if missing)
     SOUND = "SOUND"              # sfx palette
     SCRIBBLE = "SCRIBBLE"        # an annotations/ mark on a number or a word
-    # delivery direction — stripped from captions, passed to TTS
+    # DELIVERY DIRECTION — stripped from captions, passed to TTS.
+    #
+    # What each one becomes is in pipeline/direction.py, one table, per model
+    # tier. Nothing about a tag's meaning lives here: this enum is the grammar
+    # the writer types, and the table is what the models are given for it.
+    #
+    # The vocabulary was BEAT/SIGH/FLAT/DRY for as long as the only models
+    # available took pauses and sliders. Of those four exactly one — SIGH —
+    # became an audio tag, and the other three were timing and register. v3
+    # performs direction, so the tags that had no mechanism now have one.
     BEAT = "BEAT"                # a deliberate pause
+    LONG_BEAT = "LONG BEAT"      # the pause that has become a silence
     SIGH = "SIGH"
+    EXHALE = "EXHALE"            # shorter than a sigh, less resigned
+    SNORT = "SNORT"              # the joke he cannot let pass (capped at one)
+    SARCASTIC = "SARCASTIC"      # the line means its opposite
+    CURIOUS = "CURIOUS"          # rare genuine interest — §7's retention lift
+    QUIET = "QUIET"              # dark calm; the register drops, never rises
     FLAT = "FLAT"                # hold the register flatter than baseline
     DRY = "DRY"
 
@@ -114,8 +129,11 @@ OVERLAY_TAG_TYPES = frozenset({TagType.SCRIBBLE})
 # Delivery direction. These never reach the screen — they are stripped from
 # the captions and re-inserted into the TTS request, because deadpan comedy
 # is timing and the pipeline was sending flat text with none of it.
-DELIVERY_TAG_TYPES = frozenset({TagType.BEAT, TagType.SIGH, TagType.FLAT,
-                                TagType.DRY})
+DELIVERY_TAG_TYPES = frozenset({
+    TagType.BEAT, TagType.LONG_BEAT, TagType.SIGH, TagType.EXHALE,
+    TagType.SNORT, TagType.SARCASTIC, TagType.CURIOUS, TagType.QUIET,
+    TagType.FLAT, TagType.DRY,
+})
 
 # What a SHORT's `audio_script` may carry inline. The same grammar as the long,
 # minus the tags that need a runtime the short does not have.
@@ -1066,9 +1084,9 @@ class CostReport(BaseModel):
         tts = f"Audio: {self.words} words / {self.chars} chars / ~{self.est_runtime_min:.0f} min video"
         tts += "  (cached — $0.00 TTS)" if self.tts_cached else f"  (~${self.est_tts_usd:.2f} TTS)"
         if self.delivery_directives:
-            tts += (f"\n  {self.delivery_directives} delivery directive(s) "
-                    f"([BEAT]/[SIGH]/[FLAT]/[DRY]) are baked into this "
-                    f"generation — adding one later re-bills the whole script.")
+            tts += (f"\n  {self.delivery_directives} delivery directive(s) are "
+                    f"baked into this generation — adding one later re-bills "
+                    f"the whole script.")
         lines.append(tts)
 
         if self.fmt == "short":

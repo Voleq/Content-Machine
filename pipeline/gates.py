@@ -414,9 +414,17 @@ _CONSTRUCTIONS: tuple[tuple[str, str, "re.Pattern[str]"], ...] = (
 # continuously, so counting them as turns would mean the check never fires,
 # which is the same as not having it. What makes an anchored number a turn is
 # the anchor, and the anchor is addressed to somebody.
-_TURN = re.compile(r"[?]|\[(?:BEAT|SIGH|DRY|FLAT)\]|"
-                   r"\b(?:i|i'm|i've|i'd|i'll|me|my|you|you're|you've|you'd|"
-                   r"you'll|your|we|we're|us|our)\b", re.I)
+def _turn_pattern() -> "re.Pattern[str]":
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    marks = "|".join(re.escape(t.value) for t in
+                     sorted(DELIVERY_TAG_TYPES, key=lambda t: t.value))
+    return re.compile(rf"[?]|\[(?:{marks})\]|"
+                      r"\b(?:i|i'm|i've|i'd|i'll|me|my|you|you're|you've|you'd|"
+                      r"you'll|your|we|we're|us|our)\b", re.I)
+
+
+_TURN = _turn_pattern()
 
 # Seconds of unbroken exposition before it is worth saying so. The bible says
 # "about twenty", and about is the operative word — 24 gives a long sentence
@@ -467,7 +475,9 @@ def delivery_text(script) -> str:
     """
     narration = getattr(script, "narration", None) or getattr(
         script, "audio_script", "")
-    marks = {"BEAT", "SIGH", "DRY", "FLAT"}
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    marks = {t.value for t in DELIVERY_TAG_TYPES}
     events = [e for e in (getattr(script, "events", None) or [])
               if str(getattr(getattr(e, "type", None), "value", "")).upper() in marks]
     if not events:
@@ -545,6 +555,218 @@ def voice_lint(narration: str) -> list[Finding]:
                 gate="voice", severity="warn", line=lineno,
                 message="exclamation mark — the register is flat",
                 excerpt=line.strip()[:140]))
+    return findings
+
+
+# --------------------------------------------------------------------------
+# Delivery direction: what the writer may declare, and how much of it.
+# --------------------------------------------------------------------------
+# The vocabulary and the ceilings are in pipeline/direction.py. This reads them
+# rather than restating them, so the prompts, the expander and the linter
+# cannot drift apart on what a tag is or how often it may appear.
+#
+# Everything here is a WARNING except one thing: a banned tag written in the
+# lowercase spelling the ElevenLabs docs use is a BLOCK, because that spelling
+# is not a tag at all to the bracket grammar. It survives into the narration,
+# gets spoken, and lands in the captions — the same class of defect as the
+# data vendor's name, which blocks for the same reason.
+
+# `[laughs]`, `[applause]`, `[Laughs]` — anything the bracket grammar did not
+# recognise as a tag and therefore left in the narration to be spoken. Matched
+# in ANY case: the tokenizer only strips a SHOUTED type, so `[Laughs]` escapes
+# it exactly as the lowercase spelling does, and an uppercase tag cannot reach
+# this text at all.
+_SPOKEN_TAG_RE = re.compile(r"\[([A-Za-z][A-Za-z ]{1,30})\]")
+
+# A shouted word used for emphasis. v3 reads capitalisation as emphasis, which
+# makes it live formatting rather than typography — but the captions use the
+# CLEAN text, so it also reaches the screen shouting. The bible already bans
+# the exclamation mark for this exact reason.
+_EMPHASIS_CAPS_RE = re.compile(r"(?<![\w'’])([A-Z]{2,})(?![\w'’])")
+
+# Tokens that are legitimately capitalised in a filing discussion and are not
+# somebody leaning on a word. The ticker is added per script.
+_ACRONYMS = frozenset({
+    "AI", "API", "ARR", "ARPU", "CAGR", "CAPEX", "CEO", "CFO", "COO", "CTO",
+    "DCF", "EBIT", "EBITDA", "EPS", "ESG", "ETF", "EU", "EV", "FCF", "FDA",
+    "FX", "GAAP", "GDP", "GPU", "IPO", "IRR", "KPI", "M&A", "NASDAQ", "NAV",
+    "NYSE", "OEM", "OPEX", "P&L", "PE", "R&D", "ROE", "ROIC", "RSU", "SAAS",
+    "SEC", "SG&A", "SKU", "TAM", "TSR", "UK", "US", "USA", "USD", "VAT", "YOY",
+    "YTD",
+})
+
+_SENTENCE_END_RE = re.compile(r"[.!?…]+[\s\"'’”)]*")
+
+# Below this the script is a fragment and a per-thousand rate says nothing.
+_RATE_FLOOR_CHARS = 400
+
+
+def _delivery_events(script) -> list:
+    """The delivery direction on a script of either format."""
+    from pipeline.models import DELIVERY_TAG_TYPES
+
+    events = (getattr(script, "events", None)
+              or getattr(script, "inline_events", None) or [])
+    return sorted((e for e in events if e.type in DELIVERY_TAG_TYPES),
+                  key=lambda e: getattr(e, "char_offset", 0))
+
+
+def _sentence_index(narration: str) -> list[int]:
+    """The sentence number each character of the narration belongs to."""
+    idx = [0] * (len(narration) + 1)
+    n = 0
+    at = 0
+    for m in _SENTENCE_END_RE.finditer(narration):
+        for i in range(at, min(m.end(), len(narration) + 1)):
+            idx[i] = n
+        at = m.end()
+        n += 1
+    for i in range(at, len(narration) + 1):
+        idx[i] = n
+    return idx
+
+
+def direction_lint(script) -> list[Finding]:
+    """The delivery vocabulary, and the ceilings on using it.
+
+    A device used constantly stops being a device — the bible caps repetition
+    for that reason and direction is a device. None of this is a rewrite: the
+    ceilings are notes, the writer decides.
+    """
+    from pipeline.direction import (BANNED_TAGS, MAX_TAGS_PER_SENTENCE,
+                                    PER_SCRIPT_MAX, TAGS_PER_1K_CHARS_WARN)
+
+    narration = getattr(script, "narration", None) or getattr(
+        script, "audio_script", "")
+    findings: list[Finding] = []
+
+    # 1. A banned tag that is going to be SPOKEN.
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        for m in _SPOKEN_TAG_RE.finditer(line):
+            reason = BANNED_TAGS.get(m.group(1).lower())
+            if reason:
+                findings.append(Finding(
+                    gate="direction", severity="block", line=lineno,
+                    message=(f"“[{m.group(1)}]” is not an allowed direction — "
+                             f"{reason}. Written in lowercase it is not a tag "
+                             f"at all: it would be read out and captioned"),
+                    excerpt=line.strip()[:140]))
+
+    # 1b. A shouted word. On v3 capitalisation is live formatting — the docs
+    #     say it increases emphasis — so this is no longer only typography.
+    #     It is also NOT only an audio decision: captions are built from the
+    #     clean text, so an emphasised word reaches the screen shouting too.
+    #     Banned on the same ground as the exclamation mark, which the bible
+    #     already forbids: shouting in text is the written form of trying.
+    known = set(_ACRONYMS)
+    ticker = str(getattr(script, "ticker", "") or "").upper()
+    if ticker:
+        known.add(ticker)
+    for lineno, line in enumerate(narration.splitlines(), 1):
+        for m in _EMPHASIS_CAPS_RE.finditer(line):
+            word = m.group(1)
+            if word in known:
+                continue
+            findings.append(Finding(
+                gate="direction", severity="warn", line=lineno,
+                message=(f"“{word}” is shouted. v3 reads capitalisation as "
+                         f"emphasis, and the captions are built from this same "
+                         f"text — so it is heard AND seen leaning on the word. "
+                         f"The bible bans the exclamation mark for this; write "
+                         f"the emphasis into the sentence, or place a "
+                         f"direction"),
+                excerpt=line.strip()[:140]))
+
+    events = _delivery_events(script)
+    if not events:
+        return findings
+
+    # 2a. A direction that landed INSIDE a word. Almost always a missing space
+    #     before the bracket — but it splits the word in the request, so the
+    #     alignment comes back with two half-words and any cue anchored on that
+    #     word anchors on half of it. Cheap to say, invisible otherwise.
+    for e in events:
+        off = int(getattr(e, "char_offset", 0))
+        if 0 < off < len(narration) and not (
+                narration[off - 1].isspace() or narration[off].isspace()):
+            word = narration[max(0, off - 20):off + 20].strip()
+            findings.append(Finding(
+                gate="direction", severity="warn",
+                message=(f"[{e.type.value}] falls inside a word — it splits it "
+                         f"in the request, so the voice pauses mid-word and any "
+                         f"visual anchored there anchors on half of one. Put a "
+                         f"space before the bracket"),
+                excerpt=word[:140]))
+
+    # 2. One per sentence, and never two with nothing between them.
+    sent = _sentence_index(narration)
+    per_sentence: dict[int, list] = {}
+    for e in events:
+        off = max(0, min(int(getattr(e, "char_offset", 0)), len(narration)))
+        per_sentence.setdefault(sent[off], []).append(e)
+    for _, group in sorted(per_sentence.items()):
+        if len(group) > MAX_TAGS_PER_SENTENCE:
+            names = ", ".join(f"[{e.type.value}]" for e in group)
+            findings.append(Finding(
+                gate="direction", severity="warn",
+                message=(f"{len(group)} directions in one sentence ({names}) — "
+                         f"the ceiling is {MAX_TAGS_PER_SENTENCE}. Stacked "
+                         f"direction is the model performing, which is the "
+                         f"thing the flat register is instead of")))
+    for a, b in zip(events, events[1:]):
+        gap = narration[getattr(a, "char_offset", 0):getattr(b, "char_offset", 0)]
+        if not gap.strip():
+            findings.append(Finding(
+                gate="direction", severity="warn",
+                message=(f"[{a.type.value}] and [{b.type.value}] are adjacent "
+                         f"with no words between them — one direction at a "
+                         f"time, or the delivery is doing the writing")))
+
+    # 3. Across the whole script. Not on a fragment: below a few hundred
+    #    characters a "per thousand" rate is arithmetic about a script that
+    #    does not exist, and the per-sentence ceiling above is the one that
+    #    means anything there.
+    if len(narration) >= _RATE_FLOOR_CHARS:
+        rate = len(events) / (len(narration) / 1000.0)
+        if rate > TAGS_PER_1K_CHARS_WARN:
+            findings.append(Finding(
+                gate="direction", severity="warn",
+                message=(f"{len(events)} directions across {len(narration)} "
+                         f"characters ({rate:.1f} per 1,000; the ceiling is "
+                         f"{TAGS_PER_1K_CHARS_WARN:.0f}) — past this the "
+                         f"direction is the texture rather than the exception "
+                         f"to it")))
+
+    # 4. Per-tag ceilings. The lift is the retention, and a lift that happens
+    #    six times is a monotone again.
+    counts: dict = {}
+    for e in events:
+        counts[e.type] = counts.get(e.type, 0) + 1
+    for tag, cap in PER_SCRIPT_MAX.items():
+        n = counts.get(tag, 0)
+        if n > cap:
+            findings.append(Finding(
+                gate="direction", severity="warn",
+                message=(f"[{tag.value}] {n} times — the ceiling is {cap} per "
+                         f"script. Used more often it stops being the "
+                         f"exception it is for")))
+
+    # 5. Dark calm is earned, not opened on. Chapters carry no offsets until
+    #    the timeline exists, so "the first chapter" is the opening share of
+    #    the narration by chapter count — approximate on purpose, and a
+    #    warning for exactly that reason.
+    from pipeline.models import TagType
+
+    chapters = getattr(script, "chapter_list", None) or []
+    if chapters and narration:
+        opening = len(narration) / max(len(chapters), 1)
+        for e in events:
+            if e.type is TagType.QUIET and getattr(e, "char_offset", 0) < opening:
+                findings.append(Finding(
+                    gate="direction", severity="warn",
+                    message=(f"[QUIET] in the opening chapter — dark calm is "
+                             f"the register the video earns its way down to, "
+                             f"and it has nothing to drop from yet")))
     return findings
 
 
@@ -1421,6 +1643,7 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += fact_check(narration, data)
     report.findings += onscreen_fact_check(script, data)
     report.findings += voice_lint(delivery_text(script))
+    report.findings += direction_lint(script)
     report.findings += confession_lint(script, settings)
     report.findings += valuation_moves(script, settings)
     report.findings += budget_check(script, settings)

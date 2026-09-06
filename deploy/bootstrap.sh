@@ -16,12 +16,21 @@
 # genuinely broken network or disk.
 #
 # What is REQUIRED and what is OPTIONAL is a decision made once, here: a step
-# is required only if the bot cannot run without it. FFmpeg, the venv and the
-# pinned dependencies are required. Headless Chromium (10-K screenshots) and
+# is required only if the bot cannot run without it. FFmpeg, the venv, the
+# pinned dependencies, Node and the design kit are required - `render_long.py`
+# calls load_plates() unguarded, so a box without assets/plates/ has a bot that
+# answers /help and dies on /render. Headless Chromium (10-K screenshots) and
 # the local Piper voice (free draft audio) are not - each degrades a feature
 # and neither blocks a render, so each warns and the install carries on. An
 # optional step that aborts leaves the operator with no service at all, which
 # is strictly worse than the degradation it was trying to prevent.
+#
+# The kit is the step this script spent its first release missing entirely. It
+# generated the placeholders (sfx, music, b-roll, memes) and then ran the test
+# suite against an assets/plates/ nothing had built, so every clean install
+# ended in ~180 PlateErrors under a message calling them real and reproducible.
+# They were neither. Ingest is what makes the install usable, and it belongs
+# before the suite that checks it.
 #
 # The local voice can be skipped outright, and this is honoured for real -
 # unlike the message it replaces, which told the operator to set a variable
@@ -72,6 +81,12 @@ PY_MIN_MINOR=11
 PY_MAX_MINOR=13
 PYTHON_CANDIDATES=(python3.13 python3.12 python3.11 python3)
 FFMPEG_MIN_MAJOR=6
+
+# The kit engine is JS and runs at INGEST, never in the render path. The real
+# floor is 16.6 - `kit/engine/plates.js` calls Array.prototype.at() - but 18 is
+# the oldest release still getting security fixes and the oldest worth telling
+# an operator to install, so that is what is checked.
+NODE_MIN_MAJOR=18
 
 STEP=""
 
@@ -221,20 +236,142 @@ Pick whichever of these fits the machine:
      no PPA build for it yet, and back-version PPAs will not install):
          curl -LsSf https://astral.sh/uv/install.sh | sh
          uv python install 3.${PY_MIN_MINOR}
+         sudo ln -sf \"\$(uv python find 3.${PY_MIN_MINOR})\" /usr/local/bin/python3.${PY_MIN_MINOR}
+         chmod o+x ~ && chmod -R o+rX ~/.local/share/uv
          sudo bash deploy/bootstrap.sh ${DEST}
 
-     uv puts the interpreter on PATH as python3.${PY_MIN_MINOR}, which this
-     script then finds on its own."
+     The symlink and the chmod are not optional, and leaving them out is
+     what made this route fail twice for the operator who tried it.
+
+     The symlink: uv puts the interpreter on YOUR PATH, under ~/.local/bin.
+     sudo resets PATH to the secure_path in /etc/sudoers, which does not
+     contain it - so this script, running as root, finds nothing and prints
+     the message you are reading now. /usr/local/bin IS on secure_path
+     everywhere Debian-shaped, which is why that is the target.
+
+     The chmod: uv keeps the interpreter under ~/.local/share/uv, and Ubuntu
+     creates home directories mode 750. The ${SERVICE_USER} service user
+     cannot traverse in, so the venv's bin/python is a symlink to a file it
+     is not allowed to reach. This script checks that below rather than
+     letting it surface three steps later as a permission error in an
+     unrelated subsystem."
 fi
 PY_VERSION="$("$PY" -c 'import sys; print("%d.%d.%d" % sys.version_info[:3])')"
 info "python: $PY ($PY_VERSION)"
 
-# The venv package is separate on Debian/Ubuntu and its absence only shows up
-# at `python -m venv`, several minutes in.
-VENV_PKG="python3-venv"
-case "$PY" in
-  python3.1[0-9]) VENV_PKG="${PY}-venv" ;;
-esac
+# Whether a venv package is needed is a question about the INTERPRETER, not
+# about its name. Debian and Ubuntu are the only builds that carve ensurepip
+# out into a separate package; anything from uv, pyenv or a source build
+# already carries it.
+#
+# Deriving the package name from "$PY" got that backwards on the one route
+# that needs uv. `uv python install 3.13` on a release too new for deadsnakes
+# gives PY=python3.13, which named python3.13-venv - a package that cannot
+# exist on a release new enough to have needed uv in the first place. apt-get
+# then died on it and blamed a stale index or a broken WSL network, neither of
+# which had anything to do with it.
+#
+# So ask the interpreter. `import venv` alone is not the question: the venv
+# module is stdlib and imports fine on a Debian box with the package missing -
+# it is ensurepip that gets carved out, and `python -m venv` fails on it
+# several minutes in. Both are checked, because both are what venv creation
+# needs.
+#
+# An empty VENV_PKG is the normal answer for anything not built by Debian, and
+# it is left UNQUOTED at the apt-get line below so that it disappears instead
+# of becoming an empty argument apt cannot parse.
+if "$PY" -c 'import ensurepip, venv' 2>/dev/null; then
+  VENV_PKG=""
+  info "venv: built into this interpreter - no apt package needed"
+else
+  VENV_PKG="python3-venv"
+  case "$PY" in
+    python3.1[0-9]) VENV_PKG="${PY}-venv" ;;
+  esac
+  info "venv: not built in - apt will install $VENV_PKG"
+fi
+
+# Can $SERVICE_USER actually EXECUTE this interpreter?
+#
+# The venv is a set of symlinks into $PY's real location, and the bot runs as
+# the service user, not as you. uv keeps its interpreters under
+# ~/.local/share/uv and Ubuntu creates home directories mode 750, so a service
+# user that shares no group with the operator cannot traverse in - and
+# .venv/bin/python becomes a symlink to a file it is not allowed to reach.
+#
+# Unchecked, that surfaces three steps later as two errors that look unrelated
+# and are the same cause:
+#     sudo: cannot execute '$DEST/.venv/bin/piper': Permission denied (os error 13)
+#     sudo: '.venv/bin/python': command not found
+# The second is the misleading one - the file is right there and owned by the
+# service user; sudo cannot resolve what it points AT. own_dest cannot fix it
+# either, because the directory in the way is outside $DEST.
+#
+# BLOCKED_PATH is set to the first thing in the way, so the message can name it.
+BLOCKED_PATH=""
+
+# The others-execute bit, read rather than tested: [ -x ] is answered for root
+# by root's own privileges and would say yes to a 0750 directory.
+_world_x()  { local m; m="$(stat -Lc '%a' "$1" 2>/dev/null)" || return 1; [ $(( 0$m & 1 )) -ne 0 ]; }
+_world_rx() { local m; m="$(stat -Lc '%a' "$1" 2>/dev/null)" || return 1; [ $(( 0$m & 5 )) -eq 5 ]; }
+
+service_can_run() {
+  BLOCKED_PATH=""
+  local target real dir
+  target="$1"
+  # When the service user already exists (any re-run), ask the kernel rather
+  # than modelling it: this accounts for groups and ACLs, which mode bits do
+  # not.
+  if id -u "$SERVICE_USER" >/dev/null 2>&1; then
+    sudo -u "$SERVICE_USER" "$target" -c 'pass' >/dev/null 2>&1 && return 0
+  fi
+  # Otherwise walk it. Preflight runs before the service user is created and
+  # preflight does not create things, so on a clean install this is the check
+  # that runs. Group bits are not consulted: the service user is created with
+  # its own group and no supplementary ones, so "other" is what applies to it.
+  real="$(readlink -f "$(command -v "$target" 2>/dev/null || printf '%s' "$target")" 2>/dev/null)"
+  [ -n "$real" ] || { BLOCKED_PATH="$target"; return 1; }
+  _world_rx "$real" || { BLOCKED_PATH="$real"; return 1; }
+  dir="$(dirname "$real")"
+  while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+    _world_x "$dir" || { BLOCKED_PATH="$dir"; return 1; }
+    dir="$(dirname "$dir")"
+  done
+  # The walk found nothing in the way. If the user exists, the authoritative
+  # test above already disagreed, so trust that one.
+  id -u "$SERVICE_USER" >/dev/null 2>&1 && return 1
+  return 0
+}
+
+if ! service_can_run "$PY"; then
+  die \
+"$PY works for you, but the $SERVICE_USER service user cannot execute it.
+
+In the way:  ${BLOCKED_PATH:-unknown}
+
+The bot runs as $SERVICE_USER, and the venv about to be built here is a set of
+symlinks into that interpreter's real location. A service user that cannot
+traverse to it gets a venv whose bin/python resolves to nothing it may read -
+which shows up later as 'Permission denied' from piper and, more confusingly,
+as \"'.venv/bin/python': command not found\" for a file that is plainly there
+and owned by $SERVICE_USER. Chowning $DEST cannot help: the directory in the
+way is outside it.
+
+This is the normal state of a uv-installed interpreter, because Ubuntu creates
+home directories mode 750. Either open the path:
+
+    chmod o+x ${BLOCKED_PATH:-\$HOME}
+
+and, if the interpreter came from uv, its own tree too - as the user who ran
+\`uv python install\`, not as root:
+
+    chmod -R o+rX ~/.local/share/uv
+
+or put an interpreter somewhere system-wide instead, which avoids the question
+entirely:
+
+    sudo apt-get install -y python3.${PY_MAX_MINOR} python3.${PY_MAX_MINOR}-venv"
+fi
 
 if has_systemd; then
   info "systemd: running as PID 1"
@@ -253,7 +390,7 @@ ok "preflight passed"
 # --------------------------------------------------------------------------
 # apt dependencies
 # --------------------------------------------------------------------------
-step "apt dependencies (ffmpeg, fonts, python venv, rsync)"
+step "apt dependencies (ffmpeg, node, git-lfs, fonts, python venv, rsync)"
 # ImageMagick is deliberately NOT required: all text rendering is Pillow, all
 # animation is Pillow-frames -> ffmpeg. No display server needed.
 #
@@ -265,14 +402,36 @@ step "apt dependencies (ffmpeg, fonts, python venv, rsync)"
 # espeak-ng-data tree inside the package. Verified by synthesizing on a box
 # with no espeak-ng, no libespeak in ldconfig and nothing on PATH: 2.9s of
 # real audio. Adding it would install a package nothing links against.
+#
+# nodejs and npm are here because the design kit is JS: scripts/ingest_kit.py
+# drives kit/engine/build.js through @resvg/resvg-js and writes the PNGs the
+# renderer loads. BUILD-time only - nothing under pipeline/ shells out to node,
+# and tests/test_ingest.py holds that line - but build-time on a machine with
+# no node is still a machine that cannot produce artwork.
+#
+# git-lfs is here because samples/*.mp4 are LFS objects. A clone without it
+# gets 132-byte pointer files, and the fifteen tests in test_short_holds.py
+# fail on `moov atom not found` - which reads like a broken ffmpeg and is
+# actually a missing prerequisite nothing had named.
+#
+# $VENV_PKG is deliberately UNQUOTED: it is empty for any interpreter that
+# carries ensurepip itself, and an empty quoted argument is one apt-get
+# rejects. This is the one place in this script where the missing quotes are
+# the point.
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
-apt-get install -y -q ffmpeg "$VENV_PKG" fonts-dejavu-core rsync \
+# shellcheck disable=SC2086  # $VENV_PKG must word-split away when empty
+apt-get install -y -q ffmpeg nodejs npm git-lfs fonts-dejavu-core rsync $VENV_PKG \
   || die \
 "apt-get failed to install the base dependencies.
 
 Re-run 'sudo apt-get update' and read its output - on a fresh WSL2 image this
-is almost always a stale package index or no network from inside WSL."
+is almost always a stale package index or no network from inside WSL.
+
+If it named a package rather than the network - a python3.NN-venv that does
+not exist, say - that is a bug in this script and worth reporting: the venv
+package is chosen from what the interpreter actually carries, not from its
+name, precisely so it cannot ask for one that was never published."
 ok "installed"
 
 # --------------------------------------------------------------------------
@@ -295,18 +454,138 @@ fi
 ok "ffmpeg $FFMPEG_VERSION"
 
 # --------------------------------------------------------------------------
+# Node - the kit engine
+# --------------------------------------------------------------------------
+step "Node ${NODE_MIN_MAJOR}+ (the design kit's engine)"
+# REQUIRED, at build time. The kit is code: kit/engine/build.js declares every
+# plate as an author plus a seed, scripts/ingest_kit.py runs it through
+# @resvg/resvg-js and writes the PNGs, and the render path then loads plain
+# files with no node anywhere near it. Skip this and assets/plates/ is never
+# built, which is a bot that answers /help and dies on /render.
+command -v node >/dev/null 2>&1 || die \
+"node is still not on PATH after apt-get install.
+
+The design kit is JavaScript and is rendered to PNGs at ingest. Without node
+there is no artwork, and the renderer has nothing to load."
+
+command -v npm >/dev/null 2>&1 || die \
+"npm is missing (it ships alongside nodejs on Debian/Ubuntu).
+
+    sudo apt-get install -y npm"
+
+NODE_VERSION="$(node --version 2>/dev/null | sed 's/^v//')"
+NODE_MAJOR="$(printf '%s' "$NODE_VERSION" | sed 's/[^0-9].*//')"
+if [ -z "$NODE_MAJOR" ] || [ "$NODE_MAJOR" -lt "$NODE_MIN_MAJOR" ] 2>/dev/null; then
+  die \
+"Node ${NODE_MIN_MAJOR}+ is required; this is '${NODE_VERSION:-unknown}'.
+
+Ubuntu 22.04 still ships Node 12 in its own repository, which is the usual way
+to land here. The engine needs newer syntax than that (Array.prototype.at, for
+one), so this would fail inside the kit build rather than at startup.
+
+Take a current release from NodeSource:
+
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN_MAJOR}.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+
+then re-run this script."
+fi
+ok "node $NODE_VERSION"
+
+# --------------------------------------------------------------------------
+# Git LFS media
+# --------------------------------------------------------------------------
+step "Git LFS media (samples/)"
+# samples/*.mp4 are LFS objects (see .gitattributes). A clone made on a box
+# without git-lfs gets 132-byte pointer files instead, and the fifteen tests in
+# test_short_holds.py - which discover the samples from the directory rather
+# than by name - fail on `moov atom not found` and
+# `could not convert string to float: ''`. Those read like a broken ffmpeg and
+# are nothing of the sort.
+#
+# This has to happen in $SRC, before the rsync: $DEST gets no .git (it is
+# excluded), so `git lfs pull` there has nothing to resolve against. Fixing it
+# after the copy is not possible, which is why it is fixed before.
+
+# No pipeline here on purpose: `head -c 64 | grep -q` is a pipefail trap - grep
+# exits on the first match and SIGPIPEs head, so the pipeline reports failure
+# for the pointer it just matched.
+lfs_pointer() {
+  [ -f "$1" ] || return 1
+  case "$(head -c 64 "$1" 2>/dev/null)" in
+    *git-lfs.github.com/spec*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# The checkout belongs to the operator, not to root, so run git as them where
+# we can and disarm the dubious-ownership refusal where we cannot.
+git_src() {
+  if [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != "root" ]; then
+    sudo -u "$SUDO_USER" -H git -C "$SRC" -c safe.directory="$SRC" "$@"
+  else
+    git -C "$SRC" -c safe.directory="$SRC" "$@"
+  fi
+}
+
+LFS_POINTERS=0
+# Set when this run knows the samples are still pointers. The test suite's
+# failure message reads it, so that a red suite names the cause this run
+# already found instead of insisting the failure is the operator's to debug.
+LFS_DEGRADED=0
+for f in "$SRC"/samples/*.mp4; do
+  if lfs_pointer "$f"; then LFS_POINTERS=1; break; fi
+done
+
+if [ "$LFS_POINTERS" -eq 0 ]; then
+  info "samples are real media - nothing to fetch"
+elif ! git_src rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  LFS_DEGRADED=1
+  warn "$SRC/samples holds LFS pointer files and is not a git checkout, so"
+  warn "there is nothing here to resolve them against. The fifteen sample"
+  warn "measurements in tests/test_short_holds.py will fail below."
+  warn "Clone the repository with git-lfs installed and re-run."
+else
+  info "samples are LFS pointers - fetching the real media"
+  if git_src lfs install --local >/dev/null 2>&1 && git_src lfs pull; then
+    ok "LFS media fetched into $SRC"
+  else
+    LFS_DEGRADED=1
+    warn "git lfs pull failed. samples/*.mp4 are still 132-byte pointers, and"
+    warn "the fifteen tests in tests/test_short_holds.py will fail below on"
+    warn "'moov atom not found' - which is this, not a broken ffmpeg. Retry:"
+    warn "    cd $SRC && git lfs install && git lfs pull"
+  fi
+fi
+
+# --------------------------------------------------------------------------
 # hardware encoder (informational)
 # --------------------------------------------------------------------------
 step "hardware encoder"
 # Detection is a real smoke encode at runtime (pipeline/render_common.py), so
 # this is only an early heads-up. NVENC through WSL2 works but is less
 # reliable than native; the pipeline falls back to libx264 silently either way.
+# The probe frame is 640x360, not 128x128. NVENC has a minimum frame dimension
+# and a current driver refuses anything under it outright:
+#     [h264_nvenc] InitializeEncoder failed: invalid param (8):
+#                  Frame Dimension less than the minimum supported value.
+# So the old probe reported "no GPU" on a working RTX 3060 with the driver
+# loaded, and every render on that box fell back to libx264 while the card sat
+# idle. 640x360 is still instant and is a size any encoder will take.
 if ffmpeg -hide_banner -encoders 2>/dev/null | grep -q h264_nvenc; then
-  if ffmpeg -hide_banner -loglevel error -f lavfi \
-      -i color=c=black:s=128x128:d=0.1 -c:v h264_nvenc -f null - >/dev/null 2>&1; then
+  if nvenc_err="$(ffmpeg -hide_banner -loglevel error -f lavfi \
+      -i color=c=black:s=640x360:d=0.1 -c:v h264_nvenc -f null - 2>&1 >/dev/null)"; then
     ok "h264_nvenc works - finals will use the GPU"
   else
     info "h264_nvenc is listed but a smoke encode failed - finals use libx264"
+    # The reason, not just the verdict. "listed but failed" reads as "no GPU"
+    # and closes the investigation; the actual line from the encoder is what
+    # tells a driver problem apart from a probe this script got wrong.
+    if [ -n "$nvenc_err" ]; then
+      while IFS= read -r nvenc_line; do
+        [ -n "$nvenc_line" ] && info "  $nvenc_line"
+      done <<< "$(printf '%s' "$nvenc_err" | tail -n 5)"
+    fi
     is_wsl && info "(common under WSL2; the fallback is automatic and silent)"
   fi
 else
@@ -356,6 +635,34 @@ fi
 
 Every version in pyproject.toml is pinned, so this is a network problem or a
 version that has been yanked - the pip output above says which."
+
+# The exact form of the preflight check, now that the service user exists and
+# there is a real venv to point at. Preflight had to model the answer by
+# reading mode bits; this asks the kernel, which also accounts for groups and
+# ACLs. Everything after this line runs `sudo -u $SERVICE_USER .venv/bin/...`,
+# so this is the last moment the failure can still be explained.
+own_dest
+if ! service_can_run "$DEST/.venv/bin/python"; then
+  die \
+"The venv is built, but $SERVICE_USER cannot execute $DEST/.venv/bin/python.
+
+In the way:  ${BLOCKED_PATH:-$PY}
+
+.venv/bin/python is a symlink to $PY, and the service user has to be able to
+follow it. It cannot, so every step below - the kit build, the Piper smoke
+test, the test suite, and eventually the service itself - would fail on a file
+that is plainly present and owned by $SERVICE_USER:
+
+    sudo: '.venv/bin/python': command not found
+
+Open the path to the interpreter:
+
+    chmod o+x ${BLOCKED_PATH:-$(dirname "$(readlink -f "$PY")")}
+
+or install one somewhere system-wide, which avoids the question entirely:
+
+    sudo apt-get install -y python3.${PY_MAX_MINOR} python3.${PY_MAX_MINOR}-venv"
+fi
 ok "installed from the pinned pyproject.toml"
 
 # --------------------------------------------------------------------------
@@ -382,6 +689,42 @@ step "brand assets + fixtures (deterministic, generated locally)"
 .venv/bin/python scripts/gen_assets.py
 .venv/bin/python scripts/gen_fixtures.py
 ok "generated"
+
+# --------------------------------------------------------------------------
+# the design kit
+# --------------------------------------------------------------------------
+step "design kit (the node engine -> assets/plates)"
+# REQUIRED, and the step this installer used to leave out altogether. gen_assets
+# above draws placeholders for everything the kit does NOT draw - sfx, music,
+# b-roll, memes - and nothing at all for the 143 plates, because those are the
+# kit's. Without this step assets/plates/ never exists, load_plates() raises
+# PlateError, and the test suite below reports ~180 failures under a message
+# calling them real and reproducible. They were an installer that skipped its
+# own build.
+#
+# Deliberately NOT cached across runs. `ingest_kit.py --check` verifies the
+# artwork on disk against its own registry, not against kit/, so a kit that
+# changed in a `git pull` would pass a check and ship stale plates. The
+# day-to-day update command is `git pull && sudo bash deploy/bootstrap.sh`, so
+# rebuilding every time is what keeps the artwork and the code the same age.
+npm ci --no-audit --no-fund || die \
+"npm ci failed, so the kit's rasteriser (@resvg/resvg-js) is not installed.
+
+It is a BUILD-time dependency only - the render path loads PNGs and never
+touches node - but without it there is no artwork to load. This is a network
+problem or a registry problem; the npm output above says which. Retry alone:
+    cd $DEST && npm ci"
+
+.venv/bin/python scripts/ingest_kit.py kit || die \
+"The design kit did not build.
+
+The engine runs kit/engine/build.js and reconciles what it emits against the
+manifests the artwork was signed off against; it refuses to install anything
+the two disagree about, so a failure here is a real disagreement rather than a
+flaky step. The output above names it. Nothing was installed into
+assets/plates/, and the test suite below would report every plate as missing."
+own_dest
+ok "kit installed into $DEST/assets/plates"
 
 # --------------------------------------------------------------------------
 # .env
@@ -603,12 +946,38 @@ own_dest
 # --------------------------------------------------------------------------
 step "offline test suite (MOCK_MODE, zero network)"
 info "this runs real encodes and takes a while"
-sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q || die \
+# This runs AFTER the kit, which is the whole point of where it sits. It used
+# to run against an assets/plates/ that nothing in this script ever built, so
+# every clean install ended in ~180 PlateErrors below a message calling them
+# real and reproducible - the one sentence guaranteed to stop a first-time
+# installer, and the only one in the run that was false.
+#
+# The message may only claim a failure is the operator's to debug when this
+# run has nothing of its own to blame. Where it does, it says so first.
+if ! sudo -u "$SERVICE_USER" .venv/bin/python -m pytest tests/ -q; then
+  if [ "$LFS_DEGRADED" -eq 1 ]; then
+    die \
+"The offline test suite failed, and this run already knows why.
+
+samples/*.mp4 are still Git LFS pointer files - see the warning further up.
+The fifteen tests in tests/test_short_holds.py measure those samples frame by
+frame, so against a 132-byte pointer they fail on 'moov atom not found' and
+'could not convert string to float' - which look like a broken ffmpeg and are
+not. Fetch the media and re-run this script:
+
+    cd $SRC && git lfs install && git lfs pull
+    sudo bash $SRC/deploy/bootstrap.sh $DEST
+
+If there are failures ABOVE and BEYOND those fifteen, they are real."
+  fi
+  # Nothing this run did explains it, so it is the operator's to debug.
+  die \
 "The offline test suite failed.
 
 The install is otherwise complete, but do not start the bot on a red suite -
 the failure above is real and reproducible with:
     cd $DEST && sudo -u $SERVICE_USER .venv/bin/python -m pytest -q"
+fi
 ok "suite green"
 
 # --------------------------------------------------------------------------

@@ -189,9 +189,10 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
 
     if not script.delivery_events():
         out.append(
-            "no delivery direction in the script — [BEAT]/[SIGH]/[FLAT]/[DRY] "
-            "are what make the deadpan land, and four or five across a short "
-            "is the budget. Without them TTS reads it evenly.")
+            "no delivery direction in the script — the delivery tags are what "
+            "make the deadpan land, and four or five across a short is the "
+            "budget. Without them TTS reads it evenly. The vocabulary, the "
+            "mode each tag serves and the ceilings are in the writing prompt.")
     out.extend(_reach_warning(script, settings))
     return out
 

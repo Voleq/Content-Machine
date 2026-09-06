@@ -79,7 +79,7 @@ The beats are fixed; the runtime goes to keeping the viewer, never more talking:
 ## PUNCTUATING WITH HAND-DRAWN MARKS
 Place inline in `audio_script`, immediately before the word they hit; the parser strips them (never spoken) and fires them on that word:
 - `[SCRIBBLE: style -> target]` — a drawn mark + the target text as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
-You may also place DELIVERY DIRECTION inline — `[BEAT]` (a deliberate pause), `[SIGH]`, `[FLAT]`, `[DRY]`. These never reach the screen; they reach the voice. A [BEAT] before the payoff is what turns a sentence into a joke. Use them sparingly, and write them NOW — they change what gets generated, so adding one later means paying twice.
+You may also place DELIVERY DIRECTION inline. The full vocabulary, the modes each one serves and the ceilings on them are in DELIVERY DIRECTION above — that list is generated from the code that performs the tags, so it is the one to trust. A [BEAT] before the payoff is what turns a sentence into a joke.
 
 Keep it to ~1–3 inline marks. They ride on the fixed beats; they don't replace the JSON `annotations`.
 

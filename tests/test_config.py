@@ -100,3 +100,94 @@ def test_mnt_itself_counts_but_a_lookalike_does_not():
     # /mnturbo is not under /mnt — a plain string prefix test would say it is
     off = Settings(_env_file=None, state_dir=Path("/mnturbo/state"))
     assert off.windows_drive_dirs() == []
+
+
+# --------------------------------------------------------------------------
+# Which ElevenLabs model gets called, and what it costs
+# --------------------------------------------------------------------------
+# Set through the environment, because that is how an operator sets it: only
+# fields with an explicit `alias=` accept the SCREAMING spelling as a keyword,
+# and `extra="ignore"` swallows the rest without a word.
+
+
+def test_the_model_can_be_named_outright(monkeypatch):
+    """ELEVEN_USE_PREMIUM was a boolean over two hardcoded ids, and nothing
+    documented a way past it — so eleven_v3, the only model that honours
+    [SIGH] instead of reading it aloud, could not be chosen in practice."""
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
+    assert Settings(_env_file=None).active_eleven_model == "eleven_v3"
+
+
+def test_the_deprecated_boolean_still_does_what_it_did(monkeypatch):
+    """An .env written before ELEVEN_MODEL_ID existed must not change meaning."""
+    monkeypatch.setenv("ELEVEN_USE_PREMIUM", "true")
+    assert Settings(_env_file=None).active_eleven_model == "eleven_multilingual_v2"
+
+    monkeypatch.delenv("ELEVEN_USE_PREMIUM")
+    assert Settings(_env_file=None).active_eleven_model == "eleven_turbo_v2_5"
+
+
+def test_naming_the_model_beats_the_deprecated_boolean(monkeypatch):
+    """One of them has to win, and it is the one that can name any model."""
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
+    monkeypatch.setenv("ELEVEN_USE_PREMIUM", "true")
+    assert Settings(_env_file=None).active_eleven_model == "eleven_v3"
+
+
+def test_the_audio_tag_path_turns_itself_on_with_the_model(monkeypatch):
+    """Selecting v3 has to be enough. expand_delivery degrades [SIGH] to a
+    break on anything else — correctly, since an unsupported tag is read
+    aloud — so the model setting is the only switch there should be."""
+    from pipeline.models import TagType
+    from pipeline.tts import expand_delivery
+
+    class _Ev:
+        type = TagType.SIGH
+        char_offset = 5
+
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
+    text, _, _ = expand_delivery("Well. Fine.", [_Ev()],
+                              Settings(_env_file=None).active_eleven_model)
+    assert "[sighs]" in text
+
+    monkeypatch.delenv("ELEVEN_MODEL_ID")
+    text, _, _ = expand_delivery("Well. Fine.", [_Ev()],
+                              Settings(_env_file=None).active_eleven_model)
+    assert "[sighs]" not in text and "<break" in text
+
+
+def test_the_tts_rate_follows_the_model(monkeypatch):
+    """The rate is metered against by SpendLedger, not merely displayed: at a
+    flat 0.15 a $50 cap stopped paid calls after about $16.67 of real spend."""
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.05
+
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_multilingual_v2")
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
+
+    # v3 is TWICE turbo, and the audio tags are what the difference buys.
+    # `eleven_v3_conversational` is the $0.05 one and is a different model.
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.10
+
+    monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3_conversational")
+    assert Settings(_env_file=None).tts_usd_per_1k_chars == 0.05
+
+
+def test_the_shipped_dotenv_example_actually_loads():
+    """`bootstrap.sh` copies `.env.example` to `.env` verbatim on a clean
+    install, so anything in it that pydantic rejects is a bot that will not
+    start on a box where everything else went right.
+
+    The case that motivated this: `USD_PER_1K_CHARS=` — a key deliberately
+    shipped blank so the rate follows the model — arrives as the empty string,
+    which float validation refuses.
+    """
+    example = Path(__file__).resolve().parents[1] / ".env.example"
+    s = Settings(_env_file=example)
+    from config import ELEVEN_USD_PER_1K_CHARS
+
+    assert s.mock_mode is True, "the shipped example must not start live"
+    # Read off the table rather than a list here: an example that names a model
+    # the pricing table does not know would raise at the first cost estimate.
+    assert s.active_eleven_model in ELEVEN_USD_PER_1K_CHARS
+    assert s.tts_usd_per_1k_chars > 0

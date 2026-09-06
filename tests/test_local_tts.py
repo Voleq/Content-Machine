@@ -498,6 +498,32 @@ def test_a_proof_mocks_the_voice_and_nothing_else(settings, monkeypatch,
                                        "mock_prices": None, "mock_screener": None})
     live.ensure_runtime_dirs()
     core = BotCore(live)
+
+    # MOCK_MODE is off, so ContentManager built the REAL Wikimedia and company
+    # site clients — and intake_script() below resolves the script's one [IMG]
+    # tag through them. cache_dir is under tmp_path, so there is never a cached
+    # entry to short-circuit it. On a box where that reaches the internet,
+    # conftest's socket guard fails the test:
+    #     network call attempted in tests: ('185.15.59.224', 443)
+    # Whether it fires depends on the box — a proxy on loopback, or a search
+    # that returns nothing without connecting, both hide it — which is what
+    # made this look like a flake rather than a test that was always wrong.
+    #
+    # Stubbed here rather than mocked in `live`, because `live` is the subject:
+    # the assertions below are about what the PROOF TIER switches to mock, and
+    # flipping a setting to get the test offline would delete the thing being
+    # tested. An image search that finds nothing degrades to a filler card,
+    # which is the same path a genuinely offline box takes.
+    class _OfflineImages:
+        def search(self, query, limit=5):
+            return []
+
+        def download(self, url, dest):
+            raise AssertionError("nothing was found, so nothing may be fetched")
+
+    core.content.image_client = _OfflineImages()
+    core.content.site_client = _OfflineImages()
+
     core.start_lane(93, "long", "EXMPL")
     ws = core.context.get(93)
     shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
