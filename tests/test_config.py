@@ -146,12 +146,12 @@ def test_the_audio_tag_path_turns_itself_on_with_the_model(monkeypatch):
         char_offset = 5
 
     monkeypatch.setenv("ELEVEN_MODEL_ID", "eleven_v3")
-    text, _ = expand_delivery("Well. Fine.", [_Ev()],
+    text, _, _ = expand_delivery("Well. Fine.", [_Ev()],
                               Settings(_env_file=None).active_eleven_model)
     assert "[sighs]" in text
 
     monkeypatch.delenv("ELEVEN_MODEL_ID")
-    text, _ = expand_delivery("Well. Fine.", [_Ev()],
+    text, _, _ = expand_delivery("Well. Fine.", [_Ev()],
                               Settings(_env_file=None).active_eleven_model)
     assert "[sighs]" not in text and "<break" in text
 

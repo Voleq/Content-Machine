@@ -79,6 +79,7 @@ blocks, never rewrites — the writer decides.
 | **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData` | warns |
 | **on-screen fact-check** | every figure in a `[PLATE]`'s cells, against the same export, with the plate's own `unit=` applied — the numbers a viewer can pause on | warns |
 | **voice linter** | what `assets/voice_bible.md` forbids: hype adjectives, exclamation marks, anything that reads as a call, a construction used twice in one script, and ~20 seconds of explanation with no turn in it. A data vendor named on screen is the one **block** — it would be spoken and captioned | mostly warns |
+| **direction linter** | the delivery vocabulary and its ceilings, read off `pipeline/direction.py`: one direction a sentence, never two adjacent, per-script caps on the tags that stop working when repeated, and no shouted word. A tag the bible refuses is named as refused, and the **block** is the lowercase spelling the ElevenLabs docs use — `[laughs]` is not a tag to the bracket grammar at all, so it would be read out and captioned | mostly warns |
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
 | **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
@@ -139,6 +140,10 @@ pipeline/
                          figure animation, and solving a mark onto its target
 
   tts.py                 ElevenLabs with-timestamps client + cache + budgets
+  direction.py           THE DELIVERY VOCABULARY: one table of what each tag
+                         becomes per model tier, the ceilings, and the tags the
+                         bible refuses by name. The prompts are generated from
+                         it and the linter reads it
   local_tts.py           the free draft voice (Piper) + sentence-anchored timings
   timeline.py            THE MASTER CLOCK: beats/anchors -> cue times
   segments.py            per-segment encoding: content-hash cache, parallel,
@@ -832,7 +837,7 @@ just less directly. Set the var once you know which macro your box has.
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
 | `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash/v3 $0.05, multilingual_v2 $0.10. Set it only when a price moves or the model is one that table does not know. This is not a display figure — `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
 | `MONTHLY_SPEND_CAP` | 50.0 | hard code-level gate |
-| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. v3 is the only one that honours the `[SIGH]` audio tag rather than having it read aloud, and it now costs the same as turbo |
+| `ELEVEN_MODEL_ID` | unset | the ElevenLabs model, by name. `eleven_turbo_v2_5` (default), `eleven_multilingual_v2`, `eleven_v3`. **v3 is the only model that performs delivery** — eight of the ten direction tags do something only there, and it costs the same as turbo. See *Delivery direction* below |
 | `ELEVEN_USE_PREMIUM` | false | **deprecated** — picks between turbo and multilingual_v2, and only when `ELEVEN_MODEL_ID` is unset. Prefer naming the model |
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
@@ -927,6 +932,20 @@ env var, case-insensitive).
   maps 16 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only
   consulted on a miss, and only when configured.
+- **Delivery direction is declared, never inferred.** The writer places
+  `[BEAT]`, `[CURIOUS]`, `[SIGH]` and the rest inline; nothing downstream reads
+  a sentence and decides it wants one. `pipeline/direction.py` is the single
+  table — what each tag becomes on `eleven_v3`, what it falls back to on an
+  older model, the ceiling on each, and the ones refused by name — and the
+  writing prompts are **generated** from it, so the list a writer is handed is
+  the list the pipeline performs. ElevenLabs' "Enhance" pass is deliberately
+  not wired in: it puts a model in charge of the register, which is the thing
+  the bible, this linter and the fact-check gate exist to keep it out of.
+- **Only the paid tier is handed direction.** Which model is configured and
+  which voice is about to speak are different questions. Piper honours neither
+  audio tags nor SSML — it reads both aloud — so the free draft voice gets the
+  clean script, and the direction stays in the cache key so a draft with a
+  `[SIGH]` is still a different generation from one without.
 - **Mock TTS** synthesizes a low hum at a deterministic words-per-second
   rate (2.7 SHORT / 2.3 LONG) with linear word timestamps, so mock
   renders have realistic pacing and the full timeline logic is exercised.

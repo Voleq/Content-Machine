@@ -122,6 +122,12 @@ These are architecture, not tone, and they do more for retention than any joke.
 - **NO CONSTRUCTION TWICE IN ONE SCRIPT.** One reframe ("that's not X, it's Y"), one simile chain, one bathos drop, one fake-out. Maximum. No individual one is bad; the fourth is tired. This is checked too.
 - **ESCALATE** the stakes as chapters stack; the close should feel earned, not merely reached.
 - Rotate the four modes (tired explainer / genuine interest / quiet exasperation / dark calm) across chapters — never park in one for a whole chapter.
+- **Name the mode in the chapter plan, then let it suggest the direction.** The
+  delivery tags are grouped by mode in DELIVERY DIRECTION above: tired explainer
+  reaches for `[SIGH]`, quiet exasperation for `[EXHALE]` and `[SARCASTIC]`,
+  rare genuine interest for `[CURIOUS]`, dark calm for `[QUIET]`. This is
+  guidance for you, not a rule the pipeline enforces — nothing downstream reads
+  a chapter's mode and inserts a tag. You place them or they do not exist.
 
 ## THE CONFESSION — roughly one video in three
 
@@ -235,11 +241,15 @@ on the plate. What sits on the rail comes from you, as a PAIR OF NUMBERS:
                             A plate that already carries an attention mark cannot also be annotated.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
-[BEAT]                  a deliberate pause. The single most useful tool you have: deadpan lands on timing, and a beat before the flat turn is what makes it a joke rather than a sentence.
-[SIGH]                  an audible exhale before a line he resents having to say
-[FLAT]                  hold the whole read flatter than baseline
-[DRY]                   same, drier
-Use them SPARINGLY — a [BEAT] on every line is a stutter, not a rhythm. They change what gets generated, so they must be written NOW: adding one after the audio exists means paying for the generation twice.
+The full vocabulary is in DELIVERY DIRECTION near the top of this prompt, with
+the mode each tag serves and the ceiling on each. That block is generated from
+the same table the pipeline performs the tags from, so it is the list to trust:
+a tag that is not on it is a tag nothing will honour, and several of them are
+refused by name with a reason.
+
+[BEAT] remains the single most useful tool you have — deadpan lands on timing,
+and a beat before the flat turn is what makes it a joke rather than a sentence.
+A [BEAT] on every line is a stutter, not a rhythm.
 
 {{tagging_density}}
 

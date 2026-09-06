@@ -100,6 +100,26 @@ Named so he can reach for one, not listed so he can tick them off. The learning 
 
 **The acknowledged pun.** As above. Rare.
 
+**The delivery itself.** The newest of these, and the only one that is not a
+sentence: the writer declares how a line is *said*, inline, and the voice
+performs it. `[BEAT]` before the flat turn is the oldest one and the one every
+mechanic above already leans on — the sincere fake-out is a concession, a beat,
+then a short clause, and the beat is doing a third of that work.
+
+What the rest of the vocabulary buys is the thing §7 has always asked for and
+never had a mechanism for: `[CURIOUS]` is how the monotone lifts, and §7 says
+those lifts are the retention. `[SNORT]` is the one piece of audible amusement
+allowed anywhere in the register — a man reading a filing at 3am snorts; he
+does not laugh, and laughing is still banned outright by §2. `[QUIET]` is dark
+calm with the register dropping rather than rising, which is the opposite of
+every emphasis instinct and is why it is worth a tag.
+
+The same ceiling applies as to every mechanic here: **a device used constantly
+stops being a device.** One direction a sentence at most, and the lift spent on
+the one mechanism in the video that genuinely earns it. The full vocabulary is
+generated into the writing prompts from the code that performs it, so the list
+in the prompt is always the list that works.
+
 ### The test that governs all of them
 
 **Delete the joke. If the paragraph now teaches less, keep it. If it teaches exactly the same thing, cut it.**

@@ -221,15 +221,77 @@ The reference script said exactly that and showed nothing, which asks the
 audience to take your word for the most checkable claim in the video."""
 
 
-EXPRESSIVITY_AND_PACING = """\
-Expressivity tags — inline, sparing, and never on every sentence:
-  [BEAT]  a held pause before a punchline or a number lands
-  [SIGH]  weary resignation; at most once or twice in a whole script
-  [FLAT]  deadpan delivery of something that should sound dramatic
-  [DRY]   the joke that is not signposted as a joke
-  Four or five across a short, a dozen or so across a long. Tagging every
-  sentence flattens the effect and reads as a tic.
+def delivery_vocabulary() -> str:
+    """The delivery tags, their modes and their ceilings — from the table.
 
+    GENERATED, like every other catalogue the writer is handed, because a
+    hand-kept copy of a vocabulary is a copy that goes stale. The list here,
+    what `pipeline/tts.py` emits, and what `gates.direction_lint` refuses are
+    the same four facts read off `pipeline/direction.py` once.
+
+    A writer who is not told a tag exists does not use it, which is the whole
+    reason §7's "rare genuine interest — the monotone lifts" went unspoken for
+    as long as it did: there was a mode in the bible and no way to ask for it.
+    """
+    from pipeline.direction import (BANNED_TAGS, DIRECTIONS,
+                                    MAX_TAGS_PER_SENTENCE, PER_SCRIPT_MAX,
+                                    REGISTERS, TAGS_PER_1K_CHARS_WARN)
+
+    rows = []
+    for tag, d in sorted(DIRECTIONS.items(), key=lambda kv: kv[0].value):
+        rows.append(f"  [{tag.value}]".ljust(15) + f"{d.mode}".ljust(29) + d.why)
+    rows.append("")
+    for tag, r in sorted(REGISTERS.items(), key=lambda kv: kv[0].value):
+        rows.append(f"  [{tag.value}]".ljust(15) + f"{r.mode}".ljust(29) + r.why)
+
+    caps = ", ".join(
+        f"[{t.value}] at most {n}" for t, n in
+        sorted(PER_SCRIPT_MAX.items(), key=lambda kv: kv[0].value))
+
+    trying, effects = [], []
+    for name, reason in sorted(BANNED_TAGS.items()):
+        (effects if "did not happen" in reason else trying).append(f"[{name}]")
+
+    return f"""\
+DELIVERY DIRECTION — inline, sparing, and never on screen. These reach the
+voice, not the captions. YOU declare the delivery; nothing downstream invents
+it, and nothing downstream second-guesses it.
+
+{chr(10).join(rows)}
+
+  The four modes are the bible's (§7). [CURIOUS] is the one worth learning:
+  "a mechanism he actually respects; the monotone lifts — these lifts are the
+  retention". It is the only tag that buys a lift, so spend it on the one
+  mechanism in the video that genuinely deserves one.
+
+HOW MUCH — a device used constantly stops being a device:
+  - At most {MAX_TAGS_PER_SENTENCE} per sentence, and never two with nothing between them.
+  - At most {TAGS_PER_1K_CHARS_WARN:.0f} per 1,000 characters across the whole script.
+  - Per script: {caps}.
+  - [QUIET] never in the opening chapter — dark calm is the register the
+    video earns its way down to, so it has nothing to drop from yet.
+  - Write them NOW. They change what gets generated, so adding one after the
+    audio exists means paying for the generation twice.
+
+NEVER — these are refused by name, with the reason, and the first one is
+refused as a BLOCK because in lowercase it is not a tag at all: it would be
+read out loud and captioned.
+  {" ".join(trying)}
+      §2 — still banned: anything that reads as trying. A host who audibly
+      laughs at his own line has broken the deadpan, and the flatness IS the
+      delivery.
+  {" ".join(effects)}
+      A sound effect is the pipeline manufacturing an event that did not
+      happen, in a product whose whole claim is that every figure is checked.
+
+Do not SHOUT a word for emphasis either. Capitalisation is read as emphasis by
+the voice, and the captions are built from the same text — so it is heard and
+seen leaning on the word. The bible bans the exclamation mark for this reason;
+this is the same thing wearing a different hat.
+"""
+
+
+PACING = """\
 Pacing:
   - Every chapter OPENS and CLOSES on the host's face. He introduces the
     evidence and he reacts to it; cutting straight from one chart to the next
@@ -239,6 +301,11 @@ Pacing:
     readable things back to back.
   - The rhythm is: he says it, you show it, he reacts. Not: montage.
 """
+
+
+def expressivity_and_pacing() -> str:
+    """What every writing prompt is handed as {{craft_rules}}."""
+    return delivery_vocabulary() + "\n" + PACING
 
 
 def chart_metrics_line(data: CompanyData) -> str:
@@ -502,7 +569,7 @@ def fill_prompt(
         r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
         r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
         r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{craft_rules}}"] = expressivity_and_pacing()
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
     elif fmt == "long_angle":
         r["{{available_screenshots}}"] = screenshots_line(workspace)
@@ -518,7 +585,7 @@ def fill_prompt(
         r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
         r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
         r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{craft_rules}}"] = expressivity_and_pacing()
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
@@ -541,7 +608,7 @@ def fill_prompt(
         r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
         r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
         r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{craft_rules}}"] = expressivity_and_pacing()
         r["{{available_screenshots}}"] = screenshots_line(workspace)
         r["{{valuation_data}}"] = valuation_data_block(data)
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
@@ -560,7 +627,7 @@ def fill_prompt(
         r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
         r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
         r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = EXPRESSIVITY_AND_PACING
+        r["{{craft_rules}}"] = expressivity_and_pacing()
         r["{{peer_percentiles}}"] = (
             peer_percentiles_block(data) if data is not None else "(n/a in macro mode)"
         )

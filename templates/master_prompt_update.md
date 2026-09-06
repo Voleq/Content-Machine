@@ -85,8 +85,9 @@ WRITE THE VALUE INTO THE CARD — a key on its own renders the box EMPTY:
 **The before-and-after is this format's own visual.** A number that moved is two numbers, and the kit has drawings built for exactly that — reach for the two-figure and many-figure scenes in the catalog above rather than showing today's figure alone. A [CHART] on the metric that decided it is close to mandatory in movement 2.
 
 DELIVERY DIRECTION (never on screen — these reach the voice, not the captions):
-[BEAT] a deliberate pause · [SIGH] an audible exhale · [FLAT] flatter than baseline · [DRY] drier
-Sparingly. They change what gets generated, so write them NOW — adding one later means paying for the voice twice.
+The vocabulary, the modes and the ceilings are in DELIVERY DIRECTION above. It
+is generated from the table the pipeline actually performs the tags from, so a
+tag that is not on that list is a tag nothing will honour.
 
 ## DIRECTION RULES — unchanged from long-form
 This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to your words; a visual tag means "leave his face and hold this long enough to read it". Roughly ONE cutaway per idea, not per sentence. Every movement OPENS and CLOSES on Dennis talking. Nothing flashes by — when you tag a [CHART] or a [SHOW FILING], keep talking about it, because the renderer holds it for as long as your words about it last. Real photographs run raw and full-frame.

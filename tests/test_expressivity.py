@@ -14,15 +14,15 @@ def ev(kind: TagType, offset: int) -> TagEvent:
 
 
 def test_a_beat_becomes_a_break_at_its_own_offset():
-    text, overrides = expand_delivery("He paused. Then said it.",
-                                      [ev(TagType.BEAT, 11)], "eleven_turbo_v2_5")
+    text, overrides, _ = expand_delivery("He paused. Then said it.",
+                                         [ev(TagType.BEAT, 11)], "eleven_turbo_v2_5")
     assert text == 'He paused. <break time="0.6s" /> Then said it.'
     assert overrides == {}
 
 
-def test_flat_and_dry_are_generation_settings_not_inline_text():
-    text, overrides = expand_delivery("Flat line.", [ev(TagType.FLAT, 0)],
-                                      "eleven_turbo_v2_5")
+def test_flat_and_dry_are_generation_settings_on_a_pre_v3_model():
+    text, overrides, _ = expand_delivery("Flat line.", [ev(TagType.FLAT, 0)],
+                                         "eleven_turbo_v2_5")
     assert text == "Flat line.", "a register note must not appear in the speech"
     assert overrides["stability"] == 0.85 and overrides["style"] == 0.0
 
@@ -30,24 +30,24 @@ def test_flat_and_dry_are_generation_settings_not_inline_text():
 def test_sigh_degrades_on_a_model_without_audio_tags():
     """`[sighs]` is an eleven_v3 feature. On turbo it would be READ ALOUD,
     so it degrades to a pause instead of gambling on support."""
-    turbo, _ = expand_delivery("Well. Fine.", [ev(TagType.SIGH, 5)],
-                               "eleven_turbo_v2_5")
+    turbo, _, _ = expand_delivery("Well. Fine.", [ev(TagType.SIGH, 5)],
+                                  "eleven_turbo_v2_5")
     assert "[sighs]" not in turbo and "<break" in turbo
 
-    v3, _ = expand_delivery("Well. Fine.", [ev(TagType.SIGH, 5)], "eleven_v3")
+    v3, _, _ = expand_delivery("Well. Fine.", [ev(TagType.SIGH, 5)], "eleven_v3")
     assert "[sighs]" in v3
 
 
 def test_no_directives_leaves_the_text_untouched():
     assert expand_delivery("Nothing here.", [], "eleven_turbo_v2_5") == \
-        ("Nothing here.", {})
+        ("Nothing here.", {}, [])
 
 
 def test_visual_tags_are_not_treated_as_delivery():
-    text, overrides = expand_delivery(
+    text, overrides, spans = expand_delivery(
         "A line.", [TagEvent(type=TagType.CLIP, payload="clown",
                              char_offset=2, raw_offset=2)], "eleven_turbo_v2_5")
-    assert text == "A line." and overrides == {}
+    assert text == "A line." and overrides == {} and spans == []
 
 
 def test_offsets_are_remapped_back_onto_the_clean_text():
