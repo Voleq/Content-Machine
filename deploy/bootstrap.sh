@@ -403,11 +403,22 @@ step "apt dependencies (ffmpeg, node, git-lfs, fonts, python venv, rsync)"
 # with no espeak-ng, no libespeak in ldconfig and nothing on PATH: 2.9s of
 # real audio. Adding it would install a package nothing links against.
 #
-# nodejs and npm are here because the design kit is JS: scripts/ingest_kit.py
-# drives kit/engine/build.js through @resvg/resvg-js and writes the PNGs the
-# renderer loads. BUILD-time only - nothing under pipeline/ shells out to node,
-# and tests/test_ingest.py holds that line - but build-time on a machine with
-# no node is still a machine that cannot produce artwork.
+# nodejs is here because the design kit is JS: scripts/ingest_kit.py drives
+# kit/engine/build.js through @resvg/resvg-js and writes the PNGs the renderer
+# loads. BUILD-time only - nothing under pipeline/ shells out to node, and
+# tests/test_ingest.py holds that line - but build-time on a machine with no
+# node is still a machine that cannot produce artwork.
+#
+# npm is deliberately NOT in this list, even though the kit build needs it.
+# NodeSource's nodejs - the release the Node step below tells you to install -
+# bundles npm and declares `Conflicts: npm`, so naming both packages here is a
+# request apt cannot satisfy: it reports conflicting assignments and this step
+# dies on a machine that already has a perfectly good node and npm, following
+# advice this script gave it. Ubuntu packages the two the other way round and
+# its nodejs carries no npm at all, so no single list is right for both. The
+# Node step is the gate instead - it checks that node and npm actually run and
+# that node is new enough, which is what matters, not which package supplied
+# them. On a bare Ubuntu box that step is what asks for npm, and says how.
 #
 # git-lfs is here because samples/*.mp4 are LFS objects. A clone without it
 # gets 132-byte pointer files, and the fifteen tests in test_short_holds.py
@@ -421,17 +432,31 @@ step "apt dependencies (ffmpeg, node, git-lfs, fonts, python venv, rsync)"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -q
 # shellcheck disable=SC2086  # $VENV_PKG must word-split away when empty
-apt-get install -y -q ffmpeg nodejs npm git-lfs fonts-dejavu-core rsync $VENV_PKG \
+apt-get install -y -q ffmpeg nodejs git-lfs fonts-dejavu-core rsync $VENV_PKG \
   || die \
 "apt-get failed to install the base dependencies.
 
-Re-run 'sudo apt-get update' and read its output - on a fresh WSL2 image this
-is almost always a stale package index or no network from inside WSL.
+Read the apt output above - it says which of these it was.
 
-If it named a package rather than the network - a python3.NN-venv that does
-not exist, say - that is a bug in this script and worth reporting: the venv
-package is chosen from what the interpreter actually carries, not from its
-name, precisely so it cannot ask for one that was never published."
+If it mentions 'Conflicts:' or conflicting assignments, two packages cannot be
+installed together on this machine, and nodejs is the usual reason. NodeSource
+builds bundle npm and declare \`Conflicts: npm\`, so they cannot coexist with
+Ubuntu's separate npm package: with that one installed, apt has to remove it
+before a NodeSource nodejs can go in. Removing it loses nothing, because the
+node it is replaced by carries npm itself:
+
+    sudo apt-get remove -y npm
+
+then re-run this script.
+
+If it named a package that does not exist - a python3.NN-venv, say - that is a
+bug in this script and worth reporting: the venv package is chosen from what
+the interpreter actually carries, not from its name, precisely so it cannot
+ask for one that was never published.
+
+Otherwise it is the index or the network. Re-run 'sudo apt-get update' and read
+its output - on a fresh WSL2 image this is almost always a stale package index
+or no network from inside WSL."
 ok "installed"
 
 # --------------------------------------------------------------------------
@@ -469,9 +494,21 @@ The design kit is JavaScript and is rendered to PNGs at ingest. Without node
 there is no artwork, and the renderer has nothing to load."
 
 command -v npm >/dev/null 2>&1 || die \
-"npm is missing (it ships alongside nodejs on Debian/Ubuntu).
+"npm is missing, and the kit build runs 'npm ci'.
 
-    sudo apt-get install -y npm"
+Ubuntu packages npm separately from nodejs, so its nodejs on its own lands
+exactly here. NodeSource's bundles npm instead, which is why the apt step above
+asks for nodejs and leaves npm to this check:
+
+    sudo apt-get install -y npm
+
+If the Node version check then refuses - Ubuntu 22.04 still ships Node 12 -
+take a current release from NodeSource instead, which carries both:
+
+    curl -fsSL https://deb.nodesource.com/setup_${NODE_MIN_MAJOR}.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+
+then re-run this script."
 
 NODE_VERSION="$(node --version 2>/dev/null | sed 's/^v//')"
 NODE_MAJOR="$(printf '%s' "$NODE_VERSION" | sed 's/[^0-9].*//')"
