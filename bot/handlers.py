@@ -203,7 +203,7 @@ def _what_it_said(script, fmt: str) -> dict:
         narration = getattr(script, "narration", "") or ""
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", narration)
                      if s.strip()]
-        titles = [title for _ts, title in
+        titles = [title for _ts, title, _type in
                   normalise_chapters(getattr(script, "chapters", "") or "")]
         return {"hook": sentences[0] if sentences else "",
                 "conclusion": " ".join(sentences[-2:]),
