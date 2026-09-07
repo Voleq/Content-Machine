@@ -123,6 +123,17 @@ FOREIGN_MEDIA_TAG_TYPES = frozenset({
     TagType.MEME,
 })
 
+# Tags that take a `| hold=<seconds>` field.
+#
+# The joke and the illustration, which are the two the writer actually times.
+# A meme's hold IS the joke's timing, and how long an illustration stays up is
+# the difference between showing a shot going in and flashing a man mid-jump.
+# Everything else on the timeline holds for a length the format decides — a
+# table is read, a chart is read, and neither is a judgement call per script.
+HOLDABLE_TAG_TYPES = frozenset({
+    TagType.CLIP, TagType.BROLL, TagType.MEME,
+})
+
 # Overlay tag types — composited over the current frame, not a segment.
 OVERLAY_TAG_TYPES = frozenset({TagType.SCRIBBLE})
 
@@ -243,6 +254,15 @@ class TagEvent(BaseModel):
     raw_offset: int = Field(ge=0)
     # optional modifier — [CHART: metric style=marker] parses to style.
     style: str = ""
+    # How long the DIRECTOR asked this to stay on screen, in seconds:
+    # `[CLIP: lebron three pointer | hold=2.5]`. 0.0 means they wrote the bare
+    # form and the format's own default applies — which is what every script
+    # already written does, so a bare tag is byte-identical to what it was.
+    #
+    # The writer is the one who knows whether a visual is a glance or a beat
+    # to sit in; nothing downstream can read that off the tag, and a single
+    # number in the timeline cannot be right for both.
+    hold: float = Field(default=0.0, ge=0.0)
     # Slot values written on the tag: `[PROP: crushed-flat = -41%]`. Keys are
     # slot names, `""` for a single unnamed value, `#N` for a positional one;
     # bound to the asset's real slots at render time.

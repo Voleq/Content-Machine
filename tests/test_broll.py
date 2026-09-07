@@ -2,8 +2,10 @@
 floor, attribution — all offline."""
 
 import json
+import pathlib
 
 import pytest
+from PIL import Image
 
 from pipeline.broll import (
     PALETTE,
@@ -101,18 +103,37 @@ def test_non_palette_clip_key_is_fetched_as_raw_query(manager):
     assert manager.clip_client.search_calls[-1] == "abandoned mall escalator"
 
 
-def test_pexels_cap_degrades_to_filler(settings, tmp_path):
+def test_pexels_cap_degrades_down_the_chain_never_aborts(settings, tmp_path):
+    """A spent Pexels cap costs one link, not the whole chain.
+
+    The cap is PEXELS' — the gif providers below it are free — so exhausting
+    it falls through to them rather than jumping straight to a filler card.
+    Both ends are asserted here: with the free providers present the clip
+    still resolves, and with none configured it lands on filler, which is the
+    guarantee that never changes.
+    """
     capped = settings.model_copy(update={"pexels_monthly_call_cap": 0})
-    manager = ContentManager(capped, library_dir=tmp_path / "library")
 
-    class CapClient(MockPexelsClient):
-        def search(self, query, per_page=5):
-            manager.ledger.check_pexels_budget()  # simulates the real client's gate
-            return super().search(query, per_page)
+    def capped_manager(**kw):
+        m = ContentManager(capped, library_dir=tmp_path / "library", **kw)
 
-    manager.clip_client = CapClient(capped)
-    clip = manager.resolve_clip("dumpster_fire")
-    assert clip.source == "filler", "cap exhaustion must degrade, never abort"
+        class CapClient(MockPexelsClient):
+            def search(self, query, per_page=5):
+                m.ledger.check_pexels_budget()  # simulates the real client's gate
+                return super().search(query, per_page)
+
+        m.clip_client = CapClient(capped)
+        return m
+
+    clip = capped_manager().resolve_clip("dumpster_fire")
+    assert clip.source == "mock", "a free provider must still be tried"
+    assert clip.path.exists()
+
+    # A DIFFERENT key, because the resolve above warmed the gif cache for
+    # `dumpster_fire` and a cache hit would answer before any provider does —
+    # which is correct behaviour and the wrong thing to be measuring here.
+    bare = capped_manager(gif_clients=[]).resolve_clip("tumbleweed")
+    assert bare.source == "filler", "cap exhaustion must degrade, never abort"
 
 
 def test_swap_choice_picks_other_candidate(manager):
@@ -255,3 +276,161 @@ def test_generic_fixture_used_for_unfixtured_keys(manager):
     clip = manager.resolve_clip("piggy_bank")  # no dedicated fixture json
     assert clip.source == "pexels"
     assert "Generic Fixture" in clip.attribution
+
+
+# ------------------------------------------------- illustration that moves
+#
+# `[MEME]` is still and `[CLIP]` moves. The tests below are the two halves of
+# that one line, plus the chain that makes a SPECIFIC illustration reachable
+# at all — Pexels is a stock library and will never have LeBron shooting a
+# three, which is exactly what a clip written to prove a claim asks for.
+
+
+class _NoResultsPexels(MockPexelsClient):
+    """Pexels with nothing to say — the normal case for a real moment."""
+
+    def search(self, query, per_page=5):
+        self.search_calls.append(query)
+        return {"videos": []}
+
+
+class _Provider:
+    """One gif provider, recording and optionally empty-handed."""
+
+    def __init__(self, name, settings, hit=True):
+        self.name = name
+        self.settings = settings
+        self.hit = hit
+        self.search_calls: list[str] = []
+        self.download_calls: list[str] = []
+
+    def search(self, query, *, animated=False):
+        self.search_calls.append(query)
+        assert animated, "the clip chain must ask for the MOVING rendition"
+        return f"mock://gif/{query.replace(' ', '-')}" if self.hit else None
+
+    def download(self, url, dest):
+        self.download_calls.append(url)
+        from pipeline.memes import MockMemeClient
+
+        return MockMemeClient(self.settings).download(url, dest)
+
+
+def _distinct_frames(path, settings, times=(0.0, 0.5)) -> int:
+    """How many DIFFERENT frames this clip shows across `times`.
+
+    Counting frames proves nothing — a still normalised to 30fps is sixty
+    identical frames of a man stopped mid-jump, which is the exact failure
+    this is here to catch. So the frames are compared.
+    """
+    import hashlib
+    import tempfile
+
+    seen = set()
+    with tempfile.TemporaryDirectory() as tmp:
+        for i, t in enumerate(times):
+            out = pathlib.Path(tmp) / f"f{i}.png"
+            run_ffmpeg(["-ss", f"{t:.3f}", "-i", str(path), "-frames:v", "1",
+                        str(out)])
+            seen.add(hashlib.sha256(out.read_bytes()).hexdigest())
+    return len(seen)
+
+
+def test_an_animated_source_moves_as_a_clip_and_freezes_as_a_meme(settings, tmp_path):
+    """The same gif, down both paths, and they must disagree.
+
+    A clip of a shot going in, reduced to one frame, has lost the only thing
+    that made it worth showing. A meme reduced to one frame IS the joke — the
+    freeze is its timing. One provider, one query, two answers.
+    """
+    from pipeline.memes import MemeManager, MockMemeClient
+
+    manager = ContentManager(
+        settings, library_dir=tmp_path / "library",
+        clip_client=_NoResultsPexels(settings),
+        gif_clients=[_Provider("giphy", settings)],
+        meme_manager=MemeManager(settings, providers=[MockMemeClient(settings)]),
+    )
+
+    clip = manager.resolve_clip("lebron three pointer")
+    assert clip.source == "giphy" and clip.is_video
+    assert clip.loops, "an animated source has to keep moving through its hold"
+    assert _distinct_frames(clip.path, settings) == 2, \
+        "the clip froze — this is the freeze-frame the meme path is for"
+
+    meme = manager.resolve_meme("lebron three pointer")
+    assert not meme.is_video
+    with Image.open(meme.path) as img:
+        assert img.format == "PNG"
+        assert getattr(img, "n_frames", 1) == 1, "a meme is a freeze-frame"
+
+
+def test_the_clip_chain_reaches_giphy_then_tenor_and_the_library_still_wins(
+        settings, tmp_path):
+    """owned library -> cache -> Pexels -> Giphy -> Tenor -> filler.
+
+    Order is the whole point. Owned-library-first is what keeps the gif
+    providers a fallback rather than the default, which is the mitigation for
+    everything user-uploaded about them; Giphy before Tenor is arbitrary but
+    fixed, so a swap is reproducible.
+    """
+    lib = tmp_path / "library"
+    lib.mkdir()
+
+    def build(giphy_hits, tenor_hits, library=False):
+        giphy = _Provider("giphy", settings, hit=giphy_hits)
+        tenor = _Provider("tenor", settings, hit=tenor_hits)
+        m = ContentManager(settings, library_dir=lib,
+                           clip_client=_NoResultsPexels(settings),
+                           gif_clients=[giphy, tenor])
+        return m, giphy, tenor
+
+    # 1. Pexels misses, Giphy answers — Tenor is never asked.
+    m, giphy, tenor = build(True, True)
+    clip = m.resolve_clip("lebron three pointer")
+    assert clip.source == "giphy"
+    assert m.clip_client.search_calls, "Pexels is still asked first"
+    assert giphy.search_calls and tenor.search_calls == []
+
+    # 2. Giphy misses too — Tenor answers.
+    m, giphy, tenor = build(False, True)
+    clip = m.resolve_clip("a shot from a film nobody uploaded")
+    assert clip.source == "tenor"
+    assert giphy.search_calls and tenor.search_calls
+
+    # 3. Nothing answers — the filler floor still holds.
+    m, giphy, tenor = build(False, False)
+    assert m.resolve_clip("nothing at all anywhere").source == "filler"
+
+    # 4. The owned library beats every one of them, and is not even a fetch.
+    run_ffmpeg([
+        "-f", "lavfi", "-i", "color=c=red:size=640x360:rate=30:duration=2",
+        "-c:v", "libx264", "-preset", "ultrafast", str(lib / "clown.mp4"),
+    ])
+    m, giphy, tenor = build(True, True)
+    owned = m.resolve_clip("clown")
+    assert owned.source == "local"
+    assert m.clip_client.search_calls == []
+    assert giphy.search_calls == [] and tenor.search_calls == []
+
+
+def test_a_gif_clip_keeps_looping_out_of_the_cache(settings, tmp_path):
+    """A second render of the same script must not freeze where the first moved.
+
+    `loops` is a property of the SOURCE, so it has to survive the cache the
+    same way attribution does — otherwise the re-render an operator does to
+    fix visual placement is the one that quietly breaks the visual.
+    """
+    def build():
+        return ContentManager(settings, library_dir=tmp_path / "library",
+                              clip_client=_NoResultsPexels(settings),
+                              gif_clients=[_Provider("giphy", settings)])
+
+    first = build().resolve_clip("lebron three pointer")
+    assert first.source == "giphy" and first.loops
+
+    m = build()
+    second = m.resolve_clip("lebron three pointer")
+    assert second.source == "cache" and second.path == first.path
+    assert second.loops, "the clip came back from the cache frozen"
+    assert m.gif_clients[0].search_calls == [], "a cache hit must not re-fetch"

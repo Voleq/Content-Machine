@@ -120,7 +120,7 @@ peer range low-to-high, with the subject marked on it.
 - `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: 2]` picks the SECOND news row in the data above by number — use it when two of this week's headlines cover the same theme and the match could go either way; `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows in words; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
 - `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
 - `[IMG: query]` / `[PRODUCT: query]` — real imagery.
-- `[MEME: key]` / `[CLIP: key]` — from the catalogs above, sparingly.
+- `[MEME: key]` / `[CLIP: key or subject]` — a meme is STILL and comes from the catalog above; a clip MOVES and may name any specific subject. Both take an optional `| hold=2.0` — seconds on screen, 0.8–5.0 — when you know whether it is a glance or a beat to sit in. Sparingly.
 
 Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are never cut short. Punctuation beats (a prop, a meme, a reaction) run 0.6–2 seconds over the frame. **Never put two data beats back to back** — with nothing between them the second one doesn't get read, and the renderer will move it.
 

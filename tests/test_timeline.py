@@ -731,3 +731,77 @@ def test_headline_cards_are_removed_not_accumulated(settings):
     for a, b in zip(heads, heads[1:]):
         assert float(a.payload["until"]) <= b.t + 1e-6, (
             "a headline is still on screen when the next one lands")
+
+
+# ------------------------------------------------------- the written hold
+
+
+def _long_segments(raw: str, settings, duration: float = 90.0):
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    words = mock_words(script.narration, duration)
+    cues = build_long_timeline(script, words, duration)
+    segments, warnings = plan_long_segments(cues, duration)
+    return script, segments, warnings
+
+
+_FILLER = "Words that go on for a while so nothing collides. " * 12
+
+
+def test_the_written_hold_is_the_length_on_screen(settings):
+    """`DEFAULT_HOLDS` is what to do when nobody decided. Somebody did."""
+    raw = (f"{_FILLER} [CLIP: lebron three pointer | hold=2.5] {_FILLER} "
+           f"[MEME: bagholder | hold=2.0] {_FILLER}")
+    _, segments, _ = _long_segments(raw, settings)
+    clip = next(s for s in segments if s.kind == "clip")
+    meme = next(s for s in segments if s.kind == "meme")
+    assert clip.length == pytest.approx(2.5, abs=0.01)
+    assert meme.length == pytest.approx(2.0, abs=0.01)
+
+
+def test_a_bare_tag_still_gets_the_format_s_own_default(settings):
+    """The regression that matters: every script already written plans
+    identically. A bare [CLIP] is 5s and a bare [MEME] is 3s, as they were."""
+    from pipeline.timeline import DEFAULT_HOLDS
+
+    raw = f"{_FILLER} [CLIP: tumbleweed] {_FILLER} [MEME: bagholder] {_FILLER}"
+    script, segments, _ = _long_segments(raw, settings)
+    clip = next(s for s in segments if s.kind == "clip")
+    meme = next(s for s in segments if s.kind == "meme")
+    assert clip.length == pytest.approx(DEFAULT_HOLDS[CueKind.CLIP], abs=0.01)
+    assert meme.length == pytest.approx(DEFAULT_HOLDS[CueKind.MEME], abs=0.01)
+
+    # …and the cue does not carry a `hold` at all, rather than carrying one
+    # that happens to equal the default. The planner reads its presence.
+    cues = build_long_timeline(script, mock_words(script.narration, 90.0), 90.0)
+    for c in cues:
+        if c.kind in (CueKind.CLIP, CueKind.MEME):
+            assert "hold" not in c.payload
+
+
+def test_a_short_tag_hold_pins_the_pacing_band(settings):
+    """On a SHORT the hold is negotiated inside a class band. A number the
+    writer wrote collapses the band onto it — there is nothing left to
+    negotiate, which is the point of writing one."""
+    from pipeline.parser_short import parse_short_script
+    from pipeline.timeline import build_short_timeline, plan_short_pacing
+
+    raw = json.loads(
+        (__import__("pathlib").Path(__file__).resolve().parents[1]
+         / "fixtures" / "scripts" / "short_valid.json").read_text(encoding="utf-8"))
+    raw["audio_script"] = (
+        raw["audio_script"].rstrip()
+        + " And here is the joke. [MEME: bagholder | hold=2.0] That was it.")
+    script, _ = parse_short_script(json.dumps(raw), settings)
+    meme = next(e for e in script.evidence_events()
+                if e.type.value == "MEME" and e.hold)
+    assert meme.hold == 2.0
+
+    duration = 75.0
+    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
+                               duration)
+    tagged = next(c for c in cues
+                  if c.payload.get("tag") == "MEME" and c.payload.get("min_hold"))
+    assert (tagged.payload["min_hold"], tagged.payload["max_hold"]) == (2.0, 2.0)
+    kept, _ = plan_short_pacing(cues, duration)
+    landed = next(c for c in kept if c.payload.get("tag") == "MEME")
+    assert landed.payload["hold"] == pytest.approx(2.0, abs=0.01)

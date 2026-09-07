@@ -440,7 +440,6 @@ class Settings(BaseSettings):
     proof_crf: int = 26
     proof_preset: str = "veryfast"
     audio_bitrate: str = "192k"
-    music_gain_db: float = -22.0           # music bed under the VO
     sfx_gain_db: float = -6.0
     use_hardware_encoder: bool = True      # if detected; falls back to libx264
 
@@ -458,20 +457,6 @@ class Settings(BaseSettings):
     # alternatives worth auditioning. Blank turns the cue off. LONG only —
     # shorts have no chapters.
     chapter_cue_sfx: str = Field(default="keyboard_clack", alias="CHAPTER_CUE_SFX")
-    # Chapter TYPES under which the music bed goes quiet. `dennis_bed.m4a` is
-    # the only bed and it loops under every video for forty minutes; adding
-    # more music is the boring fix, and the music LEAVING is what tells a
-    # viewer the lights are going out. Room tone continues underneath, so it
-    # reads as a deliberate register change rather than a dropout.
-    #
-    # Keyed off TYPE and not mode on purpose. §7 of the bible names four
-    # modes, but mode is never machine-readable — the trailer grammar is
-    # `type | Display Title` and mode exists only as an instruction to the
-    # writer. Type is already there, already gates which plates a chapter may
-    # use, and is stable in a way a per-chapter authorial choice is not.
-    music_silent_chapters: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["resigned-close", "risk"],
-        alias="MUSIC_SILENT_CHAPTERS")
 
     # --- encode politeness ------------------------------------------------
     # The render box is the operator's daily-driver desktop, and renders are
@@ -573,7 +558,7 @@ class Settings(BaseSettings):
 
     # ------------------------------------------------------------- validators
     @field_validator("operator_chat_ids", "screen_allow_list", "screen_deny_list",
-                     "music_silent_chapters", mode="before")
+                     mode="before")
     @classmethod
     def _split_csv(cls, v):
         """Accept a JSON array OR a plain comma-separated list.
@@ -594,29 +579,6 @@ class Settings(BaseSettings):
                     pass  # fall through to CSV; the field error will be clearer
             v = [item.strip().strip("\"'") for item in s.split(",") if item.strip()]
         return v
-
-    @field_validator("music_silent_chapters")
-    @classmethod
-    def _known_chapter_types(cls, v: list[str]) -> list[str]:
-        """Fold to the kit's spelling, and refuse a type that does not exist.
-
-        A typo here is a SILENT nothing — the bed simply never drops, in a
-        video nobody re-listens to with the setting in front of them — so it
-        is caught at startup instead, where the sixteen can be printed.
-        """
-        from pipeline.plates import CHAPTER_TYPES, fold_chapter_type
-
-        out: list[str] = []
-        for raw in v:
-            t = fold_chapter_type(raw)
-            if not t:
-                continue
-            if t not in CHAPTER_TYPES:
-                raise ValueError(
-                    f"MUSIC_SILENT_CHAPTERS names {raw!r}, which is not one of "
-                    f"the sixteen chapter types: " + ", ".join(CHAPTER_TYPES))
-            out.append(t)
-        return out
 
     @field_validator("usd_per_1k_chars", mode="before")
     @classmethod

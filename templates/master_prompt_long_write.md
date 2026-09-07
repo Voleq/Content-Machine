@@ -235,8 +235,14 @@ on the plate. What sits on the rail comes from you, as a PAIR OF NUMBERS:
 ### everything else
 [IMG: query]            real imagery of operations / facilities / people (literal query like "{{ticker}} distribution warehouse")
 [PRODUCT: query]        real imagery of the product itself
-[MEME: key]             from the meme catalog above. HARD CAP: 1–2 per video.
-[CLIP: key]             ironic stock footage; key from the b-roll palette above ([BROLL: key] also accepted)
+[MEME: key]             from the meme catalog above. HARD CAP: 1–2 per video. A meme is STILL — the freeze is the joke's timing.
+[CLIP: key or subject]  the visual that PROVES the line. A key from the b-roll palette above, or any specific subject
+                        ("lebron shooting a three") — the palette is searched first, then the gif providers, so a real
+                        moment is reachable. A clip MOVES. Uncapped: illustration is information, and it is the one
+                        thing on this list that makes a claim land by showing it. ([BROLL: key] also accepted)
+                        Both take an optional hold: [CLIP: lebron three pointer | hold=2.5] · [MEME: bagholder | hold=2.0]
+                        Seconds on screen, 0.8–5.0. Write one when you know whether this is a glance or a beat to sit
+                        in; leave it off and the format's default applies.
 [CHART: metric]         a data path drawn into a charts/ plate; metric from the chartable list
 [SHOW FILING: file.png] a filing screenshot, framed. REACH FOR THIS WHENEVER YOU QUOTE A FILING — if the line is "it's in the risk factors, and it names a person", show the risk factor.
 [SCREENGRAB: slug]      an operator-supplied real screen capture (broker app, P&L). Blocks until the file exists.

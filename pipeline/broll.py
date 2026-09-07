@@ -6,7 +6,10 @@ interfaces, all with the same guarantee: a missing visual NEVER aborts a
 render — every failure path degrades to a deterministic filler.
 
     [CLIP: q] / [BROLL: q]  vetted palette -> owned library -> cache ->
-                            Pexels (rate-capped) -> filler clip
+                            Pexels (rate-capped) -> Giphy -> Tenor ->
+                            filler clip. IT MOVES: an animated source
+                            normalises to a short looping mp4, never a
+                            freeze-frame
     [IMG: q] / [PRODUCT: q] real imagery: cache -> Wikimedia Commons
                             (free, attribution stored) -> the company's
                             own site (og:image, real mode) -> filler card
@@ -35,7 +38,7 @@ import httpx
 
 from config import Settings
 from pipeline.cost import SpendCapExceededError, SpendLedger
-from pipeline.memes import MemeManager
+from pipeline.memes import MemeManager, animated_providers
 from pipeline.render_common import RenderError, ffprobe_duration, run_ffmpeg
 
 log = logging.getLogger(__name__)
@@ -146,6 +149,11 @@ class Visual:
                          # company_site | giphy | tenor | imgflip | mock |
                          # generated | filler
     attribution: str = ""
+    # Whether this clip is meant to REPEAT to fill its beat rather than hold
+    # its last frame. A gif is two seconds long and a hold may be four; a
+    # looping source that freezes for the back half is the same failure as a
+    # frozen gif, arriving later.
+    loops: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -506,6 +514,7 @@ class ContentManager:
         site_client=None,
         meme_manager: MemeManager | None = None,
         library_dir: Path | None = None,
+        gif_clients: list | None = None,
     ):
         self.settings = settings
         self.ledger = ledger or SpendLedger(settings)
@@ -526,12 +535,26 @@ class ContentManager:
             None if settings.mock_mode else CompanySiteImageClient(settings)
         )
         self.memes = meme_manager or MemeManager(settings)
+        # The tail of the [CLIP] chain. Same clients the meme chain uses,
+        # asked for the moving rendition instead of the still one.
+        self.gif_clients = (gif_clients if gif_clients is not None
+                            else animated_providers(settings))
 
     # ------------------------------------------------------------- clips
     def resolve_clip(self, key: str, choice: int = 0, *,
                      portrait: bool = False) -> Visual:
         """Resolve a [CLIP]/[BROLL] key (palette preferred, raw query
         tolerated) to a normalized clip. Never raises for content reasons.
+
+        owned library -> cache -> Pexels -> Giphy -> Tenor -> filler.
+
+        THE GIF PROVIDERS ARE WHY A SPECIFIC ILLUSTRATION CAN LAND. Pexels is
+        a stock library: it has "basketball court" and it will never have
+        LeBron shooting a three, a film moment, or any of the culturally
+        specific things a `[CLIP]` written to PROVE a claim reaches for. Every
+        one of those used to search, miss, log `pexels: no results` and draw a
+        filler card, silently. Owned-library-first stays first, for the
+        reason it always was — see `_fetch_gif_clip`.
 
         `choice` picks the nth candidate (the Approve-flow "Swap clip"
         button re-resolves with choice+1). `portrait` normalizes to 9:16
@@ -544,13 +567,24 @@ class ContentManager:
             cached = self._clip_from_cache(key, choice, portrait)
             if cached:
                 return cached
-            return self._fetch_clip(key, choice, portrait)
+            fetched = self._fetch_clip(key, choice, portrait)
+            if fetched is not None:
+                return fetched
         except SpendCapExceededError as e:
-            log.warning("clip %r: %s — filler", key, e)
-            return self.filler_clip(key)
+            # The Pexels cap is Pexels' alone — the gif providers are free and
+            # are the point of the fallback, so a spent cap falls through to
+            # them rather than straight to a filler card.
+            log.info("clip %r: %s — trying the gif providers", key, e)
         except (PexelsError, RenderError, httpx.HTTPError, OSError) as e:
-            log.warning("clip %r failed (%s) — filler", key, e)
-            return self.filler_clip(key)
+            log.warning("clip %r: pexels failed (%s)", key, e)
+        try:
+            gif = self._fetch_gif_clip(key, choice, portrait)
+            if gif is not None:
+                return gif
+        except (RenderError, httpx.HTTPError, OSError) as e:
+            log.warning("clip %r: gif providers failed (%s)", key, e)
+        log.warning("clip %r resolved to nothing — filler", key)
+        return self.filler_clip(key)
 
     def _clip_query(self, key: str) -> str:
         # palette keys map to their pre-tested query; anything else is
@@ -580,33 +614,49 @@ class ContentManager:
         return Visual(key=key, kind="clip", path=norm, is_video=True,
                       source="local", attribution=f"owned library clip ({src.name})")
 
-    def _clip_cache_dir(self, key: str) -> Path:
-        return self.settings.cache_dir / "broll" / content_cache_key(self._clip_query(key), "pexels")
+    # Each fetch FAMILY caches under its own key, in chain order. One dir per
+    # family rather than one per key, so adding the gif chain did not
+    # invalidate a warm Pexels cache — and re-warming that one costs calls
+    # against a monthly cap, not just time.
+    _CLIP_CACHE_FAMILIES = ("pexels", "gif")
+
+    def _clip_cache_dir(self, key: str, family: str = "pexels") -> Path:
+        return (self.settings.cache_dir / "broll"
+                / content_cache_key(self._clip_query(key), family))
 
     def _clip_from_cache(self, key: str, choice: int, portrait: bool) -> Visual | None:
-        cdir = self._clip_cache_dir(key)
         suffix = "_p" if portrait else ""
-        norm = cdir / f"normalized_{choice}{suffix}.mp4"
-        meta = cdir / f"meta_{choice}.json"
-        if norm.exists():
-            attribution = ""
+        for family in self._CLIP_CACHE_FAMILIES:
+            cdir = self._clip_cache_dir(key, family)
+            norm = cdir / f"normalized_{choice}{suffix}.mp4"
+            meta = cdir / f"meta_{choice}.json"
+            if not norm.exists():
+                continue
+            attribution, loops = "", False
             if meta.exists():
-                attribution = json.loads(meta.read_text(encoding="utf-8")).get("attribution", "")
+                m = json.loads(meta.read_text(encoding="utf-8"))
+                attribution = m.get("attribution", "")
+                # A gif that loops has to keep looping out of the cache, or
+                # the second render of the same script freezes where the first
+                # one moved.
+                loops = bool(m.get("loops", False))
             return Visual(key=key, kind="clip", path=norm, is_video=True,
-                          source="cache", attribution=attribution)
+                          source="cache", attribution=attribution, loops=loops)
         return None
 
-    def _fetch_clip(self, key: str, choice: int, portrait: bool) -> Visual:
+    def _fetch_clip(self, key: str, choice: int, portrait: bool) -> Visual | None:
+        """Pexels. `None` means "no result" — the caller carries on down the
+        chain, which is the whole reason this no longer returns a filler."""
         query = self._clip_query(key)
         data = self.clip_client.search(query)
         videos = data.get("videos") or []
         if not videos:
-            log.warning("pexels: no results for %r — filler", query)
-            return self.filler_clip(key)
+            log.info("pexels: no results for %r", query)
+            return None
         video = videos[min(choice, len(videos) - 1)]
         file_url = self._pick_file(video)
         if not file_url:
-            return self.filler_clip(key)
+            return None
 
         cdir = self._clip_cache_dir(key)
         suffix = "_p" if portrait else ""
@@ -624,6 +674,58 @@ class ContentManager:
         }, indent=2), encoding="utf-8")
         return Visual(key=key, kind="clip", path=norm, is_video=True,
                       source="pexels", attribution=attribution)
+
+    def _fetch_gif_clip(self, key: str, choice: int, portrait: bool) -> Visual | None:
+        """Giphy, then Tenor — asked for the MOVING rendition.
+
+        Whatever comes back goes through `normalize_clip`, so it arrives in
+        the same shape Pexels footage does: a short mp4 at the project's
+        resolution and fps, audio stripped, capped in length. The renderer
+        does not need to know which chain produced it and plays it inside the
+        same frames/ plate either way.
+
+        WORTH DECIDING DELIBERATELY, and not a legal opinion: Giphy and Tenor
+        content is user-uploaded and frequently copyrighted — sports
+        highlights and film clips especially, which is exactly what a specific
+        illustration reaches for. That material has been in this pipeline for
+        memes at one or two per video; illustration will reach it more often
+        and more deliberately, because that is what it is for. The mitigation
+        is the one already built and it is the reason owned-library-first is
+        first: this only fires on a miss, so the more the owned library
+        covers, the less this matters.
+        """
+        query = self._clip_query(key)
+        cdir = self._clip_cache_dir(key, "gif")
+        suffix = "_p" if portrait else ""
+        for provider in self.gif_clients:
+            # One provider failing is the next one's turn, not the end of the
+            # chain — a Giphy timeout that took Tenor down with it would be a
+            # filler card drawn for a reason that had nothing to do with the
+            # illustration. So the whole fetch is inside the loop's guard, not
+            # just the search.
+            try:
+                url = provider.search(query, animated=True)
+                if not url:
+                    continue
+                raw = cdir / f"raw_{choice}.bin"
+                provider.download(url, raw)
+                norm = cdir / f"normalized_{choice}{suffix}.mp4"
+                normalize_clip(raw, norm, self.settings, self._res(portrait))
+                raw.unlink(missing_ok=True)
+            except (RenderError, httpx.HTTPError, OSError) as e:
+                log.warning("gif provider %s failed for %r (%s)",
+                            provider.name, query, e)
+                continue
+            attribution = f"clip via {provider.name} ({url})"
+            cdir.mkdir(parents=True, exist_ok=True)
+            (cdir / f"meta_{choice}.json").write_text(json.dumps({
+                "key": key, "query": query, "provider": provider.name,
+                "url": url, "attribution": attribution, "loops": True,
+            }, indent=2), encoding="utf-8")
+            return Visual(key=key, kind="clip", path=norm, is_video=True,
+                          source=provider.name, attribution=attribution,
+                          loops=True)
+        return None
 
     @staticmethod
     def _pick_file(video: dict) -> str | None:

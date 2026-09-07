@@ -11,8 +11,13 @@
        keyless). MOCK_MODE swaps in a deterministic offline client.
     4. a deterministic filler card — a missing meme never aborts a render.
 
-Everything used as a freeze-frame is normalized to a still PNG on ingest
-(GIFs contribute their first frame) and cached.
+`[MEME]` IS STILL, `[CLIP]` MOVES. Everything resolved through here is a
+freeze-frame and is normalized to a still PNG on ingest (GIFs contribute their
+first frame) and cached — a frozen meme is drier, and the freeze IS the joke's
+timing. The same providers also answer the clip chain in `pipeline.broll`,
+where the ask is the opposite: `search(..., animated=True)` returns the moving
+form, because a clip of a shot going in reduced to one frame of a man mid-jump
+has lost the only thing that made it worth showing.
 """
 
 from __future__ import annotations
@@ -103,7 +108,7 @@ class MemeLibrary:
 
 class MemeProvider(Protocol):
     name: str
-    def search(self, query: str) -> str | None: ...
+    def search(self, query: str, *, animated: bool = False) -> str | None: ...
     def download(self, url: str, dest: Path) -> Path: ...
 
 
@@ -142,7 +147,18 @@ class _PoliteHttp:
 class GiphyClient(_PoliteHttp):
     name = "giphy"
 
-    def search(self, query: str) -> str | None:
+    # The still forms, and the moving ones. Same search, same result set —
+    # only which rendition is pulled off each hit changes, which is the whole
+    # difference between a meme and an illustration.
+    #
+    # The moving list is ordered mp4-first: `downsized_small` and
+    # `original_mp4` ARE mp4s, which are a fraction of the gif's size and are
+    # what normalize_clip wants anyway. The two gif renditions are the
+    # fallback for a hit that ships no mp4.
+    _STILL_FORMS = ("downsized_still", "original_still")
+    _MOVING_FORMS = ("downsized_small", "original_mp4", "downsized", "original")
+
+    def search(self, query: str, *, animated: bool = False) -> str | None:
         if not self.settings.giphy_api_key:
             return None
         self._respect_interval()
@@ -155,25 +171,33 @@ class GiphyClient(_PoliteHttp):
         if r.status_code != 200:
             log.warning("giphy %s for %r", r.status_code, query)
             return None
+        forms = self._MOVING_FORMS if animated else self._STILL_FORMS
         for item in r.json().get("data", []):
             images = item.get("images", {})
-            url = (images.get("downsized_still") or images.get("original_still") or {}).get("url")
-            if url:
-                return url
+            for form in forms:
+                rendition = images.get(form) or {}
+                url = (rendition.get("mp4") if animated else None) \
+                    or rendition.get("url")
+                if url:
+                    return url
         return None
 
 
 class TenorClient(_PoliteHttp):
     name = "tenor"
 
-    def search(self, query: str) -> str | None:
+    _STILL_FORMS = ("png_transparent", "gifpreview", "gif")
+    _MOVING_FORMS = ("mp4", "tinymp4", "gif", "tinygif")
+
+    def search(self, query: str, *, animated: bool = False) -> str | None:
         if not self.settings.tenor_api_key:
             return None
+        forms = self._MOVING_FORMS if animated else self._STILL_FORMS
         self._respect_interval()
         r = httpx.get(
             f"{self.settings.tenor_base_url}/v2/search",
             params={"key": self.settings.tenor_api_key, "q": query,
-                    "limit": 3, "media_filter": "png_transparent,gifpreview"},
+                    "limit": 3, "media_filter": ",".join(forms)},
             timeout=30,
         )
         if r.status_code != 200:
@@ -181,7 +205,7 @@ class TenorClient(_PoliteHttp):
             return None
         for item in r.json().get("results", []):
             formats = item.get("media_formats", {})
-            for fmt in ("png_transparent", "gifpreview", "gif"):
+            for fmt in forms:
                 url = (formats.get(fmt) or {}).get("url")
                 if url:
                     return url
@@ -191,7 +215,13 @@ class TenorClient(_PoliteHttp):
 class ImgflipClient(_PoliteHttp):
     name = "imgflip"
 
-    def search(self, query: str) -> str | None:
+    def search(self, query: str, *, animated: bool = False) -> str | None:
+        # imgflip is a library of meme TEMPLATES — flat jpgs, every one of
+        # them. It has nothing to offer a caller that asked for motion, and
+        # saying so is better than handing back a still that then normalises
+        # into a one-frame "clip".
+        if animated:
+            return None
         self._respect_interval()
         r = httpx.get(f"{self.settings.imgflip_base_url}/get_memes", timeout=30)
         if r.status_code != 200:
@@ -205,10 +235,23 @@ class ImgflipClient(_PoliteHttp):
         return None
 
 
+# How many frames a mock animated stand-in carries, and how long it runs.
+# Short enough that a hold is usually LONGER than it is, which is the case the
+# loop exists for; more than one frame, which is the whole point.
+MOCK_GIF_FRAMES = 8
+MOCK_GIF_FRAME_MS = 120
+
+
 class MockMemeClient:
     """Deterministic offline fallback provider used in MOCK_MODE: search
     yields a mock:// URL; download GENERATES a captioned placeholder so
-    the exact cache/normalize path is exercised with zero network."""
+    the exact cache/normalize path is exercised with zero network.
+
+    It answers both asks, because the two chains it stands in for want
+    different things from the same provider. `animated=True` yields a
+    `mock://gif/…` URL and downloads a real multi-frame GIF whose frames
+    visibly differ — so "the clip moves and the meme does not" is a property
+    of the artefact offline, not just of the production code path."""
 
     name = "mock"
 
@@ -217,9 +260,10 @@ class MockMemeClient:
         self.search_calls: list[str] = []
         self.download_calls: list[str] = []
 
-    def search(self, query: str) -> str | None:
+    def search(self, query: str, *, animated: bool = False) -> str | None:
         self.search_calls.append(query)
-        return f"mock://meme/{query.replace(' ', '-')}"
+        kind = "gif" if animated else "meme"
+        return f"mock://{kind}/{query.replace(' ', '-')}"
 
     def download(self, url: str, dest: Path) -> Path:
         self.download_calls.append(url)
@@ -227,11 +271,29 @@ class MockMemeClient:
 
         seed = int(hashlib.sha256(url.encode()).hexdigest()[:6], 16)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        img = Image.new("RGB", (720, 540), ((seed % 80) + 40, 40, (seed % 60) + 60))
-        d = ImageDraw.Draw(img)
-        d.rectangle([12, 12, 707, 527], outline=(240, 240, 240), width=4)
-        d.text((30, 250), url.rsplit("/", 1)[-1][:40], fill=(240, 240, 240))
-        img.save(dest, format="PNG")  # dest may have a non-image suffix
+        label = url.rsplit("/", 1)[-1][:40]
+        animated = "mock://gif/" in url
+
+        def frame(i: int) -> Image.Image:
+            img = Image.new("RGB", (720, 540),
+                            ((seed % 80) + 40, 40, (seed % 60) + 60))
+            d = ImageDraw.Draw(img)
+            d.rectangle([12, 12, 707, 527], outline=(240, 240, 240), width=4)
+            d.text((30, 250), label, fill=(240, 240, 240))
+            if animated:
+                # A bar that walks across the frame. Anything that samples two
+                # frames of this and finds them identical has frozen the clip.
+                x = 40 + i * (620 // max(MOCK_GIF_FRAMES - 1, 1))
+                d.rectangle([x, 320, x + 60, 400], fill=(240, 240, 240))
+            return img
+
+        if animated:
+            frames = [frame(i) for i in range(MOCK_GIF_FRAMES)]
+            frames[0].save(dest, format="GIF", save_all=True,
+                           append_images=frames[1:],
+                           duration=MOCK_GIF_FRAME_MS, loop=0)
+        else:
+            frame(0).save(dest, format="PNG")  # dest may have a non-image suffix
         return dest
 
 
@@ -240,8 +302,28 @@ class MockMemeClient:
 # ---------------------------------------------------------------------------
 
 
+def animated_providers(settings: Settings) -> list:
+    """The providers that can return something that MOVES, in chain order.
+
+    Giphy and Tenor, and deliberately not imgflip: it is a library of flat
+    meme templates and has nothing to answer with. These are the same clients
+    the meme chain uses, configured the same way — `pipeline.broll` hangs the
+    tail of its `[CLIP]` chain off them rather than adding a dependency,
+    because Pexels is a STOCK library and stock will never have LeBron
+    shooting a three.
+    """
+    if settings.mock_mode:
+        return [MockMemeClient(settings)]
+    return [GiphyClient(settings, "giphy"), TenorClient(settings, "tenor")]
+
+
 def normalize_meme(src: Path, dest: Path) -> Path:
-    """Any input image -> a still PNG (GIFs freeze on frame 0)."""
+    """Any input image -> a still PNG (GIFs freeze on frame 0).
+
+    THE FREEZE IS THE POINT here, and it is why `[CLIP]` does not come through
+    this function: a frozen meme is drier and the freeze is the joke's timing,
+    where a frozen illustration is a man stopped mid-jump.
+    """
     from PIL import Image
 
     dest.parent.mkdir(parents=True, exist_ok=True)

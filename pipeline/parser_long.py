@@ -9,8 +9,8 @@ coordinate system.
 The Dennis tag grammar:
     [PLATE: name | slot=value | …]    a plate from the kit, with its content
     [IMG: query] [PRODUCT: query]     real operations/product imagery
-    [MEME: key]                       owned library first, capped per video
-    [CLIP: query] / [BROLL: query]    ironic stock footage (vetted palette)
+    [MEME: key | hold=2.0]            owned library first, capped per video
+    [CLIP: query | hold=2.5]          footage/illustration; the clip moves
     [CHART: metric]                   a data path drawn into a charts/ plate
     [SHOW FILING: file.png]           unnamed-source data screenshot
     [SCREENGRAB: slug]                operator-supplied app/screen capture
@@ -41,6 +41,7 @@ from typing import Iterable
 from config import Settings
 from pipeline.models import (
     HISTORY_FIELDS,
+    HOLDABLE_TAG_TYPES,
     SFX_KEYS,
     VISUAL_TAG_TYPES,
     Chapter,
@@ -51,7 +52,7 @@ from pipeline.models import (
 )
 from pipeline.plate_tags import build_fill, check_bound
 from pipeline.plates import CHAPTER_TYPES, load_plates
-from pipeline.tagging import parse_chart_payload, tokenize_tags
+from pipeline.tagging import parse_chart_payload, parse_hold, tokenize_tags
 
 log = logging.getLogger(__name__)
 
@@ -222,7 +223,13 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
     for rt in raw_tags:
         payload = rt.payload
         style = ""
+        hold = 0.0
         values: dict[str, str] = {}
+        if rt.type in HOLDABLE_TAG_TYPES:
+            # `hold=` is the writer's call on whether this is a glance or a
+            # beat to sit in, and it is the only `|` field these tags take.
+            payload, hold, hold_warnings = parse_hold(payload, tag=rt.type.value)
+            warnings.extend(hold_warnings)
         if rt.type is TagType.PLATE:
             # The tag carries its own content. Resolution and slot-filling
             # happen here so a bad plate name or a mis-sized row is caught at
@@ -253,7 +260,7 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
                                 f'"circle|arrow|underline -> target") — skipped')
                 continue
         events.append(TagEvent(
-            type=rt.type, payload=payload, values=values,
+            type=rt.type, payload=payload, values=values, hold=hold,
             char_offset=rt.char_offset, raw_offset=rt.raw_offset, style=style,
         ))
 
@@ -402,6 +409,13 @@ def validate_long_script(
     warnings: list[str] = []
     blocking: list[str] = []
 
+    # THE MEME IS CAPPED AND THE CLIP IS NOT, and that is a decision rather
+    # than an omission. A meme is a joke and jokes are rationed. A `[CLIP]` is
+    # ILLUSTRATION — the visual that proves the claim — which is
+    # information-first, which is the thing §8 of the bible actively wants:
+    # the boredom is aimed at the hype, never at the work. Capping it would
+    # fight the reason it exists, and the pacing and hold-ceiling checks
+    # already stop a video becoming a slideshow.
     meme_count = script.meme_count()
     if meme_count > settings.meme_max_per_long:
         blocking.append(

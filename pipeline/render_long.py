@@ -7,7 +7,7 @@ Structure:
     evidence he cuts away to
   * the whole video is ONE ffmpeg filter_complex: per-segment trim ->
     concat -> bug/disclaimer/glitch overlays -> libass captions, plus
-    VO + music bed + SFX in a single amix — one final encode
+    VO + room tone + SFX in a single amix — one final encode
 
 NOTHING PANS OR ZOOMS. Motion is the host (mouth flap, boil pairs), the cuts,
 and real video clips. Every still is scale + pad, held.
@@ -224,9 +224,10 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
     warning and nothing else — the same contract as `[SOUND: …]`, because the
     alternative is a forty-minute render dying over a typo'd effect name.
 
-    Gain matches the meme boom (`sfx_gain_db + 2`) so the cue sits above the
-    bed rather than inside it: a signpost the viewer has to strain for is not
-    a signpost.
+    Gain matches the meme boom (`sfx_gain_db + 2`). That number was chosen to
+    sit ABOVE THE BED, and the bed is gone — the cue now lands in room tone
+    with nothing competing with it, so the gain is worth re-auditioning
+    against near-silence rather than against a drone.
     """
     key = (settings.chapter_cue_sfx or "").strip()
     if not key:
@@ -247,29 +248,6 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
                    name=f"chapter_cue@{s['t']:.2f}")
         for s in stingers
     ]
-
-
-def _silent_spans(stingers: list[dict], duration: float,
-                  types: list[str]) -> list[tuple[float, float]]:
-    """The windows where the music bed goes quiet, from the openers on screen.
-
-    A chapter runs from its own opener to the NEXT one — which is what the
-    viewer sees, and is why this reads the landed openers rather than the
-    script's requested times. The last chapter runs to the end of the video.
-    """
-    wanted = {t.strip().lower() for t in types if str(t).strip()}
-    if not wanted or not stingers:
-        return []
-    marks = sorted(stingers, key=lambda s: float(s["t"]))
-    spans: list[tuple[float, float]] = []
-    for i, s in enumerate(marks):
-        if str(s.get("type", "")).strip().lower() not in wanted:
-            continue
-        start = float(s["t"])
-        end = float(marks[i + 1]["t"]) if i + 1 < len(marks) else duration
-        if end > start:
-            spans.append((round(start, 3), round(min(end, duration), 3)))
-    return spans
 
 
 def render_long(
@@ -871,11 +849,29 @@ def render_long(
             # Real footage carries its own motion, so it is simply cover-scaled
             # and clone-padded if the clip is shorter than the beat. No drift is
             # added — nothing in this pipeline pans or zooms.
+            #
+            # A LOOPING source needs no padding: `_clip_input` demuxer-loops it
+            # so the stream never runs out, and the `trim` below is the whole
+            # job. `tpad` is then a no-op rather than a wrong answer.
             return (
                 f"[{idx}:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
                 f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
                 f"trim=0:{seg_len:.4f},scale={W}:{H}{tail}"
             )
+
+        def _clip_input(visual) -> int:
+            """A clip as an ffmpeg input, repeating when it is meant to.
+
+            A gif is two seconds long and a `hold=4.5` is not; a source that
+            repeats and then freezes for the back half of its beat has the
+            same defect as the freeze-frame this whole path exists to avoid.
+            `-stream_loop` does it at the demuxer, so nothing is buffered —
+            the `loop` FILTER holds every decoded frame in memory, which is
+            fine for a two-frame boil and is not fine for eight seconds of
+            1080p.
+            """
+            args = ["-stream_loop", "-1"] if visual.loops else []
+            return _add_input([*args, "-i", str(visual.path)])
 
         if seg.kind == "host":
             # Dennis is the default base frame: the room, then the talking rig
@@ -897,7 +893,7 @@ def render_long(
             # then back — two videos cut together.
             visual = content.resolve_clip(value, overrides.get(value, 0))
             frame_plate = _frame_plate(CueKind.CLIP)
-            clip_i = _add_input(["-i", str(visual.path)])
+            clip_i = _clip_input(visual)
             if frame_plate is None:
                 chain = _clip_motion(clip_i)
             else:
@@ -918,7 +914,7 @@ def render_long(
             # operator-supplied capture — image or short clip, framed either way
             visual = content.resolve_screengrab(value)
             if visual.is_video:
-                clip_i = _add_input(["-i", str(visual.path)])
+                clip_i = _clip_input(visual)
                 frame_plate = _frame_plate(CueKind.SCREENGRAB)
                 if frame_plate is None:
                     chain = _clip_motion(clip_i)
@@ -1013,6 +1009,12 @@ def render_long(
         if visual is not None:
             meta["source"] = visual.source
             meta["attribution"] = visual.attribution
+            if visual.loops:
+                # A gif repeating to fill its hold leaves no trace in a still
+                # frame of the output, so the manifest is the only place the
+                # difference between "looping" and "frozen after 2s" is
+                # legible without scrubbing the file.
+                meta["loops"] = True
         else:
             meta["attribution"] = ""
         if seg.kind == "host":
@@ -1357,24 +1359,27 @@ def render_long(
 
     # ------------------------------------------------------------- audio
     #
-    # THE MIX REACTS TO STRUCTURE. Two of the tracks below are keyed off the
-    # chapter openers rather than off the narration: a cue announces each one,
-    # and the bed leaves under the chapter TYPES that are supposed to be
-    # quiet. Both read off `stinger_meta`, which is what actually landed on
-    # screen — a chapter with no cut to land on was skipped above, and a cue
-    # for an opener nobody sees would be a sound with no picture.
+    # THERE IS NO BED, and this is where it used to be mixed in. It was three
+    # sine waves and brown noise — sixty seconds of a G drone, looped for
+    # forty minutes under every video — and a lo-fi bed under a dry finance
+    # monologue is the convention this channel exists to be the opposite of.
+    # Room tone already does the only job it was doing: stopping the digital
+    # silence between words that gives a cut away as assembled.
+    #
+    # The setting that muted it under a chapter type went with it. With no bed
+    # there is nothing to mute, and a setting that does nothing is worse than
+    # no setting; the fade machinery it needed went too. If a licensed bed
+    # ever arrives, reintroduce both then rather than leaving the corpse.
+    #
+    # THE MIX STILL REACTS TO STRUCTURE. The chapter cue below is keyed off
+    # the openers rather than off the narration and reads `stinger_meta`,
+    # which is what actually landed on screen — a chapter with no cut to land
+    # on was skipped above, and a cue for an opener nobody sees would be a
+    # sound with no picture.
     audio = [AudioTrack(path=tts.audio_path, gain_db=0.0, voice=True,
                         name="voice")]
-    music = settings.assets_dir / "music" / "dennis_bed.m4a"
-    if music.exists():
-        audio.append(AudioTrack(path=music, gain_db=settings.music_gain_db,
-                                loop=True, name="music",
-                                mute_windows=_silent_spans(
-                                    stinger_meta, duration,
-                                    settings.music_silent_chapters)))
-    # The room, under everything — including under the windows where the bed
-    # has gone. That is what makes the drop read as a register change rather
-    # than a dropout: something is still there.
+    # The room, under everything, and now the whole floor of the mix. It is
+    # diegetic — the desk at three in the morning he is sitting at.
     room = settings.assets_dir / "sfx" / ROOM_TONE_NAME
     if room.exists():
         audio.append(AudioTrack(path=room, gain_db=ROOM_TONE_GAIN_DB,
@@ -1464,19 +1469,17 @@ def render_long(
              "x": l.x, "y": l.y}
             for l in layers
         ],
-        # WHAT THE MIX ACTUALLY DID. The bed leaving under a chapter and a cue
-        # on every opener are both decisions taken from `stingers` below, and
-        # neither leaves a trace in the picture — so they go here, where the
-        # operator (and the suite) can read them without opening the audio in
-        # something that draws waveforms.
+        # WHAT THE MIX ACTUALLY DID. A cue on every opener is a decision taken
+        # from `stingers` below and it leaves no trace in the picture — so it
+        # goes here, where the operator (and the suite) can read it without
+        # opening the audio in something that draws waveforms.
         #
         # Named by SOURCE AND TIME, because the same file fires repeatedly: a
         # boom on every meme and a cue on every opener are several rows that
         # would otherwise be indistinguishable from one another.
         "audio": [
             {"name": a.name or a.path.stem, "start": round(a.start_s, 2),
-             "gain_db": round(a.gain_db, 1), "loop": a.loop,
-             "mute_windows": [list(w) for w in a.mute_windows]}
+             "gain_db": round(a.gain_db, 1), "loop": a.loop}
             for a in audio
         ],
         "marks": mark_solves,

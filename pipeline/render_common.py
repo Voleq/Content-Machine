@@ -310,26 +310,13 @@ class OverlayLayer:
     name: str = ""           # for the manifest / debugging
 
 
-# How long the music bed takes to leave and to come back. Long enough that
-# the drop is a register change rather than a click, short enough that the
-# chapter it belongs to has already started when the room is all that is left.
-MUTE_FADE_S = 0.6
-
-
 @dataclass
 class AudioTrack:
     path: Path
     start_s: float = 0.0
     gain_db: float = 0.0
-    loop: bool = False       # e.g. the music bed
+    loop: bool = False       # e.g. room tone, which runs the whole video
     voice: bool = False      # the VO — gets light compression before the mix
-    # Spans, in output-timeline seconds, where this track fades to silence and
-    # back. The bed is ONE looped track spanning the whole video, so "mute it
-    # under these chapters" is an envelope on that track rather than several
-    # shorter tracks cut around the holes — one input, one filter, and the
-    # loop phase stays continuous underneath so the bed does not restart on
-    # the way back in.
-    mute_windows: list[tuple[float, float]] = field(default_factory=list)
     name: str = ""           # for the manifest / debugging
 
 
@@ -366,30 +353,6 @@ class CompositeSpec:
 
     def input_count(self) -> int:
         return sum(1 for a in self.base_input_args if a == "-i")
-
-
-def mute_envelope(windows: list[tuple[float, float]],
-                  fade_s: float = MUTE_FADE_S) -> str:
-    """A `volume` expression that is 1 everywhere except across `windows`.
-
-    Chained `afade` filters cannot express this: an `afade=t=out` zeroes
-    everything after its ramp, so a later `afade=t=in` multiplies against
-    zero and the track is silent from the first window to the end. A single
-    `volume` with `eval=frame` and a per-window gain, multiplied together, is
-    one filter that reads as the envelope it is.
-
-    Each window contributes 1 outside `[start - fade, end + fade]`, ramps
-    down across the lead-in, holds 0 for the window itself, and ramps back.
-    """
-    f = max(fade_s, 1e-3)
-    parts = []
-    for start, end in windows:
-        lo = max(start - f, 0.0)
-        parts.append(
-            f"(1-min(1,max(0,min((t-{lo:.3f})/{f:.3f},"
-            f"({end + f:.3f}-t)/{f:.3f}))))"
-        )
-    return "*".join(parts)
 
 
 def composite_video(
@@ -454,8 +417,6 @@ def composite_video(
         if track.start_s > 0:
             chain += f",adelay={int(track.start_s * 1000)}:all=1"
         chain += f",volume={track.gain_db:.1f}dB"
-        if track.mute_windows:
-            chain += f",volume='{mute_envelope(track.mute_windows)}':eval=frame"
         lines.append(f"[{idx}:a]{chain}[a{j}]")
         a_labels.append(f"[a{j}]")
         idx += 1

@@ -313,3 +313,96 @@ def test_a_malformed_confession_warns_and_is_dropped(settings, long_valid_text):
     script, warnings = parse_long_script(shapeless, "EXMPL", settings)
     assert script.confession is None
     assert any("kind | the admission" in w for w in warnings)
+
+
+# --------------------------------------------------------------- the hold
+#
+# The writer is the one who knows whether a visual is a glance or a beat to
+# sit in, and nothing downstream can read that off a tag. `hold=` is the one
+# `|` field these two take.
+
+
+def test_the_director_can_say_how_long_it_holds(settings):
+    raw = ("A thing happened. [CLIP: lebron three pointer | hold=2.5] "
+           "And then this. [MEME: bagholder | hold=2.0] "
+           "And that was that.")
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    clip, meme = script.events_of(TagType.CLIP)[0], script.events_of(TagType.MEME)[0]
+    assert (clip.payload, clip.hold) == ("lebron three pointer", 2.5)
+    assert (meme.payload, meme.hold) == ("bagholder", 2.0)
+    assert not [w for w in warnings if "hold" in w]
+
+
+def test_a_bare_tag_is_exactly_what_it_always_was(settings):
+    """Nothing already written may change. `hold == 0.0` is the sentinel for
+    "the writer did not ask", and every consumer reads it as the default."""
+    raw = ("A thing happened. [CLIP: tumbleweed] And then this. "
+           "[MEME: bagholder] And that was that.")
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    assert [e.hold for e in script.events] == [0.0, 0.0]
+    assert script.events_of(TagType.CLIP)[0].payload == "tumbleweed"
+    assert script.events_of(TagType.MEME)[0].payload == "bagholder"
+    assert not [w for w in warnings if "hold" in w]
+
+    # …and the narration is untouched: the field never reaches the voice.
+    assert "hold" not in script.narration
+    assert script.narration.startswith("A thing happened.")
+
+
+def test_a_thirty_second_hold_is_a_typo_and_is_clamped(settings):
+    """`hold=30` is a slipped decimal point, not somebody asking for a
+    thirty-second still. Refusing the whole script over it would cost the
+    writer everything else they wrote."""
+    raw = ("A thing happened. [CLIP: tumbleweed | hold=30] "
+           "And this. [MEME: bagholder | hold=0.1] Done.")
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    assert script.events_of(TagType.CLIP)[0].hold == 5.0
+    assert script.events_of(TagType.MEME)[0].hold == 0.8
+    said = " ".join(warnings)
+    assert "30s" in said and "0.8-5s" in said
+    assert "0.1s" in said
+
+
+def test_a_hold_that_is_not_a_number_warns_and_falls_back(settings):
+    raw = "A thing happened. [CLIP: tumbleweed | hold=soon] Done."
+    script, warnings = parse_long_script(raw, "EXMPL", settings)
+    assert script.events_of(TagType.CLIP)[0].hold == 0.0
+    assert any("not a number of seconds" in w for w in warnings)
+
+
+def test_only_the_two_timed_tags_take_a_hold(settings):
+    """A `|` field on a tag that has none is not silently swallowed into the
+    key — `[IMG: warehouse | hold=3]` would otherwise search for the whole
+    string and miss."""
+    from pipeline.models import HOLDABLE_TAG_TYPES
+
+    assert HOLDABLE_TAG_TYPES == {TagType.CLIP, TagType.BROLL, TagType.MEME}
+    raw = "A thing happened. [IMG: EXMPL warehouse] Done."
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    assert script.events_of(TagType.IMG)[0].hold == 0.0
+
+
+def test_illustration_is_not_rationed_the_way_the_joke_is(settings, tmp_path):
+    """The meme cap is a decision about JOKES, and a clip is not one.
+
+    A `[CLIP]` is the visual that proves the claim — information-first, which
+    is what the format is for. Capping it would fight the reason it exists,
+    and the pacing and hold-ceiling checks already stop a slideshow. So this
+    pins the asymmetry: nine clips pass where three memes do not.
+    """
+    body = " ".join(
+        f"Sentence number {i} carries a point worth showing. "
+        f"[CLIP: illustration number {i}]" for i in range(9))
+    script, _ = parse_long_script(f"{body} See you at the next filing.",
+                                  "EXMPL", settings)
+    assert len(script.events_of(TagType.CLIP)) == 9
+    _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert not [b for b in blocking if "CLIP" in b], \
+        f"illustration was rationed: {blocking}"
+
+    memes = " ".join(f"A joke. [MEME: bagholder-{i}]" for i in range(3))
+    script, _ = parse_long_script(f"{memes} See you at the next filing.",
+                                  "EXMPL", settings)
+    _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
+    assert any("[MEME]" in b and "cap" in b for b in blocking), \
+        "the joke is supposed to stay rationed"
