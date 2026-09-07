@@ -26,7 +26,8 @@ Bull case: sticky contracts. [PLATE: both-true-16x9 | kicker=BOTH TRUE | stateme
 === CHAPTERS ==="""  + """
 00:00 cold-open | nobody cares anymore
 00:06 the-numbers | five years of them
-00:14 bull-vs-bear | both of these are true"""
+00:14 bull-vs-bear | both of these are true
+00:20 resigned-close | see you at the next filing"""
 
 
 @pytest.fixture(scope="module")
@@ -319,6 +320,150 @@ def test_a_chapter_opener_is_the_room_with_the_title_in_its_slot(rendered):
         assert st["type"], "an opener with no type"
         assert "n" not in st, "a chapter opener carries an ordinal"
     assert manifest["chapter_warnings"] == []
+
+
+# --------------------------------------------------------------------------
+# The mix reacts to structure: a cue on every opener, and a bed that leaves.
+# --------------------------------------------------------------------------
+
+
+def _track(manifest, name):
+    return next(a for a in manifest["audio"] if a["name"] == name)
+
+
+def test_every_chapter_opener_gets_its_cue(rendered):
+    """One cue per opener, ahead of the picture, above the bed.
+
+    The opener is otherwise visual only — the room plate held 1.6s — so a
+    viewer who looks away misses that a new argument started. The lead is the
+    point: audio arriving with the image reacts to it, audio arriving first
+    announces it.
+    """
+    from pipeline.render_long import CHAPTER_CUE_LEAD_S
+
+    settings, script, tts, out, manifest = rendered
+    cues = [a for a in manifest["audio"] if a["name"].startswith("chapter_cue@")]
+    stingers = manifest["stingers"]
+    assert len(cues) == len(stingers), "a chapter opener with no cue"
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
+    for st, cue in zip(sorted(stingers, key=lambda s: s["t"]),
+                       sorted(cues, key=lambda a: a["start"])):
+        assert cue["start"] == pytest.approx(st["t"] - CHAPTER_CUE_LEAD_S, abs=0.01)
+        assert cue["gain_db"] == pytest.approx(settings.sfx_gain_db + 2)
+        assert f"adelay={int(cue['start'] * 1000)}" in filter_text
+
+
+def test_the_cue_is_off_when_the_setting_is_blank():
+    """One setting, not a constant: the choice can only be made by listening,
+    so it has to be turnable off without a code change."""
+    from config import Settings
+    from pipeline.render_long import _chapter_cues
+
+    stingers = [{"type": "valuation", "title": "what it costs", "t": 12.0}]
+    off = Settings(CHAPTER_CUE_SFX="", _env_file=None)
+    assert _chapter_cues(stingers, off) == []
+    on = Settings(CHAPTER_CUE_SFX="keyboard_clack", _env_file=None)
+    assert len(_chapter_cues(stingers, on)) == 1
+
+
+def test_an_unknown_cue_key_warns_and_skips(caplog):
+    """Same contract as `[SOUND: …]`: a typo'd effect name is a warning, never
+    a forty-minute render that dies on it."""
+    import logging
+
+    from config import Settings
+    from pipeline.render_long import _chapter_cues
+
+    stingers = [{"type": "risk", "title": "the clock", "t": 4.0}]
+    with caplog.at_level(logging.WARNING):
+        assert _chapter_cues(stingers, Settings(CHAPTER_CUE_SFX="airhorn",
+                                                _env_file=None)) == []
+    assert "airhorn" in caplog.text
+
+
+def test_the_bed_leaves_under_a_resigned_close(rendered):
+    """The music leaving is what tells a viewer the lights are going out.
+
+    Dropping the one bed costs nothing and says more than a second one would.
+    The room tone keeps running underneath, which is what makes it read as a
+    register change rather than a dropout.
+    """
+    settings, script, tts, out, manifest = rendered
+    close = next(s for s in manifest["stingers"] if s["type"] == "resigned-close")
+    later = [s["t"] for s in manifest["stingers"] if s["t"] > close["t"]]
+    expected = (close["t"], min(later) if later else manifest["duration"])
+
+    music = _track(manifest, "music")
+    assert [tuple(w) for w in music["mute_windows"]] == [
+        pytest.approx(expected, abs=0.01)]
+    assert _track(manifest, "room_tone")["mute_windows"] == [], \
+        "the room went with the music — that is a dropout, not a register change"
+    assert _track(manifest, "voice")["mute_windows"] == []
+
+    # …and the window the manifest reports is the one the mix actually got.
+    # The bed cannot be measured out of the finished file — the voice is over
+    # it the whole way — so the chain is closed here and the silencing itself
+    # is measured on its own in `test_the_envelope_really_silences_the_track`.
+    from pipeline.render_common import mute_envelope
+
+    filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
+    assert mute_envelope([tuple(w) for w in music["mute_windows"]]) in filter_text
+
+
+def test_a_silent_span_runs_to_the_next_opener():
+    """From this opener to the NEXT one, which is what the viewer sees. A
+    chapter with no cut to land on was never drawn, so it is not in here."""
+    from pipeline.render_long import _silent_spans
+
+    stingers = [{"type": "cold-open", "t": 0.0}, {"type": "risk", "t": 10.0},
+                {"type": "valuation", "t": 25.0},
+                {"type": "resigned-close", "t": 40.0}]
+    assert _silent_spans(stingers, 55.0, ["risk", "resigned-close"]) == [
+        (10.0, 25.0), (40.0, 55.0)]
+    assert _silent_spans(stingers, 55.0, []) == []
+    assert _silent_spans([], 55.0, ["risk"]) == []
+
+
+def test_the_envelope_really_silences_the_track(tmp_path):
+    """Measured, not asserted from the expression.
+
+    Chained `afade` filters cannot express "quiet here, loud either side" —
+    an `afade=t=out` zeroes everything after its ramp — so this is one
+    `volume` expression, and the thing worth checking is what comes out of
+    ffmpeg rather than what went into the string.
+    """
+    import re
+    import subprocess
+    from pathlib import Path
+
+    from pipeline.render_common import mute_envelope
+
+    def render(name: str, *filters: str) -> Path:
+        out = tmp_path / name
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-f", "lavfi",
+             "-i", "sine=frequency=440:duration=12",
+             *(["-af", *filters] if filters else []),
+             "-t", "10", "-y", str(out)], check=True)
+        return out
+
+    def mean_db(wav: Path, at: float) -> float:
+        out = subprocess.run(
+            ["ffmpeg", "-ss", str(at), "-t", "1", "-i", str(wav),
+             "-af", "volumedetect", "-f", "null", "-"],
+            capture_output=True, text=True, check=True).stderr
+        return float(re.search(r"mean_volume: (-?[\d.]+) dB", out).group(1))
+
+    # Against the SAME tone with no envelope on it, so the assertion is about
+    # what the filter did rather than about lavfi's amplitude convention.
+    plain = render("plain.wav")
+    ducked = render("ducked.wav",
+                    f"volume='{mute_envelope([(3.0, 6.0)])}':eval=frame")
+    bed = mean_db(plain, 4.0)
+
+    assert mean_db(ducked, 4.0) < bed - 40, "the bed still plays under the window"
+    assert mean_db(ducked, 0.0) == pytest.approx(bed, abs=0.5), "the bed never came in"
+    assert mean_db(ducked, 8.0) == pytest.approx(bed, abs=0.5), "the bed never came back"
 
 
 def test_every_on_screen_title_is_one_the_director_wrote(rendered, long_valid_text):

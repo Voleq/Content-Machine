@@ -203,7 +203,7 @@ def _what_it_said(script, fmt: str) -> dict:
         narration = getattr(script, "narration", "") or ""
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", narration)
                      if s.strip()]
-        titles = [title for _ts, title in
+        titles = [title for _ts, title, _type in
                   normalise_chapters(getattr(script, "chapters", "") or "")]
         return {"hook": sentences[0] if sentences else "",
                 "conclusion": " ".join(sentences[-2:]),
@@ -1721,11 +1721,18 @@ class BotCore:
             if not evidence:
                 return Reply("No retention data yet. /retention TICKER pulls it "
                              "for a published video (YouTube needs a day or two "
-                             "of views first).")
+                             "of views first). Videos uploaded before the "
+                             "chapter type was recorded never count towards "
+                             "this — the evidence starts from the next one.")
             lines = ["📊 Which chapter types hold attention (all videos)"]
             for row in evidence[:12]:
+                # The type is what aggregates; a title is what the operator
+                # recognises, so one of them rides along as the reminder of
+                # which chapter this actually was.
+                eg = (row.get("titles") or [""])[0]
                 lines.append(f"  {row['avg_watch_ratio'] * 100:5.1f}%  "
-                             f"{row['chapter'][:40]}  (n={row['videos']})")
+                             f"{row['type'][:24]:<24} (n={row['videos']})"
+                             + (f'  e.g. "{eg[:38]}"' if eg else ""))
             lines.append("\nWorst first. One video is an anecdote; the same "
                          "chapter type dropping across several is evidence.")
             return Reply("\n".join(lines))

@@ -399,19 +399,25 @@ def map_retention_to_chapters(rows: Sequence[dict],
     With them, each chapter gets the average watch ratio over its own span and
     the drop across it — and the drop is the interesting number, because a
     chapter that starts low may simply be late in the video.
+
+    Each row carries the chapter's TYPE alongside its title, where the record
+    has one. The title is what the operator reads; the type is the only half
+    that means anything across videos, because a title is deliberately unique
+    to the video it was written for.
     """
     if not rows or not chapters or duration_s <= 0:
         return []
-    bounds: list[tuple[str, float, float]] = []
-    stamps = [(_seconds(str(c[0])), str(c[1])) for c in chapters]
-    for i, (start, title) in enumerate(stamps):
+    bounds: list[tuple[str, str, float, float]] = []
+    stamps = [(_seconds(str(c[0])), str(c[1]),
+               str(c[2]) if len(c) > 2 else "") for c in chapters]
+    for i, (start, title, ctype) in enumerate(stamps):
         end = stamps[i + 1][0] if i + 1 < len(stamps) else duration_s
         if end > start:
-            bounds.append((title, start, end))
+            bounds.append((title, ctype, start, end))
 
     ordered = sorted(rows, key=lambda r: r["elapsed_ratio"])
     out: list[dict] = []
-    for title, start, end in bounds:
+    for title, ctype, start, end in bounds:
         inside = [r for r in ordered
                   if start <= r["elapsed_ratio"] * duration_s < end]
         if not inside:
@@ -419,6 +425,7 @@ def map_retention_to_chapters(rows: Sequence[dict],
         avg = sum(r["watch_ratio"] for r in inside) / len(inside)
         out.append({
             "chapter": title,
+            "chapter_type": ctype,
             "start_s": round(start, 1),
             "end_s": round(end, 1),
             "avg_watch_ratio": round(avg, 4),
@@ -477,18 +484,36 @@ def pull_retention(video_id: str, settings: Settings, *,
 
 
 def chapter_type_evidence(settings: Settings) -> list[dict]:
-    """Across every video with retention, which chapter TITLES hold attention.
+    """Across every video with retention, which chapter TYPES hold attention.
 
     The point of storing retention per chapter rather than per video: one
     video's drop-off is an anecdote, the same chapter type dropping across
     eight of them is evidence.
+
+    It aggregates on TYPE, and used to aggregate on the display title. That
+    could not produce the evidence this docstring describes: the title is free
+    text and is deliberately unique per video, so eight `valuation` chapters
+    across eight videos landed in eight buckets of one and every reading was
+    the anecdote the function exists to rule out.
+
+    A record written before the type was carried has none. Nothing is inferred
+    for it — those rows are skipped, and the evidence starts from the next
+    upload. A guessed type is worse than a missing one when the entire output
+    is a claim about evidence.
     """
     totals: dict[str, list[float]] = {}
+    titles: dict[str, list[str]] = {}
     for video in VideoLog(settings).all():
         for row in (video.retention or {}).get("chapters", []):
-            key = str(row.get("chapter", "")).strip().lower()
-            if key:
-                totals.setdefault(key, []).append(float(row.get("avg_watch_ratio", 0)))
-    out = [{"chapter": k, "videos": len(v), "avg_watch_ratio": round(sum(v) / len(v), 4)}
+            key = str(row.get("chapter_type", "")).strip().lower()
+            if not key:
+                continue
+            totals.setdefault(key, []).append(float(row.get("avg_watch_ratio", 0)))
+            title = str(row.get("chapter", "")).strip()
+            if title and title not in titles.setdefault(key, []):
+                titles[key].append(title)
+    out = [{"type": k, "videos": len(v),
+            "avg_watch_ratio": round(sum(v) / len(v), 4),
+            "titles": titles.get(k, [])}
            for k, v in totals.items() if v]
     return sorted(out, key=lambda r: r["avg_watch_ratio"])

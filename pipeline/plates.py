@@ -69,6 +69,22 @@ CHAPTER_TYPES = (
     "risk", "filing-walk", "bull-vs-bear", "resigned-close",
 )
 
+
+def fold_chapter_type(raw: str) -> str:
+    """A type as a writer typed it, in the kit's spelling.
+
+    "Resigned close", "resigned_close" and "resigned-close" are the same type,
+    and the writer types the trailer by hand. Shared rather than repeated
+    because three copies of three `.replace()` calls is how the renderer comes
+    to record `resigned-close` for a chapter the upload records as `resigned
+    close` — the same chapter, in two buckets, which is the exact defect the
+    type was introduced to fix.
+
+    Folding only. Whether the result is one of the sixteen is a question for
+    whoever is validating, and they do not all answer it the same way.
+    """
+    return str(raw).strip().lower().replace(" ", "-").replace("_", "-")
+
 # Six periods, always: four fiscal years, the last full year, and LTM. Every
 # table and every time-series chart in the kit is authored six wide. Anything
 # that assumes five drops LTM, which is the column the argument usually turns

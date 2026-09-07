@@ -37,6 +37,7 @@ from datetime import date, datetime, time as dt_time, timezone
 from pathlib import Path
 
 from config import Settings
+from pipeline.spoken import eye_written_figures
 
 log = logging.getLogger(__name__)
 
@@ -554,6 +555,19 @@ def voice_lint(narration: str) -> list[Finding]:
             findings.append(Finding(
                 gate="voice", severity="warn", line=lineno,
                 message="exclamation mark — the register is flat",
+                excerpt=line.strip()[:140]))
+        # A figure written for the eye. WARNING, never a block: whether the
+        # number is RIGHT is fact_check's question and it has already been
+        # asked, and a render stopped over a dollar sign would be a gate
+        # nobody leaves switched on. This is only about how it is spelled —
+        # and it is the one defect the two existing verification systems can
+        # both pass while the voice still says it wrong out loud.
+        for raw, said in eye_written_figures(line):
+            findings.append(Finding(
+                gate="voice", severity="warn", line=lineno,
+                message=(f"“{raw}” is written for the eye — the voice reads a "
+                         f"symbol, a comma and a decimal point literally. "
+                         f"Write it spoken: “{said}”"),
                 excerpt=line.strip()[:140]))
     return findings
 

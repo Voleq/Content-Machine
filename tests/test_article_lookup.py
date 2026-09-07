@@ -193,3 +193,64 @@ def test_a_workspace_with_no_export_is_a_miss_not_a_crash(tmp_path):
 # The resolution logic above is untouched and still covered: article_lookup
 # still resolves a tag to a story off the workspace export. What changed is
 # that nothing in the SHORT's visual layer consumes the result.
+
+
+# --------------------------------------------------------------------------
+# `[SHOW ARTICLE: 2]` — the writer can see the export, so let them point.
+# --------------------------------------------------------------------------
+
+def test_a_row_number_shoots_that_row(workspace):
+    """Token overlap decides which row gets shot, and when two of the week's
+    headlines cover the same theme it can pick the wrong one SILENTLY — the
+    screenshot is of a real, current, adjacent story and nothing flags it."""
+    script = _Script(headlines=[_Headline("Nvidia signs a $2B Saudi supply deal")])
+    assert article_url("2", script, workspace) == (
+        "https://cnbc.com/nvda-q2", "row")
+    assert article_url("3", script, workspace) == (
+        "https://bloomberg.com/chip-rules", "row")
+
+
+def test_a_row_out_of_range_warns_and_falls_back(workspace, caplog):
+    """Never fails a render, same as every other visual."""
+    import logging
+
+    script = _Script(headlines=[_Headline("Nvidia signs a $2B Saudi supply deal")])
+    with caplog.at_level(logging.WARNING):
+        got = article_url("99", script, workspace)
+    assert got == ("https://reuters.com/nvda-saudi", "auto"), \
+        "out of range should self-resolve, not give up"
+    assert "row 99" in caplog.text
+
+
+def test_a_bare_tag_is_unchanged_by_the_number_path(workspace):
+    """Requiring a payload is what stopped this being used; bare stays bare."""
+    script = _Script(headlines=[_Headline("Nvidia signs a $2B Saudi supply deal")])
+    assert article_url("", script, workspace) == (
+        "https://reuters.com/nvda-saudi", "auto")
+
+
+def test_a_row_with_no_usable_url_falls_back_rather_than_shooting_nothing(
+        tmp_path, monkeypatch):
+    import pipeline.company_data as cd
+
+    class _Data:
+        news = [{"headline": "Nvidia signs $2B supply deal with Saudi AI venture",
+                 "url": "https://reuters.com/nvda-saudi"},
+                {"headline": "Nvidia beats on datacenter revenue", "url": ""}]
+
+    monkeypatch.setattr(cd, "load_company_data", lambda ws: _Data())
+    script = _Script(headlines=[_Headline("Nvidia signs a $2B Saudi supply deal")])
+    assert article_url("2", script, tmp_path) == (
+        "https://reuters.com/nvda-saudi", "auto")
+
+
+def test_a_number_is_never_mistaken_for_a_story_to_match(workspace):
+    """`2` is a row, not a headline to token-match — matching it as words
+    would score zero against everything and quietly self-resolve anyway,
+    which is the same answer for the wrong reason."""
+    from pipeline.article_lookup import row_url
+
+    assert row_url(NEWS, 1) == "https://reuters.com/nvda-saudi"
+    assert row_url(NEWS, 0) is None
+    assert row_url(NEWS, 4) is None
+    assert row_url([], 1) is None

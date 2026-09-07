@@ -65,7 +65,37 @@ def test_chapters_are_normalised_for_youtube():
     assert len(got) == 3
     # YouTube only renders chapters when the first is at 00:00
     assert got[0][0] == "00:00"
-    assert got[1] == ("04:12", "The numbers")
+    # A line with no `type |` is a title with no type. Nothing is guessed.
+    assert got[1] == ("04:12", "The numbers", "")
+
+
+def test_the_type_is_split_off_the_title():
+    """The trailer's grammar is `type | Display Title`, and only the title
+    belongs on screen.
+
+    Taking everything after the timestamp put the internal slug in the chapter
+    list YouTube renders — "00:00 cold-open | nobody cares anymore" — and made
+    the same string the retention record's chapter name, which is what stopped
+    `chapter_type_evidence` from ever aggregating anything.
+    """
+    raw = ("00:00 cold-open | nobody cares anymore\n"
+           "04:12 the-numbers | five years of them\n"
+           "09:00 Resigned close | see you at the next filing")
+    got = normalise_chapters(raw)
+    assert got[0] == ("00:00", "nobody cares anymore", "cold-open")
+    assert got[1] == ("04:12", "five years of them", "the-numbers")
+    # The type folds to the kit's spelling — the writer types the trailer by
+    # hand, and "Resigned close" recorded against "resigned-close" is the same
+    # chapter in two buckets, which is the defect the type exists to fix. The
+    # title is left exactly as written.
+    assert got[2] == ("09:00", "see you at the next filing", "resigned-close")
+
+
+def test_a_pipe_with_nothing_on_one_side_is_not_a_type():
+    """Better a title that reads oddly than a type invented out of a stray
+    character."""
+    assert normalise_chapters("00:00 | orphaned pipe")[0][2] == ""
+    assert normalise_chapters("00:00 trailing pipe |")[0][2] == ""
 
 
 def test_junk_lines_are_ignored():

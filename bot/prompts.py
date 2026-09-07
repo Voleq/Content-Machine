@@ -77,6 +77,61 @@ def confession_ledger(settings: Settings) -> str:
     return "\n".join(lines)
 
 
+# Below this many videos a chapter type has not earned the word "evidence".
+# One reading is an anecdote and two is a coincidence; the number is deliberately
+# low because the alternative — showing nothing until there are eight — is a
+# writer told nothing while the channel already knows something.
+RETENTION_EVIDENCE_FLOOR = 3
+
+
+def retention_evidence(settings: Settings) -> str:
+    """Which chapter types actually held people, for the writer choosing the plan.
+
+    The loop was built and disconnected at the last inch: retention is pulled,
+    mapped onto chapters, stored and shown to the OPERATOR by `/retention`, and
+    the one person who picks the chapter plan never saw it. This is the only
+    measurement that should influence which chapters get written, so it goes in
+    the prompt that writes them.
+
+    Worst first, because the bottom of this list is what changes. Every row
+    carries its video count and rows under the floor are marked as not yet
+    evidence — a writer handed a single 22% reading and no denominator will
+    cut a chapter type on one video's bad afternoon.
+    """
+    from pipeline.youtube import chapter_type_evidence
+
+    try:
+        rows = chapter_type_evidence(settings)
+    except Exception:                              # noqa: BLE001 — never fatal
+        return ("(retention unreadable — write the chapters the story earns "
+                "and ignore this block)")
+    if not rows:
+        return ("(nothing published has retention against it yet, so there is "
+                "no evidence either way. Write the chapters the story earns. "
+                "Videos uploaded before the chapter type was recorded carry no "
+                "type and never count towards this.)")
+
+    lines = ["  Average watch ratio per chapter TYPE, across every video with "
+             "retention. Worst first."]
+    for row in rows[:16]:
+        n = row["videos"]
+        tail = ("" if n >= RETENTION_EVIDENCE_FLOOR
+                else "  <- NOT YET EVIDENCE, too few videos")
+        lines.append(f"    {row['avg_watch_ratio'] * 100:5.1f}%  "
+                     f"{row['type']:<22} (n={n}){tail}")
+    thin = sum(1 for r in rows if r["videos"] < RETENTION_EVIDENCE_FLOOR)
+    lines.append(
+        f"  A type needs at least {RETENTION_EVIDENCE_FLOOR} videos behind it "
+        f"before this says anything"
+        + (f" — {thin} of the rows above do not have that yet." if thin
+           else "; every row above clears that."))
+    lines.append("  Use it to decide WHICH optional chapters this video earns "
+                 "and where the weak ones sit, not to delete a chapter the "
+                 "story needs. A type at the bottom is a type to write BETTER "
+                 "or place earlier, not one to stop writing.")
+    return "\n".join(lines)
+
+
 def meme_catalog(settings: Settings) -> str:
     """Every meme key + its 'use when' — the full catalog (capped in use)."""
     idx = MemeLibrary(settings).index()
@@ -591,6 +646,7 @@ def fill_prompt(
         r["{{peer_percentiles}}"] = peer_percentiles_block(data)
         r["{{filing_quotes}}"] = filing_quotes_block(workspace)
         r["{{confession_ledger}}"] = confession_ledger(settings)
+        r["{{retention}}"] = retention_evidence(settings)
     elif fmt == "update":
         # An update is a LONG in every mechanical sense — same tag grammar,
         # same parser, same renderer, same validation — so it takes the long

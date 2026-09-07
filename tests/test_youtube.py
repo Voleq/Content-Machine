@@ -338,21 +338,79 @@ def test_an_unknown_video_is_reported(settings):
         "unknown video"
 
 
-def test_the_same_chapter_across_videos_becomes_evidence(settings):
+def test_the_same_chapter_type_across_videos_becomes_evidence(settings):
     """One video's drop-off is an anecdote; the same chapter type dropping
-    across several is the thing worth acting on."""
+    across several is the thing worth acting on.
+
+    The titles here are all different ON PURPOSE — the title is free text and
+    is deliberately unique per video. Aggregating on it, which is what this
+    did, put three `valuation` chapters in three buckets of one and could only
+    ever produce the anecdote the function exists to rule out.
+    """
     log_ = VideoLog(settings)
-    for i, ratio in enumerate([0.30, 0.34, 0.28]):
+    titles = ["What you're paying for", "The price of the story",
+              "Twenty-two times what, exactly"]
+    for i, (ratio, title) in enumerate(zip([0.30, 0.34, 0.28], titles)):
         log_.record(VideoRecord(
             ticker=f"T{i}", video_id=f"v{i}", title="t", privacy="private",
             retention={"chapters": [
-                {"chapter": "The valuation", "avg_watch_ratio": ratio},
-                {"chapter": "Cold open", "avg_watch_ratio": 0.95},
+                {"chapter": title, "chapter_type": "valuation",
+                 "avg_watch_ratio": ratio},
+                {"chapter": f"Nobody cares any more {i}",
+                 "chapter_type": "cold-open", "avg_watch_ratio": 0.95},
             ]}))
     evidence = chapter_type_evidence(settings)
-    assert evidence[0]["chapter"] == "the valuation", evidence
-    assert evidence[0]["videos"] == 3
-    assert evidence[-1]["chapter"] == "cold open"
+    assert [r["type"] for r in evidence] == ["valuation", "cold-open"], evidence
+    assert evidence[0]["videos"] == 3, "three videos read as three anecdotes"
+    assert evidence[0]["avg_watch_ratio"] == pytest.approx(0.3067, abs=1e-3)
+    # The title is kept for display — it is the only half a human recognises.
+    assert set(evidence[0]["titles"]) == set(titles)
+
+
+def test_a_record_with_no_type_is_skipped_not_bucketed_under_nothing(settings):
+    """Records written before the type was carried have none, and nothing is
+    inferred for them: a guessed type is worse than a missing one in something
+    whose whole output is a claim about evidence."""
+    log_ = VideoLog(settings)
+    log_.record(VideoRecord(
+        ticker="OLD", video_id="v-old", title="t", privacy="private",
+        retention={"chapters": [{"chapter": "The valuation",
+                                 "avg_watch_ratio": 0.20}]}))
+    assert chapter_type_evidence(settings) == []
+
+    log_.record(VideoRecord(
+        ticker="NEW", video_id="v-new", title="t", privacy="private",
+        retention={"chapters": [{"chapter": "What you're paying for",
+                                 "chapter_type": "valuation",
+                                 "avg_watch_ratio": 0.40}]}))
+    evidence = chapter_type_evidence(settings)
+    assert [r["type"] for r in evidence] == ["valuation"]
+    assert evidence[0]["videos"] == 1, "the untyped record was counted anyway"
+    assert evidence[0]["avg_watch_ratio"] == pytest.approx(0.40)
+
+
+def test_the_type_reaches_the_record_and_the_mapped_rows(settings, package, video):
+    """End to end: the trailer's type survives the upload and comes back out
+    of the retention mapping, which is the whole chain the evidence needs."""
+    from pipeline.publish import normalise_chapters
+
+    chapters = normalise_chapters(
+        "00:00 cold-open | nobody cares anymore\n"
+        "02:00 valuation | what you're paying for\n"
+        "06:00 resigned-close | see you at the next filing")
+    upload_video(video, package, settings, client=FakeClient(), now=NOW,
+                 chapters=chapters, duration_s=600.0)
+    client = FakeClient(rows=_rows([(0.0, 1.0), (0.5, 0.6), (0.9, 0.4)]))
+    payload = pull_retention("vid123", settings, client=client, today=NOW)
+
+    assert payload["status"] == "ok"
+    rows = payload["chapters"]
+    assert [r["chapter_type"] for r in rows] == ["cold-open", "valuation",
+                                                 "resigned-close"]
+    assert [r["chapter"] for r in rows] == ["nobody cares anymore",
+                                            "what you're paying for",
+                                            "see you at the next filing"]
+    assert chapter_type_evidence(settings), "the record produced no evidence"
 
 
 # --------------------------------------------------------------------------
@@ -407,3 +465,65 @@ def test_scheduled_lists_what_is_queued(core, settings, package, video):
 def test_retention_with_nothing_published_explains_itself(core):
     assert "No retention data" in core.retention_text([]).text
     assert "Nothing published" in core.retention_text(["EXMPL"]).text
+
+
+# --------------------------------------------------------------------------
+# The last inch: the evidence reaches the one person who picks the chapters.
+# --------------------------------------------------------------------------
+
+
+def test_the_writing_prompt_carries_the_retention_evidence(settings, workspace):
+    """The loop was built and disconnected at the last inch.
+
+    Retention is pulled, mapped onto chapters, stored and shown to the
+    OPERATOR by `/retention` — and the Step-2 writing prompt, where the
+    chapter plan is actually chosen, never saw any of it.
+    """
+    import re
+
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    log_ = VideoLog(settings)
+    for i, ratio in enumerate([0.28, 0.31, 0.30]):
+        log_.record(VideoRecord(
+            ticker=f"T{i}", video_id=f"v{i}", title="t", privacy="private",
+            retention={"chapters": [
+                {"chapter": f"What you're paying for {i}",
+                 "chapter_type": "valuation", "avg_watch_ratio": ratio},
+                {"chapter": f"Nobody cares {i}", "chapter_type": "cold-open",
+                 "avg_watch_ratio": 0.94},
+            ]}))
+    # One video behind it, so it is a reading and not yet evidence.
+    log_.record(VideoRecord(
+        ticker="T9", video_id="v9", title="t", privacy="private",
+        retention={"chapters": [{"chapter": "The clock", "chapter_type": "risk",
+                                 "avg_watch_ratio": 0.55}]}))
+
+    text = fill_prompt("long_write", "EXMPL", load_company_data(workspace),
+                       workspace, settings, chosen_angle="the value trap")
+    left = [m for m in re.findall(r"\{\{[a-z_]+\}\}", text)
+            if m != "{{placeholder}}"]
+    assert not left, f"unfilled placeholders: {left}"
+
+    block = text[text.index("WHAT THE CHANNEL ALREADY KNOWS"):]
+    block = block[:block.index("## ")]
+    assert "valuation" in block and "(n=3)" in block
+    assert "cold-open" in block
+    # Worst first — the bottom of the list is what changes.
+    assert block.index("valuation") < block.index("cold-open")
+    # A type with one video behind it is a reading, and says so.
+    assert "risk" in block and "NOT YET EVIDENCE" in block
+
+
+def test_the_prompt_says_something_honest_with_no_data_at_all(settings, workspace):
+    """It produces nothing until videos are published, which is exactly why it
+    is worth building now: every video shipped before it exists is evidence
+    nobody read."""
+    from bot.prompts import fill_prompt
+    from pipeline.company_data import load_company_data
+
+    text = fill_prompt("long_write", "EXMPL", load_company_data(workspace),
+                       workspace, settings, chosen_angle="the value trap")
+    assert "no evidence either way" in text
+    assert "{{retention}}" not in text

@@ -87,6 +87,13 @@ OPTIONAL CHAPTERS — insert between the numbers beat and the valuation beat, ON
 
 Sequence the chapters so the stakes ESCALATE toward the close.
 
+### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
+Measured, not guessed: YouTube's own retention for every video published so far,
+averaged per chapter TYPE. It is the only data that should influence the plan
+above.
+
+{{retention}}
+
 ## THE ANALYTICAL SPINE — what makes this depth rather than commentary
 Run these through the whole script, not as a checklist chapter:
 
@@ -290,6 +297,7 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - 1–2 [MEME] tags MAXIMUM; zero is fine. Scribbles are uncapped but never wallpaper — and one per frame, because a mark spends the frame's one attention.
 - Let the numbers pick the tone. A genuinely good business gets grudging respect — the irony aims at the market's neglect, not the company.
 - Short sentences. Deadpan reads better clipped. No hype adjectives, no "folks", no exclamation marks.
+- **EVERY FIGURE IN THE NARRATION IS WRITTEN THE WAY IT IS SAID.** The narration is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to the spoken line: values you write INTO a `[PLATE]`, `[CHART]` or `[SCRIBBLE]` are typography and stay as figures — "$1.2B" on the plate, "one point two billion dollars" in the sentence about it.
 - NEVER name any data vendor, terminal, or data product — it would be spoken and captioned. "The filing", "the 10-K", "the numbers" are the only sources on screen.
 - Close resigned, not conclusive — on "you don't have to swing at every pitch". A pass is a considered position, not indecision.
 

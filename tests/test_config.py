@@ -191,3 +191,44 @@ def test_the_shipped_dotenv_example_actually_loads():
     # the pricing table does not know would raise at the first cost estimate.
     assert s.active_eleven_model in ELEVEN_USD_PER_1K_CHARS
     assert s.tts_usd_per_1k_chars > 0
+
+
+# --------------------------------------------------------------- the mix
+# Two settings the operator tunes by listening, so both have to survive being
+# typed by hand into a .env.
+
+
+def test_the_silent_chapter_list_takes_what_an_operator_would_type():
+    """A JSON array, a bare comma list, and the kit's spelling either way."""
+    assert Settings(_env_file=None).music_silent_chapters == ["resigned-close", "risk"]
+    assert Settings(MUSIC_SILENT_CHAPTERS="risk", _env_file=None
+                    ).music_silent_chapters == ["risk"]
+    assert Settings(MUSIC_SILENT_CHAPTERS='["risk", "valuation"]', _env_file=None
+                    ).music_silent_chapters == ["risk", "valuation"]
+    # "Resigned close" and "resigned-close" are the same type. Recording them
+    # separately is the exact defect the chapter TYPE exists to prevent.
+    assert Settings(MUSIC_SILENT_CHAPTERS="Resigned close, the_numbers",
+                    _env_file=None).music_silent_chapters == [
+        "resigned-close", "the-numbers"]
+    # Empty means the bed runs flat under everything, as it used to.
+    assert Settings(MUSIC_SILENT_CHAPTERS="", _env_file=None
+                    ).music_silent_chapters == []
+
+
+def test_a_chapter_type_that_does_not_exist_is_refused_at_startup():
+    """A typo here is a SILENT nothing — the bed simply never drops, in a video
+    nobody re-listens to with the setting in front of them."""
+    import pytest as _pytest
+
+    with _pytest.raises(Exception) as e:
+        Settings(MUSIC_SILENT_CHAPTERS="the-sad-bit", _env_file=None)
+    assert "the-sad-bit" in str(e.value)
+    assert "resigned-close" in str(e.value), "the sixteen are not printed"
+
+
+def test_the_chapter_cue_is_a_key_or_nothing():
+    """Unknown keys are the renderer's problem, not startup's — same contract
+    as `[SOUND: …]`, which warns and skips rather than stopping a render."""
+    assert Settings(_env_file=None).chapter_cue_sfx == "keyboard_clack"
+    assert Settings(CHAPTER_CUE_SFX="", _env_file=None).chapter_cue_sfx == ""
+    assert Settings(CHAPTER_CUE_SFX="airhorn", _env_file=None).chapter_cue_sfx == "airhorn"
