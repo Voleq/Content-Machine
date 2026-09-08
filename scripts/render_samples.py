@@ -5,10 +5,26 @@ Usage:  .venv/bin/python scripts/render_samples.py [short|long|all]
 Outputs to samples/ at the repo root: full-spec Dennis renders driven
 end-to-end by mock TTS timestamps — the SHORT "Noise or signal?"
 template and the LONG deadpan deep-dive.
+
+DO NOT JUDGE VISUAL PLACEMENT FROM THESE FILES.
+
+This script forces MOCK_MODE, and mock TTS does not know where any word is.
+It synthesises a hum at a fixed words-per-second rate and INTERPOLATES the
+timestamps — so every cue in a sample lands where arithmetic put it, on a
+pipeline whose entire design is that visuals are positioned by real audio
+timestamps. A cue that looks late here may be perfectly placed in a real
+render, and a cue that looks perfect here proves nothing at all.
+
+What the samples ARE for: that the composition works, that type fits its
+slots, that the kit is wired up, that a render completes. Placement is judged
+from a real render, or not at all — so every manifest this writes is stamped
+with `placement`, and the stamp is the thing to read before drawing a
+conclusion from where something landed.
 """
 
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 import time
@@ -23,6 +39,32 @@ from pipeline.tts import TTSEngine  # noqa: E402
 
 SAMPLES = ROOT / "samples"
 WORK = ROOT / "workspace"
+
+# Stamped into every manifest copied into samples/, so the caveat travels with
+# the artefact rather than living in this file where nobody reading a manifest
+# will find it.
+PLACEMENT_NOTE = (
+    "MOCK TIMINGS — every cue time in this manifest came from interpolated "
+    "mock TTS word timestamps, not from a voice. Composition, type fit and "
+    "kit coverage are real; WHERE anything lands is not. Judge placement "
+    "from a real render only."
+)
+
+
+def _stamp(manifest: Path) -> Path:
+    """Write the placement caveat into a copied sample manifest."""
+    try:
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return manifest
+    data["placement"] = PLACEMENT_NOTE
+    manifest.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return manifest
+
+
+def _banner() -> None:
+    print("  ! MOCK TIMINGS — cue placement in this sample is interpolated, "
+          "not measured off a voice. Do not judge placement from it.")
 
 
 def _settings() -> Settings:
@@ -61,12 +103,13 @@ def render_vertical_sample(format_name: str = "short") -> Path:
                                  format_name=format_name,
                                  out_name=f"{format_name}_final.mp4")
     print(f"  rendered in {time.time() - t0:.0f}s")
+    _banner()
     SAMPLES.mkdir(exist_ok=True)
     stem = ("sample_short_EXMPL" if format_name == "short"
             else f"sample_{format_name}_{script.ticker}")
     dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
+    _stamp(Path(shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")))
     return dest
 
 
@@ -148,12 +191,13 @@ def render_long_sample(fixture: str = "long_sample") -> Path:
                                 as_of=str(data.get("as_of_date") or ""),
                                 company_data=data)
     print(f"  rendered in {time.time() - t0:.0f}s")
+    _banner()
     SAMPLES.mkdir(exist_ok=True)
     stem = ("sample_long_EXMPL" if fixture == "long_sample"
             else f"sample_{fixture}_EXMPL")
     dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
+    _stamp(Path(shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")))
     return dest
 
 
@@ -169,12 +213,13 @@ def render_long_shots_sample(fixture: str = "long_sample") -> Path:
                                       company_data=data,
                                       out_name="long_shots_final.mp4")
     print(f"  rendered in {time.time() - t0:.0f}s")
+    _banner()
     SAMPLES.mkdir(exist_ok=True)
     stem = ("sample_long_shots_EXMPL" if fixture == "long_sample"
             else f"sample_{fixture}_shots_EXMPL")
     dest = SAMPLES / f"{stem}.mp4"
     shutil.copy(out, dest)
-    shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")
+    _stamp(Path(shutil.copy(manifest, SAMPLES / f"{stem}.manifest.json")))
     return dest
 
 

@@ -212,6 +212,38 @@ def _count_directives(script) -> int:
     return sum(1 for e in events if e.type in DELIVERY_TAG_TYPES)
 
 
+# What a filler card is standing in FOR, phrased for whoever has to fix it.
+# The generic card is drawn identically whatever the tag asked for, so a
+# report that only counted fillers said "filler 3" and left the operator to
+# guess which three beats went missing.
+_FILLER_MEANS = {
+    "clip": ("the illustration did not resolve — the owned library, Pexels, "
+             "Giphy and Tenor all missed, so this beat draws a blank card "
+             "instead of the thing the line is pointing at"),
+    "img": "no imagery resolved — this beat draws a blank card",
+    "meme": "no meme resolved — this beat draws a blank card",
+}
+
+
+def unresolved_visual_warnings(visual_plan) -> list[str]:
+    """One warning per visual that came back as a filler card.
+
+    A `[CLIP]` was written because the point NEEDED SHOWING, and a silent
+    miss is the failure mode that costs the most: the render succeeds, the
+    card is drawn, the beat is dead, and the only trace is a log line nobody
+    reads. The approval report is the last screen before the money, so it is
+    where this belongs.
+    """
+    out: list[str] = []
+    for v in visual_plan:
+        if getattr(v, "source", "") != "filler":
+            continue
+        why = _FILLER_MEANS.get(getattr(v, "kind", ""),
+                                "did not resolve — this beat draws a blank card")
+        out.append(f"[{str(getattr(v, 'kind', '')).upper()}: {v.key}] {why}")
+    return out
+
+
 def build_long_report(
     script, parse_warnings, validation_warnings, validation_blocking,
     settings, ledger, tts_engine, visual_plan, filing_count,
@@ -227,6 +259,8 @@ def build_long_report(
             f"TTS (~${est:.2f}) would exceed the monthly cap "
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
+    warnings = list(parse_warnings) + list(validation_warnings)
+    warnings += unresolved_visual_warnings(visual_plan)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
@@ -249,7 +283,7 @@ def build_long_report(
         mtd_spend_usd=ledger.mtd_spend_usd(),
         monthly_cap_usd=settings.monthly_spend_cap_usd,
         kit_reach=script_reach(script, settings).line(),
-        warnings=list(parse_warnings) + list(validation_warnings),
+        warnings=warnings,
         blocking=blocking,
         script_sha=script.content_sha(),
     )

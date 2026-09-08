@@ -75,7 +75,9 @@ Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below:
 {{craft_rules}}
 
 ## TAG GRAMMAR — identical to the long-form prompt; place inline, immediately before the word it should hit
-[PLATE: name | slot=value | …] · [IMG: query] · [PRODUCT: query] · [MEME: key] · [CLIP: key] · [CHART: metric] · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [SCRIBBLE: mark -> target]
+[PLATE: name | slot=value | …] · [IMG: query] · [PRODUCT: query] · [MEME: key | hold=2.0] · [CLIP: key or subject | hold=2.5] · [CHART: metric] · [SHOW FILING: file.png] · [SCREENGRAB: slug] · [SOUND: key] · [SCRIBBLE: mark -> target]
+
+`hold` is seconds on screen, 0.8–5.0, and is optional on those two — write one when you know whether this is a glance or a beat to sit in. A meme is STILL (the freeze is the joke's timing); a clip MOVES, and its subject need not be a palette key — a specific moment ("lebron shooting a three") is reachable and is the point of the tag.
 
 Scribble styles: {{scribble_styles}}
 

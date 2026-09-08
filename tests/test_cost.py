@@ -268,3 +268,40 @@ def test_the_refusal_reaches_the_approval_screen(settings, short_valid_json):
     with pytest.raises(UnknownModelPriceError, match="eleven_v3_preview_2026"):
         build_short_report(script, warnings, unpriced,
                            SpendLedger(unpriced), TTSEngine(unpriced))
+
+
+def test_a_clip_that_fell_to_filler_is_named_on_the_approval_report(
+        settings, long_valid_text, workspace):
+    """A silent miss is the failure that costs the most.
+
+    `[CLIP: lebron three pointer]` was written because the point needed
+    SHOWING. When the whole chain misses, the render still succeeds, the
+    generic card is still drawn, and the only trace was `pexels: no results`
+    in a log nobody reads — so the beat is dead and the operator approves it
+    anyway. The report is the last screen before the money.
+    """
+    from pipeline.broll import Visual
+    from pipeline.cost import build_long_report, unresolved_visual_warnings
+    from pipeline.parser_long import parse_long_script
+    from pipeline.tts import TTSEngine
+
+    plan = [
+        Visual(key="lebron three pointer", kind="clip",
+               path=settings.cache_dir / "f.mp4", is_video=True, source="filler"),
+        Visual(key="tumbleweed", kind="clip",
+               path=settings.cache_dir / "g.mp4", is_video=True, source="pexels"),
+    ]
+    said = unresolved_visual_warnings(plan)
+    assert len(said) == 1, "only the miss is worth the operator's attention"
+    assert "lebron three pointer" in said[0]
+    assert "Giphy" in said[0] and "Tenor" in said[0], \
+        "the operator has to know the whole chain missed, not just Pexels"
+
+    script, warnings = parse_long_script(long_valid_text, "EXMPL", settings)
+    report = build_long_report(script, warnings, [], [], settings,
+                               SpendLedger(settings), TTSEngine(settings),
+                               plan, 0)
+    text = report.render_text()
+    assert said[0] in report.warnings
+    assert f"⚠️ {said[0]}" in text, "it has to reach the rendered report"
+    assert report.approvable, "a missing illustration warns; it never blocks"

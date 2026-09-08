@@ -509,6 +509,11 @@ def build_short_timeline(
         t = clamp(char_offset_time(words, e.char_offset), duration)
         is_data = e.type in SHORT_DATA_TAGS
         lo, hi = SHORT_DATA_HOLD_S if is_data else SHORT_PUNCT_HOLD_S
+        if e.hold:
+            # `[MEME: bagholder | hold=2.0]` — the writer named the length, so
+            # the class band collapses onto it and the pacing pass has nothing
+            # left to negotiate. Bare tags keep their band exactly.
+            lo = hi = e.hold
         cues.append(Cue(
             t=t, kind=kind,
             payload={"value": e.payload, "tag": e.type.value,
@@ -796,6 +801,11 @@ def build_long_timeline(
                    "values": dict(e.values)}
         if kind is CueKind.CHART and e.style:
             payload["style"] = e.style
+        if e.hold:
+            # `[CLIP: … | hold=2.5]`. Only present when the director wrote
+            # one, so an untagged hold still falls through to DEFAULT_HOLDS
+            # and every script already written plans identically.
+            payload["hold"] = e.hold
         if kind is CueKind.SCRIBBLE:
             payload["hold"] = SCRIBBLE_HOLD_S
         cues.append(Cue(t=t, kind=kind, payload=payload))
@@ -822,10 +832,15 @@ MIN_SEGMENT_S = 0.25
 # int so this module stays pure logic — no PIL/raster import.
 LONG_FILLER_LOOKS = 12
 
-# How long each visual kind holds before cutting back to the host. These are
-# roughly double the old values: the show is a host talking who cuts away to
-# evidence, and evidence the viewer cannot finish reading is worse than no
-# evidence at all. A meme is still a beat; a diagram is a paragraph.
+# How long each visual kind holds before cutting back to the host WHEN THE
+# DIRECTOR DID NOT SAY. These are roughly double the old values: the show is a
+# host talking who cuts away to evidence, and evidence the viewer cannot
+# finish reading is worse than no evidence at all. A meme is still a beat; a
+# diagram is a paragraph.
+#
+# A `[CLIP: … | hold=2.5]` overrides its row. One number per KIND cannot be
+# right for both a glance and a beat to sit in, and the writer is the only one
+# who knows which this is.
 DEFAULT_HOLDS = {
     CueKind.CLIP: 5.0,
     CueKind.IMG: 5.0,
@@ -1020,8 +1035,13 @@ def plan_long_segments(
                 f"visual was still being read"
             )
         add_host(cursor, start)
-        hold = holds.get(c.kind, 5.0)
-        if c.kind in READABLE_KINDS:
+        # THE DIRECTOR'S HOLD WINS. A number in the tag is the one place in
+        # this planner where somebody who read the line decided how long the
+        # frame stays; `DEFAULT_HOLDS` is what to do when nobody did. It has
+        # already been clamped to a sane band at parse time.
+        asked = float(c.payload.get("hold") or 0.0)
+        hold = asked or holds.get(c.kind, 5.0)
+        if c.kind in READABLE_KINDS and not asked:
             hold = max(hold, min_readable_s)
         end = min(start + hold, duration)
         payload = dict(c.payload)

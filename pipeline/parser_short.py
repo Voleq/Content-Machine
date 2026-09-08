@@ -20,6 +20,7 @@ from pydantic import ValidationError
 from config import Settings
 from pipeline.models import (
     DELIVERY_TAG_TYPES,
+    HOLDABLE_TAG_TYPES,
     SELF_RESOLVING_TAG_TYPES,
     SHORT_TAG_TYPES,
     ShortScript,
@@ -30,7 +31,7 @@ from pipeline.models import (
 from pipeline.plate_tags import build_fill
 from pipeline.plates import load_plates
 from pipeline.tagging import parse_chart_payload
-from pipeline.tagging import tokenize_tags
+from pipeline.tagging import parse_hold, tokenize_tags
 
 log = logging.getLogger(__name__)
 
@@ -256,7 +257,11 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     f'"circle|arrow|underline -> target") — skipped'
                 )
                 continue
-            payload, style, values = rt.payload, "", {}
+            payload, style, values, hold = rt.payload, "", {}, 0.0
+            if rt.type in HOLDABLE_TAG_TYPES:
+                payload, hold, hold_warnings = parse_hold(
+                    payload, tag=rt.type.value)
+                inline_warnings.extend(hold_warnings)
             if rt.type is TagType.PLATE:
                 # The tag carries its own content. Resolved here so a bad plate
                 # name or a mis-sized row is caught at parse time rather than
@@ -269,7 +274,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                     inline_warnings.extend(fill.problems)
                     continue
             elif rt.type not in DELIVERY_TAG_TYPES:
-                payload, style = parse_chart_payload(rt.payload)
+                payload, style = parse_chart_payload(payload)
             if (rt.type not in DELIVERY_TAG_TYPES
                     and rt.type not in SELF_RESOLVING_TAG_TYPES
                     and not payload):
@@ -279,6 +284,7 @@ def parse_short_script(raw: str, settings: Settings) -> tuple[ShortScript, list[
                 continue
             events.append(TagEvent(
                 type=rt.type, payload=payload, style=style, values=values,
+                hold=hold,
                 char_offset=rt.char_offset, raw_offset=rt.raw_offset,
             ).model_dump())
         data["audio_script"] = clean

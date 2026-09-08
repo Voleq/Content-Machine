@@ -8,6 +8,7 @@ import json
 import pytest
 from PIL import Image, ImageDraw
 
+from pipeline.audio_assets import ROOM_TONE_GAIN_DB
 from pipeline.broll import ContentManager
 from pipeline.company_data import load_company_data
 from pipeline.models import CueKind
@@ -381,89 +382,84 @@ def test_an_unknown_cue_key_warns_and_skips(caplog):
     assert "airhorn" in caplog.text
 
 
-def test_the_bed_leaves_under_a_resigned_close(rendered):
-    """The music leaving is what tells a viewer the lights are going out.
+def test_the_bed_is_gone_and_the_room_is_the_floor_of_the_mix(rendered):
+    """Every video used to carry a 60s G drone on a loop under the voice.
 
-    Dropping the one bed costs nothing and says more than a second one would.
-    The room tone keeps running underneath, which is what makes it read as a
-    register change rather than a dropout.
+    What replaced it is nothing: room tone was already running underneath and
+    it is the thing actually doing the work — it is diegetic, it is the desk
+    he is sitting at, and it is what stops the digital silence between words
+    that gives an assembled cut away. So the check is that the mix still has
+    a continuous floor and that nothing loops under it but the room.
     """
     settings, script, tts, out, manifest = rendered
-    close = next(s for s in manifest["stingers"] if s["type"] == "resigned-close")
-    later = [s["t"] for s in manifest["stingers"] if s["t"] > close["t"]]
-    expected = (close["t"], min(later) if later else manifest["duration"])
+    names = [a["name"] for a in manifest["audio"]]
+    assert "voice" in names and "room_tone" in names
+    # Everything else in the mix is a NAMED EVENT — one effect at one time.
+    # A track that is neither the voice, nor the room, nor something firing at
+    # a timestamp is a continuous layer, which is what was deleted.
+    assert all(n in ("voice", "room_tone") or "@" in n for n in names), \
+        f"a continuous track other than the room is in the mix: {names}"
 
-    music = _track(manifest, "music")
-    assert [tuple(w) for w in music["mute_windows"]] == [
-        pytest.approx(expected, abs=0.01)]
-    assert _track(manifest, "room_tone")["mute_windows"] == [], \
-        "the room went with the music — that is a dropout, not a register change"
-    assert _track(manifest, "voice")["mute_windows"] == []
+    room = _track(manifest, "room_tone")
+    assert room["loop"] is True and room["start"] == 0.0, \
+        "the room has to run the whole video — it is the only floor left"
+    assert [a for a in manifest["audio"] if a["loop"]] == [room], \
+        "nothing else loops under the voice any more"
 
-    # …and the window the manifest reports is the one the mix actually got.
-    # The bed cannot be measured out of the finished file — the voice is over
-    # it the whole way — so the chain is closed here and the silencing itself
-    # is measured on its own in `test_the_envelope_really_silences_the_track`.
-    from pipeline.render_common import mute_envelope
-
+    # …and the tracks the manifest names are the tracks the mix got. A row
+    # that no longer carries a mute envelope is the point: there is nothing
+    # left to mute, so no track carries one.
     filter_text = (out.parent / (out.stem + ".filter.txt")).read_text(encoding="utf-8")
-    assert mute_envelope([tuple(w) for w in music["mute_windows"]]) in filter_text
+    assert "eval=frame" not in filter_text, \
+        "a volume envelope survived the bed it was written for"
 
 
-def test_a_silent_span_runs_to_the_next_opener():
-    """From this opener to the NEXT one, which is what the viewer sees. A
-    chapter with no cut to land on was never drawn, so it is not in here."""
-    from pipeline.render_long import _silent_spans
+def test_there_is_no_gap_where_the_bed_was(rendered):
+    """MEASURED OFF THE FILE, not asserted from the graph.
 
-    stingers = [{"type": "cold-open", "t": 0.0}, {"type": "risk", "t": 10.0},
-                {"type": "valuation", "t": 25.0},
-                {"type": "resigned-close", "t": 40.0}]
-    assert _silent_spans(stingers, 55.0, ["risk", "resigned-close"]) == [
-        (10.0, 25.0), (40.0, 55.0)]
-    assert _silent_spans(stingers, 55.0, []) == []
-    assert _silent_spans([], 55.0, ["risk"]) == []
-
-
-def test_the_envelope_really_silences_the_track(tmp_path):
-    """Measured, not asserted from the expression.
-
-    Chained `afade` filters cannot express "quiet here, loud either side" —
-    an `afade=t=out` zeroes everything after its ramp — so this is one
-    `volume` expression, and the thing worth checking is what comes out of
-    ffmpeg rather than what went into the string.
+    The failure this is here to catch is not "the bed is gone" — that is the
+    point — it is the bed's removal taking the floor with it and leaving
+    stretches of digital silence between words, which is the single clearest
+    tell that a cut was assembled rather than recorded. Room tone is what
+    stops that, and it is the only thing stopping it now.
     """
     import re
     import subprocess
-    from pathlib import Path
 
-    from pipeline.render_common import mute_envelope
+    settings, script, tts, out, manifest = rendered
+    proc = subprocess.run(
+        ["ffmpeg", "-v", "info", "-i", str(out),
+         "-af", "silencedetect=n=-70dB:d=0.4", "-f", "null", "-"],
+        capture_output=True, text=True, check=True)
+    silences = re.findall(r"silence_start: ([\d.]+)", proc.stderr)
+    assert not silences, (
+        f"the cut goes to digital silence at {silences} — the room tone that "
+        f"is supposed to run underneath everything is not reaching the mix")
 
-    def render(name: str, *filters: str) -> Path:
-        out = tmp_path / name
-        subprocess.run(
-            ["ffmpeg", "-v", "error", "-f", "lavfi",
-             "-i", "sine=frequency=440:duration=12",
-             *(["-af", *filters] if filters else []),
-             "-t", "10", "-y", str(out)], check=True)
-        return out
 
-    def mean_db(wav: Path, at: float) -> float:
-        out = subprocess.run(
-            ["ffmpeg", "-ss", str(at), "-t", "1", "-i", str(wav),
-             "-af", "volumedetect", "-f", "null", "-"],
-            capture_output=True, text=True, check=True).stderr
-        return float(re.search(r"mean_volume: (-?[\d.]+) dB", out).group(1))
+def test_the_gain_staging_the_bed_left_behind_is_unchanged(rendered):
+    """Narration and effects sit exactly where they sat with the bed in.
 
-    # Against the SAME tone with no envelope on it, so the assertion is about
-    # what the filter did rather than about lavfi's amplitude convention.
-    plain = render("plain.wav")
-    ducked = render("ducked.wav",
-                    f"volume='{mute_envelope([(3.0, 6.0)])}':eval=frame")
-    bed = mean_db(plain, 4.0)
+    Removing a track from an `amix` is the kind of change that quietly
+    re-levels everything around it, and the two levels a viewer would notice
+    are the voice and the effects.
+    """
+    settings, script, tts, out, manifest = rendered
+    assert _track(manifest, "voice")["gain_db"] == 0.0
+    assert _track(manifest, "room_tone")["gain_db"] == round(ROOM_TONE_GAIN_DB, 1)
 
-    assert mean_db(ducked, 4.0) < bed - 40, "the bed still plays under the window"
-    assert mean_db(ducked, 0.0) == pytest.approx(bed, abs=0.5), "the bed never came in"
-    assert mean_db(ducked, 8.0) == pytest.approx(bed, abs=0.5), "the bed never came back"
+    named = [a["name"] for a in manifest["audio"]]
+    boom = [a for a in manifest["audio"] if a["name"].startswith("vine_boom@")]
+    assert boom, f"the script has a [MEME] and its sting is missing: {named}"
+    assert boom[0]["gain_db"] == round(settings.sfx_gain_db + 2, 1)
+
+    sfx = [a for a in manifest["audio"] if a["name"].startswith("cash_register@")]
+    assert sfx, f"the script has a [SOUND] and it is missing: {named}"
+    assert sfx[0]["gain_db"] == round(settings.sfx_gain_db, 1)
+
+    cues = [a for a in manifest["audio"] if a["name"].startswith("chapter_cue@")]
+    assert cues, "the chapter cue is the one structural sound that stays"
+    assert cues[0]["gain_db"] == round(settings.sfx_gain_db + 2, 1)
 
 
 def test_every_on_screen_title_is_one_the_director_wrote(rendered, long_valid_text):
@@ -856,3 +852,146 @@ def test_an_empty_slot_has_no_box_to_solve_a_mark_onto(settings):
     assert drawn_box(plate, slot, "", settings, reg) is None
     assert drawn_box(plate, slot, "   ", settings, reg) is None
     assert drawn_box(plate, slot, "-212", settings, reg) is not None
+
+
+# --------------------------------------------------- illustration that moves
+
+
+def _moving_clip(dest, seconds=1.0):
+    """A short clip whose whole frame changes every frame.
+
+    A luma ramp — frame N is a flat field at brightness 8N — so "did this
+    freeze?" is answerable by reading one number off a frame, and the two
+    behaviours are hundreds of levels apart rather than a few. A `drawbox`
+    whose x is an expression in `t` is NOT a substitute: it renders
+    identically on every frame, and a source that never moves makes this whole
+    test vacuous in the direction that passes.
+    """
+    from pipeline.render_common import run_ffmpeg
+
+    run_ffmpeg([
+        "-f", "lavfi", "-i", f"color=c=black:s=320x180:r=30:d={seconds}",
+        "-vf", "geq=lum='clip(N*8,0,255)':cb=128:cr=128",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        str(dest),
+    ])
+    return dest
+
+
+def _frame_spread(clip, times, tmp) -> float:
+    """The largest mean pixel difference between any two of these frames.
+
+    Not a hash: a still re-encoded frame by frame does not decode to identical
+    bytes — ultrafast leaves a little residual noise — so hashing calls a
+    frozen clip "moving". A number says how much it moved.
+    """
+    from PIL import Image, ImageChops, ImageStat
+
+    from pipeline.render_common import run_ffmpeg
+
+    frames = []
+    for i, t in enumerate(times):
+        f = tmp / f"probe_{i}.png"
+        run_ffmpeg(["-ss", f"{t:.3f}", "-i", str(clip), "-frames:v", "1", str(f)])
+        frames.append(Image.open(f).convert("L").copy())
+    return max(
+        ImageStat.Stat(ImageChops.difference(a, b)).mean[0]
+        for i, a in enumerate(frames) for b in frames[i + 1:]
+    )
+
+
+def test_a_looping_source_shorter_than_its_hold_loops_rather_than_freezing(
+        tmp_path):
+    """A gif is one second long and a `hold=3` is not.
+
+    The renderer's clip chain clone-pads a short source, which is right for
+    footage — the shot simply ends — and wrong for a gif, which is a LOOP: it
+    would play once and then hold a still through the back half of its own
+    beat, which is the freeze-frame this whole path exists to avoid.
+    `-stream_loop` does it at the demuxer, so nothing is buffered; the `loop`
+    filter holds every decoded frame in memory instead.
+
+    Both arms go through the same filter chain the renderer builds, so the
+    only difference under test is the input flag.
+    """
+    from pipeline.render_common import run_ffmpeg
+
+    src = _moving_clip(tmp_path / "src.mp4", seconds=1.0)
+    seg_len = 3.0
+    # `_clip_motion` in render_long, verbatim in shape: trim, clone-pad, trim.
+    chain = (f"[0:v]trim=0:{seg_len:.4f},setpts=PTS-STARTPTS,"
+             f"tpad=stop_mode=clone:stop_duration={seg_len:.4f},"
+             f"trim=0:{seg_len:.4f},scale=320:180,setsar=1,format=yuv420p[out]")
+
+    def render(name, loop):
+        dest = tmp_path / name
+        run_ffmpeg([*(["-stream_loop", "-1"] if loop else []), "-i", str(src),
+                    "-filter_complex", chain, "-map", "[out]",
+                    "-t", f"{seg_len:.3f}", "-r", "30",
+                    "-c:v", "libx264", "-preset", "ultrafast", str(dest)])
+        return dest
+
+    # Past the source's own end, so the two behaviours have to disagree.
+    probes = (1.4, 1.9, 2.4, 2.9)
+
+    frozen = _frame_spread(render("frozen.mp4", False), probes, tmp_path)
+    assert frozen < 2.0, (
+        "the un-looped arm is supposed to hold its last frame and it moved "
+        f"by {frozen:.1f} — the test is measuring the wrong thing")
+
+    looped = _frame_spread(render("looped.mp4", True), probes, tmp_path)
+    assert looped > 50.0, (
+        f"the gif moved by only {looped:.1f} past its own end — it froze on "
+        f"its last frame instead of looping through its hold")
+
+
+def test_a_gif_clip_reaches_the_renderer_marked_as_looping(tmp_path):
+    """The flag has to survive the whole way, resolver to manifest.
+
+    `test_a_looping_source_shorter_than_its_hold_loops_rather_than_freezing`
+    proves the ffmpeg construction repeats. This proves the renderer actually
+    reaches for it — a `loops` that stops at the `Visual` is a gif that plays
+    once and then holds a still, and nothing in the picture would say so.
+    """
+    from config import Settings
+    from pipeline.broll import ContentManager, Visual
+
+    settings = Settings(
+        MOCK_MODE=True,
+        workspace_dir=tmp_path / "ws", cache_dir=tmp_path / "cache",
+        state_dir=tmp_path / "state",
+        long_width=320, long_height=180,
+        _env_file=None,
+    )
+    settings.ensure_runtime_dirs()
+
+    src = _moving_clip(tmp_path / "gif.mp4", seconds=1.0)
+
+    class GifContent(ContentManager):
+        """Pexels missed and a gif provider answered — the case §2 exists for."""
+
+        def resolve_clip(self, key, choice=0, *, portrait=False):
+            return Visual(key=key, kind="clip", path=src, is_video=True,
+                          source="giphy", attribution="clip via giphy (mock://)",
+                          loops=True)
+
+    raw = ("EXMPL is down sixty percent and nobody cares. "
+           "[CLIP: lebron three pointer | hold=4.5] "
+           "Which is when I start reading, and it takes a while. "
+           "See you at the next filing.\n\n"
+           "=== CHAPTERS ===\n00:00 cold-open | nobody cares")
+    script, _ = parse_long_script(raw, "EXMPL", settings)
+    ws = settings.workspace_dir / "EXMPL" / "gif"
+    ws.mkdir(parents=True)
+
+    tts = TTSEngine(settings).synthesize(script.narration, "long")
+    _, manifest_path = render_long(script, tts, ws, settings,
+                                   content=GifContent(settings), draft=True)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    clip = next(s for s in manifest["segments"] if s["kind"] == "clip")
+    assert clip["source"] == "giphy"
+    assert clip.get("loops") is True, \
+        "the renderer lost the loop flag between the resolver and the cut"
+    assert clip["end"] - clip["start"] == pytest.approx(4.5, abs=0.05), \
+        "the hold the director wrote is not the length on screen"

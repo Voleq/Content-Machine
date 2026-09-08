@@ -191,3 +191,62 @@ def test_real_path_requires_api_key(settings):
     engine = TTSEngine(live)
     with pytest.raises(Exception, match="ELEVENLABS_API_KEY"):
         engine.synthesize("hello there", "short")
+
+
+def test_re_rendering_the_same_approved_script_costs_nothing(
+        settings, alignment_sample, tmp_path):
+    """The operator renders the same script repeatedly to fix placement.
+
+    Nothing consumes `is_approved()` on render — the approval is a content
+    hash and `/render TICKER` runs again — so the only thing standing between
+    a fifth pass at visual placement and a fifth TTS bill is the cache. It is
+    keyed on the script's own content, global, and never pruned, which is what
+    makes the second run $0.
+
+    The things an operator changes BETWEEN those passes are deliberately
+    outside the key: a kit rebuild, a plate manifest, `CHAPTER_CUE_SFX`, a
+    `hold=` on a tag. None of them changes a word that is spoken, so none of
+    them may re-bill the voice.
+    """
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    calls: list = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(200, json={
+            "audio_base64": audio_b64,
+            "alignment": alignment_sample["alignment"],
+        })
+
+    live = settings.model_copy(update={
+        "mock_mode": False,
+        "elevenlabs_api_key": "test-key",
+        "eleven_voice_id_long": "voiceX",
+    })
+    ledger = SpendLedger(live)
+    text = alignment_sample["text"]
+
+    def render_pass(s):
+        engine = TTSEngine(s, ledger=ledger,
+                           client=httpx.Client(transport=httpx.MockTransport(handler)))
+        return engine.synthesize(text, "long")
+
+    first = render_pass(live)
+    assert len(calls) == 1 and first.cost_usd > 0
+    spent = ledger.mtd_spend_usd()
+
+    # A fresh engine — a separate `/render` invocation, in a separate process
+    # as far as the cache is concerned.
+    second = render_pass(live)
+    assert second.cached and second.cost_usd == 0.0
+    assert len(calls) == 1, "the second render bought the voice again"
+    assert ledger.mtd_spend_usd() == pytest.approx(spent)
+    assert second.audio_path == first.audio_path
+
+    # …and the settings an operator actually changes between passes do not
+    # touch the key.
+    tuned = live.model_copy(update={"chapter_cue_sfx": "paper_rustle",
+                                    "sfx_gain_db": -3.0})
+    third = render_pass(tuned)
+    assert third.cached and len(calls) == 1, \
+        "a mix setting re-billed the voice — nothing spoken changed"

@@ -181,3 +181,85 @@ def test_the_help_text_and_the_readme_agree_on_what_exists():
     documented = _documented()
     assert not (in_help - documented), \
         f"in the help text, missing from the README: {sorted(in_help - documented)}"
+
+
+# --------------------------------------------------------------------------
+# The music bed, and the fact that it is gone.
+# --------------------------------------------------------------------------
+
+# Every name the bed and its machinery went by. A grep for the bare word
+# "music" is not the check: `fetch_sfx.py` describes `sting` as a "short
+# musical sting accent", which is a correct description of a sound effect and
+# has nothing to do with a bed. What must not survive is anything that still
+# PLAYS, mixes, configures, generates or documents one — so the identifiers
+# are the check, and they are exact.
+_BED_NAMES = (
+    "dennis_bed",              # the file
+    "gen_dennis_music",        # the generator
+    "music_gain_db",           # its level in the mix
+    "MUSIC_SILENT_CHAPTERS",   # the setting that muted it under a chapter
+    "music_silent_chapters",
+    "_silent_spans",           # the windows it was muted across
+    "mute_windows",            # the envelope that did the muting
+    "mute_envelope",
+    "MUTE_FADE_S",
+    "assets/music",            # where the file lived
+)
+
+_SEARCHED = ("pipeline", "scripts", "bot", "tests", "templates",
+             "config.py", ".env.example", "README.md")
+
+
+def _bed_hits() -> list[str]:
+    hits: list[str] = []
+    for name in _SEARCHED:
+        target = ROOT / name
+        files = ([target] if target.is_file()
+                 else sorted(p for p in target.rglob("*")
+                             if p.suffix in (".py", ".md", ".json", ".example")))
+        for path in files:
+            if path == Path(__file__):
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (OSError, UnicodeDecodeError):
+                continue
+            for i, line in enumerate(text.splitlines(), 1):
+                for name in _BED_NAMES:
+                    if name in line:
+                        hits.append(f"{path.relative_to(ROOT)}:{i}: {line.strip()}")
+    return hits
+
+
+def test_no_music_bed_survives_anywhere():
+    """It was three sine waves and brown noise, looped for forty minutes.
+
+    Room tone already did the only job it was doing, and a lo-fi bed under a
+    dry finance monologue is the convention this channel exists to be the
+    opposite of. `MUSIC_SILENT_CHAPTERS` went with it: with nothing to mute, a
+    setting that does nothing is worse than no setting.
+    """
+    assert _bed_hits() == []
+
+
+def test_the_bed_search_would_actually_find_one():
+    """The test above passes trivially if the search is broken."""
+    assert "dennis_bed" in _BED_NAMES
+    probe = ROOT / "pipeline" / "render_long.py"
+    assert probe.exists()
+    text = probe.read_text(encoding="utf-8")
+    assert "AudioTrack" in text, "the search reads real files"
+    assert any(n in "assets/music/dennis_bed.m4a" for n in _BED_NAMES)
+
+
+def test_the_bed_file_and_its_directory_are_gone():
+    assert not (ROOT / "assets" / "music").exists()
+
+
+def test_room_tone_stays():
+    """It is diegetic — the room he is sitting at a desk in — and it is doing
+    the real work: stopping the digital silence between words that gives an
+    assembled cut away."""
+    assert (ROOT / "assets" / "sfx" / "room_tone.wav").exists()
+    text = (ROOT / "pipeline" / "render_long.py").read_text(encoding="utf-8")
+    assert "ROOM_TONE_NAME" in text and "ROOM_TONE_GAIN_DB" in text

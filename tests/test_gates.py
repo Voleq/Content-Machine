@@ -545,3 +545,74 @@ def test_a_tag_route_is_not_credited_for_the_set_or_the_host(settings):
     routes = reachable_plates(reg)
     assert not [k for k in routes["tag"]
                 if k.split("/", 1)[0] in ("room", "host", "annotations")]
+
+
+# --------------------------------------------------------------------------
+# The gate that makes a production render possible.
+# --------------------------------------------------------------------------
+
+
+def _fake_assets(tmp_path, settings, *, real: bool):
+    """An assets tree with only the audio the gate scans, provenance declared.
+
+    `real=True` is what `scripts/fetch_sfx.py` leaves behind: a sidecar saying
+    every file came from somewhere with a licence on it.
+    """
+    import json as _json
+
+    from pipeline.audio_assets import ROOM_TONE_NAME
+    from pipeline.models import SFX_KEYS
+
+    sfx = tmp_path / "assets" / "sfx"
+    sfx.mkdir(parents=True)
+    names = [f"{k}.wav" for k in SFX_KEYS] + [ROOM_TONE_NAME]
+    for name in names:
+        (sfx / name).write_bytes(b"RIFF....WAVEfmt ")
+    if real:
+        (sfx / "SOURCES.json").write_text(_json.dumps({"files": {
+            n: {"source": f"https://freesound.org/s/{i}/", "licence": "CC0",
+                "author": "somebody", "generated": False}
+            for i, n in enumerate(names)
+        }}), encoding="utf-8")
+    return settings.model_copy(update={"assets_dir": tmp_path / "assets"})
+
+
+def test_the_audio_gate_no_longer_looks_for_a_music_bed(tmp_path, settings):
+    """It scanned two directories and one of them held a synthesised bed.
+
+    With the bed deleted, `assets/sfx` is the whole scan — which means the
+    effects are the only thing between a placeholder and an upload, and
+    `scripts/fetch_sfx.py` is the only thing that clears the gate.
+    """
+    from pipeline.audio_assets import generated_audio
+
+    placeheld = _fake_assets(tmp_path, settings, real=False)
+    reported = generated_audio(placeheld)
+    assert reported, "the placeholders still have to be reported"
+    assert all(name.startswith("sfx/") for name in reported), \
+        f"the gate is scanning somewhere other than sfx/: {reported}"
+
+
+def test_check_audio_passes_outright_once_the_real_effects_are_fetched(
+        tmp_path, settings):
+    """THE GATE THAT MAKES A PRODUCTION RENDER POSSIBLE.
+
+    `check_audio` blocks a final render outside MOCK_MODE on any placeholder
+    it finds. It used to find the bed no matter what an operator did, because
+    nothing was ever going to fetch a licensed one — so a production render
+    was blocked forever. With the bed gone, the sound effects are the only
+    thing left, and `scripts/fetch_sfx.py` resolves those.
+    """
+    from pipeline.gates import check_audio
+
+    live = _fake_assets(tmp_path, settings, real=False).model_copy(
+        update={"mock_mode": False})
+    blocked = check_audio(live, final=True)
+    assert [f.severity for f in blocked] == ["block"]
+    assert "PLACEHOLDER AUDIO" in blocked[0].message
+
+    fetched = _fake_assets(tmp_path / "fetched", settings, real=True).model_copy(
+        update={"mock_mode": False})
+    assert check_audio(fetched, final=True) == [], (
+        "a final render is still blocked with the bed gone and real effects "
+        "fetched — nothing an operator can do would clear this gate")

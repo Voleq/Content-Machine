@@ -13,12 +13,16 @@ MOCK_MODE render must never be silent, and nothing here has a drawn equivalent.
 Run from the repo root:  .venv/bin/python scripts/gen_assets.py
 
 Everything here is procedural (ffmpeg lavfi), seeded and deterministic — no
-downloads, no licences to clear. The licensed bed and the real sfx drop over the
-same filenames.
+downloads, no licences to clear. The real sfx drop over the same filenames.
+
+THERE IS NO BED. The generator that wrote it made sixty seconds of a G drone
+out of three sine waves and brown noise, looped under every video, and its own
+docstring called it a placeholder for a licensed one that was never going to
+arrive. Room tone does the only job it was doing — stopping the digital silence
+between words — and it is diegetic: it is the room he is sitting in.
 
 Outputs:
   assets/sfx/*.wav              the sfx palette, plus room tone
-  assets/music/dennis_bed.m4a   60s lo-fi placeholder bed
 """
 
 from __future__ import annotations
@@ -165,22 +169,3 @@ def gen_room_tone() -> None:
            "afade=t=in:st=0:d=1.5,afade=t=out:st=28.5:d=1.5",
            "-c:a", "pcm_s16le", "-ar", "44100")
     print("room tone: 1 written")
-
-
-def gen_dennis_music() -> None:
-    """Lo-fi-ish placeholder bed for both formats (replace with the
-    Claude Design / licensed bed in production)."""
-    out = ASSETS / "music"
-    out.mkdir(parents=True, exist_ok=True)
-    _lavfi(out / "dennis_bed.m4a",
-           "-f", "lavfi", "-i", "sine=f=98:d=60",
-           "-f", "lavfi", "-i", "sine=f=146.83:d=60",
-           "-f", "lavfi", "-i", "sine=f=196:d=60",
-           "-f", "lavfi", "-i", "anoisesrc=d=60:color=brown:seed=21",
-           "-filter_complex",
-           "[0]volume=0.42[a];[1]volume=0.26,tremolo=f=0.12:d=0.8[b];"
-           "[2]volume=0.16[c];[3]lowpass=f=300,volume=0.06[d];"
-           "[a][b][c][d]amix=inputs=4:normalize=0,lowpass=f=700,"
-           "tremolo=f=0.10:d=0.3,afade=t=in:st=0:d=2,afade=t=out:st=57:d=3,volume=0.55",
-           "-c:a", "aac", "-b:a", "128k")
-    print("dennis music: 1 written")

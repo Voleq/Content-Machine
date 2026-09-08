@@ -206,7 +206,7 @@ assets/
   plates/                the materialised kit: 143 plates in fourteen families
                          plus plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
-  fonts, brand, channel, backgrounds, overlays, sfx, music, broll_library,
+  fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
   meme_library, custom/ ([SCREENGRAB] drops), hook_bank.json
 templates/
   shots/                 one file per FORMAT: short, earnings, macro, long
@@ -254,7 +254,7 @@ sudo apt install ffmpeg nodejs npm fonts-dejavu-core  # FFmpeg 6+, Node 18+
 python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 npm ci                                      # the kit's rasteriser (build-time only)
-.venv/bin/python scripts/gen_assets.py      # placeholder sfx, music, b-roll, memes
+.venv/bin/python scripts/gen_assets.py      # placeholder sfx + room tone
 .venv/bin/python scripts/ingest_kit.py kit  # the 143 drawn plates -> assets/plates
 .venv/bin/python -m pytest tests/           # offline, zero network calls
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
@@ -493,6 +493,17 @@ the overnight window and simply finds the work still there next time the
 window opens, and the daily cleanup timer catches up when it misses a run.
 Closing the Ubuntu window does not stop the service, but shutting Windows
 down does — WSL stops with it, and both resume when you next open Ubuntu.
+
+**Never delete `cache/tts`.** It is the only directory in this repo whose
+contents cost money. TTS is cached on a content hash of the script text and
+the delivery directives in it, globally and forever — which is what makes
+re-rendering the same approved script to fix visual placement free: kit
+changes, plate manifests, `CHAPTER_CUE_SFX` and `hold=` values are all
+outside the cache key, so the second render of a script is $0 and reuses the
+same voice. Clear it and every one of those scripts re-bills in full at the
+per-1k-character rate on its next render. `RETENTION_DAYS` never touches it,
+and neither should anybody clearing space: prune `cache/segments` (encoded
+video, regenerates for free) and old workspaces instead.
 
 **Keep everything off `/mnt/c`.** `workspace/`, `cache/` and `state/` must
 live on the Linux filesystem. `cache/segments` is thousands of small clips
@@ -834,7 +845,6 @@ just less directly. Set the var once you know which macro your box has.
 | `SHORT_OPEN_STYLE` | `bug` | where the signature card goes in a SHORT: `bug` (a corner mark, so the video opens cold on the hook), `tail` (no open at all — `e_close` still runs), `full` (the original full-frame bumper). Tunable against retention data rather than by editing code |
 | `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `CHAPTER_CUE_SFX` | `keyboard_clack` | the sound a LONG's chapter opener fires, 0.15s ahead of the picture so it announces the opener rather than reacting to it. A key from the sfx taxonomy; blank turns the cue off. It is a signpost, not atmosphere — `keyboard_clack` reads as one because it is diegetic (he is typing the chapter title), where a `ding` reads as a notification. `paper_rustle` and `ding` are the alternatives worth auditioning; the choice can only be made by listening, which is why it is a setting |
-| `MUSIC_SILENT_CHAPTERS` | `resigned-close,risk` | chapter TYPES the music bed drops out under (room tone keeps running, so it reads as a register change and not a dropout). Keyed off type, not mode: mode is never machine-readable — the trailer grammar is `type \| Title` and mode exists only as an instruction to the writer. A name that is not one of the sixteen is refused at startup rather than silently never firing |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
 | `USD_PER_1K_CHARS` | unset | **override only.** Unset means the selected model's list price (`config.ELEVEN_USD_PER_1K_CHARS`): turbo/flash and v3-conversational $0.05, v3 and multilingual_v2 $0.10. Lookup is **exact** and a model the table does not know **raises** rather than defaulting — a guessed rate is how a spend cap comes to meter at the wrong speed. Set this when a price moves or a model is newer than the table. Not a display figure: `SpendLedger` meters `MONTHLY_SPEND_CAP` with it |
@@ -849,7 +859,7 @@ just less directly. Set the var once you know which macro your box has.
 | `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
 | `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
-| `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned) |
+| `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
 | `SCREEN_DIGEST_CRON` | `30 7 * * 1-5` | digest, `SCREEN_TIMEZONE` (ET) |
 | `ALERTS_ENABLED` / `ALERT_POLL_MINUTES` | true / 15 | intraday watch on covered names |
@@ -934,6 +944,20 @@ env var, case-insensitive).
   maps 16 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only
   consulted on a miss, and only when configured.
+- **`[MEME]` is still, `[CLIP]` moves.** A meme is normalised to a frozen PNG
+  because the freeze is the joke's timing. A clip is illustration — the visual
+  that proves the claim — so an animated source resolved through the clip path
+  normalises to a short looping mp4 and plays inside a frames/ plate exactly as
+  footage does. Its chain is owned library → cache → Pexels → Giphy → Tenor →
+  filler: Pexels is a STOCK library and will never have a specific film or
+  sports moment, which used to mean `[CLIP: lebron three pointer]` silently drew
+  a blank card. A clip that still lands on filler is a warning on the approval
+  report, not just a log line. `[MEME]` keeps `MEME_MAX_PER_LONG` — a joke is
+  rationed — and `[CLIP]` stays uncapped, because illustration is information.
+- **The writer times the hold.** `[CLIP: lebron three pointer | hold=2.5]` and
+  `[MEME: bagholder | hold=2.0]` — seconds on screen, clamped to 0.8–5.0 with a
+  warning outside it, because `hold=30` is a slipped decimal point rather than
+  an instruction. The bare forms are unchanged and take the format's default.
 - **Delivery direction is declared, never inferred.** The writer places
   `[BEAT]`, `[CURIOUS]`, `[SIGH]` and the rest inline; nothing downstream reads
   a sentence and decides it wants one. `pipeline/direction.py` is the single
@@ -957,7 +981,7 @@ env var, case-insensitive).
   emits against those manifests, refuses the install if the two disagree, and
   writes `assets/plates/` plus `plates-registry.json`. Nothing under
   `assets/plates/` is edited by hand and no PNG is committed from anywhere
-  else. Everything the kit does NOT draw — sfx, music, b-roll, memes — is
+  else. Everything the kit does NOT draw — sfx, b-roll, memes — is
   still procedurally placeheld by `scripts/gen_assets.py` and meant to be
   replaced.
 - **Placeholder AUDIO cannot be published.** Every wav in `assets/sfx` is an
