@@ -1,5 +1,5 @@
 """End-to-end operator flow WITHOUT Telegram: BotCore consumes strings/
-bytes and returns Reply values. Covers the full loop: /new → upload →
+bytes and returns Reply values. Covers the full loop: /long → upload →
 prompts → paste script → report → approve → render gate → executed job →
 local delivery. All in MOCK_MODE, zero network."""
 
@@ -29,28 +29,26 @@ def xlsx_bytes(fixtures_dir) -> bytes:
     return (fixtures_dir / "company_data" / "dennis_data.xlsx").read_bytes()
 
 
-def test_new_ticker_creates_workspace_and_context(core):
-    reply = core.new_ticker(CHAT, "exmpl")
-    assert "Workspace ready: EXMPL" in reply.text
+def test_starting_a_lane_creates_the_workspace_and_context(core):
+    reply = core.start_lane(CHAT, "long", "exmpl")
+    assert "EXMPL" in reply.text
     assert reply.files and reply.files[0].name == "dennis_data_template.xlsx"
     assert core.context.get(CHAT).ticker == "EXMPL"
+    assert core.context.get(CHAT).lane() == "long"
     assert "Refinitiv" not in reply.text
 
 
-def test_upload_xlsx_yields_short_and_long_angle_prompts(core, xlsx_bytes):
-    core.new_ticker(CHAT, "EXMPL")
+def test_upload_on_a_short_lane_yields_exactly_the_short_prompt(core, xlsx_bytes):
+    """One lane, one prompt. The lane is declared, never inferred."""
+    core.start_lane(CHAT, "short", "EXMPL")
     reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     assert "saved dennis_data.xlsx" in reply.text
-    # SHORT is one paste; LONG is now Step 1 (the angle prompt)
-    assert len(reply.files) == 2
-    short_prompt = next(f for f in reply.files if f.name == "prompt_short.md").read_text(encoding="utf-8")
-    angle_prompt = next(f for f in reply.files if "long_angle" in f.name).read_text(encoding="utf-8")
-    # no real placeholder braces survive in either (the header's literal
-    # "{{placeholder}}" doc token is not a real field)
+    assert [f.name for f in reply.files] == ["prompt_short.md"]
+    short_prompt = reply.files[0].read_text(encoding="utf-8")
+
     import re as _re
     unfilled = _re.compile(r"\{\{(?!placeholder\}\})[a-z_]+\}\}")
     assert not unfilled.search(short_prompt), "short placeholders filled"
-    assert not unfilled.search(angle_prompt), "angle placeholders filled"
 
     assert "Ticker: EXMPL" in short_prompt and "ps_ttm = 62.0" in short_prompt
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
@@ -59,20 +57,32 @@ def test_upload_xlsx_yields_short_and_long_angle_prompts(core, xlsx_bytes):
     assert "numbers-sheet" in short_prompt        # doodle catalog, grouped
     assert "harold-quick-flip-became-bagholder" in short_prompt  # meme catalog
     assert "## VOICE BIBLE" in short_prompt and "deadpan" in short_prompt
+    assert "Refinitiv" not in short_prompt
+
+
+def test_upload_on_a_long_lane_yields_exactly_the_angle_prompt(core, xlsx_bytes):
+    core.start_lane(CHAT, "long", "EXMPL")
+    reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    assert [f.name for f in reply.files] == ["prompt_long_angle.md"]
+    angle_prompt = reply.files[0].read_text(encoding="utf-8")
+
+    import re as _re
+    unfilled = _re.compile(r"\{\{(?!placeholder\}\})[a-z_]+\}\}")
+    assert not unfilled.search(angle_prompt), "angle placeholders filled"
 
     # the angle prompt is Step 1: ranked angles, no script, gets the full data
     assert "PICK THE ANGLE" in angle_prompt and "pick an angle" in angle_prompt
     assert "ps_ttm = 62.0" in angle_prompt
     assert "★recommended" in angle_prompt
     assert "ASSET PROMPTS" not in angle_prompt, "no tags/assets at the angle step"
-    assert "Refinitiv" not in short_prompt and "Refinitiv" not in angle_prompt
+    assert "Refinitiv" not in angle_prompt
     # the workspace is now awaiting the operator's angle pick
     ws = Workspace.latest_for(core.settings, "EXMPL")
     assert ws.awaiting_angle()
 
 
 def test_long_two_step_angle_then_write(core, xlsx_bytes, long_valid_text):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     ws = Workspace.latest_for(core.settings, "EXMPL")
     assert ws.awaiting_angle()
@@ -110,21 +120,20 @@ def test_prompts_carry_screener_move_context(core, xlsx_bytes):
                               "reasons": ["+29.0% today", "vol 5.0× avg"],
                               "price": 19.67, "pct_change": 29.0}},
     }), encoding="utf-8")
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "short", "EXMPL")
     reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     short_prompt = next(f for f in reply.files if "short" in f.name).read_text(encoding="utf-8")
-    assert "+29.0% today" in short_prompt
     assert "trending lane" in short_prompt
 
 
 def test_prompts_blocked_without_upload(core):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     reply = core.prompts_reply(CHAT)
     assert "⛔" in reply.text
 
 
 def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_json):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, short_valid_json)
     assert "EXMPL — SHORT — ready to render" in reply.text
@@ -147,7 +156,7 @@ def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_jso
 
 
 def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, short_valid_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")
@@ -157,14 +166,14 @@ def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
 
 
 def test_malformed_script_reports_friendly_error(core, xlsx_bytes):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, '{"ticker": "EXMPL", "format": "short"')
     assert "⛔" in reply.text and "rejected" in reply.text
 
 
 def test_long_intake_blocks_on_missing_screenshot(core, xlsx_bytes, long_valid_text):
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, long_valid_text)
     assert "BLOCKED" in reply.text
@@ -193,7 +202,7 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
     raw = ("EXMPL is cheap and hated. Here is my account, for context. "
            "[SCREENGRAB: broker-pnl] Twenty five k to zero. "
            "I will be up at three a.m. See you at the next filing.")
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
 
     reply = core.intake_script(CHAT, raw)
@@ -221,7 +230,7 @@ def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_
     from PIL import Image
     import io
 
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     buf = io.BytesIO()
     Image.new("RGB", (800, 500), (20, 24, 30)).save(buf, format="PNG")
@@ -266,7 +275,7 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
             {"target": "numbers", "row_index": 1, "anchor_word": "fewer"},
         ],
     })
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, script_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")

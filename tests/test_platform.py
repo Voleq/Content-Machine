@@ -139,8 +139,10 @@ def test_no_windows_only_branches_survive_in_the_runtime_path():
     """The runtime is POSIX now; a `sys.platform == "win32"` fork in the hot
     path is exactly the kind of thing that rots untested.
 
-    `excel_refresh.py` is the deliberate exception — it is parked behind
-    `excel_available()`, which the Linux flow only ever reads as False.
+    There is no exemption. `excel_refresh.py` was the one documented
+    exception and it is gone (Group L), so what used to be "every file but
+    that one" is now simply every file — a documented exception turned into
+    an enforced invariant.
     """
     import io
     import tokenize
@@ -148,8 +150,6 @@ def test_no_windows_only_branches_survive_in_the_runtime_path():
     pattern = re.compile(r"win32|BELOW_NORMAL|creationflags|os\.name")
     offenders = []
     for py in sorted((ROOT / "pipeline").glob("*.py")):
-        if py.name == "excel_refresh.py":
-            continue
         src = py.read_text(encoding="utf-8")
         # Only real code counts: docstrings and comments explaining why the
         # branch was removed are the whole reason this stays removed.

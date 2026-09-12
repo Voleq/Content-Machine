@@ -511,14 +511,30 @@ async def screen_reply(core, lane: str = "all"):
     if lane not in ("trending", "value", "all"):
         return Reply("Usage: /screen [trending|value|all]")
     result = await asyncio.to_thread(run_screen, core.settings, lane)
-    tickers = [c.ticker for c in result.get("trending", [])] + \
-              [c.ticker for c in result.get("value", [])]
-    seen: list[str] = []
-    for t in tickers:
-        if t not in seen:
-            seen.append(t)
+    seen = _candidate_lanes(result)
     return Reply(digest_text(result),
                  keyboard=candidates_keyboard(seen) if seen else None)
+
+
+def _candidate_lanes(result: dict) -> list[tuple[str, str]]:
+    """`(ticker, bot lane)` for every candidate, first occurrence wins.
+
+    The screener's own lane names are editorial ("trending", "value"); the
+    bot's are formats ("short", "long"). The mapping is the editorial rule the
+    screener exists to apply — a name that ran today is SHORT material, a
+    beaten-down one is LONG material — so it lives here, next to the screens
+    that produce it, rather than being re-derived at the button.
+    """
+    lane_for = {"trending": "short", "value": "long", "update": "long"}
+    out: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for screen_lane in ("trending", "value", "update"):
+        for c in result.get(screen_lane, []) or []:
+            if c.ticker in seen:
+                continue
+            seen.add(c.ticker)
+            out.append((c.ticker, lane_for[screen_lane]))
+    return out
 
 
 def parse_cron(expr: str) -> tuple[int, int, tuple[int, ...]]:
@@ -574,9 +590,8 @@ def schedule_digest(application, core) -> None:
 
         result = await asyncio.to_thread(run_screen, settings, "all")
         text = "🌅 Morning screen\n\n" + digest_text(result)
-        tickers = [c.ticker for lane in ("trending", "value")
-                   for c in result.get(lane, [])]
-        kb = candidates_keyboard(list(dict.fromkeys(tickers))) if tickers else None
+        seen = _candidate_lanes(result)
+        kb = candidates_keyboard(seen) if seen else None
         for chat_id in settings.operator_chat_ids:
             await ctx.bot.send_message(chat_id, text, reply_markup=kb)
 

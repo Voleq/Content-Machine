@@ -116,7 +116,7 @@ def test_company_asks_for_data_then_hands_prompt(core, xlsx_bytes):
 
 def test_earnings_framing_with_data(core, xlsx_bytes):
     # seed the workspace with data first, then the earnings headline
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     h = _headlines()["earnings"]
     reply = core.headline_command(CHAT, [h["symbol"], *h["headline"].split()])

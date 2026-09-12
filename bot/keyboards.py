@@ -5,7 +5,7 @@ Callback data grammar (64-byte Telegram limit — keep it terse):
     x|<fmt>|<ticker>|<date>           cancel
     w|<ticker>|<date>                 open the swap-clip menu (LONG)
     s|<ticker>|<date>|<key>           swap this b-roll key to its next take
-    n|<ticker>                        fire /new from a screener candidate
+    n|<lane>|<ticker>                 open a screener candidate in its own lane
     fv|<ticker>|<date>|<file>         veto (drop) an auto-pulled filing shot
 """
 
@@ -83,11 +83,32 @@ def filing_veto_keyboard(ticker: str, workdate: str,
     return InlineKeyboardMarkup(rows)
 
 
-def candidates_keyboard(tickers: list[str]) -> InlineKeyboardMarkup:
+# The screener puts every candidate in a lane, and that lane is the whole
+# reason the candidate is on the list — a trending name is SHORT material, a
+# beaten-down one is LONG material. Dropping it on the way to the button was
+# what made the button open a lane-less workspace (G3), which is one of the
+# inputs to the format-resolution mess in Group C. So the lane rides in the
+# callback data and the handler routes to `start_lane`, not to a lane-less
+# alias that has to guess.
+LANE_CODES = {"short": "s", "long": "l"}
+CODE_LANES = {v: k for k, v in LANE_CODES.items()}
+
+
+def candidates_keyboard(
+    candidates: list[tuple[str, str]],
+) -> InlineKeyboardMarkup:
+    """One button per candidate, as `(ticker, lane)` pairs.
+
+    `lane` is "short" or "long"; anything else is treated as "short", which
+    is what a trending candidate is and the cheaper mistake of the two.
+    """
     rows = []
-    for i in range(0, len(tickers), 3):
-        rows.append([
-            InlineKeyboardButton(f"/new {t}", callback_data=f"n|{t}")
-            for t in tickers[i:i + 3]
-        ])
+    for i in range(0, len(candidates), 3):
+        row = []
+        for ticker, lane in candidates[i:i + 3]:
+            code = LANE_CODES.get(lane, "s")
+            cmd = "short" if code == "s" else "long"
+            row.append(InlineKeyboardButton(
+                f"/{cmd} {ticker}", callback_data=f"n|{code}|{ticker}"))
+        rows.append(row)
     return InlineKeyboardMarkup(rows)

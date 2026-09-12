@@ -198,29 +198,40 @@ def test_an_explicit_format_still_wins(core, settings, short_valid_json):
 
 
 # --------------------------------------------------------------------------
-# /new survives one release as an alias.
+# /new is gone (L3). It could not know the lane, so it prepared both prompts
+# and left the workspace lane-less — one of the inputs to the format-
+# resolution mess. Its last caller was the screener's candidate buttons, and
+# those now carry the candidate's own lane.
 # --------------------------------------------------------------------------
 
 
-def test_new_still_works_and_says_it_is_deprecated(core, settings):
-    core.new_ticker(CHAT, "EXMPL")
-    _with_data(core, "EXMPL")
-    reply = core.prompts_reply(CHAT)
-    names = sorted(f.name for f in reply.files)
-    assert names == ["prompt_long_angle.md", "prompt_short.md"], names
-    assert "deprecated" in reply.text
-    assert "/short TICKER" in reply.text
+def test_the_lane_less_alias_is_gone_from_the_core_and_the_frontend():
+    from bot import handlers
+
+    assert not hasattr(handlers.BotCore, "new_ticker")
+    src = Path(handlers.__file__).read_text(encoding="utf-8")
+    assert 'CommandHandler("new"' not in src
+    assert 'CommandHandler("refresh"' not in src
 
 
-def test_new_leaves_the_lane_unset_which_is_what_makes_it_the_old_behaviour(
-        core, settings):
-    core.new_ticker(CHAT, "EXMPL")
-    assert core.context.get(CHAT).lane() == ""
+def test_a_screener_button_opens_the_lane_the_screen_put_it_in(core, settings):
+    """G3: the candidate's lane rides in the callback data.
 
+    Asserting on the workspace the button produces, not on the string that
+    was handed to Telegram — the old button routed to a lane-less alias and
+    a test on the callback text would have passed either way.
+    """
+    from bot.keyboards import CODE_LANES, candidates_keyboard
 
-def test_new_with_a_bad_ticker_points_at_the_replacements(core):
-    text = core.new_ticker(CHAT, "").text
-    assert "/short TICKER" in text and "/long TICKER" in text
+    kb = candidates_keyboard([("EXMPL", "short"), ("OTHER", "long")])
+    data = [b.callback_data for row in kb.inline_keyboard for b in row]
+    assert data == ["n|s|EXMPL", "n|l|OTHER"]
+
+    for payload, expected in zip(data, ("short", "long")):
+        op, code, ticker = payload.split("|")
+        assert op == "n"
+        core.start_lane(CHAT, CODE_LANES[code], ticker)
+        assert core.context.get(CHAT).lane() == expected
 
 
 # --------------------------------------------------------------------------

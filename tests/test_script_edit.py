@@ -180,7 +180,7 @@ def core_with_long(settings, long_valid_text):
     from pathlib import Path
 
     core = BotCore(settings)
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     ws = core.context.get(CHAT)
     fixtures = Path(__file__).resolve().parents[1] / "fixtures"
     shutil.copy(fixtures / "company_data" / "dennis_data.xlsx",
@@ -303,7 +303,7 @@ def test_editing_with_no_script_on_file_is_refused(settings):
     from bot.handlers import BotCore
 
     core = BotCore(settings)
-    core.new_ticker(CHAT, "EXMPL")
+    core.start_lane(CHAT, "long", "EXMPL")
     assert "No script" in core.edit_script(CHAT, ["1", "text"]).text
     assert "No script" in core.script_listing(CHAT).text
 

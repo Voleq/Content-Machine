@@ -2,9 +2,9 @@
 
 The operator has an Excel add-in (Capital IQ, with Refinitiv/LSEG mnemonics
 alongside), not API access, so the data contract is the shipped template — the
-PRIVATE data source. The add-in resolves the formulas in Excel — since P3.1b
-the bot can drive that itself; see `excel_refresh.py` — and the file this
-reads carries CACHED VALUES, so it opens with openpyxl data_only=True
+PRIVATE data source. The add-in resolves the formulas in Excel on the
+operator's own machine — the bot runs on Linux and never drives Excel — and
+the file this reads carries CACHED VALUES, so it opens with openpyxl data_only=True
 (values, never formula strings). Sheets are read strictly BY NAME, so the
 add-in's hidden helper sheets (`_CIQHiddenCacheSheet`, `_RICMap`, a GUID-named
 cache) are ignored:

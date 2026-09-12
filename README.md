@@ -25,14 +25,14 @@ machine does 100% of voice, asset fetching, composition and rendering.
 no hardcoded scene timings anywhere in the render code.
 
 ```
-/short TICKER  (or /long TICKER) → the bot refreshes the numbers in Excel
-itself → run the pre-filled master prompt in Claude/GPT → paste the output
-back → validation + cost report → tweak in chat if needed → Approve ✅ →
-/render TICKER → shareable link
+/short TICKER  (or /long TICKER) → refresh the data template outside the
+bot and upload it as dennis_data.xlsx → run the pre-filled master prompt in
+Claude/GPT → paste the output back → validation + cost report → tweak in
+chat if needed → Approve ✅ → /render TICKER → shareable link
 ```
 
-(Off the Windows render box, or with no data add-in loaded, step two is the
-manual upload it always was — `dennis_data.xlsx` into the chat.)
+(The upload is the only data route. The bot runs on Linux and does not drive
+Excel; the refresh happens on the operator's own machine.)
 
 ---
 
@@ -169,7 +169,6 @@ pipeline/
 
   prices.py              Yahoo price history behind an interface (cached)
   company_data.py        two-sheet Excel export reader + filing screenshots
-  excel_refresh.py       drives Excel over COM to refresh the data itself
   filings.py             10-K auto-screenshot pipeline
   article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
@@ -362,8 +361,8 @@ having one.
 path is FFmpeg filtergraphs, headless Chromium and a systemd service, and all
 three are first-class on Linux and awkward-to-broken on native Windows. The one
 feature that ever needed native Windows — Excel COM automation — has been
-replaced by the external refresh plus upload, so there is nothing left on that
-side of the line.
+deleted outright in favour of the external refresh plus upload, so there is
+nothing left on that side of the line.
 
 From a clean Windows 11 machine, in order:
 
@@ -546,16 +545,13 @@ starting point, but they are **unmaintained** and nothing tests them.
    choice. Trending lane → SHORT; beaten-down value lane → LONG, and picking
    a trending name for a LONG gets a warning, not a refusal — the screener is
    a suggestion engine. The screener's move context is baked into the SHORT
-   prompt automatically. (`/new` still works for one release, preparing both
-   prompts as before.)
-2. The numbers arrive on their own: `/new` copies
-   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!C3`,
-   fires the add-in's refresh, waits for it to genuinely finish, and files a
-   dated copy in the workspace. `/refresh TICKER` re-pulls; a second argument
-   pins a **RIC override** for good (`/refresh PLTR PLTR.O`) for the cases the
-   template's own exchange lookup can't get right. Anywhere without Excel and
-   a loaded add-in the bot says so and takes the manual upload instead — that
-   path is unchanged. Optionally upload raw screenshot PNGs for
+   prompt automatically, from a live quote rather than yesterday's close.
+2. The numbers arrive by upload, which is the only data route: the bot sends
+   `templates/dennis_data_template.xlsx`, you refresh it outside the bot and
+   upload the result as `dennis_data.xlsx`. A successful upload **withdraws
+   any approval** on that workspace — the approval pins the script's hash,
+   which does not change when the data underneath it does, so new numbers
+   have to be re-read and re-approved. Optionally upload raw screenshot PNGs for
    `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
    label on screen.
 3. The bot replies with the lane's **pre-filled master prompt** — run it in
@@ -648,12 +644,10 @@ this section failing.
 
 | command | what it does |
 |---|---|
-| `/short TICKER` | Opens a SHORT (9:16, 60–75s). Refreshes the numbers itself where Excel is available, then hands back `prompt_short.md`. |
+| `/short TICKER` | Opens a SHORT (9:16, 60–75s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
 | `/long TICKER` | Opens a LONG (16:9 deep dive). Two steps: Step 1 returns ranked angles, you reply with a number, Step 2 is the writing prompt. |
 | `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Refuses (and points at `/long`) when no thesis is on file. |
 | `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. |
-| `/new TICKER` | Deprecated alias, kept for one release. Prepares both prompts because it cannot know the lane. |
-| `/refresh TICKER [RIC]` | Re-pulls the numbers in Excel. A second argument pins a vendor-symbol override for good (`/refresh PLTR PLTR.O`). |
 | `/prompts` | Re-sends the active workspace's pre-filled prompt. |
 
 ### Reviewing and editing the script
@@ -780,57 +774,6 @@ the operator can see in the file they exported. Not the file's mtime —
 re-saving or copying a workbook resets that without changing a single
 number, which is exactly the case the gate exists to catch.
 
-#### The parked COM path
-
-`pipeline/excel_refresh.py` drives Excel over COM. It is **parked**: it
-needs native Windows, `excel_available()` reports it as unavailable on
-Linux, and nothing on the supported path calls it. It is kept so a future
-native-Windows deployment stays possible. What follows describes it as it
-was written.
-
-Two input cells, and they mean different things. **`Snapshot!C3`** takes the
-plain ticker and every `CIQ(...)` formula reads it. **`Snapshot!B3` derives**
-the Refinitiv RIC from C3, looking the suffix up from the exchange via the
-hidden `_RICMap` table — it is a formula and writing to it would silently
-detach every green cell from the ticker. **`Snapshot!E2`** forces a RIC for
-the cases the lookup can't know (a dual listing, a share class); leave it
-empty and the template does the work, which is right more often than a guess.
-`/refresh PLTR PLTR.O` pins E2 for that ticker permanently.
-
-The step that matters is the wait: the add-in resolves **asynchronously**, so
-the refresh call returns instantly while cells still read `#N/A` or
-`Requesting Data...`. Reading at that moment produces a workbook full of
-blanks that looks like a successful refresh — a video built on nothing. So the
-refresh only counts as done when every field worth waiting for has resolved
-*and* the sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive
-reads.
-
-"Worth waiting for" is two tiers, because the template grades its own fields
-in the `Priority` column and grades twelve as Required where `DATA_REQUIRED`
-names six. The poll waits for all twelve — a stronger completion signal, so it
-cannot stop while the valuation block is still filling in — but only the six
-are hard: a thinly-covered small-cap missing `ev_ebitda` gets a warning and a
-usable workbook, not a failed refresh.
-
-Consequences, by design:
-
-- A timeout, or a `DATA_REQUIRED` field still unresolved, is a **hard failure**
-  with the fields and the symbol named. Nothing is written to
-  `dennis_data.xlsx`; a workbook already in the workspace is left exactly as
-  it was.
-- Excel or the add-in missing is **reported**, not crashed on, and the manual
-  upload takes over.
-- The scratch copy is deleted and Excel is quit — and killed by PID if a
-  modal dialog swallowed the quit — on every path, including failure.
-- A workspace it populated carries `data_refresh.json`. The freshness gate
-  still reads that, but only as a fallback for a workbook whose sheet carries
-  no as-of date of its own; the sheet is the authority.
-
-The add-in's refresh macro is named differently in every vintage, so
-`EXCEL_REFRESH_MACROS` is a list of candidates tried in order, falling back to
-a full recalculation — most add-in formulas are volatile, so that works too,
-just less directly. Set the var once you know which macro your box has.
-
 ---
 
 ## Configuration reference (env / .env)
@@ -854,10 +797,6 @@ just less directly. Set the var once you know which macro your box has.
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
-| `EXCEL_REFRESH_ENABLED` | true | let the bot refresh its own numbers (Windows + add-in) |
-| `EXCEL_SYMBOL_SUFFIX` | — | `.O` builds `PLTR.O`; per-ticker pins beat it |
-| `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
-| `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
@@ -1131,6 +1070,3 @@ network calls:
 - **The bot stops answering overnight** — Windows slept or shut down, which
   takes WSL with it. Expected. Reopen Ubuntu and the service comes back;
   anything queued with `/batch` is still queued.
-- **Excel refresh never happens** — the add-in path only exists on a Windows
-  box with Excel and the add-in loaded, and it is the parked route. The manual
-  upload of `dennis_data.xlsx` is the primary one and always works.

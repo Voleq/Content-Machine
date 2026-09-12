@@ -1196,25 +1196,6 @@ def check_freshness(as_of: str, settings: Settings,
                          f"and upload dennis_data.xlsx again"))]
         return []
 
-    # No usable date on the sheet. Fall back to a recorded COM refresh if this
-    # workspace has one.
-    if workspace is not None:
-        from pipeline.excel_refresh import refresh_age_days
-
-        now = None
-        if today is not None:
-            now = datetime.combine(today, dt_time(), tzinfo=timezone.utc)
-        age_days = refresh_age_days(workspace, now=now)
-        if age_days is not None:
-            if age_days > settings.data_max_age_days:
-                severity = "block" if settings.data_stale_blocks else "warn"
-                return [Finding(
-                    gate="freshness", severity=severity,
-                    message=(f"the data was last refreshed {age_days:.1f} days "
-                             f"ago (limit {settings.data_max_age_days}) — "
-                             f"refresh it and upload it again"))]
-            return []
-
     if not as_of:
         return [Finding(gate="freshness", severity="warn",
                         message="the data export carries no as-of date")]
