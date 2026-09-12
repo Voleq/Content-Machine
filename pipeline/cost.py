@@ -76,6 +76,57 @@ class SpendLedger:
         with self._lock:
             return int(self._load().get(month_key(), {}).get("pexels_calls", 0))
 
+    # ---------------------------------------------------------- reconciled
+    #
+    # NOTHING RECONCILES THIS LEDGER AGAINST THE PROVIDER (P7). Every figure
+    # in it is what Dennis BELIEVES it spent: chunks counted at the rate in
+    # config, against a cap enforced from the same number. A drift — a rate
+    # change, a retried chunk billed twice, a model switch — is invisible
+    # from inside, and the first symptom is a bill.
+    #
+    # Not automated: reading the ElevenLabs dashboard is a human act, and a
+    # scraper against a billing page is a worse idea than a date. What this
+    # does is the same trick as the provenance record — the failure mode is
+    # nobody looking, so the number that matters carries its own age.
+    RECONCILED_KEY = "reconciled_on"
+
+    def reconciled_on(self) -> str:
+        """ISO date the operator last checked this against the provider."""
+        with self._lock:
+            return str(self._load().get(self.RECONCILED_KEY) or "")
+
+    def mark_reconciled(self, today: "date | None" = None) -> str:
+        """Stamp today. Returns the date written."""
+        from datetime import date as _date
+
+        stamp = (today or _date.today()).isoformat()
+        with self._lock:
+            data = self._load()
+            data[self.RECONCILED_KEY] = stamp
+            self._save(data)
+        return stamp
+
+    def reconciled_line(self, today: "date | None" = None) -> str:
+        """One line for `/cost` saying how old the check is."""
+        from datetime import date as _date
+
+        stamp = self.reconciled_on()
+        now = today or _date.today()
+        if not stamp:
+            return ("Reconciled: NEVER — nothing has ever checked this "
+                    "against the provider's own number. `/cost reconciled` "
+                    "after you have.")
+        try:
+            when = _date.fromisoformat(stamp)
+        except ValueError:
+            return f"Reconciled: {stamp} (unreadable date)"
+        days = (now - when).days
+        if days <= 0:
+            return f"Reconciled: today ({stamp})"
+        ago = f"{days} day{'s' if days != 1 else ''} ago"
+        flag = "  ⚠️ stale" if days > 31 else ""
+        return f"Reconciled: {stamp} — {ago}{flag}"
+
     def llm_usd_this_month(self) -> float:
         with self._lock:
             return float(self._load().get(month_key(), {}).get("llm_usd", 0.0))

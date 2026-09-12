@@ -744,7 +744,8 @@ only the human-facing summary in the chat body.
 | command | what it does |
 |---|---|
 | `/batch [TICKER [fmt] \| run \| clear]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
-| `/cost` | Month-to-date spend against the cap. |
+| `/cost` | Month-to-date spend against the cap, and **how long ago anyone checked it against the provider**. Every figure is what Dennis believes it spent — chunks counted at the configured rate, against a cap enforced from that same number — so a drift is invisible from inside and the first symptom is a bill. |
+| `/cost reconciled` | Stamp today, after you have compared month-to-date against the ElevenLabs dashboard. It records a date and verifies nothing; it is worth exactly as much as the check you did. Past a month the line in `/cost` marks itself stale. |
 | `/kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. The gap list is the input to the next batch of art. |
 | `/help`, `/start` | The command list, in chat. |
 

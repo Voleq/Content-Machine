@@ -91,7 +91,7 @@ HELP_TEXT = """Dennis — operator commands
 /repurpose TICKER — free 9:16 SHORT from the finished LONG
 /status — job queue
 /cancel TICKER — cancel queued/running jobs + pending approval
-/cost — month-to-date spend vs cap
+/cost — month-to-date spend vs cap (/cost reconciled after checking the provider)
 /kit doctor — unresolved tag keys, never-used artwork, unregistered PNGs
 /help — this text
 
@@ -2314,8 +2314,41 @@ class BotCore:
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
             f"{self.settings.pexels_monthly_call_cap}\n"
             f"Filing-flagger LLM: ${self.ledger.llm_usd_this_month():.2f}\n"
+            # HOW OLD IS THE NUMBER ABOVE (P7). Every figure here is what
+            # Dennis BELIEVES it spent — chunks counted at the configured
+            # rate, against a cap enforced from the same number. Nothing
+            # reconciles it against the provider, so a drift is invisible
+            # from inside and the first symptom is a bill. Same reasoning as
+            # the provenance record: the failure mode is nobody looking, so
+            # the number that matters carries its own age.
+            f"{self.ledger.reconciled_line()}\n"
             + self._mock_status_line()
         )
+
+    def cost_reply(self, args: list[str] | None = None) -> Reply:
+        """`/cost` and its one subcommand.
+
+        The routing lives here rather than in the PTB glue so it can be
+        exercised without a Telegram application — and so a typo gets an
+        answer instead of the report printed as if it had been understood.
+        """
+        what = (args[0].lower() if args else "")
+        if not what:
+            return Reply(self.cost_text())
+        if what in ("reconciled", "reconcile"):
+            return Reply(self.mark_reconciled())
+        return Reply("usage: /cost  or  /cost reconciled")
+
+    def mark_reconciled(self) -> str:
+        """`/cost reconciled` — stamp today against the ledger."""
+        stamp = self.ledger.mark_reconciled()
+        return (
+            f"✅ ledger marked reconciled on {stamp}.\n"
+            f"Month-to-date reads ${self.ledger.mtd_spend_usd():.2f} — that "
+            f"is the figure you just checked against the provider's own "
+            f"dashboard.\n\nThis stamps a date and nothing else. It does "
+            f"not verify anything, and it is worth exactly as much as the "
+            f"check you actually did.")
 
     def _mock_status_line(self) -> str:
         """Which subsystems are fake, spelled out — never just "mock mode".
@@ -2630,7 +2663,7 @@ def build_application(settings: Settings, core: BotCore):
 
     @guard
     async def cmd_cost(update, ctx):
-        await _send(update, Reply(core.cost_text()))
+        await _send(update, core.cost_reply(ctx.args))
 
     @guard
     async def cmd_kit(update, ctx):

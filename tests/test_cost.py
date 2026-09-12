@@ -333,3 +333,80 @@ def test_cost_says_no_paid_calls_when_nothing_can_spend(settings):
 
     assert "no paid calls possible" in text
     assert "TTS: MOCK" in text
+
+
+# --------------------------------------------------------------------------
+# P7 — the number that matters carries its own age.
+# --------------------------------------------------------------------------
+
+
+def test_cost_says_nobody_has_ever_reconciled_it(settings):
+    """P7: every figure in `/cost` is what Dennis BELIEVES it spent —
+    chunks counted at the configured rate, against a cap enforced from the
+    same number. Nothing reconciles it against the provider, so a drift is
+    invisible from inside and the first symptom is a bill. Silence about
+    that is the same failure the provenance record exists to prevent."""
+    from bot.handlers import BotCore
+
+    text = BotCore(settings).cost_text()
+    assert "Reconciled: NEVER" in text
+    assert "/cost reconciled" in text
+
+
+def test_marking_it_reconciled_stamps_a_date_that_survives_a_restart(settings):
+    """It is a date on disk, not a claim about correctness."""
+    import datetime
+
+    from bot.handlers import BotCore
+    from pipeline.cost import SpendLedger
+
+    core = BotCore(settings)
+    reply = core.mark_reconciled()
+    today = datetime.date.today().isoformat()
+    assert today in reply
+    # It says outright what it is not.
+    assert "does not verify anything" in reply
+
+    # A fresh ledger over the same state dir reads it back.
+    assert SpendLedger(settings).reconciled_on() == today
+    assert "Reconciled: today" in BotCore(settings).cost_text()
+
+
+def test_an_old_reconciliation_marks_itself_stale(settings):
+    """A date nobody looks at is the thing this replaces, so the line has to
+    change shape once it is old rather than sitting there looking current."""
+    import datetime
+
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    today = datetime.date(2026, 9, 12)
+
+    ledger.mark_reconciled(datetime.date(2026, 9, 10))
+    fresh = ledger.reconciled_line(today)
+    assert "2 days ago" in fresh and "stale" not in fresh
+
+    ledger.mark_reconciled(datetime.date(2026, 7, 1))
+    old = ledger.reconciled_line(today)
+    assert "73 days ago" in old
+    assert "⚠️ stale" in old, "an old check must not read as a current one"
+    assert old != fresh
+
+
+def test_the_command_routes_reconciled_and_refuses_anything_else(settings):
+    """`/cost` and `/cost reconciled` are the whole surface; a typo must not
+    silently print the report as if it had been understood."""
+    from bot.handlers import BotCore
+
+    core = BotCore(settings)
+    assert "Month-to-date" in core.cost_reply([]).text
+    assert "Month-to-date" in core.cost_reply(None).text
+
+    stamped = core.cost_reply(["reconciled"])
+    assert "marked reconciled" in stamped.text
+    assert "Reconciled: today" in core.cost_reply([]).text
+
+    for typo in (["reconsiled"], ["reset"], ["--help"]):
+        out = core.cost_reply(typo).text
+        assert out.startswith("usage:"), f"{typo} was not refused: {out}"
+        assert "Month-to-date" not in out
