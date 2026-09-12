@@ -6,12 +6,20 @@ from pipeline.models import DELIVERY_TAG_TYPES, CueKind, ShortScript
 from pipeline.parser_long import parse_long_script
 from pipeline.timeline import (
     build_long_timeline,
-    build_short_timeline,
     char_offset_time,
     find_anchor_time,
     plan_long_segments,
 )
 from pipeline.tts import mock_words
+
+
+# These are TIMELINE tests, driven by one-line snippets that sit far below the
+# LONG parser's length floor (C1). The floor is asserted at its real default in
+# `tests/test_parser_long.py`.
+@pytest.fixture()
+def settings(settings):
+    return settings.model_copy(update={"long_min_chars": 0})
+
 
 # ------------------------------------------------------------------ anchors
 
@@ -86,132 +94,20 @@ def short_script(short_valid_json) -> ShortScript:
     return ShortScript.model_validate(json.loads(short_valid_json))
 
 
-def test_short_timeline_structure(short_script):
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-
-    kinds = [c.kind for c in cues]
-    assert kinds.count(CueKind.HOOK) == 1
-    assert kinds.count(CueKind.TRANSITION) == 4          # why / gut / trap / payoff
-    assert kinds.count(CueKind.HEADLINE) == len(short_script.headlines)
-    assert kinds.count(CueKind.NUMBERS) == 1
-    assert kinds.count(CueKind.NUMBER_ROW) == len(short_script.numbers)
-    assert kinds.count(CueKind.ANNOTATION) == len(short_script.annotations)
-    assert kinds.count(CueKind.ZOOM) == 1                # one numbers annotation
-    assert kinds.count(CueKind.MEME) == 1
-    assert kinds.count(CueKind.CONCLUSION) == 1
-
-    # the short opens on Dennis talking; the hook card rides the same t=0
-    assert kinds.count(CueKind.HOST_OPEN) == 1
-    assert kinds.count(CueKind.HOST_CLOSE) == 1
-    assert cues[0].t == 0.0
-    assert {c.kind for c in cues if c.t == 0.0} == {CueKind.HOST_OPEN, CueKind.HOOK}
-    times = [c.t for c in cues]
-    assert times == sorted(times)
-    assert all(0 <= t <= duration for t in times)
 
 
-def test_short_beats_are_ordered(short_script):
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    hook = next(c for c in cues if c.kind is CueKind.HOOK)
-    headlines = [c for c in cues if c.kind is CueKind.HEADLINE]
-    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
-    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
-
-    hook_end = float(hook.payload["until"])
-    assert 0 < hook_end < numbers.t < conclusion.t < duration
-    for i, h in enumerate(headlines):
-        assert hook_end <= h.t < numbers.t, "headlines live in the why-zone"
-        # each ends when the NEXT one claims the frame — or at the sheet if
-        # it is the last — and never past the hold ceiling either way
-        nxt = headlines[i + 1].t if i + 1 < len(headlines) else numbers.t
-        assert float(h.payload["until"]) == pytest.approx(min(nxt, h.t + 8.0))
 
 
-def test_short_payoff_anchors_on_conclusion_words(short_script):
-    """The conclusion is spoken at the end of audio_script — the payoff
-    beat must land on those exact words, not a hardcoded offset."""
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
-    anchored = find_anchor_time(words, " ".join(short_script.conclusion.split()[:3]))
-    assert anchored is not None
-    assert conclusion.t == pytest.approx(anchored, abs=0.01)
-    assert not conclusion.fallback
 
 
-def test_short_number_rows_type_in_order_inside_gut_zone(short_script):
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
-    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
-    rows = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
-    assert [c.payload["index"] for c in rows] == list(range(len(short_script.numbers)))
-    for c in rows:
-        assert numbers.t < c.t < conclusion.t + 0.5
-    row_times = [c.t for c in rows]
-    assert row_times == sorted(row_times)
 
 
-def test_short_annotation_lands_on_anchor_and_after_its_row(short_script):
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    ann = [c for c in cues if c.kind is CueKind.ANNOTATION]
-    chart_ann = next(c for c in ann if c.payload["target"] == "chart")
-    num_ann = next(c for c in ann if c.payload["target"] == "numbers")
-
-    anchor_t = find_anchor_time(words, "today")
-    assert chart_ann.t == pytest.approx(anchor_t, abs=0.01)
-    assert not chart_ann.fallback
-
-    rows = {c.payload["index"]: c.t for c in cues if c.kind is CueKind.NUMBER_ROW}
-    assert num_ann.t >= rows[num_ann.payload["row_index"]] + 0.2, \
-        "a scribble can never precede the row it circles"
-    zoom = next(c for c in cues if c.kind is CueKind.ZOOM)
-    assert zoom.t == pytest.approx(num_ann.t + 0.05, abs=0.01)
-    assert zoom.payload["row_index"] == num_ann.payload["row_index"]
 
 
-def test_short_annotation_fallback_when_anchor_missing(short_script):
-    duration = 58.0
-    raw = short_script.model_dump()
-    raw["annotations"][0]["anchor_word"] = "zebra"
-    script = ShortScript.model_validate(raw)
-    words = mock_words(script.audio_script, duration)
-    cues = build_short_timeline(script, words, duration)
-    chart_ann = next(c for c in cues if c.kind is CueKind.ANNOTATION
-                     and c.payload["target"] == "chart")
-    assert chart_ann.fallback
 
 
-def test_short_meme_lands_on_anchor(short_script):
-    duration = 58.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    meme = next(c for c in cues if c.kind is CueKind.MEME)
-    anchor_t = find_anchor_time(words, "vertical")
-    assert meme.t == pytest.approx(anchor_t, abs=0.01)
-    assert meme.payload["key"] == "fomo-stages-wish-i-bought-doodle"
-    assert not meme.fallback
 
 
-def test_short_timeline_tiny_duration_smoke(short_script):
-    """3–5s smoke renders must still produce a sane, ordered timeline."""
-    duration = 4.0
-    words = mock_words(short_script.audio_script, duration)
-    cues = build_short_timeline(short_script, words, duration)
-    times = [c.t for c in cues]
-    assert times == sorted(times)
-    assert all(0 <= t < duration for t in times)
-    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
-    hook = next(c for c in cues if c.kind is CueKind.HOOK)
-    assert numbers.t > float(hook.payload["until"]) - 1e-6
 
 
 # ----------------------------------------------------------- LONG timeline
@@ -251,22 +147,6 @@ def test_long_timeline_img_and_product_share_kind(settings):
     assert img_cues[1].payload["tag"] == "PRODUCT"
 
 
-def test_short_inline_plate_and_scribble_cues(short_doodles_json):
-    script = ShortScript.model_validate_json(_reparse(short_doodles_json))
-    duration = 55.0
-    words = mock_words(script.audio_script, duration)
-    cues = build_short_timeline(script, words, duration)
-    plates = [c for c in cues if c.kind is CueKind.PLATE]
-    scribbles = [c for c in cues if c.kind is CueKind.SCRIBBLE]
-    assert len(plates) == 1
-    assert plates[0].payload["value"] == "shorts/hook-card-t2"
-    assert plates[0].payload["values"], "the plate carries its own content"
-    assert len(scribbles) == 1
-    assert scribbles[0].payload["value"] == "scrawl-oval-tight -> Net income"
-    # word-anchored into the clean audio_script, and inside the runtime
-    for c in plates + scribbles:
-        assert 0 <= c.t <= duration
-    assert [c.t for c in cues] == sorted(c.t for c in cues)
 
 
 def test_long_annotations_do_not_claim_segments(long_doodles_text, settings):
@@ -478,73 +358,14 @@ def test_adjacent_same_type_real_cuts_are_flagged():
 # --------------------------------------------------------------------------
 
 
-def test_short_opens_and_closes_on_the_host(short_script):
-    """Dennis bookends the short: ~3-5s on camera at each end."""
-    duration = 68.0
-    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
-                                duration)
-    opener = next(c for c in cues if c.kind is CueKind.HOST_OPEN)
-    closer = next(c for c in cues if c.kind is CueKind.HOST_CLOSE)
-
-    assert opener.t == 0.0
-    assert 3.0 <= float(opener.payload["until"]) <= 5.0
-    assert float(closer.payload["until"]) == duration
-    assert 3.0 <= duration - closer.t <= 5.0
-    # the closer must not open before the payoff it rides on
-    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
-    assert closer.t >= conclusion.t - 0.01
 
 
-def test_cheap_or_trap_is_held_long_enough_to_read(short_script):
-    from pipeline.timeline import SHORT_MIN_READABLE_S
-
-    duration = 68.0
-    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
-                                duration)
-    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
-    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
-
-    assert float(trap.payload["until"]) - trap.t >= SHORT_MIN_READABLE_S - 0.01
-    # it sits between the numbers sheet and the payoff, and the sheet gets
-    # its own readable window first
-    assert trap.t - numbers.t >= SHORT_MIN_READABLE_S - 0.01
-    rows = [c for c in cues if c.kind is CueKind.NUMBER_ROW]
-    assert max(c.t for c in rows) <= trap.t, "the sheet must finish typing before the cut"
 
 
-def test_a_short_without_the_trap_beat_still_builds(short_script):
-    """The beat is optional — scripts written to the four-beat format parse."""
-    script = short_script.model_copy(update={"cheap_or_trap": None})
-    duration = 68.0
-    cues = build_short_timeline(script, mock_words(script.audio_script, duration), duration)
-    assert not [c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP]
-    assert next(c for c in cues if c.kind is CueKind.CONCLUSION)
 
 
-def test_beat_variants_are_deterministic_and_rotate():
-    from pipeline.timeline import SHORT_BEAT_VARIANTS, pick_beat_variant
-
-    for beat, options in SHORT_BEAT_VARIANTS.items():
-        assert pick_beat_variant(beat, "abc123") == pick_beat_variant(beat, "abc123")
-        picked = {pick_beat_variant(beat, f"sha{i:04d}") for i in range(400)}
-        assert picked == set(options), f"{beat} never reached every variant"
-
-    # two different scripts should not share every beat layout
-    a = {b: pick_beat_variant(b, "script-one") for b in SHORT_BEAT_VARIANTS}
-    b = {b: pick_beat_variant(b, "script-two") for b in SHORT_BEAT_VARIANTS}
-    assert a != b
 
 
-def test_beat_variants_reach_the_cues(short_script):
-    duration = 68.0
-    cues = build_short_timeline(short_script, mock_words(short_script.audio_script, duration),
-                                duration)
-    hook = next(c for c in cues if c.kind is CueKind.HOOK)
-    numbers = next(c for c in cues if c.kind is CueKind.NUMBERS)
-    conclusion = next(c for c in cues if c.kind is CueKind.CONCLUSION)
-    for cue, beat in ((hook, "hook"), (numbers, "gutcheck"), (conclusion, "payoff")):
-        from pipeline.timeline import SHORT_BEAT_VARIANTS
-        assert cue.payload["variant"] in SHORT_BEAT_VARIANTS[beat]
 
 
 # ------------------------------------------------- tag -> cue coverage
@@ -576,22 +397,6 @@ def test_every_tag_type_is_drawn_or_deliberately_not_on_long():
     )
 
 
-def test_every_tag_type_is_drawn_or_deliberately_not_on_short():
-    from pipeline.models import SHORT_TAG_TYPES, TagType
-    from pipeline.timeline import _SHORT_NO_CUE_REASONS, _SHORT_TAG_TO_KIND
-
-    undecided = sorted(
-        t.value for t in TagType
-        # a tag a SHORT may not carry at all is the parser's problem, not the
-        # timeline's — the guarantee here covers everything that can arrive.
-        if t in SHORT_TAG_TYPES
-        and t not in _SHORT_TAG_TO_KIND
-        and t not in _SHORT_NO_CUE_REASONS
-    )
-    assert not undecided, (
-        f"{undecided} are allowed in a SHORT but build_short_timeline neither "
-        f"cues them nor records why not."
-    )
 
 
 def test_a_delivery_tag_on_a_long_renders_instead_of_crashing(long_valid_text, settings):
@@ -671,66 +476,10 @@ def _sndk_shaped(settings):
     return script
 
 
-def test_no_short_beat_is_planned_to_hold_past_the_ceiling(settings):
-    """The invariant, at the layer that decides it. A composition may not sit
-    unchanged longer than the format's own longest legitimate data hold."""
-    from pipeline.timeline import SHORT_DATA_HOLD_S
-
-    script = _sndk_shaped(settings)
-    duration = 80.0
-    ceiling = settings.short_max_hold_s
-    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
-                                duration, max_hold_s=ceiling)
-
-    over = []
-    for c in cues:
-        until = c.payload.get("until")
-        # Beats whose window is a STAGE CLAIM rather than a drawn composition:
-        # the thing on screen changes inside them. NUMBERS is carried by its
-        # NUMBER_ROW cues and CHEAP_OR_TRAP by its TRAP_LINE cues; the payoff
-        # and the bookends legitimately own the tail of the frame.
-        if until is None or c.kind in (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP,
-                                       CueKind.CONCLUSION, CueKind.HOST_CLOSE,
-                                       CueKind.HOST_OPEN):
-            continue
-        if float(until) - c.t > ceiling + 1e-6:
-            over.append((c.kind.value, round(c.t, 1), round(float(until) - c.t, 1)))
-    assert not over, f"planned to hold past {ceiling}s: {over}"
-    assert ceiling == SHORT_DATA_HOLD_S[1]
 
 
-def test_the_trap_lands_one_clause_at_a_time_not_as_a_paragraph(settings):
-    """It was a single panel carrying forty words, held from the moment it
-    landed until the payoff, while the caption underneath read it aloud."""
-    script = _sndk_shaped(settings)
-    duration = 80.0
-    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
-                                duration, max_hold_s=settings.short_max_hold_s)
-
-    lines = [c for c in cues if c.kind is CueKind.TRAP_LINE]
-    assert len(lines) >= 3, "the paragraph was not broken into beats"
-    times = [c.t for c in lines]
-    assert times == sorted(times)
-    # they must be spread across the beat, not stacked on one instant — an
-    # anchor resolving outside the beat's own window used to collapse them
-    assert len(set(round(t, 1) for t in times)) == len(times), times
-    trap = next(c for c in cues if c.kind is CueKind.CHEAP_OR_TRAP)
-    assert max(times) < float(trap.payload["until"])
 
 
-def test_headline_cards_are_removed_not_accumulated(settings):
-    """The Citi card landed at ~10s and was still there at 30s with the second
-    stacked under it, both shrunk to roughly 9px-equivalent on a phone."""
-    script = _sndk_shaped(settings)
-    duration = 80.0
-    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
-                                duration, max_hold_s=settings.short_max_hold_s)
-
-    heads = sorted((c for c in cues if c.kind is CueKind.HEADLINE), key=lambda c: c.t)
-    assert len(heads) >= 2
-    for a, b in zip(heads, heads[1:]):
-        assert float(a.payload["until"]) <= b.t + 1e-6, (
-            "a headline is still on screen when the next one lands")
 
 
 # ------------------------------------------------------- the written hold
@@ -778,30 +527,3 @@ def test_a_bare_tag_still_gets_the_format_s_own_default(settings):
             assert "hold" not in c.payload
 
 
-def test_a_short_tag_hold_pins_the_pacing_band(settings):
-    """On a SHORT the hold is negotiated inside a class band. A number the
-    writer wrote collapses the band onto it — there is nothing left to
-    negotiate, which is the point of writing one."""
-    from pipeline.parser_short import parse_short_script
-    from pipeline.timeline import build_short_timeline, plan_short_pacing
-
-    raw = json.loads(
-        (__import__("pathlib").Path(__file__).resolve().parents[1]
-         / "fixtures" / "scripts" / "short_valid.json").read_text(encoding="utf-8"))
-    raw["audio_script"] = (
-        raw["audio_script"].rstrip()
-        + " And here is the joke. [MEME: bagholder | hold=2.0] That was it.")
-    script, _ = parse_short_script(json.dumps(raw), settings)
-    meme = next(e for e in script.evidence_events()
-                if e.type.value == "MEME" and e.hold)
-    assert meme.hold == 2.0
-
-    duration = 75.0
-    cues = build_short_timeline(script, mock_words(script.audio_script, duration),
-                               duration)
-    tagged = next(c for c in cues
-                  if c.payload.get("tag") == "MEME" and c.payload.get("min_hold"))
-    assert (tagged.payload["min_hold"], tagged.payload["max_hold"]) == (2.0, 2.0)
-    kept, _ = plan_short_pacing(cues, duration)
-    landed = next(c for c in kept if c.payload.get("tag") == "MEME")
-    assert landed.payload["hold"] == pytest.approx(2.0, abs=0.01)

@@ -182,6 +182,22 @@ class Settings(BaseSettings):
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
     # target — the writer assembles chapters and runtime falls out of that.
+    # Which LONG engine renders a final (D6). "segments" is the tag-driven
+    # jump-cut compositor in `render_long.py`, which is what the bot has
+    # always used. "shots" is `render_long_shots.py`: the director picks nine
+    # chapter TYPES, each expands to its own shot list from
+    # `templates/chapters/`, and the composition goes through the same
+    # compositor the SHORT uses.
+    #
+    # The shots engine had its own committed samples and manifests and no
+    # path from any command — reachable only from `scripts/render_samples.py`
+    # — which is how a second render engine sat there being genuinely
+    # ambiguous about which code was live. It has a route now. The default
+    # does not move: the segments engine is what every finished video on the
+    # channel was cut with, and switching that is an editorial decision, not
+    # a defect fix.
+    long_render_engine: str = Field(default="segments",
+                                    alias="LONG_RENDER_ENGINE")
     long_max_chars: int = Field(default=36000, alias="LONG_MAX_CHARS")
     # The LONG parser's floor (C1). It used to reject only EMPTY input, so a
     # plain chat remark — "hold on, the revenue number in row 2 looks wrong"

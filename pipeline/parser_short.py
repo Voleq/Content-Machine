@@ -155,6 +155,15 @@ def vendor_name_hits(script: ShortScript) -> list[str]:
     return hits
 
 
+# Tag types a SHORT may carry that its renderer does not draw (D4). Delivery
+# tags are deliberately absent: those DO reach the voice.
+SHORT_IGNORED_TAG_TYPES = frozenset({
+    TagType.PLATE, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
+    TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT, TagType.MEME,
+    TagType.CLIP, TagType.BROLL, TagType.SCRIBBLE, TagType.CHART,
+})
+
+
 def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     """What the short's inline tags will and won't reach at render time.
 
@@ -174,19 +183,42 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
     from pipeline.plates import PlateError, load_plates
 
     out: list[str] = []
+
+    # SAY THAT THEY ARE NOT DRAWN (D4). The SHORT renderer is a fixed shot
+    # template: `templates/shots/<format>.json` fixes which plate carries each
+    # beat and `ShortResolver` binds text into it from the script's structured
+    # fields. It never consulted the inline tags, and the cue path that would
+    # have — `build_short_timeline` — had no caller and is gone.
+    #
+    # They are still tokenised, because the DELIVERY tags in the same stream
+    # do reach the voice. What changed is that a visual one is reported as
+    # ignored instead of validated as if it mattered.
+    ignored = sorted({e.type.value for e in script.inline_events
+                      if e.type in SHORT_IGNORED_TAG_TYPES})
+    if ignored:
+        out.append(
+            f"visual tags in a SHORT are not drawn — {', '.join(ignored)} "
+            f"{'were' if len(ignored) > 1 else 'was'} parsed and discarded. "
+            f"A short's visuals come from its shot template and its "
+            f"structured fields (hook_text, headlines, numbers, "
+            f"cheap_or_trap, conclusion); inline visual tags are LONG-form "
+            f"grammar. Nothing is broken — the beat still renders — but the "
+            f"instruction had no effect.")
+
     try:
         reg = load_plates(settings.assets_dir)
     except PlateError:
-        return out
-    for e in script.inline_events:
-        if e.type is not TagType.PLATE:
-            continue
-        # The payload is already the registry key and the values are already
-        # bound — re-parsing here would find a name with no assignments and
-        # report every plate as empty.
-        fill = check_bound(reg, e.payload, e.values, aspect="9x16")
-        out.extend(fill.problems)
-        out.extend(fill.warnings)
+        reg = None
+    if reg is not None:
+        for e in script.inline_events:
+            if e.type is not TagType.PLATE:
+                continue
+            # Still checked, because a plate key the writer names is a
+            # statement about the kit and a wrong one is worth knowing about
+            # — but see the note above: the renderer does not draw it.
+            fill = check_bound(reg, e.payload, e.values, aspect="9x16")
+            out.extend(fill.problems)
+            out.extend(fill.warnings)
 
     if not script.delivery_events():
         out.append(

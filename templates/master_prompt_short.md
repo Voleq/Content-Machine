@@ -67,78 +67,25 @@ The beats are fixed; the added runtime goes to keeping the viewer, never to more
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
-## THE TAG GRAMMAR — inline in `audio_script`
-Place a tag immediately before the word it should hit. The parser strips every tag out before anything is spoken or counted, and fires it on that word. Three kinds:
+## WHAT REACHES THE SCREEN, AND WHAT DOES NOT
 
-**Evidence — takes the frame for a beat.** Dennis cuts away to it and comes back.
-### [PLATE] — you name the plate and write what goes on it
-The kit is a library of drawn plates. YOU choose which one and YOU write every
-word and figure on it. The renderer puts your text in the declared slots and
-does nothing else — it never picks a plate and it never works out a number.
+**The visuals of a short are a fixed shot template, not something you place.**
+`templates/shots/short.json` decides which plate carries each beat and in what
+order; the renderer binds YOUR WORDS into its slots. So the way you control
+what a viewer sees is the structured fields below — `hook_text`,
+`move_summary`, `headlines`, `numbers` and `numbers_comment`, `turn_line`,
+`cheap_or_trap`, `conclusion` — and writing those well is the whole job.
 
-```
-[PLATE: hook-card-t1 | ticker=EXMPL | move=+29% | hook=a plateau in a costume | sub=five years of drift]
-[PLATE: numbers-sheet-3r-9x16 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=400,412,441,468,479,496]
-```
-
-SIX PERIODS, ALWAYS: four fiscal years, the last full year, LTM. A row whose
-length does not match the header is rejected, as is an unknown plate, an
-undeclared slot, and a plate this chapter's type may not use.
-
-**`marker-N` takes NUMBERS, not words — and in 9:16 it carries the peer number
-as well as the subject's.** `multiples-strip-9x16` draws a rail per row: the
-peer range low-to-high, with the subject marked on it.
-
-```
-[PLATE: multiples-strip-9x16 | unit=Multiples, current | head-subject=EXMPL
-  | label-1=P/E | subject-1=58.2x | marker-1=t:0.94, median:0.41
-  | label-2=EV / EBITDA | subject-2=42.7x | marker-2=t:0.88, median:0.38
-  | label-3=P/S | subject-3=28.4x | marker-3=t:1.4, median:0.44
-  | caption=Rail ends are p10 and p90 of 8 peers ]
-```
-
-* `t` is the subject's position and `median` is the peer set's, both on one
-  scale: `0` is the peer low, `1` is the peer high. Both come off the data
-  (`Peers!I` and `Peers!J`). Write them named — they look alike.
-* **`median:` IS NOT OPTIONAL HERE.** The portrait strip is three columns —
-  metric, subject, rail — and carries no median column at all. The tick the
-  rail draws IS the peer number, so leaving it out shows a position with
-  nothing to be positioned against. There is no `median-N` and no
-  `head-median` on this plate; writing either is rejected.
-* **THREE ROWS, NOT SIX.** The portrait strip is a re-author, not the landscape
-  one cropped. Pick the three metrics that carry the argument.
-* **`t` outside 0–1 is a real reading — write it as it comes.** The ends are the
-  10th and 90th percentile, so a subject priced above every peer is `t = 1.4`,
-  and that is the row worth saying out loud. The renderer puts the dot on the
-  end tick with a chevron past it. Do not clamp it to be safe.
-* **Never write words into `marker-N`**, and never colour a row `up` or `down`
-  here: cheap is not up and expensive is not down. Position carries the claim.
-* **`structure/multiple-bridge` does not exist in 9:16** — do not reach for it.
-* `multiples-strip` rows are METRICS; `peers/peer-strip` rows are COMPANIES.
-  They are inverses, not variants.
-- `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
-- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: 2]` picks the SECOND news row in the data above by number — use it when two of this week's headlines cover the same theme and the match could go either way; `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows in words; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
-- `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
-- `[IMG: query]` / `[PRODUCT: query]` — real imagery.
-- `[MEME: key]` / `[CLIP: key or subject]` — a meme is STILL and comes from the catalog above; a clip MOVES and may name any specific subject. Both take an optional `| hold=2.0` — seconds on screen, 0.8–5.0 — when you know whether it is a glance or a beat to sit in. Sparingly.
-
-Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are never cut short. Punctuation beats (a prop, a meme, a reaction) run 0.6–2 seconds over the frame. **Never put two data beats back to back** — with nothing between them the second one doesn't get read, and the renderer will move it.
-
-**Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
-- `[SCRIBBLE: style -> target]` — a drawn mark plus the target as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
+**Do not place inline visual tags.** `[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`,
+`[SHOW FILING]`, `[SHOW ARTICLE]`, `[SCREENGRAB]` and `[SCRIBBLE]` are LONG-form
+grammar. A short parses them, warns about them and draws none of them — they
+used to be tokenised, validated, costed and listed on a contact sheet before
+being discarded, which is work asked of you for nothing.
 
 **Delivery — never reaches the screen, only the voice.** The vocabulary, the mode each tag serves and the ceilings are in DELIVERY DIRECTION above, generated from the code that performs them. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short is plenty.
 
-Budget: roughly 22–30 visual events across the whole short. Two layers, and they are counted separately because they do different jobs:
-- **4–8 data beats** — a figure, a card, a filing, an article. These are READ, so each holds 3–8 seconds. More than eight and something gets cut short.
-- **8–14 punctuation beats** — a prop, a reaction, a transformation, a doodle. These ride over whatever is up for under two seconds and cost the viewer nothing. This is the layer that gives short-form its pulse, and it is the one scripts consistently under-write: eight is the FLOOR, not the target.
-
-Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
-
-**If a beat has a figure in it and no `[PLATE]`, the renderer draws the room. The room is not a beat.** Every number you say out loud needs a plate built to carry it. Reach for a DIFFERENT one each time — repeating one plate twice reads as a template.
-
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[PLATE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.

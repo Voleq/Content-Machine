@@ -130,6 +130,18 @@ class SegmentSpec:
     width: int
     height: int
     fps: int
+
+    @property
+    def frames(self) -> int:
+        """How many frames this segment IS, as an integer (D1).
+
+        The plan quantises every boundary onto the frame grid, so `duration`
+        is already a whole number of frames — this just says which number,
+        without going back through a formatted float. `-t 0.9667` at 30fps
+        is 30 frames, not the 29 the plan decided, because `-t` cuts at a
+        timestamp and a rounded string can land on the wrong side of one.
+        """
+        return max(int(round(self.duration * self.fps)), 1)
     inputs: tuple[tuple[str, ...], ...]      # ffmpeg -i argument groups
     filter_chain: str
     layout: str = ""
@@ -196,7 +208,16 @@ def _encode_one(spec: SegmentSpec, dest: Path, profile: EncodeProfile,
         "-filter_complex", spec.filter_chain,
         "-map", "[out]",
         "-an",
-        "-t", f"{spec.duration:.4f}",
+        # CUT ON FRAMES, NOT ON A TIMESTAMP (D1). `-t` takes a formatted
+        # float, and rounding it to four places can land either side of a
+        # frame boundary — 29/30 prints as 0.9667, which is longer than 29
+        # frames, so ffmpeg emitted 30. Every such rounding used to be lost
+        # into the concat and the picture crept ahead of the voice.
+        #
+        # `-t` stays as a generous upper bound so a source that could run
+        # forever still stops; `-frames:v` is what makes the count exact.
+        "-t", f"{(spec.frames + 1) / spec.fps:.4f}",
+        "-frames:v", str(spec.frames),
         "-r", str(spec.fps),
         *profile.video_args(),
         # Independently decodable: the concat demuxer needs a keyframe at the

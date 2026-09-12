@@ -675,11 +675,17 @@ nobody read.
 | `/render TICKER` | Renders the approved script for that ticker's lane. |
 | `/render_long TICKER` | Forces the LONG, for a ticker that has both. |
 | `/render_short TICKER` | Forces the SHORT, for a ticker that has both. |
-| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". |
+| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
 | `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
 | `/status` | The job queue. |
 | `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
+
+**Every render writes to a temp file and `os.replace`s into position**, after
+its length has been checked, so a failed re-render cannot destroy the good
+final that was already there. **Segment boundaries are quantised to whole
+frames at plan time** with the remainder carried forward, so the picture no
+longer creeps ahead of the voice across a long cut.
 
 **The lane decides the format, and it is declared rather than inferred.**
 `/short` or `/long` sets it once; `current_format()` returns it. It used to be

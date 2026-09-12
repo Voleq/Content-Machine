@@ -62,6 +62,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Callable
@@ -250,6 +251,29 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
     ]
 
 
+# A plate file's identity, for cache filenames that have to notice new art.
+# Content-hashed rather than mtime'd: the kit is rebuilt by running an engine,
+# so every ingest rewrites every file and an mtime would invalidate the whole
+# cache on a build that changed nothing.
+_PLATE_FINGERPRINTS: dict[tuple[str, int, float], str] = {}
+
+
+def _plate_fingerprint(path: Path) -> str:
+    """Eight hex characters of the plate file's content hash."""
+    st = path.stat()
+    ck = (str(path), st.st_size, st.st_mtime)
+    got = _PLATE_FINGERPRINTS.get(ck)
+    if got is None:
+        import hashlib
+
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for block in iter(lambda: fh.read(1 << 20), b""):
+                h.update(block)
+        got = _PLATE_FINGERPRINTS[ck] = h.hexdigest()[:8]
+    return got
+
+
 def _price_provenance(script, settings) -> dict:
     """`{source, degraded}` for a LONG that draws a price chart, else `{}`.
 
@@ -315,11 +339,16 @@ def render_long(
     chapters = _chapter_plan(script, duration, chapter_warnings.append)
     for w in chapter_warnings:
         log.warning("chapters: %s", w)
+    # The frame rate is decided BEFORE the plan, because the plan is what
+    # snaps the cuts onto the frame grid (D1). Letting each encode round its
+    # own `-t` independently is what put the picture ahead of the voice.
+    fps = settings.preview_fps if preview else settings.fps
     segments, seg_warnings = plan_long_segments(
         cues, duration,
         chapter_starts=[(t, ti) for t, ti, _ in chapters],
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
+        fps=fps,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -336,7 +365,6 @@ def render_long(
              else settings.proof_scale if proof else 1.0)
     W = int(FW * scale) // 2 * 2
     H = int(FH * scale) // 2 * 2
-    fps = settings.preview_fps if preview else settings.fps
 
     rdir = workspace / ("render_long_preview" if preview
                         else "render_long_draft" if draft
@@ -388,7 +416,12 @@ def render_long(
         plates_used.add(plate.key)
         key = (plate.key, "")
         if key not in room_cache:
-            dest = rdir / f"room_{plate.name}.png"
+            # The cache filename carries a hash of the SOURCE PLATE (D3).
+            # Keyed on the plate NAME alone, a workspace kept its pre-ingest
+            # art forever: rebuild the kit with new room drawings, re-render,
+            # and the file was already there so the old one was reused. The
+            # ingest looked like it had done nothing.
+            dest = rdir / f"room_{plate.name}_{_plate_fingerprint(plate.path)}.png"
             if not dest.exists():
                 Image.open(plate.path).convert("RGB").resize(
                     (W, H), Image.LANCZOS).save(dest)
@@ -1450,14 +1483,31 @@ def render_long(
     out_path = workspace / ("long_draft.mp4" if draft
                             else "long_proof.mp4" if proof
                             else "long_final.mp4")
-    composite_video(spec, profile, settings.audio_bitrate, out_path)
+    # Render beside the target, validate, then `os.replace` into position
+    # (D2). `composite_video` used to write straight over the existing file
+    # and the sanity check ran afterwards, so a failure at any point past
+    # that line left the operator with nothing — not the new render and not
+    # the good one they already had. A forty-minute build is a bad thing to
+    # lose twice. `segments._encode_one` already worked this way.
+    part = out_path.with_suffix(".part.mp4")
+    part.unlink(missing_ok=True)
+    composite_video(spec, profile, settings.audio_bitrate, part)
 
-    rendered = ffprobe_duration(out_path)
+    rendered = ffprobe_duration(part)
     if abs(rendered - duration) > 0.7:
+        part.unlink(missing_ok=True)
         raise RenderError(
             f"rendered duration {rendered:.2f}s deviates from the audio master "
             f"clock {duration:.2f}s"
         )
+    os.replace(part, out_path)
+    # `composite_video` writes its filtergraph beside its OUTPUT, so the
+    # sidecar followed the temp name. Move it with the file it describes —
+    # the manifest points at it, and the tests read it to check what was
+    # actually drawn.
+    part_filter = part.with_suffix(".filter.txt")
+    if part_filter.exists():
+        os.replace(part_filter, out_path.with_suffix(".filter.txt"))
 
     manifest_path = workspace / ("render_long_draft_manifest.json" if draft
                                  else "render_long_proof_manifest.json" if proof

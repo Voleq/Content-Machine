@@ -1259,12 +1259,24 @@ class BotCore:
                 if done == total or done % 5 == 0:
                     checkpoint(f"render {done}/{total} segments")
 
-            out, manifest = render_long(
-                script, tts, ws.path, self.settings, content=self.content,
-                draft=draft, broll_overrides=ws.broll_overrides(),
-                as_of=as_of, company_data=data,
-                on_progress=seg_progress,
-            )
+            if self.settings.long_render_engine == "shots" and not draft:
+                # The chapter-template engine (D6). Behind a setting rather
+                # than deleted: it is newer architecture, it shares the
+                # SHORT's compositor, and it had committed samples and no
+                # route from any command at all.
+                from pipeline.render_long_shots import render_long_shots
+
+                out, manifest = render_long_shots(
+                    script, tts, ws.path, self.settings,
+                    content=self.content, company_data=data,
+                )
+            else:
+                out, manifest = render_long(
+                    script, tts, ws.path, self.settings, content=self.content,
+                    draft=draft, broll_overrides=ws.broll_overrides(),
+                    as_of=as_of, company_data=data,
+                    on_progress=seg_progress,
+                )
             if draft:
                 job.delivered_link = f"file://{out}"
                 return str(out)
@@ -1373,6 +1385,9 @@ class BotCore:
         checkpoint(f"proof audio ({tts.tier}) — not the real voice")
         if short:
             checkpoint("render")
+            # `proof=True` picks `short_proof.mp4` (D5). It used to land on
+            # `short_final.mp4` and replace a paid final with a free-voice
+            # pass, which `/upload` would then send to YouTube.
             out, _ = render_short(script, tts, ws.path, self.settings,
                                   content=self.content, proof=True)
         else:

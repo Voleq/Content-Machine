@@ -497,14 +497,6 @@ class ShortScript(BaseModel):
     def scribble_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type is TagType.SCRIBBLE]
 
-    def evidence_events(self) -> list[TagEvent]:
-        """Inline tags that claim the frame — the short's own tag grammar.
-
-        Ordered by position in the spoken text, which is the order they fire.
-        """
-        return [e for e in self.inline_events
-                if e.type in SHORT_SEGMENT_TAG_TYPES]
-
     def delivery_events(self) -> list[TagEvent]:
         return [e for e in self.inline_events if e.type in DELIVERY_TAG_TYPES]
 

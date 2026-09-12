@@ -18,6 +18,15 @@ from pipeline.render_long import render_long
 from pipeline.timeline import build_long_timeline
 from pipeline.tts import TTSEngine
 
+
+# Several of these drive the renderer from a one-paragraph snippet, well below
+# the LONG parser's length floor (C1). The floor is asserted at its real
+# default in `tests/test_parser_long.py`.
+@pytest.fixture()
+def settings(settings):
+    return settings.model_copy(update={"long_min_chars": 0})
+
+
 RAW = """EXMPL is down sixty percent and nobody cares anymore. [CLIP: tumbleweed] Which is when I start reading.
 Here is what they actually do. [IMG: EXMPL logistics warehouse] Software for depots. Real customers. [SOUND: cash_register]
 The numbers, five years of them. [CHART: revenue] Revenue is a plateau wearing a growth costume. [SHOW FILING: income_statement.png] The filing says minus eighty nine million. [SOUND: windows_error] Every year wider. [MEME: harold-quick-flip-became-bagholder]
@@ -961,6 +970,7 @@ def test_a_gif_clip_reaches_the_renderer_marked_as_looping(tmp_path):
         workspace_dir=tmp_path / "ws", cache_dir=tmp_path / "cache",
         state_dir=tmp_path / "state",
         long_width=320, long_height=180,
+        LONG_MIN_CHARS=0,          # a one-paragraph snippet, not a script
         _env_file=None,
     )
     settings.ensure_runtime_dirs()
@@ -995,3 +1005,98 @@ def test_a_gif_clip_reaches_the_renderer_marked_as_looping(tmp_path):
         "the renderer lost the loop flag between the resolver and the cut"
     assert clip["end"] - clip["start"] == pytest.approx(4.5, abs=0.05), \
         "the hold the director wrote is not the length on screen"
+
+
+# --------------------------------------------------------------------------
+# GROUP D — render correctness. Each of these asserts on a file on disk.
+# --------------------------------------------------------------------------
+
+
+def test_a_failed_re_render_leaves_the_previous_final_intact(
+        settings, workspace, long_valid_text, monkeypatch):
+    """D2: `composite_video` wrote straight over the existing final and the
+    sanity check ran afterwards, so a failure past that line left nothing."""
+    from pipeline import render_long as rl
+
+    good = workspace / "long_final.mp4"
+    good.write_bytes(b"the paid final nobody wants to lose")
+
+    def explode(*a, **k):
+        raise RuntimeError("the encoder fell over")
+
+    monkeypatch.setattr(rl, "composite_video", explode)
+
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    tts = TTSEngine(settings).synthesize(script.narration, "long")
+
+    with pytest.raises(Exception):
+        rl.render_long(script, tts, workspace, settings)
+
+    assert good.read_bytes() == b"the paid final nobody wants to lose", \
+        "a failed render must not destroy the good one already there"
+
+
+def test_a_short_proof_does_not_overwrite_the_paid_final(settings, workspace):
+    """D5: `out_name` defaulted to the final's name and the proof call did
+    not override it, so a free-voice pass replaced a paid final — which
+    `/upload` would then send to YouTube."""
+    import inspect
+
+    from pipeline import render_short as rs
+
+    sig = inspect.signature(rs.render_short)
+    assert sig.parameters["out_name"].default is None, \
+        "the name must follow `proof`, not default to the final's"
+
+    src = inspect.getsource(rs.render_short)
+    assert 'out_name = "short_proof.mp4" if proof else "short_final.mp4"' in src
+
+
+def test_the_room_cache_notices_new_art(settings, tmp_path):
+    """D3: room backgrounds were cached by plate NAME, so a workspace kept
+    its pre-ingest art forever — the ingest looked like it did nothing."""
+    from pipeline.render_long import _plate_fingerprint
+
+    plate = tmp_path / "wide.png"
+    plate.write_bytes(b"the old drawing")
+    before = _plate_fingerprint(plate)
+
+    plate.write_bytes(b"the redrawn one, same name")
+    after = _plate_fingerprint(plate)
+
+    assert before != after, "new art must produce a new cache filename"
+
+
+def test_the_dead_short_cue_engine_is_gone(settings):
+    """D4: `build_short_timeline` had no caller, and `evidence_events` was
+    referenced only from inside it."""
+    from pipeline import timeline
+    from pipeline.models import ShortScript
+
+    assert not hasattr(timeline, "build_short_timeline")
+    assert not hasattr(timeline, "plan_short_pacing")
+    assert not hasattr(ShortScript, "evidence_events")
+
+
+def test_a_short_says_which_of_its_tags_will_not_be_drawn(settings,
+                                                          short_valid_json):
+    """D4: they were tokenised, validated, costed and listed on a contact
+    sheet, and never drawn. Now the report says so."""
+    from pipeline.parser_short import parse_short_script
+
+    script, warnings = parse_short_script(short_valid_json, settings)
+    assert any("not drawn" in w for w in warnings), warnings
+
+
+def test_the_second_long_engine_has_a_route_now(settings):
+    """D6: `render_long_shots` was reachable only from the sample script."""
+    from pathlib import Path
+
+    from bot import handlers
+
+    assert settings.long_render_engine == "segments", "the default does not move"
+    src = Path(handlers.__file__).read_text(encoding="utf-8")
+    assert "render_long_shots" in src, \
+        "a render engine with no caller is a render engine nobody can trust"
