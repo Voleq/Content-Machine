@@ -193,6 +193,60 @@ def test_the_shipped_dotenv_example_actually_loads():
     assert s.tts_usd_per_1k_chars > 0
 
 
+def _example_keys() -> set[str]:
+    """Every `NAME=` in `.env.example`, commented-out ones included.
+
+    A commented line still documents the setting — `# CACHE_DIR=` tells you
+    the knob exists and that blank is the default — which is the whole job
+    of this file.
+    """
+    import re
+
+    example = Path(__file__).resolve().parents[1] / ".env.example"
+    text = example.read_text(encoding="utf-8")
+    return set(re.findall(r"^\s*#?\s*([A-Z][A-Z0-9_]+)\s*=", text, re.M))
+
+
+def test_every_setting_is_discoverable_in_the_dotenv_example():
+    """`.env.example` is the ONLY discovery surface a setting has (P2).
+
+    Seventeen aliases had none. `OLLAMA_NUM_CTX` is the sharpest: unset, it
+    silently truncates every filing brief — the exact defect it was added to
+    fix — and an operator who never learns it exists gets confident briefs
+    built from half a section. `PUBLISH_HOUR` and `PUBLISH_TIMEZONE` are the
+    next worst: they decide when a video goes public, and inheriting them is
+    not the same as choosing them.
+
+    This is the cheap permanent close. A setting added without a line here
+    fails on the commit that adds it, which is the only moment the author
+    still knows what to write.
+    """
+    aliases = {f.alias for f in Settings.model_fields.values() if f.alias}
+    missing = sorted(aliases - _example_keys())
+    assert not missing, (
+        f"{len(missing)} setting(s) exist in Settings and are documented "
+        f"nowhere an operator will look:\n  " + "\n  ".join(missing)
+        + "\n\nAdd each to .env.example with its default and a one-line "
+          "comment saying what goes wrong when it is left alone.")
+
+
+def test_the_dotenv_example_does_not_document_settings_that_are_gone():
+    """The same lie in the other direction, and the one Group L would have
+    left behind: eleven `EXCEL_*` keys describing a subsystem that had been
+    deleted. A name here that resolves to nothing is an operator setting a
+    value and waiting for an effect that cannot arrive.
+    """
+    fields = Settings.model_fields
+    known = {f.alias for f in fields.values() if f.alias}
+    # Fields with no explicit alias are still settable by their own name,
+    # case-insensitively — that is pydantic-settings' default.
+    known |= {name.upper() for name in fields}
+    stale = sorted(_example_keys() - known)
+    assert not stale, (
+        "documented in .env.example and read by nothing:\n  "
+        + "\n  ".join(stale))
+
+
 # --------------------------------------------------------------- the mix
 # One setting the operator tunes by listening, so it has to survive being typed
 # by hand into a .env. The chapter-silence list was the other one, and it went
