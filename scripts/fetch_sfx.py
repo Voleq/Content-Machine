@@ -28,6 +28,12 @@ Until this script has run, the block is what an operator sees.
     python scripts/fetch_sfx.py --force     # re-fetch everything
     python scripts/fetch_sfx.py --dry-run   # show what it would take
 
+The room bed is ON by default (`--room-tone` is `store_true, default=True`),
+so passing it explicitly changes nothing. It is also not the whole job: the
+audio gate is PER FILE, so fixing room tone alone leaves the other fourteen
+blocking. This script exits non-zero until every audio file in the target
+directory carries provenance.
+
 Without a key it explains what to set and exits non-zero rather than silently
 leaving the oscillators in place.
 """
@@ -48,7 +54,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from pipeline.audio_assets import (  # noqa: E402
+    AUDIO_SUFFIXES,
     ROOM_TONE_NAME,
+    SIDECAR_NAME,
     TARGET_PEAK_DBFS,
     AudioSource,
     load_sources,
@@ -258,19 +266,63 @@ def main(argv: list[str] | None = None) -> int:
                 print("not found")
 
     path = save_sources(out, known)
-    still = [k for k in wanted
-             if known.get(f"{k}.wav") is None or known[f"{k}.wav"].generated]
+    # WHAT THE GATE WILL SEE, not what this script set out to fetch.
+    #
+    # `still` used to be computed over `QUERIES` alone — fourteen keys — while
+    # `check_audio` reads the DIRECTORY and counts any file without a
+    # provenance entry as a placeholder. `room_tone.wav` is not a query key,
+    # so a run where every effect downloaded and the room bed did not exited
+    # 0 and left every final render blocked, with nothing connecting the two.
+    # The same is true of any file an operator drops in by hand.
+    #
+    # So this asks the gate's own question, of the gate's own directory.
+    unattributed = _unattributed(out, known)
     print()
     print(f"fetched     : {fetched}")
     print(f"provenance  : {path}")
-    print(f"still fake  : {len(still)}" + (f" — {', '.join(still)}" if still else ""))
     attribution = [s for s in known.values()
                    if s.real and "attribution" in s.licence.lower()]
     if attribution:
         print(f"ATTRIBUTION REQUIRED for {len(attribution)} file(s):")
         for s in attribution:
             print(f"   {s.name:20s} {s.author}  {s.source}")
-    return 0 if not still else 1
+    if not unattributed:
+        print("still fake  : 0 — every audio file in this directory is "
+              "attributed, so `check_audio` will pass.")
+        return 0
+    print(f"\nINCOMPLETE — {len(unattributed)} audio file(s) in {out} have no "
+          f"`generated: false` entry in {SIDECAR_NAME}:", file=sys.stderr)
+    for name in unattributed:
+        why = ("no entry" if known.get(name) is None
+               else "entry says generated: true")
+        print(f"   {name:20s} {why}", file=sys.stderr)
+    print("\nEvery one of these BLOCKS a final render outside MOCK_MODE "
+          "(pipeline.gates.check_audio), not just the ones this script knows "
+          "how to query. Re-run to retry, or replace the file by hand and add "
+          "its entry.\nDo NOT hand-write `generated: false` for a file that is "
+          "still an oscillator — that defeats the gate rather than passing it.",
+          file=sys.stderr)
+    return 1
+
+
+def _unattributed(directory: Path, known: dict) -> list[str]:
+    """Audio files in `directory` the audio gate will call placeholders.
+
+    Deliberately the same rule as `pipeline.audio_assets.generated_audio`:
+    read off the directory, and treat a missing entry as generated. Two
+    implementations of one question is how they come to disagree, and the
+    disagreement here is a silent render block.
+    """
+    out: list[str] = []
+    if not directory.is_dir():
+        return out
+    for f in sorted(directory.iterdir()):
+        if f.suffix.lower() not in AUDIO_SUFFIXES:
+            continue
+        entry = known.get(f.name)
+        if entry is None or entry.generated:
+            out.append(f.name)
+    return out
 
 
 if __name__ == "__main__":

@@ -22,7 +22,9 @@ trusted to be live, and is connected to nothing.
 
 from __future__ import annotations
 
+import os
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -159,3 +161,249 @@ def test_every_plate_a_template_names_resolves(registry):
     assert not problems, (
         "named in a template and absent from the kit:\n  "
         + "\n  ".join(problems))
+
+
+# --------------------------------------------------------------------------
+# The audio provenance gate (P0b).
+# --------------------------------------------------------------------------
+#
+# THIS IS A GATE, NOT A BUG. It fails on a fresh checkout and it is supposed
+# to: `assets/sfx/` ships fifteen ffmpeg oscillators with no `SOURCES.json`
+# beside them, `generated_audio` counts a file with no provenance entry as
+# generated, and `check_audio` therefore blocks every final render outside
+# MOCK_MODE. All fifteen, not just the room bed — the gate is per file.
+#
+# The fix is an OPERATOR action and nobody else's:
+#
+#     export FREESOUND_API_KEY=...
+#     python scripts/fetch_sfx.py
+#     python scripts/check_sfx.py      # must report zero placeholders
+#
+# Do not route around this by hand-writing `generated: false` for a file that
+# is still a sine sweep. That turns a gate that works into a gate that lies,
+# and the thing it is guarding is a synthesised cash register reaching a
+# published video.
+
+
+def _sfx_dir() -> Path:
+    return ASSETS / "sfx"
+
+
+@pytest.mark.audio_provenance
+def test_every_shipped_sound_has_provenance():
+    """Every audio file under `assets/sfx/` carries a `SOURCES.json` entry
+    saying where it came from and that it is not generated.
+
+    Asserted on `generated_audio` — the function the blocking gate actually
+    calls — rather than on the sidecar's contents, so this passes exactly
+    when a final render would be allowed to proceed and not a moment before.
+    """
+    from pipeline.audio_assets import generated_audio
+
+    settings = Settings(MOCK_MODE=True, assets_dir=ASSETS, _env_file=None)
+    placeholders = generated_audio(settings)
+    assert not placeholders, (
+        f"{len(placeholders)} of the sound files a render plays are "
+        f"synthesised placeholders, so `check_audio` BLOCKS every final "
+        f"render outside MOCK_MODE:\n  " + "\n  ".join(placeholders)
+        + "\n\nThis is the audio provenance gate doing its job, not a test to "
+          "fix. An operator runs:\n"
+          "    export FREESOUND_API_KEY=...\n"
+          "    python scripts/fetch_sfx.py\n"
+          "    python scripts/check_sfx.py\n"
+          "Never hand-write `generated: false` for an oscillator.")
+
+
+def test_the_fetch_script_fails_on_a_file_it_does_not_know_how_to_query():
+    """`fetch_sfx.py` has to finish by asking the GATE's question.
+
+    It used to compute "still fake" over its own fourteen query keys, while
+    `check_audio` reads the directory and counts any file without provenance
+    as a placeholder. So a run that attributed every key it knew about exited
+    0 — reporting success — while a file outside that list left every final
+    render blocked with nothing connecting the two. `room_tone.wav` is not a
+    query key; neither is anything an operator drops in by hand.
+
+    Run as a subprocess against a throwaway directory, because the exit code
+    is the whole contract and a helper called directly would pass whatever
+    `main` actually does.
+    """
+    import importlib.util
+    import subprocess
+    import tempfile
+
+    from pipeline.audio_assets import AudioSource, save_sources
+
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_sfx", ROOT / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    keys = list(mod.QUERIES)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        sfx = Path(tmp)
+        attributed = {}
+        for i, key in enumerate(keys + ["room_tone"]):
+            (sfx / f"{key}.wav").write_bytes(b"RIFF")
+            attributed[f"{key}.wav"] = AudioSource(
+                name=f"{key}.wav", source=f"freesound.org/s/{i}/",
+                licence="CC0", author="someone", generated=False)
+        # One file the script has no query for, with no provenance — exactly
+        # what an unfetchable room bed or a hand-dropped effect looks like.
+        (sfx / "applause.wav").write_bytes(b"RIFF")
+        save_sources(sfx, attributed)
+
+        env = {"PATH": os.environ.get("PATH", ""),
+               "PYTHONPATH": str(ROOT),
+               # A key so `main` gets past the token check; nothing is
+               # fetched because every query key is already attributed.
+               "FREESOUND_API_KEY": "not-used-offline"}
+        got = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "fetch_sfx.py"),
+             "--out", str(sfx)],
+            capture_output=True, text=True, env=env, cwd=ROOT, timeout=120)
+
+        assert got.returncode == 1, (
+            "the script reported success while a file with no provenance "
+            "was still blocking every final render:\n"
+            + got.stdout + got.stderr)
+        assert "applause.wav" in got.stderr
+        assert "INCOMPLETE" in got.stderr
+        assert "BLOCKS a final render" in got.stderr
+
+        # …and it reports success once that file is attributed too.
+        attributed["applause.wav"] = AudioSource(
+            name="applause.wav", source="freesound.org/s/99/",
+            licence="CC0", author="someone", generated=False)
+        save_sources(sfx, attributed)
+        ok = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "fetch_sfx.py"),
+             "--out", str(sfx)],
+            capture_output=True, text=True, env=env, cwd=ROOT, timeout=120)
+        assert ok.returncode == 0, ok.stdout + ok.stderr
+        assert "still fake  : 0" in ok.stdout
+
+
+def test_the_fetch_script_and_the_gate_share_one_definition_of_audio():
+    """Two implementations of "which files are placeholders" is how they come
+    to disagree, and the disagreement is a silent render block: a file the
+    script does not consider audio but the gate does gets reported as fetched
+    and refuses every final render.
+
+    Exercised against a directory holding more than one container, because
+    `assets/sfx/` happens to be all `.wav` — so a narrowed suffix list there
+    would look identical either way.
+    """
+    import importlib.util
+    import tempfile
+
+    from pipeline.audio_assets import generated_audio, load_sources
+
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_sfx_defs", ROOT / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        assets = Path(tmp)
+        sfx = assets / "sfx"
+        sfx.mkdir(parents=True)
+        for name in ("ding.wav", "crowd.mp3", "bed.ogg", "notes.txt"):
+            (sfx / name).write_bytes(b"RIFF")
+        settings = Settings(MOCK_MODE=True, assets_dir=assets, _env_file=None)
+
+        theirs = mod._unattributed(sfx, load_sources(sfx))
+        ours = [p.removeprefix("sfx/") for p in generated_audio(settings)]
+        assert theirs == ours, (
+            "fetch_sfx.py and the audio gate disagree about which files are "
+            f"placeholders: script says {theirs}, gate says {ours}")
+        assert ours == ["bed.ogg", "crowd.mp3", "ding.wav"], ours
+        assert "notes.txt" not in " ".join(ours)
+
+    # …and on the real directory too, which is the one that matters.
+    sfx = _sfx_dir()
+    settings = Settings(MOCK_MODE=True, assets_dir=ASSETS, _env_file=None)
+    assert (mod._unattributed(sfx, load_sources(sfx))
+            == [p.removeprefix("sfx/") for p in generated_audio(settings)])
+
+
+def test_the_room_bed_is_not_the_whole_job():
+    """Two things that were documented wrongly, and both mattered.
+
+    `--room-tone` is `store_true, default=True` — already on — so passing it
+    explicitly changes nothing and calling it required is wrong. And the room
+    bed is one file of fifteen: an operator who fetched only that would have
+    found fourteen blockers left and no explanation of why the render still
+    refused.
+    """
+    import importlib.util
+    import tempfile
+
+    from pipeline.audio_assets import AudioSource, generated_audio, save_sources
+
+    spec = importlib.util.spec_from_file_location(
+        "_fetch_sfx_flags", ROOT / "scripts" / "fetch_sfx.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+
+    # The flag is on without being asked for.
+    assert mod.main.__module__
+    parser_default = mod.argparse.ArgumentParser()
+    del parser_default
+    src = (ROOT / "scripts" / "fetch_sfx.py").read_text(encoding="utf-8")
+    assert '"--room-tone", action="store_true", default=True' in src.replace(
+        "\n                    ", " "), "the room bed stopped defaulting on"
+    assert len(mod.QUERIES) >= 14, "the effect taxonomy shrank"
+
+    # And one attributed file does not clear the gate for the rest.
+    with tempfile.TemporaryDirectory() as tmp:
+        assets = Path(tmp)
+        sfx = assets / "sfx"
+        sfx.mkdir(parents=True)
+        for name in ("room_tone.wav", "cash_register.wav", "ding.wav"):
+            (sfx / name).write_bytes(b"RIFF")
+        save_sources(sfx, {"room_tone.wav": AudioSource(
+            name="room_tone.wav", source="freesound.org/s/1/",
+            licence="CC0", author="someone", generated=False)})
+        settings = Settings(MOCK_MODE=True, assets_dir=assets, _env_file=None)
+        assert generated_audio(settings) == ["sfx/cash_register.wav",
+                                             "sfx/ding.wav"]
+
+
+def test_the_sfx_check_script_passes_only_when_a_render_could_proceed():
+    """`scripts/check_sfx.py` is what the operator runs, so its exit code is
+    the contract — not the text it prints. Exercised both ways against a
+    throwaway assets dir, because on this checkout it can only ever fail."""
+    import subprocess
+    import tempfile
+
+    from pipeline.audio_assets import AudioSource, save_sources
+
+    def _run(assets: Path) -> subprocess.CompletedProcess:
+        env = {"PATH": os.environ.get("PATH", ""),
+               "MOCK_MODE": "true", "ASSETS_DIR": str(assets),
+               "PYTHONPATH": str(ROOT)}
+        return subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "check_sfx.py")],
+            capture_output=True, text=True, env=env, cwd=ROOT)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        assets = Path(tmp)
+        sfx = assets / "sfx"
+        sfx.mkdir(parents=True)
+        (sfx / "ding.wav").write_bytes(b"RIFF")
+        (sfx / "pop.wav").write_bytes(b"RIFF")
+
+        bad = _run(assets)
+        assert bad.returncode == 1, bad.stdout + bad.stderr
+        assert "BLOCKED" in bad.stderr
+        assert "ding.wav" in bad.stderr and "pop.wav" in bad.stderr
+
+        save_sources(sfx, {
+            name: AudioSource(name=name, source=f"freesound.org/s/{i}/",
+                              licence="CC0", author="someone", generated=False)
+            for i, name in enumerate(("ding.wav", "pop.wav"))})
+        good = _run(assets)
+        assert good.returncode == 0, good.stdout + good.stderr
+        assert "PASS" in good.stdout
+

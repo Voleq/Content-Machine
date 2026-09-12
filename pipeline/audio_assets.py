@@ -34,6 +34,11 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 SIDECAR_NAME = "SOURCES.json"
+# What counts as an audio file here. One definition, because
+# `scripts/fetch_sfx.py` has to ask this module's exact question when
+# it decides whether it finished: a file it does not recognise but the
+# gate does is a silent render block (P0b).
+AUDIO_SUFFIXES = (".wav", ".mp3", ".m4a", ".ogg")
 
 # Every generated file is normalised to this peak so one cue is never four
 # times louder than the next. `fetch_sfx.py` matches it, so swapping a
@@ -122,7 +127,7 @@ def generated_audio(settings) -> list[str]:
         return out
     known = load_sources(directory)
     for path in sorted(directory.iterdir()):
-        if path.suffix.lower() not in (".wav", ".mp3", ".m4a", ".ogg"):
+        if path.suffix.lower() not in AUDIO_SUFFIXES:
             continue
         entry = known.get(path.name)
         if entry is None or entry.generated:

@@ -84,3 +84,17 @@ addopts = "-q"
 filterwarnings = [
     "ignore::DeprecationWarning:telegram.*",
 ]
+markers = [
+    # A GATE, not a test. `audio_provenance` fails on a fresh checkout
+    # because `assets/sfx/` ships ffmpeg oscillators with no SOURCES.json,
+    # which is exactly the state that blocks a final render — so a green
+    # suite here would be the suite lying about a production blocker.
+    #
+    # An operator clears it by running `scripts/fetch_sfx.py`. Anyone who
+    # needs a clean run before that can deselect it:
+    #
+    #     pytest -m "not audio_provenance"
+    #
+    # Deselecting it does not clear the render block; only the fetch does.
+    "audio_provenance: a build product the operator must fetch (P0b)",
+]
