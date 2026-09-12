@@ -732,6 +732,24 @@ def render_frames(result: BuildResult, resolver, duration: float,
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _provenance(script, settings, workspace: Path, duration: float,
+                prices, tts, format_name: str, *, proof: bool):
+    """The render's provenance record (N3)."""
+    from pipeline import provenance as prov
+
+    label = format_name or "short"
+    if proof:
+        label = f"{label}-proof"
+    return prov.build(
+        ticker=getattr(script, "ticker", ""), fmt=label,
+        workdate=workspace.name, duration_s=duration,
+        prices=prices,
+        # A SHORT's visuals are the shot template's plates plus whatever the
+        # resolver fetched; the fetched half is what has provenance worth
+        # recording, and a SHORT fetches none today.
+        visual_sources={}, filings={}, tts=tts, settings=settings)
+
+
 def render_short(script, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
                  out_name: str | None = None,
@@ -914,6 +932,10 @@ def render_short(script, tts, workspace: Path, settings, *,
             "source": getattr(prices, "source", ""),
             "degraded": bool(getattr(prices, "degraded", False)),
         },
+        # THE WHOLE RECORD (N3). Same shape as the LONG's, so the delivery
+        # message is built the same way for both formats.
+        "provenance": _provenance(script, settings, Path(workspace), duration,
+                                  prices, tts, fmt.name, proof=proof).to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
         "shots": [{

@@ -465,12 +465,16 @@ def test_run_gates_is_silent_on_a_clean_script(settings, data, long_valid_text):
     assert not blocking, report.text()
 
 
-def test_the_skeptic_never_runs_offline(settings, long_valid_text):
-    """MOCK_MODE must not reach the network, so the pass simply does not run."""
+def test_the_skeptic_never_runs_offline_and_says_so(settings, long_valid_text):
+    """MOCK_MODE must not reach the network, so the pass does not run — and
+    it now reports WHY rather than returning the same `[]` a clean script
+    gets (N2)."""
     from pipeline.gates import skeptic_notes
 
     assert settings.mock_mode
-    assert skeptic_notes("anything at all", settings) == []
+    notes, why = skeptic_notes("anything at all", settings)
+    assert notes == []
+    assert why == "mock"
 
 
 def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):

@@ -61,6 +61,17 @@ class Finding:
 @dataclass
 class GateReport:
     findings: list[Finding] = field(default_factory=list)
+    # WHAT EACH GATE DID, not just what it found (N2).
+    #
+    # This held only `findings`, so a gate that ran and found nothing and a
+    # gate that never ran both contributed zero and were indistinguishable.
+    # `skeptic_notes` makes it concrete: it returns `[]` when the LLM is
+    # unavailable and `[]` when the script is clean.
+    #
+    # For a record whose entire purpose is honesty about what happened,
+    # "clean" and "did not check" must not render the same way. Values are
+    # `ok` / `warn` / `block` / `skipped:<why>`.
+    ran: dict[str, str] = field(default_factory=dict)
 
     @property
     def blocking(self) -> list[Finding]:
@@ -69,6 +80,36 @@ class GateReport:
     @property
     def ok(self) -> bool:
         return not self.findings
+
+    def record(self, gate: str, findings: list[Finding]) -> list[Finding]:
+        """Note that `gate` ran, at the worst severity it reported."""
+        worst = "ok"
+        for f in findings:
+            if f.severity == "block":
+                worst = "block"
+                break
+            if f.severity == "warn":
+                worst = "warn"
+        self.ran[gate] = worst
+        return findings
+
+    def skipped(self, gate: str, why: str) -> None:
+        self.ran[gate] = f"skipped:{why}"
+
+    def ran_line(self) -> str:
+        """The provenance record's gates line.
+
+        A skipped gate reads differently from a clean one, which is the
+        whole point of the field.
+        """
+        marks = {"ok": "✓", "warn": "⚠", "block": "⛔"}
+        bits = []
+        for gate, state in sorted(self.ran.items()):
+            if state.startswith("skipped:"):
+                bits.append(f"{gate} SKIPPED ({state.split(':', 1)[1]})")
+            else:
+                bits.append(f"{gate} {marks.get(state, state)}")
+        return " · ".join(bits)
 
     def text(self, limit: int = 20) -> str:
         if self.ok:
@@ -2009,25 +2050,31 @@ _SKEPTIC_SYSTEM = (
 
 
 def skeptic_notes(narration: str, settings: Settings,
-                  max_chars: int = 12000) -> list[Finding]:
+                  max_chars: int = 12000) -> tuple[list[Finding], str]:
     """A separate read of the finished script as a hostile investor.
+
+    Returns `(findings, skip_reason)`. The second half is what makes "clean"
+    distinguishable from "did not check" (N2): this returned `[]` for both,
+    and a gate whose silence means two opposite things is not a gate.
 
     Advisory by construction: the result is appended to the validation report
     as notes. It never rewrites and never blocks.
     """
-    from pipeline.llm import chat
+    from pipeline.llm import chat_result
 
     body = narration[:max_chars]
-    out = chat(
+    out = chat_result(
         f"Script:\n\n{body}\n\n"
         "List at most 5 items. One line each, format: `weakness — counterargument`.",
         settings, system=_SKEPTIC_SYSTEM, purpose="skeptic",
     )
     if not out:
-        return []
-    notes = [ln.strip(" -•\t") for ln in out.splitlines() if ln.strip()]
+        # The REASON, so `run_gates` can say `skipped:no_daemon` rather than
+        # letting a dead daemon read as a clean script (N2).
+        return [], out.reason
+    notes = [ln.strip(" -•\t") for ln in out.text.splitlines() if ln.strip()]
     return [Finding(gate="skeptic", severity="warn", message=n)
-            for n in notes[:5]]
+            for n in notes[:5]], ""
 
 
 # --------------------------------------------------------------------------
@@ -2049,20 +2096,40 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     """
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
-    report.findings += fact_check(narration, data)
-    report.findings += onscreen_fact_check(script, data)
-    report.findings += voice_lint(delivery_text(script))
-    report.findings += direction_lint(script)
-    report.findings += confession_lint(script, settings)
-    report.findings += valuation_moves(script, settings)
-    report.findings += budget_check(script, settings)
-    report.findings += check_freshness(as_of, settings, workspace=workspace)
-    report.findings += check_audio(settings, final=final)
-    report.findings += check_prices(script, settings, final=final)
+    # Every gate records that it RAN, at the worst severity it reported (N2).
+    # A gate that ran and found nothing used to look exactly like one that
+    # never ran, and for a record whose whole purpose is honesty about what
+    # happened, those cannot render the same way.
+    report.findings += report.record("fact-check", fact_check(narration, data))
+    report.findings += report.record("on-screen",
+                                     onscreen_fact_check(script, data))
+    report.findings += report.record("voice", voice_lint(delivery_text(script)))
+    report.findings += report.record("direction", direction_lint(script))
+    report.findings += report.record("confession",
+                                     confession_lint(script, settings))
+    report.findings += report.record("valuation",
+                                     valuation_moves(script, settings))
+    report.findings += report.record("budgets", budget_check(script, settings))
+    report.findings += report.record(
+        "freshness", check_freshness(as_of, settings, workspace=workspace))
+    report.findings += report.record("audio",
+                                     check_audio(settings, final=final))
+    report.findings += report.record(
+        "prices", check_prices(script, settings, final=final))
     kit_findings, kit_stats = kit_doctor(script, settings)
-    report.findings += kit_findings
+    report.findings += report.record("kit", kit_findings)
     if skeptic:
-        report.findings += skeptic_notes(narration, settings)
-    log.info("gates: %d findings (%d blocking); kit uses %d assets",
-             len(report.findings), len(report.blocking), len(kit_stats["used"]))
+        notes, why = skeptic_notes(narration, settings)
+        report.findings += report.record("skeptic", notes)
+        if why:
+            report.skipped("skeptic", why)
+    else:
+        report.skipped("skeptic", "not requested")
+    if data is None:
+        # The two gates that compare against the workbook cannot have run.
+        report.skipped("fact-check", "no company data")
+        report.skipped("on-screen", "no company data")
+    log.info("gates: %d findings (%d blocking); kit uses %d assets; %s",
+             len(report.findings), len(report.blocking),
+             len(kit_stats["used"]), report.ran_line())
     return report

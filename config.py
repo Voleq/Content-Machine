@@ -386,8 +386,51 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = Field(default="http://127.0.0.1:11434",
                                  alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
-    ollama_timeout_s: float = 120.0
+    # THE MODEL THE FILING BRIEF WAS SIZED FOR (K2b). Dense 12B, 256K
+    # context, ~8GB at int4 QAT — fits an RTX 3060 12GB with headroom for
+    # the KV cache. Needs Ollama 0.22 or newer.
+    #
+    # Three properties drove the choice and are worth preserving if you swap:
+    #
+    # - Context. 24k-character sections are fine anywhere, but the
+    #   CONDENSATION pass has to hold every section summary from up to four
+    #   filings plus the workbook dashboard at once. A 32K-context model
+    #   gets tight there.
+    # - Dense, not MoE. A model that spills into system RAM has
+    #   unpredictable latency, and latency failures here are invisible (see
+    #   `ollama_timeout_s` below).
+    # - Fully resident in VRAM. The box renders video on the same hardware.
+    #   ffmpeg's x264 work is CPU-side so contention is minimal, but only if
+    #   the model stays loaded — set `OLLAMA_KEEP_ALIVE` to at least `30m`
+    #   or every section call pays an 8GB reload.
+    #
+    # `qwen3:14b` (~9GB Q4_K_M) is the fallback if the briefs come out thin:
+    # the stronger general reasoner, with a 32K context and a tighter fit.
+    #
+    # A box with a different model pulled sets `OLLAMA_MODEL`. Getting this
+    # wrong costs the optional passes (no brief, no skeptic read, each
+    # saying so) and never a render.
+    ollama_model: str = Field(default="gemma4:12b-it-qat", alias="OLLAMA_MODEL")
+    # The context window Ollama is TOLD to use (K2). Its default has
+    # historically been 2048-4096 tokens; `filings_llm_max_chars` is 24000
+    # (~6,000 tokens), and Ollama does not error on an overflowing prompt —
+    # it drops the front and summarises what remains, so roughly half of
+    # every 10-K section fell off and the brief came back plausible,
+    # confident and partly fiction.
+    #
+    # Here rather than in an Ollama Modelfile: a Modelfile works and hides a
+    # load-bearing value somewhere the repository cannot see, audit or test,
+    # and the whole reason this defect existed is that the budget lived in
+    # one place and the context limit in another.
+    #
+    # `scripts/check_llm_context.py` proves it is actually taking effect.
+    ollama_num_ctx: int = Field(default=16384, alias="OLLAMA_NUM_CTX")
+    # Raised from 120s (K2). Two full 10-Ks is a dozen-plus calls on a
+    # background job with no user waiting on it, and a timeout used to be
+    # swallowed as "unavailable" at debug level — indistinguishable from a
+    # missing daemon. It is logged at warning level now, because a pass that
+    # nearly worked is different information from one that never started.
+    ollama_timeout_s: float = Field(default=300.0, alias="OLLAMA_TIMEOUT_S")
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")

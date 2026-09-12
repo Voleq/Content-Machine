@@ -1604,6 +1604,14 @@ class BotCore:
                 job.delivered_link = f"file://{send_file} (send failed)"
 
         extras = self._byproduct_lines(result)
+        # THE PROVENANCE RECORD RIDES ON THE DELIVERY (N3). Not a command:
+        # the failure mode here is nobody looking, and a `/provenance`
+        # gets typed when you already suspect something is wrong — which is
+        # exactly when you do not need it. Attached to the link, it arrives
+        # whether or not you thought to ask.
+        record = self._provenance_text(job)
+        if record:
+            extras = extras + ["", record]
         if self.queue:
             fresh = self.queue.store.load(job.id)
             if fresh:
@@ -1612,6 +1620,29 @@ class BotCore:
                 fresh.byproducts = extras
                 self.queue.store.save(fresh)
         self._record_thesis(job)
+
+    def _provenance_text(self, job: JobRecord) -> str:
+        """The record, read back off the manifest the render just wrote.
+
+        Off the MANIFEST rather than rebuilt, so the machine-readable copy
+        and the words the operator reads cannot say different things.
+        """
+        import json as _json
+
+        from pipeline.provenance import Provenance
+
+        ws = Workspace(self.settings, job.ticker, job.workdate)
+        for name in ("render_long_manifest.json", "short_final.manifest.json",
+                     "render_long_proof_manifest.json",
+                     "short_proof.manifest.json"):
+            try:
+                data = _json.loads((ws.path / name).read_text(encoding="utf-8"))
+            except (FileNotFoundError, _json.JSONDecodeError, OSError):
+                continue
+            block = data.get("provenance")
+            if block:
+                return Provenance.from_json(block).render_text()
+        return ""
 
     @staticmethod
     def _byproduct_lines(result) -> list[str]:

@@ -59,7 +59,12 @@ Excel; the refresh happens on the operator's own machine.)
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[SCREENGRAB]` tags **block** the render until the operator's capture exists | `validate_long_script` + `assets/custom/` |
 | Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
+| A stated quarterly figure is checked against the `Quarters` sheet, and a sentence that names a quarter is checked against THAT column | `pipeline/gates.py` `fact_check`, `_quarter_indices`; the earnings format was structurally unverifiable without it |
+| A quarterly move is never reported as one number: QoQ and YoY-same-quarter are always shown as a labelled pair, a rate moves in points, and a loss is shown as two values rather than a percentage of a negative base | `CompanyData.quarter_moves`, `quarters_prompt_block` |
 | A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
+| Every finished render carries a provenance record — where the prices came from, what the visuals were, which filings, which voice at what cost, which LLM provider, and which gates actually ran — on the manifest and in the delivery message, unasked | `pipeline/provenance.py`; written by both renderers, read back off the manifest by `_finish` so the two cannot drift |
+| The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
+| Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
 | Every file under `assets/` is loadable by some code path, or reported | `tests/test_asset_reach.py`; the same idea as `reachable_plates`, for non-kit art |
@@ -73,8 +78,8 @@ Excel; the refresh happens on the operator's own machine.)
 
 ## What the bot checks before you approve
 
-Six gates run unprompted between the script landing and any spend, **on
-both lanes**. Silence means proceed; every finding carries a line
+Twelve gates run unprompted between the script landing and any spend,
+**on both lanes**. Silence means proceed; every finding carries a line
 reference. They are notes and blocks, never rewrites — the writer decides.
 
 A SHORT used to run none of them — only the cost report and the audio
@@ -90,6 +95,7 @@ vendor or stale data went straight to the Approve button.
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
 | **data freshness** | the workbook's own as-of date, not its mtime. A date it cannot READ blocks too — an unreadable date is not evidence of freshness. Reads ISO, US and day-first slashes, `3-Sep-2026`, `Sep 3, 2026` and a raw Excel serial | blocks when stale or unreadable (`DATA_STALE_BLOCKS=false` to make it advisory) |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
+| **prices** | whether the price chart in this video was drawn from the live feed or from the seeded synthetic floor — nothing on screen distinguishes them | blocks a FINAL outside `MOCK_MODE`, warns on a draft or proof |
 | **type budgets** | every figure and line a `[PLATE]` writes, against the `maxChars` the kit derived for THAT box — the role's narrowest box is the floor behind it. Checked here because it is a property of the script: the same failure at render time costs a forty-minute build to learn a label is six characters too long | blocks |
 | **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
 | **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
@@ -173,10 +179,19 @@ pipeline/
   form.py                what the writer is asked for, DERIVED from the shot
                          templates and the kit's own character budgets
   llm.py                 LLM routing — local first, hosted as the fallback
+  provenance.py          what was real in one render: prices, visuals, filings,
+                         voice, LLM provider, and which gates actually ran —
+                         on the manifest and on the delivery message
 
   prices.py              Yahoo price history behind an interface (cached)
-  company_data.py        two-sheet Excel export reader + filing screenshots
-  filings.py             10-K auto-screenshot pipeline
+  company_data.py        Excel export reader (Snapshot · History · Quarters ·
+                         Dashboard · Valuation · Peers · News) + filing
+                         screenshots
+  filings.py             10-K/10-Q resolution (the ordered reading list,
+                         incl. the Q4 case) + the auto-screenshot pipeline
+  filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
+                         angle is chosen: risk shift, language, segments, and
+                         what contradicts the workbook
   article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed

@@ -274,6 +274,62 @@ def _plate_fingerprint(path: Path) -> str:
     return got
 
 
+def _provenance(script, settings, workspace: Path, duration: float,
+                seg_meta: list[dict], tts, *, draft: bool, proof: bool):
+    """The render's provenance record (N3)."""
+    from pipeline import provenance as prov
+    from pipeline.filings import load_manifest
+
+    prices = None
+    if _reaches_a_price_chart_safe(script):
+        from pipeline.prices import get_price_history
+
+        ticker = (getattr(script, "ticker", "") or "").strip()
+        if ticker:
+            prices = get_price_history(ticker, settings)
+
+    shots = load_manifest(workspace) or []
+    filings = {"shots": len(shots)} if shots else {}
+    refs = sorted({str(s.get("accession") or "") for s in shots
+                   if s.get("accession")})
+    if refs:
+        filings["refs"] = [f"10-K {r}" for r in refs]
+    brief = _filing_brief_provenance(workspace)
+    if brief:
+        filings["brief"] = brief
+
+    fmt = "long-draft" if draft else "long-proof" if proof else "long"
+    return prov.build(
+        ticker=getattr(script, "ticker", ""), fmt=fmt,
+        workdate=workspace.name, duration_s=duration,
+        prices=prices, visual_sources=_visual_source_counts(seg_meta),
+        filings=filings, tts=tts, settings=settings)
+
+
+def _reaches_a_price_chart_safe(script) -> bool:
+    from pipeline.gates import _reaches_a_price_chart
+
+    return _reaches_a_price_chart(script)
+
+
+def _filing_brief_provenance(workspace: Path) -> dict:
+    """What the pre-angle filing brief recorded about itself, if any.
+
+    Written by the brief pass; absent before it has run. `context_held` is
+    K2's question: a brief built from half a section reads exactly like one
+    built from all of it.
+    """
+    import json as _json
+
+    f = workspace / "filing_brief.json"
+    try:
+        data = _json.loads(f.read_text(encoding="utf-8"))
+    except (FileNotFoundError, _json.JSONDecodeError, OSError):
+        return {}
+    return {k: data[k] for k in ("sections", "context_held", "accessions")
+            if k in data}
+
+
 def _rendered_kit_reach(plate_keys: list[str], settings) -> str:
     """The reach line for a finished render, or "" when the kit is absent."""
     from pipeline.reach import reach_from_manifest
@@ -1546,6 +1602,12 @@ def render_long(
         # Where the numbers on any price chart came from, and whether they
         # are real (B1). Absent when the script draws no price chart.
         **({"prices": price_provenance} if price_provenance else {}),
+        # THE WHOLE RECORD (N3): what in this video was real. Machine-
+        # readable here, and the same thing in words on the delivery
+        # message, so the two surfaces cannot drift.
+        "provenance": _provenance(
+            script, settings, workspace, duration, seg_meta, tts,
+            draft=draft, proof=proof).to_json(),
         "duration": duration,
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],
