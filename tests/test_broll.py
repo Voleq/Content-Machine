@@ -527,12 +527,26 @@ def test_opening_the_swap_menu_spends_no_quota(manager, monkeypatch):
     assert searched == [], "the swap menu must read the cache, not the provider"
 
 
-def test_the_swap_count_grows_once_takes_are_actually_cached(manager):
-    """And it is still a real number: a fetched take is a reachable swap."""
-    before = manager.alternates_count("dumpster_fire")
-    manager.resolve_clip("dumpster_fire", choice=0)
-    manager.resolve_clip("dumpster_fire", choice=1)
-    assert manager.alternates_count("dumpster_fire") > before
+def test_the_swap_count_is_still_a_number_a_swap_can_reach(manager, tmp_path):
+    """Not spending on it must not make it useless.
+
+    The count drives `(choice + 1) % n`, so an n of 1 makes the Swap button
+    a no-op. It has to stay the range the chain can actually address.
+    """
+    n = manager.alternates_count("dumpster_fire")
+    assert n > 1, "a swap has to be able to go somewhere"
+
+    # Every take the count promises resolves to something, and consecutive
+    # takes differ — which is what the operator tapped the button for.
+    seen = {manager.resolve_clip("dumpster_fire", choice=i).path
+            for i in range(n)}
+    assert len(seen) > 1
+
+    # An owned library adds to it, because those are extra reachable takes.
+    lib = tmp_path / "library"
+    lib.mkdir(parents=True, exist_ok=True)
+    (lib / "dumpster_fire.mp4").write_bytes(b"\x00")
+    assert manager.alternates_count("dumpster_fire") > n
 
 
 # --------------------------------------------------------------------------

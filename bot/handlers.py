@@ -294,6 +294,32 @@ class BotCore:
                     "a move to hang it on.")
         return ""
 
+    def _move_context(self, ticker: str) -> str:
+        """What this ticker has actually done today, for the SHORT prompt.
+
+        A live quote first (B2). The screener's cached string is written
+        only by `run_screen`, whose default schedule is 07:30 ET — before
+        the open, when Yahoo's `regularMarketChangePercent` still carries
+        the previous completed session. On a Monday that is Friday, and the
+        word "today" in that string means the day the screen ran, which
+        nothing recorded. A ticker the screener had NEVER seen produced
+        better output than one it had, because the empty-state text asks
+        for a real number.
+
+        The quote is the true intraday move and costs one data-only
+        request. The cached line is the fallback and now carries its own
+        age, so a stale figure cannot be read as a current one.
+        """
+        from pipeline.screener import last_screen_context, live_move_context
+
+        live = live_move_context(self.settings, ticker)
+        cached = last_screen_context(self.settings, ticker)
+        if live and cached:
+            # Both are worth having: the quote is the number, the screen is
+            # why the ticker is on the list at all (volume, lane, reasons).
+            return f"{live} · {cached}"
+        return live or cached
+
     # ------------------------------------------------------------ /prompts
     def prompts_reply(self, chat_id: int) -> Reply:
         ws = self._active_ws(chat_id)
@@ -308,9 +334,7 @@ class BotCore:
                 "⛔ Data export is missing required fields "
                 f"({', '.join(data.blocking_missing[:8])}…). Refresh and re-upload."
             )
-        from pipeline.screener import last_screen_context
-
-        move_context = last_screen_context(self.settings, ws.ticker)
+        move_context = self._move_context(ws.ticker)
         # One lane, one prompt (1d). The lane is declared by /short or /long
         # and is never inferred; the deprecated lane-less /new is gone
         # (Group L), so a workspace without one is an old folder rather than

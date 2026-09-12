@@ -614,8 +614,8 @@ def fill_prompt(
 
     if fmt == "short":
         r["{{move_context}}"] = move_context or (
-            "(no screener context — fill in how much it moved today, on what "
-            "volume, and the headline that did it)"
+            "(no live quote and no screener context — fill in how much it "
+            "moved today, on what volume, and the headline that did it)"
         )
         r["{{voice_bible}}"] = voice_bible(settings)
         r["{{meme_catalog}}"] = meme_catalog(settings)

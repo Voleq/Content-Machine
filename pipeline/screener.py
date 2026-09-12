@@ -432,15 +432,33 @@ def _save_last_screen(settings: Settings, result: dict) -> None:
         log.warning("could not persist last screen: %s", e)
 
 
+# How long a screener move figure stays usable in a prompt. The digest fires
+# pre-market, so its "+0.5% today" is the PREVIOUS completed session and on a
+# Monday that is Friday — a whole trading day of divergence before anyone
+# types anything. Twenty minutes is about as long as an intraday move figure
+# stays true; past that the text says how old it is rather than pretending.
+SCREEN_CONTEXT_FRESH_S = 20 * 60
+SCREEN_CONTEXT_MAX_AGE_S = 86400
+
+
 def last_screen_context(settings: Settings, ticker: str) -> str:
-    """The move context for a ticker from the most recent screen run, or ""
-    when unknown/stale (older than one trading day)."""
+    """The move context for a ticker from the most recent screen run.
+
+    The move figure is STAMPED WITH ITS AGE once it is past
+    `SCREEN_CONTEXT_FRESH_S`, because the string the screener writes is
+    `"{move:+.1f}% today"` and "today" means the day the screen ran, which
+    nothing else records. A model handed "+0.5% today" at 11:00 on a Monday
+    reports it faithfully, and it is Friday's close (B2).
+
+    `""` when unknown or older than a day.
+    """
     path = settings.state_dir / "last_screen.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return ""
-    if time.time() - float(data.get("ts", 0)) > 86400:
+    age = time.time() - float(data.get("ts", 0))
+    if age > SCREEN_CONTEXT_MAX_AGE_S:
         return ""
     entry = (data.get("tickers") or {}).get(ticker.upper())
     if not entry:
@@ -448,7 +466,60 @@ def last_screen_context(settings: Settings, ticker: str) -> str:
     bits = list(entry.get("reasons") or [])
     if entry.get("lane"):
         bits.append(f"{entry['lane']} lane")
-    return " · ".join(bits)
+    text = " · ".join(bits)
+    if text and age > SCREEN_CONTEXT_FRESH_S:
+        text += f" (as screened {_age_phrase(age)}, NOT as of now)"
+    return text
+
+
+def _age_phrase(seconds: float) -> str:
+    if seconds < 3600:
+        return f"{int(seconds // 60)} minutes ago"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)}h ago"
+    return f"{seconds / 86400:.1f} days ago"
+
+
+def live_move_context(settings: Settings, ticker: str) -> str:
+    """Today's real intraday move for `ticker`, or `""` if it cannot be had.
+
+    `YahooMarketSource.quotes()` already computes `last_price` vs
+    `previous_close` through `_pct_change`, which IS the true intraday move.
+    Its only caller was the alert poller; the SHORT prompt — the one place a
+    market number is actually spoken — never fetched a quote at all and was
+    filled from a cached screener string instead (B2).
+
+    Data-only and never raises: a dead feed gives "" and the caller falls
+    back to the cached line, which is worse but labelled. Mocked the same way
+    the screener is, so the offline suite never reaches the network.
+    """
+    ticker = (ticker or "").strip().upper()
+    if not ticker or settings.mocking_screener:
+        return ""
+    try:
+        quotes = YahooMarketSource(settings).quotes([ticker])
+    except Exception as e:  # noqa: BLE001 - a dead feed is not an error here
+        log.warning("live quote for %s failed (%s)", ticker, e)
+        return ""
+    for q in quotes:
+        if str(q.get("symbol", "")).upper() != ticker:
+            continue
+        move = q.get("regularMarketChangePercent")
+        price = q.get("regularMarketPrice")
+        if move is None:
+            continue
+        bits = [f"{float(move):+.1f}% so far today"]
+        if price:
+            bits.append(f"last {float(price):.2f}")
+        vol = q.get("regularMarketVolume")
+        avg = q.get("averageDailyVolume3Month")
+        try:
+            if vol and avg and float(avg):
+                bits.append(f"vol {float(vol) / float(avg):.1f}x avg")
+        except (TypeError, ValueError):
+            pass
+        return " · ".join(bits)
+    return ""
 
 
 def last_screen_lane(settings: Settings, ticker: str) -> str:

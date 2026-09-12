@@ -136,3 +136,121 @@ async def test_screen_reply_shape(settings):
     assert reply.keyboard is not None
     reply2 = await screen_reply(core, "bogus")
     assert "Usage" in reply2.text
+
+
+# --------------------------------------------------------------------------
+# B2 — "today" in a SHORT script has to mean today. The screener's cached
+# string says it about the day the SCREEN ran, which is pre-market, which on
+# a Monday is Friday's close.
+# --------------------------------------------------------------------------
+
+
+def test_a_live_quote_is_the_real_intraday_move(settings, monkeypatch):
+    """`_pct_change` on a live quote is last vs previous close."""
+    from pipeline.screener import live_move_context
+
+    live = settings.model_copy(update={"mock_screener": False})
+
+    class FakeSource:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            return [{"symbol": "EXMPL", "regularMarketPrice": 22.0,
+                     "regularMarketChangePercent": 10.4,
+                     "regularMarketVolume": 5_000_000,
+                     "averageDailyVolume3Month": 1_000_000}]
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", FakeSource)
+    text = live_move_context(live, "EXMPL")
+
+    assert "+10.4% so far today" in text
+    assert "5.0x avg" in text
+
+
+def test_a_dead_quote_feed_is_silent_not_wrong(settings, monkeypatch):
+    from pipeline.screener import live_move_context
+
+    live = settings.model_copy(update={"mock_screener": False})
+
+    class Dead:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            raise RuntimeError("yahoo is down")
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", Dead)
+    assert live_move_context(live, "EXMPL") == ""
+
+
+def test_a_stale_screener_line_says_how_stale_it_is(settings):
+    """The word "today" cannot be left standing on a day-old figure."""
+    import json
+    import time
+
+    from pipeline.screener import last_screen_context
+
+    state = settings.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 6 * 3600,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+0.5% today"]}},
+    }), encoding="utf-8")
+
+    text = last_screen_context(settings, "EXMPL")
+    assert "+0.5% today" in text
+    assert "NOT as of now" in text and "6h ago" in text
+
+
+def test_a_fresh_screener_line_is_left_alone(settings):
+    import json
+    import time
+
+    from pipeline.screener import last_screen_context
+
+    state = settings.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 60,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+9.0% today"]}},
+    }), encoding="utf-8")
+
+    assert "NOT as of now" not in last_screen_context(settings, "EXMPL")
+
+
+def test_the_short_prompt_carries_the_live_move_not_the_cached_one(
+        settings, monkeypatch, fixtures_dir):
+    """End to end, on the prompt file the operator actually receives."""
+    import json
+    import time
+
+    from bot.handlers import BotCore
+
+    live = settings.model_copy(update={"mock_screener": False})
+    state = live.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 6 * 3600,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+0.5% today"]}},
+    }), encoding="utf-8")
+
+    class FakeSource:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            return [{"symbol": "EXMPL", "regularMarketPrice": 22.0,
+                     "regularMarketChangePercent": 10.4}]
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", FakeSource)
+
+    core = BotCore(live)
+    core.start_lane(7788, "short", "EXMPL")
+    reply = core.handle_upload(
+        7788, "dennis_data.xlsx",
+        (fixtures_dir / "company_data" / "dennis_data.xlsx").read_bytes())
+    prompt = next(f for f in reply.files if "short" in f.name).read_text(encoding="utf-8")
+
+    assert "+10.4% so far today" in prompt, "the prompt must carry today's move"
+    assert "NOT as of now" in prompt, "and label the stale line it kept"

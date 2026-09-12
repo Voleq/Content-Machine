@@ -1055,9 +1055,14 @@ class ContentManager:
         return out
 
     # -------------------------------------------------- approval-flow bits
+    # How many provider takes a swap can address without asking anyone.
+    # `search()` requests `per_page=5` and `_fetch_clip` clamps `choice` to
+    # what came back, so five is the range the chain can reach — the exact
+    # number the old live search was being spent to discover.
+    SWAP_PROVIDER_TAKES = 5
+
     def alternates_count(self, key: str) -> int:
-        """How many swap choices exist for a clip key — from what is already
-        on disk, never from a live call.
+        """How many swap choices exist for a clip key, without a live call.
 
         This number exists to put a digit on a button. It used to run a real
         Pexels search to get it, so merely OPENING the swap menu spent
@@ -1065,15 +1070,22 @@ class ContentManager:
         was swallowed, so the count silently degraded to the owned-library
         size without saying so (A4).
 
-        The provider side is read from the `meta_*.json` the fetch already
-        wrote, so a key that has been fetched reports its real alternates and
-        one that has not reports what is owned. Both are true statements
-        about what a swap can reach right now, which a live search is not:
-        it counts results nobody has downloaded.
+        It is now the owned library plus the range the provider chain can
+        address. That range is a constant rather than a measurement because
+        measuring it is what cost money: `search()` asks for five results and
+        `_fetch_clip` clamps `choice` to what comes back, so five is what a
+        swap can reach and a sixth tap would land on the fifth clip anyway.
+        Where a key has already been fetched more widely than that, the
+        cached takes win — those are known to exist.
+
+        A key with no provider chain at all (every client removed) counts
+        only what is owned, which is the honest answer there.
         """
         n = len(self._library_candidates(key))
-        n += len(self._cached_provider_takes(key))
-        return max(n, 1)
+        reachable = len(self._cached_provider_takes(key))
+        if self.clip_client is not None or self.gif_clients:
+            reachable = max(reachable, self.SWAP_PROVIDER_TAKES)
+        return max(n + reachable, 1)
 
     def _cached_provider_takes(self, key: str) -> list[Path]:
         """Provider takes already fetched for this key, from the clip cache.

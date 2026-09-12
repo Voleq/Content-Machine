@@ -20,7 +20,7 @@ Keep it TIGHT — a short has no room to waste. Almost no teaching: this is the 
 
 ## INPUT
 Ticker: {{ticker}}
-Why it's moving (from the screener): {{move_context}}
+What it has done and why (live quote first, screener context after — any figure labelled with an age is AS OF THAT TIME, so say so rather than calling it today's): {{move_context}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
