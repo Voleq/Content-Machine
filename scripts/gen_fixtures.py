@@ -4,7 +4,8 @@ Run from the repo root:  .venv/bin/python scripts/gen_fixtures.py
 
 Produces:
   fixtures/company_data/dennis_data.xlsx   (the v3 export, filled for EXMPL:
-                                            Snapshot · History · Dashboard ·
+                                            Snapshot · History · Quarters ·
+                                            Dashboard ·
                                             Valuation [+ WACC/reverse-DCF] ·
                                             Peers [+ self-scoring percentiles] ·
                                             News)
@@ -110,6 +111,59 @@ EXMPL_HISTORY = [
     ("roic", "ROIC %", [-0.4, -1.1, -2.1, -2.9, -3.6, -3.6]),
     ("diluted_shares", "Diluted Shares", [298*M, 315*M, 330*M, 346*M, 364.6*M, 364.6*M]),
     ("shares_yoy", "Share Count YoY %", [NA, 5.7, 4.8, 4.8, 5.4, 0.0]),
+]
+
+# --- Quarters: 8 quarters, oldest -> newest (O1) -------------------------------
+#
+# THE SEASONAL SHAPE IS THE POINT. Q4 beats Q3 in both years by roughly the
+# same amount, so the fixture teaches what O2 exists for: the QoQ on the
+# latest quarter reads as strong growth (+15.6%) and the YoY on the same
+# quarter reads as flat (+0.7%). A script handed only the first number would
+# call a seasonal December a turnaround, which is the exact thing this
+# channel is for puncturing.
+#
+# Every row also reconciles with the ANNUAL sheet above — the four quarters
+# of FY-1 sum to FY-1's figure, and the same for FY-0 — because a workbook
+# whose two sheets disagree would make the fact-check block correct scripts.
+EXMPL_QUARTERS_LABELS = ["Q1 FY-1", "Q2 FY-1", "Q3 FY-1", "Q4 FY-1",
+                         "Q1 FY-0", "Q2 FY-0", "Q3 FY-0", "Q4 FY-0"]
+EXMPL_QUARTERS = [
+    ("revenue", "Revenue",
+     [112*M, 118*M, 121*M, 140*M, 114*M, 119*M, 122*M, 141*M]),
+    ("gross_profit", "Gross Profit",
+     [66.5*M, 69.7*M, 71.3*M, 82.0*M, 66.6*M, 69.2*M, 70.8*M, 81.2*M]),
+    ("gross_margin", "Gross Margin %",
+     [59.4, 59.1, 58.9, 58.6, 58.4, 58.2, 58.0, 57.6]),
+    ("operating_income", "Operating Income",
+     [-11*M, -12*M, -13*M, -13*M, -14*M, -15*M, -15*M, -16*M]),
+    ("operating_margin", "Operating Margin %",
+     [-9.8, -10.2, -10.7, -9.3, -12.3, -12.6, -12.3, -11.3]),
+    ("net_income", "Net Income",
+     [-16*M, -17*M, -18*M, -19*M, -21*M, -22*M, -22*M, -24*M]),
+    ("net_margin", "Net Margin %",
+     [-14.3, -14.4, -14.9, -13.6, -18.4, -18.5, -18.0, -17.0]),
+    ("operating_cf", "Operating Cash Flow",
+     [-3*M, -3*M, -2*M, 0, -4*M, -3*M, -3*M, 1*M]),
+    ("capex", "CapEx",
+     [-0.7*M, -0.8*M, -0.7*M, -0.8*M, -1.4*M, -1.5*M, -1.5*M, -1.6*M]),
+    ("fcf", "Free Cash Flow",
+     [-3.7*M, -3.8*M, -2.7*M, -0.8*M, -5.4*M, -4.5*M, -4.5*M, -0.6*M]),
+    ("fcf_margin", "FCF Margin %",
+     [-3.3, -3.2, -2.2, -0.6, -4.7, -3.8, -3.7, -0.4]),
+    ("sbc", "Stock-Based Comp",
+     [22*M, 23*M, 25*M, 25*M, 26*M, 27*M, 28*M, 29*M]),
+    ("cash", "Cash & Equivalents",
+     [505*M, 495*M, 480*M, 465*M, 450*M, 435*M, 422*M, 410*M]),
+    ("total_debt", "Total Debt",
+     [1275*M, 1300*M, 1325*M, 1350*M, 1375*M, 1400*M, 1425*M, 1450*M]),
+    ("net_debt", "Net Debt",
+     [770*M, 805*M, 845*M, 885*M, 925*M, 965*M, 1003*M, 1040*M]),
+    ("total_equity", "Total Equity",
+     [1045*M, 1040*M, 1035*M, 1030*M, 1030*M, 1032*M, 1034*M, 1036*M]),
+    ("diluted_shares", "Diluted Shares",
+     [338*M, 341*M, 344*M, 346*M, 350*M, 355*M, 360*M, 364.6*M]),
+    ("eps", "EPS (diluted)",
+     [-0.047, -0.050, -0.052, -0.055, -0.060, -0.062, -0.061, -0.066]),
 ]
 
 # --- Dashboard: label -> value (+ flags) --------------------------------------
@@ -307,6 +361,23 @@ def build_workbook() -> Workbook:
             hs.cell(row=r, column=3 + j, value=v)
         hs.cell(row=r, column=3 + len(EXMPL_PERIODS), value="")  # CAGR (computed)
         hs.cell(row=r, column=4 + len(EXMPL_PERIODS), value="computed")
+
+    # ---- Quarters (O1)
+    qs = wb.create_sheet("Quarters")
+    qs["A1"] = "DENNIS — quarterly results (8 quarters) — QoQ and YoY same quarter"
+    qs["A2"] = ("Both comparisons, never one. A retailer's Q4 beats its Q3 "
+                "every year; only the YoY says whether anything moved.")
+    qhead = ["field_key", "Label", *EXMPL_QUARTERS_LABELS,
+             "Field mnemonic (verify)"]
+    for j, h in enumerate(qhead, 1):
+        qs.cell(row=4, column=j, value=h).font = header_font
+    for i, (key, label, vals) in enumerate(EXMPL_QUARTERS):
+        r = 5 + i
+        qs.cell(row=r, column=1, value=key)
+        qs.cell(row=r, column=2, value=label)
+        for j, v in enumerate(vals):
+            qs.cell(row=r, column=3 + j, value=v)
+        qs.cell(row=r, column=3 + len(EXMPL_QUARTERS_LABELS), value="computed")
 
     # ---- Dashboard
     ds = wb.create_sheet("Dashboard")

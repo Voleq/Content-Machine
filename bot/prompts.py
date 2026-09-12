@@ -346,8 +346,40 @@ def expressivity_and_pacing() -> str:
 
 
 def chart_metrics_line(data: CompanyData) -> str:
-    """Only metrics with a real multi-year series in THIS data (+ price)."""
-    return ", ".join(data.available_chart_metrics())
+    """Only metrics with a real multi-year series in THIS data (+ price).
+
+    The quarterly series are named separately (O5) rather than folded into
+    the annual list. A writer must not feature a quarterly row the sheet
+    does not carry — the same rule the annual list has always enforced —
+    and the two lists are genuinely different: a ticker can have five years
+    of revenue and no Quarters sheet at all.
+    """
+    line = ", ".join(data.available_chart_metrics())
+    quarterly = data.available_quarter_metrics()
+    if quarterly:
+        line += ("\nQuarterly series present (a quarterly claim MUST come "
+                 "from here): " + ", ".join(quarterly))
+    return line
+
+
+def quarters_block(data: CompanyData) -> str:
+    """The `[quarters]` table, or why there is not one.
+
+    A MISSING SHEET IS SAID OUT LOUD rather than leaving a blank where a
+    table should be. `templates/shots/earnings.json` is a complete 9:16
+    format whose first two beats are `the-print` and `vs-expected`, and
+    before O1 there was no quarterly data behind either: the writer supplied
+    the print from its own training knowledge and `fact_check` could not
+    verify a word of it, because it only had annual series to compare
+    against (O0). A silent blank here reproduces that exactly.
+    """
+    if data.has_quarters:
+        return data.quarters_prompt_block()
+    return ("(no Quarters sheet in this workbook — you have NO quarterly "
+            "data. Do not state a print, a beat/miss, or a quarter-on-quarter "
+            "move: nothing here can check it. Work from the annual series "
+            "above. To get quarterly numbers, refresh the template and fill "
+            "the Quarters sheet.)")
 
 
 def _pct(v) -> str:
@@ -649,6 +681,9 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
         f"(macro mode — no single-company financials; anchor on "
         f"{c.ticker.upper()} as the index/sector proxy and the macro figures "
         f"in the headline)")),
+    PayloadBlock("{{quarters}}", _ALL, lambda c: (
+        quarters_block(c.data) if c.data is not None else
+        "(macro mode — no company quarters)")),
     PayloadBlock("{{chart_metrics}}", _ALL, lambda c: (
         chart_metrics_line(c.data) if c.data is not None else
         f"(index-based — the chart is the {c.ticker.upper()} proxy; the "

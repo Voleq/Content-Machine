@@ -63,7 +63,6 @@ Excel; the refresh happens on the operator's own machine.)
 | A quarterly move is never reported as one number: QoQ and YoY-same-quarter are always shown as a labelled pair, a rate moves in points, and a loss is shown as two values rather than a percentage of a negative base | `CompanyData.quarter_moves`, `quarters_prompt_block` |
 | A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
 | Every finished render carries a provenance record — where the prices came from, what the visuals were, which filings, which voice at what cost, which LLM provider, and which gates actually ran — on the manifest and in the delivery message, unasked | `pipeline/provenance.py`; written by both renderers, read back off the manifest by `_finish` so the two cannot drift |
-| The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
 | Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
@@ -115,7 +114,8 @@ config.py                typed settings (pydantic-settings) — every cap/knob,
 main.py                  bot entrypoint
 pipeline/
   models.py              data contracts: ShortScript (strict JSON), LongScript
-                         + the Dennis tag grammar, CompanyData (six periods),
+                         + the Dennis tag grammar, CompanyData (six annual
+                         periods + eight quarters),
                          CostReport, JobRecord, Candidate
   parser_short.py        tolerant JSON extraction + the SHORT's inline tags
   parser_long.py         offset-aware tag tokenizer + the chapter trailer
@@ -189,9 +189,6 @@ pipeline/
                          screenshots
   filings.py             10-K/10-Q resolution (the ordered reading list,
                          incl. the Q4 case) + the auto-screenshot pipeline
-  filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
-                         angle is chosen: risk shift, language, segments, and
-                         what contradicts the workbook
   article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
@@ -760,21 +757,33 @@ only the human-facing summary in the chat body.
 
 ### The data contract (private, no API)
 
-`templates/dennis_data_template.xlsx` has two fixed sheets read strictly
-by **field name** (never cell positions):
+`templates/dennis_data_template.xlsx` is read sheet by sheet, strictly by
+**name** and by **field key** — never by cell position, and never with a
+hardcoded period count:
 
-- `Latest` — `field | value | group` rows; the operator's live copy holds
-  Excel add-in formulas in the value column.
-- `History` — row 1 = year labels (oldest → newest), one row per
-  direction metric (revenue, margins, net income, FCF, share count,
-  debt, cash). This is what makes the SHORT's multi-year gut check and
-  the LONG's `[CHART: metric]` possible.
+- `Snapshot` — `field_key | Label | value | mnemonic` rows; the operator's
+  live copy holds add-in formulas in the value column.
+- `History` — `field_key | Label | <period columns> | CAGR | mnemonic`.
+  The period labels (`FY-4 … FY-0, LTM`) come off the header row. This is
+  what makes the SHORT's multi-year gut check and the LONG's
+  `[CHART: metric]` possible.
+- `Quarters` — the same shape, the last 8 reported quarters. Both
+  comparisons are derived and printed **as a labelled pair**: QoQ against
+  the previous quarter and YoY against the same quarter a year earlier. One
+  of them alone is misleading in a flattering direction — a retailer's Q4
+  beats its Q3 every single year — so the prompt never shows a single
+  quarterly figure called "growth".
+- `Dashboard`, `Valuation`, `Peers`, `News` — the one-glance summary, the
+  bear/base/bull + WACC/reverse-DCF block, the auto peer table with its
+  percentile self-score, and dated headlines.
 
 Missing identity/size/margins/cash fields **block** the run; other gaps
-warn; a missing History sheet warns. CSV (`field,value`) is accepted for
-the snapshot only. Nothing in scripts, tags, overlays or captions may
-name the data vendor — the parsers reject it, and on screen the data is
-"from the 10-K".
+warn. A missing `History`, `Quarters` or `News` sheet warns and the rest of
+the flow is unchanged — most workbooks in the wild have no `Quarters` sheet
+yet, and the writer is told so in as many words rather than handed a blank
+where a table should be. CSV (`field,value`) is accepted for the snapshot
+only. Nothing in scripts, tags, overlays or captions may name the data
+vendor — the parsers reject it, and on screen the data is "from the 10-K".
 
 #### Getting the numbers in (the primary route)
 

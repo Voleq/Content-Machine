@@ -37,6 +37,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from config import Settings
+from pipeline.models import RATE_FIELDS
 from pipeline.spoken import eye_written_figures
 
 log = logging.getLogger(__name__)
@@ -217,6 +218,20 @@ class SpokenNumber:
     value: float
     text: str
     is_percent: bool = False
+    # WHERE IT WAS SAID, not just what was said.
+    #
+    # The caller used to recover the position with `sentence.find(num.text)`,
+    # and for a spoken run `text` is the tokens rejoined with single spaces —
+    # so "minus twenty-four million" produced the text "twenty four million",
+    # `find` returned -1, and both the minus sign and the metric-ownership
+    # scan were computed against character 0 of the sentence. A correct
+    # statement of a negative figure was then reported as a fabrication,
+    # which for a BLOCKING gate is the one failure that matters.
+    #
+    # Hyphenated spoken numbers are how a writer actually spells them, so
+    # the span is carried out rather than re-derived.
+    start: int = -1
+    end: int = -1
 
 
 def extract_numbers(sentence: str) -> list[SpokenNumber]:
@@ -234,9 +249,11 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
         pct = suffix in ("percent", "%")
         if suffix in _SUFFIX:
             value *= _SUFFIX[suffix]
-        out.append(SpokenNumber(value, m.group(0).strip(), pct))
+        out.append(SpokenNumber(value, m.group(0).strip(), pct,
+                                m.start(), m.end()))
 
-    tokens = re.findall(r"[a-z]+|%", low)
+    words = list(re.finditer(r"[a-z]+|%", low))
+    tokens = [w.group(0) for w in words]
     i = 0
     while i < len(tokens):
         if tokens[i] not in _NUMBER_WORDS or tokens[i] in ("and", "a", "point"):
@@ -249,7 +266,8 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
         value = _words_to_number(run)
         if value is not None:
             pct = j < len(tokens) and tokens[j] in ("percent", "%")
-            out.append(SpokenNumber(value, " ".join(run), pct))
+            out.append(SpokenNumber(value, " ".join(run), pct,
+                                    words[i].start(), words[j - 1].end()))
         i = max(j, i + 1)
     return out
 
@@ -321,6 +339,14 @@ def _series_for(data, field_name: str) -> list[float]:
         if isinstance(series, (list, tuple)):
             values.extend(float(v) for v in series if isinstance(v, (int, float)))
 
+    # AND THE QUARTERS (O4). `templates/shots/earnings.json` opens on the
+    # print and the beat/miss, and before the Quarters sheet existed the
+    # fact-check had only annual series to compare a stated print against —
+    # so an earnings SHORT could say any number at all and nothing objected.
+    # A quarterly figure is a figure the export carries; it belongs in the
+    # same bag as the annual one.
+    values.extend(_quarters_for(data, field_name))
+
     snap = getattr(data, "dashboard", None)
     if hasattr(snap, "get"):
         latest = snap.get(field_name)
@@ -361,6 +387,28 @@ def _history_for(data, field_name: str) -> list[float]:
         if all(isinstance(v, (int, float)) for v in series) else []
 
 
+def _quarters_for(data, field_name: str) -> list[float]:
+    """The ordered quarterly series alone, or []."""
+    if data is None:
+        return []
+    rows = getattr(data, "quarters", None)
+    series = None
+    if hasattr(rows, "get"):
+        series = rows.get(field_name)
+    elif hasattr(data, "get"):
+        series = (data.get("quarters") or {}).get(field_name)
+    if not isinstance(series, (list, tuple)):
+        return []
+    return [float(v) for v in series if isinstance(v, (int, float))]
+
+
+def _quarter_labels(data) -> list[str]:
+    labels = getattr(data, "quarter_labels", None)
+    if not isinstance(labels, (list, tuple)) and hasattr(data, "get"):
+        labels = data.get("quarter_labels")
+    return [str(x) for x in labels] if isinstance(labels, (list, tuple)) else []
+
+
 def _matches(value: float, known: list[float]) -> bool:
     for k in known:
         if k == 0:
@@ -378,10 +426,9 @@ def _matches(value: float, known: list[float]) -> bool:
 # Metrics whose values ARE percentages, so a spoken "sixty-two percent" is a
 # direct claim about them rather than something derived. Every one of these
 # used to be skipped outright, which meant a wrong margin was never checked.
-_RATE_METRICS = frozenset({
-    "gross_margin", "operating_margin", "net_margin", "fcf_margin",
-    "sbc_pct_rev", "roic", "roe", "shares_yoy",
-})
+# One definition, in `models.py`, because the quarterly comparison needs the
+# same distinction: a move in a rate is a move in POINTS (O2).
+_RATE_METRICS = RATE_FIELDS
 
 # Phrases that contain a metric word but name a line the export does not
 # carry. "Two hundred and twelve million on SALES and marketing" is not a
@@ -502,6 +549,52 @@ def _period_index(sentence: str, labels: list[str]) -> int | None:
     return None
 
 
+_QUARTER_WORDS = {"first": 1, "second": 2, "third": 3, "fourth": 4}
+_QUARTER_NUM_RE = re.compile(r"\bq\s?-?\s?([1-4])\b", re.IGNORECASE)
+_QUARTER_WORD_RE = re.compile(
+    r"\b(first|second|third|fourth)\s+quarter\b", re.IGNORECASE)
+
+
+def _label_quarter(label: str) -> int | None:
+    m = _QUARTER_NUM_RE.search(str(label))
+    return int(m.group(1)) if m else None
+
+
+def _quarter_indices(sentence: str, labels: list[str]) -> list[int]:
+    """Which quarterly columns a sentence is talking about, if it says.
+
+    Returns EVERY column a bare quarter number could mean rather than
+    guessing the newest (O4). An eight-quarter sheet has two Q4s, and a
+    blocking gate that picks one and blocks a script meaning the other is
+    worse than no gate — the one thing the fact-check must never do is
+    refuse a correct script. Two columns is still a far narrower comparison
+    than the whole bag.
+
+    "Last quarter" and "the most recent quarter" deliberately narrow
+    nothing: they are ambiguous between the quarter just reported and the
+    one before it, and the honest answer to an ambiguous reference is the
+    wider comparison.
+    """
+    if not labels:
+        return []
+    low = sentence.lower()
+    for i, label in enumerate(labels):
+        lab = str(label).strip().lower()
+        if lab and lab in low:
+            return [i]
+    q = None
+    m = _QUARTER_NUM_RE.search(low)
+    if m:
+        q = int(m.group(1))
+    else:
+        m = _QUARTER_WORD_RE.search(low)
+        if m:
+            q = _QUARTER_WORDS[m.group(1).lower()]
+    if q is None:
+        return []
+    return [i for i, label in enumerate(labels) if _label_quarter(label) == q]
+
+
 _PERIOD_TOKEN_RE = re.compile(r"\b(?:fy|q|h|cy)\s?-?\s?\d{1,4}\b",
                               re.IGNORECASE)
 
@@ -570,6 +663,34 @@ def _metrics_named(low: str) -> dict[str, int]:
     return out
 
 
+# Words that, with a period token, make up a phrase naming WHEN rather than
+# WHAT. "In Q4", "in FY-2", "in 2024", "in the fourth quarter", "in that same
+# quarter" — none of them is a subject a number could belong to.
+_PERIOD_WORDS = frozenset({
+    "quarter", "quarters", "year", "years", "fiscal", "half", "period",
+    "the", "that", "this", "last", "latest", "same", "most", "recent",
+    "previous", "prior", "first", "second", "third", "fourth", "q", "fy",
+    "cy", "lt", "ltm", "trailing", "twelve", "months", "month", "ago",
+})
+
+
+def _is_period_phrase(phrase: str) -> bool:
+    """Does this attached phrase name a TIME rather than a subject?
+
+    `_ATTACHED_RE` exists to stop "two hundred and twelve million ON SALES
+    AND MARKETING" being read as a revenue claim. But it also matched "minus
+    forty million IN Q4" and "in FY-0" — and since neither "q4" nor "fy-0"
+    is a metric the export carries, the number was discarded as belonging to
+    something else. Naming the period is exactly what a careful script does,
+    so the narrowing was silently switching the gate off on the sentences
+    most worth checking (O4's interaction with B4).
+    """
+    body = _PERIOD_TOKEN_RE.sub(" ", phrase.lower())
+    body = re.sub(r"\b(?:19|20)\d{2}\b", " ", body)
+    words = [w for w in re.findall(r"[a-z]+", body) if w not in _PERIOD_WORDS]
+    return not words
+
+
 def _owner_of(number_end: int, tail: str, named: dict[str, int],
               low: str) -> str | None:
     """Which metric a number is a claim about, or None if it is not one.
@@ -590,7 +711,7 @@ def _owner_of(number_end: int, tail: str, named: dict[str, int],
     if _MULTIPLE_RE.match(tail):
         return None          # "eleven times earnings" is a multiple
     attached = _ATTACHED_RE.match(tail)
-    if attached:
+    if attached and not _is_period_phrase(attached.group(1)):
         phrase = _mask_decoys(attached.group(1))
         owners = [m for m, words in _METRIC_WORDS.items()
                   if any(w in phrase for w in words)]
@@ -645,6 +766,7 @@ def fact_check(narration: str, data, *,
         m: _series_for(data, m) for m in _METRIC_WORDS
     }
     labels = _history_labels(data)
+    qlabels = _quarter_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
         for sentence in re.split(r"(?<=[.!?])\s+", line):
             low = sentence.lower()
@@ -657,8 +779,10 @@ def fact_check(narration: str, data, *,
             # magnitude floor hid it — dropping the floor exposed it, so the
             # labels are masked out before anything is extracted.
             for num in extract_numbers(_mask_labels(sentence, labels)):
-                pos = low.find(num.text)
-                end = pos + len(num.text) if pos >= 0 else len(low)
+                # The span the extractor recorded, never a re-`find`: a
+                # hyphenated spoken run does not appear verbatim in the
+                # sentence and used to collapse to position 0.
+                pos, end = num.start, num.end
                 metric = _owner_of(end, low[end:], named, low)
                 if metric is None:
                     continue
@@ -667,7 +791,17 @@ def fact_check(narration: str, data, *,
                 hist = _history_for(data, metric)
                 idx = _period_index(sentence, labels) if hist else None
                 where = ""
-                if idx is not None and idx < len(hist):
+                quarters = _quarters_for(data, metric)
+                # A NAMED QUARTER WINS over a named year (O4). "Q4 FY-0
+                # revenue" says both, and the quarterly column is the one
+                # the sentence is actually about — checking it against the
+                # FY-0 annual total would block a correct print.
+                qidx = (_quarter_indices(sentence, qlabels)
+                        if quarters and len(quarters) == len(qlabels) else [])
+                if qidx:
+                    series = [quarters[i] for i in qidx if i < len(quarters)]
+                    where = " for " + "/".join(qlabels[i] for i in qidx)
+                elif idx is not None and idx < len(hist):
                     series, where = [hist[idx]], f" for {labels[idx]}"
 
                 is_rate = metric in _RATE_METRICS

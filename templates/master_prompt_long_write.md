@@ -21,6 +21,9 @@ Ticker: {{ticker}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
 VALUATION DATA — the reverse-DCF gut-check for the MANDATORY valuation chapter. Cite these exact figures. It is a perpetuity sanity check ("priced for X, has delivered Y"), NOT a fair value:
 {{valuation_data}}
 

@@ -763,6 +763,24 @@ HISTORY_FIELDS: list[str] = [
 ]
 
 
+# Quarters sheet field_keys. The same keys as History — a quarterly revenue
+# row is a revenue row — so there is one list to keep honest rather than two
+# that can disagree. The period columns (`Q1 FY24` …) are read dynamically
+# from the header, exactly as History's are.
+QUARTER_FIELDS: list[str] = list(HISTORY_FIELDS)
+
+# Fields the workbook carries as a RATE — a margin, a return, a share-count
+# change — rather than a quantity. The distinction is load-bearing twice: the
+# fact-check reads a stated percentage against the rate series itself instead
+# of against a growth rate (B4), and a quarter-over-quarter move in one of
+# these is a change in POINTS, not a percentage change. "Gross margin rose
+# 1.7%" when it went from 58 to 59 is a number nobody can check and nobody
+# meant.
+RATE_FIELDS = frozenset({
+    "gross_margin", "operating_margin", "net_margin", "fcf_margin",
+    "sbc_pct_rev", "roic", "roe", "shares_yoy",
+})
+
 # Fields the workbook holds as a FRACTION and a writer would otherwise read as a
 # percentage. `Snapshot!D50`/`D51` are 0-1, the same convention `D49`
 # short_interest uses, and `insider_own = 0.08` in a prompt is a line that comes
@@ -775,6 +793,46 @@ HISTORY_FIELDS: list[str] = [
 # here would show a 100x error rather than fix one. That disagreement is real
 # and is reported with this pack; it is not silently patched from this end.
 _FRACTION_FIELDS = frozenset({"insider_own", "institutional_own"})
+
+
+def _mag(v: float) -> str:
+    """A number a writer can read out loud. 1.41e+08 is not one."""
+    a = abs(v)
+    for cut, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M"), (1e3, "k")):
+        if a >= cut:
+            return f"{v / cut:,.2f}".rstrip("0").rstrip(".") + suffix
+    return f"{v:,.3f}".rstrip("0").rstrip(".") if a < 10 else f"{v:,.1f}"
+
+
+def _one_move(d: dict | None, kind: str, absent: str) -> str:
+    """One half of the pair. Says what it cannot say (O2)."""
+    if d is None:
+        return f"{kind} n/a ({absent})"
+    if "points" in d:
+        body = f"{d['points']:+.1f}pts"
+    elif "pct" in d:
+        body = f"{d['pct']:+.1f}%"
+    else:
+        # No percentage exists here — see `quarter_moves`. The values
+        # themselves, which are the checkable form anyway.
+        body = (f"{_mag(d['from'])} → {_mag(d['to'])} "
+                f"(Δ {'+' if d['change'] >= 0 else '−'}{_mag(abs(d['change']))})")
+    return f"{kind} {body} vs {d['from_label']}"
+
+
+def _moves_line(moves: dict) -> str:
+    """BOTH comparisons on one line, each named.
+
+    Never a single figure called growth: "up forty percent from last
+    quarter, which sounds impressive until you notice it is up forty percent
+    every December" is the sentence this exists to make writable, and it
+    needs both numbers side by side to be written at all.
+    """
+    return (f"{moves['label']}: "
+            + _one_move(moves["qoq"], "QoQ", "no prior quarter")
+            + " · "
+            + _one_move(moves["yoy"], "YoY same quarter",
+                        "needs five quarters of history"))
 
 
 def _present(field: str, value):
@@ -810,6 +868,11 @@ class CompanyData(BaseModel):
     values: dict[str, str | float | None] = Field(default_factory=dict)
     history_years: list[str] = Field(default_factory=list)   # oldest -> newest
     history: dict[str, list[float | None]] = Field(default_factory=dict)
+    # THE LAST 6-8 QUARTERS (O1), oldest -> newest, mirroring `history` /
+    # `history_years`. Optional by design: plenty of tickers will not have
+    # the sheet, and the annual flow has to keep working untouched.
+    quarter_labels: list[str] = Field(default_factory=list)  # oldest -> newest
+    quarters: dict[str, list[float | None]] = Field(default_factory=dict)
     dashboard: dict[str, str | float | None] = Field(default_factory=dict)
     valuation: dict = Field(default_factory=dict)   # inputs + bear/base/bull + WACC/reverse-DCF
     peers: list[dict] = Field(default_factory=list)
@@ -849,6 +912,110 @@ class CompanyData(BaseModel):
 
     def history_row(self, field: str) -> list[float | None]:
         return self.history.get(field, [])
+
+    @property
+    def has_quarters(self) -> bool:
+        return bool(self.quarter_labels) and any(
+            any(v is not None for v in vals) for vals in self.quarters.values()
+        )
+
+    def quarter_row(self, field: str) -> list[float | None]:
+        return self.quarters.get(field, [])
+
+    def available_quarter_metrics(self) -> list[str]:
+        """Quarterly metrics with enough of a series to compare.
+
+        Two points, because the whole value of the sheet is a comparison —
+        a single quarter with nothing to sit beside is a number, not a
+        reading. The writer must not feature a quarterly row that cannot be
+        read, the same rule `available_chart_metrics` enforces annually.
+        """
+        return [f for f in QUARTER_FIELDS
+                if sum(1 for v in self.quarters.get(f, []) if v is not None) >= 2]
+
+    def quarter_moves(self, field: str) -> dict | None:
+        """BOTH comparisons for one quarterly row, or None.
+
+        QoQ alone is misleading for any seasonal business, and misleading in
+        a flattering direction: a retailer's Q4 beats its Q3 every single
+        year, and reporting that as growth is the thing this channel exists
+        to puncture. YoY-same-quarter is the honest number.
+
+        So both are returned, labelled, and `as_prompt_block` prints them as
+        a pair — never one figure called "growth" (O2). When there are fewer
+        than five quarters the YoY does not exist, and that is said out loud
+        rather than leaving the QoQ standing alone looking complete.
+
+        A rate — a margin, a return — moves in POINTS. A margin that went
+        from 58 to 59 did not grow 1.7%, and the percentage version of that
+        sentence is a figure the fact-check cannot find anywhere.
+        """
+        vals = self.quarters.get(field) or []
+        labels = self.quarter_labels
+        if len(vals) < 2 or vals[-1] is None:
+            return None
+        rate = field in RATE_FIELDS
+
+        def _delta(prior_i: int) -> dict | None:
+            if prior_i < 0 or prior_i >= len(vals):
+                return None
+            prior = vals[prior_i]
+            if prior is None:
+                return None
+            latest = vals[-1]
+            out = {"from_label": labels[prior_i] if prior_i < len(labels) else "?",
+                   "from": prior, "to": latest}
+            if rate:
+                out["points"] = latest - prior
+            elif prior <= 0 or latest <= 0:
+                # A PERCENTAGE OF A LOSS IS A TRAP. Capex going from -0.8M to
+                # -1.6M is spending that DOUBLED, and every percentage form
+                # of that sentence reads as a cut: "-100%" against a negative
+                # base, "+100%" if you drop the sign. An operating cash flow
+                # crossing zero has no percentage at all.
+                #
+                # So the two values and the change between them, which is
+                # what a writer can say out loud and the fact-check can find
+                # on the sheet: "the loss widened from fifteen million to
+                # sixteen".
+                out["change"] = latest - prior
+            else:
+                out["pct"] = (latest - prior) / prior * 100.0
+            return out
+
+        return {
+            "label": labels[-1] if labels else "latest",
+            "value": vals[-1],
+            "rate": rate,
+            "qoq": _delta(len(vals) - 2),
+            "yoy": _delta(len(vals) - 5),
+        }
+
+    def quarters_prompt_block(self) -> str:
+        """The `[quarters]` table, with both comparisons on every row."""
+        if not self.has_quarters:
+            return ""
+        lines = [f"[quarters · {len(self.quarter_labels)} quarters, "
+                 f"oldest → newest]",
+                 "  quarters: " + " | ".join(self.quarter_labels)]
+        for f in QUARTER_FIELDS:
+            vals = self.quarters.get(f)
+            if not vals or all(v is None for v in vals):
+                continue
+            # `_mag`, not `:g`. A writer handed `1.41e+08` cannot say the
+            # number out loud, and saying it out loud is the whole job.
+            #
+            # The ANNUAL table above still uses `:g` and therefore still has
+            # this problem. Left alone deliberately: changing it would change
+            # the text of every prompt for every ticker, which is not this
+            # group's scope. It is a real wart and is named here rather than
+            # quietly half-fixed.
+            cells = " | ".join("n/a" if v is None else _mag(v) for v in vals)
+            lines.append(f"  {f}: {cells}")
+            moves = self.quarter_moves(f)
+            if moves:
+                lines.append("    " + _moves_line(moves))
+        return "\n".join(lines)
 
     def available_chart_metrics(self) -> list[str]:
         """History metrics that have a multi-year series the renderer can draw
@@ -894,6 +1061,12 @@ class CompanyData(BaseModel):
                 if vals and any(v is not None for v in vals):
                     cells = " | ".join("n/a" if v is None else f"{v:g}" for v in vals)
                     lines.append(f"  {f}: {cells}")
+        # The quarterly table is NOT emitted here. It is its own entry in
+        # `bot.prompts.PAYLOAD` (`{{quarters}}`), placed directly after
+        # `{{company_data}}` — annual first, quarters second (O5). The
+        # multi-year trend is the argument and the quarter is the update to
+        # it; reversing them invites a script that treats one quarter as the
+        # thesis, which is the opposite of what long-form is for.
         if self.dashboard:
             lines.append("[dashboard · one-glance summary + flags]")
             for label, val in self.dashboard.items():

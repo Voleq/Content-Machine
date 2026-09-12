@@ -67,6 +67,14 @@ class FilingRef:
     primary_doc: str  # "aapl-20240928.htm"
     url: str          # full EDGAR archive URL
     filed: str = ""   # ISO filing date
+    # THE PERIOD IT REPORTS ON, not the day it was filed. A 10-Q filed in
+    # November reports on September, and "the same quarter a year earlier"
+    # is a statement about the period, not the paperwork (O3).
+    period: str = ""  # ISO reportDate
+
+    @property
+    def label(self) -> str:
+        return f"{self.form} {self.accession}"
 
 
 @dataclass
@@ -197,34 +205,176 @@ def _load_submissions(cik: str, settings: Settings) -> dict | None:
         return None
 
 
-def _pick_filing(cik: str, ticker: str, submissions: dict,
-                 include_10q: bool) -> FilingRef | None:
-    """Pick the most recent preferred form from the submissions' `recent`
-    parallel arrays and build its EDGAR primary-document URL."""
+ANNUAL_FORMS = ("10-K", "10-K/A")
+QUARTERLY_FORMS = ("10-Q", "10-Q/A")
+
+
+def pick_filings(cik: str, ticker: str, submissions: dict,
+                 forms: tuple[str, ...]) -> list[FilingRef]:
+    """EVERY matching filing, newest first — not just the first one.
+
+    `_pick_filing` returned on the first match, with no parameter and no
+    second entry point, so "the prior year's 10-K" was not reachable at all
+    (K2) and neither was the year-ago 10-Q that O3 needs. A list is the
+    natural shape: a year-over-year diff is what this data is for, and a
+    single-ref API fights that every time it is asked.
+    """
     recent = (submissions.get("filings") or {}).get("recent") or {}
-    forms = recent.get("form") or []
+    all_forms = recent.get("form") or []
     accns = recent.get("accessionNumber") or []
     docs = recent.get("primaryDocument") or []
     dates = recent.get("filingDate") or []
-    wanted = ("10-K", "10-K/A") + (("10-Q", "10-Q/A") if include_10q else ())
-    for i, form in enumerate(forms):
-        if form in wanted and i < len(accns) and i < len(docs):
-            accession = accns[i]
-            primary = docs[i]
-            if not primary:
-                continue
-            nodash = accession.replace("-", "")
-            url = (f"https://www.sec.gov/Archives/edgar/data/"
-                   f"{int(cik)}/{nodash}/{primary}")
-            return FilingRef(ticker=ticker.upper(), cik=cik, form=form,
-                             accession=accession, primary_doc=primary, url=url,
-                             filed=dates[i] if i < len(dates) else "")
-    # foreign filer / no domestic report — degrade, but say why
-    present = set(forms[:20])
-    if present & set(_FOREIGN_FORMS):
-        log.info("filings: %s files %s, no 10-K — skipping auto-shots",
-                 ticker, sorted(present & set(_FOREIGN_FORMS)))
-    return None
+    periods = recent.get("reportDate") or []
+    out: list[FilingRef] = []
+    for i, form in enumerate(all_forms):
+        if form not in forms or i >= len(accns) or i >= len(docs):
+            continue
+        accession, primary = accns[i], docs[i]
+        if not primary:
+            continue
+        nodash = accession.replace("-", "")
+        url = (f"https://www.sec.gov/Archives/edgar/data/"
+               f"{int(cik)}/{nodash}/{primary}")
+        out.append(FilingRef(
+            ticker=ticker.upper(), cik=cik, form=form, accession=accession,
+            primary_doc=primary, url=url,
+            filed=dates[i] if i < len(dates) else "",
+            period=periods[i] if i < len(periods) else ""))
+    if not out:
+        # foreign filer / no domestic report — degrade, but say why
+        present = set(all_forms[:20])
+        if present & set(_FOREIGN_FORMS):
+            log.info("filings: %s files %s, no 10-K — skipping auto-shots",
+                     ticker, sorted(present & set(_FOREIGN_FORMS)))
+    return out
+
+
+def _pick_filing(cik: str, ticker: str, submissions: dict,
+                 include_10q: bool) -> FilingRef | None:
+    """The single most recent preferred form, or None. `pick_filings` is the
+    general case; this keeps the one-shot callers honest."""
+    wanted = ANNUAL_FORMS + (QUARTERLY_FORMS if include_10q else ())
+    refs = pick_filings(cik, ticker, submissions, wanted)
+    return refs[0] if refs else None
+
+
+@dataclass
+class FilingSet:
+    """The filings a pre-angle brief should read, and why each is there.
+
+    Two 10-Ks give the year-over-year annual diff. The two 10-Qs give the
+    sharper one: an annual report is up to twelve months stale, and guidance
+    changes and new risk language appear in the quarterlies first — a risk
+    factor that showed up three months ago is news, one that has been in
+    every filing for four years is furniture (O3).
+    """
+
+    latest_annual: FilingRef | None = None
+    prior_annual: FilingRef | None = None
+    latest_quarter: FilingRef | None = None
+    year_ago_quarter: FilingRef | None = None
+    # THE Q4 WRINKLE. There is no fourth-quarter 10-Q — the 10-K covers it —
+    # so "last quarter" is sometimes inside the annual report. When that is
+    # the case the quarterly slots point at the annual filings and this says
+    # so, rather than the picker returning nothing (O3).
+    quarter_in_annual: bool = False
+
+    def refs(self) -> list[FilingRef]:
+        """Reading order, deduplicated: annual pair, then quarterly pair."""
+        seen: set[str] = set()
+        out: list[FilingRef] = []
+        for ref in (self.latest_annual, self.prior_annual,
+                    self.latest_quarter, self.year_ago_quarter):
+            if ref is not None and ref.accession not in seen:
+                seen.add(ref.accession)
+                out.append(ref)
+        return out
+
+    def describe(self) -> str:
+        """What was read, for the brief's own provenance line."""
+        if not self.refs():
+            return "no domestic filings found"
+        bits = [f"{r.form} {r.period or r.filed}" for r in self.refs()]
+        if self.quarter_in_annual:
+            bits.append("latest quarter is inside the 10-K (no Q4 10-Q)")
+        return " · ".join(bits)
+
+
+def _same_quarter_a_year_earlier(ref: FilingRef,
+                                 refs: list[FilingRef]) -> FilingRef | None:
+    """The filing covering the same period one year before `ref`.
+
+    Matched on the REPORT date's month and day, because that is what "the
+    same quarter" means. Filing dates drift by weeks between years and a
+    fiscal year need not end in December.
+    """
+    if not ref.period:
+        return None
+    stem = ref.period[5:]              # "09-30"
+    year = ref.period[:4]
+    if not (stem and year.isdigit()):
+        return None
+    want = f"{int(year) - 1:04d}-{stem}"
+    for other in refs:
+        if other.accession != ref.accession and other.period == want:
+            return other
+    # A fiscal calendar that shifted by a few days still means the same
+    # quarter, so fall back to the nearest report date in the prior year.
+    prior = [r for r in refs if r.period[:4] == f"{int(year) - 1:04d}"
+             and r.accession != ref.accession]
+    if not prior:
+        return None
+    return min(prior, key=lambda r: abs(_days_apart(r.period[5:], stem)))
+
+
+def _days_apart(a: str, b: str) -> int:
+    """Distance between two `MM-DD` stems, in days, wrapping the year."""
+    try:
+        am, ad = (int(x) for x in a.split("-"))
+        bm, bd = (int(x) for x in b.split("-"))
+    except ValueError:
+        return 999
+    delta = abs((am * 31 + ad) - (bm * 31 + bd))
+    return min(delta, 372 - delta)
+
+
+def resolve_filings(ticker: str, settings: Settings) -> FilingSet:
+    """The brief's reading list: two 10-Ks and the quarterly pair (O3/K2).
+
+    Degrades in every direction — a ticker with one 10-K and no 10-Q yields
+    a set with one ref in it, and a foreign filer yields an empty one. None
+    of that is an error: the brief is an input to a writing prompt, and a
+    thinner brief is better than a refused render.
+    """
+    tickers = _load_company_tickers(settings)
+    cik = resolve_cik(ticker, tickers)
+    if cik is None:
+        log.info("filings: %s not found in the SEC ticker map", ticker)
+        return FilingSet()
+    submissions = _load_submissions(cik, settings)
+    if submissions is None:
+        return FilingSet()
+
+    annual = pick_filings(cik, ticker, submissions, ANNUAL_FORMS)
+    quarterly = pick_filings(cik, ticker, submissions, QUARTERLY_FORMS)
+    out = FilingSet(
+        latest_annual=annual[0] if annual else None,
+        prior_annual=annual[1] if len(annual) > 1 else None,
+    )
+    latest_q = quarterly[0] if quarterly else None
+    # The 10-K reports on a LATER period than the newest 10-Q exactly when
+    # the most recent completed quarter is the fourth — that is the Q4 case,
+    # and the annual report is the filing that covers it.
+    if out.latest_annual and (not latest_q or
+                              out.latest_annual.period > latest_q.period):
+        out.quarter_in_annual = True
+        out.latest_quarter = out.latest_annual
+        out.year_ago_quarter = out.prior_annual
+    else:
+        out.latest_quarter = latest_q
+        out.year_ago_quarter = _same_quarter_a_year_earlier(
+            latest_q, quarterly) if latest_q else None
+    return out
 
 
 def resolve_filing(ticker: str, settings: Settings) -> FilingRef | None:
@@ -244,13 +394,35 @@ def resolve_filing(ticker: str, settings: Settings) -> FilingRef | None:
 # 2. download
 # --------------------------------------------------------------------------
 
+def filing_path(ref: FilingRef, workspace: Path) -> Path:
+    """Where this filing's HTML lives. KEYED ON THE ACCESSION (K2).
+
+    Every filing used to be written to `filings/filing.html`, so the second
+    download into one workspace returned the first one's bytes — silently,
+    and with a name that made the two indistinguishable. A year-over-year
+    brief reading two 10-Ks would have read the same one twice.
+
+    Keying on the accession is also exactly the per-accession cache the
+    brief needs, so it is one change and not two.
+    """
+    safe = re.sub(r"[^0-9A-Za-z_-]", "", ref.accession) or "filing"
+    return workspace / "filings" / f"{safe}.html"
+
+
 def download_filing(ref: FilingRef, workspace: Path, settings: Settings) -> Path | None:
-    """Fetch the filing HTML into ws/filings/ (cached; the workspace is
-    retention-managed). MOCK/offline → the fixture 10-K. None on failure."""
+    """Fetch the filing HTML into ws/filings/<accession>.html (cached; the
+    workspace is retention-managed). MOCK/offline → the fixture 10-K. None
+    on failure."""
     fdir = workspace / "filings"
     fdir.mkdir(parents=True, exist_ok=True)
-    dest = fdir / "filing.html"
+    dest = filing_path(ref, workspace)
     if dest.exists() and dest.stat().st_size > 0:
+        return dest
+    legacy = fdir / "filing.html"
+    if legacy.exists() and legacy.stat().st_size > 0:
+        # A workspace written before the rename. Move it under the accession
+        # it belongs to rather than re-fetching from the SEC.
+        legacy.replace(dest)
         return dest
     if settings.mock_mode:
         src = settings.fixtures_dir / "filings" / "sample_10k.html"

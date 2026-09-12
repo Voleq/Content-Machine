@@ -34,6 +34,9 @@ Article summary (optional — empty if none was fetched; work from the headline 
 Company data (company & earnings modes only; private research — NEVER name any data vendor; on screen everything is "from the 10-K". In macro mode this is a placeholder — ignore it):
 {{company_data}}
 
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
 Peer percentiles (OPTIONAL — where this ticker ranks vs peers; the gut check may drop at most ONE as a one-liner, never a table):
 {{peer_percentiles}}
 

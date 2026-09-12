@@ -53,6 +53,7 @@ from pipeline.models import (
     ALL_DATA_FIELDS,
     DATA_REQUIRED,
     HISTORY_FIELDS,
+    QUARTER_FIELDS,
     CompanyData,
     _STRING_FIELDS,
 )
@@ -121,6 +122,7 @@ EXPORT_NAMES = ("dennis_data.xlsx", "data.xlsx", "dennis_data.csv")
 # sheets read by name (anything else — Instructions, hidden helpers — ignored)
 SNAPSHOT_SHEET = "Snapshot"
 HISTORY_SHEET = "History"
+QUARTERS_SHEET = "Quarters"
 DASHBOARD_SHEET = "Dashboard"
 VALUATION_SHEET = "Valuation"
 PEERS_SHEET = "Peers"
@@ -578,10 +580,15 @@ def _read_snapshot(ws) -> dict[str, object]:
     return pairs
 
 
-def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
-    """Header row carries `field_key`, `Label`, the period labels, then
-    `CAGR …` and the mnemonic column. The period columns are everything
-    between `Label` and the CAGR/mnemonic tail — read dynamically."""
+def _read_periods(ws, allowed: list[str], what: str
+                  ) -> tuple[list[str], dict[str, list[float | None]]]:
+    """A `field_key | Label | <periods…> | <computed tail>` sheet.
+
+    Both History and Quarters have this shape, so both read through here
+    (O1). The period labels come off the header row and are never hardcoded:
+    a workbook carrying seven quarters, or FY-5, must not silently lose a
+    column to a constant in this file.
+    """
     rows = _rows(ws)
     hr = _header_row(rows, "field_key")
     if hr is None:
@@ -611,11 +618,27 @@ def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
         if not key or key == "field_key":
             continue
         history[key] = [_num(row[j] if j < len(row) else None) for j in period_cols]
-    unknown = [k for k in history if k not in HISTORY_FIELDS]
+    unknown = [k for k in history if k not in allowed]
     for k in unknown:
-        log.warning("history sheet has unknown field %r — ignored", k)
+        log.warning("%s sheet has unknown field %r — ignored", what, k)
         history.pop(k)
     return periods, history
+
+
+def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
+    return _read_periods(ws, HISTORY_FIELDS, "history")
+
+
+def _read_quarters(ws) -> tuple[list[str], dict[str, list[float | None]]]:
+    """The last 6-8 quarters, oldest → newest.
+
+    A quarterly sheet is the only thing that makes an earnings video
+    checkable: `templates/shots/earnings.json` opens on `the-print` and
+    `vs-expected`, and with annual series alone the fact-check could not
+    verify a word of either — the writer supplied the print from its own
+    training knowledge and nothing objected (O0).
+    """
+    return _read_periods(ws, QUARTER_FIELDS, "quarters")
 
 
 def _read_dashboard(ws) -> dict[str, object]:
@@ -967,6 +990,8 @@ def load_company_data(workspace: Path) -> CompanyData:
     peers: list[dict] = []
     peer_percentiles: list[dict] = []
     news: list[dict] = []
+    quarter_labels: list[str] = []
+    quarters: dict[str, list[float | None]] = {}
     if src.suffix == ".xlsx":
         wb = load_workbook(src, data_only=True)
         names = set(wb.sheetnames)
@@ -976,6 +1001,13 @@ def load_company_data(workspace: Path) -> CompanyData:
             history_years, history = _read_history(wb[HISTORY_SHEET])
         else:
             log.warning("export has no History sheet — multi-year numbers unavailable")
+        if QUARTERS_SHEET in names:
+            quarter_labels, quarters = _read_quarters(wb[QUARTERS_SHEET])
+        else:
+            # A WARNING, NOT A BLOCK (O1). Plenty of tickers will not have
+            # one, and every workbook that exists today does not — the
+            # annual flow has to keep working exactly as it does.
+            log.warning("export has no Quarters sheet — QoQ/YoY unavailable")
         if DASHBOARD_SHEET in names:
             dashboard = _read_dashboard(wb[DASHBOARD_SHEET])
         if VALUATION_SHEET in names:
@@ -1000,7 +1032,8 @@ def load_company_data(workspace: Path) -> CompanyData:
 
     values = {field: _coerce(field, pairs.get(field)) for field in ALL_DATA_FIELDS}
     return CompanyData(values=values, history_years=history_years,
-                       history=history, dashboard=dashboard,
+                       history=history, quarter_labels=quarter_labels,
+                       quarters=quarters, dashboard=dashboard,
                        valuation=valuation, peers=peers,
                        peer_percentiles=peer_percentiles, news=news,
                        source_file=str(src))
