@@ -3,6 +3,16 @@ import pytest
 from pipeline.models import TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 
+
+# The LONG parser has a length floor (C1) so that a chat remark cannot be
+# saved as a script. These are TOKENISER tests, driven by three-line snippets
+# that are deliberately far below it, so the floor is lowered here and
+# asserted at its real default in the floor's own tests at the end.
+@pytest.fixture()
+def settings(settings):
+    return settings.model_copy(update={"long_min_chars": 0})
+
+
 PALETTE = {
     "tumbleweed", "hamster_wheel", "boardroom_suits", "growing_plant",
     "clown", "dumpster_fire", "sinking_ship", "monopoly_money",
@@ -406,3 +416,49 @@ def test_illustration_is_not_rationed_the_way_the_joke_is(settings, tmp_path):
     _, blocking = validate_long_script(script, PALETTE, tmp_path, settings)
     assert any("[MEME]" in b and "cap" in b for b in blocking), \
         "the joke is supposed to stay rationed"
+
+
+# --------------------------------------------------------------------------
+# C1 — the floor. `parse_long_script` rejected only EMPTY input, so anything
+# that was not JSON became a valid forty-minute script: a chat remark, half
+# a Telegram-split paste, an angle reply that arrived a moment late.
+# --------------------------------------------------------------------------
+
+
+def _real_settings(settings):
+    """Settings with the floor at its shipped default, not the tokeniser's 0."""
+    from config import Settings
+
+    return settings.model_copy(
+        update={"long_min_chars": Settings(_env_file=None).long_min_chars})
+
+
+def test_the_floor_refuses_a_chat_remark(settings):
+    real = _real_settings(settings)
+    with pytest.raises(LongScriptError, match="rather than a script"):
+        parse_long_script(
+            "hold on, the revenue number in row 2 looks wrong", "EXMPL", real)
+
+
+def test_the_floor_refuses_a_tagged_fragment_too(settings):
+    """Brackets are not structure. Every SHORT contains them, which is why
+    the old SHORT->LONG retry accepted one."""
+    real = _real_settings(settings)
+    with pytest.raises(LongScriptError, match="rather than a script"):
+        parse_long_script(
+            '{"format": "short", "hook_text": "EXMPL is up 29% today",',
+            "EXMPL", real)
+
+
+def test_the_floor_lets_a_real_script_through(long_valid_text, settings):
+    real = _real_settings(settings)
+    script, _ = parse_long_script(long_valid_text, "EXMPL", real)
+    assert script.narration
+
+
+def test_the_vendor_block_still_fires_before_the_floor(settings):
+    """A short remark that names the vendor is refused for NAMING THE VENDOR
+    — the more specific message is the useful one."""
+    real = _real_settings(settings)
+    with pytest.raises(LongScriptError, match="vendor"):
+        parse_long_script("According to Refinitiv, revenue fell.", "EXMPL", real)

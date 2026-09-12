@@ -102,17 +102,38 @@ class Workspace:
         return bool(self._lane_data().get("update"))
 
     def current_format(self) -> str | None:
-        """Which format this workspace is working in.
+        """Which format this workspace is working in: the declared lane.
 
-        A pasted script is the strongest signal, then the declared lane. LONG
-        wins a tie between two scripts: a workspace holding both is one where a
-        SHORT was cut from the LONG, and the LONG is the thing being edited.
+        It used to be inferred from which files existed on disk, LONG
+        unconditionally winning — which is backwards, and is why one stray
+        paste poisoned a ticker for the day (C3). Approve the real SHORT and
+        the bot told you to type `/render`, which then reported that the LONG
+        was not approved; tap Approve on a junk LONG report and it rendered
+        16:9 with the paid voice reading JSON fragments.
+
+        The lane is declared once, by `/short` or `/long`, and never
+        inferred. A script file that disagrees with it is a bug to refuse
+        (see `format_conflict`), not a signal to follow.
+
+        `None` only for a workspace with no lane at all — an old folder, or
+        one created before the lane existed.
         """
-        if (self.path / "script_long.json").exists():
-            return "long"
-        if (self.path / "script_short.json").exists():
-            return "short"
         return self.lane() or None
+
+    def format_conflict(self) -> str | None:
+        """A script on file for a format this workspace is not in, if any.
+
+        Returns the offending format's name. The caller decides what to say;
+        what matters here is that the disagreement is VISIBLE rather than
+        silently resolved in favour of whichever file happens to exist.
+        """
+        lane = self.lane()
+        if not lane:
+            return None
+        other = "short" if lane == "long" else "long"
+        if (self.path / f"script_{other}.json").exists():
+            return other
+        return None
 
     # ------------------------------------------------------- revisions (P3.1c)
     # In-chat editing needs an undo. Every save stacks the previous raw here

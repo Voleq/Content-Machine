@@ -160,7 +160,20 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 3. SCRIPT — the `audio_script` (180–210 words), written with the ★ hook as its first sentence, ONE mid-point re-hook (~30s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
 
-THEN, as the final block, the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
+THEN the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the four prose sections in the chat and the JSON object in the `.txt` file.
 
 {
   "ticker": "{{ticker}}",

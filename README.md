@@ -674,11 +674,26 @@ nobody read.
 |---|---|
 | `/render TICKER` | Renders the approved script for that ticker's lane. |
 | `/render_long TICKER` | Forces the LONG, for a ticker that has both. |
+| `/render_short TICKER` | Forces the SHORT, for a ticker that has both. |
 | `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". |
 | `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
 | `/status` | The job queue. |
 | `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
+
+**The lane decides the format, and it is declared rather than inferred.**
+`/short` or `/long` sets it once; `current_format()` returns it. It used to be
+read off which script files existed, with LONG winning unconditionally, so one
+stray paste made `/render`, `/proof`, `/script`, `/edit`, `/undo`, `/upload`
+and `/batch` all target the wrong script for the rest of the day. A script file
+that disagrees with the lane is reported, not followed.
+
+**A pasted script routes by the lane too**, never by whether it starts with a
+brace. A paste that looks cut off — a JSON body that never closes, or a message
+sitting exactly on Telegram's 4,096-character split point — is refused with
+"send it as a .txt file" rather than saved as half a script, and the master
+prompts now ask the model to hand the script back as a downloadable `.txt` with
+only the human-facing summary in the chat body.
 
 ### Publishing
 

@@ -133,7 +133,7 @@ def test_prompts_blocked_without_upload(core):
 
 
 def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_json):
-    core.start_lane(CHAT, "long", "EXMPL")
+    core.start_lane(CHAT, "short", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     reply = core.intake_script(CHAT, short_valid_json)
     assert "EXMPL — SHORT — ready to render" in reply.text
@@ -156,7 +156,7 @@ def test_short_intake_report_and_approval_flow(core, xlsx_bytes, short_valid_jso
 
 
 def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
-    core.start_lane(CHAT, "long", "EXMPL")
+    core.start_lane(CHAT, "short", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, short_valid_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")
@@ -166,9 +166,10 @@ def test_stale_sha_approval_refused(core, xlsx_bytes, short_valid_json):
 
 
 def test_malformed_script_reports_friendly_error(core, xlsx_bytes):
-    core.start_lane(CHAT, "long", "EXMPL")
+    core.start_lane(CHAT, "short", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
-    reply = core.intake_script(CHAT, '{"ticker": "EXMPL", "format": "short"')
+    reply = core.intake_script(CHAT, '{"ticker": "EXMPL", "format": "short",\n'
+                                     '"hook_text": "x", "audio_script": "y"}')
     assert "⛔" in reply.text and "rejected" in reply.text
 
 
@@ -199,9 +200,18 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
 
     from PIL import Image
 
-    raw = ("EXMPL is cheap and hated. Here is my account, for context. "
-           "[SCREENGRAB: broker-pnl] Twenty five k to zero. "
-           "I will be up at three a.m. See you at the next filing.")
+    raw = ("EXMPL is cheap and hated, which is the only interesting "
+           "combination there is, and it is why I am still reading the "
+           "filings at three in the morning instead of sleeping like a "
+           "person with a balanced life. The revenue line went four "
+           "hundred million to four ninety six over five years, which is "
+           "technically growth in the way a coma is technically rest. "
+           "Here is my account, for context. "
+           "[SCREENGRAB: broker-pnl] Twenty five thousand dollars to zero "
+           "dollars and zero cents, which I mention not for sympathy but "
+           "because it is the only credential that matters in this "
+           "business. I will be up at three a.m. either way. "
+           "See you at the next filing.")
     core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
 
@@ -275,7 +285,7 @@ def test_execute_job_short_end_to_end(core, xlsx_bytes):
             {"target": "numbers", "row_index": 1, "anchor_word": "fewer"},
         ],
     })
-    core.start_lane(CHAT, "long", "EXMPL")
+    core.start_lane(CHAT, "short", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
     core.intake_script(CHAT, script_json)
     ws = Workspace.latest_for(core.settings, "EXMPL")

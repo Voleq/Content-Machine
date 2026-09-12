@@ -42,6 +42,7 @@ from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
 from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 from pipeline.parser_short import ScriptParseError, parse_short_script
+from pipeline.plates import PlateError
 from pipeline.rasters import load_font
 from pipeline.render_long import render_long
 from pipeline.script_edit import (
@@ -78,6 +79,7 @@ HELP_TEXT = """Dennis — operator commands
 /earnings TICKER YYYY-MM-DD [bmo|amc] — so the bot flags the print both sides
 /render TICKER — render the approved script for this ticker's lane
 /render_long TICKER — force the LONG (only needed if a ticker has both)
+/render_short TICKER — force the SHORT (same reason, the other way)
 /script — the stored script, numbered, ready to edit
 /edit N <text> — replace line N (N-M for a range; no text deletes it)
 /replace old => new — fix a figure or a phrase in place (all: for every hit)
@@ -415,6 +417,11 @@ class BotCore:
 
         ws = Workspace(self.settings, ws_ticker, today_str()).create()
         self.context.set(chat_id, ws_ticker, ws.workdate)
+        # A headline video is a SHORT, so SAY so (G7). This never set the
+        # lane, which left the workspace lane-less and fed straight into the
+        # format-resolution mess in Group C — the paste that followed was
+        # routed by its shape rather than by what the operator had asked for.
+        ws.set_lane("short")
         ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
         display_headline, summary = self._enrich_headline(headline)
         # Free primary sources (P3.4): the 8-K's EX-99.1 for an earnings
@@ -541,7 +548,9 @@ class BotCore:
             )
 
         if suffix in (".txt", ".json", ".md"):
-            return self.intake_script(chat_id, data.decode("utf-8", errors="replace"))
+            return self.intake_script(chat_id,
+                                      data.decode("utf-8", errors="replace"),
+                                      from_file=True)
 
         return Reply(f"Unsupported file type: {name}")
 
@@ -654,7 +663,8 @@ class BotCore:
             return True  # the LONG write-step output
         return False
 
-    def intake_script(self, chat_id: int, text: str) -> Reply:
+    def intake_script(self, chat_id: int, text: str, *,
+                      from_file: bool = False) -> Reply:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
@@ -662,23 +672,95 @@ class BotCore:
         # the operator's angle choice, not a script — hand back Step 2.
         if ws.awaiting_angle() and text.strip() and not self._looks_like_script(text):
             return self._intake_angle(ws, text)
-        stripped = text.lstrip()
-        looks_short = stripped.startswith("{") or '"format"' in text or "```" in text
-        if looks_short:
+        # A file arrives whole — Telegram only splits chat MESSAGES — so the
+        # truncation check applies to pastes only. Running it on an upload
+        # would refuse exactly the thing the refusal asks for.
+        truncated = None if from_file else self._looks_truncated(text)
+        # Route by the LANE, not by whether the text starts with a brace
+        # (C1). `ws.lane()` was never consulted: anything that did not look
+        # like JSON went to `_intake_long`, and `parse_long_script` rejected
+        # only empty input — so a plain chat remark was saved as a LONG
+        # script. And a failed SHORT parse was retried as a LONG whenever the
+        # text contained brackets, which every SHORT does.
+        lane = ws.lane()
+        if lane == "short":
+            if truncated:
+                return self._truncated_reply("SHORT", truncated)
             try:
                 return self._intake_short(ws, text)
             except ScriptParseError as e:
-                # a fenced LONG narration could false-positive; try long too
-                if "[" in text and "]" in text:
-                    try:
-                        return self._intake_long(ws, text)
-                    except LongScriptError:
-                        pass
                 return Reply(f"⛔ SHORT script rejected:\n{e}")
-        try:
-            return self._intake_long(ws, text)
-        except LongScriptError as e:
-            return Reply(f"⛔ LONG script rejected:\n{e}")
+        if lane == "long":
+            if truncated:
+                return self._truncated_reply("LONG", truncated)
+            try:
+                return self._intake_long(ws, text)
+            except LongScriptError as e:
+                return Reply(f"⛔ LONG script rejected:\n{e}")
+            except PlateError as e:
+                # The kit is not installed. Say so, rather than letting it
+                # escape the handler as an internal error (C5).
+                return Reply(f"⛔ LONG script could not be checked — the "
+                             f"design kit is not installed:\n{e}")
+
+        # No lane at all: an old workspace, or one created before the lane
+        # existed. Shape is the only signal left, and it is the one that was
+        # wrong before — so it is used to ASK rather than to decide.
+        return Reply(
+            "⛔ This workspace has no lane, so I can't tell whether that is a "
+            "SHORT or a LONG — and guessing from the text is what used to "
+            f"save a chat remark as a script.\n\n/short {ws.ticker} or "
+            f"/long {ws.ticker} declares one, then paste it again.")
+
+    # Telegram splits a message over 4,096 characters into separate messages
+    # and `on_text` handles each independently (C2). The SHORT prompt asks
+    # for four prose sections before the JSON and the repo's own sample is
+    # already ~4,200 characters, so the split is the common case rather than
+    # the edge one. A LONG arrives as seven to nine fragments, each saved
+    # over the last as a complete script.
+    #
+    # Buffering consecutive messages was the other option. Refusing is more
+    # honest: a buffer has to guess when the operator has finished, and
+    # guessing wrong silently truncates a script — which is the failure being
+    # fixed. A `.txt` upload cannot be split at all.
+    TELEGRAM_MESSAGE_LIMIT = 4096
+
+    @classmethod
+    def _looks_truncated(cls, text: str) -> str | None:
+        """Why this paste looks like a fragment, or None if it does not."""
+        stripped = text.strip()
+        if not stripped:
+            return None
+        if stripped.startswith("{") or stripped.startswith("```"):
+            # A JSON body that never closes is a fragment whatever its length.
+            if stripped.count("{") - stripped.count("}") > 0:
+                return "the JSON body never closes"
+        # A message AT the limit was cut there. A narrow band rather than a
+        # threshold, in both directions:
+        #
+        # - Not "near" it. Telegram splits at exactly 4,096, so every
+        #   fragment but the last is exactly that long, and a loose lower
+        #   bound refuses complete messages that merely ran close — the
+        #   repo's own SHORT fixture is 4,056 characters.
+        # - Not "over" it either. Telegram cannot deliver a chat message
+        #   longer than the limit, so anything longer did not come through
+        #   the chat at all: it is a file, a test, or a re-intake.
+        #
+        # The limit counts UTF-16 units and `len()` counts code points, so
+        # the band absorbs the handful an emoji or two would differ by.
+        if cls.TELEGRAM_MESSAGE_LIMIT - 16 <= len(text) <= cls.TELEGRAM_MESSAGE_LIMIT:
+            return (f"it is {len(text)} characters, which is where Telegram "
+                    f"cuts a message in two")
+        return None
+
+    @staticmethod
+    def _truncated_reply(fmt: str, why: str) -> Reply:
+        return Reply(
+            f"⛔ That {fmt} looks cut off — {why}.\n\n"
+            f"Telegram splits anything over 4,096 characters into separate "
+            f"messages, and each one arrives here as its own paste. Send the "
+            f"script as a .txt file instead — drag it into the chat — and it "
+            f"arrives whole.")
 
     # ------------------------------------------- in-chat revision (P3.1c)
     def script_listing(self, chat_id: int) -> Reply:
@@ -1020,7 +1102,8 @@ class BotCore:
         ws.set_broll_override(key, (current + 1) % max(n, 1))
         raw = (ws.path / "script_long.raw.txt").read_text(encoding="utf-8")
         self.context.set(chat_id, ticker, workdate)
-        reply = self.intake_script(chat_id, raw)  # rebuild report + sheet
+        # Re-intake of a script already on file, not a new paste.
+        reply = self.intake_script(chat_id, raw, from_file=True)
         reply.text = f"🔄 {key}: take {(current + 1) % max(n, 1) + 1}/{max(n, 1)}\n\n" + reply.text
         return reply
 
@@ -1904,12 +1987,18 @@ def build_application(settings: Settings, core: BotCore):
             text = f"⛔ {e}"
         await _send(update, Reply(text))
 
-    @guard
-    async def cmd_render_long_impl(update, ctx):
+    async def _render_in(update, ctx, fmt: str, command: str) -> None:
+        """`/render_short` and `/render_long`: the explicit overrides.
+
+        Both exist so a ticker that has both formats on one date can reach
+        either (C4). Only `/render_long` did, so the SHORT was unreachable
+        the moment a LONG existed — which combined with format-by-file-
+        existence to make one stray paste cost a day's SHORT.
+        """
         if not ctx.args:
-            await _send(update, Reply("Usage: /render_long TICKER"))
+            await _send(update, Reply(f"Usage: /{command} TICKER"))
             return
-        kind, text, ws = core.render_request(ctx.args[0].upper(), "long", False)
+        kind, text, ws = core.render_request(ctx.args[0].upper(), fmt, False)
         if kind is None or ws is None:
             await _send(update, Reply(text))
             return
@@ -1918,6 +2007,14 @@ def build_application(settings: Settings, core: BotCore):
         except ValueError as e:
             text = f"⛔ {e}"
         await _send(update, Reply(text))
+
+    @guard
+    async def cmd_render_long_impl(update, ctx):
+        await _render_in(update, ctx, "long", "render_long")
+
+    @guard
+    async def cmd_render_short_impl(update, ctx):
+        await _render_in(update, ctx, "short", "render_short")
 
     @guard
     async def cmd_draft(update, ctx):
@@ -2135,7 +2232,9 @@ def build_application(settings: Settings, core: BotCore):
         elif op == "w!" and len(parts) == 3:
             core.context.set(chat_id, parts[1], parts[2])
             raw_file = Workspace(core.settings, parts[1], parts[2]).path / "script_long.raw.txt"
-            reply = (core.intake_script(chat_id, raw_file.read_text(encoding="utf-8"))
+            reply = (core.intake_script(chat_id,
+                                        raw_file.read_text(encoding="utf-8"),
+                                        from_file=True)
                      if raw_file.exists() else Reply("No LONG script on file."))
         elif op == "s" and len(parts) == 4:
             reply = core.swap_key(chat_id, parts[1], parts[2], parts[3])
@@ -2166,6 +2265,7 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("prompts", cmd_prompts))
     app.add_handler(CommandHandler("render", cmd_render))
     app.add_handler(CommandHandler("render_long", cmd_render_long_impl))
+    app.add_handler(CommandHandler("render_short", cmd_render_short_impl))
     app.add_handler(CommandHandler("draft", cmd_draft))
     app.add_handler(CommandHandler("proof", cmd_proof))
     app.add_handler(CommandHandler("repurpose", cmd_repurpose))

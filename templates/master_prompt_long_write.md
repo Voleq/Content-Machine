@@ -308,6 +308,19 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - Close resigned, not conclusive — on "you don't have to swing at every pitch". A pass is a considered position, not indecision.
 
 ## OUTPUT
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the HOOK OPTIONS menu in the chat and the narration, the `=== CHAPTERS ===` trailer and any `=== CONFESSION ===` trailer in the `.txt` file.
 First the `=== HOOK OPTIONS ===` block, then the narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin the script at the chosen hook.
 
 After the narration, append a `=== CHAPTERS ===` trailer — one line per chapter,

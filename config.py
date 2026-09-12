@@ -183,6 +183,13 @@ class Settings(BaseSettings):
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
     # target — the writer assembles chapters and runtime falls out of that.
     long_max_chars: int = Field(default=36000, alias="LONG_MAX_CHARS")
+    # The LONG parser's floor (C1). It used to reject only EMPTY input, so a
+    # plain chat remark — "hold on, the revenue number in row 2 looks wrong"
+    # — parsed as a valid forty-minute script and was saved over whatever was
+    # there. A real LONG runs to twenty thousand characters; four hundred is
+    # far below anything a writer would send and far above anything an
+    # operator would type into a chat by accident.
+    long_min_chars: int = Field(default=400, alias="LONG_MIN_CHARS")
     # LONG scripts are chunked by paragraph to stay under request limits.
     tts_chunk_chars: int = 4000
 

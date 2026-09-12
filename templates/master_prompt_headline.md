@@ -99,6 +99,19 @@ Keep it to ~1–3 inline marks. They ride on the fixed beats; they don't replace
 13. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the prose sections in the chat and the JSON object in the `.txt` file.
 Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
 1. READ — one line on the news and which MODE it is, then the 1–5 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.
