@@ -305,3 +305,31 @@ def test_a_clip_that_fell_to_filler_is_named_on_the_approval_report(
     assert said[0] in report.warnings
     assert f"⚠️ {said[0]}" in text, "it has to reach the rendered report"
     assert report.approvable, "a missing illustration warns; it never blocks"
+
+
+# --------------------------------------------------------------------------
+# A2 — /cost must not contradict itself. The thing that decides whether the
+# voice spends is `mocking_tts` (which follows MOCK_TTS), not MOCK_MODE.
+# --------------------------------------------------------------------------
+
+
+def test_cost_does_not_claim_zero_spend_while_the_paid_voice_is_live(settings):
+    """MOCK_MODE=true with MOCK_TTS=false is a live ElevenLabs."""
+    from bot.handlers import BotCore
+
+    live_voice = settings.model_copy(update={"mock_mode": True, "mock_tts": False})
+    text = BotCore(live_voice).cost_text()
+
+    assert "TTS: live" in text
+    assert "no paid calls possible" not in text, \
+        "the voice is live; the mode line said it could not be"
+
+
+def test_cost_says_no_paid_calls_when_nothing_can_spend(settings):
+    from bot.handlers import BotCore
+
+    both_mocked = settings.model_copy(update={"mock_mode": True, "mock_tts": True})
+    text = BotCore(both_mocked).cost_text()
+
+    assert "no paid calls possible" in text
+    assert "TTS: MOCK" in text

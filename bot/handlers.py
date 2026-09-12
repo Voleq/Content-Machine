@@ -1740,7 +1740,6 @@ class BotCore:
             f"Pexels calls: {self.ledger.pexels_calls_this_month()} of "
             f"{self.settings.pexels_monthly_call_cap}\n"
             f"Filing-flagger LLM: ${self.ledger.llm_usd_this_month():.2f}\n"
-            f"Mode: {'MOCK (no paid calls possible)' if self.settings.mock_mode else 'LIVE'}\n"
             + self._mock_status_line()
         )
 
@@ -1751,13 +1750,25 @@ class BotCore:
         prices and a placeholder voice looks identical to a run with neither
         unless something says so.
 
+        This is also the ONLY mode line in `/cost` (A2). There used to be a
+        second one above it derived from `MOCK_MODE`, which is not the thing
+        that decides whether the voice spends — `mocking_tts` is, and it
+        follows the `MOCK_TTS` override. With `MOCK_MODE=true MOCK_TTS=false`
+        the old line read "no paid calls possible" directly above this one
+        reading "TTS: live", contradicting itself inside one reply.
         """
         s = self.settings
         rows = [f"{name}: {'MOCK' if on else 'live'}" for name, on in (
             ("TTS", s.mocking_tts), ("Prices", s.mocking_prices),
             ("Screener", s.mocking_screener))]
+        # The headline is whether MONEY can move, and only the voice spends
+        # per render. Pexels and the filing flagger follow MOCK_MODE, so say
+        # so separately rather than folding them into one claim.
+        spending = "no paid calls possible" if s.mocking_tts and s.mock_mode \
+            else "paid calls possible"
+        head = f"Mode: {spending}\n"
         banner = s.mock_banner()
-        return "  ·  ".join(rows) + (f"\n{banner}" if banner else "")
+        return head + "  ·  ".join(rows) + (f"\n{banner}" if banner else "")
 
 
 # ---------------------------------------------------------------------------
