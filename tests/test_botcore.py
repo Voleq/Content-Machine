@@ -216,11 +216,19 @@ def test_screengrab_flow_blocks_and_accepts_upload(core, xlsx_bytes):
     core.start_lane(CHAT, "long", "EXMPL")
     core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
 
+    # `assets/custom/` is the SHARED library, not a tmp dir — it has to be,
+    # because that is where the renderer looks. A run killed between the
+    # upload and the cleanup below therefore leaves a file that makes this
+    # test pass for the wrong reason next time, so it is cleared going in as
+    # well as coming out.
+    custom = core.settings.assets_dir / "custom"
+    for stale in custom.glob("broker-pnl.*"):
+        stale.unlink()
+
     reply = core.intake_script(CHAT, raw)
     assert "BLOCKED" in reply.text
     assert "SCREENGRAB" in reply.text and "broker-pnl" in reply.text
 
-    custom = core.settings.assets_dir / "custom"
     try:
         # a short screen-record (mp4) whose name matches the slug routes to custom/
         buf = io.BytesIO()
@@ -254,9 +262,15 @@ def test_swap_key_invalidates_approval_and_rotates(core, xlsx_bytes, long_valid_
     core.approve("long", "EXMPL", ws.workdate, script.content_sha()[:8])
     assert ws.is_approved("long")
 
-    reply = core.swap_key(CHAT, "EXMPL", ws.workdate, "tumbleweed")
-    assert "take" in reply.text
-    assert ws.broll_overrides()["tumbleweed"] == 1
+    # Swap buttons address an OCCURRENCE by index now (G4, G5): the payload
+    # text does not fit Telegram's 64-byte callback limit, and keying on it
+    # swapped every beat that shared a palette key.
+    slots = core.swappable_slots(ws.load_long())
+    i = next(n for n, (_tag, payload) in enumerate(slots)
+             if payload == "tumbleweed")
+    reply = core.swap_key(CHAT, "EXMPL", ws.workdate, str(i))
+    assert "tumbleweed" in reply.text and "take" in reply.text
+    assert ws.broll_overrides()[f"{slots[i][0]}:{i}"] == 1
     assert not ws.is_approved("long"), "swap must reset the approval gate"
 
 

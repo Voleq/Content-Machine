@@ -4,7 +4,7 @@ Callback data grammar (64-byte Telegram limit — keep it terse):
     a|<fmt>|<ticker>|<date>|<sha8>     approve
     x|<fmt>|<ticker>|<date>           cancel
     w|<ticker>|<date>                 open the swap-clip menu (LONG)
-    s|<ticker>|<date>|<key>           swap this b-roll key to its next take
+    s|<ticker>|<date>|<i>             swap visual #i to its next take
     n|<lane>|<ticker>                 open a screener candidate in its own lane
     fv|<ticker>|<date>|<file>         veto (drop) an auto-pulled filing shot
 """
@@ -55,13 +55,33 @@ def approval_keyboard(fmt: str, ticker: str, workdate: str, sha: str,
     return InlineKeyboardMarkup(rows)
 
 
-def swap_keyboard(ticker: str, workdate: str, keys: list[str]) -> InlineKeyboardMarkup:
+# Telegram rejects callback data over 64 BYTES, and rejects the whole markup
+# when one button is over — so the menu failed with "internal error" rather
+# than dropping a button (G4). `s|` + ticker + `|` + a 10-char date + `|`
+# leaves roughly 44 bytes, and the payload that went in there was a
+# free-text clip subject the prompt actively encourages writing in full.
+#
+# An index is bounded by construction, and it pairs with G5: the index is
+# the occurrence, so two beats that share a subject are separately
+# swappable.
+CALLBACK_DATA_MAX = 64
+
+
+def swap_keyboard(ticker: str, workdate: str,
+                  keys: list[str]) -> InlineKeyboardMarkup:
+    """One button per swappable visual, addressed BY INDEX.
+
+    `keys` is the label list in plan order; the index is what travels, and
+    the handler resolves it against the stored plan.
+    """
     rows = []
     for i in range(0, len(keys), 2):
-        rows.append([
-            InlineKeyboardButton(f"🔄 {k}", callback_data=f"s|{ticker}|{workdate}|{k}")
-            for k in keys[i:i + 2]
-        ])
+        row = []
+        for j, k in enumerate(keys[i:i + 2], start=i):
+            label = k if len(k) <= 28 else k[:27] + "…"
+            row.append(InlineKeyboardButton(
+                f"🔄 {label}", callback_data=f"s|{ticker}|{workdate}|{j}"))
+        rows.append(row)
     rows.append([InlineKeyboardButton("◀ back to report", callback_data=f"w!|{ticker}|{workdate}")])
     return InlineKeyboardMarkup(rows)
 
@@ -71,9 +91,11 @@ def filing_veto_keyboard(ticker: str, workdate: str,
     """One drop button per auto-pulled filing shot (veto a bad crop)."""
     rows = []
     row = []
-    for i, name in enumerate(names, 1):
+    # Same shape as the swap menu, same reason: a filename in the callback
+    # data blows the 64-byte limit and takes the whole markup with it (G4).
+    for i, _name in enumerate(names, 1):
         row.append(InlineKeyboardButton(
-            f"❌ drop #{i}", callback_data=f"fv|{ticker}|{workdate}|{name}"
+            f"❌ drop #{i}", callback_data=f"fv|{ticker}|{workdate}|{i - 1}"
         ))
         if len(row) == 3:
             rows.append(row)

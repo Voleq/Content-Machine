@@ -819,7 +819,7 @@ class BotCore:
 
         return self._revise(ws, fmt, raw, result.text,
                             note=f"✏️ {result.summary}",
-                            diff=diff_lines(raw, result.text))
+                            diff=diff_lines(raw, result.text))[0]
 
     def undo_edit(self, chat_id: int) -> Reply:
         """Step back one revision. The stack survives a restart."""
@@ -833,17 +833,29 @@ class BotCore:
         previous = ws.pop_revision(fmt)
         if previous is None:
             return Reply("Nothing to undo — this is the script as pasted.")
-        reply = self._revise(ws, fmt, current, previous,
-                             note="↩️ reverted to the previous revision",
-                             diff=diff_lines(current, previous))
-        # `_revise` saved, which pushed `current` onto the stack; drop it so a
-        # second /undo goes further back rather than toggling between two.
-        ws.pop_revision(fmt)
+        reply, saved = self._revise(ws, fmt, current, previous,
+                                    note="↩️ reverted to the previous revision",
+                                    diff=diff_lines(current, previous))
+        if saved:
+            # `_revise` saved, which pushed `current` onto the stack; drop it
+            # so a second /undo goes further back rather than toggling.
+            ws.pop_revision(fmt)
+        else:
+            # It did NOT save, so nothing was pushed — and the second pop
+            # used to run anyway and eat a revision that was never replaced
+            # (G1). Put back the one this /undo took off, so a failed undo
+            # costs nothing.
+            ws.push_revision_text(fmt, previous)
         return reply
 
     def _revise(self, ws: Workspace, fmt: str, before: str, after: str,
-                *, note: str, diff: str = "") -> Reply:
+                *, note: str, diff: str = "") -> tuple[Reply, bool]:
         """Validate a candidate script and, only if it holds up, store it.
+
+        Returns `(reply, saved)`. The caller needs to know (G1): `/undo`
+        pops a revision, calls this, and then pops again to drop the one the
+        save pushed — and when this REJECTS the candidate nothing was pushed,
+        so the second pop was eating a revision that was never replaced.
 
         On rejection the workspace keeps `before` untouched: the operator gets
         the parser's complaint and can try again, with nothing lost.
@@ -854,12 +866,12 @@ class BotCore:
         except (ScriptParseError, LongScriptError) as e:
             return Reply(
                 f"⛔ that edit doesn't parse, so I've left the script alone:\n{e}"
-                f"\n\nThe script is unchanged — /script to see it.")
+                f"\n\nThe script is unchanged — /script to see it."), False
         head = note
         if diff:
             head += f"\n```\n{diff}\n```"
         reply.text = f"{head}\n\n{reply.text}"
-        return reply
+        return reply, True
 
     def _intake_angle(self, ws: Workspace, text: str) -> Reply:
         """The operator picked a LONG angle — store it, run the thesis-aware
@@ -918,13 +930,25 @@ class BotCore:
                                             [s["name"] for s in shots])
         return Reply(note, files=[f], photo=photo, keyboard=keyboard)
 
-    def veto_filing(self, chat_id: int, ticker: str, workdate: str, name: str) -> Reply:
+    def veto_filing(self, chat_id: int, ticker: str, workdate: str,
+                    index: str) -> Reply:
         """Operator dropped an auto-pulled filing crop — remove it and re-send
-        the writing prompt (regenerated without that shot)."""
-        from pipeline.filings import veto_shot
+        the writing prompt (regenerated without that shot).
+
+        Addressed by index for the same reason as the swap menu: a filename
+        in the callback data blows Telegram's 64-byte limit and takes the
+        whole markup with it (G4).
+        """
+        from pipeline.filings import load_manifest, veto_shot
 
         ws = Workspace(self.settings, ticker, workdate)
         self.context.set(chat_id, ticker, workdate)
+        shots = load_manifest(ws.path) or []
+        try:
+            name = str(shots[int(index)].get("name", ""))
+        except (ValueError, IndexError, AttributeError):
+            # An older button still carrying the filename, or a stale index.
+            name = index
         removed = veto_shot(ws.path, name)
         header = f"🗑 Dropped {name}." if removed else f"({name} already gone.)"
         return self._long_write_reply(ws, header=header)
@@ -1083,28 +1107,63 @@ class BotCore:
         script = ws.load_long()
         if script is None:
             return Reply("No LONG script on file.")
-        keys = self._long_clip_keys(script)
-        if not keys:
+        slots = self.swappable_slots(script)
+        if not slots:
             return Reply("This LONG has no [CLIP] tags to swap.")
+        labels = [f"{i + 1}. {payload}" for i, (_tag, payload) in enumerate(slots)]
         return Reply(
-            "Pick the clip key to swap to its next take "
+            "Pick the visual to swap to its next take "
             "(approval resets after a swap):",
-            keyboard=swap_keyboard(ticker, workdate, keys),
+            keyboard=swap_keyboard(ticker, workdate, labels),
         )
 
-    def swap_key(self, chat_id: int, ticker: str, workdate: str, key: str) -> Reply:
+    @staticmethod
+    def swappable_slots(script) -> list[tuple[str, str]]:
+        """Every swappable visual in the script, IN ORDER, as (tag, payload).
+
+        One entry per OCCURRENCE, not per distinct payload (G5). An override
+        keyed on the payload text swapped every beat that shared it — and the
+        prompt actively encourages reusing palette keys, so that is the
+        common case rather than the edge one. It also could not tell a
+        `[CLIP]` from an `[IMG]` carrying the same subject.
+        """
+        out: list[tuple[str, str]] = []
+        for e in getattr(script, "events", []) or []:
+            tag = getattr(getattr(e, "type", None), "value", "")
+            if tag in ("CLIP", "BROLL", "IMG", "PRODUCT", "MEME"):
+                out.append((tag, e.payload))
+        return out
+
+    def swap_key(self, chat_id: int, ticker: str, workdate: str,
+                 index: str) -> Reply:
+        """Swap ONE occurrence to its next take.
+
+        `index` is the position in `swappable_slots` — a small integer that
+        fits Telegram's 64-byte callback limit (G4) and identifies the
+        occurrence rather than the payload text (G5).
+        """
         ws = Workspace(self.settings, ticker, workdate)
         script = ws.load_long()
         if script is None:
             return Reply("No LONG script on file.")
-        current = ws.broll_overrides().get(key, 0)
-        n = self.content.alternates_count(key)
-        ws.set_broll_override(key, (current + 1) % max(n, 1))
+        slots = self.swappable_slots(script)
+        try:
+            i = int(index)
+            tag, payload = slots[i]
+        except (ValueError, IndexError):
+            return Reply("That swap button is stale — the script changed. "
+                         "Open the menu again.")
+        slot = f"{tag}:{i}"
+        current = ws.broll_overrides().get(slot, 0)
+        n = self.content.alternates_count(payload)
+        take = (current + 1) % max(n, 1)
+        ws.set_broll_override(slot, take)
         raw = (ws.path / "script_long.raw.txt").read_text(encoding="utf-8")
         self.context.set(chat_id, ticker, workdate)
         # Re-intake of a script already on file, not a new paste.
         reply = self.intake_script(chat_id, raw, from_file=True)
-        reply.text = f"🔄 {key}: take {(current + 1) % max(n, 1) + 1}/{max(n, 1)}\n\n" + reply.text
+        reply.text = (f"🔄 {payload}: take {take + 1}/{max(n, 1)}\n\n"
+                      + reply.text)
         return reply
 
     # ------------------------------------------------------------- renders
@@ -1222,8 +1281,9 @@ class BotCore:
             tts = self.tts.synthesize(script.audio_script, "short",
                                       events=script.inline_events)
             checkpoint("render")
-            out, manifest = render_short(script, tts, ws.path, self.settings,
-                                         content=self.content)
+            out, manifest = render_short(
+                script, tts, ws.path, self.settings, content=self.content,
+                format_name=self.short_format_name(ws))
             checkpoint("delivery")
             result = deliver(out, job.ticker, job.workdate, self.settings)
             self._finish(job, result)
@@ -1388,8 +1448,9 @@ class BotCore:
             # `proof=True` picks `short_proof.mp4` (D5). It used to land on
             # `short_final.mp4` and replace a paid final with a free-voice
             # pass, which `/upload` would then send to YouTube.
-            out, _ = render_short(script, tts, ws.path, self.settings,
-                                  content=self.content, proof=True)
+            out, _ = render_short(
+                script, tts, ws.path, self.settings, content=self.content,
+                proof=True, format_name=self.short_format_name(ws))
         else:
             data = self._company_data(ws)
             as_of = str(data.get("as_of_date") or "") if data is not None else ""
@@ -1876,6 +1937,31 @@ class BotCore:
                     return found
         return None
 
+    @staticmethod
+    def short_format_name(ws: Workspace) -> str:
+        """Which shot template a SHORT renders through (G7).
+
+        `/headline` detects a mode — company, earnings or macro — and stored
+        it on the workspace, and `render_short` defaulted to `"short"` on
+        every call from the bot. So `templates/shots/earnings.json` and
+        `templates/shots/macro.json` were reachable only from the sample
+        script, and the mode changed the WRITING PROMPT and nothing
+        downstream.
+
+        That matters more than an unused template: the three formats are
+        different arguments with different beat orders. `short` is "noise or
+        signal" — chart first, then the news, then multi-year numbers, then a
+        valuation judgement. `earnings` is "did they beat, and does it
+        matter" — the print against expectations, then guidance, and no price
+        chart at all. `macro` is "what happened and who does it hurt" — the
+        print, the statement, a mechanism, a who-it-hits beat, and no company
+        numbers sheet, because there is no company. An earnings script landed
+        on the plain short's chart-first ten beats and the mismatch was
+        silent.
+        """
+        mode = str((ws.headline() or {}).get("mode") or "")
+        return mode if mode in ("earnings", "macro") else "short"
+
     def _upload_target(self, ws: Workspace, wanted: str = "",
                        ) -> tuple[str, Path | None, str]:
         """Which file `/upload` should send, and why if none (E5).
@@ -1964,7 +2050,15 @@ class BotCore:
         wl = Watchlist(self.settings)
         if args:
             head = args[0].lower()
-            if head in ("drop", "remove", "off") and len(args) > 1:
+            if head in ("drop", "remove", "off"):
+                # Without the ticker this used to fall through and start
+                # WATCHING A STOCK CALLED "DROP" (G6) — the guard required a
+                # second argument and there was no else.
+                if len(args) < 2:
+                    return Reply(
+                        f"Usage: /watch drop TICKER\n"
+                        f"Currently watched: "
+                        f"{', '.join(wl.all()) or '(nothing)'}")
                 ticker = args[1].upper()
                 gone = wl.remove(ticker)
                 return Reply(f"👁 {'unpinned' if gone else 'was not pinned'}: {ticker}"

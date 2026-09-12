@@ -322,3 +322,44 @@ def test_replace_reaches_the_bot_the_same_way(core_with_long):
     # replacing a word with itself is a no-op edit — the parser accepts it but
     # nothing should claim to have changed
     assert "replaced" in reply.text or "already" in reply.text
+
+
+# --------------------------------------------------------------------------
+# G1 — an /undo that fails validation still discarded a revision.
+# --------------------------------------------------------------------------
+
+
+def test_a_rejected_undo_does_not_eat_a_revision(settings, long_valid_text,
+                                                 monkeypatch):
+    """`_revise` returns a rejection WITHOUT saving, so nothing was pushed —
+    and the second `pop_revision` ran anyway and ate a revision that was
+    never replaced."""
+    import shutil
+    from pathlib import Path
+
+    from bot.handlers import BotCore
+
+    core = BotCore(settings)
+    core.start_lane(CHAT, "long", "EXMPL")
+    ws = core.context.get(CHAT)
+    fixtures = Path(__file__).resolve().parents[1] / "fixtures"
+    shutil.copy(fixtures / "company_data" / "dennis_data.xlsx",
+                ws.path / "dennis_data.xlsx")
+    ws.clear_awaiting_angle()
+    core.intake_script(CHAT, long_valid_text)
+    core.edit_script(CHAT, ["1", "A different opening line entirely, for once."])
+    before = ws.revision_count("long")
+    assert before >= 1
+
+    # The revert candidate fails to parse.
+    from pipeline.parser_long import LongScriptError
+
+    def refuse(_ws, _raw):
+        raise LongScriptError("nope")
+
+    monkeypatch.setattr(core, "_intake_long", refuse)
+    reply = core.undo_edit(CHAT)
+
+    assert "doesn't parse" in reply.text
+    assert ws.revision_count("long") == before, \
+        "a refused undo must cost nothing"

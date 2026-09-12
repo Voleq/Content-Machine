@@ -402,3 +402,95 @@ def test_a_missing_design_kit_surfaces_as_a_refusal_not_an_internal_error(
 
     assert "design kit is not installed" in reply.text
     assert "ingest_kit" in reply.text
+
+
+# --------------------------------------------------------------------------
+# G4 / G5 / G6 / G7 — the rest of the command surface.
+# --------------------------------------------------------------------------
+
+
+def test_no_swap_button_can_exceed_telegrams_callback_limit(core, settings):
+    """G4: `k` was a free-text clip key, and the fixed prefix left about 44
+    bytes for a subject the prompt encourages writing in full. Over that,
+    Telegram rejects the WHOLE markup and the menu fails with "internal
+    error"."""
+    from bot.keyboards import CALLBACK_DATA_MAX, swap_keyboard
+
+    verbose = [
+        "a wide shot of an abandoned shopping mall escalator at night, "
+        "nobody on it, the lights still on",
+        "an office plant nobody has watered since the last funding round",
+    ]
+    kb = swap_keyboard("EXMPL", "2026-09-12", verbose)
+
+    for row in kb.inline_keyboard:
+        for b in row:
+            assert len(b.callback_data.encode("utf-8")) <= CALLBACK_DATA_MAX, \
+                b.callback_data
+
+
+def test_swapping_one_occurrence_leaves_the_other_alone(core, settings):
+    """G5: an override keyed on the payload swapped every beat that shared
+    it — and the prompt encourages reusing palette keys."""
+    from pipeline.workspace import Workspace
+
+    text = (
+        "EXMPL is down sixty percent from its high and nobody is left to "
+        "sell it, which is the only moment worth reading a filing in at "
+        "three in the morning. [CLIP: tumbleweed] The chart nobody "
+        "screenshots looks like this, and it has looked like this for a "
+        "year and a half without anybody writing it up. The revenue line "
+        "went four hundred million to four ninety six over five years, "
+        "which is technically growth in the way a coma is technically "
+        "rest, and the losses widened every single year underneath it. "
+        "[CLIP: tumbleweed] Same silence, a year later, and the same "
+        "people telling me it is a coiled spring. I will be up at three "
+        "either way. See you at the next filing.")
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+    core.intake_script(CHAT, text)
+
+    slots = core.swappable_slots(ws.load_long())
+    assert [p for _t, p in slots] == ["tumbleweed", "tumbleweed"], \
+        "two occurrences, not one deduplicated key"
+
+    core.swap_key(CHAT, "EXMPL", ws.workdate, "0")
+    overrides = ws.broll_overrides()
+
+    assert overrides.get("CLIP:0") == 1
+    assert "CLIP:1" not in overrides, \
+        "swapping one occurrence must not move the other"
+
+
+def test_watch_drop_with_no_ticker_prints_usage(core):
+    """G6: the guard required a second argument and there was no else, so
+    `/watch drop` started watching a stock called DROP."""
+    reply = core.watch_command(["drop"])
+
+    assert "Usage" in reply.text
+    assert "DROP" not in core.watch_command([]).text
+
+
+def test_the_headline_mode_reaches_the_renderer(core, settings):
+    """G7: `render_short` defaulted to "short" on every call from the bot,
+    so `templates/shots/earnings.json` and `macro.json` were reachable only
+    from the sample script — the mode changed the prompt and nothing else."""
+    from pipeline.workspace import Workspace
+
+    core.headline_command(CHAT, ["NVDA", "[earnings]", "NVDA", "tops",
+                                 "Q3", "estimates", "and", "raises", "guide"])
+    ws = Workspace.latest_for(settings, "NVDA")
+
+    assert ws.headline()["mode"] == "earnings"
+    assert core.short_format_name(ws) == "earnings"
+    assert ws.lane() == "short", "and the lane is set, which it never was"
+
+
+def test_a_plain_short_still_renders_through_the_plain_template(core, settings):
+    from pipeline.workspace import Workspace
+
+    core.start_lane(CHAT, "short", "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    assert core.short_format_name(ws) == "short"

@@ -652,7 +652,7 @@ this section failing.
 | `/short TICKER` | Opens a SHORT (9:16, 60–75s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
 | `/long TICKER` | Opens a LONG (16:9 deep dive). Two steps: Step 1 returns ranked angles, you reply with a number, Step 2 is the writing prompt. |
 | `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Refuses (and points at `/long`) when no thesis is on file. |
-| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. |
+| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template, so an earnings script renders through the earnings beat order rather than the plain short's. |
 | `/prompts` | Re-sends the active workspace's pre-filled prompt. |
 
 ### Reviewing and editing the script
@@ -662,7 +662,7 @@ this section failing.
 | `/script` | The stored script, numbered, so `/edit N` and it agree. |
 | `/edit N <text>` | Replaces line N. `N-M` for a range; no text deletes the line. |
 | `/replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
-| `/undo` | Steps back one revision. |
+| `/undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
 
 An edit that does not parse never lands. Every edit that does re-runs the
 gates, re-prices, and drops the approval — nothing renders from a version
@@ -718,7 +718,7 @@ only the human-facing summary in the chat body.
 | `/idea TICKER <why>` | Adds one by hand. |
 | `/unidea TICKER` | Drops one. |
 | `/thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
-| `/watch [TICKER \| drop TICKER]` | Intraday watch. Published names join automatically. |
+| `/watch [TICKER \| drop TICKER]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. `/watch drop` on its own prints usage instead of watching a stock called DROP. |
 | `/earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
 
 ### Housekeeping

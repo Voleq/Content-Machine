@@ -169,6 +169,19 @@ class Workspace:
         last.unlink()
         return text
 
+    def push_revision_text(self, fmt: str, text: str) -> None:
+        """Put a popped revision back (G1).
+
+        `/undo` pops, then asks the caller to save, then pops again to drop
+        what the save pushed. When the save is REFUSED nothing was pushed, so
+        the undo has to put back what it took or a rejected revert silently
+        costs a revision.
+        """
+        d = self._revision_dir(fmt)
+        d.mkdir(parents=True, exist_ok=True)
+        n = len(list(d.glob("*.txt")))
+        (d / f"{n:03d}.txt").write_text(text, encoding="utf-8")
+
     def load_short(self) -> ShortScript | None:
         f = self.path / "script_short.json"
         return ShortScript.model_validate_json(f.read_text(encoding="utf-8")) if f.exists() else None

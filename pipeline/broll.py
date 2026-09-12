@@ -1030,6 +1030,13 @@ class ContentManager:
         website = str(company_data.get("website") or "") if company_data is not None else ""
         out: list[Visual] = []
         seen: set[tuple[str, str]] = set()
+        # An override is keyed on (TAG, OCCURRENCE INDEX) — `CLIP:3` — not on
+        # the payload text (G5). The prompt encourages reusing palette keys,
+        # so a payload-keyed override swapped every beat that shared one, and
+        # could not tell a `[CLIP]` from an `[IMG]` carrying the same subject.
+        # `swap_index` counts the swappable tags in script order, which is
+        # exactly what the swap menu numbers its buttons by.
+        swap_index = -1
         for e in script.events:
             if e.type in (TagType.CLIP, TagType.BROLL):
                 kind = "clip"
@@ -1043,14 +1050,27 @@ class ContentManager:
                 kind = "screengrab"
             else:
                 continue
+            if e.type in (TagType.CLIP, TagType.BROLL, TagType.IMG,
+                          TagType.PRODUCT, TagType.MEME):
+                swap_index += 1
+            slot = f"{e.type.value}:{swap_index}"
+            choice = overrides.get(slot)
+            if choice is None:
+                # Overrides written before the slot keys existed. Honouring
+                # them keeps a workspace mid-flow working across the change;
+                # the next swap rewrites the key.
+                choice = overrides.get(e.payload, 0)
             style = e.style or "clean"
-            if (kind, e.payload + f":{style}") in seen:
+            # De-duplication is on the RESOLVED identity, so two occurrences
+            # of one payload with different takes are two entries.
+            ident = (kind, f"{e.payload}:{style}:{choice}")
+            if ident in seen:
                 continue
-            seen.add((kind, e.payload + f":{style}"))
+            seen.add(ident)
             out.append(self.resolve_visual(
                 kind, e.payload, ticker=script.ticker,
                 company_data=company_data, website=website,
-                choice=overrides.get(e.payload, 0), style=style,
+                choice=int(choice), style=style,
             ))
         return out
 
