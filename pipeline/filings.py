@@ -534,41 +534,24 @@ def _compress_sections(sections: list[dict], budget: int) -> str:
     return "".join(out)
 
 
-def _llm_chat(prompt: str, settings: Settings, system: str = _FLAG_SYSTEM) -> str | None:
-    """One OpenAI-compatible chat completion. Provider is swappable via
-    config; returns the message content or None on any failure."""
-    try:
-        import httpx
-    except ImportError:  # pragma: no cover
-        return None
-    provider = settings.filings_llm_provider.lower()
-    if provider == "openai":
-        base, token = settings.openai_base_url, settings.openai_api_key
-        url = base.rstrip("/") + "/v1/chat/completions"
-    else:  # github models (default), OpenAI-compatible
-        base, token = settings.github_models_endpoint, settings.github_models_token
-        url = base.rstrip("/") + "/chat/completions"
-    if not token:
-        log.warning("filings: no token for LLM provider %r — skipping", provider)
-        return None
-    try:
-        resp = httpx.post(
-            url,
-            headers={"Authorization": f"Bearer {token}",
-                     "Content-Type": "application/json"},
-            json={
-                "model": settings.filings_llm_model,
-                "messages": [{"role": "system", "content": system},
-                             {"role": "user", "content": prompt}],
-                "temperature": 0.2,
-            },
-            timeout=45.0,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
-    except Exception as e:
-        log.warning("filings: LLM call failed (%s)", e)
-        return None
+def _llm_chat(prompt: str, settings: Settings,
+              system: str = _FLAG_SYSTEM, *, purpose: str = "filings") -> str | None:
+    """One completion, through the routed local-first client (K2).
+
+    THIS WAS A SECOND PROVIDER-RESOLUTION PATH. It was a private httpx
+    implementation reading `filings_llm_provider` and posting to GitHub
+    Models or OpenAI directly, while `pipeline.llm.chat` routed
+    `ollama,github,openai` in order. Two paths in one module is how they
+    drift, and they had: a box with Ollama running served every gate
+    locally and every filing call over the network, for money, silently.
+
+    Kept as a named function rather than deleted because the call sites read
+    better for it and because `purpose` is what the provenance record
+    counts. The provider logic is gone.
+    """
+    from pipeline.llm import chat
+
+    return chat(prompt, settings, system=system, purpose=purpose)
 
 
 _SUMMARY_SYSTEM = (

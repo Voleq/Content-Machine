@@ -26,8 +26,10 @@ PEER PERCENTILES — where THIS ticker ranks within its peer set:
 Chartable metrics present in THIS data (a featured number MUST come from here): {{chart_metrics}}
 Uploaded filing screenshots you could flash: {{available_screenshots}}
 
+THE FILING, ALREADY READ. A survey of the latest annual report, the prior year's, and the quarterly pair beside them: what moved in the risk factors, where management's language shifted, which segments moved, and — the line worth starting from — anything in the filing that disagrees with the numbers above. A company contradicting its own reported figures IS the tension you are looking for. This is a survey, not a receipt: every claim you build on it has to be traceable to the data above or to a quote pulled after the angle is chosen.
+{{filing_brief}}
 
-Auto-extracted filing quotes (the receipts, when present):
+Verbatim filing quotes for a chosen thesis — the receipts, pulled AFTER an angle is picked, so normally empty at this step:
 {{filing_quotes}}
 
 ## YOUR JOB

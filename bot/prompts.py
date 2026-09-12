@@ -442,18 +442,44 @@ def peer_percentiles_block(data: CompanyData) -> str:
     return "\n".join(lines) if lines else "(no peer-percentile block in this export)"
 
 
+def filing_brief_block(workspace: Path) -> str:
+    """The pre-angle filing survey, or why there is not one (K4).
+
+    A NEW PLACEHOLDER rather than filling `{{filing_quotes}}`: the two
+    artefacts are different shapes — a brief is prose, the quotes are
+    verbatim receipts carrying `[SHOW FILING: …]` flash instructions — and
+    collapsing them means the prompt cannot tell the model which is which.
+    """
+    from pipeline.filing_brief import load_brief
+
+    brief = load_brief(workspace)
+    if brief is None:
+        return ("(the filing has not been read for this ticker yet — the "
+                "pre-angle pass either has not finished or did not run. "
+                "Work from the numbers above.)")
+    return brief.render_text()
+
+
 def filing_quotes_block(workspace: Path) -> str:
-    """Auto-extracted 10-K quotes for the smoking-gun walk (task 5), read from
-    the workspace manifest the auto-filings step writes AFTER the angle is
-    picked. Each line gives the verbatim quote, its section, the one-line why,
-    and the exact [SHOW FILING: file] to flash it. Empty until the angle step
-    has run (or when nothing was found — then the walk is simply skipped)."""
+    """Verbatim 10-K quotes for the smoking-gun walk (task 5), read from the
+    workspace manifest `auto_filings` writes AFTER an angle is picked. Each
+    line gives the quote, its section, the one-line why, and the exact
+    [SHOW FILING: file] to flash it.
+
+    The empty-state text used to say filing material "is pulled after you
+    pick an angle", which was true of the quotes and became misleading the
+    moment `{{filing_brief}}` could be present at angle time (K4) — a reader
+    told that nothing from the filing is available yet will not use the
+    survey sitting directly above it.
+    """
     from pipeline.filings import load_manifest
 
     shots = load_manifest(workspace).get("shots", [])
     if not shots:
-        return ("(no auto-extracted filing quotes for this angle yet — they are pulled "
-                "after you pick an angle; skip the smoking-gun walk if none appear)")
+        return ("(no verbatim quotes yet — these are pulled for a CHOSEN "
+                "angle, so they are normally absent at the angle step. The "
+                "filing survey above is separate and may well be present; "
+                "skip only the smoking-gun walk if no quotes appear.)")
     lines: list[str] = []
     for s in shots:
         quote = (s.get("quote") or "").strip()
@@ -709,6 +735,13 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  "(operator did not specify — use your ★recommended angle)"),
 
     # --- source material
+    #
+    # THE BRIEF BEFORE THE RECEIPTS. A survey of the filings, present at
+    # ANGLE time — which is the whole of K: the angle prompt used to be
+    # built from workbook numbers only, and its filing slot was always
+    # empty because the quotes are pulled after an angle is chosen.
+    PayloadBlock("{{filing_brief}}", ("long_angle", "update"),
+                 lambda c: filing_brief_block(c.workspace)),
     PayloadBlock("{{filing_quotes}}", ("long_angle", "long_write", "update"),
                  lambda c: filing_quotes_block(c.workspace)),
     PayloadBlock("{{available_screenshots}}",

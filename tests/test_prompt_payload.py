@@ -71,7 +71,14 @@ def test_the_long_form_pair_agree_on_what_they_are(settings):
     to, or the prior call it is grading — and not about craft, catalogs or
     evidence.
     """
-    spine = {"{{chosen_angle}}", "{{prior_coverage}}"}
+    # `{{filing_brief}}` is in here for a reason worth stating. `/long` has
+    # an angle step, and the filing SURVEY belongs there — by write time the
+    # angle is chosen and the verbatim quotes are the right artefact.
+    # `/update` has no angle step at all, so the survey has nowhere else to
+    # go, and its job on that prompt is grading the prior call: "what I
+    # said → what happened → was I right → what now" (K5b). That is the
+    # spine, not craft or catalogs.
+    spine = {"{{chosen_angle}}", "{{prior_coverage}}", "{{filing_brief}}"}
     only_write = payload_tokens("long_write") - payload_tokens("update")
     only_update = payload_tokens("update") - payload_tokens("long_write")
 

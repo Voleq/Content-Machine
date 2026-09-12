@@ -15,6 +15,9 @@ The register for that is the one you already have and it is the honest one: you 
 ## WHAT YOU SAID LAST TIME (the spine of this video)
 {{prior_coverage}}
 
+THE FILING, ALREADY READ — and graded against what we said. A survey of the latest annual report, the prior year's, and the quarterly pair beside them, plus a pass over the claims above: which of them the filings SUPPORT, which they UNDERMINE, and which they do not address. That grading is the spine of this format — what I said, what happened, was I right, what now — so start there rather than from the numbers.
+{{filing_brief}}
+
 ## THE FOUR MOVEMENTS — this is the whole structure
 An update is not the first-time video with a history paragraph in front of it. Do not re-explain the business model, do not re-run the "how the money is made" chapter, do not rebuild the bull case from scratch. The viewer's question is narrow and you answer exactly it, in this order:
 

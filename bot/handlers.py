@@ -217,6 +217,15 @@ class BotCore:
         # (storyboard, thumbnail) to the operator mid-job.
         self.file_pusher: Callable[[Path, str], None] | None = None
         self.queue: RenderJobQueue | None = None  # attached in main.py
+        # FILING READINGS IN FLIGHT, keyed (ticker, workdate) → Future (K3).
+        #
+        # Its own single worker rather than the render queue: a reading is
+        # eight to ten minutes of SEC pulls and LLM calls, and putting that
+        # on the render queue would stall a video behind a survey. One
+        # worker, because the SEC's fair-access limit is per client and a
+        # second concurrent reader buys nothing.
+        self._filing_reads: dict[tuple[str, str], object] = {}
+        self._filing_pool = None
 
     # ------------------------------------------------------------- helpers
     def _ws_or_error(self, ticker: str) -> Workspace | None:
@@ -278,6 +287,13 @@ class BotCore:
                  "LONG (16:9 deep dive)")
         head = f"📁 {ticker} / {ws.workdate} — {label}"
         warn = "" if update else self._lane_warning(ticker, lane)
+
+        # THE READING STARTS NOW (K3), not after the upload. It needs only
+        # EDGAR, so it runs in parallel with the operator refreshing the
+        # workbook; the half that needs the workbook is one cheap call, made
+        # when the file lands.
+        if lane == "long":
+            self._start_filing_read(ws)
 
         name = "update" if update else lane
         template = self.settings.templates_dir / "dennis_data_template.xlsx"
@@ -641,6 +657,10 @@ class BotCore:
                 reply.text = f"💾 saved {dest.name}.{note}\n\n" + reply.text
                 return reply
 
+        # The workbook is here, so the half of the brief that needed it can
+        # run: one call over material already summarised (K3).
+        note += self._finish_filing_read(ws)
+
         reply = self.prompts_reply(chat_id)
         reply.text = f"💾 saved {dest.name} for {ws.ticker}.{note}\n\n" + reply.text
         return reply
@@ -898,6 +918,108 @@ class BotCore:
         ws.set_chosen_angle(text)
         self._auto_filings(ws, text)  # best-effort; never blocks the flow
         return self._long_write_reply(ws, header=f"✅ Angle locked for {ws.ticker}.")
+
+    # ------------------------------------------------ the pre-angle brief
+    def _filing_read_key(self, ws: Workspace) -> tuple[str, str]:
+        return (ws.ticker, ws.workdate)
+
+    def _start_filing_read(self, ws: Workspace) -> object | None:
+        """Queue the filing reading for this workspace and return at once.
+
+        Never raises and never waits. A failure to even start is the same
+        outcome as a failure to finish: no brief, and a normal angle prompt.
+        """
+        if not (self.settings.filings_enabled
+                and self.settings.filing_brief_enabled):
+            return None
+        key = self._filing_read_key(ws)
+        if key in self._filing_reads:
+            return self._filing_reads[key]
+        from pipeline.filing_brief import build_brief, save_brief
+
+        def _run():
+            brief = build_brief(ws.ticker, ws.path, self.settings)
+            save_brief(ws.path, brief, self.settings)
+            return brief
+
+        try:
+            if self._filing_pool is None:
+                from concurrent.futures import ThreadPoolExecutor
+
+                self._filing_pool = ThreadPoolExecutor(
+                    max_workers=1, thread_name_prefix="filing-read")
+            fut = self._filing_pool.submit(_run)
+        except Exception as e:  # noqa: BLE001
+            log.warning("filing brief: could not queue the reading (%s)", e)
+            return None
+        self._filing_reads[key] = fut
+        return fut
+
+    def _finish_filing_read(self, ws: Workspace) -> str:
+        """Wait out a reading still in flight, then cross-check the workbook.
+
+        Returns a line for the upload reply, or "". Bounded by
+        `filing_brief_wait_s`: past that the prompt goes out without the
+        brief rather than the operator watching a silent bot.
+        """
+        if not (self.settings.filings_enabled
+                and self.settings.filing_brief_enabled):
+            return ""
+        from pipeline.filing_brief import (
+            cross_check,
+            grade_prior_coverage,
+            load_brief,
+            save_brief,
+        )
+
+        fut = self._filing_reads.pop(self._filing_read_key(ws), None)
+        if fut is None and load_brief(ws.path) is None:
+            # Nothing was ever queued for this workspace — an upload into a
+            # lane started before this existed, or the switch is off.
+            self._start_filing_read(ws)
+            fut = self._filing_reads.pop(self._filing_read_key(ws), None)
+        waited = ""
+        if fut is not None:
+            import time
+
+            t0 = time.monotonic()
+            try:
+                fut.result(timeout=self.settings.filing_brief_wait_s)
+            except Exception as e:  # noqa: BLE001 — includes TimeoutError
+                log.warning("filing brief: %s did not finish (%s)",
+                            ws.ticker, type(e).__name__)
+                return ("\n⚠️ the filing reading has not finished — the prompt "
+                        "below has no filing brief in it. Re-upload the "
+                        "workbook once it lands to pick it up.")
+            elapsed = time.monotonic() - t0
+            if elapsed > 5:
+                waited = f" (waited {elapsed:.0f}s for the filing reading)"
+
+        brief = load_brief(ws.path)
+        if brief is None or not brief.ok:
+            why = (brief.reason if brief is not None else "the pass did not run")
+            return f"\nℹ️ no filing brief — {why}."
+        data = self._company_data(ws)
+        try:
+            cross_check(brief, data, self.settings)
+            if ws.is_update():
+                from bot.prompts import prior_coverage
+
+                grade_prior_coverage(
+                    brief, prior_coverage(self.settings, ws.ticker),
+                    self.settings)
+            save_brief(ws.path, brief, self.settings)
+        except Exception as e:  # noqa: BLE001 — the survey survives this
+            log.warning("filing brief: cross-check failed for %s (%s)",
+                        ws.ticker, e)
+        parts = [f"{brief.sections} sections"]
+        if brief.contradictions:
+            parts.append("cross-checked against your numbers")
+        if brief.grading:
+            parts.append("graded against the last video")
+        if not brief.context_held:
+            parts.append("⚠️ some sections did not fit the model's context")
+        return f"\n📄 filing brief ready{waited}: " + ", ".join(parts) + "."
 
     def _auto_filings(self, ws: Workspace, angle: str) -> list:
         """Pull the 10-K, flag smoking-gun quotes, snap + normalize them into

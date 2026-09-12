@@ -63,6 +63,7 @@ Excel; the refresh happens on the operator's own machine.)
 | A quarterly move is never reported as one number: QoQ and YoY-same-quarter are always shown as a labelled pair, a rate moves in points, and a loss is shown as two values rather than a percentage of a negative base | `CompanyData.quarter_moves`, `quarters_prompt_block` |
 | A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
 | Every finished render carries a provenance record — where the prices came from, what the visuals were, which filings, which voice at what cost, which LLM provider, and which gates actually ran — on the manifest and in the delivery message, unasked | `pipeline/provenance.py`; written by both renderers, read back off the manifest by `_finish` so the two cannot drift |
+| The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
 | Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
@@ -189,6 +190,9 @@ pipeline/
                          screenshots
   filings.py             10-K/10-Q resolution (the ordered reading list,
                          incl. the Q4 case) + the auto-screenshot pipeline
+  filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
+                         angle is chosen: risk shift, language, segments, and
+                         what contradicts the workbook
   article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
@@ -664,8 +668,8 @@ this section failing.
 | command | what it does |
 |---|---|
 | `/short TICKER` | Opens a SHORT (9:16, 60–75s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
-| `/long TICKER` | Opens a LONG (16:9 deep dive). Two steps: Step 1 returns ranked angles, you reply with a number, Step 2 is the writing prompt. |
-| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Refuses (and points at `/long`) when no thesis is on file. |
+| `/long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (with that filing brief in front of the model, cross-checked against your numbers once the workbook lands), you reply with a number, Step 2 is the writing prompt. |
+| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed** — which is what this format is. Refuses (and points at `/long`) when no thesis is on file. |
 | `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template, so an earnings script renders through the earnings beat order rather than the plain short's. |
 | `/prompts` | Re-sends the active workspace's pre-filled prompt. |
 

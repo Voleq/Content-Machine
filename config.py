@@ -274,9 +274,30 @@ class Settings(BaseSettings):
     sec_min_interval_s: float = 0.11        # SEC fair-access: keep well under 10 req/s
     filings_include_10q: bool = Field(default=False, alias="FILINGS_INCLUDE_10Q")
     filings_max_shots: int = Field(default=3, alias="FILINGS_MAX_SHOTS")
-    # smoking-gun flagging LLM — swappable. Default: GitHub Models gpt-4o-mini
-    # (free tier, OpenAI-compatible endpoint + a GitHub token). MOCK -> fixture.
-    filings_llm_provider: str = Field(default="github", alias="FILINGS_LLM_PROVIDER")  # github|openai|mock
+    # --- the pre-angle filing brief (K) ----------------------------------
+    # The reading starts the instant `/long TICKER` is typed, in parallel
+    # with the operator refreshing the workbook — a dozen-odd LLM calls over
+    # two annual reports and the quarterly pair beside them, eight to ten
+    # minutes. Ten minutes of dead time AFTER an upload is the difference
+    # between a feature that gets used and one that gets switched off.
+    filing_brief_enabled: bool = Field(default=True, alias="FILING_BRIEF_ENABLED")
+    # How long the upload reply will wait for a reading still in flight. A
+    # slow operator finds it done; a fast one waits. Past this the prompt
+    # goes out without the brief rather than the operator watching a silent
+    # bot — an absent brief is a normal outcome, a hung intake is not.
+    filing_brief_wait_s: float = Field(default=600.0, alias="FILING_BRIEF_WAIT_S")
+    # The filing passes route through `pipeline.llm.chat` like every other
+    # LLM call, so `llm_provider_order` below decides WHERE they run. This
+    # setting's only remaining job is the offline escape hatch: `mock`
+    # serves the fixtures without MOCK_MODE being on globally.
+    #
+    # It used to select the provider itself, for a private httpx client in
+    # `filings.py` that ignored the routing table — so a box with Ollama
+    # running served every gate locally and every filing call over the
+    # network, for money, with nothing saying so (K2).
+    filings_llm_provider: str = Field(default="routed", alias="FILINGS_LLM_PROVIDER")  # routed|mock
+    # The HOSTED model name, read by `llm.py` for the github/openai tiers.
+    # The local tier uses `ollama_model`.
     filings_llm_model: str = Field(default="gpt-4o-mini", alias="FILINGS_LLM_MODEL")
     filings_llm_max_chars: int = 24000      # per-call section budget (free tier is rate-limited)
     filings_llm_usd_per_call: float = 0.0   # free tier; still recorded in the ledger
