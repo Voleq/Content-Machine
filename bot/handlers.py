@@ -16,6 +16,7 @@ import logging
 import os
 import re
 import uuid
+from concurrent.futures import CancelledError
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -37,6 +38,7 @@ from pipeline.cost import (
     build_short_report,
 )
 from pipeline.delivery import deliver
+from pipeline.filing_brief import FilingReader
 from pipeline.gates import run_gates
 from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
 from pipeline.models import JobKind, TagType
@@ -220,12 +222,20 @@ class BotCore:
         # FILING READINGS IN FLIGHT, keyed (ticker, workdate) → Future (K3).
         #
         # Its own single worker rather than the render queue: a reading is
-        # eight to ten minutes of SEC pulls and LLM calls, and putting that
-        # on the render queue would stall a video behind a survey. One
-        # worker, because the SEC's fair-access limit is per client and a
-        # second concurrent reader buys nothing.
+        # eight to ten minutes of SEC pulls and LLM calls, and the point of
+        # starting it at `/long` is that it overlaps the operator refreshing
+        # their workbook — a single-worker render queue would put it behind
+        # whatever is rendering, and every render behind it. One worker,
+        # because the SEC's fair-access limit is per client and a second
+        # concurrent reader buys nothing.
+        #
+        # `FilingReader` rather than a `ThreadPoolExecutor` because the pool
+        # this replaced was never shut down and its threads are joined at
+        # interpreter exit, so stopping the bot mid-reading hung for as long
+        # as the reading had left (P1). `shutdown()` is wired to the
+        # application's post_shutdown in main.py.
         self._filing_reads: dict[tuple[str, str], object] = {}
-        self._filing_pool = None
+        self.filing_reader = FilingReader()
 
     # ------------------------------------------------------------- helpers
     def _ws_or_error(self, ticker: str) -> Workspace | None:
@@ -943,12 +953,7 @@ class BotCore:
             return brief
 
         try:
-            if self._filing_pool is None:
-                from concurrent.futures import ThreadPoolExecutor
-
-                self._filing_pool = ThreadPoolExecutor(
-                    max_workers=1, thread_name_prefix="filing-read")
-            fut = self._filing_pool.submit(_run)
+            fut = self.filing_reader.submit(f"{ws.ticker} {ws.workdate}", _run)
         except Exception as e:  # noqa: BLE001
             log.warning("filing brief: could not queue the reading (%s)", e)
             return None
@@ -985,6 +990,13 @@ class BotCore:
             t0 = time.monotonic()
             try:
                 fut.result(timeout=self.settings.filing_brief_wait_s)
+            except CancelledError:
+                # The bot is shutting down and the reading was dropped. Not
+                # an error, and not something to wait out.
+                log.info("filing brief: %s was abandoned at shutdown",
+                         ws.ticker)
+                return ("\n⚠️ the filing reading was cancelled — the prompt "
+                        "below has no filing brief in it.")
             except Exception as e:  # noqa: BLE001 — includes TimeoutError
                 log.warning("filing brief: %s did not finish (%s)",
                             ws.ticker, type(e).__name__)

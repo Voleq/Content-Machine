@@ -127,7 +127,24 @@ def main() -> None:
         except ImportError:
             log.info("screener module not present; digest not scheduled")
 
+    async def _post_shutdown(application) -> None:
+        """Let go of anything still reading a filing (P1).
+
+        A reading is eight to ten minutes of SEC pulls and LLM calls. Its
+        worker is a daemon thread so the interpreter never waits for it, and
+        this is where the operator finds out which brief was dropped — a
+        silent abandonment is how you re-run `/long` and wonder why the
+        angle prompt has no filing in it.
+        """
+        abandoned = core.filing_reader.shutdown()
+        if abandoned:
+            log.warning("shutting down with %d filing reading(s) unfinished: "
+                        "%s — re-run /long for those tickers; nothing is lost "
+                        "but the reading itself",
+                        len(abandoned), ", ".join(abandoned))
+
     app.post_init = _post_init
+    app.post_shutdown = _post_shutdown
     log.info("starting polling")
     app.run_polling(allowed_updates=None)
 

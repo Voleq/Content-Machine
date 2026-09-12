@@ -483,3 +483,103 @@ def test_the_filings_module_has_one_llm_path(settings, monkeypatch):
     body = src.split("def _llm_chat")[1].split("\ndef ")[0]
     assert "httpx.post" not in body
     assert "github_models_endpoint" not in body
+
+
+# --------------------------------------------------------------------------
+# P1 — the reader does not own the process's exit.
+# --------------------------------------------------------------------------
+
+
+def test_a_reading_in_flight_does_not_hold_the_process_open():
+    """P1: the pool this replaced was a `ThreadPoolExecutor` nobody shut
+    down. Its threads are non-daemon and it registers an atexit handler that
+    JOINS them, so stopping the bot during an eight-to-ten-minute reading
+    hung until the reading finished. That reads as a frozen shutdown, the
+    reflex is `kill -9`, and that is how half-written state happens.
+
+    Asserted by actually exiting a Python process with a reading still
+    running — the only version of this claim that means anything.
+    """
+    import subprocess
+    import sys
+    import textwrap
+    import time
+
+    root = Path(__file__).resolve().parents[1]
+    prog = textwrap.dedent(f"""
+        import sys, time
+        sys.path.insert(0, {str(root)!r})
+        from pipeline.filing_brief import FilingReader
+        r = FilingReader()
+        r.submit("SLOW 2026-09-12", lambda: time.sleep(300))
+        time.sleep(0.3)          # let it actually start
+        print("started", flush=True)
+    """)
+    t0 = time.monotonic()
+    done = subprocess.run([sys.executable, "-c", prog],
+                          capture_output=True, text=True, timeout=60)
+    elapsed = time.monotonic() - t0
+    assert "started" in done.stdout
+    assert elapsed < 20, (
+        f"the interpreter took {elapsed:.0f}s to exit with a reading in "
+        f"flight — it is waiting for the worker, which is the hang P1 is "
+        f"about")
+
+
+def test_shutdown_names_every_brief_it_abandons(caplog):
+    """A dropped brief has to be said out loud. Silence here means re-running
+    `/long` and wondering why the angle prompt has no filing in it."""
+    import threading
+
+    from pipeline.filing_brief import FilingReader
+
+    started = threading.Event()
+    release = threading.Event()
+    r = FilingReader()
+
+    def _slow():
+        started.set()
+        release.wait(timeout=30)
+        return "late"
+
+    running = r.submit("EXMPL 2026-09-12", _slow)
+    assert started.wait(timeout=10)
+    queued = r.submit("MEGA 2026-09-12", lambda: "never")
+
+    with caplog.at_level("WARNING"):
+        abandoned = r.shutdown()
+
+    assert "EXMPL 2026-09-12" in abandoned, "the one in flight went unnamed"
+    assert "MEGA 2026-09-12" in abandoned, "the queued one went unnamed"
+    assert queued.cancelled(), "a queued reading must be dropped, not run"
+    logged = " ".join(rec.getMessage() for rec in caplog.records)
+    assert "EXMPL" in logged and "MEGA" in logged
+    assert "abandoned" in logged.lower()
+
+    # And nothing new is accepted after the switch is off.
+    assert r.submit("LATE 2026-09-12", lambda: "no").cancelled()
+    release.set()
+    running.result(timeout=30)
+
+
+def test_a_cancelled_reading_lets_the_upload_through(settings, monkeypatch):
+    """The other end of the same wire: if the reader is shut down while an
+    upload is waiting on it, the operator gets their prompt and a line
+    saying why there is no brief — not a stack trace and not a hang."""
+    import threading
+
+    from bot.handlers import BotCore
+    from pipeline.workspace import Workspace
+
+    core = BotCore(settings)
+    ws = Workspace(settings, "EXMPL", "2026-09-12").create()
+
+    started = threading.Event()
+    fut = core.filing_reader.submit(
+        "EXMPL 2026-09-12", lambda: (started.set(), __import__("time").sleep(5))[0])
+    assert started.wait(timeout=10)
+    core._filing_reads[core._filing_read_key(ws)] = fut
+    fut.cancel()                       # what shutdown() does to a queued one
+
+    note = core._finish_filing_read(ws)
+    assert "no filing brief" in note or "cancelled" in note

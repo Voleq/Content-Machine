@@ -37,9 +37,13 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import queue
 import re
+import threading
+from concurrent.futures import Future
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from config import Settings
 
@@ -493,3 +497,109 @@ def _looks_like_no_coverage(text: str) -> bool:
     """`prior_coverage` returns its own empty-state prose when there is no
     thesis on file. Grading that would be grading a placeholder."""
     return bool(re.match(r"\s*\(", text or ""))
+
+
+# --------------------------------------------------------------------------
+# Running one, in the background, without owning the process's exit.
+# --------------------------------------------------------------------------
+
+
+class FilingReader:
+    """A single background worker for filing readings, and its off switch.
+
+    WHY NOT `ThreadPoolExecutor`. That is what this was, and nothing ever
+    called `shutdown()`. Its threads are non-daemon and it registers an
+    atexit handler that JOINS them, so stopping the bot during a reading —
+    Ctrl-C, a service restart, the desktop sleeping — hung the process for
+    the eight to ten minutes the reading had left. That reads as a frozen
+    shutdown, the reflex is `kill -9`, and that is how half-written state
+    happens. `shutdown(wait=False, cancel_futures=True)` does not fix it
+    either: cancel_futures only drops work that has not STARTED, and the
+    atexit join still waits for the one in flight.
+
+    WHY NOT THE RENDER QUEUE, which is the other obvious home and has the
+    persistence, cancellation and boot-time re-enqueue this lacks. It runs
+    ONE job at a time. A reading is eight to ten minutes, and the entire
+    point of starting it at `/long` is that it overlaps the operator
+    refreshing their workbook — so a queued render would push the reading
+    behind it and the upload would then wait `filing_brief_wait_s` for
+    something that had not begun. In the other direction a reading would
+    delay every render behind it by up to ten minutes. Both are worse than
+    the bug being fixed, and `/batch` makes both routine.
+
+    So: one daemon thread, which the interpreter never joins, plus an
+    explicit shutdown that says what it abandoned. A brief is disposable by
+    construction — losing one costs a normal angle prompt, which is what
+    every other failure path here already degrades to — so there is nothing
+    to persist and nothing to resume.
+    """
+
+    def __init__(self) -> None:
+        self._queue: "queue.Queue[tuple[str, Future, Callable[[], FilingBrief]] | None]" = (
+            queue.Queue())
+        self._thread: threading.Thread | None = None
+        self._lock = threading.Lock()
+        self._running: str = ""      # the label of the reading in flight
+        self._closed = False
+
+    def submit(self, label: str, fn) -> "Future":
+        """Queue `fn` and return its future. Starts the worker on first use."""
+        fut: Future = Future()
+        with self._lock:
+            if self._closed:
+                fut.cancel()
+                return fut
+            if self._thread is None or not self._thread.is_alive():
+                self._thread = threading.Thread(
+                    target=self._loop, name="filing-read", daemon=True)
+                self._thread.start()
+        self._queue.put((label, fut, fn))
+        return fut
+
+    def _loop(self) -> None:
+        while True:
+            item = self._queue.get()
+            if item is None:
+                return
+            label, fut, fn = item
+            if not fut.set_running_or_notify_cancel():
+                continue
+            with self._lock:
+                self._running = label
+            try:
+                fut.set_result(fn())
+            except BaseException as e:  # noqa: BLE001 — a survey never escapes
+                fut.set_exception(e)
+            finally:
+                with self._lock:
+                    self._running = ""
+
+    def shutdown(self) -> list[str]:
+        """Stop accepting work, drop what has not started, and SAY what was
+        abandoned. Returns the labels, so the caller can log them too.
+
+        Never joins the worker: the reading in flight is abandoned on
+        purpose, because the alternative is the ten-minute hang this class
+        exists to remove.
+        """
+        with self._lock:
+            self._closed = True
+            in_flight = self._running
+        dropped: list[str] = []
+        while True:
+            try:
+                item = self._queue.get_nowait()
+            except queue.Empty:
+                break
+            if item is None:
+                continue
+            label, fut, _ = item
+            fut.cancel()
+            dropped.append(label)
+        self._queue.put(None)
+        abandoned = ([in_flight] if in_flight else []) + dropped
+        for label in abandoned:
+            log.warning("filing brief abandoned at shutdown: %s — re-run "
+                        "/long %s to read it again (nothing was lost but the "
+                        "reading itself)", label, label.split()[0])
+        return abandoned
