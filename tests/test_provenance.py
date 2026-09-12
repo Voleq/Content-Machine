@@ -499,3 +499,44 @@ def test_a_render_that_left_no_record_says_nothing(settings):
     job = JobRecord(id="j1", chat_id=1, ticker="NOPE", workdate="2026-09-12",
                     kind=JobKind.RENDER_LONG)
     assert core._provenance_text(job) == ""
+
+
+# --------------------------------------------------------------------------
+# P4 — which engine and which template drew this.
+# --------------------------------------------------------------------------
+
+
+def test_the_record_names_the_engine_and_the_template():
+    """P4: `LONG_RENDER_ENGINE` and the SHORT's shot template are both
+    switchable, and a first production run should not have to discover which
+    branch it took. `render_long_shots` in particular is wired up and has no
+    production mileage — a surprise should be attributable."""
+    from pipeline.provenance import build
+
+    seg = build(ticker="EXMPL", fmt="long", workdate="d", duration_s=1.0,
+                render={"engine": "segments"})
+    line = next(ln for ln in seg.render_text().splitlines()
+                if ln.startswith("render"))
+    assert "segments" in line
+
+    shots = build(ticker="EXMPL", fmt="short", workdate="d", duration_s=1.0,
+                  render={"engine": "shots", "format": "earnings"})
+    line = next(ln for ln in shots.render_text().splitlines()
+                if ln.startswith("render"))
+    assert "shots" in line and "template earnings" in line
+    assert shots.render_text() != seg.render_text()
+
+    # …and it survives the manifest, like every other line (N5.4).
+    back = Provenance.from_json(json.loads(json.dumps(shots.to_json())))
+    assert back.render == {"engine": "shots", "format": "earnings"}
+    assert back.render_text() == shots.render_text()
+
+
+def test_a_record_with_no_engine_says_nothing_rather_than_guessing():
+    """An older manifest has no `render` block. It must read as absent, not
+    as the engine this build happens to default to."""
+    from pipeline.provenance import build
+
+    p = build(ticker="EXMPL", fmt="long", workdate="d", duration_s=1.0)
+    assert "render" not in p.render_text()
+    assert p.to_json()["render"] == {}

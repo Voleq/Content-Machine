@@ -61,6 +61,12 @@ class Provenance:
     workdate: str = ""
     duration_s: float = 0.0
 
+    # WHICH CODE DREW THIS (P4). `long_render_engine` and the SHORT's shot
+    # template are both switchable, and a first production run should not
+    # have to discover which branch it took. `render_long_shots` in
+    # particular is wired up and has no production mileage — a surprise
+    # should be attributable rather than mysterious.
+    render: dict = field(default_factory=dict)
     prices: dict = field(default_factory=dict)
     visuals: dict = field(default_factory=dict)
     filings: dict = field(default_factory=dict)
@@ -73,6 +79,7 @@ class Provenance:
             "ticker": self.ticker, "format": self.fmt,
             "workdate": self.workdate,
             "duration_s": round(self.duration_s, 3),
+            "render": self.render,
             "prices": self.prices, "visuals": self.visuals,
             "filings": self.filings, "audio": self.audio,
             "llm": self.llm, "gates": self.gates,
@@ -85,6 +92,7 @@ class Provenance:
             fmt=str(data.get("format") or ""),
             workdate=str(data.get("workdate") or ""),
             duration_s=float(data.get("duration_s") or 0.0),
+            render=dict(data.get("render") or {}),
             prices=dict(data.get("prices") or {}),
             visuals=dict(data.get("visuals") or {}),
             filings=dict(data.get("filings") or {}),
@@ -105,7 +113,8 @@ class Provenance:
             self.ticker, self.fmt.upper(), self.workdate,
             _mmss(self.duration_s) if self.duration_s else "") if p)
         lines = [head]
-        for label, body in (("prices", self._prices_line()),
+        for label, body in (("render", self._render_line()),
+                            ("prices", self._prices_line()),
                             ("visuals", self._visuals_line()),
                             ("filings", self._filings_line()),
                             ("audio", self._audio_line()),
@@ -114,6 +123,16 @@ class Provenance:
             if body:
                 lines.append(f"{label:<9} {body}")
         return "\n".join(lines)
+
+    def _render_line(self) -> str:
+        """Which engine and which shot template drew this (P4)."""
+        r = self.render or {}
+        bits = []
+        if r.get("engine"):
+            bits.append(str(r["engine"]))
+        if r.get("format"):
+            bits.append(f"template {r['format']}")
+        return " · ".join(bits)
 
     def _prices_line(self) -> str:
         if not self.prices:
@@ -211,12 +230,12 @@ class Provenance:
 def build(*, ticker: str, fmt: str, workdate: str, duration_s: float,
           prices=None, visual_sources: dict | None = None,
           filings: dict | None = None, tts=None, gate_report=None,
-          settings=None) -> Provenance:
+          settings=None, render: dict | None = None) -> Provenance:
     """Assemble the record from what the render already has in hand."""
     from pipeline.llm import llm_summary
 
     p = Provenance(ticker=ticker, fmt=fmt, workdate=workdate,
-                   duration_s=duration_s)
+                   duration_s=duration_s, render=dict(render or {}))
     if prices is not None:
         p.prices = {
             "source": getattr(prices, "source", ""),

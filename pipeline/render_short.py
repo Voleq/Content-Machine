@@ -743,6 +743,12 @@ def _provenance(script, settings, workspace: Path, duration: float,
     return prov.build(
         ticker=getattr(script, "ticker", ""), fmt=label,
         workdate=workspace.name, duration_s=duration,
+        # WHICH CODE DREW THIS (P4). The shot template is picked per video
+        # from the headline mode, so `short`, `earnings` and `macro` are
+        # three different beat orders out of one renderer — and `long` means
+        # this is `render_long_shots`, the engine with no production
+        # mileage. None of that was recoverable from the artefact.
+        render={"engine": "shots", "format": format_name},
         prices=prices,
         # A SHORT's visuals are the shot template's plates plus whatever the
         # resolver fetched; the fetched half is what has provenance worth
@@ -921,6 +927,9 @@ def render_short(script, tts, workspace: Path, settings, *,
         # post-expansion shots as beats made the long look like 38 ideas
         # instead of nine.
         "beats": n_beats,
+        # The engine, beside the template it ran. `render_long_shots`
+        # delegates here with format_name="long" (P4).
+        "engine": "shots",
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "kit": "v2-plates",

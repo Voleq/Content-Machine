@@ -366,3 +366,37 @@ def test_the_template_is_data_not_code():
     seq = [s for s in raw["shots"]
            if s.get("repeat", {}).get("arrange") == "sequence"]
     assert len(seq) == 1 and seq[0]["id"] == "numbers"
+
+
+def test_the_short_manifest_names_the_template_it_rendered(settings, tmp_path,
+                                                           short_valid_json):
+    """P4: `/headline` picks `short`, `earnings` or `macro` per video and the
+    three are different beat orders out of one renderer. Which one ran was
+    recoverable from nothing — so an earnings video that came out reading
+    like a plain short had no artefact saying which template drew it."""
+    import json
+
+    from pipeline.parser_short import parse_short_script
+    from pipeline.render_short import render_short
+    from pipeline.tts import TTSEngine
+
+    small = settings.model_copy(update={"short_width": 270,
+                                        "short_height": 480})
+    script, _ = parse_short_script(short_valid_json, settings=small)
+    tts = TTSEngine(small).synthesize(script.audio_script, fmt="short",
+                                      free_only=True)
+    _out, manifest_path = render_short(script, tts, tmp_path, small,
+                                       proof=True)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert manifest["engine"] == "shots"
+    assert manifest["format"] == "short"
+    assert manifest["provenance"]["render"] == {"engine": "shots",
+                                                "format": "short"}
+
+    from pipeline.provenance import Provenance
+
+    line = next(ln for ln in
+                Provenance.from_json(manifest["provenance"])
+                .render_text().splitlines() if ln.startswith("render"))
+    assert "shots" in line and "template short" in line

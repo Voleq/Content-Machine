@@ -302,6 +302,7 @@ def _provenance(script, settings, workspace: Path, duration: float,
     return prov.build(
         ticker=getattr(script, "ticker", ""), fmt=fmt,
         workdate=workspace.name, duration_s=duration,
+        render={"engine": "segments"},
         prices=prices, visual_sources=_visual_source_counts(seg_meta),
         filings=filings, tts=tts, settings=settings)
 
@@ -1605,6 +1606,10 @@ def render_long(
         # THE WHOLE RECORD (N3): what in this video was real. Machine-
         # readable here, and the same thing in words on the delivery
         # message, so the two surfaces cannot drift.
+        # WHICH ENGINE DREW IT (P4). `LONG_RENDER_ENGINE` switches between
+        # this and the shot-template path, and "which branch did that run
+        # take" should be answerable from the artefact.
+        "engine": "segments",
         "provenance": _provenance(
             script, settings, workspace, duration, seg_meta, tts,
             draft=draft, proof=proof).to_json(),
