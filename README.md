@@ -1001,6 +1001,51 @@ env var, case-insensitive).
   wrapped, cached, rate-limited and allowed to fail into a labelled,
   degraded lane. The screener can never block or spend.
 
+## Preflight — before the first live video
+
+Run in order. Steps 1 and 3 are the two hard blockers: without them nothing
+renders at all, and both are build products the code correctly refuses to
+proceed without. Steps 3 onward spend real money or need a human to read a
+page, so nothing below is automated.
+
+```bash
+python scripts/check_preflight.py          # the half a machine can answer
+python scripts/check_preflight.py --live   # also the production-only settings
+```
+
+| # | step | why |
+|---|---|---|
+| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~400MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. |
+| 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
+| 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. |
+| 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
+| 5 | `SEC_USER_AGENT="Your Name your@email"` | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
+| 6 | `python scripts/check_freshness.py TICKER DATE` | Against the **real** workbook. `DATA_STALE_BLOCKS` defaults on and an unreadable date blocks too; your sheet's as-of format is whatever Capital IQ wrote under your locale. |
+| 7 | `python scripts/check_llm_context.py` | Needs a live Ollama. Proves the marker survives a 24k-character prompt, so filing briefs are not silently built from half a section. |
+| 8 | `MOCK_MODE=true`, full flow on one ticker, both lanes | The whole loop with nothing at stake. |
+| 9 | `MOCK_MODE=true MOCK_TTS=true`, live prices and screener | The only way to exercise B1 against a real feed **including a real failure**: confirm the provenance line reads `SYNTHETIC` and that a final blocks. |
+| 10 | `/proof` on a real script | The last free look at what the video will be. |
+| 11 | One SHORT final | One TTS chunk, so reconciling `/cost` against the ElevenLabs dashboard is unambiguous. Then `/cost reconciled`. |
+| 12 | One LONG final | Nine chunks. Re-reconcile. **If 11 matched and 12 does not, the bug is in the chunk loop** and one comparison found it. |
+| 13 | Kill the bot mid-TTS on a throwaway LONG, then re-render | A1's resume is a claim about money. Verify it rather than trust it. |
+| 14 | Upload one video, leave it private, check YouTube Studio | E7 is new code against a live API, and `captions().insert` fails on a missing scope. Confirm the thumbnail and captions actually arrived. |
+| 15 | Run the digest manually once | F3's day-numbering fix (PTB counts `0-6` as Sunday-Saturday) looks right and is the one item that could not be verified offline. Do this before trusting the cron. |
+
+Two settings that are decisions rather than defaults:
+
+- **`DELIVERY_BACKEND` defaults to `local`**, which writes a file path and no
+  link. Correct for testing, silently useless in production — the operator
+  gets a path on a machine they are not sitting at.
+- **`PUBLISH_HOUR=17` with `PUBLISH_TIMEZONE=Europe/Bucharest`** is 10:00 US
+  Eastern. For a US-markets channel that may be exactly right or exactly
+  wrong; either way it should be chosen, not inherited.
+
+And one note on the suite: `tests/test_asset_reach.py::test_every_shipped_sound_has_provenance`
+**fails until step 3 is done**. That is the gate, not a broken test — a green
+suite there would be the suite lying about a production blocker. Deselect it
+with `pytest -m "not audio_provenance"` if you need a clean run first;
+deselecting does not clear the render block.
+
 ## Operations
 
 ### Back up `state/` before anything risky

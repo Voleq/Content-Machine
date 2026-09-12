@@ -40,7 +40,7 @@ def _run(script: str, *args: str, **env_extra: str) -> subprocess.CompletedProce
 # Grown by the commit that adds each script, so a name here always points at
 # something that exists.
 PREFLIGHT = ("check_sfx.py", "check_freshness.py", "check_llm_context.py",
-             "backup_state.py")
+             "backup_state.py", "check_preflight.py")
 
 
 @pytest.mark.parametrize("name", PREFLIGHT)
@@ -238,3 +238,112 @@ def test_the_backup_lists_what_it_has_written(tmp_path):
                    "--list")
     assert nothing.returncode == 0
     assert "No archives" in nothing.stdout
+
+
+# --------------------------------------------------------------------------
+# check_preflight.py — the README's checklist, mirrored where a machine can
+# answer it.
+# --------------------------------------------------------------------------
+
+
+def _fake_tree(root: Path, *, sfx_ok: bool, kit: bool) -> Path:
+    """An assets tree in whatever state the test needs."""
+    assets = root / "assets"
+    (assets / "broll_library").mkdir(parents=True)
+    sfx = assets / "sfx"
+    sfx.mkdir()
+    (sfx / "ding.wav").write_bytes(b"RIFF")
+    if sfx_ok:
+        from pipeline.audio_assets import AudioSource, save_sources
+
+        save_sources(sfx, {"ding.wav": AudioSource(
+            name="ding.wav", source="freesound.org/s/1/", licence="CC0",
+            author="someone", generated=False)})
+    if kit:
+        shutil.copytree(ROOT / "assets" / "plates", assets / "plates")
+    return assets
+
+
+def test_the_preflight_blocks_on_the_sound_gate(tmp_path):
+    """P0b is one of the two hard blockers, and the script has to say so
+    rather than passing and leaving it for the render to discover."""
+    assets = _fake_tree(tmp_path, sfx_ok=False, kit=False)
+    got = _run("check_preflight.py", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"))
+    assert got.returncode == 1
+    assert "[FAIL] sound provenance" in got.stdout
+    assert "fetch_sfx.py" in got.stdout
+    assert "BLOCKED" in got.stderr
+
+
+def test_the_preflight_blocks_on_a_missing_design_kit(tmp_path):
+    """The other hard blocker. `assets/plates/` is a gitignored build
+    product, and without it nothing renders on either lane."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"))
+    assert got.returncode == 1
+    assert "[FAIL] design kit" in got.stdout
+    assert "ingest_kit.py" in got.stdout
+
+
+@pytest.mark.skipif(not (ROOT / "assets" / "plates").is_dir(),
+                    reason="the design kit is not built in this checkout")
+def test_the_preflight_passes_once_both_blockers_are_cleared(tmp_path):
+    """The passing case must be reachable, or the script is a wall rather
+    than a check. Everything else it reports is advisory."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=True)
+    got = _run("check_preflight.py", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"))
+    assert got.returncode == 0, got.stdout + got.stderr
+    assert "PREFLIGHT OK" in got.stdout
+    assert "[PASS] design kit" in got.stdout
+    assert "[PASS] sound provenance" in got.stdout
+    # …and it still says which steps remain a human's.
+    assert "still yours" in got.stdout
+
+
+def test_live_mode_checks_the_settings_that_only_matter_in_production(tmp_path):
+    """`DELIVERY_BACKEND=local` writes a path and no link — correct for
+    testing and silently useless in production — and an empty
+    `SEC_USER_AGENT` costs three features quietly."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    env = {"ASSETS_DIR": str(assets), "STATE_DIR": str(tmp_path / "state")}
+
+    mocked = _run("check_preflight.py", **env)
+    assert "[----] SEC_USER_AGENT" in mocked.stdout
+    assert "[PASS] DELIVERY_BACKEND" in mocked.stdout
+
+    live = _run("check_preflight.py", "--live", **env)
+    assert "[FAIL] SEC_USER_AGENT" in live.stdout
+    assert "[FAIL] DELIVERY_BACKEND" in live.stdout
+    assert "silently useless in production" in live.stdout
+
+
+def test_the_preflight_refuses_the_engine_with_no_production_mileage(tmp_path):
+    """P4: `render_long_shots` is wired up and has never rendered a real
+    video. A first live LONG must not be the one that finds out."""
+    assets = _fake_tree(tmp_path, sfx_ok=True, kit=False)
+    got = _run("check_preflight.py", ASSETS_DIR=str(assets),
+               STATE_DIR=str(tmp_path / "state"),
+               LONG_RENDER_ENGINE="shots")
+    assert "[FAIL] LONG engine" in got.stdout
+    assert "no production mileage" in got.stdout
+    assert got.returncode == 1
+
+
+def test_the_readme_preflight_and_the_script_name_the_same_scripts():
+    """A checklist step pointing at a script that is not there is worse than
+    a step that is missing, and the README is where the operator reads it."""
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    section = readme.split("## Preflight")[1].split("\n## ")[0]
+    for name in ("check_preflight.py", "check_sfx.py", "check_freshness.py",
+                 "check_llm_context.py", "ingest_kit.py", "fetch_sfx.py"):
+        assert name in section, f"the preflight never mentions {name}"
+        assert (SCRIPTS / name).is_file(), f"{name} is named and absent"
+    # The two hard blockers are steps 1 and 3, and the sound gate is per file.
+    assert "nothing renders on either lane" in section
+    assert "room tone alone leaves fourteen" in section
+    # And the deselect escape hatch, which does not clear the block.
+    assert 'pytest -m "not audio_provenance"' in section
+    assert "does not clear the render block" in section
