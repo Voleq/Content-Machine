@@ -71,9 +71,13 @@ Excel; the refresh happens on the operator's own machine.)
 
 ## What the bot checks before you approve
 
-Six gates run unprompted between the script landing and any spend. Silence
-means proceed; every finding carries a line reference. They are notes and
-blocks, never rewrites — the writer decides.
+Six gates run unprompted between the script landing and any spend, **on
+both lanes**. Silence means proceed; every finding carries a line
+reference. They are notes and blocks, never rewrites — the writer decides.
+
+A SHORT used to run none of them — only the cost report and the audio
+check — on the higher-volume format, so an invented figure, a named data
+vendor or stale data went straight to the Approve button.
 
 | Gate | What it reads | Blocks? |
 |---|---|---|

@@ -883,7 +883,16 @@ class BotCore:
             warnings = [f"script ticker {script.ticker} ≠ workspace {ws.ticker} — "
                         f"using the workspace ticker's folder"] + warnings
         ws.save_short(script, raw)
-        report = build_short_report(script, warnings, self.settings, self.ledger, self.tts)
+        # The same battery the LONG runs (B3). A SHORT could state an
+        # invented revenue figure, name a data vendor — which the LONG hard
+        # blocks, because it would be spoken and captioned — or run on stale
+        # data, and nothing objected. SHORTs are the higher-volume output.
+        data = self._company_data(ws)
+        gates = run_gates(script, self.settings, data=data,
+                          as_of=str((data.get("as_of_date") if data else "") or ""),
+                          workspace=ws.path)
+        report = build_short_report(script, warnings, self.settings,
+                                    self.ledger, self.tts, gate_report=gates)
         (ws.path / "report_short.txt").write_text(report.render_text(), encoding="utf-8")
         return Reply(
             report.render_text(),

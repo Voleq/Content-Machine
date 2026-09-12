@@ -747,3 +747,69 @@ def test_the_gate_can_still_be_asked_for_advisory_findings(settings, data):
     out = fact_check("Revenue was nine hundred and twelve million.", data,
                      severity="warn")
     assert out and out[0].severity == "warn"
+
+
+# --------------------------------------------------------------------------
+# B3 — the SHORT lane runs the battery. It used to run `build_short_report`
+# and nothing else, on the higher-volume format.
+# --------------------------------------------------------------------------
+
+
+def _short_core(settings):
+    from bot.handlers import BotCore
+
+    return BotCore(settings)
+
+
+def _short_with_data(core, fixtures, ticker="EXMPL"):
+    core.start_lane(5150, "short", ticker)
+    core.handle_upload(
+        5150, "dennis_data.xlsx",
+        (fixtures / "company_data" / "dennis_data.xlsx").read_bytes())
+    return core
+
+
+def test_a_short_with_an_invented_figure_is_refused(settings, fixtures_dir,
+                                                    short_valid_json):
+    """Asserting on the REPORT the operator sees, not on whether a gate
+    function was called."""
+    import json
+
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    payload = json.loads(short_valid_json)
+    payload["audio_script"] = (
+        payload["audio_script"]
+        + " Revenue was nine hundred and twelve million dollars.")
+    reply = core.intake_script(5150, json.dumps(payload))
+
+    assert "fact-check" in reply.text
+    assert "nine hundred and twelve million" in reply.text
+
+
+def test_a_short_that_names_the_data_vendor_is_refused(settings, fixtures_dir,
+                                                       short_valid_json):
+    """The LONG hard-blocks this because it would be spoken and captioned.
+    A SHORT is spoken and captioned too."""
+    import json
+
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    payload = json.loads(short_valid_json)
+    payload["audio_script"] = (
+        "Straight off the Bloomberg terminal. " + payload["audio_script"])
+
+    from pipeline.parser_short import ScriptParseError
+
+    try:
+        reply = core.intake_script(5150, json.dumps(payload))
+    except ScriptParseError as e:
+        assert "bloomberg" in str(e).lower()
+        return
+    assert "bloomberg" in reply.text.lower() or "vendor" in reply.text.lower()
+
+
+def test_a_clean_short_still_passes_the_battery(settings, fixtures_dir,
+                                                short_valid_json):
+    """The gate that blocks a correct script is worse than no gate."""
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    reply = core.intake_script(5150, short_valid_json)
+    assert "fact-check" not in reply.text

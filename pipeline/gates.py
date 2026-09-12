@@ -464,17 +464,43 @@ def _period_index(sentence: str, labels: list[str]) -> int | None:
 _PERIOD_TOKEN_RE = re.compile(r"\b(?:fy|q|h|cy)\s?-?\s?\d{1,4}\b",
                               re.IGNORECASE)
 
+# A spoken year. "Free cash flow turned negative in twenty twenty two" is a
+# DATE, and the word-number parser reads it as a quantity — which the old
+# magnitude floor hid and a blocking gate cannot afford to.
+_SPOKEN_YEAR_RE = re.compile(
+    r"\b(?:twenty|two thousand(?:\s+and)?)\s+"
+    r"(?:oh\s+)?"
+    r"(?:twenty|thirty|nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|"
+    r"thirteen|twelve|eleven|ten|one|two|three|four|five|six|seven|eight|nine)"
+    r"(?:\s+(?:one|two|three|four|five|six|seven|eight|nine))?\b",
+    re.IGNORECASE)
+
+_DIGIT_YEAR_RE = re.compile(
+    r"(?:\b(?:in|since|by|during|through|until|from)\s+)((?:19|20)\d{2})\b",
+    re.IGNORECASE)
+
+# "Eleven times earnings" is a MULTIPLE, not an earnings figure. The metric
+# word is there and the number is not a claim about it.
+_MULTIPLE_RE = re.compile(r"^\s*(?:x|times)\b", re.IGNORECASE)
+
+
+def _blank(m) -> str:
+    return "·" * len(m.group(0))
+
 
 def _mask_labels(sentence: str, labels: list[str]) -> str:
-    """Blank the export's own period labels so their digits are not read as
-    spoken figures. Same length out as in, so positions still line up."""
+    """Blank period labels and dates so their digits are not read as spoken
+    figures. Same length out as in, so character positions still line up."""
     out = sentence
     for label in labels:
         lab = str(label).strip()
         if len(lab) >= 2:
-            out = re.sub(re.escape(lab), "·" * len(lab), out,
-                         flags=re.IGNORECASE)
-    return _PERIOD_TOKEN_RE.sub(lambda m: "·" * len(m.group(0)), out)
+            out = re.sub(re.escape(lab), _blank, out, flags=re.IGNORECASE)
+    out = _PERIOD_TOKEN_RE.sub(_blank, out)
+    out = _SPOKEN_YEAR_RE.sub(_blank, out)
+    return _DIGIT_YEAR_RE.sub(
+        lambda m: m.group(0)[:m.start(1) - m.start(0)] + "·" * len(m.group(1)),
+        out)
 
 
 def _history_labels(data) -> list[str]:
@@ -520,6 +546,8 @@ def _owner_of(number_end: int, tail: str, named: dict[str, int],
     """
     if not named:
         return None
+    if _MULTIPLE_RE.match(tail):
+        return None          # "eleven times earnings" is a multiple
     attached = _ATTACHED_RE.match(tail)
     if attached:
         phrase = _mask_decoys(attached.group(1))

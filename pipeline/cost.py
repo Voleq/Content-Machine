@@ -150,7 +150,8 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
     return round(words / wps / 60.0, 1)
 
 
-def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
+def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
+                       *, gate_report=None) -> "CostReport":
     from pipeline.gates import check_audio
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
     from pipeline.reach import script_reach
@@ -172,12 +173,20 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
             f"TTS (~${est:.2f}) would exceed the monthly cap "
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
-    # The SHORT lane has no gate battery — the LONG runs `run_gates` at intake
-    # and folds its findings in here, and the daily-volume format was the one
-    # with nothing between a synthesised cash register and an upload. The audio
-    # check is the same function the battery calls.
-    for f in check_audio(settings):
-        (blocking if f.severity == "block" else warnings).append(f.message)
+    # The SHORT lane runs the gate battery now (B3). `_intake_short` builds
+    # the report and folds the findings in here, exactly as the LONG does —
+    # the daily-volume format used to have nothing between a fabricated
+    # figure and an upload.
+    #
+    # `check_audio` is still called directly when no battery was handed in,
+    # so the report keeps working for callers that have no CompanyData to
+    # gate against (the sample renderer, and the tests that predate this).
+    if gate_report is not None:
+        for f in gate_report.findings:
+            (blocking if f.severity == "block" else warnings).append(f.render())
+    else:
+        for f in check_audio(settings):
+            (blocking if f.severity == "block" else warnings).append(f.message)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
