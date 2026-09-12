@@ -678,7 +678,7 @@ nobody read.
 | `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
 | `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
-| `/status` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. |
+| `/status` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. Jobs left QUEUED by a restart are picked back up rather than blocking their ticker. |
 | `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
 
 **Every render writes to a temp file and `os.replace`s into position**, after

@@ -230,13 +230,40 @@ class AlertLog:
         return len(rows)
 
 
+def _alert_tz(settings: Settings):
+    """The market clock the alert window is expressed in."""
+    from zoneinfo import ZoneInfo
+
+    try:
+        return ZoneInfo(settings.screen_timezone)
+    except Exception as e:  # noqa: BLE001 - a bad zone name is not fatal
+        log.warning("screen_timezone %r unusable (%s) — using the machine "
+                    "clock, which is what F4 was about",
+                    settings.screen_timezone, e)
+        return datetime.now().astimezone().tzinfo
+
+
 def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
     """True when nothing should be pushed. Weekends included.
 
     The window is expressed as the hours alerts ARE allowed, so a window that
     crosses midnight is handled the same way the batch window is.
+
+    IN `screen_timezone`, not the machine's clock (F4). `datetime.now()` is
+    naive and local, so on a box in Bucharest the default 9:00-17:00 window
+    covered 06:00-14:00 New York and missed most of the US session — while
+    the startup log said the window was in `settings.screen_timezone`. The
+    weekend check had the same problem: Friday evening in New York is
+    Saturday in Bucharest, and the market is open.
+
+    `now` stays injectable. A naive `now` is read as already being in the
+    alert timezone, which is what a test that passes one means.
     """
-    current = now or datetime.now()
+    tz = _alert_tz(settings)
+    current = now or datetime.now(tz)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=tz)
+    current = current.astimezone(tz)
     if current.weekday() >= 5 and not settings.alert_weekends:
         return True
     start = time(hour=settings.alert_start_hour % 24)

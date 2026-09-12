@@ -17,6 +17,8 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime
+from pathlib import Path
 from typing import Protocol
 
 import httpx
@@ -609,8 +611,33 @@ def _candidate_lanes(result: dict) -> list[tuple[str, str]]:
 
 
 def parse_cron(expr: str) -> tuple[int, int, tuple[int, ...]]:
-    """'M H * * DOW' -> (minute, hour, ptb_days). Supports lists/ranges/*
-    in the DOW field; day numbering: cron 0/7=Sun … 6=Sat -> PTB 0=Mon."""
+    """'M H * * DOW' -> (minute, hour, ptb_days).
+
+    Both numberings are Sunday-first, so the day field passes through
+    unchanged apart from cron's 7-as-Sunday alias (F3).
+
+    This used to shift every day by one — `((d % 7) - 1) % 7` — which was
+    right for `python-telegram-bot` before v20, where `run_daily(days=…)`
+    counted 0-6 as Monday-Sunday. **PTB 20.0 changed it to Sunday-Saturday**
+    and its own docstring in the pinned 22.8 says so:
+
+        days: ... where ``0-6`` correspond to sunday - saturday
+        .. versionchanged:: 20.0
+            Changed day of the week mapping of 0-6 from monday-sunday to
+            sunday-saturday.
+
+    So the default `"30 7 * * 1-5"` — the weekday morning digest — was
+    scheduled for Sunday through Thursday. Friday never got a digest and
+    Sunday got one nobody asked for, and it had been that way since the
+    v20 upgrade.
+
+    The old test could not catch it: it asserted the integers this function
+    produced against the same assumption the function was making, and the
+    author's own comment (`# Sun,Sat -> PTB Sat=5?`) recorded the doubt.
+    The replacement asserts the CALENDAR DAYS the digest fires on — see
+    `tests/test_screener.py`. That is X1's rule: anything crossing an
+    external contract is asserted on the result, not on the request.
+    """
     fields = expr.split()
     if len(fields) != 5:
         raise ValueError(f"cron must have 5 fields: {expr!r}")
@@ -626,8 +653,16 @@ def parse_cron(expr: str) -> tuple[int, int, tuple[int, ...]]:
                 cron_days.update(range(int(a), int(b) + 1))
             else:
                 cron_days.add(int(part))
-        days = tuple(sorted(((d % 7) - 1) % 7 for d in cron_days))
+        # cron's 7 is Sunday, same as its 0. Everything else is identical to
+        # PTB's numbering.
+        days = tuple(sorted({d % 7 for d in cron_days}))
     return minute, hour, days
+
+
+# Which weekday each PTB `days=` integer means, for tests and for anything
+# that has to say out loud what it scheduled. PTB 20.0+: 0 = Sunday.
+PTB_WEEKDAYS = ("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                "Friday", "Saturday")
 
 
 def _pct_change(info) -> float | None:
@@ -642,6 +677,30 @@ def _pct_change(info) -> float | None:
     return None
 
 
+def _digest_state(settings: Settings) -> Path:
+    return settings.state_dir / "last_digest.json"
+
+
+def last_digest_date(settings: Settings):
+    """The date the digest last went out, or None."""
+    from datetime import date as _date
+
+    try:
+        raw = json.loads(_digest_state(settings).read_text(encoding="utf-8"))
+        return _date.fromisoformat(str(raw.get("date", "")))
+    except (FileNotFoundError, json.JSONDecodeError, OSError, ValueError):
+        return None
+
+
+def mark_digest_sent(settings: Settings, day) -> None:
+    try:
+        path = _digest_state(settings)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"date": day.isoformat()}), encoding="utf-8")
+    except OSError as e:  # advisory — never let bookkeeping break a digest
+        log.warning("could not record the digest date: %s", e)
+
+
 def schedule_digest(application, core) -> None:
     """Morning digest via PTB's JobQueue (APScheduler under the hood)."""
     from datetime import time as dtime
@@ -654,26 +713,55 @@ def schedule_digest(application, core) -> None:
         log.warning("SCREEN_DIGEST_CRON invalid (%s) — digest disabled", e)
         return
 
-    async def digest_job(ctx) -> None:
+    tz = ZoneInfo(settings.screen_timezone)
+
+    async def digest_job(ctx, *, catch_up: bool = False) -> None:
         import asyncio
 
         from bot.keyboards import candidates_keyboard
 
         result = await asyncio.to_thread(run_screen, settings, "all")
-        text = "🌅 Morning screen\n\n" + digest_text(result)
+        head = ("🌅 Morning screen (catch-up — the bot was down when this "
+                "was due)\n\n" if catch_up else "🌅 Morning screen\n\n")
+        text = head + digest_text(result)
         seen = _candidate_lanes(result)
         kb = candidates_keyboard(seen) if seen else None
         for chat_id in settings.operator_chat_ids:
             await ctx.bot.send_message(chat_id, text, reply_markup=kb)
+        mark_digest_sent(settings, datetime.now(tz).date())
 
     application.job_queue.run_daily(
         digest_job,
-        time=dtime(hour=hour, minute=minute, tzinfo=ZoneInfo(settings.screen_timezone)),
+        time=dtime(hour=hour, minute=minute, tzinfo=tz),
         days=days,
         name="screen_digest",
     )
-    log.info("screen digest scheduled: %02d:%02d %s days=%s",
-             hour, minute, settings.screen_timezone, days)
+
+    async def catch_up(ctx) -> None:
+        """One late digest on boot if today's was missed (F5).
+
+        `run_daily` fires once and nothing noticed a miss: a box asleep,
+        restarting, or a bot down at 07:30 ET lost that day's digest with no
+        trace — and the digest is the top of the whole funnel.
+
+        Only for a day the schedule actually covers, only after the hour it
+        was due, and only once — the sent date is persisted, so a restart
+        loop does not send seven of them.
+        """
+        today = datetime.now(tz)
+        if today.weekday() not in {(d - 1) % 7 for d in days}:
+            return                       # PTB 0=Sun -> Python 0=Mon
+        if (today.hour, today.minute) < (hour, minute):
+            return                       # not due yet; run_daily will do it
+        if last_digest_date(settings) == today.date():
+            return
+        log.info("digest for %s was missed — sending it now", today.date())
+        await digest_job(ctx, catch_up=True)
+
+    application.job_queue.run_once(catch_up, when=5, name="screen_digest_catchup")
+    log.info("screen digest scheduled: %02d:%02d %s on %s",
+             hour, minute, settings.screen_timezone,
+             ", ".join(PTB_WEEKDAYS[d] for d in days))
 
 
 def schedule_alerts(application, core) -> None:

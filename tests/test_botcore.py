@@ -436,3 +436,49 @@ def test_a_short_runtime_is_read_from_the_manifest_the_renderer_writes(
         json.dumps({"duration_s": 63.5}), encoding="utf-8")
 
     assert core._render_duration(ws, "short") == 63.5
+
+
+# --------------------------------------------------------------------------
+# F2 — the intake paths ran synchronously inside the handler coroutine, so
+# nothing else on the event loop answered until they finished.
+# --------------------------------------------------------------------------
+
+
+def test_the_blocking_intake_paths_run_off_the_event_loop():
+    """`intake_script` downloads every clip, runs ffmpeg, hits EDGAR, drives
+    headless Chromium and makes LLM calls. While it ran, `/status`,
+    `/cancel` and the render-finished push all waited."""
+    import ast
+    import inspect
+
+    from bot import handlers
+
+    src = inspect.getsource(handlers)
+    tree = ast.parse(src)
+
+    blocking = {"intake_script", "handle_upload", "swap_key"}
+    offenders: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.AsyncFunctionDef):
+            continue
+        for call in ast.walk(node):
+            if not isinstance(call, ast.Call):
+                continue
+            fn = call.func
+            # `core.intake_script(...)` awaited directly is the bug; the same
+            # name inside `asyncio.to_thread(core.intake_script, ...)` is the
+            # fix, and appears as an ARGUMENT rather than as the callee.
+            if isinstance(fn, ast.Attribute) and fn.attr in blocking:
+                offenders.append(f"{node.name} calls {fn.attr}() inline")
+    assert not offenders, "on the event loop:\n  " + "\n  ".join(offenders)
+
+
+def test_a_slow_paste_is_acknowledged_before_the_work_starts(core):
+    """The operator should not be watching a silent bot for a minute."""
+    import inspect
+
+    from bot import handlers
+
+    src = inspect.getsource(handlers.build_application)
+    assert "_off_loop" in src
+    assert "got it" in src, "the acknowledgement has to actually be sent"

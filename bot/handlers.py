@@ -651,7 +651,7 @@ class BotCore:
 
     # ------------------------------------------------------- script intake
     @staticmethod
-    def _looks_like_script(text: str) -> bool:
+    def looks_like_script(text: str) -> bool:
         """A pasted SHORT (JSON) or LONG (tagged narration / write-step
         output) — as opposed to a short free-text angle reply."""
         stripped = text.lstrip()
@@ -670,7 +670,7 @@ class BotCore:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
         # LONG two-step: a plain-text reply while awaiting the angle pick is
         # the operator's angle choice, not a script — hand back Step 2.
-        if ws.awaiting_angle() and text.strip() and not self._looks_like_script(text):
+        if ws.awaiting_angle() and text.strip() and not self.looks_like_script(text):
             return self._intake_angle(ws, text)
         # A file arrives whole — Telegram only splits chat MESSAGES — so the
         # truncation check applies to pastes only. Running it on an upload
@@ -2366,20 +2366,49 @@ def build_application(settings: Settings, core: BotCore):
         reply = await screen_reply(core, lane)
         await _send(update, reply)
 
+    async def _off_loop(update, fn, *args, ack: str = "", **kwargs) -> None:
+        """Run a blocking BotCore call in a thread (F2).
+
+        `intake_script` -> `_intake_long` downloads every clip and image and
+        runs ffmpeg normalisation, `_auto_filings` hits SEC EDGAR and drives
+        headless Chromium, `run_gates` makes LLM calls, and `_contact_sheet`
+        encodes thumbnails — all of it inside the handler coroutine. Nothing
+        else on the event loop answered until it finished: not `/status`, not
+        `/cancel`, not a render-finished push. Pasting a LONG, picking an
+        angle or swapping a clip froze the whole bot.
+
+        The Excel refresh was correctly moved off the loop when it was
+        written; these paths were not. `ack` is sent first so the operator
+        knows the paste landed rather than watching a silent bot.
+        """
+        import asyncio
+
+        if ack:
+            await _send(update, Reply(ack))
+        reply = await asyncio.to_thread(fn, *args, **kwargs)
+        await _send(update, reply)
+
     @guard
     async def on_text(update, ctx):
-        await _send(update, core.intake_script(
-            update.effective_chat.id, update.effective_message.text or ""
-        ))
+        text = update.effective_message.text or ""
+        chat_id = update.effective_chat.id
+        # An angle pick and a short remark come back fast; a pasted script
+        # does not. Acknowledge only the slow one, or every message gets a
+        # "working on it" nobody needs.
+        slow = core.looks_like_script(text)
+        await _off_loop(update, core.intake_script, chat_id, text,
+                        ack="⏳ got it — planning the visuals, this takes a "
+                            "minute." if slow else "")
 
     @guard
     async def on_document(update, ctx):
         doc = update.effective_message.document
         f = await doc.get_file()
         data = bytes(await f.download_as_bytearray())
-        await _send(update, core.handle_upload(
-            update.effective_chat.id, doc.file_name or "upload.bin", data
-        ))
+        await _off_loop(update, core.handle_upload,
+                        update.effective_chat.id,
+                        doc.file_name or "upload.bin", data,
+                        ack="⏳ got the file — reading it now.")
 
     @guard
     async def on_photo(update, ctx):
@@ -2387,10 +2416,13 @@ def build_application(settings: Settings, core: BotCore):
         f = await photo.get_file()
         data = bytes(await f.download_as_bytearray())
         name = f"screenshot_{photo.file_unique_id}.png"
-        await _send(update, core.handle_upload(update.effective_chat.id, name, data))
+        await _off_loop(update, core.handle_upload,
+                        update.effective_chat.id, name, data)
 
     @guard
     async def on_callback(update, ctx):
+        import asyncio
+
         q = update.callback_query
         await q.answer()
         parts = (q.data or "").split("|")
@@ -2403,14 +2435,21 @@ def build_application(settings: Settings, core: BotCore):
         elif op == "w" and len(parts) == 3:
             reply = core.swap_menu(parts[1], parts[2])
         elif op == "w!" and len(parts) == 3:
+            # Both of these re-run the full intake — the plan, the gates, the
+            # contact sheet — so they go off the loop like a paste does (F2).
             core.context.set(chat_id, parts[1], parts[2])
             raw_file = Workspace(core.settings, parts[1], parts[2]).path / "script_long.raw.txt"
-            reply = (core.intake_script(chat_id,
-                                        raw_file.read_text(encoding="utf-8"),
-                                        from_file=True)
-                     if raw_file.exists() else Reply("No LONG script on file."))
+            if raw_file.exists():
+                await _send(update, Reply("⏳ rebuilding the report…"))
+                reply = await asyncio.to_thread(
+                    core.intake_script, chat_id,
+                    raw_file.read_text(encoding="utf-8"), from_file=True)
+            else:
+                reply = Reply("No LONG script on file.")
         elif op == "s" and len(parts) == 4:
-            reply = core.swap_key(chat_id, parts[1], parts[2], parts[3])
+            await _send(update, Reply("⏳ swapping the clip…"))
+            reply = await asyncio.to_thread(
+                core.swap_key, chat_id, parts[1], parts[2], parts[3])
         elif op == "fv" and len(parts) == 4:
             reply = core.veto_filing(chat_id, parts[1], parts[2], parts[3])
         elif op == "n" and len(parts) == 3:

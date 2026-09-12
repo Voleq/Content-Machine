@@ -118,10 +118,63 @@ def test_stocktwits_network_error_degrades(settings):
     assert src.trending() is None
 
 
+def test_the_digest_fires_on_the_calendar_days_the_cron_names(settings):
+    """F3, and the shape X1 asks for: assert on the DAYS, not the integers.
+
+    The old test read `parse_cron("30 7 * * 1-5")[2] == (0, 1, 2, 3, 4)` —
+    the same assumption the function was making, so it passed whether or not
+    the assumption was right. It was not: PTB 20.0 changed `run_daily(days=)`
+    from Monday-Sunday to Sunday-Saturday, the pinned version is 22.8, and
+    the conversion still shifted every day by one. The weekday morning
+    digest was scheduled for Sunday through Thursday. The author's own
+    comment — `# Sun,Sat -> PTB Sat=5?` — recorded the doubt.
+
+    So this goes through PTB's real scheduler and reads back the dates it
+    would fire on.
+    """
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    from telegram.ext import Application
+
+    from pipeline.screener import parse_cron
+
+    minute, hour, days = parse_cron("30 7 * * 1-5")
+    tz = ZoneInfo("America/New_York")
+
+    async def _noop(ctx):  # pragma: no cover - never runs
+        pass
+
+    app = Application.builder().token("1:aaa").build()
+    jq = app.job_queue
+    jq.set_application(app)
+    jq.scheduler.configure(timezone=tz)
+    job = jq.run_daily(_noop, time=dt.time(hour=hour, minute=minute, tzinfo=tz),
+                       days=days, name="t")
+
+    trigger = job.job.trigger
+    start = dt.datetime(2026, 9, 6, 0, 0, tzinfo=tz)   # a Sunday
+    fires, when = [], start
+    for _ in range(7):
+        when = trigger.get_next_fire_time(None, when)
+        if when is None:
+            break
+        fires.append(when.astimezone(tz))
+        when = when + dt.timedelta(seconds=1)
+
+    names = [f.strftime("%A") for f in fires[:5]]
+    assert names == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], \
+        f"a weekday cron scheduled the digest on {names}"
+    assert all(f.hour == 7 and f.minute == 30 for f in fires[:5])
+
+
 def test_parse_cron():
-    assert parse_cron("30 7 * * 1-5") == (30, 7, (0, 1, 2, 3, 4))
+    """cron and PTB are both Sunday-first now, so the field passes through."""
+    assert parse_cron("30 7 * * 1-5") == (30, 7, (1, 2, 3, 4, 5))
     assert parse_cron("0 9 * * *")[2] == tuple(range(7))
-    assert parse_cron("15 6 * * 0,6")[2] == (5, 6)  # Sun,Sat -> PTB Sat=5? cron0=Sun->PTB6
+    # cron's 7 is Sunday, the same day as its 0.
+    assert parse_cron("15 6 * * 0,6")[2] == (0, 6)
+    assert parse_cron("15 6 * * 7")[2] == (0,)
     with pytest.raises(ValueError):
         parse_cron("not a cron")
 
@@ -254,3 +307,37 @@ def test_the_short_prompt_carries_the_live_move_not_the_cached_one(
 
     assert "+10.4% so far today" in prompt, "the prompt must carry today's move"
     assert "NOT as of now" in prompt, "and label the stale line it kept"
+
+
+# --------------------------------------------------------------------------
+# F5 — `run_daily` fires once and nothing noticed a miss. A box asleep, or a
+# bot down at 07:30 ET, lost that day's digest with no trace.
+# --------------------------------------------------------------------------
+
+
+def test_the_digest_date_is_remembered_across_a_restart(settings):
+    import datetime as dt
+
+    from pipeline.screener import last_digest_date, mark_digest_sent
+
+    assert last_digest_date(settings) is None
+    mark_digest_sent(settings, dt.date(2026, 9, 11))
+    assert last_digest_date(settings) == dt.date(2026, 9, 11)
+
+
+def test_a_catch_up_is_scheduled_alongside_the_daily_digest(settings):
+    """Asserting that the job exists on the queue, not that a function was
+    defined: a catch-up nothing schedules is the defect, not the fix."""
+    from telegram.ext import Application
+
+    from bot.handlers import BotCore
+    from pipeline.screener import schedule_digest
+
+    app = Application.builder().token("1:aaa").build()
+    app.job_queue.set_application(app)
+    schedule_digest(app, BotCore(settings))
+
+    names = {j.name for j in app.job_queue.jobs()}
+    assert "screen_digest" in names
+    assert "screen_digest_catchup" in names, \
+        "a missed digest has to have something that notices"
