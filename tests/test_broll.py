@@ -571,3 +571,100 @@ def test_the_two_orientations_do_not_share_a_raw_download_path(manager):
     src = inspect.getsource(manager._fetch_clip)
     assert 'raw_{choice}{suffix}' in src, \
         "the raw filename must be orientation-keyed like the normalised one"
+
+
+# --------------------------------------------------------------------------
+# H3 / H4 — the GIF chain is the most legally exposed surface in the
+# pipeline, and it had no counter, no report line and no ceiling.
+# --------------------------------------------------------------------------
+
+
+def test_gif_sourced_visuals_are_counted_separately(settings):
+    """H3: memes from the OWNED library were capped at one or two; this was
+    uncapped and uncounted."""
+    from pipeline.models import CostReport, VisualPlanItem
+
+    report = CostReport(
+        ticker="EXMPL", fmt="long", gif_cap=2,
+        words=1000, chars=6000, tts_cached=True, est_tts_usd=0.0,
+        visuals=[VisualPlanItem(key="a", kind="clip", source="tenor"),
+                 VisualPlanItem(key="b", kind="clip", source="giphy"),
+                 VisualPlanItem(key="c", kind="clip", source="pexels"),
+                 VisualPlanItem(key="d", kind="img", source="local")],
+    )
+
+    counts = report.visual_counts
+    assert counts["gif"] == 2
+    assert "2/2 from GIF providers" in report.render_text()
+
+
+def test_leaning_on_the_gif_chain_past_the_cap_warns(settings):
+    """Warned, not blocked: the alternative to a GIF here is a filler card,
+    so refusing trades a legal question for a dead beat — and that trade is
+    the operator's."""
+    from pipeline.broll import Visual
+    from pipeline.cost import gif_ceiling_warnings
+
+    plan = [Visual(key=f"k{i}", kind="clip", path=pathlib.Path("x"),
+                   is_video=True, source="tenor") for i in range(4)]
+
+    out = gif_ceiling_warnings(plan, settings)
+    assert out and "over the cap of 2" in out[0]
+    assert gif_ceiling_warnings(plan[:2], settings) == []
+
+
+def test_a_palette_key_is_never_rewritten(manager, monkeypatch):
+    """H4: the 53 palette entries are hand-curated and pre-tested —
+    `dumpster_fire` is "dumpster fire burning night", not "dumpster fire".
+    Rewriting one would be undoing work somebody already did."""
+    called: list[str] = []
+    monkeypatch.setattr("pipeline.llm.chat",
+                        lambda *a, **k: called.append(a[0]) or "something else")
+
+    assert manager._clip_query("dumpster_fire") == "dumpster fire burning night"
+    assert called == [], "a tested query must not go near the rewriter"
+
+
+def test_an_off_palette_subject_is_rewritten_and_cached(settings, tmp_path,
+                                                        monkeypatch):
+    """H4: a free-text subject is the minority that misses on stock footage
+    and falls through to Giphy/Tenor."""
+    from pipeline.broll import ContentManager
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c"})
+    live.ensure_runtime_dirs()
+    m = ContentManager(live, library_dir=tmp_path / "library")
+
+    calls: list[str] = []
+
+    def fake_chat(prompt, _settings, **kw):
+        calls.append(prompt)
+        return "flat desert mesa landscape wide"
+
+    monkeypatch.setattr("pipeline.llm.chat", fake_chat)
+
+    assert m._clip_query("a plateau in a costume") == \
+        "flat desert mesa landscape wide"
+    # Cached on the subject text, so the same subject is rewritten once ever
+    # — not once per off-palette visual per render.
+    assert m._clip_query("a plateau in a costume") == \
+        "flat desert mesa landscape wide"
+    assert len(calls) == 1
+
+
+def test_a_rewrite_that_looks_wrong_falls_back_to_the_raw_subject(
+        settings, tmp_path, monkeypatch):
+    """A query is not a fact: a worse query is much cheaper than a stalled
+    plan, so every failure path is the raw text."""
+    from pipeline.broll import ContentManager
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c2"})
+    live.ensure_runtime_dirs()
+    m = ContentManager(live, library_dir=tmp_path / "library")
+
+    monkeypatch.setattr(
+        "pipeline.llm.chat",
+        lambda *a, **k: "Sure! Here is a query for you: desert mesa.")
+    assert m._clip_query("a plateau in a costume") == "a plateau in a costume"

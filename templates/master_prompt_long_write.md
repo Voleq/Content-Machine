@@ -288,7 +288,7 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - Alternate the KIND of evidence across a chapter (real photo → chart → filing → structure plate → table), and never reuse the same meme.
 - [SCRIBBLE] rides OVER whatever is on screen — including over the host. It punctuates a flat aside; it is never the reason to cut.
 - Use ONLY names from the catalogues above. Every visual tag is validated before render. Irony lands on the exact word: "a [CLIP: clown] visionary CEO".
-- **Foreign media is COMPOSITED INSIDE A DRAWN FRAME** — a photograph, a clip or a filing screenshot lands inside frames/media-frame or frames/capture-frame, with its caption and source in their slots. Full-frame raw media destroys the drawn surface the rest of the video is built on; the treatments rotate so consecutive ones differ.
+- **Foreign media is COMPOSITED INSIDE A DRAWN FRAME** — a photograph, a clip or a filing screenshot lands inside `frames/media-frame-t1`, `frames/media-frame-t2` or `frames/media-frame-t3`, or in `frames/capture-frame`, with its caption and source in their slots. Full-frame raw media destroys the drawn surface the rest of the video is built on; the three `-t` treatments are what makes consecutive media beats differ, so rotate them.
 
 ## RULES
 - Multi-year first: growth rates, margin direction, share count, debt — the history table is the spine of the numbers chapter.

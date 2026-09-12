@@ -245,6 +245,22 @@ class Settings(BaseSettings):
     imgflip_base_url: str = "https://api.imgflip.com"  # get_memes is keyless
     # information-first: a LONG may carry at most this many memes (validated)
     meme_max_per_long: int = 2
+    # GIF-sourced visuals per video (H3). Giphy and Tenor content is
+    # user-uploaded and frequently copyrighted, and the fallback fires
+    # precisely when a clip is specific enough that stock footage misses —
+    # so it was the most legally exposed surface in the pipeline with no
+    # counter, no report line and no ceiling, while memes from the OWNED
+    # library were capped at one or two. Same shape as the meme cap.
+    gif_max_per_video: int = Field(default=2, alias="GIF_MAX_PER_VIDEO")
+    # Rewrite an OFF-PALETTE clip subject into stock-searchable terms before
+    # the Pexels call (H4). The 53-entry palette is hand-curated and
+    # pre-tested and bypasses this entirely — never rewrite a query someone
+    # already tested. Only free-text subjects go through it, and they are the
+    # minority that misses on stock footage and falls through to the GIF
+    # providers. Local-first and cached; off means the raw text is sent, as
+    # it always was.
+    broll_rewrite_offpalette: bool = Field(default=True,
+                                           alias="BROLL_REWRITE_OFFPALETTE")
 
     # ---------------------------------------------- filings (10-K auto-screenshot)
     # Pull the latest 10-K from SEC EDGAR, flag smoking-gun quotes with a cheap
@@ -536,43 +552,16 @@ class Settings(BaseSettings):
     screen_allow_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
     screen_deny_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
-    # -------------------------------------------------------------- editorial
-    disclaimer_text: str = Field(
-        default="Opinion / entertainment. Not financial advice.",
-        alias="DISCLAIMER_TEXT",
-    )
-    # brand copy burned into the intro/outro bug — never the data vendor
-    brand_name: str = "DENNIS"
-    brand_tagline: str = "NOISE OR SIGNAL?"
-    # the handle the signature close card signs off with
-    brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")
-
-    # ------------------------------------------------------- the cold open
-    # Where the signature card goes in a SHORT. It used to play FULL-FRAME
-    # from t=0, so the first second and a half of every video — the only part
-    # that decides whether anyone watches the rest — was a channel bumper
-    # rather than the hook.
+    # `SHORT_OPEN_STYLE`, `SHORT_OPEN_BUG_S` and `assets/hook_bank.json`
+    # lived here and nothing read any of them (found by the new
+    # `tests/test_asset_reach.py`, which is what J8 is for).
     #
-    #   "bug"   a small corner mark. The brand is present, the hook is not
-    #           covered. The default.
-    #   "tail"  no open at all; the signature card plays only at the end,
-    #           where `e_close` already is.
-    #   "full"  the original full-frame open, kept so the change is reversible
-    #           against retention data rather than by editing code.
-    short_open_style: str = Field(default="bug", alias="SHORT_OPEN_STYLE")
-    # How long the corner bug holds. Long enough to register, short enough
-    # that it is never what the viewer is looking at.
-    short_open_bug_s: float = Field(default=1.6, alias="SHORT_OPEN_BUG_S")
-
-    @field_validator("short_open_style")
-    @classmethod
-    def _known_open_style(cls, v: str) -> str:
-        allowed = {"bug", "tail", "full"}
-        got = str(v).strip().lower()
-        if got not in allowed:
-            raise ValueError(
-                f"SHORT_OPEN_STYLE={v!r} is not one of {sorted(allowed)}")
-        return got
+    # They described the SHORT's signature open — a corner bug, a sampled
+    # opener line, a length to hold it for — and the SHORT's open is now
+    # whatever `templates/shots/short.json` puts in its `hook` shot. The
+    # README described all three as live and tunable against retention data,
+    # which is the same shape as `assets/brand/`: an instrument documented,
+    # trusted, and wired to nothing.
 
     # ------------------------------------------------------------ mock timing
     # Deterministic mock TTS pacing (words per second) so rendered fixtures

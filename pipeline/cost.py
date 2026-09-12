@@ -202,6 +202,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
         annotation_note="\n".join(notes),
         meme_count=1 if script.meme else 0,
         meme_cap=settings.meme_max_per_long,
+        gif_cap=settings.gif_max_per_video,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
         delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
@@ -232,6 +233,36 @@ _FILLER_MEANS = {
     "img": "no imagery resolved — this beat draws a blank card",
     "meme": "no meme resolved — this beat draws a blank card",
 }
+
+
+def gif_ceiling_warnings(visual_plan, settings) -> list[str]:
+    """One warning when a video leans on the GIF providers past its ceiling.
+
+    Same shape as the meme cap, for the same reason and a sharper one: memes
+    come from the OWNED library and were already capped at one or two, while
+    Giphy and Tenor content is user-uploaded, frequently copyrighted, and
+    fires exactly when a clip is specific enough that stock footage misses
+    (H3). It had no counter, no report line and no ceiling at all.
+
+    A warning rather than a block: the alternative to a GIF here is a filler
+    card, so refusing the render trades a legal question for a dead beat,
+    and the operator is the one who gets to make that trade.
+    """
+    from pipeline.models import _GIF_SOURCES
+
+    gifs = [v for v in visual_plan
+            if getattr(v, "source", "") in _GIF_SOURCES]
+    cap = settings.gif_max_per_video
+    if len(gifs) <= cap:
+        return []
+    keys = ", ".join(sorted({v.key for v in gifs})[:6])
+    return [
+        f"{len(gifs)} visuals came from Giphy/Tenor, over the cap of {cap} "
+        f"({keys}). That content is user-uploaded and frequently "
+        f"copyrighted, and this chain only fires when the owned library and "
+        f"Pexels both missed — so the fix is an owned clip or a palette key, "
+        f"not a bigger cap."
+    ]
 
 
 def unresolved_visual_warnings(visual_plan) -> list[str]:
@@ -270,6 +301,7 @@ def build_long_report(
         )
     warnings = list(parse_warnings) + list(validation_warnings)
     warnings += unresolved_visual_warnings(visual_plan)
+    warnings += gif_ceiling_warnings(visual_plan, settings)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
@@ -286,6 +318,7 @@ def build_long_report(
         filing_overlays=filing_count,
         meme_count=script.meme_count(),
         meme_cap=settings.meme_max_per_long,
+        gif_cap=settings.gif_max_per_video,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_long),
         delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),

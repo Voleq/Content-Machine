@@ -603,9 +603,75 @@ class ContentManager:
         return self.filler_clip(key)
 
     def _clip_query(self, key: str) -> str:
-        # palette keys map to their pre-tested query; anything else is
-        # treated as a raw query (validation already warned about it)
-        return PALETTE.get(key, key.replace("_", " "))
+        """The stock-search query for a clip key.
+
+        A PALETTE key maps to its pre-tested query and stops there — the 53
+        entries are hand-curated, `dumpster_fire` is
+        `"dumpster fire burning night"` rather than `"dumpster fire"`, and
+        rewriting one would be undoing work somebody already did (H4).
+
+        Anything else is the writer going off-palette, which the prompt
+        discourages and `validate_*_script` already warns about. It is a
+        minority of visuals and precisely the minority that misses on stock
+        footage and falls through to Giphy/Tenor — the most legally exposed
+        surface in the pipeline (H3). So a free-text subject is rewritten
+        into stock-searchable terms first: "a plateau in a costume" is not a
+        stock query, "flat desert mesa landscape wide" is.
+        """
+        if key in PALETTE:
+            return PALETTE[key]
+        raw = key.replace("_", " ")
+        return self._stock_query(raw)
+
+    def _stock_query(self, subject: str) -> str:
+        """`subject` rewritten for a stock library, or `subject` unchanged.
+
+        Cached on the subject text, beside the clip cache: the same subject
+        is rewritten once, ever, rather than once per off-palette visual per
+        render. Degrades to the raw text on every failure path — this is a
+        query, not a fact, and a worse query is much cheaper than a stalled
+        plan.
+        """
+        if not self.settings.broll_rewrite_offpalette or not subject.strip():
+            return subject
+        cache = self.settings.cache_dir / "broll" / "queries.json"
+        try:
+            store = json.loads(cache.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            store = {}
+        if subject in store:
+            return str(store[subject]) or subject
+
+        from pipeline.llm import chat
+
+        out = chat(
+            subject,
+            self.settings,
+            system=(
+                "You turn a director's free-text visual note into a search "
+                "query for a stock-footage library. Reply with the query "
+                "ONLY: three to six concrete, literal, photographable nouns "
+                "and adjectives, no punctuation, no quotes, no explanation. "
+                "Drop metaphor and keep what a camera could actually see — "
+                '"a plateau in a costume" becomes "flat desert mesa '
+                'landscape wide". Do not think out loud.'),
+            purpose="broll query",
+        )
+        query = (str(out or "").strip().splitlines() or [""])[0].strip(' "\'')
+        # A rewrite that came back long, empty, or with punctuation in it is
+        # a model answering a different question. The raw text is the floor.
+        if not query or len(query) > 120 or any(c in query for c in ".!?:;"):
+            if out:
+                log.info("broll query rewrite for %r looked wrong (%r) — "
+                         "using the raw subject", subject, out)
+            query = subject
+        store[subject] = query
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        except OSError as e:  # advisory — a cache miss costs a call, not a run
+            log.warning("could not cache the broll query rewrite: %s", e)
+        return query
 
     def _res(self, portrait: bool) -> tuple[int, int]:
         return self.settings.short_resolution if portrait else self.settings.long_resolution

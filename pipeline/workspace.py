@@ -14,11 +14,17 @@ content the operator did not see (§2.3, §8.3).
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+import re
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from config import Settings
 from pipeline.models import LongScript, ShortScript
+
+
+# A `YYYY-MM-DD` workspace directory. Compared as a string before it
+# is parsed, which is why the format is pinned here.
+_DATE_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def today_str() -> str:
@@ -315,21 +321,35 @@ class ActiveContext:
 
 
 def audited_tickers_since(settings: Settings, days: int) -> set[str]:
-    """Tickers with a workspace newer than `days` — the screener cooldown."""
+    """Tickers with a workspace newer than `days` — the screener cooldown.
+
+    Reads the DATE DIRECTORY NAMES and stops at the first one inside the
+    window (J5). It used to walk every date directory of every ticker on
+    every screen, which is fine at today's volume and grows without bound
+    alongside the thesis book: a year of daily videos is 365 directories per
+    ticker, and the screener runs this on every candidate.
+
+    Two cheap changes rather than an index, because an index is a second
+    thing to keep true: the ticker directories are sorted so the newest
+    dates come first and the scan stops as soon as one qualifies, and the
+    cutoff is compared as a DATE STRING, so the parse only happens for the
+    handful of names that could matter.
+    """
     out: set[str] = set()
     root = settings.workspace_dir
     if not root.is_dir():
         return out
-    cutoff = datetime.now(timezone.utc).timestamp() - days * 86400
+    cutoff = (datetime.now(timezone.utc)
+              - timedelta(days=days)).date().isoformat()
     for tdir in root.iterdir():
-        if not tdir.is_dir():
+        if not tdir.is_dir() or tdir.name.startswith("_"):
             continue
-        for ddir in tdir.iterdir():
-            try:
-                d = datetime.fromisoformat(ddir.name).replace(tzinfo=timezone.utc)
-                if d.timestamp() >= cutoff:
-                    out.add(tdir.name)
-                    break
-            except ValueError:
-                continue
+        # Newest first: the answer is almost always the first name.
+        for name in sorted((d.name for d in tdir.iterdir() if d.is_dir()),
+                           reverse=True):
+            if name < cutoff:
+                break          # every remaining name is older still
+            if _DATE_DIR_RE.match(name):
+                out.add(tdir.name)
+                break
     return out

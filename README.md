@@ -61,6 +61,8 @@ Excel; the refresh happens on the operator's own machine.)
 | Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
 | A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
+| GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
+| Every file under `assets/` is loadable by some code path, or reported | `tests/test_asset_reach.py`; the same idea as `reachable_plates`, for non-kit art |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
 | Uploads are private or scheduled — never public from a machine | `pipeline/youtube.py` `build_body` |
@@ -211,7 +213,7 @@ assets/
                          plus plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
   fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
-  meme_library, custom/ ([SCREENGRAB] drops), hook_bank.json
+  meme_library, custom/ ([SCREENGRAB] drops)
 templates/
   shots/                 one file per FORMAT: short, earnings, macro, long
   chapters/              one file per chapter TYPE — all sixteen
@@ -229,7 +231,7 @@ scripts/
   kit_engine.js          the node entry point the ingest drives
   render_samples.py      render the committed samples from fixtures
   gen_assets.py          procedural placeholders for everything not drawn
-  gen_fixtures.py, fetch_sfx.py, contact_sheet.py, audit_placement.py
+  gen_fixtures.py, fetch_sfx.py, contact_sheet.py
 workspace|cache|state/   runtime (gitignored)
 ```
 
@@ -811,8 +813,6 @@ number, which is exactly the case the gate exists to catch.
 | `TELEGRAM_BOT_TOKEN` | — | from @BotFather (free; required even in mock) |
 | `OPERATOR_CHAT_IDS` | — | allow-list; empty denies all. `["123456789"]`, `123456789` and `123,456` all parse |
 | `BRAND_HANDLE` | `@dennisreads` | signed on the SHORT's closing card |
-| `SHORT_OPEN_STYLE` | `bug` | where the signature card goes in a SHORT: `bug` (a corner mark, so the video opens cold on the hook), `tail` (no open at all — `e_close` still runs), `full` (the original full-frame bumper). Tunable against retention data rather than by editing code |
-| `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `CHAPTER_CUE_SFX` | `keyboard_clack` | the sound a LONG's chapter opener fires, 0.15s ahead of the picture so it announces the opener rather than reacting to it. A key from the sfx taxonomy; blank turns the cue off. It is a signpost, not atmosphere — `keyboard_clack` reads as one because it is diegetic (he is typing the chapter title), where a `ding` reads as a notification. `paper_rustle` and `ding` are the alternatives worth auditioning; the choice can only be made by listening, which is why it is a setting |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
@@ -906,9 +906,6 @@ env var, case-insensitive).
   word timestamps — words punch in as they are spoken. LONG captions are
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps
   them intact.
-- **Hook bank**: `assets/hook_bank.json` openers are sampled per render
-  (seeded by the script sha — idempotent re-renders, fresh openers across
-  videos).
 - **Owned meme library first**: `assets/meme_library/meme_index.json`
   maps 16 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only

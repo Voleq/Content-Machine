@@ -1,8 +1,8 @@
 """The cover — a frame from the video, not a poster for a different one.
 
 A thumbnail is the only part of the channel most people ever see, and this one
-advertised a product that no longer exists. It painted on
-``backgrounds/dennis_bg_wide.png`` — mean luminance 17, a near-black photo —
+advertised a product that no longer exists. It painted on a near-black stock
+photo from the previous kit's ``assets/backgrounds/`` — mean luminance 17 —
 darkened it further, and accented in a gold that is not in the kit palette,
 with every string carrying a six-pixel black outline because that is what type
 needs to survive on a photograph. The video it was selling is ink on paper.

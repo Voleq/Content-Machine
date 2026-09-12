@@ -274,6 +274,24 @@ def _plate_fingerprint(path: Path) -> str:
     return got
 
 
+def _rendered_kit_reach(plate_keys: list[str], settings) -> str:
+    """The reach line for a finished render, or "" when the kit is absent."""
+    from pipeline.reach import reach_from_manifest
+
+    reach = reach_from_manifest({"plates_used": plate_keys}, settings)
+    return reach.line() if reach.keys else ""
+
+
+def _visual_source_counts(seg_meta: list[dict]) -> dict[str, int]:
+    """`{source: n}` over the segments that carried a fetched visual."""
+    counts: dict[str, int] = {}
+    for m in seg_meta:
+        src = str(m.get("source") or "")
+        if src:
+            counts[src] = counts.get(src, 0) + 1
+    return dict(sorted(counts.items()))
+
+
 def _price_provenance(script, settings) -> dict:
     """`{source, degraded}` for a LONG that draws a price chart, else `{}`.
 
@@ -1570,6 +1588,10 @@ def render_long(
         # never used" — which is the gap list the next design batch is drawn
         # from, and it is worth nothing if nobody writes the numerator down.
         "plates_used": sorted(plates_used),
+        # The render's own reach line, in the same shape as the script's, so
+        # "how much of the kit did this actually use" is answerable from the
+        # artefact (J3). `rendered_reach` existed for this and had no caller.
+        "kit_reach": _rendered_kit_reach(sorted(plates_used), settings),
         "stingers": stinger_meta,
         "transitions": transition_meta,
         # The motion that reached the cut. Zero here means the long is back to
@@ -1591,6 +1613,12 @@ def render_long(
         "shots_with_blink": sum(1 for m in host_motion if m.get("has_blink")),
         "shots_with_idle": sum(1 for m in host_motion if m.get("has_idle")),
         "attributions": attributions,
+        # Where every visual came from, counted (H3). `Visual.source` was
+        # already exactly the right vocabulary — local | library | cache |
+        # pexels | wikimedia | company_site | giphy | tenor | imgflip | mock
+        # | generated | filler — and nothing counted it, so a video leaning
+        # on user-uploaded GIF content left no trace anywhere.
+        "visual_sources": _visual_source_counts(seg_meta),
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),
     }, indent=2), encoding="utf-8")

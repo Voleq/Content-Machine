@@ -1019,6 +1019,8 @@ class VisualPlanItem(BaseModel):
 # report bucketing: where each resolver source counts
 _OWNED_SOURCES = {"local", "library"}
 _FILLER_SOURCES = {"filler"}
+# The providers whose content is user-uploaded and not ours (H3).
+_GIF_SOURCES = {"giphy", "tenor"}
 
 
 class CostReport(BaseModel):
@@ -1047,13 +1049,15 @@ class CostReport(BaseModel):
     filing_overlays: int = 0
     meme_count: int = 0
     meme_cap: int = 2
+    gif_cap: int = 2
     est_runtime_min: float = 0.0   # estimated finished VIDEO length (min)
     est_render_minutes: float = 0.0  # estimated ffmpeg processing time (min)
     mtd_spend_usd: float = 0.0
     monthly_cap_usd: float = 0.0
-    # How much of the 442-asset kit this script asks for. It lived only in
-    # `kit_assets_used` in a render manifest nobody opens, so a short reaching
-    # 17 assets and one beat-library scene went unremarked for months. The
+    # How much of the kit this script asks for. The render's own reach line
+    # is on the manifest under the same key, computed by `rendered_reach`,
+    # so the two are readable against each other — a render whose count is
+    # barely above the script's is a render carried by furniture (J3). The
     # approval screen is the last moment a thin script can be sent back, so
     # this is the moment to say it.
     kit_reach: str = ""
@@ -1071,7 +1075,7 @@ class CostReport(BaseModel):
 
     @property
     def visual_counts(self) -> dict[str, int]:
-        counts = {"owned": 0, "cache": 0, "fetched": 0, "filler": 0}
+        counts = {"owned": 0, "cache": 0, "fetched": 0, "filler": 0, "gif": 0}
         for item in self.visuals:
             if item.source in _OWNED_SOURCES:
                 counts["owned"] += 1
@@ -1081,6 +1085,14 @@ class CostReport(BaseModel):
                 counts["filler"] += 1
             else:
                 counts["fetched"] += 1
+            # Counted SEPARATELY as well as within "fetched" (H3). Giphy and
+            # Tenor content is user-uploaded and frequently copyrighted, and
+            # the fallback fires precisely when a clip is specific enough
+            # that stock footage misses. Memes from the owned library were
+            # capped at one or two per video; this had no counter, no report
+            # line and no ceiling.
+            if item.source in _GIF_SOURCES:
+                counts["gif"] += 1
         return counts
 
     def render_text(self) -> str:
@@ -1120,10 +1132,12 @@ class CostReport(BaseModel):
                 lines.append(self.annotation_note)
         if self.visuals:
             c = self.visual_counts
-            lines.append(
-                f"Visuals: {len(self.visuals)} "
-                f"(owned {c['owned']} / cache {c['cache']} / fetched {c['fetched']} / filler {c['filler']})"
-            )
+            line = (f"Visuals: {len(self.visuals)} "
+                    f"(owned {c['owned']} / cache {c['cache']} / "
+                    f"fetched {c['fetched']} / filler {c['filler']})")
+            if c["gif"]:
+                line += f"\n  {c['gif']}/{self.gif_cap} from GIF providers"
+            lines.append(line)
         if self.fmt == "long":
             lines.append(f"Filing overlays: {self.filing_overlays or 'not used'}   "
                          f"Memes: {self.meme_count}/{self.meme_cap}")

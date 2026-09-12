@@ -341,3 +341,27 @@ def test_a_catch_up_is_scheduled_alongside_the_daily_digest(settings):
     assert "screen_digest" in names
     assert "screen_digest_catchup" in names, \
         "a missed digest has to have something that notices"
+
+
+def test_a_broken_source_is_named_in_the_digest(settings):
+    """J6: Yahoo and StockTwits are both unofficial endpoints. A failure
+    degraded to an empty lane and a log line, and the digest still went out
+    — just shorter. A silently broken screener read exactly like a quiet
+    market."""
+    from pipeline.screener import digest_text
+
+    quiet = digest_text({"trending": [], "value": [],
+                         "sources": {"yahoo": "ok", "stocktwits": "empty"}})
+    broken = digest_text({"trending": [], "value": [],
+                          "sources": {"yahoo": "failed", "stocktwits": "ok"}})
+
+    assert "yahoo ok" in quiet and "DEGRADED" not in quiet
+    assert "yahoo DEGRADED" in broken
+    assert quiet != broken, "the two must not read the same"
+
+
+def test_run_screen_records_what_each_source_did(settings):
+    from pipeline.screener import run_screen
+
+    result = run_screen(settings, "all")
+    assert set(result.get("sources") or {}) >= {"yahoo", "stocktwits"}

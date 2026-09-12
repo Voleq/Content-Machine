@@ -350,18 +350,24 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
     cooled = audited_tickers_since(settings, settings.cooldown_days)
     st_symbols = None
     result: dict[str, list[Candidate]] = {}
+    # What each source did on this run (J6), reported in the digest.
+    health: dict[str, str] = {}
 
     if lane in ("trending", "all"):
         try:
             st_symbols = sentiment.trending()
+            health["stocktwits"] = "ok" if st_symbols else "empty"
         except Exception as e:  # pragma: no cover — belt and braces
             log.warning("sentiment source blew up: %s", e)
             st_symbols = None
+            health["stocktwits"] = "failed"
         try:
             movers = market.trending_movers()
+            health["yahoo"] = "ok" if movers else "empty"
         except Exception as e:
             log.warning("market source blew up: %s", e)
             movers = []
+            health["yahoo"] = "failed"
         cands = [c for c in score_trending(movers, st_symbols, settings)
                  if c.ticker not in cooled]
         result["trending"] = cands[: settings.screen_top_n]
@@ -370,9 +376,14 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
     if lane in ("value", "all"):
         try:
             pool = market.value_candidates()
+            # Yahoo answers both lanes. A value screen that came back empty
+            # while trending worked is a filter result, not a dead source,
+            # so an existing "ok" is not downgraded.
+            health.setdefault("yahoo", "ok" if pool else "empty")
         except Exception as e:
             log.warning("market source blew up: %s", e)
             pool = []
+            health["yahoo"] = "failed"
         cands = [c for c in score_value(pool, st_symbols, settings)
                  if c.ticker not in cooled]
         result["value"] = cands[: settings.screen_top_n]
@@ -381,6 +392,11 @@ def run_screen(settings: Settings, lane: str = "all") -> dict[str, list[Candidat
     # from the thesis book rather than from candidates, and every ticker in it
     # is cooled — that is what having covered it means.
     result["updates"] = _theses_worth_revisiting(settings)  # type: ignore[assignment]
+    # A SILENTLY BROKEN SCREENER IS INDISTINGUISHABLE FROM A QUIET MARKET
+    # (J6). Yahoo and StockTwits are both unofficial endpoints; a failure
+    # degraded to an empty lane and a log line, and the digest still went
+    # out — just shorter. So the digest says what each source did.
+    result["sources"] = health  # type: ignore[assignment]
 
     _save_last_screen(settings, result)
     # Every screen feeds the standing backlog (P3.3), so a session opens with
@@ -564,7 +580,16 @@ def digest_text(result: dict) -> str:
         lines.append("🔁 Already covered, thesis moved (UPDATE candidates)")
         for ticker in result["updates"]:
             lines.append(f"  {ticker}: /update {ticker}")
-    lines.append("\nTap a ticker to open its workspace (/new).")
+    health = result.get("sources") or {}
+    if health:
+        # A short digest because the market was quiet and a short digest
+        # because Yahoo returned a 403 read identically (J6). This is the
+        # line that tells them apart.
+        icons = {"ok": "ok", "empty": "no results", "failed": "DEGRADED"}
+        lines.append("\nsources: " + " · ".join(
+            f"{name} {icons.get(state, state)}"
+            for name, state in sorted(health.items())))
+    lines.append("Tap a ticker to open it in its own lane.")
     return "\n".join(lines)
 
 

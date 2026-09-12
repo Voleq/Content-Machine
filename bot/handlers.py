@@ -1409,12 +1409,23 @@ class BotCore:
             checkpoint("delivery")
             import json as _json
             attributions = _json.loads(manifest.read_text(encoding="utf-8")).get("attributions", [])
-            result = ""
+            # EVERY clip's link, not just the last one's (I3). `result` was
+            # overwritten each pass, so `/status` and the job record showed
+            # only the final clip — the first two were delivered and
+            # invisible, which is the whole point of cutting three.
+            results = []
             for i, (path, _info) in enumerate(clips, 1):
                 checkpoint(f"delivery {i}/{len(clips)}")
-                result = deliver(path, job.ticker, job.workdate, self.settings,
-                                 attributions=attributions)
-            self._finish(job, result)
+                results.append(deliver(path, job.ticker, job.workdate,
+                                       self.settings,
+                                       attributions=attributions))
+            self._finish(job, results[0])
+            fresh = self.queue.store.load(job.id) if self.queue else None
+            if fresh is not None:
+                extra = [f"clip {i}/{len(results)}: {r.link}"
+                         for i, r in enumerate(results, 1)]
+                fresh.byproducts = extra + list(fresh.byproducts)
+                self.queue.store.save(fresh)
             return str(clips[0][0])
 
         raise RuntimeError(f"unknown job kind {job.kind}")

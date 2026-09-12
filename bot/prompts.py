@@ -149,33 +149,13 @@ def broll_catalog() -> str:
     return "\n".join(f"  - {k} — {PALETTE[k]}" for k in palette_keys())
 
 
-def scribble_styles(settings: Settings) -> str:
-    """The `[SCRIBBLE: style -> target]` vocabulary, off the kit on disk.
-
-    Generated for the same reason every other catalog here is: the templates
-    named three styles while the kit ships twelve marks, and none of the three
-    drew the artwork — so a writer was never told the drawings existed and
-    could not have asked for one. A style whose artwork is missing still
-    renders (a drawn stand-in takes it), but it is not offered.
-    """
-    from pipeline.kit import load_kit
-    from pipeline.rasters import SCRIBBLE_MARKS
-
-    kit = load_kit(settings.assets_dir)
-    have = [s for s, (key, _) in sorted(SCRIBBLE_MARKS.items())
-            if kit.get(key) is not None]
-    return ", ".join(f"`{s}`" for s in have) or "`circle`, `arrow`, `underline`"
-
-
-# --------------------------------------------------------------------------
-# The plate catalogue — generated from the manifests, never written down.
-# --------------------------------------------------------------------------
-#
-# A hand-maintained list drifts the moment the artwork changes, and the failure
-# mode of drift is a script full of names that validate-then-fail. So the
-# catalogue is emitted from the registry that ingest wrote from the kit's own
-# manifests: name, purpose, slot names, and which chapter types may use it.
-
+# `scribble_styles` was defined twice in this file. The first definition
+# imported `pipeline.kit`, a module that does not exist — so it would have
+# raised on the first call, and never did, because the SECOND definition (a
+# few hundred lines down, reading the plate registry) shadowed it. Harmless
+# in the sense that nothing broke; dangerous in the sense that a reader
+# looking for the live one found the dead one first (J2). The dead one is
+# gone.
 
 def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
     """Every plate the director may name, with what it is for and its slots."""
