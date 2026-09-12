@@ -265,21 +265,60 @@ def test_fresh_data_passes():
     assert check_freshness("2026-07-20", s, today=date(2026, 7, 22)) == []
 
 
-def test_stale_data_warns():
+def test_stale_data_blocks_by_default():
+    """B5: the README always listed freshness as a blocking gate."""
     s = Settings(_env_file=None)
     out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
     assert out and "days old" in out[0].message
-    assert out[0].severity == "warn"
-
-
-def test_stale_data_can_be_made_blocking():
-    s = Settings(data_stale_blocks=True, _env_file=None)
-    out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
     assert out[0].severity == "block"
 
 
-def test_a_missing_as_of_date_is_flagged():
-    assert check_freshness("", Settings(_env_file=None))
+def test_stale_data_can_be_made_advisory():
+    s = Settings(data_stale_blocks=False, _env_file=None)
+    out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
+    assert out[0].severity == "warn"
+
+
+def test_a_missing_as_of_date_blocks_rather_than_skipping():
+    """An absent date is the absence of evidence, not evidence."""
+    out = check_freshness("", Settings(_env_file=None))
+    assert out and out[0].severity == "block"
+
+
+def test_an_unreadable_as_of_date_blocks_rather_than_skipping():
+    out = check_freshness("last tuesday", Settings(_env_file=None))
+    assert out and out[0].severity == "block"
+    assert "not evidence of freshness" in out[0].message
+
+
+@pytest.mark.parametrize("written,expected", [
+    ("2026-09-03", date(2026, 9, 3)),
+    # US format, which is what a US-locale export of US market data writes.
+    # Read day-first this was 3 March — six months adrift and inside any
+    # staleness limit either way, so the gate said nothing.
+    ("09/03/2026", date(2026, 9, 3)),
+    ("3-Sep-2026", date(2026, 9, 3)),
+    ("3 Sep 2026", date(2026, 9, 3)),
+    ("Sep 3, 2026", date(2026, 9, 3)),
+    ("September 3, 2026", date(2026, 9, 3)),
+    ("2026-09-03 00:00:00", date(2026, 9, 3)),
+    # A cell read as a raw Excel serial (days since 1899-12-30).
+    ("46268", date(2026, 9, 3)),
+])
+def test_the_shapes_a_sheet_actually_writes_a_date_in_are_all_read(
+        written, expected):
+    """Every one of these used to return None and skip the check."""
+    from pipeline.gates import _parse_as_of
+
+    assert _parse_as_of(written) == expected
+
+
+def test_a_stale_us_format_date_is_now_caught():
+    """The end-to-end version of the format above: the gate fires."""
+    s = Settings(_env_file=None)
+    # 9 March, read a US sheet correctly -> 100+ days stale on 20 June.
+    out = check_freshness("03/09/2026", s, today=date(2026, 6, 20))
+    assert out and out[0].severity == "block"
 
 
 # ------------------------------------------------ figures that reach the screen
@@ -413,8 +452,10 @@ def test_run_gates_is_silent_on_a_clean_script(settings, data, long_valid_text):
     from pipeline.parser_long import parse_long_script
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    # A date the gate would call stale is not a clean script — freshness
+    # blocks by default now (B5) — so the fixture's as-of is read as today.
     report = run_gates(script, settings, data=data,
-                       as_of="2026-07-01", skeptic=False)
+                       as_of=date.today().isoformat(), skeptic=False)
     blocking = [f for f in report.findings if f.severity == "block"]
     assert not blocking, report.text()
 

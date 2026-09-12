@@ -82,7 +82,7 @@ blocks, never rewrites — the writer decides.
 | **voice linter** | what `assets/voice_bible.md` forbids: hype adjectives, exclamation marks, anything that reads as a call, a construction used twice in one script, and ~20 seconds of explanation with no turn in it. A data vendor named on screen is the one **block** — it would be spoken and captioned | mostly warns |
 | **direction linter** | the delivery vocabulary and its ceilings, read off `pipeline/direction.py`: one direction a sentence, never two adjacent, per-script caps on the tags that stop working when repeated, and no shouted word. A tag the bible refuses is named as refused, and the **block** is the lowercase spelling the ElevenLabs docs use — `[laughs]` is not a tag to the bracket grammar at all, so it would be read out and captioned | mostly warns |
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
-| **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
+| **data freshness** | the workbook's own as-of date, not its mtime. A date it cannot READ blocks too — an unreadable date is not evidence of freshness. Reads ISO, US and day-first slashes, `3-Sep-2026`, `Sep 3, 2026` and a raw Excel serial | blocks when stale or unreadable (`DATA_STALE_BLOCKS=false` to make it advisory) |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
 | **type budgets** | every figure and line a `[PLATE]` writes, against the `maxChars` the kit derived for THAT box — the role's narrowest box is the floor behind it. Checked here because it is a property of the script: the same failure at render time costs a forty-minute build to learn a label is six characters too long | blocks |
 | **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
@@ -759,7 +759,7 @@ named in terms of what to go and fix:
 | `#CIQINACTIVE` / `Not Signed In` / `#NAME?` in a **required** field | the field, the marker in the cell, and to sign the terminal in — **refused** |
 | the same in an optional field | a warning; treated as missing |
 | A different company's workbook | both tickers, and the command to open a workspace for the other one — **refused** |
-| Older than `DATA_MAX_AGE_DAYS` | its age and its as-of date; a warning, not a refusal |
+| Older than `DATA_MAX_AGE_DAYS` | its age and its as-of date — **refused** by default (`DATA_STALE_BLOCKS=false` makes it a warning) |
 
 An unresolved marker is **not** the same as an empty cell, and conflating
 them is how a video ends up titled `#CIQINACTIVE`: a text field accepts the

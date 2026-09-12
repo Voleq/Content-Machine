@@ -252,8 +252,15 @@ class Settings(BaseSettings):
     # fallback. Comma-separated; empty means ollama,github,openai.
     llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
     # A render built on a stale snapshot states old numbers as current.
+    #
+    # Blocking by default (B5). The README's guarantee table has always
+    # listed freshness as a blocking gate; the code shipped it as a warning,
+    # and a row that says "enforced in code" while the code shrugs is worse
+    # than no row. This is also the house rule: a refusal is data, and the
+    # choice between failing loudly and carrying on quietly goes to loud.
+    # Set DATA_STALE_BLOCKS=false to go back to advisory.
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
-    data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
+    data_stale_blocks: bool = Field(default=True, alias="DATA_STALE_BLOCKS")
 
     # ------------------------------------- by-products + status page (P3.6)
     # Every finished render emits the kit's thumbnail layouts, social cards

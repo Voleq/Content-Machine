@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import date, datetime, time as dt_time, timezone
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from config import Settings
@@ -1179,9 +1179,10 @@ def check_freshness(as_of: str, settings: Settings,
     between machines, resets that without touching a single number, which is
     exactly the case this gate exists to catch.
 
-    The COM refresh stamp is still honoured when one is present, but only as a
-    fallback for a workspace populated that way, and only when the sheet
-    carries no date of its own. On the Linux target nothing writes it.
+    A date this cannot READ is a block too, at the same severity as a stale
+    one (B5). It used to be a silent skip, which is the wrong shape: an
+    unreadable date is not evidence of freshness, it is the absence of
+    evidence, and the gate exists precisely to refuse to proceed without it.
     """
     parsed = _parse_as_of(as_of)
 
@@ -1196,22 +1197,75 @@ def check_freshness(as_of: str, settings: Settings,
                          f"and upload dennis_data.xlsx again"))]
         return []
 
+    severity = "block" if settings.data_stale_blocks else "warn"
     if not as_of:
-        return [Finding(gate="freshness", severity="warn",
-                        message="the data export carries no as-of date")]
-    return [Finding(gate="freshness", severity="warn",
-                    message=f"could not read the as-of date {as_of!r}")]
+        return [Finding(
+            gate="freshness", severity=severity,
+            message=("the data export carries no as-of date — there is "
+                     "nothing here that says when these numbers were "
+                     "pulled, so they cannot be checked for staleness"))]
+    return [Finding(
+        gate="freshness", severity=severity,
+        message=(f"could not read the as-of date {as_of!r} — an unreadable "
+                 f"date is not evidence of freshness. Write it as "
+                 f"YYYY-MM-DD in the sheet and re-upload"))]
+
+
+# Written as a US date first. The workbook is exported on a US-locale
+# machine against US market data, so `09/03/2026` is 9 March there — read
+# day-first it silently became 3 September, six months adrift and inside
+# any staleness limit either way (B5).
+#
+# The formats after it are the ones the sheet actually produces when the
+# operator's locale, or Excel's own formatting, gets involved; every one of
+# them used to return None and skip the check entirely.
+_AS_OF_FORMATS = (
+    "%Y-%m-%d",      # ISO — what the template asks for
+    "%m/%d/%Y",      # US, before day-first: see above
+    "%d/%m/%Y",      # day-first, for a sheet saved under a European locale
+    "%Y/%m/%d",
+    "%d-%b-%Y",      # 3-Sep-2026
+    "%d %b %Y",      # 3 Sep 2026
+    "%b %d, %Y",     # Sep 3, 2026
+    "%B %d, %Y",     # September 3, 2026
+    "%d-%B-%Y",
+    "%m/%d/%y",
+    "%d.%m.%Y",
+)
+
+# Excel stores a date as days since 1899-12-30 (the 1900 system, with its
+# deliberate leap-year bug already accounted for by that epoch). A cell
+# read as a raw serial reaches here as "46265" or "46265.0".
+_EXCEL_EPOCH = date(1899, 12, 30)
 
 
 def _parse_as_of(as_of: str) -> date | None:
     """The sheet's as-of date, or None when it is absent or unreadable."""
     if not as_of:
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
-        try:
-            return datetime.strptime(as_of.strip()[:10], fmt).date()
-        except ValueError:
-            continue
+    raw = str(as_of).strip()
+    if not raw:
+        return None
+
+    # A full datetime ("2026-09-03 00:00:00") — take the date half.
+    head = raw.split("T")[0].split(" ")[0] if ("T" in raw or " " in raw[:11]) else raw
+    for candidate in (raw, head):
+        for fmt in _AS_OF_FORMATS:
+            try:
+                return datetime.strptime(candidate[:len(candidate)], fmt).date()
+            except ValueError:
+                continue
+
+    # A raw Excel serial number.
+    try:
+        serial = float(raw)
+    except ValueError:
+        return None
+    # Below ~1000 is not a plausible date (that is 1902); above ~80000 is
+    # past 2119. Either is a number that happens to be in the cell, not a
+    # date, and guessing at it is how a wrong date passes as a right one.
+    if 1000 <= serial <= 80000:
+        return _EXCEL_EPOCH + timedelta(days=int(serial))
     return None
 
 

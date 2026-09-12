@@ -23,9 +23,18 @@ FIXTURES = ROOT / "fixtures"
 
 @pytest.fixture()
 def settings(tmp_path: Path) -> Settings:
-    """Isolated settings: runtime dirs under tmp, mock mode forced on."""
+    """Isolated settings: runtime dirs under tmp, mock mode forced on.
+
+    Freshness is advisory here. `DATA_STALE_BLOCKS` defaults to true in
+    production (B5), and the shipped workbook fixture carries a FIXED as-of
+    date, so every test that touches it would start failing on the calendar
+    rather than on anything anyone changed. The gate's own tests build their
+    own `Settings` and assert the real default; this keeps the other four
+    hundred from being a clock.
+    """
     s = Settings(
         MOCK_MODE=True,
+        DATA_STALE_BLOCKS=False,
         workspace_dir=tmp_path / "workspace",
         cache_dir=tmp_path / "cache",
         state_dir=tmp_path / "state",
