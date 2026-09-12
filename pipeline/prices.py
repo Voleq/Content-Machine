@@ -54,17 +54,26 @@ class PriceSeries:
         return (self.closes[-1] - self.closes[0]) / self.closes[0] * 100.0
 
     def to_json(self) -> str:
+        # `degraded` travels with the series (B1). It used to be dropped
+        # here, so the flag survived exactly as long as the object did and
+        # was destroyed the moment the series was written to cache — which
+        # is the first thing that happens to it. A fabricated chart then
+        # read back from that cache as an ordinary one.
         return json.dumps({
             "ticker": self.ticker, "dates": self.dates, "closes": self.closes,
-            "source": self.source,
+            "source": self.source, "degraded": self.degraded,
         })
 
     @classmethod
     def from_json(cls, raw: str) -> "PriceSeries":
         d = json.loads(raw)
+        # An older cache file has no `degraded` key. Treating its absence as
+        # False is right: the flag was never written, so the only series that
+        # can be in such a file are ones nothing ever marked.
         return cls(ticker=d["ticker"], dates=list(d["dates"]),
                    closes=[float(c) for c in d["closes"]],
-                   source=d.get("source", "yahoo"))
+                   source=d.get("source", "yahoo"),
+                   degraded=bool(d.get("degraded", False)))
 
 
 class PriceSource(Protocol):
@@ -74,19 +83,28 @@ class PriceSource(Protocol):
 def synthetic_series(ticker: str, days: int) -> PriceSeries:
     """Deterministic seeded walk — the never-fail floor (and the mock
     default). Same ticker + length ⇒ identical series, so cached renders
-    stay idempotent."""
+    stay idempotent.
+
+    There is no "event move" on the final bar any more (B1). This series
+    exists so a dead price feed cannot abort a render; a floor that lets
+    the render complete is defensible, and one engineered to look like a
+    real trending stock is the opposite of a floor. The old final bar was
+    multiplied by 8–30% in a random direction, which is precisely the
+    shape a viewer reads as news — an invented spike, indistinguishable
+    from a real one, on a channel whose premise is real numbers.
+
+    What replaces it is nothing: an ordinary walk that looks like an
+    ordinary walk. `degraded` is how a caller learns this is not real, and
+    since B1 that flag survives the cache and blocks a final render.
+    """
     rng = random.Random(f"prices:{ticker.upper()}:{days}")
     n = max(days * 5 // 7, 10)  # trading days
     base = 8.0 + (int(hashlib.sha256(ticker.upper().encode()).hexdigest()[:6], 16) % 900) / 10.0
     drift = rng.uniform(-0.0035, 0.0035)
     closes: list[float] = []
     price = base
-    for i in range(n):
+    for _ in range(n):
         price = max(price * (1 + drift + rng.gauss(0, 0.022)), 0.5)
-        # the final day carries an "event" move so trending fixtures look
-        # like trending stocks (a real pct_change_1d for the move badge)
-        if i == n - 1:
-            price *= 1 + rng.choice([-1, 1]) * rng.uniform(0.08, 0.30)
         closes.append(round(price, 2))
     start = date.today() - timedelta(days=days)
     dates, d = [], start

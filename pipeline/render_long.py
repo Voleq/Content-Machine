@@ -250,6 +250,26 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
     ]
 
 
+def _price_provenance(script, settings) -> dict:
+    """`{source, degraded}` for a LONG that draws a price chart, else `{}`.
+
+    Reads the same cached series the chart was drawn from, so it reports on
+    the data that is actually in the video rather than on a fresh fetch that
+    might disagree with it.
+    """
+    from pipeline.gates import _reaches_a_price_chart
+
+    if not _reaches_a_price_chart(script):
+        return {}
+    ticker = (getattr(script, "ticker", "") or "").strip()
+    if not ticker:
+        return {}
+    from pipeline.prices import get_price_history
+
+    series = get_price_history(ticker, settings)
+    return {"source": series.source, "degraded": bool(series.degraded)}
+
+
 def render_long(
     script: LongScript,
     tts: TTSResult,
@@ -1444,6 +1464,7 @@ def render_long(
                                  else "render_long_manifest.json")
     attributions = sorted({m["attribution"] for m in seg_meta
                            if m.get("attribution")})
+    price_provenance = _price_provenance(script, settings)
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,
@@ -1454,6 +1475,9 @@ def render_long(
         # a final would have used, the voice is not.
         "audio_tier": getattr(tts, "tier", ""),
         "draft_audio": bool(getattr(tts, "draft", False)),
+        # Where the numbers on any price chart came from, and whether they
+        # are real (B1). Absent when the script draws no price chart.
+        **({"prices": price_provenance} if price_provenance else {}),
         "duration": duration,
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],

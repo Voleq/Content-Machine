@@ -887,6 +887,14 @@ def render_short(script, tts, workspace: Path, settings, *,
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "kit": "v2-plates",
+        # Where the numbers on the chart came from, and whether they are
+        # real (B1). `degraded` means the live feed failed and the seeded
+        # floor drew the chart instead — which is invisible on screen, so
+        # the artefact has to say it.
+        "prices": {
+            "source": getattr(prices, "source", ""),
+            "degraded": bool(getattr(prices, "degraded", False)),
+        },
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
         "shots": [{

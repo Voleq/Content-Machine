@@ -59,6 +59,7 @@ Excel; the refresh happens on the operator's own machine.)
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[SCREENGRAB]` tags **block** the render until the operator's capture exists | `validate_long_script` + `assets/custom/` |
 | Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
+| A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
@@ -823,7 +824,11 @@ env var, case-insensitive).
   remains available as an optional extra (`pip install -e '.[moviepy]'`).
 - **The branded chart is rendered by the pipeline** from the same Yahoo
   feed the screener uses (cached, TTL'd, synthetic deterministic floor if
-  the feed dies) — never a TradingView screenshot. Two styles: the clean
+  the feed dies) — never a TradingView screenshot. The floor is a plain
+  seeded walk with no invented spike on the final bar, it is flagged
+  `degraded` all the way through the cache and onto the render manifest,
+  and it **blocks** a final render outside `MOCK_MODE`: a fabricated chart
+  on a channel whose premise is real numbers is not a warning-level event. Two styles: the clean
   branded card and a crude hand-drawn "marker" napkin chart on black;
   a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
 - **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M

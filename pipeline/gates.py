@@ -1261,6 +1261,74 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
 
 
 # --------------------------------------------------------------------------
+# Synthetic price data.
+# --------------------------------------------------------------------------
+
+
+def _reaches_a_price_chart(script) -> bool:
+    """Would this script put a price series on screen?
+
+    A SHORT always does — the price chart is beat 2 of the plain short
+    template and the renderer fills it whether or not the writer asked. A
+    LONG only does when it carries `[CHART: price]`. Anything else never
+    touches the feed, and a gate that fired on it would be reporting on
+    data the video does not contain.
+    """
+    fmt = (getattr(script, "format", "") or "").lower()
+    if fmt == "short" or type(script).__name__ == "ShortScript":
+        return True
+    for event in getattr(script, "events", []) or []:
+        if getattr(getattr(event, "type", None), "value", "") == "CHART" \
+                and str(getattr(event, "payload", "")).strip().lower() == "price":
+            return True
+    return False
+
+
+def check_prices(script, settings: Settings, *,
+                 final: bool = True) -> list[Finding]:
+    """Whether the price chart in this video is drawn from real prices.
+
+    When Yahoo fails, `YahooPriceSource.history()` falls back to
+    `synthetic_series()` — a seeded random walk. That floor is right: a dead
+    feed must never abort a render. What was missing is anyone saying so. The
+    `degraded` flag was set and read by nothing, anywhere, and was dropped by
+    `to_json` the moment the series hit the cache, so a fabricated chart
+    shipped looking exactly like a real one and no surface in the product
+    could reveal it (B1).
+
+    This blocks the same way `check_audio` does, for the same reason: a FINAL
+    render outside `MOCK_MODE` is the thing that gets published. A proof or a
+    draft is for looking at, and `MOCK_MODE` is synthetic by construction —
+    warning there is honest, blocking there would only teach the operator to
+    skip gates.
+    """
+    if not _reaches_a_price_chart(script):
+        return []
+    ticker = (getattr(script, "ticker", "") or "").strip()
+    if not ticker:
+        return []
+
+    from pipeline.prices import get_price_history
+
+    # Cached and never-raising by contract, so this costs a file read on the
+    # path that already fetched it for the render.
+    series = get_price_history(ticker, settings)
+    if not series.degraded:
+        return []
+
+    blocks = final and not settings.mock_mode
+    reason = ("this render is a FINAL and MOCK_MODE is off" if blocks else
+              ("MOCK_MODE is on" if settings.mock_mode else "this is a draft"))
+    return [Finding(
+        gate="prices", severity="block" if blocks else "warn",
+        message=(f"SYNTHETIC PRICE DATA — the {ticker} chart in this video is "
+                 f"a seeded random walk, not market data: the live feed "
+                 f"failed and the deterministic floor took over. Nothing on "
+                 f"screen distinguishes it from a real chart. Retry once the "
+                 f"feed is back, or cut the chart ({reason})."))]
+
+
+# --------------------------------------------------------------------------
 # Kit doctor.
 # --------------------------------------------------------------------------
 
@@ -1644,6 +1712,7 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     report.findings += budget_check(script, settings)
     report.findings += check_freshness(as_of, settings, workspace=workspace)
     report.findings += check_audio(settings, final=final)
+    report.findings += check_prices(script, settings, final=final)
     kit_findings, kit_stats = kit_doctor(script, settings)
     report.findings += kit_findings
     if skeptic:
