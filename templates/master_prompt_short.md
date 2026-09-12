@@ -24,6 +24,9 @@ What it has done and why (live quote first, screener context after — any figur
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
+VALUATION DATA — the evidence for the CHEAP OR TRAP beat. A perpetuity sanity check ("priced for X, has delivered Y"), NOT a fair value. Name the multiple from here, then say what would have to be true for it to be cheap:
+{{valuation_data}}
+
 Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut check may drop at most ONE as a one-liner, never a table):
 {{peer_percentiles}}
 

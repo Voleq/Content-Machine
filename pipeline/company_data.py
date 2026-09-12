@@ -881,6 +881,73 @@ def _read_peer_percentiles(ws) -> list[dict]:
     return out
 
 
+def merge_free_news(news: list[dict], ticker: str, website: str,
+                    settings) -> list[dict]:
+    """Workbook rows first, the free sources filling the gap (M5).
+
+    `pipeline/sources.py` already has a cached, free, gracefully-degrading
+    feed layer that nothing pointed at news: `latest_8k` with EX-99.1
+    extraction and `ir_feed`/`parse_rss`. An 8-K IS the news for a thinly
+    covered ticker — it is the company announcing the thing the headline is
+    about, with a date and a URL, and often the only primary source there
+    is. Thinness hurt twice: the writer composed the "headlines that caused
+    the move" beat unaided, and `[SHOW ARTICLE]` had fewer candidates to
+    token-match against, so the tag failed to resolve and degraded to
+    nothing.
+
+    THE VENDOR BLOCK APPLIES. Parsers hard-reject a data-terminal brand in a
+    script because it would be spoken and captioned, and `_read_news` notes
+    that Source must be a news outlet — so anything merged here carries an
+    outlet name ("8-K filing", the IR site), never the terminal it arrived
+    through.
+
+    Never raises: every source in that layer degrades to "unavailable", and
+    a missing headline is a thinner prompt rather than a failed load.
+    """
+    out = list(news)
+    seen = {str(n.get("headline") or "").strip().lower() for n in out}
+
+    def add(headline: str, when: str, source: str, url: str) -> None:
+        head = (headline or "").strip()
+        if not head or head.lower() in seen:
+            return
+        seen.add(head.lower())
+        out.append({"date": (when or "").strip(), "headline": head,
+                    "source": source, "url": (url or "").strip()})
+
+    try:
+        from pipeline.sources import UNAVAILABLE, latest_8k
+
+        got = latest_8k(ticker, settings) or {}
+        if got.get("status") not in (None, UNAVAILABLE):
+            # The 8-K cover page says a thing happened; the exhibit says
+            # what. Its first sentence is the headline the company wrote.
+            text = str(got.get("exhibit_text") or "").strip()
+            headline = text.split(". ")[0].strip(" .") if text else ""
+            add(headline or f"{ticker.upper()} filed an 8-K",
+                str(got.get("filed") or ""), "8-K filing",
+                str(got.get("exhibit_url") or got.get("url") or ""))
+    except Exception as e:  # noqa: BLE001 - a free source is never fatal
+        log.warning("8-K news merge for %s failed (%s)", ticker, e)
+
+    if website:
+        for path in ("/rss", "/feed", "/press-releases/rss"):
+            try:
+                from pipeline.sources import UNAVAILABLE, ir_feed
+
+                feed = ir_feed(website.rstrip("/") + path, settings) or {}
+                if feed.get("status") in (None, UNAVAILABLE):
+                    continue
+                for item in (feed.get("items") or [])[:6]:
+                    add(str(item.get("title") or ""),
+                        str(item.get("published") or ""),
+                        "company IR", str(item.get("link") or ""))
+                break
+            except Exception as e:  # noqa: BLE001
+                log.warning("IR feed news merge for %s failed (%s)", ticker, e)
+    return out
+
+
 def load_company_data(workspace: Path) -> CompanyData:
     """Load + type-coerce the v3 export (all sheets, by name). Raises
     CompanyDataError if absent or unreadable; missing-field policy lives on

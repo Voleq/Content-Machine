@@ -227,9 +227,24 @@ class BotCore:
 
     def _company_data(self, ws: Workspace):
         try:
-            return load_company_data(ws.path)
+            data = load_company_data(ws.path)
         except CompanyDataError:
             return None
+        # Workbook headlines first, the free sources filling the gap (M5).
+        # An 8-K IS the news for a thinly-covered ticker, and a thin News
+        # sheet hurt twice: the writer composed the headline beat unaided,
+        # and `[SHOW ARTICLE]` had fewer candidates to match against so the
+        # tag degraded to nothing. Cached and gracefully degrading, so a
+        # dead feed is a thinner prompt rather than a failed load.
+        try:
+            from pipeline.company_data import merge_free_news
+
+            data.news = merge_free_news(
+                data.news, ws.ticker,
+                str(data.get("website") or ""), self.settings)
+        except Exception as e:  # noqa: BLE001 - never fatal
+            log.warning("free-news merge for %s failed: %s", ws.ticker, e)
+        return data
 
     # -------------------------------------------------- /short · /long (1d)
     # The format is declared up front rather than inferred from which of two

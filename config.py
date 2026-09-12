@@ -552,6 +552,17 @@ class Settings(BaseSettings):
     screen_allow_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
     screen_deny_list: Annotated[list[str], NoDecode] = Field(default_factory=list)
 
+    # -------------------------------------------------------------- editorial
+    disclaimer_text: str = Field(
+        default="Opinion / entertainment. Not financial advice.",
+        alias="DISCLAIMER_TEXT",
+    )
+    # brand copy burned into the intro/outro bug — never the data vendor
+    brand_name: str = "DENNIS"
+    brand_tagline: str = "NOISE OR SIGNAL?"
+    # the handle the signature close card signs off with
+    brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")
+
     # `SHORT_OPEN_STYLE`, `SHORT_OPEN_BUG_S` and `assets/hook_bank.json`
     # lived here and nothing read any of them (found by the new
     # `tests/test_asset_reach.py`, which is what J8 is for).

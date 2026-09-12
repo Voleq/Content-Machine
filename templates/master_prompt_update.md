@@ -134,3 +134,11 @@ Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line, 
 An update is the format where a confession is most likely to be earned — "I was wrong" is the premise, not an aside — but "most likely" is still not "always", and the ledger below says what has already been used.
 
 {{confession_ledger}}
+
+### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
+Measured, not guessed: YouTube's own retention for every video published so
+far, averaged per chapter TYPE. It is the only data that should influence the
+plan above — and on an UPDATE it is sharper than usual, because this is a name
+the channel already has retention data for.
+
+{{retention}}

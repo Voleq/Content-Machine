@@ -20,8 +20,10 @@ validate-then-fail.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Callable
 
 from config import Settings
 from pipeline.broll import PALETTE, palette_keys
@@ -553,6 +555,166 @@ def prior_coverage(settings: Settings, ticker: str) -> str:
             "is written above, and say plainly that the rest is not on record.")
     return "\n".join(lines)
 
+# --------------------------------------------------------------------------
+# The payload, as a table.
+# --------------------------------------------------------------------------
+#
+# This was five hand-written branches, one per prompt, each listing its own
+# placeholders (M6). That is how you get one block computed and discarded,
+# another missing where it is needed, and a third that reaches nobody:
+#
+#   M1  `{{chapter_types}}` was built for `short` and for `headline`, and
+#       NEITHER template contains the token. `chapter_type_catalogue` reads
+#       the plate registry to build a catalogue that was then thrown away on
+#       both paths. Decided rather than papered over: a chapter is a LONG
+#       concept and a SHORT has none, so it is not built for them.
+#   M2  `{{retention}}` went to `long_write` and not to `update`, though both
+#       are 16:9 long-form with the same tag grammar, the same parser and the
+#       same renderer — and per-chapter drop-off is MORE useful on a revisit,
+#       where there is retention data for the name already.
+#   M3  `{{valuation_data}}` went to all three long prompts and not to
+#       `short`, whose beat 8 is cheap-or-trap: "Is the multiple a bargain or
+#       a trap? Name the multiple, then say what would have to be true for it
+#       to be cheap." That asked for a judgement with none of the evidence
+#       for it — no scenarios, no WACC, no reverse-DCF read.
+#   M5  `news` is one entry here rather than five edits.
+#
+# One canonical ORDER, facts before instructions, the same in every prompt so
+# the model is not relearning the layout each time:
+#
+#   subject -> what moved -> the numbers -> valuation -> peers
+#     -> prior coverage -> source material -> voice -> visual catalogs
+#     -> craft rules -> output contract
+#
+# A mismatch between a template's tokens and what this table fills is now a
+# TEST FAILURE rather than a silent no-op: see
+# `tests/test_prompt_payload.py`.
+
+_WRITING = ("short", "long_write", "update", "headline")
+_LONG_FORM = ("long_write", "update")
+_ALL = ("short", "long_angle", "long_write", "update", "headline")
+
+
+@dataclass(frozen=True)
+class PayloadBlock:
+    """One `{{token}}`, who receives it, and what builds it."""
+
+    token: str
+    formats: tuple[str, ...]
+    build: "Callable[[_Ctx], str]"
+
+
+@dataclass
+class _Ctx:
+    """Everything any block could need. Built once per fill."""
+
+    fmt: str
+    ticker: str
+    data: CompanyData | None
+    workspace: Path
+    settings: Settings
+    move_context: str = ""
+    chosen_angle: str = ""
+    headline: str = ""
+    article_summary: str = ""
+    headline_mode: str = ""
+
+
+def _macro(ctx: "_Ctx") -> bool:
+    return ctx.data is None
+
+
+PAYLOAD: tuple[PayloadBlock, ...] = (
+    # --- subject
+    PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
+    PayloadBlock("{{as_of_date}}", _ALL, lambda c: str(
+        (c.data.get("as_of_date") if c.data is not None else None)
+        or date.today().isoformat())),
+    PayloadBlock("{{mode}}", ("headline",),
+                 lambda c: c.headline_mode or "company"),
+
+    # --- what moved
+    PayloadBlock("{{move_context}}", ("short",), lambda c: c.move_context or (
+        "(no live quote and no screener context — fill in how much it moved "
+        "today, on what volume, and the headline that did it)")),
+    PayloadBlock("{{headline}}", ("headline",),
+                 lambda c: c.headline.strip() or "(no headline text supplied)"),
+    PayloadBlock("{{article_summary}}", ("headline",),
+                 lambda c: c.article_summary.strip() or
+                 "(no article summary — work from the headline itself)"),
+
+    # --- the numbers
+    PayloadBlock("{{company_data}}", _ALL, lambda c: (
+        c.data.as_prompt_block() if c.data is not None else
+        f"(macro mode — no single-company financials; anchor on "
+        f"{c.ticker.upper()} as the index/sector proxy and the macro figures "
+        f"in the headline)")),
+    PayloadBlock("{{chart_metrics}}", _ALL, lambda c: (
+        chart_metrics_line(c.data) if c.data is not None else
+        f"(index-based — the chart is the {c.ticker.upper()} proxy; the "
+        f"numbers beat is optional and, if used, carries index levels or the "
+        f"macro series)")),
+
+    # --- valuation, then peers
+    PayloadBlock("{{valuation_data}}",
+                 ("short", "long_angle", "long_write", "update"),
+                 lambda c: valuation_data_block(c.data)),
+    PayloadBlock("{{peer_percentiles}}", _ALL, lambda c: (
+        "(n/a in macro mode)" if _macro(c)
+        else peer_percentiles_block(c.data))),
+
+    # --- prior coverage
+    PayloadBlock("{{prior_coverage}}", ("update",),
+                 lambda c: prior_coverage(c.settings, c.ticker) or (
+                     "(no thesis on file for this ticker — nothing was "
+                     "recorded from a previous video. Write this as a "
+                     "first-time take instead: /long TICKER.)")),
+    PayloadBlock("{{chosen_angle}}", ("long_write",),
+                 lambda c: c.chosen_angle.strip() or
+                 "(operator did not specify — use your ★recommended angle)"),
+
+    # --- source material
+    PayloadBlock("{{filing_quotes}}", ("long_angle", "long_write", "update"),
+                 lambda c: filing_quotes_block(c.workspace)),
+    PayloadBlock("{{available_screenshots}}",
+                 ("long_angle", "long_write", "update"),
+                 lambda c: screenshots_line(c.workspace)),
+
+    # --- voice
+    PayloadBlock("{{voice_bible}}", _WRITING,
+                 lambda c: voice_bible(c.settings)),
+    PayloadBlock("{{confession_ledger}}", _LONG_FORM,
+                 lambda c: confession_ledger(c.settings)),
+    PayloadBlock("{{retention}}", _LONG_FORM,
+                 lambda c: retention_evidence(c.settings)),
+
+    # --- visual catalogs
+    PayloadBlock("{{meme_catalog}}", _WRITING,
+                 lambda c: meme_catalog(c.settings)),
+    PayloadBlock("{{broll_palette}}", _WRITING, lambda c: broll_catalog()),
+    PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
+                 lambda c: plate_catalogue(
+                     c.settings, fmt="short" if c.fmt == "short" else "long")),
+    PayloadBlock("{{scribble_styles}}", _LONG_FORM,
+                 lambda c: scribble_styles(c.settings)),
+    PayloadBlock("{{chapter_types}}", _LONG_FORM,
+                 lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt)),
+
+    # --- craft rules
+    PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),
+                 lambda c: TAGGING_DENSITY),
+    PayloadBlock("{{craft_rules}}", _WRITING,
+                 lambda c: expressivity_and_pacing()),
+)
+
+PROMPT_FORMATS = _ALL
+
+
+def payload_tokens(fmt: str) -> set[str]:
+    """The tokens this table fills for `fmt`. The test reads this."""
+    return {b.token for b in PAYLOAD if fmt in b.formats}
+
+
 def fill_prompt(
     fmt: str,
     ticker: str,
@@ -565,111 +727,26 @@ def fill_prompt(
     article_summary: str = "",
     headline_mode: str = "",
 ) -> str:
-    """Fill one master prompt. `fmt` ∈ {short, long_angle, long_write, headline}.
+    """Fill one master prompt from `PAYLOAD`.
 
-    Every prompt gets the catalogs it needs; the writing prompts (short,
-    long_write, headline) additionally get the voice bible. `long_write` also
-    gets the operator's {{chosen_angle}}; `headline` gets the operator's
-    {{headline}} + optional {{article_summary}} + the active {{mode}}. `data`
-    may be None for the macro headline mode (no single-company financials).
+    `fmt` is one of `PROMPT_FORMATS`. Which blocks a prompt receives is
+    declared in the table above rather than in a branch here, so adding one
+    is a single entry and a prompt cannot quietly be handed a block its
+    template does not contain (M6).
+
+    `data` may be None for the macro headline mode (no single-company
+    financials).
     """
+    if fmt not in PROMPT_FORMATS:
+        raise ValueError(f"unknown prompt fmt {fmt!r}")
     template_file = settings.templates_dir / f"master_prompt_{fmt}.md"
     text = template_file.read_text(encoding="utf-8")
 
-    as_of = (data.get("as_of_date") if data is not None else None) or date.today().isoformat()
-    r: dict[str, str] = {
-        "{{ticker}}": ticker.upper(),
-        "{{as_of_date}}": str(as_of),
-        "{{company_data}}": (
-            data.as_prompt_block() if data is not None else
-            f"(macro mode — no single-company financials; anchor on {ticker.upper()} "
-            f"as the index/sector proxy and the macro figures in the headline)"
-        ),
-        "{{chart_metrics}}": (
-            chart_metrics_line(data) if data is not None else
-            f"(index-based — the chart is the {ticker.upper()} proxy; the numbers "
-            f"beat is optional and, if used, carries index levels or the macro series)"
-        ),
-    }
-
-    if fmt == "short":
-        r["{{move_context}}"] = move_context or (
-            "(no live quote and no screener context — fill in how much it "
-            "moved today, on what volume, and the headline that did it)"
-        )
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-    elif fmt == "long_angle":
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-    elif fmt == "long_write":
-        r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-        r["{{confession_ledger}}"] = confession_ledger(settings)
-        r["{{retention}}"] = retention_evidence(settings)
-    elif fmt == "update":
-        # An update is a LONG in every mechanical sense — same tag grammar,
-        # same parser, same renderer, same validation — so it takes the long
-        # writer's catalogs unchanged. What differs is the spine, and the
-        # spine's first movement is `prior_coverage`.
-        r["{{prior_coverage}}"] = prior_coverage(settings, ticker) or (
-            "(no thesis on file for this ticker — nothing was recorded from a "
-            "previous video. Write this as a first-time take instead: "
-            "/long TICKER.)"
-        )
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-        r["{{confession_ledger}}"] = confession_ledger(settings)
-    elif fmt == "headline":
-        r["{{headline}}"] = headline.strip() or "(no headline text supplied)"
-        r["{{article_summary}}"] = article_summary.strip() or (
-            "(no article summary — work from the headline itself)"
-        )
-        r["{{mode}}"] = headline_mode or "company"
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{peer_percentiles}}"] = (
-            peer_percentiles_block(data) if data is not None else "(n/a in macro mode)"
-        )
-    else:
-        raise ValueError(f"unknown prompt fmt {fmt!r}")
-
-    for k, v in r.items():
-        text = text.replace(k, v)
+    ctx = _Ctx(fmt=fmt, ticker=ticker, data=data, workspace=workspace,
+               settings=settings, move_context=move_context,
+               chosen_angle=chosen_angle, headline=headline,
+               article_summary=article_summary, headline_mode=headline_mode)
+    for block in PAYLOAD:
+        if fmt in block.formats:
+            text = text.replace(block.token, block.build(ctx))
     return text

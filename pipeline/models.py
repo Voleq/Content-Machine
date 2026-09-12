@@ -909,6 +909,31 @@ class CompanyData(BaseModel):
                                   if v not in (None, ""))
                 if cells:
                     lines.append(f"  {cells}")
+        if self.news:
+            # THE NEWS SHEET REACHED NOBODY (M5). `CompanyData.news` carries
+            # `{date, headline, source, url}` per row and `as_prompt_block`
+            # did not emit it, so `{{company_data}}` contained zero headlines
+            # in every prompt. Its only consumer was `article_lookup`, which
+            # runs AFTER the script is written: the writer invented a
+            # headline from its own training knowledge and `resolve_url`
+            # then token-matched that invented text against these rows to
+            # find a real URL for `[SHOW ARTICLE]`.
+            #
+            # The SHORT's beat 3 is "the headline(s) that caused the move"
+            # and the writer was composing it unaided.
+            #
+            # The URL is deliberately absent: it is what `[SHOW ARTICLE]`
+            # resolves against server-side, and a model handed one will put
+            # it on screen.
+            lines.append(f"[news · {len(self.news)} recent headlines]")
+            for item in self.news[:12]:
+                head = str(item.get("headline") or "").strip()
+                if not head:
+                    continue
+                when = str(item.get("date") or "").strip()
+                src = str(item.get("source") or "").strip()
+                bits = " · ".join(b for b in (when, src) if b)
+                lines.append(f"  {head}" + (f"  ({bits})" if bits else ""))
         if self.has_peers:
             lines.append(f"[peers · {len(self.peers)} names]")
             for p in self.peers:
