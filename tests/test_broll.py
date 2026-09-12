@@ -434,3 +434,126 @@ def test_a_gif_clip_keeps_looping_out_of_the_cache(settings, tmp_path):
     assert second.source == "cache" and second.path == first.path
     assert second.loops, "the clip came back from the cache frozen"
     assert m.gif_clients[0].search_calls == [], "a cache hit must not re-fetch"
+
+
+# --------------------------------------------------------------------------
+# A3 / A4 — the Pexels quota. These assert on the COUNT the ledger ends up
+# holding and on whether a request left at all, not on the arguments handed
+# to a client: the old bugs were both invisible from the argument list.
+# --------------------------------------------------------------------------
+
+
+def test_one_clip_costs_one_api_call_not_two(settings, monkeypatch, tmp_path):
+    """A3: search is the API call; the download is a CDN fetch."""
+    import httpx
+
+    from pipeline.broll import RealPexelsClient
+    from pipeline.cost import SpendLedger
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "pexels_api_key": "test-key",
+                                       "pexels_min_interval_s": 0.0})
+    ledger = SpendLedger(live)
+    client = RealPexelsClient(live, ledger)
+
+    monkeypatch.setattr("pipeline.broll.httpx.get", lambda *a, **k: httpx.Response(
+        200, json={"videos": [{"id": 1, "video_files": []}]},
+        request=httpx.Request("GET", "https://x")))
+
+    class _Stream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+        status_code = 200
+
+        def iter_bytes(self, n):
+            yield b"\x00" * 16
+
+    monkeypatch.setattr("pipeline.broll.httpx.stream", lambda *a, **k: _Stream())
+
+    client.search("dumpster fire burning night")
+    client.download("https://cdn.example/clip.mp4", tmp_path / "raw.mp4")
+
+    assert ledger.pexels_calls_this_month() == 1, \
+        "the CDN fetch is not an API call and must not spend quota"
+
+
+def test_a_search_that_never_comes_back_is_still_counted(settings, monkeypatch):
+    """A3: the quota was spent the moment the request left.
+
+    A 429 was already counted, because the old code recorded after the
+    response object existed. A timeout or a dropped connection was not —
+    the exception escaped before the record — and those are precisely the
+    calls a rate limit produces. So the count is taken at dispatch.
+    """
+    import httpx
+
+    from pipeline.broll import RealPexelsClient
+    from pipeline.cost import SpendLedger
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "pexels_api_key": "test-key",
+                                       "pexels_min_interval_s": 0.0})
+    ledger = SpendLedger(live)
+    client = RealPexelsClient(live, ledger)
+
+    def boom(*a, **k):
+        raise httpx.ConnectTimeout("the request never came back")
+
+    monkeypatch.setattr("pipeline.broll.httpx.get", boom)
+
+    with pytest.raises(httpx.ConnectTimeout):
+        client.search("anything")
+    assert ledger.pexels_calls_this_month() == 1, \
+        "a call that left and timed out still consumed the quota"
+
+
+def test_opening_the_swap_menu_spends_no_quota(manager, monkeypatch):
+    """A4: a number on a button is not worth an API call."""
+    searched = []
+    real_search = manager.clip_client.search
+
+    def counting(query, per_page=5):
+        searched.append(query)
+        return real_search(query, per_page)
+
+    monkeypatch.setattr(manager.clip_client, "search", counting)
+
+    n = manager.alternates_count("dumpster_fire")
+
+    assert n >= 1
+    assert searched == [], "the swap menu must read the cache, not the provider"
+
+
+def test_the_swap_count_grows_once_takes_are_actually_cached(manager):
+    """And it is still a real number: a fetched take is a reachable swap."""
+    before = manager.alternates_count("dumpster_fire")
+    manager.resolve_clip("dumpster_fire", choice=0)
+    manager.resolve_clip("dumpster_fire", choice=1)
+    assert manager.alternates_count("dumpster_fire") > before
+
+
+# --------------------------------------------------------------------------
+# H1 — the raw download filename has to carry the orientation too.
+# --------------------------------------------------------------------------
+
+
+def test_the_two_orientations_do_not_share_a_raw_download_path(manager):
+    """Asserting on the files on disk, not on the string that was built."""
+    manager.resolve_clip("dumpster_fire", portrait=False)
+    manager.resolve_clip("dumpster_fire", portrait=True)
+
+    cdir = manager._clip_cache_dir("dumpster_fire")
+    # The raws are unlinked after normalising, so what is asserted is that
+    # the two normalised outputs both survived — a shared raw path lets the
+    # second fetch delete the first's input mid-normalise.
+    norms = sorted(p.name for p in cdir.glob("normalized_*"))
+    assert norms == ["normalized_0.mp4", "normalized_0_p.mp4"], norms
+
+    import inspect
+
+    src = inspect.getsource(manager._fetch_clip)
+    assert 'raw_{choice}{suffix}' in src, \
+        "the raw filename must be orientation-keyed like the normalised one"
