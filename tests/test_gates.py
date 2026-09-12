@@ -331,15 +331,20 @@ def _long(text, settings):
     return script
 
 
-def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
+def test_a_wrong_figure_blocks_whether_it_is_spoken_or_on_screen(settings, data,
                                                             long_valid_text):
-    """The asymmetry is the point, not an inconsistency.
+    """The asymmetry is gone: both block now (B4).
 
-    A spoken figure is a sentence a viewer hears once and a linter can misread.
-    A figure in a `[PLATE]` slot is a number the director typed, held on screen
-    for six seconds, and screenshotted by anyone who disagrees with it. The
-    voice gets to be as confident as v2 asks precisely because these were
-    verified before anything rendered.
+    The old reasoning was that a spoken figure is a sentence a viewer hears
+    once and a linter can misread, while a figure in a `[PLATE]` slot is
+    typed by the director and held on screen for six seconds. The first half
+    of that was true of the OLD linter, which skipped every percentage and
+    everything under a thousand and compared against a whole series at once.
+    A check that crude could not be trusted to stop anything.
+
+    It is not that crude any more, and a wrong number is wrong whichever way
+    it reaches the viewer — so the thing the README calls the last line of
+    defence is now allowed to be one.
     """
     from pipeline.gates import onscreen_fact_check
 
@@ -350,7 +355,7 @@ def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
     assert "720" in out[0].message
 
     spoken = fact_check("Revenue was seven hundred and twenty million.", data)
-    assert spoken and all(f.severity == "warn" for f in spoken)
+    assert spoken and all(f.severity == "block" for f in spoken)
 
 
 def test_a_real_figure_under_the_wrong_year_is_caught(settings, data,
@@ -657,3 +662,88 @@ def test_check_audio_passes_outright_once_the_real_effects_are_fetched(
     assert check_audio(fetched, final=True) == [], (
         "a final render is still blocked with the bed gone and real effects "
         "fetched — nothing an operator can do would clear this gate")
+
+
+# --------------------------------------------------------------------------
+# B4 — the fact-check's four blind spots. Each of these is a script that the
+# old gate read and passed, so each asserts on the FINDINGS, not on which
+# branch ran.
+# --------------------------------------------------------------------------
+
+
+def test_a_figure_in_a_millions_sheet_is_checked_not_skipped(settings):
+    """The magnitude floor skipped everything under 1,000 — which is most of
+    a workbook written in millions."""
+    from pipeline.models import CompanyData
+
+    millions = CompanyData(
+        history_years=["FY-2", "FY-1", "FY-0"],
+        history={"revenue": [452.0, 471.0, 486.0]},
+    )
+    clean = fact_check("Revenue was four hundred and eighty six million.",
+                       millions)
+    assert not clean, "486 in a millions sheet IS 486 million"
+
+    wrong = fact_check("Revenue was nine hundred and twelve million.", millions)
+    assert wrong, "a figure under 1,000 in the sheet was never checked at all"
+    assert wrong[0].severity == "block"
+
+
+def test_a_wrong_margin_is_caught(settings, data):
+    """Every percentage used to be skipped, so no margin was ever checked."""
+    assert not fact_check("Gross margin is fifty eight percent.", data)
+    out = fact_check("Gross margin is eighty one percent.", data)
+    assert out and "gross_margin" in out[0].message
+
+
+def test_a_wrong_growth_rate_is_caught(settings, data):
+    """A percentage against a currency metric is a growth claim."""
+    # FY-1 491 -> FY-0 496 is +1.0%; FY-4 400 -> LTM 496 is +24%.
+    assert not fact_check("Revenue grew one percent.", data)
+    out = fact_check("Revenue grew forty percent.", data)
+    assert out and "revenue growth" in out[0].message
+
+
+def test_a_real_figure_under_the_wrong_year_is_caught_in_speech(settings, data):
+    """`_matches` compared against every value at once, so a figure from the
+    wrong column passed."""
+    assert not fact_check("In FY-2, revenue was four hundred and "
+                          "seventy one million.", data)
+    out = fact_check("In FY-2, revenue was four hundred million.", data)
+    assert out and "FY-2" in out[0].message, \
+        "400 is in the series, but it is FY-4's"
+
+
+def test_a_derived_change_is_a_true_claim(settings, data):
+    """491 to 496 is five million of revenue, and the gate has to know it —
+    a blocking gate that cannot see a derived claim blocks correct scripts."""
+    assert not fact_check("They added five million of revenue.", data)
+
+
+def test_a_number_attached_to_another_subject_is_not_a_revenue_claim(
+        settings, data):
+    """"Two hundred and twelve million ON SALES AND MARKETING" is not a
+    revenue figure, even in a sentence that later names revenue."""
+    assert not fact_check(
+        "Two hundred and twelve million on sales and marketing, to add "
+        "five million of revenue.", data)
+
+
+def test_a_spoken_series_recital_is_checked_through_to_the_end(settings, data):
+    """One metric, a run of numbers: all of them are claims about it."""
+    ok = ("Net income, from the actual filing: minus eight, minus twenty "
+          "five, minus forty nine, minus seventy, minus eighty nine.")
+    assert not fact_check(ok, data)
+
+    wrong = ok.replace("minus eighty nine", "minus one hundred and forty")
+    out = fact_check(wrong, data)
+    assert out and "one hundred and forty" in out[0].message, \
+        "the last figure in a recital is as checkable as the first"
+
+
+def test_the_gate_can_still_be_asked_for_advisory_findings(settings, data):
+    """The severity is a decision, and it is recorded as one rather than
+    hard-coded in fourteen places."""
+    out = fact_check("Revenue was nine hundred and twelve million.", data,
+                     severity="warn")
+    assert out and out[0].severity == "warn"

@@ -334,12 +334,239 @@ def _matches(value: float, known: list[float]) -> bool:
     return False
 
 
-def fact_check(narration: str, data) -> list[Finding]:
+# Metrics whose values ARE percentages, so a spoken "sixty-two percent" is a
+# direct claim about them rather than something derived. Every one of these
+# used to be skipped outright, which meant a wrong margin was never checked.
+_RATE_METRICS = frozenset({
+    "gross_margin", "operating_margin", "net_margin", "fcf_margin",
+    "sbc_pct_rev", "roic", "roe", "shares_yoy",
+})
+
+# Phrases that contain a metric word but name a line the export does not
+# carry. "Two hundred and twelve million on SALES and marketing" is not a
+# claim about revenue, and the same trap as the `cash` note above: matching a
+# figure against the wrong row makes a blocking gate block a correct script,
+# which is the one thing it must never do.
+_DECOY_PHRASES = (
+    "sales and marketing", "sales & marketing", "sales team", "sales force",
+    "salesforce", "cost of sales", "cost of revenue", "sales cycle",
+    "sales pipeline", "research and development",
+)
+
+# A number attached to its own subject by a preposition belongs to that
+# subject, not to a metric named elsewhere in the sentence.
+_ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
+                          r"((?:[a-z][\w'-]*\s+){0,4}[a-z][\w'-]*)")
+
+_NEGATIVE_RE = re.compile(r"(?:minus|negative|-)\s*$")
+
+
+def _unit_scale(series: list[float]) -> float:
+    """What one unit of this series is worth in absolute terms.
+
+    The workbook holds a metric either way — the shipped History sheet
+    carries revenue as 400000000, the Peers sheet carries the same idea as
+    2037.36 — and nothing reconciled that with the magnitude a script speaks
+    in (B4). Inferred from the series rather than configured, because the
+    sheet does not declare it and a setting nobody maintains is how this
+    drifts again.
+    """
+    magnitudes = [abs(v) for v in series if v]
+    if not magnitudes:
+        return 1.0
+    return 1.0 if max(magnitudes) >= 1e5 else 1e6
+
+
+def _shorthand(value: float, target: float) -> float:
+    """`value` brought to `target`'s own order of magnitude.
+
+    A script that has just said "four hundred million" then says "four
+    ninety six" and means 496 million. That shorthand is how anyone reads a
+    series out loud, and a check that cannot follow it reports every recital
+    as a mismatch.
+
+    This walks by factors of a thousand, so it changes the SCALE and never
+    the digits: 912 cannot become 496 by any number of steps, which is the
+    property that keeps a genuinely wrong figure caught.
+    """
+    if not value or not target:
+        return value
+    v, limit = value, abs(target)
+    while abs(v) * 1000 <= limit:
+        v *= 1000
+    while abs(v) > limit * 1000:
+        v /= 1000
+    return v
+
+
+def _comparison_values(series: list[float], *, rate: bool) -> list[float]:
+    """Everything a script can legitimately say about this series.
+
+    Levels, and the period-over-period CHANGE between consecutive levels —
+    "five million of revenue" against a sheet going 491 to 496 is a true
+    statement, and a gate that could only see levels called it a fabrication.
+    """
+    scale = 1.0 if rate else _unit_scale(series)
+    values = [v * scale for v in series]
+    values += [b - a for a, b in zip(values, values[1:])]
+    return values
+
+
+def _growth_rates(series: list[float]) -> list[float]:
+    """Period-over-period growth, in percent — what a spoken percentage
+    against a currency metric ("revenue grew eleven percent") is claiming."""
+    out: list[float] = []
+    for a, b in zip(series, series[1:]):
+        if a:
+            out.append((b - a) / abs(a) * 100.0)
+    if len(series) >= 2 and series[0]:
+        out.append((series[-1] - series[0]) / abs(series[0]) * 100.0)
+    return out
+
+
+def _matches_scaled(value: float, candidates: list[float]) -> bool:
+    """Does `value` land on any of `candidates`, allowing spoken shorthand?"""
+    for target in candidates:
+        if target == 0:
+            if abs(value) < 1e-9:
+                return True
+            continue
+        if abs(_shorthand(value, target) - target) <= abs(target) * _TOLERANCE:
+            return True
+    return False
+
+
+_YEAR_RE = re.compile(r"\b(20\d{2})\b")
+
+
+def _period_index(sentence: str, labels: list[str]) -> int | None:
+    """Which column of the history a sentence is talking about, if it says.
+
+    The comparison ran against every value in the series at once, so a figure
+    from the wrong year passed (B4). When the sentence names a period the
+    export labels, the check narrows to that column.
+    """
+    if not labels:
+        return None
+    low = sentence.lower()
+    for i, label in enumerate(labels):
+        lab = str(label).strip().lower()
+        if lab and lab in low:
+            return i
+    m = _YEAR_RE.search(low)
+    if m:
+        for i, label in enumerate(labels):
+            if m.group(1) in str(label):
+                return i
+    return None
+
+
+_PERIOD_TOKEN_RE = re.compile(r"\b(?:fy|q|h|cy)\s?-?\s?\d{1,4}\b",
+                              re.IGNORECASE)
+
+
+def _mask_labels(sentence: str, labels: list[str]) -> str:
+    """Blank the export's own period labels so their digits are not read as
+    spoken figures. Same length out as in, so positions still line up."""
+    out = sentence
+    for label in labels:
+        lab = str(label).strip()
+        if len(lab) >= 2:
+            out = re.sub(re.escape(lab), "·" * len(lab), out,
+                         flags=re.IGNORECASE)
+    return _PERIOD_TOKEN_RE.sub(lambda m: "·" * len(m.group(0)), out)
+
+
+def _history_labels(data) -> list[str]:
+    labels = getattr(data, "history_years", None)
+    if not isinstance(labels, (list, tuple)) and hasattr(data, "get"):
+        labels = data.get("history_years")
+    return [str(x) for x in labels] if isinstance(labels, (list, tuple)) else []
+
+
+def _mask_decoys(text: str) -> str:
+    """Blank out phrases that contain a metric word but name another line."""
+    for phrase in _DECOY_PHRASES:
+        text = text.replace(phrase, "·" * len(phrase))
+    return text
+
+
+def _metrics_named(low: str) -> dict[str, int]:
+    """metric -> character position of its first mention, decoys removed."""
+    masked = _mask_decoys(low)
+    out: dict[str, int] = {}
+    for metric, words in _METRIC_WORDS.items():
+        best = min((masked.find(w) for w in words if masked.find(w) >= 0),
+                   default=-1)
+        if best >= 0:
+            out[metric] = best
+    return out
+
+
+def _owner_of(number_end: int, tail: str, named: dict[str, int],
+              low: str) -> str | None:
+    """Which metric a number is a claim about, or None if it is not one.
+
+    Two rules, in order:
+
+    1. A number attached to its own subject by a preposition belongs to that
+       subject. "Two hundred and twelve million ON SALES AND MARKETING" is
+       not a revenue figure, even in a sentence that goes on to mention
+       revenue — and reading it as one is how a blocking gate blocks a
+       correct script.
+    2. Otherwise the nearest metric mention owns it, which in the common
+       single-metric sentence means all of them — so a recital of a whole
+       series is checked rather than only its first number.
+    """
+    if not named:
+        return None
+    attached = _ATTACHED_RE.match(tail)
+    if attached:
+        phrase = _mask_decoys(attached.group(1))
+        owners = [m for m, words in _METRIC_WORDS.items()
+                  if any(w in phrase for w in words)]
+        owners = [m for m in owners if m in named]
+        if not owners:
+            return None          # attached to something the export has no row for
+        return owners[0]
+    return min(named, key=lambda m: abs(named[m] - number_end))
+
+
+def fact_check(narration: str, data, *,
+               severity: str = "block") -> list[Finding]:
     """Re-read every numeric claim against the loaded company data.
 
-    Only sentences that name a metric are checked, and only against that
-    metric's own values — a number floating free of any metric is prose, not
-    a claim, and flagging it would bury the real mismatches.
+    This is the last line of defence the README describes, and it BLOCKS.
+    Every finding was `severity="warn"` for the life of this function, so
+    Approve stayed available through any mismatch — beside the code's own
+    comment calling this "the one error nobody downstream can catch". An
+    advisory last line of defence is not one.
+
+    Blocking is only safe because the four blind spots below are closed. A
+    gate that blocks has to be right, so every widening here comes with the
+    narrowing that keeps it from firing on a correct script.
+
+    - **No magnitude floor.** Anything under 1,000 was skipped, which is most
+      of a workbook written in millions. The unit scale is derived from the
+      series, and spoken shorthand ("four ninety six" after "four hundred
+      million") is followed by powers of a thousand — a transform that
+      changes scale and never digits, so a wrong figure stays wrong.
+    - **Percentages are checked.** Every one was skipped, so a wrong margin
+      or growth rate was never examined. A rate metric is checked against its
+      own series; a percentage against a currency metric is checked against
+      that metric's period-over-period growth.
+    - **A year-specific claim checks that year.** The comparison ran against
+      the whole series at once, so a figure from the wrong column passed.
+    - **Derived claims are claims.** Levels alone could not verify "five
+      million of revenue" against a sheet going 491 to 496, so consecutive
+      deltas are in the comparison set.
+
+    Sentence-level attribution is the one thing a regex cannot do, and it is
+    handled conservatively: a number attached to its own subject by a
+    preposition is not read as a claim about a metric named elsewhere. The
+    coreference case the tighter rule still cannot reach — a figure whose
+    metric was named in the PREVIOUS sentence — is deliberately out of scope
+    here rather than approximated.
     """
     findings: list[Finding] = []
     if data is None:
@@ -348,26 +575,63 @@ def fact_check(narration: str, data) -> list[Finding]:
     known: dict[str, list[float]] = {
         m: _series_for(data, m) for m in _METRIC_WORDS
     }
+    labels = _history_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
         for sentence in re.split(r"(?<=[.!?])\s+", line):
             low = sentence.lower()
-            for metric, words in _METRIC_WORDS.items():
-                if not any(w in low for w in words):
+            named = {m: pos for m, pos in _metrics_named(low).items()
+                     if known.get(m)}
+            if not named:
+                continue
+            # A period label is not a figure. "In FY-2, revenue was…" carries
+            # a 2 that `extract_numbers` reads as a number, and the old
+            # magnitude floor hid it — dropping the floor exposed it, so the
+            # labels are masked out before anything is extracted.
+            for num in extract_numbers(_mask_labels(sentence, labels)):
+                pos = low.find(num.text)
+                end = pos + len(num.text) if pos >= 0 else len(low)
+                metric = _owner_of(end, low[end:], named, low)
+                if metric is None:
                     continue
-                series = known.get(metric) or []
-                if not series:
+
+                series = known[metric]
+                hist = _history_for(data, metric)
+                idx = _period_index(sentence, labels) if hist else None
+                where = ""
+                if idx is not None and idx < len(hist):
+                    series, where = [hist[idx]], f" for {labels[idx]}"
+
+                is_rate = metric in _RATE_METRICS
+                if num.is_percent and not is_rate:
+                    candidates = _growth_rates(
+                        [v * _unit_scale(series) for v in series])
+                    shown = ", ".join(f"{v:+,.1f}%" for v in candidates[:6])
+                    kind = f"{metric} growth"
+                elif num.is_percent or is_rate:
+                    if not is_rate:
+                        continue
+                    candidates = _comparison_values(series, rate=True)
+                    shown = ", ".join(f"{v:,.1f}%" for v in series[:6])
+                    kind = metric
+                else:
+                    candidates = _comparison_values(series, rate=False)
+                    shown = ", ".join(
+                        f"{v * _unit_scale(series):,.0f}" for v in series[:6])
+                    kind = metric
+                if not candidates:
                     continue
-                for num in extract_numbers(sentence):
-                    if num.is_percent or num.value < 1000:
-                        continue  # rates and small counts are derived, not raw
-                    if not _matches(num.value, series):
-                        findings.append(Finding(
-                            gate="fact-check", severity="warn", line=lineno,
-                            message=(f"“{num.text}” is stated for {metric} but "
-                                     f"the data has "
-                                     f"{', '.join(f'{v:,.0f}' for v in series[:6])}"),
-                            excerpt=sentence.strip()[:140],
-                        ))
+
+                value = num.value
+                before = low[:pos].rstrip() if pos >= 0 else ""
+                if _NEGATIVE_RE.search(before):
+                    value = -value
+                if not _matches_scaled(value, candidates):
+                    findings.append(Finding(
+                        gate="fact-check", severity=severity, line=lineno,
+                        message=(f"“{num.text}” is stated for {kind}{where} "
+                                 f"but the data has {shown}"),
+                        excerpt=sentence.strip()[:140],
+                    ))
     return findings
 
 

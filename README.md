@@ -77,7 +77,7 @@ blocks, never rewrites — the writer decides.
 
 | Gate | What it reads | Blocks? |
 |---|---|---|
-| **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData` | warns |
+| **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData`. No magnitude floor (the unit scale is derived from the series, and spoken shorthand is followed by powers of a thousand); percentages checked against the rate series or the growth it implies; a claim that names a period is checked against THAT column; period-over-period changes count as claims. A number attached to its own subject by a preposition is not read as a claim about a metric named elsewhere | **blocks** |
 | **on-screen fact-check** | every figure in a `[PLATE]`'s cells, against the same export, with the plate's own `unit=` applied — the numbers a viewer can pause on | warns |
 | **voice linter** | what `assets/voice_bible.md` forbids: hype adjectives, exclamation marks, anything that reads as a call, a construction used twice in one script, and ~20 seconds of explanation with no turn in it. A data vendor named on screen is the one **block** — it would be spoken and captioned | mostly warns |
 | **direction linter** | the delivery vocabulary and its ceilings, read off `pipeline/direction.py`: one direction a sentence, never two adjacent, per-script caps on the tags that stop working when repeated, and no shouted word. A tag the bible refuses is named as refused, and the **block** is the lowercase spelling the ElevenLabs docs use — `[laughs]` is not a tag to the bracket grammar at all, so it would be read out and captioned | mostly warns |
