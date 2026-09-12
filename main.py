@@ -69,6 +69,12 @@ def main() -> None:
     # are told nothing. Beside the mock banner, at the same moment.
     for warning in settings.deployment_warnings():
         log.warning("%s", warning)
+    # Said every boot, empty or not: the size of the owned library decides
+    # how often the chain reaches past it, and it is a fact about this box
+    # rather than about the code (P9b).
+    log.info("owned b-roll library: %d clip(s) in %s",
+             settings.broll_library_size(),
+             settings.assets_dir / "broll_library")
 
     core = BotCore(settings)
     app = build_application(settings, core)

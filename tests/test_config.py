@@ -322,3 +322,84 @@ def test_main_logs_the_deployment_warnings_at_startup():
 
     src = inspect.getsource(main_mod)
     assert "deployment_warnings()" in src
+
+
+def test_an_empty_broll_library_is_said_at_startup(tmp_path):
+    """P9b: the owned library is the first link in the visual chain and the
+    whole of H3's mitigation — owned → stock → GIF providers. With nothing
+    owned, every [CLIP] reaches for Pexels and every Pexels miss for Giphy or
+    Tenor, which is the most legally exposed source in the pipeline, on
+    user-uploaded and frequently copyrighted content. So the GIF path fires
+    far more often than the design assumes, from the first video."""
+    assets = tmp_path / "assets"
+    (assets / "broll_library").mkdir(parents=True)
+    empty = Settings(MOCK_MODE=False, SEC_USER_AGENT="Jane Doe jane@x.com",
+                     assets_dir=assets, _env_file=None)
+    assert empty.broll_library_size() == 0
+    said = [w for w in empty.deployment_warnings() if "broll_library" in w]
+    assert said, empty.deployment_warnings()
+    assert "Giphy/Tenor" in said[0]
+    assert "GIF_MAX_PER_VIDEO" in said[0], "the cap goes unmentioned"
+
+    # …and a stocked library says nothing.
+    for name in ("dumpster_fire.mp4", "tumbleweed.mov"):
+        (assets / "broll_library" / name).write_bytes(b"x")
+    stocked = Settings(MOCK_MODE=False, SEC_USER_AGENT="Jane Doe jane@x.com",
+                       assets_dir=assets, _env_file=None)
+    assert stocked.broll_library_size() == 2
+    assert not [w for w in stocked.deployment_warnings()
+                if "broll_library" in w]
+
+
+def test_the_library_count_ignores_things_that_are_not_clips(tmp_path):
+    """`assets/broll_library/` ships a README. A deployment with one
+    markdown file in it has zero clips, and counting the README would report
+    a stocked library to an operator who has none."""
+    assets = tmp_path / "assets"
+    lib = assets / "broll_library"
+    lib.mkdir(parents=True)
+    (lib / "README.md").write_text("how to add clips", encoding="utf-8")
+    (lib / "notes.txt").write_text("x", encoding="utf-8")
+    s = Settings(MOCK_MODE=False, assets_dir=assets, _env_file=None)
+    assert s.broll_library_size() == 0
+
+    (lib / "clown.webm").write_bytes(b"x")
+    assert Settings(MOCK_MODE=False, assets_dir=assets,
+                    _env_file=None).broll_library_size() == 1
+
+
+def test_the_shipped_library_is_still_empty_so_the_warning_is_live():
+    """This repo ships a README and no clips. If that ever changes the
+    warning above stops firing, which is the point — but it should change
+    because someone added clips, not because the check drifted."""
+    from pathlib import Path as _P
+
+    root = _P(__file__).resolve().parents[1]
+    s = Settings(MOCK_MODE=True, assets_dir=root / "assets", _env_file=None)
+    assert s.broll_library_size() == 0, (
+        "the owned b-roll library now has clips — good; drop this test and "
+        "the operator note in the README's preflight with it")
+
+
+def test_gif_visuals_are_counted_where_the_operator_will_look():
+    """H3's counter has to reach both surfaces, or an over-reliance on the
+    GIF chain is invisible exactly when the empty library makes it likely."""
+    from pipeline.provenance import build
+
+    line = next(ln for ln in build(
+        ticker="E", fmt="long", workdate="d", duration_s=1.0,
+        visual_sources={"pexels": 4, "tenor": 2, "filler": 1}
+    ).render_text().splitlines() if ln.startswith("visuals"))
+    assert "2 GIF (tenor)" in line
+
+    from pipeline.models import CostReport, VisualPlanItem
+
+    report = CostReport(
+        ticker="E", fmt="long", words=10, chars=50, tts_cached=False,
+        est_tts_usd=0.0, gif_cap=2,
+        visuals=[VisualPlanItem(key="dumpster_fire", source="tenor"),
+                 VisualPlanItem(key="clown", source="giphy"),
+                 VisualPlanItem(key="tumbleweed", source="pexels")])
+    assert report.visual_counts["gif"] == 2
+    text = report.render_text()
+    assert "2/2 from GIF providers" in text, text

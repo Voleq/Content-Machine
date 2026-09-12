@@ -753,7 +753,31 @@ class Settings(BaseSettings):
                 "filing brief, the 8-K news source and [SHOW FILING] "
                 "screenshots will degrade to nothing, quietly and by "
                 "design. Set SEC_USER_AGENT='Your Name your@email'.")
+        if self.broll_library_size() == 0:
+            # THE OWNED LIBRARY IS THE FIRST LINK IN THE VISUAL CHAIN, and
+            # the whole of H3's mitigation. Design: owned library → stock
+            # footage → GIF providers. With nothing owned, EVERY clip goes
+            # to Pexels and every Pexels miss goes to Giphy or Tenor — the
+            # most legally exposed surface in the pipeline, on
+            # user-uploaded and frequently copyrighted content. The GIF path
+            # will fire far more often than the design assumes, from the
+            # first video, and the cap is a ceiling rather than a plan.
+            out.append(
+                f"assets/broll_library/ is empty — the owned-first visual "
+                f"chain has nothing to be first. Every [CLIP] will reach "
+                f"for Pexels, and every Pexels miss for Giphy/Tenor, which "
+                f"is the most legally exposed source in the pipeline. "
+                f"GIF_MAX_PER_VIDEO={self.gif_max_per_video} caps it; it "
+                f"does not replace owning clips.")
         return out
+
+    def broll_library_size(self) -> int:
+        """How many owned clips this deployment actually has."""
+        lib = self.assets_dir / "broll_library"
+        if not lib.is_dir():
+            return 0
+        return sum(1 for f in lib.iterdir()
+                   if f.suffix.lower() in (".mp4", ".mov", ".mkv", ".webm"))
 
     # ------------------------------------------------------------ conveniences
     @property
