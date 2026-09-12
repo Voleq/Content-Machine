@@ -962,6 +962,10 @@ class JobRecord(BaseModel):
     artifact: str = ""       # path of the rendered MP4 when done
     delivered_link: str = "" # shareable link after delivery
     detail: str = ""         # free-form progress note
+    # By-product links and credits the delivery produced: the thumbnail, the
+    # .srt, the upload package, the attribution file. They were computed and
+    # discarded (E2), so the files went up and nobody was told where.
+    byproducts: list[str] = Field(default_factory=list)
 
     def touch(self) -> None:
         self.updated_at = _utcnow()

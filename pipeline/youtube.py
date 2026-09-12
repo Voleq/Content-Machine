@@ -25,6 +25,7 @@ the package to upload by hand, which is exactly how it worked before.
 from __future__ import annotations
 
 import json
+import time
 import logging
 import re
 from dataclasses import asdict, dataclass, field
@@ -103,34 +104,66 @@ def validate_package(title: str, description: str,
 
 
 def resolve_publish_at(when: str | datetime | None,
-                       now: datetime | None = None) -> datetime | None:
+                       now: datetime | None = None,
+                       settings=None) -> datetime | None:
     """Parse a requested publish time into an aware UTC datetime (5b).
 
-    Accepts an ISO timestamp, `YYYY-MM-DD HH:MM`, or a bare date (which means
-    the configured hour on that day). A time in the past is an error rather
+    Accepts an ISO timestamp, `YYYY-MM-DD HH:MM`, or a bare date — which
+    means `PUBLISH_HOUR` on that day, in `PUBLISH_TIMEZONE` (E6).
+
+    That sentence was in this docstring for as long as the function has
+    existed, and neither setting did. A bare date parsed to midnight and
+    `replace(tzinfo=timezone.utc)` made it 00:00 UTC, so
+    `/upload TICKER 2026-09-20` published at 2am in Bucharest. A naive time
+    with an explicit clock was read as UTC for the same reason — the
+    operator types their own wall clock and gets someone else's.
+
+    Both now come from settings, and a naive time is read in the publish
+    timezone rather than UTC. A time in the past is still an error rather
     than a silent immediate publish — "I meant last Friday" should not put a
     video live now.
+
+    `settings=None` keeps the UTC-midnight behaviour, for the callers that
+    have no Settings to hand; every path through the bot passes one.
     """
     if when is None or when == "":
         return None
     now = now or datetime.now(timezone.utc)
+    tz = timezone.utc
+    hour, minute = 0, 0
+    if settings is not None:
+        try:
+            from zoneinfo import ZoneInfo
+
+            tz = ZoneInfo(settings.publish_timezone)
+        except Exception as e:  # noqa: BLE001 - a bad zone name is not fatal
+            log.warning("PUBLISH_TIMEZONE %r unusable (%s) — using UTC",
+                        getattr(settings, "publish_timezone", ""), e)
+        hour, minute = settings.publish_hour, settings.publish_minute
+
     if isinstance(when, datetime):
         dt = when
+        date_only = False
     else:
         text = str(when).strip().replace("/", "-")
         dt = None
+        date_only = False
         for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
                     "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
             try:
                 dt = datetime.strptime(text[:19], fmt)
+                date_only = fmt == "%Y-%m-%d"
                 break
             except ValueError:
                 continue
         if dt is None:
             raise ValueError(
                 f"{when!r} is not a time I can read — try 2026-08-07 18:00")
+    if date_only:
+        dt = dt.replace(hour=hour, minute=minute)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=tz)
+    dt = dt.astimezone(timezone.utc)
     if dt <= now:
         raise ValueError(
             f"{dt.isoformat()} is in the past — a scheduled publish has to be "
@@ -182,8 +215,17 @@ class YouTubeClient:
         return build(name, version, credentials=self._credentials(),
                      cache_discovery=False)
 
-    def upload(self, path: Path, body: dict) -> str:
-        """Resumable upload. Returns the video id."""
+    def upload(self, path: Path, body: dict,
+               session: "UploadSession | None" = None) -> str:
+        """Resumable upload. Returns the video id.
+
+        `session`, when given, persists the resumable session URI so a
+        dropped connection resumes instead of starting over (E8). This was a
+        single attempt with no retry and no persisted URI: a drop at 90% of a
+        40-minute render meant uploading the whole thing again — and because
+        `VideoLog` is only written on success, the retry could create a
+        SECOND private video with no record that the first existed.
+        """
         from googleapiclient.http import MediaFileUpload
 
         if self._youtube is None:
@@ -192,15 +234,65 @@ class YouTubeClient:
                                 resumable=True, mimetype="video/mp4")
         request = self._youtube.videos().insert(
             part="snippet,status", body=body, media_body=media)
+        if session is not None:
+            resume_uri = session.load(path)
+            if resume_uri:
+                log.info("resuming the youtube upload of %s", path.name)
+                request.resumable_uri = resume_uri
+
         response = None
+        attempts = 0
         while response is None:
-            status, response = request.next_chunk()
+            try:
+                status, response = request.next_chunk()
+            except Exception as e:  # noqa: BLE001 - transport, not logic
+                attempts += 1
+                if attempts > self.settings.youtube_upload_retries:
+                    raise UploadError(
+                        f"upload failed after {attempts} attempts: {e}\n"
+                        f"The session is saved — run /upload again and it "
+                        f"picks up where it stopped.") from e
+                log.warning("youtube upload chunk failed (%s) — retry %d/%d",
+                            e, attempts, self.settings.youtube_upload_retries)
+                if session is not None:
+                    session.save(path, getattr(request, "resumable_uri", ""))
+                time.sleep(min(2 ** attempts, 30))
+                continue
             if status:
                 log.info("youtube upload %d%%", int(status.progress() * 100))
+                if session is not None:
+                    session.save(path, getattr(request, "resumable_uri", ""))
         vid = response.get("id")
         if not vid:
             raise UploadError(f"upload returned no video id: {response}")
+        if session is not None:
+            session.clear(path)
         return vid
+
+    def set_thumbnail(self, video_id: str, image: Path) -> None:
+        """Upload the thumbnail that was already generated (E7)."""
+        from googleapiclient.http import MediaFileUpload
+
+        if self._youtube is None:
+            self._youtube = self._build("youtube", "v3")
+        self._youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=MediaFileUpload(str(image), mimetype="image/png"),
+        ).execute()
+
+    def set_captions(self, video_id: str, srt: Path, *,
+                     language: str = "en", name: str = "") -> None:
+        """Upload the .srt that was already generated (E7)."""
+        from googleapiclient.http import MediaFileUpload
+
+        if self._youtube is None:
+            self._youtube = self._build("youtube", "v3")
+        self._youtube.captions().insert(
+            part="snippet",
+            body={"snippet": {"videoId": video_id, "language": language,
+                              "name": name, "isDraft": False}},
+            media_body=MediaFileUpload(str(srt), mimetype="application/octet-stream"),
+        ).execute()
 
     def comment(self, video_id: str, text: str) -> None:
         if self._youtube is None:
@@ -225,6 +317,49 @@ class YouTubeClient:
         rows = resp.get("rows") or []
         return [{"elapsed_ratio": float(r[0]), "watch_ratio": float(r[1])}
                 for r in rows if len(r) >= 2]
+
+
+class UploadSession:
+    """Where a half-finished resumable upload left off (E8).
+
+    Keyed on the file's path, size and mtime: a re-rendered video is a
+    different upload even at the same path, and resuming into it would push
+    the new bytes into the old session and produce a corrupt video.
+    """
+
+    def __init__(self, settings: Settings):
+        self.path = settings.state_dir / "youtube_uploads.json"
+
+    def _all(self) -> dict:
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+            return data if isinstance(data, dict) else {}
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            return {}
+
+    @staticmethod
+    def _key(video: Path) -> str:
+        try:
+            st = video.stat()
+            return f"{video.resolve()}|{st.st_size}|{int(st.st_mtime)}"
+        except OSError:
+            return str(video)
+
+    def load(self, video: Path) -> str:
+        return str(self._all().get(self._key(video), ""))
+
+    def save(self, video: Path, uri: str) -> None:
+        if not uri:
+            return
+        data = self._all()
+        data[self._key(video)] = uri
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def clear(self, video: Path) -> None:
+        data = self._all()
+        if data.pop(self._key(video), None) is not None:
+            self.path.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def available(settings: Settings) -> tuple[bool, str]:
@@ -277,6 +412,7 @@ def upload_video(video: Path, package, settings: Settings, *,
                  title: str = "", publish_at: str | datetime | None = None,
                  workdate: str = "", chapters: Sequence = (),
                  duration_s: float = 0.0,
+                 thumbnail: Path | None = None, captions: Path | None = None,
                  client: YouTubeClient | None = None,
                  now: datetime | None = None) -> VideoRecord:
     """Upload as private (or scheduled), pin the comment, record it.
@@ -286,7 +422,7 @@ def upload_video(video: Path, package, settings: Settings, *,
     """
     if not video.exists():
         raise UploadError(f"no file to upload at {video}")
-    when = resolve_publish_at(publish_at, now)
+    when = resolve_publish_at(publish_at, now, settings=settings)
 
     chosen = title or (package.titles[0] if package.titles else package.ticker)
     problems = validate_package(chosen, package.description, package.tags)
@@ -301,7 +437,26 @@ def upload_video(video: Path, package, settings: Settings, *,
         client = YouTubeClient(settings)
 
     body = build_body(package, title=chosen, publish_at=when, settings=settings)
-    video_id = client.upload(video, body)
+    session = UploadSession(settings)
+    video_id = client.upload(video, body, session=session)
+
+    # THE BY-PRODUCTS GO UP TOO (E7). Both are generated on every finished
+    # render and handed to `deliver` as extra files, and the YouTube path
+    # referenced neither — so videos went up with an auto-generated
+    # thumbnail and no captions, which is most of what the generation was
+    # for. Best-effort: the video is already live, and a failed thumbnail
+    # must not read as a failed upload.
+    if thumbnail is not None and Path(thumbnail).exists():
+        try:
+            client.set_thumbnail(video_id, Path(thumbnail))
+        except Exception as e:  # noqa: BLE001
+            log.warning("thumbnail upload failed for %s: %s", video_id, e)
+    if captions is not None and Path(captions).exists():
+        try:
+            client.set_captions(video_id, Path(captions),
+                                language=settings.captions_language)
+        except Exception as e:  # noqa: BLE001
+            log.warning("caption upload failed for %s: %s", video_id, e)
 
     if package.pinned_comment:
         try:

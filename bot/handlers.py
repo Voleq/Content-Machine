@@ -1457,30 +1457,90 @@ class BotCore:
             caption += "\n⚠ " + "\n⚠ ".join(problems[:6])
         self.push_file(sheet, caption)
 
-    def push_file(self, path: Path, caption: str = "") -> None:
+    def push_file(self, path: Path, caption: str = "") -> bool:
         """Send a file to the operator from a worker thread.
 
         `file_pusher` is wired by main.py against the bot's event loop; when
         it is absent (tests, CLI) the path is logged instead, which is all a
         local run needs.
+
+        Returns whether it went. A failure used to be swallowed into the log
+        and nowhere else (E3), so the operator watched for a proof that had
+        silently failed to send — which is the same shape as everything else
+        in this codebase that degraded without saying so.
         """
         if self.file_pusher is None:
             log.info("%s%s", caption + "\n" if caption else "", path)
-            return
+            return True
         try:
             self.file_pusher(path, caption)
-        except Exception:  # noqa: BLE001
+            return True
+        except Exception as e:  # noqa: BLE001
             log.exception("could not push %s to the operator", path)
+            self.notify(f"⚠️ could not send {Path(path).name}: {e}\n"
+                        f"It is on the render box at {path}")
+            return False
+
+    def notify(self, text: str) -> None:
+        """A line to the operator from a worker thread, best-effort."""
+        if self.queue is not None and getattr(self.queue, "notifier", None):
+            try:
+                self.queue.notify_sync(text)
+                return
+            except Exception:  # noqa: BLE001
+                log.exception("could not notify the operator")
+        log.warning("operator notice (undelivered): %s", text)
 
     def _finish(self, job: JobRecord, result) -> None:
+        """Consume the WHOLE DeliveryResult (E1, E2).
+
+        It used to read `result.link` and `result.backend` and nothing else,
+        which meant three things the delivery layer had already done were
+        thrown away:
+
+        - `send_file`, set by the telegram backend, was written and read
+          nowhere. `DELIVERY_BACKEND=telegram` reported success, reported
+          "(sent in chat)", and delivered nothing.
+        - `extra_links` — the thumbnail, the `.srt`, the upload package, the
+          attribution file — were uploaded to Drive or S3 and the operator
+          was never told where.
+        - `note`, carrying the Pexels and Wikimedia credits, likewise.
+        """
         job.delivered_link = result.link
+        # The telegram backend does not push the file itself: it hands it
+        # back for the bot to send, because only the bot has the chat.
+        send_file = getattr(result, "send_file", None)
+        if send_file is not None and Path(send_file).exists():
+            if self.push_file(Path(send_file), f"{job.ticker} — {job.kind.value}"):
+                job.delivered_link = "(sent in chat)"
+            else:
+                job.delivered_link = f"file://{send_file} (send failed)"
+
+        extras = self._byproduct_lines(result)
         if self.queue:
             fresh = self.queue.store.load(job.id)
             if fresh:
-                fresh.delivered_link = result.link
+                fresh.delivered_link = job.delivered_link
                 fresh.detail = f"delivered via {result.backend}"
+                fresh.byproducts = extras
                 self.queue.store.save(fresh)
         self._record_thesis(job)
+
+    @staticmethod
+    def _byproduct_lines(result) -> list[str]:
+        """The by-products the delivery already produced, as text lines.
+
+        `RenderJobQueue._done_text` formats the success push, so that is
+        where these belong — attached to the link the operator receives
+        rather than waiting to be asked for.
+        """
+        lines: list[str] = []
+        for name, link in (getattr(result, "extra_links", None) or {}).items():
+            lines.append(f"{name}: {link}" if link else name)
+        note = (getattr(result, "note", "") or "").strip()
+        if note:
+            lines.extend(note.splitlines())
+        return lines
 
     def _record_thesis(self, job: JobRecord) -> None:
         """Pin the thesis and its numbers when a video ships (P3.3).
@@ -1672,22 +1732,27 @@ class BotCore:
             return Reply("Usage: /upload TICKER [YYYY-MM-DD HH:MM]\n"
                          "No time = private. A time = scheduled publish.")
         ticker = args[0].upper()
-        when_raw = " ".join(args[1:]).strip()
+        rest = list(args[1:])
+        # An explicit format, so a ticker with both, or a repurposed clip,
+        # can be reached at all (E5). `/upload EXMPL short 2026-09-20`.
+        wanted_fmt = ""
+        if rest and rest[0].lower() in ("short", "long", "clip"):
+            wanted_fmt = rest.pop(0).lower()
+        when_raw = " ".join(rest).strip()
         try:
-            when = resolve_publish_at(when_raw or None)
+            when = resolve_publish_at(when_raw or None, settings=self.settings)
         except ValueError as e:
             return Reply(f"⛔ {e}")
 
         ws = Workspace.latest_for(self.settings, ticker)
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
-        fmt = ws.current_format() or "long"
-        video = ws.path / ("long_final.mp4" if fmt == "long" else "short_final.mp4")
-        if not video.exists():
-            return Reply(f"No finished {fmt.upper()} render for {ticker} yet.")
+        fmt, video, why = self._upload_target(ws, wanted_fmt)
+        if video is None:
+            return Reply(why)
 
         pkg_path = ws.path / "upload_package.txt"
-        package = self._upload_package(ws, fmt)
+        package = self._upload_package(ws, fmt, video)
         if package is None:
             return Reply("⛔ no upload package on file — re-render to build one.")
 
@@ -1702,7 +1767,11 @@ class BotCore:
                 video, package, self.settings, publish_at=when,
                 workdate=ws.workdate,
                 chapters=self._chapter_pairs(ws, fmt),
-                duration_s=self._render_duration(ws, fmt))
+                duration_s=self._render_duration(ws, fmt, video),
+                # Both are written by every finished render and were handed
+                # to `deliver` and to nobody else (E7).
+                thumbnail=self._byproduct(ws, "thumbnail"),
+                captions=self._byproduct(ws, "captions"))
         except (UploadError, YouTubeUnavailable) as e:
             return Reply(f"⛔ upload failed: {e}\nThe package is still yours "
                          f"to post by hand.",
@@ -1773,15 +1842,18 @@ class BotCore:
         return Reply(f"📊 {ticker} — {video.title[:60]}\n"
                      + retention_report(payload["chapters"]))
 
-    def _upload_package(self, ws: Workspace, fmt: str):
+    def _upload_package(self, ws: Workspace, fmt: str, video=None):
         from pipeline.cost import build_long_report  # noqa: F401  (import guard)
         from pipeline.publish import build_package
 
-        script = ws.load_long() if fmt == "long" else ws.load_short()
+        # A repurposed clip is cut from the LONG, so it is the LONG's script
+        # that describes it.
+        script = ws.load_short() if fmt == "short" else ws.load_long()
         if script is None:
             return None
-        return build_package(script, self.settings, ticker=ws.ticker,
-                             runtime_min=self._render_duration(ws, fmt) / 60.0)
+        return build_package(
+            script, self.settings, ticker=ws.ticker,
+            runtime_min=self._render_duration(ws, fmt, video) / 60.0)
 
     def _chapter_pairs(self, ws: Workspace, fmt: str) -> list:
         from pipeline.publish import normalise_chapters
@@ -1789,14 +1861,100 @@ class BotCore:
         script = ws.load_long() if fmt == "long" else None
         return normalise_chapters(getattr(script, "chapters", "") or "")
 
-    def _render_duration(self, ws: Workspace, fmt: str) -> float:
-        name = ("render_long_manifest.json" if fmt == "long"
-                else "render_short_manifest.json")
-        try:
-            import json as _json
-            return float(_json.loads((ws.path / name).read_text(encoding="utf-8")).get("duration", 0))
-        except (FileNotFoundError, ValueError, KeyError, OSError):
-            return 0.0
+    def _byproduct(self, ws: Workspace, kind: str) -> Path | None:
+        """A by-product the render already wrote, if it is still there.
+
+        Found by shape rather than by a remembered path, because the render
+        and the upload are separate commands with a sweep possibly in
+        between — and a missing one is a thing to skip, not to fail on.
+        """
+        patterns = {"thumbnail": ("thumbnail*.png", "*_thumb.png"),
+                    "captions": ("*.srt",)}
+        for pattern in patterns.get(kind, ()):
+            for found in sorted(ws.path.glob(pattern)):
+                if found.is_file() and found.stat().st_size:
+                    return found
+        return None
+
+    def _upload_target(self, ws: Workspace, wanted: str = "",
+                       ) -> tuple[str, Path | None, str]:
+        """Which file `/upload` should send, and why if none (E5).
+
+        Three gaps here, all the same shape: the command could only reach
+        whichever format the FOLDER "was".
+
+        - `fmt = ws.current_format() or "long"` meant a workspace holding
+          both formats had one reachable. The lane decides that now (C3),
+          and an explicit `short`/`long`/`clip` argument overrides it.
+        - The path was hard-coded to `long_final.mp4` / `short_final.mp4`,
+          so a repurposed clip — a finished, deliverable artefact — could
+          not be uploaded at all.
+        """
+        if wanted == "clip":
+            clips = sorted(ws.path.glob("short_repurposed*.mp4"))
+            if not clips:
+                return "clip", None, (
+                    f"No repurposed clips for {ws.ticker} — /repurpose "
+                    f"{ws.ticker} cuts them from a finished LONG.")
+            return "clip", clips[0], ""
+
+        fmt = wanted or ws.current_format() or "long"
+        video = ws.path / ("long_final.mp4" if fmt == "long"
+                           else "short_final.mp4")
+        if video.exists():
+            return fmt, video, ""
+
+        # Say what IS there rather than only what is not: with both lanes in
+        # one folder, "no finished SHORT" while a LONG sits beside it is the
+        # confusing half of the message.
+        other = "short" if fmt == "long" else "long"
+        alt = ws.path / f"{other}_final.mp4"
+        clips = sorted(ws.path.glob("short_repurposed*.mp4"))
+        extra = ""
+        if alt.exists():
+            extra = f" The {other.upper()} is rendered — /upload {ws.ticker} {other}."
+        elif clips:
+            extra = (f" {len(clips)} repurposed clip(s) are — "
+                     f"/upload {ws.ticker} clip.")
+        return fmt, None, (
+            f"No finished {fmt.upper()} render for {ws.ticker} yet.{extra}")
+
+    # Where each renderer actually writes its manifest, and what it calls the
+    # length inside it (E5). The SHORT was read from
+    # `render_short_manifest.json` under the key `"duration"`; it writes
+    # `short_final.manifest.json` under `"duration_s"`. Both wrong, so SHORT
+    # runtime was always 0.0 in the upload package and the YouTube record —
+    # and the LONG path was right, which is why nobody noticed.
+    _MANIFESTS: dict[str, tuple[str, str]] = {
+        "long": ("render_long_manifest.json", "duration"),
+        "short": ("short_final.manifest.json", "duration_s"),
+        "clip": ("", ""),
+    }
+
+    def _render_duration(self, ws: Workspace, fmt: str,
+                         video: Path | None = None) -> float:
+        name, key = self._MANIFESTS.get(fmt, ("", ""))
+        if name:
+            try:
+                import json as _json
+                data = _json.loads((ws.path / name).read_text(encoding="utf-8"))
+                got = float(data.get(key, 0))
+                if got:
+                    return got
+            except (FileNotFoundError, ValueError, KeyError, OSError, TypeError):
+                pass
+        # A repurposed clip has no manifest of its own, and a manifest that
+        # has been swept still leaves the file. Measuring the artefact is
+        # slower and always right, so it is the fallback rather than a
+        # reported zero.
+        if video is not None and Path(video).exists():
+            try:
+                from pipeline.render_common import ffprobe_duration
+
+                return float(ffprobe_duration(Path(video)))
+            except Exception:  # noqa: BLE001 - a duration is not worth failing on
+                log.warning("could not measure %s", video)
+        return 0.0
 
     # ------------------------------------------ intraday alerting (3b)
     def watch_command(self, args: list[str]) -> Reply:

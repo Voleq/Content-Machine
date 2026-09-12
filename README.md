@@ -678,7 +678,7 @@ nobody read.
 | `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
 | `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
-| `/status` | The job queue. |
+| `/status` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. |
 | `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
 
 **Every render writes to a temp file and `os.replace`s into position**, after
@@ -705,7 +705,7 @@ only the human-facing summary in the chat body.
 
 | command | what it does |
 |---|---|
-| `/upload TICKER [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. |
+| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
 

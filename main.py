@@ -76,12 +76,42 @@ def main() -> None:
 
         def push_file(path, caption: str = "") -> None:
             """Called from the render worker thread — hop back to the bot's
-            loop to actually send."""
+            loop to actually send.
+
+            BY TYPE AND SIZE, not always as a photo (E3). Every push went out
+            through `send_photo`, and two callers send things that are not
+            photos: `_run_proof` pushes the finished proof MP4, and
+            `_send_storyboard` pushes a large multi-tile contact sheet that
+            exceeds `send_photo`'s tighter limits. `push_file` catches the
+            exception and logs it, so the operator saw nothing at all.
+            """
             async def _send() -> None:
+                from pathlib import Path as _P
+
+                p = _P(path)
+                suffix = p.suffix.lower()
+                try:
+                    size = p.stat().st_size
+                except OSError:
+                    size = 0
+                # Telegram's photo endpoint caps at 10 MB and re-encodes;
+                # a contact sheet past that, or any non-image, goes as a
+                # document so it arrives intact.
+                video = suffix in (".mp4", ".mov", ".mkv", ".webm")
+                photo = (suffix in (".png", ".jpg", ".jpeg", ".webp")
+                         and size <= 10_000_000)
                 for chat_id in settings.operator_chat_ids:
-                    with open(path, "rb") as fh:
-                        await application.bot.send_photo(chat_id, fh,
-                                                         caption=caption[:1024])
+                    with open(p, "rb") as fh:
+                        if video:
+                            await application.bot.send_video(
+                                chat_id, fh, caption=caption[:1024],
+                                supports_streaming=True)
+                        elif photo:
+                            await application.bot.send_photo(
+                                chat_id, fh, caption=caption[:1024])
+                        else:
+                            await application.bot.send_document(
+                                chat_id, fh, caption=caption[:1024])
             asyncio.run_coroutine_threadsafe(_send(), loop)
 
         core.file_pusher = push_file

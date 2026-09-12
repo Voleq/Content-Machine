@@ -199,11 +199,23 @@ class GDriveBackend:
 
             main = self._upload_file(client, artifact, ddir)
             file_id = main["id"]
-            client.post(
-                f"{DRIVE_API}/files/{file_id}/permissions",
-                params={"supportsAllDrives": "true"},
-                json={"role": "reader", "type": "anyone"},
-            ).raise_for_status()
+            # ANYONE-WITH-THE-LINK IS OFF BY DEFAULT (E4). This used to be
+            # applied unconditionally to the main artifact, so every final
+            # render of an unpublished video sat on a public URL. The
+            # README's guarantee is "uploads are private or scheduled —
+            # never public from a machine"; that row is about YouTube, and an
+            # anyone-with-link MP4 of a video nobody has seen is the same
+            # exposure through a different door.
+            #
+            # With it off the link still works for anyone the Drive account
+            # already shares the folder with, which is the normal case for a
+            # one-operator channel.
+            if self.settings.gdrive_link_anyone:
+                client.post(
+                    f"{DRIVE_API}/files/{file_id}/permissions",
+                    params={"supportsAllDrives": "true"},
+                    json={"role": "reader", "type": "anyone"},
+                ).raise_for_status()
             r = client.get(f"{DRIVE_API}/files/{file_id}",
                            params={"fields": "webViewLink", "supportsAllDrives": "true"})
             r.raise_for_status()

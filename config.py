@@ -486,9 +486,32 @@ class Settings(BaseSettings):
     # is pure latency: write to a watched folder and post the path. gdrive
     # stays available for when the bot moves to a separate always-on host.
     delivery_backend: str = Field(default="local", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
+    # When a bare date means (E6). `resolve_publish_at`'s docstring has
+    # described "the configured hour" since it was written and no such
+    # setting existed: a bare date parsed to midnight UTC, so
+    # `/upload TICKER 2026-09-20` published at 2am in Bucharest. Naive times
+    # with an explicit clock are read in this zone too, rather than UTC.
+    # How many times a dropped resumable upload retries before giving up
+    # (E8). The session URI is persisted either way, so a give-up is
+    # resumable rather than a restart.
+    youtube_upload_retries: int = Field(default=4,
+                                        alias="YOUTUBE_UPLOAD_RETRIES")
+    # The language YouTube is told the uploaded .srt is in (E7).
+    captions_language: str = Field(default="en", alias="CAPTIONS_LANGUAGE")
+    publish_timezone: str = Field(default="Europe/Bucharest",
+                                  alias="PUBLISH_TIMEZONE")
+    publish_hour: int = Field(default=17, alias="PUBLISH_HOUR")
+    publish_minute: int = Field(default=0, alias="PUBLISH_MINUTE")
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
     gdrive_root_folder_id: str = Field(default="", alias="GDRIVE_ROOT_FOLDER_ID")
     gdrive_folder_name: str = "Dennis"
+    # Make the uploaded final readable by anyone with the link (E4). OFF:
+    # this used to be applied unconditionally, so every final render of an
+    # unpublished video sat on a public URL — the same exposure the README's
+    # "never public from a machine" row exists to prevent, through a
+    # different door. Off, the link still works for whoever the Drive account
+    # already shares the folder with.
+    gdrive_link_anyone: bool = Field(default=False, alias="GDRIVE_LINK_ANYONE")
     s3_bucket: str = ""
     s3_prefix: str = "dennis"
     s3_region: str = "us-east-1"

@@ -87,6 +87,7 @@ class RenderJobQueue:
         self.notifier = notifier
         self._queue: asyncio.Queue[str] = asyncio.Queue()
         self._worker_task: asyncio.Task | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
         interrupted = self.store.mark_interrupted_running()
         if interrupted:
             log.warning("%d job(s) marked INTERRUPTED from a previous run", interrupted)
@@ -94,7 +95,41 @@ class RenderJobQueue:
     # --------------------------------------------------------------- public
     def start(self) -> None:
         if self._worker_task is None or self._worker_task.done():
-            self._worker_task = asyncio.get_running_loop().create_task(self._worker_loop())
+            self._loop = asyncio.get_running_loop()
+            self._worker_task = self._loop.create_task(self._worker_loop())
+        self.requeue_persisted()
+
+    def requeue_persisted(self) -> int:
+        """Put jobs that were QUEUED when the process stopped back on the
+        queue (F1).
+
+        `self._queue` is in-memory and starts empty, and
+        `mark_interrupted_running()` rescues only RUNNING jobs — so a job
+        that was merely QUEUED stayed QUEUED on disk forever and never ran.
+        Worse, `submit()` refuses a new job while one is QUEUED or RUNNING,
+        so `/render` for that ticker was refused until the operator found
+        `/cancel`. On a desktop render box that sleeps, that is routine.
+
+        Re-enqueueing rather than marking them interrupted, because every
+        stage is cache-resumable — so re-running is cheap and correct — and
+        because it is what makes `/batch` work as documented: queue a night's
+        worth, and a restart does not silently empty it.
+        """
+        n = 0
+        for job in sorted(self.store.all(), key=lambda j: j.created_at):
+            if job.status is JobStatus.QUEUED:
+                self._queue.put_nowait(job.id)
+                n += 1
+        if n:
+            log.info("re-enqueued %d job(s) left QUEUED by a previous run", n)
+        return n
+
+    def notify_sync(self, text: str) -> None:
+        """Notify from a worker THREAD. No-op without a running loop."""
+        if self.notifier is None or self._loop is None:
+            log.warning("operator notice (undelivered): %s", text)
+            return
+        asyncio.run_coroutine_threadsafe(self._notify(text), self._loop)
 
     async def submit(self, kind: JobKind, ticker: str, workdate: str) -> JobRecord:
         active = [
@@ -201,6 +236,9 @@ class RenderJobQueue:
                 pass
         if job.delivered_link:
             lines.append(job.delivered_link)
+        if job.byproducts:
+            lines.append("")
+            lines.extend(job.byproducts)
         banner = self.settings.mock_banner()
         if banner:
             lines.append(banner)

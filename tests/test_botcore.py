@@ -4,6 +4,7 @@ prompts → paste script → report → approve → render gate → executed job
 local delivery. All in MOCK_MODE, zero network."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -313,3 +314,125 @@ def test_unauthorized_helper():
         class settings:
             operator_chat_ids = []
     assert not _authorized(EmptyCore, 111), "empty allow-list denies everyone"
+
+
+# --------------------------------------------------------------------------
+# GROUP E — delivery. Everything below was computed by the delivery layer and
+# read by nobody.
+# --------------------------------------------------------------------------
+
+
+def test_the_telegram_backend_actually_sends_the_video(core, tmp_path):
+    """E1: `send_file` was written by the telegram backend and read nowhere,
+    so `DELIVERY_BACKEND=telegram` reported success, reported "(sent in
+    chat)", and delivered nothing."""
+    from pipeline.delivery import DeliveryResult
+    from pipeline.models import JobKind, JobRecord
+
+    artifact = tmp_path / "long_final.mp4"
+    artifact.write_bytes(b"the video")
+    sent: list = []
+    core.file_pusher = lambda path, caption="": sent.append(Path(path))
+
+    job = JobRecord(id="e1", kind=JobKind.RENDER_LONG, ticker="EXMPL",
+                    workdate="2026-09-12")
+    core._finish(job, DeliveryResult(backend="telegram", link="(sent in chat)",
+                                     send_file=artifact))
+
+    assert sent == [artifact], "the file has to leave the machine"
+
+
+def test_by_product_links_and_credits_reach_the_operator(core, tmp_path):
+    """E2: `extra_links` and `note` were populated and never read, so the
+    thumbnail, the .srt, the package and the credits were uploaded and the
+    operator was never told where."""
+    from pipeline.delivery import DeliveryResult
+    from pipeline.models import JobKind, JobRecord
+
+    result = DeliveryResult(
+        backend="gdrive", link="https://drive/final",
+        extra_links={"EXMPL.srt": "https://drive/srt",
+                     "thumbnail.png": "https://drive/thumb"},
+        note="Credits:\n- Video by Alex on Pexels")
+
+    job = JobRecord(id="e2", kind=JobKind.RENDER_LONG, ticker="EXMPL",
+                    workdate="2026-09-12")
+    core._finish(job, result)
+    lines = core._byproduct_lines(result)
+
+    assert any("EXMPL.srt" in ln and "drive/srt" in ln for ln in lines)
+    assert any("thumbnail.png" in ln for ln in lines)
+    assert any("Alex on Pexels" in ln for ln in lines)
+
+
+def test_a_failed_push_tells_the_operator(core, tmp_path):
+    """E3: `push_file` caught the exception and logged it, so the operator
+    saw nothing at all — for a proof MP4 they were waiting on."""
+    said: list[str] = []
+    core.notify = lambda text: said.append(text)
+
+    def broken(path, caption=""):
+        raise RuntimeError("file is too big")
+
+    core.file_pusher = broken
+    f = tmp_path / "proof.mp4"
+    f.write_bytes(b"x")
+
+    assert core.push_file(f, "proof") is False
+    assert said and "too big" in said[0]
+
+
+def test_a_drive_final_is_not_world_readable_by_default(settings):
+    """E4: an anyone-with-link permission was applied unconditionally to
+    every final render of an unpublished video."""
+    import inspect
+
+    from pipeline import delivery
+
+    assert settings.gdrive_link_anyone is False
+    src = inspect.getsource(delivery.GDriveBackend.upload)
+    assert "if self.settings.gdrive_link_anyone:" in src
+
+
+def test_upload_can_reach_the_short_when_a_long_exists_too(core, xlsx_bytes,
+                                                           short_valid_json):
+    """E5: `/upload` could only reach whichever format the folder "was"."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    (ws.path / "short_final.mp4").write_bytes(b"short")
+    (ws.path / "long_final.mp4").write_bytes(b"long")
+
+    fmt, video, _ = core._upload_target(ws, "short")
+    assert fmt == "short" and video.name == "short_final.mp4"
+    fmt, video, _ = core._upload_target(ws, "long")
+    assert fmt == "long" and video.name == "long_final.mp4"
+
+
+def test_upload_can_reach_a_repurposed_clip(core, xlsx_bytes):
+    """E5: the path was hard-coded to the two finals, so a repurposed clip —
+    a finished, deliverable artefact — could not be uploaded at all."""
+    core.start_lane(CHAT, "long", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    clip = ws.path / "short_repurposed_0.mp4"
+    clip.write_bytes(b"clip")
+
+    fmt, video, _ = core._upload_target(ws, "clip")
+    assert fmt == "clip" and video == clip
+
+
+def test_a_short_runtime_is_read_from_the_manifest_the_renderer_writes(
+        core, xlsx_bytes):
+    """E5: it read `render_short_manifest.json` under `"duration"`; the
+    renderer writes `short_final.manifest.json` under `"duration_s"`. Both
+    wrong, so SHORT runtime was always 0.0 in the upload package and the
+    YouTube record."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    (ws.path / "short_final.manifest.json").write_text(
+        json.dumps({"duration_s": 63.5}), encoding="utf-8")
+
+    assert core._render_duration(ws, "short") == 63.5
