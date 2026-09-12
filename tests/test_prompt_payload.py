@@ -132,3 +132,98 @@ def test_the_news_sheet_reaches_the_writer(settings, fixtures_dir, tmp_path):
     # The URL is what `[SHOW ARTICLE]` resolves against server-side, and a
     # model handed one will put it on screen.
     assert data.news[0]["url"] not in text
+
+
+# --------------------------------------------------------------------------
+# P3 — a prompt must not offer what it forbids.
+# --------------------------------------------------------------------------
+
+# The tags a prompt can name as unavailable, and the shapes in which the same
+# prompt could then go on to offer them.
+_TAG_NAMES = ("PLATE", "IMG", "PRODUCT", "MEME", "CLIP", "BROLL",
+              "SHOW FILING", "SHOW ARTICLE", "SCREENGRAB", "SCRIBBLE")
+
+
+def _forbidden_tags(text: str) -> set[str]:
+    """Tags a prompt says are not drawn / not this format's grammar."""
+    out: set[str] = set()
+    for para in re.split(r"\n\s*\n", text):
+        low = para.lower()
+        says_no = any(p in low for p in (
+            "are long-form grammar", "is long-form grammar",
+            "draws none", "not drawn", "reaches no frame",
+            "reports them as ignored", "places a visual"))
+        if not says_no:
+            continue
+        for tag in _TAG_NAMES:
+            if f"[{tag}]" in para or f"[{tag}:" in para:
+                out.add(tag)
+    return out
+
+
+def _offered_tags(text: str) -> set[str]:
+    """Tags a prompt hands the writer as something to use.
+
+    An offer is the tag written with a placeholder key — `[MEME: key]` — or
+    a catalogue heading naming it, which is how the two catalogues read.
+    """
+    out: set[str] = set()
+    for tag in _TAG_NAMES:
+        if re.search(rf"\[{re.escape(tag)}:\s*(key|<)", text):
+            out.add(tag)
+    return out
+
+
+@pytest.mark.parametrize("fmt", PROMPT_FORMATS)
+def test_no_prompt_offers_a_tag_it_also_forbids(fmt):
+    """P3: `master_prompt_short.md` told the writer `[MEME]` and `[CLIP]`
+    were LONG-form grammar that a short "parses, warns about and draws none
+    of" — and forty lines earlier offered both as catalogues to pick from.
+
+    A contradiction in a prompt does not error. It produces a script that is
+    wrong in a way the parser may or may not catch, and the writer cannot
+    tell which half to believe.
+    """
+    text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+    both = _forbidden_tags(text) & _offered_tags(text)
+    assert not both, (
+        f"master_prompt_{fmt}.md both forbids and offers: {sorted(both)}")
+
+
+def test_the_detector_would_catch_the_contradiction_it_was_written_for():
+    """The check above is only worth having if it fires. This is the SHORT
+    prompt as it read before P3, in miniature."""
+    contradictory = (
+        "Owned memes — [MEME: key] (optional, at most one):\n"
+        "  harold-quick-flip-became-bagholder\n"
+        "\n"
+        "**Do not place inline visual tags.** `[PLATE]`, `[MEME]` and "
+        "`[CLIP]` are LONG-form grammar. A short parses them, warns about "
+        "them and draws none of them.\n")
+    assert _forbidden_tags(contradictory) & _offered_tags(contradictory) == {"MEME"}
+
+
+def test_the_short_lane_is_told_its_structured_fields_reach_no_frame():
+    """The other half of the same contradiction, one level up: `meme`,
+    `broll` and `annotations` are real fields that validate and are counted
+    on the cost report, and no shot template binds any of them."""
+    import json
+
+    bound = set()
+    for name in ("short", "earnings", "macro"):
+        spec = json.loads((TEMPLATES / "shots" / f"{name}.json")
+                          .read_text(encoding="utf-8"))
+        for shot in spec.get("shots", []):
+            bound.update(str(v) for v in (shot.get("bind") or {}).values())
+    for field in ("meme", "broll", "annotations"):
+        assert not any(f"script.{field}" in b for b in bound), (
+            f"a shot template now binds `{field}` — the prompts say it "
+            f"reaches no frame, and one of the two is now wrong")
+
+    for fmt in ("short", "headline"):
+        text = (TEMPLATES / f"master_prompt_{fmt}.md").read_text(encoding="utf-8")
+        assert "reach no frame" in text, (
+            f"master_prompt_{fmt}.md does not tell the writer that `meme`, "
+            f"`broll` and `annotations` are not drawn")
+        assert "{{meme_catalog}}" not in text
+        assert "{{broll_palette}}" not in text

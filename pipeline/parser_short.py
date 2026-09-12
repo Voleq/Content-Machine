@@ -205,6 +205,32 @@ def _tag_warnings(script: ShortScript, settings: Settings) -> list[str]:
             f"grammar. Nothing is broken — the beat still renders — but the "
             f"instruction had no effect.")
 
+    # THE STRUCTURED FIELDS ARE THE SAME STORY ONE LEVEL UP (P3).
+    #
+    # `meme`, `broll` and `annotations` validate, and `build_short_report`
+    # counts a meme against `meme_cap` — so the operator is shown "Memes:
+    # 1/2" for a cutaway no frame contains. A short's visuals come from its
+    # shot template, and no template in `templates/shots/` binds any of the
+    # three. The writing prompts no longer offer them; a script written
+    # before that change, or by a model working from memory, still can.
+    #
+    # Reported rather than rejected: refusing a whole script over a field
+    # that changes nothing would be worse than the silence it replaces.
+    unbound = []
+    if getattr(script, "meme", None) is not None:
+        unbound.append("meme")
+    if getattr(script, "broll", None) is not None:
+        unbound.append("broll")
+    if getattr(script, "annotations", None):
+        unbound.append("annotations")
+    if unbound:
+        out.append(
+            f"{', '.join(unbound)} {'are' if len(unbound) > 1 else 'is'} set "
+            f"on this script and no shot template binds "
+            f"{'them' if len(unbound) > 1 else 'it'} — a SHORT's frames come "
+            f"from its shot template, so this reaches no frame. Harmless, and "
+            f"it cost a decision: the beat renders either way.")
+
     try:
         reg = load_plates(settings.assets_dir)
     except PlateError:

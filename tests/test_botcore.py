@@ -53,10 +53,17 @@ def test_upload_on_a_short_lane_yields_exactly_the_short_prompt(core, xlsx_bytes
 
     assert "Ticker: EXMPL" in short_prompt and "ps_ttm = 62.0" in short_prompt
     assert "[history" in short_prompt, "the 5y history feeds the gut check"
-    # catalogs injected into the SHORT writing prompt (with queries / use-when)
-    assert "dumpster_fire — dumpster fire burning night" in short_prompt
-    assert "numbers-sheet" in short_prompt        # doodle catalog, grouped
-    assert "harold-quick-flip-became-bagholder" in short_prompt  # meme catalog
+    assert "numbers-sheet" in short_prompt        # the plate catalogue
+    # THE MEME AND B-ROLL CATALOGUES ARE NOT HERE, and that is the fix (P3).
+    # Both were offered to the SHORT lane while the same prompt, forty lines
+    # later, told the writer the inline form of those two tags was LONG-form
+    # grammar that a short "draws none of". The structured `meme`/`broll`
+    # fields are no better off: no shot template binds them, so the choice
+    # validated, was counted on the cost report, and reached no frame.
+    assert "dumpster_fire — dumpster fire burning night" not in short_prompt
+    assert "harold-quick-flip-became-bagholder" not in short_prompt
+    assert "reach no frame" in short_prompt, \
+        "the writer is not told why those fields are absent"
     assert "## VOICE BIBLE" in short_prompt and "deadpan" in short_prompt
     assert "Refinitiv" not in short_prompt
 

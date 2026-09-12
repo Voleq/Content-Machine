@@ -42,14 +42,6 @@ Peer percentiles (OPTIONAL — where this ticker ranks vs peers; the gut check m
 
 Chartable metrics present in THIS data — every company/earnings `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
-## VISUAL CATALOGS — for the JSON fields that carry them
-
-Owned memes — the `meme` field (optional, at most one):
-{{meme_catalog}}
-
-Ironic b-roll palette — the `broll` field (optional cutaway):
-{{broll_palette}}
-
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
 
@@ -81,9 +73,16 @@ and the renderer binds your words into its slots, so what you control is the
 structured fields — `hook_text`, `move_summary`, `headlines`, `numbers` and
 `numbers_comment`, `cheap_or_trap`, `conclusion`.
 
-**Do not place inline visual tags.** `[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`,
-`[SHOW FILING]`, `[SCREENGRAB]` and `[SCRIBBLE]` are LONG-form grammar. A
-short parses them, warns about them and draws none of them.
+**Nothing you write places a visual, in either form.**
+
+`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`, `[SCREENGRAB]` and
+`[SCRIBBLE]` written inside `audio_script` are LONG-form grammar. This format
+parses them, reports them as ignored, and draws none.
+
+The JSON fields `meme`, `broll` and `annotations` are the same story one
+level up: they validate, they are counted on the cost report, and no shot
+template binds them, so they reach no frame either. Do not spend a decision
+on them — write the fields the template binds.
 
 You MAY place DELIVERY DIRECTION inline — that does reach the voice. The full
 vocabulary, the mode each tag serves and the ceilings are in DELIVERY

@@ -35,16 +35,13 @@ Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut che
 
 Chartable metrics present in THIS data — every `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
-## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
+## THE KIT — for reference, not for placement
 
-Owned memes — [MEME: key] (optional, at most one):
-{{meme_catalog}}
+A SHORT'S VISUALS ARE NOT YOURS TO PLACE. The shot template decides every
+frame and binds it to the structured fields below; nothing you write puts a
+picture on screen. The catalogue is here so you know what the video will
+look like as you write to it — the frames a viewer will actually see:
 
-Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
-{{broll_palette}}
-
-Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these. Nothing else resolves:
 {{plate_catalogue}}
 
 {{tagging_density}}
@@ -82,11 +79,19 @@ what a viewer sees is the structured fields below — `hook_text`,
 `move_summary`, `headlines`, `numbers` and `numbers_comment`, `turn_line`,
 `cheap_or_trap`, `conclusion` — and writing those well is the whole job.
 
-**Do not place inline visual tags.** `[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`,
-`[SHOW FILING]`, `[SHOW ARTICLE]`, `[SCREENGRAB]` and `[SCRIBBLE]` are LONG-form
-grammar. A short parses them, warns about them and draws none of them — they
-used to be tokenised, validated, costed and listed on a contact sheet before
-being discarded, which is work asked of you for nothing.
+**Nothing you write places a visual, in either form.**
+
+`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`, `[SHOW ARTICLE]`,
+`[SCREENGRAB]` and `[SCRIBBLE]` written inside `audio_script` are LONG-form
+grammar. A short parses them, reports them as ignored, and draws none.
+
+The JSON fields `meme`, `broll` and `annotations` are the same story one
+level up: they validate, they are counted on the cost report, and no shot
+template binds them, so they reach no frame either. They are accepted and
+reported as ignored. Do not spend a decision on them.
+
+Either way it is work asked of you for nothing, so this prompt no longer
+asks. Write the fields the template binds.
 
 **Delivery — never reaches the screen, only the voice.** The vocabulary, the mode each tag serves and the ceilings are in DELIVERY DIRECTION above, generated from the code that performs them. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short is plenty.
 
@@ -97,13 +102,11 @@ being discarded, which is work asked of you for nothing.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
-7. `annotations`: up to 4 scribbles. `target` "chart" (circles the move) or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script` where the scribble should fire; optional `note` ≤ 40 chars, lowercase, terse.
-8. `meme` (optional, use ONLY if it genuinely lands — most videos don't need one): `{"key": "<from the meme keys above>", "anchor_word": "<word in audio_script>"}`. `broll` (optional) the same shape with a palette key.
-9. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
-10. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
-11. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
-12. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
-13. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
+7. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
+8. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
+9. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
+10. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
+11. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:

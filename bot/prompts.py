@@ -757,9 +757,16 @@ PAYLOAD: tuple[PayloadBlock, ...] = (
                  lambda c: retention_evidence(c.settings)),
 
     # --- visual catalogs
-    PayloadBlock("{{meme_catalog}}", _WRITING,
+    # LONG-FORM ONLY. Both were offered to the SHORT lane as well, where
+    # nothing draws them: a short's frames come from its shot template, and
+    # no template in `templates/shots/` binds `meme`, `broll` or
+    # `annotations`. So the prompt offered a choice that validated, was
+    # counted on the cost report, and reached no frame — forty lines above
+    # the paragraph telling the writer the inline form of the same two tags
+    # was LONG-form grammar (P3).
+    PayloadBlock("{{meme_catalog}}", _LONG_FORM,
                  lambda c: meme_catalog(c.settings)),
-    PayloadBlock("{{broll_palette}}", _WRITING, lambda c: broll_catalog()),
+    PayloadBlock("{{broll_palette}}", _LONG_FORM, lambda c: broll_catalog()),
     PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
                  lambda c: plate_catalogue(
                      c.settings, fmt="short" if c.fmt == "short" else "long")),
