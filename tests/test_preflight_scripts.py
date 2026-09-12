@@ -39,7 +39,8 @@ def _run(script: str, *args: str, **env_extra: str) -> subprocess.CompletedProce
 
 # Grown by the commit that adds each script, so a name here always points at
 # something that exists.
-PREFLIGHT = ("check_sfx.py", "check_freshness.py", "check_llm_context.py")
+PREFLIGHT = ("check_sfx.py", "check_freshness.py", "check_llm_context.py",
+             "backup_state.py")
 
 
 @pytest.mark.parametrize("name", PREFLIGHT)
@@ -158,3 +159,82 @@ def test_the_context_check_reports_an_unreachable_daemon_as_unproven():
     assert got.returncode == 2, got.stdout + got.stderr
     assert "Nothing is proven" in got.stdout or "Nothing is proven" in got.stderr
     assert "OK —" not in got.stdout
+
+
+# --------------------------------------------------------------------------
+# backup_state.py — the ledger is the only record of what was spent.
+# --------------------------------------------------------------------------
+
+
+def _seed_state(root: Path) -> Path:
+    state = root / "state"
+    (state / "jobs").mkdir(parents=True)
+    (state / "spend.json").write_text(
+        json.dumps({"2026-09": {"usd": 12.34, "tts_chars": 9000}}),
+        encoding="utf-8")
+    (state / "thesis.json").write_text('{"EXMPL": {}}', encoding="utf-8")
+    (state / "jobs" / "abc123.json").write_text('{"id": "abc123"}',
+                                                encoding="utf-8")
+    return state
+
+
+def test_the_backup_archives_state_and_can_be_restored(tmp_path):
+    """P6: `state/` holds the spend ledger, and the ledger is the only record
+    of what has been spent — so losing it loses the monthly cap silently.
+    Asserted by unpacking the archive and comparing, not by trusting that
+    tar was called."""
+    import tarfile
+
+    state = _seed_state(tmp_path)
+    out = tmp_path / "backups"
+    got = _run("backup_state.py", "--state", str(state), "--out", str(out))
+    assert got.returncode == 0, got.stdout + got.stderr
+
+    archives = list(out.glob("state-*.tar.gz"))
+    assert len(archives) == 1, f"expected one archive, got {archives}"
+    restored = tmp_path / "restored"
+    restored.mkdir()
+    with tarfile.open(archives[0]) as tar:
+        tar.extractall(restored)
+
+    back = restored / "state"
+    assert json.loads((back / "spend.json").read_text())["2026-09"]["usd"] == 12.34
+    assert (back / "thesis.json").is_file()
+    assert (back / "jobs" / "abc123.json").is_file()
+    # The ledger is called out by name, because it is the one whose loss
+    # costs money rather than time.
+    assert "ledger" in got.stdout and "2026-09" in got.stdout
+    assert "Restore with:" in got.stdout
+
+
+def test_the_backup_refuses_rather_than_writing_an_empty_archive(tmp_path):
+    """An archive of nothing is worse than no archive: it is a backup you
+    think you have."""
+    empty = tmp_path / "state"
+    empty.mkdir()
+    got = _run("backup_state.py", "--state", str(empty),
+               "--out", str(tmp_path / "b"))
+    assert got.returncode == 1
+    assert "empty" in got.stderr
+    assert not list((tmp_path / "b").glob("*")) if (tmp_path / "b").is_dir() else True
+
+    missing = _run("backup_state.py", "--state", str(tmp_path / "nope"),
+                   "--out", str(tmp_path / "b2"))
+    assert missing.returncode == 1
+    assert "nothing to back up" in missing.stderr
+
+
+def test_the_backup_lists_what_it_has_written(tmp_path):
+    state = _seed_state(tmp_path)
+    out = tmp_path / "backups"
+    assert _run("backup_state.py", "--state", str(state),
+                "--out", str(out)).returncode == 0
+    listed = _run("backup_state.py", "--out", str(out), "--list")
+    assert listed.returncode == 0
+    assert "1 archive(s)" in listed.stdout
+    assert "state-" in listed.stdout
+
+    nothing = _run("backup_state.py", "--out", str(tmp_path / "elsewhere"),
+                   "--list")
+    assert nothing.returncode == 0
+    assert "No archives" in nothing.stdout

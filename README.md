@@ -1000,6 +1000,31 @@ env var, case-insensitive).
   wrapped, cached, rate-limited and allowed to fail into a labelled,
   degraded lane. The screener can never block or spend.
 
+## Operations
+
+### Back up `state/` before anything risky
+
+```bash
+python scripts/backup_state.py            # -> backups/state-<stamp>.tar.gz
+python scripts/backup_state.py --list     # what is already archived
+python scripts/backup_state.py --out /mnt/nas
+```
+
+`state/` is the only place several things exist, and none of it is
+reconstructible:
+
+| file | what is lost with it |
+|---|---|
+| `spend.json` | the spend ledger — **the only record of what has been spent**, and therefore the only thing enforcing `MONTHLY_SPEND_CAP`. It resets to zero silently. |
+| `thesis.json`, `confessions.json`, `idea_queue.json` | what `/update` grades against and what the voice gate reads. Every ticker becomes a first-time take. |
+| `published.json` | what has already gone to YouTube, so `/upload` does not send it twice. |
+| `jobs/` | the queue, including anything QUEUED that a restart would otherwise re-enqueue. |
+| `last_digest.json`, `alerts.json`, `earnings_calendar.json` | the scheduler's memory of what it has already sent. |
+
+Deliberately **not** a scheduled job. A cron that silently stops is a backup
+you think you have; this is one command that is easy to run before a change
+you might want to undo.
+
 ## Legal / safety
 
 A persistent "Opinion / entertainment. Not financial advice." overlay is
