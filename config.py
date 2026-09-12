@@ -727,6 +727,34 @@ class Settings(BaseSettings):
                 f"{'are' if len(active) > 1 else 'is'} invented, not real. "
                 f"Nothing here is a market observation.")
 
+    def deployment_warnings(self) -> list[str]:
+        """Things about THIS deployment that quietly make videos worse.
+
+        Not errors — nothing here refuses to boot, and none of it blocks a
+        render. Each one costs a feature or a fallback that the operator
+        would otherwise discover from the output weeks later, which is the
+        same shape as every defect the provenance record exists to reveal.
+
+        Said at startup, beside the mock banner, at the same moment: these
+        are facts about the box, so the moment the box starts is when they
+        are true and cheap to act on.
+        """
+        out: list[str] = []
+        if not self.mock_mode and not self.sec_user_agent.strip():
+            # The SEC requires a real name and email in the User-Agent and
+            # rate-limits or 403s generic ones. Every caller falls back to a
+            # literal and every SEC-backed feature degrades SILENTLY by
+            # design — the filing brief, the 8-K news source and
+            # [SHOW FILING] screenshots all return nothing rather than
+            # raising. So three features go missing and nothing says why.
+            out.append(
+                "SEC_USER_AGENT is empty — SEC EDGAR requires a real name "
+                "and email and rate-limits or 403s generic agents. The "
+                "filing brief, the 8-K news source and [SHOW FILING] "
+                "screenshots will degrade to nothing, quietly and by "
+                "design. Set SEC_USER_AGENT='Your Name your@email'.")
+        return out
+
     # ------------------------------------------------------------ conveniences
     @property
     def short_resolution(self) -> tuple[int, int]:
@@ -910,6 +938,9 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1400",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
     "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
+    # The SEC refuses a generic agent, so a placeholder here is worse than
+    # nothing: it looks set and behaves as if it is not.
+    "SEC_USER_AGENT": "SEC_USER_AGENT=Your Name your@email",
 }
 
 

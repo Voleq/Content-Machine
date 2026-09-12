@@ -63,6 +63,12 @@ def main() -> None:
     if not settings.mock_mode:
         log.warning("MOCK_MODE is OFF — paid APIs are live. Spend cap: $%.2f",
                     settings.monthly_spend_cap_usd)
+    # THINGS THAT QUIETLY MAKE VIDEOS WORSE (P9). None of these refuses to
+    # boot and none blocks a render — each costs a feature that degrades
+    # silently by design, which is exactly how you lose three of them and
+    # are told nothing. Beside the mock banner, at the same moment.
+    for warning in settings.deployment_warnings():
+        log.warning("%s", warning)
 
     core = BotCore(settings)
     app = build_application(settings, core)

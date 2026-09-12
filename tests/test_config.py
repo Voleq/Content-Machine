@@ -260,3 +260,65 @@ def test_the_chapter_cue_is_a_key_or_nothing():
     assert Settings(_env_file=None).chapter_cue_sfx == "keyboard_clack"
     assert Settings(CHAPTER_CUE_SFX="", _env_file=None).chapter_cue_sfx == ""
     assert Settings(CHAPTER_CUE_SFX="airhorn", _env_file=None).chapter_cue_sfx == "airhorn"
+
+
+# ------------------------------------------------- silent degradations (P9)
+# Neither of these blocks a render. Both mean a production video is quietly
+# worse than designed, and both were invisible.
+
+
+def test_an_empty_sec_user_agent_is_a_startup_warning_when_live():
+    """P9a: the SEC requires a real name and email and rate-limits or 403s
+    generic agents. Every caller falls back to a literal, and every
+    SEC-backed feature degrades silently BY DESIGN — the filing brief, the
+    8-K news source and `[SHOW FILING]` screenshots all return nothing
+    rather than raising. So three features go missing and nothing says why.
+    """
+    live = Settings(MOCK_MODE=False, _env_file=None)
+    warnings = live.deployment_warnings()
+    assert any("SEC_USER_AGENT" in w for w in warnings), warnings
+    said = next(w for w in warnings if "SEC_USER_AGENT" in w)
+    # It has to name what is lost, or it reads as a lint rather than three
+    # missing features.
+    assert "filing brief" in said
+    assert "SHOW FILING" in said
+    assert "Your Name your@email" in said, "it does not say what to set"
+
+
+def test_a_real_sec_user_agent_says_nothing():
+    ok = Settings(MOCK_MODE=False, SEC_USER_AGENT="Jane Doe jane@x.com",
+                  _env_file=None)
+    assert not [w for w in ok.deployment_warnings() if "SEC_USER_AGENT" in w]
+
+
+def test_mock_mode_does_not_nag_about_live_credentials():
+    """MOCK_MODE never reaches the SEC, so the warning would be noise — and
+    noise at startup is how the real ones stop being read."""
+    mocked = Settings(MOCK_MODE=True, _env_file=None)
+    assert not [w for w in mocked.deployment_warnings()
+                if "SEC_USER_AGENT" in w]
+
+
+def test_the_example_shows_the_shape_the_sec_actually_accepts():
+    """A blank or a placeholder here is worse than nothing: it looks set and
+    behaves as if it is not."""
+    from config import _SETTING_EXAMPLES
+
+    assert "SEC_USER_AGENT" in _SETTING_EXAMPLES
+    assert "@" in _SETTING_EXAMPLES["SEC_USER_AGENT"]
+
+    example = (Path(__file__).resolve().parents[1] / ".env.example"
+               ).read_text(encoding="utf-8")
+    line = next(ln for ln in example.splitlines()
+                if ln.startswith("SEC_USER_AGENT="))
+    assert "@" in line, "the example is blank, so nobody learns the shape"
+
+
+def test_main_logs_the_deployment_warnings_at_startup():
+    """Computed and never surfaced is the defect, not the fix."""
+    import inspect
+
+    import main as main_mod
+
+    src = inspect.getsource(main_mod)
+    assert "deployment_warnings()" in src
