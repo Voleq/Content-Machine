@@ -1,6 +1,6 @@
 """The plate registry — the read side of the materialised design kit.
 
-``assets/plates/plates-registry.json`` is the single source of truth: 143
+``assets/plates/plates-registry.json`` is the single source of truth: 270
 addressable plates under ``family/name`` keys, each declaring its frames,
 playback, canvas, ``exportScale`` and its slots. ``scripts/ingest_kit.py``
 writes it by running the kit's own engine; this module reads it and *only* it.
@@ -216,7 +216,16 @@ class Plate:
     delivered: tuple[int, int]
     export_scale: int
     aspect: str                   # "16x9", "9x16", or "" for aspect-free marks
-    playback: str                 # "static" | "loop"
+    # "static" | "loop" | "overlay".
+    #
+    # `overlay` ARRIVED WITH delta-14 and nothing plays it yet. The seven
+    # blink strips carry it: they are not poses and no template selects one
+    # — the renderer composites the strip over the matching idle frame at
+    # 0,0, frame for frame, for about 100ms every three or four seconds.
+    # Played as a loop in its own right a blink strip is a disembodied pair
+    # of eyelids, so `animated` deliberately excludes it and the compositor
+    # has to learn the mode before any of them is reachable.
+    playback: str
     fps: float
     frame_count: int
     frames: tuple[Frame, ...]
@@ -297,7 +306,8 @@ class Plate:
 
     @property
     def animated(self) -> bool:
-        return self.playback != "static" and self.frame_count > 1
+        return (self.playback not in ("static", "overlay")
+                and self.frame_count > 1)
 
     @property
     def path(self) -> Path:

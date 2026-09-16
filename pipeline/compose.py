@@ -27,10 +27,14 @@ Three things follow from the v2 kit that did not hold under the old one:
   the anchor's HEIGHT is his target height, and his own floor line sits on the
   anchor's bottom edge. `host.place_on_room` is that contract, in one place.
 
-* **Data plates do not boil.** 47 of the 143 are `playback: static` — tables,
-  charts, figures, structure. A number that moves three times a second cannot
-  be read, which is the whole job of a number. The rooms, the host, the cards
-  and the paper loop; everything carrying figures is still.
+* **Data plates used to not boil, and in delta-14 they do.** The 143-plate
+  kit had 47 `playback: static` plates — tables, charts, figures, structure
+  — on the argument that a number moving three times a second cannot be
+  read, which is the whole job of a number. delta-14 ships 260 `loop`, 7
+  `overlay` and 3 `static`, and the three are furniture: `overlays/row-band`
+  and the two lower thirds. That is a design decision from the pack, not
+  drift in this file, and it changes what a data beat looks like on screen.
+  Worth a pair of eyes on the first render of a numbers sheet.
 """
 
 from __future__ import annotations

@@ -190,9 +190,16 @@ def test_the_short_report_states_what_the_script_reaches(settings, short_valid_j
     assert re.fullmatch(
         r"Kit: \d+ of \d+ plates · \d+ families · \d+ data plates?",
         line), line
-    # the denominator is the library, read live — the point of the line is that
-    # the numerator is small against it
-    assert "of 143 plates" in line
+    # THE DENOMINATOR IS THE LIBRARY, READ LIVE. Asserted against the
+    # registry rather than against a number typed here: the kit grew from
+    # 143 plates to 270 in delta-14, and a literal would have made a correct
+    # reach line look like a regression on the day the operator ingests it.
+    # What the line is for is that the numerator is small against whatever
+    # the library currently holds.
+    from pipeline.plates import load_plates
+
+    total = len(load_plates(settings.assets_dir).keys())
+    assert f"of {total} plates" in line
 
 
 def test_the_line_counts_what_the_script_actually_names(settings, short_valid_json):
@@ -228,7 +235,10 @@ def test_the_long_report_carries_the_same_line(settings, long_valid_text, worksp
     from pipeline.plates import load_plates
 
     assert report.kit_reach.startswith("Kit: ")
-    assert "of 143 plates" in report.kit_reach
+    from pipeline.plates import load_plates
+
+    assert f"of {len(load_plates(settings.assets_dir).keys())} plates" \
+        in report.kit_reach
     assert report.kit_reach in report.render_text()
 
 

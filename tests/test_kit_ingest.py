@@ -328,3 +328,81 @@ def test_the_furniture_and_the_blink_are_not_chapter_plates():
                 f"{name} offers the lower third as a chapter plate; the "
                 f"compositor places it, a director never names it")
             assert "blink" not in pre, f"{name} offers a blink overlay"
+
+
+# --------------------------------------------------------------------------
+# What the library's SIZE and SHAPE are, and what must not assume them.
+# --------------------------------------------------------------------------
+
+
+def test_nothing_in_the_suite_hard_codes_the_library_size():
+    """The kit went 143 -> 270 and will move again. A literal count in a
+    test turns a correct reach line into a failure on the day the operator
+    ingests a new pack, which is the day it is hardest to tell a stale test
+    from a real regression."""
+    import re
+
+    offenders: list[str] = []
+    for path in sorted((ROOT / "tests").glob("*.py")):
+        if path.name == "test_kit_ingest.py":
+            continue      # this file counts on purpose, against the manifests
+        for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.lstrip().startswith("assert"):
+                continue
+            if re.search(r"\bof (143|270) plates\b", line):
+                offenders.append(f"{path.name}:{n}: {line.strip()}")
+    assert not offenders, (
+        "a plate count is asserted as a literal; read it off the registry "
+        "instead:\n  " + "\n  ".join(offenders))
+
+
+def test_the_playback_vocabulary_is_one_the_renderer_knows():
+    """delta-14 introduced `overlay`, a third value, on the seven blink
+    strips. `Plate.animated` was `playback != "static"`, so an overlay strip
+    would have been played as a loop in its own right — a disembodied pair
+    of eyelids — rather than composited over the matching idle frame.
+
+    Nothing plays them yet, which is correct; what this holds is that a
+    fourth value cannot arrive unnoticed.
+    """
+    from collections import Counter
+
+    known = {"static", "loop", "overlay"}
+    got = Counter(v.get("playback") for v in _shipped().values())
+    unknown = set(got) - known
+    assert not unknown, (
+        f"playback value(s) no code path handles: {sorted(unknown)} — "
+        f"`Plate.animated` and `plate_frames` both branch on this")
+    assert got["overlay"] == 7, f"expected seven blink strips, got {got}"
+
+
+def test_an_overlay_strip_is_not_treated_as_an_animation():
+    """The failure this prevents, at the one place it is decided."""
+    from pipeline.plates import Plate
+
+    def _plate(playback: str) -> Plate:
+        return Plate(
+            key="host/close-up-blink", family="host", name="close-up-blink",
+            canvas=(100, 100), delivered=(200, 200), export_scale=2,
+            aspect="", playback=playback, fps=8.0, frame_count=6, frames=(),
+            files_png="", files_svg="", base_is_frame="", slots={},
+            type_roles={}, root=ROOT)
+
+    assert _plate("loop").animated is True
+    assert _plate("static").animated is False
+    assert _plate("overlay").animated is False, (
+        "a blink strip played as a loop is a pair of eyelids with no face "
+        "behind them")
+
+
+def test_the_data_plates_now_boil_and_that_is_the_packs_decision():
+    """A design decision from delta-14 that reverses a documented rule, held
+    here so it is a recorded fact rather than a surprise on the first render
+    of a numbers sheet: the 143-plate kit had 47 static data plates; this
+    one has three, and all three are furniture."""
+    shipped = _shipped()
+    static = sorted(k for k, v in shipped.items() if v.get("playback") == "static")
+    assert static == ["overlays/lower-third-16x9", "overlays/lower-third-9x16",
+                      "overlays/row-band"], static
+    numbers = [k for k in shipped if k.startswith(("tables/", "charts/"))]
+    assert numbers and all(shipped[k].get("playback") == "loop" for k in numbers)
