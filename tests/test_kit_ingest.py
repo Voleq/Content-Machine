@@ -534,3 +534,85 @@ def test_the_memory_characteristic_is_written_down_where_it_is_hit():
     preflight = readme.split("## Preflight")[1].split("\n## ")[0]
     assert "memory-bound" in preflight
     assert "--batched" in preflight
+
+
+# --------------------------------------------------------------------------
+# §6 — two rules artwork cannot carry, so the writer has to.
+# --------------------------------------------------------------------------
+
+
+class _StubPlate:
+    def __init__(self, key, aspect, purpose=""):
+        self.key, self.aspect, self.purpose = key, aspect, purpose
+        self.slots = {}
+
+
+class _StubRegistry:
+    def __init__(self, keys):
+        self.assets = {k: _StubPlate(k, a) for k, a in keys}
+
+    def families(self):
+        return sorted({k.split("/")[0] for k in self.assets})
+
+    def family(self, name):
+        return sorted(k for k in self.assets if k.startswith(name + "/"))
+
+
+@pytest.fixture()
+def _stub_registry(monkeypatch):
+    """The delta-14 plates the notes are about, without needing an ingest."""
+    import pipeline.plates as plates_mod
+
+    reg = _StubRegistry([
+        ("charts/seasonality-4y-16x9", "16x9"),
+        ("charts/seasonality-4y-9x16", "9x16"),
+        ("charts/seasonality-6y-16x9", "16x9"),
+        ("charts/seasonality-6y-9x16", "9x16"),
+    ])
+    monkeypatch.setattr(plates_mod, "load_plates", lambda *_a, **_k: reg)
+    return reg
+
+
+def test_the_nine_by_sixteen_seasonality_warning_reaches_the_writer(
+        settings, _stub_registry):
+    """§6: `seasonality-6y` in 9:16 is twenty-four columns and reads as four
+    groups rising, not six dated years. No redraw fixes it — a wider column
+    means fewer years, which is what `-4y` already is. So the writer is told
+    beside the plate, in the catalogue the prompt generates."""
+    from bot.prompts import plate_catalogue
+
+    portrait = plate_catalogue(settings, fmt="short")
+    line = next((ln for ln in portrait.splitlines()
+                 if "seasonality-6y" in ln), None)
+    assert line is not None
+    idx = portrait.splitlines().index(line)
+    note = "\n".join(portrait.splitlines()[idx:idx + 3])
+    assert "NOT countable" in note
+    assert "seasonality-4y" in note, "it does not name the plate to use instead"
+
+    # …and the rule is aspect-specific: six years is fine across a 16:9.
+    landscape = plate_catalogue(settings, fmt="long")
+    line = next(ln for ln in landscape.splitlines() if "seasonality-6y" in ln)
+    idx = landscape.splitlines().index(line)
+    assert "NOT countable" not in "\n".join(
+        landscape.splitlines()[idx:idx + 3]), (
+        "the 9:16 warning is being shown on a 16:9 prompt, where six years "
+        "are perfectly countable")
+
+
+def test_the_dusk_rule_is_recorded_where_a_catalogue_note_cannot_reach():
+    """The other half of §6, and the reason it is not a catalogue entry: a
+    `[PLATE]` tag cannot name a room, so the writer never picks the angle
+    and a note beside it would reach nobody. The renderer chooses from
+    `roomRoles`, so the rule belongs with whoever wires the dusk variants
+    into an episode-level selector."""
+    from bot.prompts import DIRECTING_NOTES, RENDERER_DIRECTING_NOTES
+
+    rule = RENDERER_DIRECTING_NOTES["room/*-dusk"]
+    assert "widest" in rule.lower() and "tighter" in rule
+    assert "never mix hours inside one video" in rule.lower(), (
+        "the rule omits the constraint that makes it actionable")
+
+    assert not any(str(k).startswith("room/") for k in DIRECTING_NOTES), (
+        "a room rule is in the writer-facing catalogue, where a script "
+        "cannot act on it")

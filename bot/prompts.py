@@ -159,6 +159,37 @@ def broll_catalog() -> str:
 # looking for the live one found the dead one first (J2). The dead one is
 # gone.
 
+# WHAT THE ARTWORK CANNOT FIX, SAID TO THE WRITER INSTEAD.
+#
+# A 1:1 pass over the delta-14 library found two things that are not defects
+# in a plate and cannot be corrected by redrawing one. Both are about which
+# VARIANT to pick, which is a directing decision, so they belong beside the
+# plate in the catalogue the prompts generate rather than in a setting
+# nobody reads or a comment in the kit nobody renders.
+#
+# Keyed by plate stem, or by (stem, aspect) where the rule only holds in one.
+DIRECTING_NOTES: dict = {
+    # Six years of quarters is twenty-four columns. In 9:16 they read as
+    # four groups rising, not six dated years, and no redraw fixes it — a
+    # wider column means fewer years, which is what -4y already is.
+    ("seasonality-6y", "9x16"):
+        "NOT countable at this aspect — twenty-four columns read as four "
+        "groups rising, not six dated years. Use seasonality-4y in 9:16.",
+}
+
+# The same rules, for the surfaces a `[PLATE]` tag never reaches. A room
+# angle is chosen by the renderer from `roomRoles`, so a catalogue note
+# would reach nobody — these are recorded for whoever wires the dusk
+# variants into an episode-level selector.
+RENDERER_DIRECTING_NOTES: dict = {
+    "room/*-dusk":
+        "Dusk fails on the WIDEST room angles. The relight was scoped out, "
+        "so cast shadows still fall where the daylight lamp puts them: on a "
+        "tight angle it reads, on a wide one it does not. A dusk episode "
+        "wants the tighter angles — and never mix hours inside one video.",
+}
+
+
 def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
     """Every plate the director may name, with what it is for and its slots."""
     from pipeline.plate_tags import _slot_summary
@@ -190,6 +221,14 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
             slots = _slot_summary(plate)
             if slots:
                 lines.append(f"      slots: {slots}")
+            # Keyed on the STEM: the catalogue prints `seasonality-6y-9x16`
+            # and the rule is about the drawing, which is the same one in
+            # both aspects even where the rule is not.
+            stem = short.removesuffix("-16x9").removesuffix("-9x16")
+            note = (DIRECTING_NOTES.get((stem, aspect))
+                    or DIRECTING_NOTES.get(stem))
+            if note:
+                lines.append(f"      ⚠ {note}")
     return "\n".join(lines).strip() or "(no plates in the registry)"
 
 
