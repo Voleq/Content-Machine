@@ -406,3 +406,131 @@ def test_the_data_plates_now_boil_and_that_is_the_packs_decision():
                       "overlays/row-band"], static
     numbers = [k for k in shipped if k.startswith(("tables/", "charts/"))]
     assert numbers and all(shipped[k].get("playback") == "loop" for k in numbers)
+
+
+# --------------------------------------------------------------------------
+# §5 — the batched route, which exists because the ingest is memory-bound.
+# --------------------------------------------------------------------------
+
+
+def test_the_batched_route_partitions_the_library_and_merges_it(monkeypatch,
+                                                                tmp_path):
+    """One process per family, fourteen of them, each returning its memory to
+    the OS before the next starts. Asserted on the merged registry rather
+    than on the fact that `--only` was passed: what matters is that a
+    batched build produces the same library a single pass would.
+
+    The engine is faked — running it needs `node` and about thirty seconds a
+    family, and it is the operator's step.
+    """
+    seen: list[str] = []
+
+    def _fake_node(delivery, out, outfit, only=""):
+        seen.append(only)
+        return {"assets": {f"{only}/plate-{i}": {"canvas": [1, 1]}
+                           for i in range(2)},
+                "outfit": outfit}
+
+    monkeypatch.setattr(ingest, "_node", _fake_node)
+    merged = ingest._node_batched(tmp_path, tmp_path / "out", "shirt")
+
+    assert sorted(seen) == sorted(ingest.EXPECTED_FAMILIES), (
+        "a batched run must cover every family exactly once")
+    assert len(merged["assets"]) == 2 * len(ingest.EXPECTED_FAMILIES)
+    assert {k.split("/")[0] for k in merged["assets"]} == ingest.EXPECTED_FAMILIES
+    assert merged["outfit"] == "shirt", "non-asset registry fields are carried"
+
+
+def test_a_batch_that_draws_nothing_stops_the_run(monkeypatch, tmp_path):
+    """A silent empty family would install a registry with a hole in it, and
+    the hole is only visible when a render reaches for a plate that is not
+    there."""
+    def _fake_node(delivery, out, outfit, only=""):
+        return {"assets": {} if only == "room" else {f"{only}/p": {}}}
+
+    monkeypatch.setattr(ingest, "_node", _fake_node)
+    with pytest.raises(ingest.PlateError) as err:
+        ingest._node_batched(tmp_path, tmp_path / "out", "shirt")
+    assert "room" in str(err.value)
+    assert "--only room" in str(err.value), (
+        "the error does not say how to retry just that family")
+
+
+def test_two_batches_may_not_claim_the_same_plate(monkeypatch, tmp_path):
+    """Merging fourteen registries is only sound because the batches
+    partition the library. If two ever drew the same key, the last one would
+    silently win and the reconcile would still pass."""
+    def _fake_node(delivery, out, outfit, only=""):
+        return {"assets": {"charts/shared": {}, f"{only}/own": {}}}
+
+    monkeypatch.setattr(ingest, "_node", _fake_node)
+    with pytest.raises(ingest.PlateError) as err:
+        ingest._node_batched(tmp_path, tmp_path / "out", "shirt")
+    assert "partition" in str(err.value)
+
+
+def test_building_one_family_never_installs_a_registry(monkeypatch, tmp_path,
+                                                       capsys):
+    """`--only` is for regenerating the family a batched run failed on. A
+    registry holding one family is not a kit, and writing one would leave
+    the render path pointing at a library with thirteen holes in it."""
+    installed: list = []
+    monkeypatch.setattr(ingest, "_node", lambda d, o, outfit, only="": {
+        "assets": {f"{only}/a": {"canvas": [1, 1], "exportScale": 2,
+                                 "playback": "loop", "frameCount": 2,
+                                 "slots": {}, "typeRoles": {}}}})
+    monkeypatch.setattr(ingest, "_shipped_manifests", lambda d: {
+        "charts/a": {"canvas": [1, 1], "exportScale": 2, "playback": "loop",
+                     "frameCount": 2, "slots": {}, "typeRoles": {}},
+        "room/b": {"canvas": [9, 9]}})
+    monkeypatch.setattr(ingest, "_install",
+                        lambda *a, **k: installed.append(a))
+
+    rc = ingest._build_one(tmp_path, tmp_path / "s", "shirt", "charts")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert installed == [], "a one-family build installed a registry"
+    assert "NOT INSTALLED" in out
+    # …and it reconciled against that family only, not against room/b.
+    assert "1 plates match" in out
+
+
+def test_the_two_batch_flags_are_not_combinable():
+    """`--batched` builds all fourteen one at a time; `--only` builds one.
+    Together they are ambiguous, and the ambiguous reading is the one that
+    silently installs a partial kit."""
+    import subprocess
+    import sys as _sys
+
+    got = subprocess.run(
+        [_sys.executable, str(ROOT / "scripts" / "ingest_kit.py"),
+         "kit", "--batched", "--only", "room"],
+        capture_output=True, text=True, cwd=ROOT, timeout=120)
+    assert got.returncode != 0
+    assert "Pick one" in got.stderr
+
+    bad = subprocess.run(
+        [_sys.executable, str(ROOT / "scripts" / "ingest_kit.py"),
+         "kit", "--only", "nosuchfamily"],
+        capture_output=True, text=True, cwd=ROOT, timeout=120)
+    assert bad.returncode != 0
+    assert "unknown family" in bad.stderr
+
+
+def test_the_memory_characteristic_is_written_down_where_it_is_hit():
+    """§5.3: an OOM part way through an ingest should read as a known shape
+    with a documented route out, not as a mystery on a machine the operator
+    then assumes is too small."""
+    ingest_md = (KIT / "INGEST.md").read_text(encoding="utf-8")
+    assert "memory-bound" in ingest_md
+    assert "--batched" in ingest_md and "--only" in ingest_md
+    # The diagnosis matters as much as the workaround: a reader who thinks
+    # it is plate cost goes looking for the big plate.
+    assert "retention" in ingest_md
+    assert "not plate cost" in ingest_md.lower()
+    assert "400 MB" in ingest_md and "gitignored" in ingest_md
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    preflight = readme.split("## Preflight")[1].split("\n## ")[0]
+    assert "memory-bound" in preflight
+    assert "--batched" in preflight

@@ -123,7 +123,7 @@ pipeline/
   tagging.py             the shared tag tokenizer, for both formats
 
   plates.py              THE PLATE REGISTRY — the read side of the design kit.
-                         143 plates keyed family/name, each with its canvas,
+                         270 plates keyed family/name, each with its canvas,
                          exportScale, frames, playback, slot geometry and type
                          roles; the palette's eight colour roles; the host and
                          room ROLES; the sixteen chapter types and what each
@@ -225,7 +225,7 @@ kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
                          fonts/, INGEST.md. The PNGs under assets/plates/ are
                          built from this and are not edited by hand
 assets/
-  plates/                the materialised kit: 143 plates in fourteen families
+  plates/                the materialised kit: 270 plates in fourteen families
                          plus plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
   fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
@@ -1015,7 +1015,7 @@ python scripts/check_preflight.py --live   # also the production-only settings
 
 | # | step | why |
 |---|---|---|
-| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~400MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. |
+| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~400MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. 270 plates, 924 frames. **The build is memory-bound**: if it is OOM-killed part way, use `--batched` (one process per family) — see `kit/INGEST.md`. The cause is retention, not any one plate, so a bigger machine and `--batched` fix the same thing. |
 | 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
 | 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. |
 | 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
