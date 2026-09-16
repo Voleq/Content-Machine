@@ -164,3 +164,167 @@ def test_every_engine_file_is_accounted_for_by_the_driver():
     assert on_disk <= named, (
         f"engine file(s) the driver does not name: {sorted(on_disk - named)}")
     assert "series.js" in named and "render.js" in named
+
+
+# --------------------------------------------------------------------------
+# roles.fragment.json — merged into the renderer's vocabulary, never copied.
+# --------------------------------------------------------------------------
+
+
+def _fragment() -> dict:
+    raw = json.loads((KIT / "roles.fragment.json").read_text(encoding="utf-8"))
+    return {k: v for k, v in raw.items() if not k.startswith("_")}
+
+
+def _roles() -> dict:
+    return json.loads((KIT / "roles.json").read_text(encoding="utf-8"))
+
+
+def _shipped() -> dict:
+    return ingest._shipped_manifests(KIT)
+
+
+RENDERER_OWNED = {"room", "host", "annotations", "overlays", "frames"}
+
+
+def test_the_fragment_is_not_the_renderers_roles_file():
+    """`roles.fragment.json` is deliberately named so a copy cannot overwrite
+    `roles.json`. They are different files with different jobs: one maps new
+    plate keys to where they may appear, the other is the renderer's own
+    role table and is what makes `room/talk` resolve to one of three desk
+    angles by seed."""
+    roles = _roles()
+    for table in ("hostRoles", "hostPoses", "roomRoles", "chapterTypes",
+                  "purposes", "wardrobe"):
+        assert roles.get(table), f"roles.json lost {table}"
+    frag = json.loads((KIT / "roles.fragment.json").read_text(encoding="utf-8"))
+    assert "hostRoles" not in frag and "roomRoles" not in frag, (
+        "roles.fragment.json now looks like roles.json — one of them has "
+        "been copied over the other")
+
+
+def test_every_name_the_fragment_uses_resolves_against_the_real_vocabulary():
+    """An earlier fragment named 32 chapter types that do not exist. Every
+    value here is checked against the sixteen real types, the four real
+    formats and the structural shot ids the chapter files actually use — so
+    a mapping cannot be merged into a slot nothing reads."""
+    from pipeline.plates import CHAPTER_TYPES
+    from pipeline.shots import available_formats
+
+    formats = set(available_formats())
+    shot_ids = set()
+    for chapter in sorted((ROOT / "templates" / "chapters").glob("*.json")):
+        spec = json.loads(chapter.read_text(encoding="utf-8"))
+        shot_ids.update(s["id"] for s in spec["shots"])
+
+    bad: list[str] = []
+    for key, spec in _fragment().items():
+        for c in (spec.get("chapter_types") or []):
+            if c not in CHAPTER_TYPES:
+                bad.append(f"{key}: chapter type {c!r} does not exist")
+        for f in (spec.get("formats") or []):
+            if f not in formats:
+                bad.append(f"{key}: format {f!r} does not exist")
+        for s in (spec.get("shot_ids") or []):
+            if s not in shot_ids:
+                bad.append(f"{key}: shot id {s!r} is in no chapter file")
+    assert not bad, "\n".join(bad[:10])
+
+
+def test_every_plate_the_fragment_maps_was_actually_shipped():
+    """A mapping for a plate that does not exist is a route to nothing."""
+    shipped = _shipped()
+    missing = sorted(k for k in _fragment() if k not in shipped)
+    assert not missing, f"mapped but not in any manifest: {missing}"
+
+
+def test_the_fragments_chapter_mappings_reached_the_curation():
+    """THE MERGE ITSELF. `plates_for_chapter` gates the library by chapter
+    type off `roles.json`, so a plate the curation does not allow cannot be
+    named by a `[PLATE]` tag no matter what the fragment says — and
+    `reachable_plates` reports it as artwork with no route to the screen.
+
+    Asserted by the curation's own prefix rule rather than by looking for a
+    literal, because `"structure/language-shift"` legitimately covers both
+    of its aspects.
+    """
+    roles = _roles()
+    ct = roles["chapterTypes"]
+    universal = ct["_universal"]
+
+    def allowed(key: str, ctype: str) -> bool:
+        prefixes = list(universal) + list((ct.get(ctype) or {}).get("plates") or [])
+        return any(key == p or key.startswith(p) for p in prefixes)
+
+    unreached: list[str] = []
+    for key, spec in _fragment().items():
+        if key.split("/", 1)[0] in RENDERER_OWNED:
+            continue      # a director never names one of these; see below
+        for ctype in (spec.get("chapter_types") or []):
+            if not allowed(key, ctype):
+                unreached.append(f"{key} is not allowed in {ctype}")
+    assert not unreached, (
+        f"{len(unreached)} fragment mapping(s) never reached the curation:\n  "
+        + "\n  ".join(unreached[:12]))
+
+
+def test_the_new_host_poses_and_room_angle_reached_the_role_tables():
+    """The renderer-owned families take the other route: a `[PLATE]` tag
+    cannot name the set or the man standing in it, so `roomRoles` and
+    `hostPoses` are where these become reachable."""
+    roles = _roles()
+    assert "room/over-the-shoulder" in roles["roomRoles"]["read"], (
+        "the over-the-shoulder angle has no role, so no shot can ask for it")
+
+    poses = roles["hostPoses"]
+    assert "host/sitting-at-desk" in poses, (
+        "every LONG is him standing for forty minutes; the seated pose is "
+        "the cheapest way to make a chapter feel like a different scene")
+    assert poses["host/sitting-at-desk"]["talks"] is True
+    assert "host/empty-chair" in poses
+    assert poses["host/empty-chair"]["talks"] is False, (
+        "an empty chair cannot have a talk strip")
+    assert poses["host/empty-chair"]["limit"] == 1, (
+        "the absence stops reading if it happens twice in one video")
+
+    served = {k for v in roles["hostRoles"].values() if isinstance(v, list)
+              for k in v}
+    assert "host/sitting-at-desk" in served, "no shot role serves the seated pose"
+    assert "host/empty-chair" in served
+
+
+def test_the_furniture_and_the_blink_are_not_chapter_plates():
+    """The two entries that carry `any` rather than a list, handled as the
+    real cases they are.
+
+    `overlays/lower-third` is composited over whatever the format is showing
+    for as long as the director leaves it up — it belongs to the FORMAT, not
+    to a beat, which is why its entry has no `beats` field at all.
+    `host/close-up-blink` is not a pose and no template selects it: the
+    renderer lays it over the idle strip, frame for frame.
+
+    Both are renderer-owned, so putting them in a chapter's curation would
+    be the wrong answer — a `[PLATE]` tag must not be able to name either.
+    """
+    frag = _fragment()
+    third = frag["overlays/lower-third-16x9"]
+    assert "beats" not in third, (
+        "the lower third has acquired a beats field — it is persistent "
+        "furniture, not a beat")
+    assert set(third["formats"]) == {"long", "earnings", "macro"}
+
+    blink = frag["host/close-up-blink"]
+    assert blink.get("any") is True and blink.get("any_shot") is True
+    assert blink["overlay_of"] == "host/close-up-idle"
+    assert blink["playback"] == "overlay"
+
+    roles = _roles()
+    ct = roles["chapterTypes"]
+    for name, spec in ct.items():
+        if name.startswith("_"):
+            continue
+        for pre in (spec or {}).get("plates") or []:
+            assert not pre.startswith("overlays/lower-third"), (
+                f"{name} offers the lower third as a chapter plate; the "
+                f"compositor places it, a director never names it")
+            assert "blink" not in pre, f"{name} offers a blink overlay"
