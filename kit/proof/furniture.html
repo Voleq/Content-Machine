@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§1 — the furniture: one decision, two surfaces</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px;max-width:1240px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:30px 0 8px}
+  p{max-width:84ch;color:#8d968f}
+  p.lead{color:#C9C2B4}
+  pre{background:#1B1F24;padding:12px 14px;border-radius:2px;overflow:auto;margin:8px 0;max-width:110ch}
+  code{color:#C7A86B}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  .row{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0 4px}
+  .cell{border:1px solid #262c33;background:#0f1215;flex:1 1 380px;min-width:340px}
+  .cap{color:#8d968f;padding:7px 9px;border-top:1px solid #262c33}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .frame{position:relative;container-type:inline-size;overflow:hidden}
+  .frame svg{display:block;width:100%;height:auto}
+  .lt{position:absolute;left:4%;bottom:7%;width:43%;container-type:inline-size}
+  .lt.p{width:62%;bottom:14%}
+  .lt svg{width:100%;height:auto;display:block}
+  .fill{position:absolute;display:flex;align-items:center;color:#1C222A;pointer-events:none}
+  .cc{position:absolute;left:8%;right:8%;bottom:6%;display:flex;justify-content:center}
+  .cc span{display:inline-block;text-align:center;text-wrap:balance}
+  .now{font-family:"Courier Prime",monospace;font-weight:700;color:#fff;
+       -webkit-text-stroke:0.55cqw #000;paint-order:stroke fill}
+</style>
+</head>
+<body>
+<main>
+  <h1>§1 — the furniture: one decision, two surfaces</h1>
+
+  <p class="lead">Everything on screen in this product is drawn in a hand-made, wobbled-ink style. Two
+  things are not, and they are the two things on screen the most. Deciding them separately produces two
+  answers that do not match, so this page answers them once: <b>the lower third is drawn in the kit's
+  hand; captions get the kit's materials and not its hand.</b> Both below, rendered together, over the
+  grounds they actually have to survive.</p>
+
+  <p><b>The principle that splits them is scale and duration, not taste.</b> A wobbled edge is a mark
+  at 78px and a rendering fault at 22px. The lower third is large, persistent and a brand element, so
+  the hand reads as craft. A caption is small, changes every two seconds, and libass re-renders it per
+  frame with no boil index — so the kit's hand there would either sit dead still (and look like a
+  failed effect) or re-wobble every frame (and crawl). Same kit, two registers, one reason.</p>
+
+  <div id="out">building…</div>
+</main>
+<script>
+(function () {
+  const PL = window.PLATES, H = window.HAND, B = window.BUILD;
+  const out = document.getElementById("out");
+  const ROLE_FONT = { ticker: "'Courier Prime'", tagline: "'Archivo Narrow'" };
+
+  function draw(key, args) {
+    const item = B.LIB.filter((i) => i.key === key)[0];
+    if (!item) throw new Error("not in LIB: " + key);
+    return B.draw(args ? Object.assign({}, item, { args: Object.assign({}, item.args, args) }) : item, null, { boil: 1 });
+  }
+
+  // Slot fills, positioned in container units so they track the plate as it scales.
+  function place(host, m, data) {
+    const roles = m.typeRoles || {};
+    Object.keys(data).forEach(function (k) {
+      const s = m.slots[k];
+      if (!s || s.region) return;
+      const r = roles[s.role] || {};
+      const d = document.createElement("div");
+      d.className = "fill";
+      d.style.left = (s.x / m.canvas[0] * 100) + "%";
+      d.style.top = (s.y / m.canvas[1] * 100) + "%";
+      d.style.width = (s.w / m.canvas[0] * 100) + "%";
+      d.style.height = (s.h / m.canvas[1] * 100) + "%";
+      d.style.justifyContent = s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start";
+      const sp = document.createElement("span");
+      sp.textContent = data[k];
+      sp.style.font = (r.weight || 400) + " " + ((r.size || 28) / m.canvas[0] * 100) + "cqw " + (ROLE_FONT[s.role] || "'Archivo Narrow'");
+      sp.style.letterSpacing = r.tracking || "0";
+      if (r.opacity != null) sp.style.opacity = r.opacity;
+      d.appendChild(sp);
+      host.appendChild(d);
+    });
+  }
+
+  // A filing screenshot is real footage the pipeline drops in, so it is a
+  // PLACEHOLDER here rather than something I drew: striped ground, monospace
+  // label. What matters for this page is its VALUE — a filing page is a bright
+  // near-white rectangle, which is the hardest ground the lower third gets and
+  // the one the PIL version fails on outright.
+  function screenshotStandIn(w, h) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs><pattern id="sg" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(8)">' +
+      '<rect width="16" height="16" fill="#F4F2EC"/><rect width="16" height="7" fill="#E8E6DE"/></pattern></defs>' +
+      '<rect width="' + w + '" height="' + h + '" fill="url(#sg)"/>' +
+      // a few grey bars standing for body text on a filing page
+      [0.18, 0.26, 0.34, 0.42, 0.5, 0.58].map(function (t, i) {
+        return '<rect x="' + (w * 0.1) + '" y="' + (h * t) + '" width="' + (w * (i % 3 === 2 ? 0.52 : 0.76)) + '" height="' + (h * 0.028) + '" fill="#9AA0A6" fill-opacity="0.5"/>';
+      }).join("") +
+      '<rect x="' + (w * 0.1) + '" y="' + (h * 0.09) + '" width="' + (w * 0.4) + '" height="' + (h * 0.042) + '" fill="#6B7076" fill-opacity="0.6"/>' +
+      '<text x="' + (w * 0.5) + '" y="' + (h * 0.8) + '" font-family="monospace" font-size="' + (h * 0.035) + '" fill="#6B7076" text-anchor="middle">[ filing screenshot — real capture drops in here ]</text>' +
+      '</svg>';
+  }
+
+  const TICK = { ticker: "$HTZ", tagline: "noise or signal?" };
+  const TICK2 = { ticker: "$BABA", tagline: "the numbers, not the story" };
+
+  // ---- 1.1 the lower third, over the three grounds -------------------------
+  const lt16 = draw("overlays/lower-third-16x9");
+  const m16 = lt16.manifest(), svg16 = lt16.toSVG();
+  const lt9 = draw("overlays/lower-third-9x16");
+  const m9 = lt9.manifest(), svg9 = lt9.toSVG();
+
+  function overGround(label, note, groundSvg, gw, gh, data, portrait) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const f = document.createElement("div");
+    f.className = "frame";
+    f.innerHTML = groundSvg;
+    const holder = document.createElement("div");
+    holder.className = "lt" + (portrait ? " p" : "");
+    holder.innerHTML = portrait ? svg9 : svg16;
+    place(holder, portrait ? m9 : m16, data);
+    f.appendChild(holder);
+    c.appendChild(f);
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.innerHTML = "<b>" + label + "</b><br>" + note;
+    c.appendChild(cap);
+    return c;
+  }
+
+  let html = "";
+  out.innerHTML = '<h2>1.1 · the lower third, over what it actually has to survive</h2>' +
+    '<p>The plate is <code>overlays/lower-third-{16x9,9x16}</code> — its own size, not a frame, so the ' +
+    'compositor places it. Shown here bottom-left at roughly one panel-height of margin, which is what ' +
+    'it was designed against. Type is real: two slots, two roles, two derived budgets.</p>' +
+    '<div class="row" id="r1"></div>' +
+    '<div class="row" id="r2"></div>' +
+    '<h2>1.2 · the captions</h2><div id="cc"></div>';
+
+  const r1 = document.getElementById("r1"), r2 = document.getElementById("r2");
+  const room = draw("room/desk-front-16x9");
+  r1.appendChild(overGround("over a room — room/desk-front-16x9",
+    "the easy case. Even here the panel earns its keep: the wall is pale and the ink is dark, but the desk edge runs through the lower-left corner.",
+    room.toSVG(), 1920, 1080, TICK));
+  const chart = draw("charts/bars-8q-16x9");
+  r1.appendChild(overGround("over a chart — charts/bars-8q-16x9",
+    "the case that decided it. A chart's own furniture is the same ink at the same weight, so an un-grounded lower third reads as another axis label.",
+    chart.toSVG(), 1920, 1080, TICK2));
+  r2.appendChild(overGround("over a filing screenshot — placeholder",
+    "the hardest ground, and the one the PIL version fails on outright: white type with a black outline on a near-white page. The panel is opaque, so it does not care.",
+    screenshotStandIn(1920, 1080), 1920, 1080, TICK));
+
+  // and the current build, for comparison, on the ground it fails on
+  (function () {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const f = document.createElement("div");
+    f.className = "frame";
+    f.innerHTML = screenshotStandIn(1920, 1080);
+    const d = document.createElement("div");
+    d.style.cssText = "position:absolute;left:5%;bottom:9%;width:60%";
+    d.innerHTML = '<div class="now" style="font-size:4.4cqw;line-height:1.2">$HTZ &middot; noise or signal?</div>';
+    f.appendChild(d);
+    c.appendChild(f);
+    c.innerHTML += '<div class="cap"><b class="fail">TODAY — render_long.py:1450, simple_text()</b><br>' +
+      'PIL, Courier Bold, white with a stroke outline. On a filing page the fill disappears and the outline ' +
+      'is all that is left, which is why this is the ground that settles it. It is also the one persistent ' +
+      'brand element in a forty-minute video.</div>';
+    r2.appendChild(c);
+  })();
+
+  // portrait, over a short's chart
+  const p9 = draw("charts/bars-8q-9x16");
+  r2.appendChild(overGround("9:16 — over charts/bars-8q-9x16",
+    "re-authored, not scaled: proportionally wider and a type step up, because it is read on a phone at arm's length. Ticker budget 8 characters here against 6 in landscape.",
+    p9.toSVG(), 1080, 1920, TICK2, true));
+
+  // ---- 1.2 the captions ----------------------------------------------------
+  const ccHost = document.getElementById("cc");
+  const LINE = "they wrote down four hundred million of it in one quarter";
+  function capFrame(label, note, styleCss, cls) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const f = document.createElement("div");
+    f.className = "frame";
+    f.innerHTML = draw("room/desk-front-16x9").toSVG();
+    const holder = document.createElement("div");
+    holder.className = "lt";
+    holder.innerHTML = svg16;
+    place(holder, m16, TICK);
+    f.appendChild(holder);
+    const cc = document.createElement("div");
+    cc.className = "cc";
+    cc.innerHTML = '<span class="' + (cls || "") + '" style="' + styleCss + '">' + LINE + '</span>';
+    f.appendChild(cc);
+    c.appendChild(f);
+    c.innerHTML += '<div class="cap"><b>' + label + '</b><br>' + note + '</div>';
+    return c;
+  }
+
+  ccHost.innerHTML =
+    '<p>Captions are burned in by libass from a <code>force_style</code> string, and they are on screen ' +
+    'more than any plate. Right now they are styled in an entirely separate vocabulary, which means the ' +
+    'register is an <b>accident</b> rather than a decision. All three rendered below, with the lower ' +
+    'third in frame so the furniture reads as a set.</p>' +
+    '<p>ONE CELL PER ROW HERE, DELIBERATELY: this row is the only one on the page whose job is to judge ' +
+    'legibility at reading size, and three cells to a row put the specimens at 8px — which answers the ' +
+    'question with the layout instead of with the type. Caption sizes are a share of the FRAME, as they ' +
+    'are in the real render, so a full-width frame shows them at the size they ship at.</p>' +
+    '<div id="r3"></div>';
+  const r3 = document.getElementById("r3");
+  const capRow = function (cell) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.maxWidth = "820px";
+    cell.style.flex = "1 1 100%";
+    row.appendChild(cell);
+    r3.appendChild(row);
+  };
+  capRow(capFrame("TODAY — white, black outline, Arial-ish",
+    "libass default register. It belongs to no one: not the kit, not a deliberate plain style. The outline is doing the work a ground should do, and it does it by thickening every letter.",
+    "font:700 2.0cqw/1.35 Arial,Helvetica,sans-serif;color:#fff;-webkit-text-stroke:0.34cqw #000;paint-order:stroke fill"));
+  capRow(capFrame("OPTION A — captions join the kit",
+    "as close as libass gets: the kit's mono, kit ink, a kit-ground box. No wobble, because libass has no boil index. It reads as the kit trying to be hand-made and not managing it — the uncanny middle.",
+    "font:700 1.95cqw/1.4 'Courier Prime',monospace;color:#1C222A;background:#E6DDC9;padding:0.5cqw 1.1cqw;box-shadow:0 0 0 0.16cqw #1C222A"));
+  capRow(capFrame("OPTION B — deliberately a different register ★",
+    "the kit's MATERIALS, not its hand: kit ink on a kit ground, the kit's own mono, no outline, no wobble, no drawn edge. Plain, legible, not competing with the artwork — and visibly a decision rather than a leftover.",
+    "font:400 1.95cqw/1.45 'Courier Prime',monospace;color:#1C222A;background:rgba(230,221,201,0.93);padding:0.5cqw 1.1cqw"));
+
+  ccHost.insertAdjacentHTML("beforeend",
+    '<h2>the decision, and it is one decision</h2>' +
+    '<pre>' +
+    "THE LOWER THIRD IS DRAWN IN THE KIT'S HAND.\n" +
+    "  Large, persistent, a brand element, and it carries its own ground. The hand\n" +
+    "  reads as craft at 78px. It does NOT boil \u2014 see the plate's noBoil note: on\n" +
+    "  screen for forty minutes, a re-wobble three times a second is a crawl.\n\n" +
+    "CAPTIONS GET THE KIT'S MATERIALS AND NOT ITS HAND. \u2014 OPTION B\n" +
+    "  Kit ink (#1C222A) on kit ground (#E6DDC9), the kit's own Courier Prime, no\n" +
+    "  outline, no drawn edge, no wobble.\n\n" +
+    "WHY THAT IS NOT A DODGE, and the argument is scale and duration:\n" +
+    "  \u00b7 a wobbled edge is a MARK at 78px and a RENDERING FAULT at 22px. Caption\n" +
+    "    type is small, and the hand at that size reads as bad rasterising.\n" +
+    "  \u00b7 libass re-renders every frame with NO boil index. The kit's hand there is\n" +
+    "    either dead still \u2014 which looks like an effect that failed \u2014 or re-wobbled\n" +
+    "    per frame at 25fps, which is a crawl under running text. Neither is the\n" +
+    "    kit; both are worse than plain.\n" +
+    "  \u00b7 captions are READ, continuously, by someone who is listening. The artwork\n" +
+    "    is looked at. Type that competes with the thing it is describing is the\n" +
+    "    one job a caption cannot afford to do.\n\n" +
+    "WHAT IS LOST BY NOT TAKING OPTION A:\n" +
+    "  the wobble, the paper grain and the bloom rim \u2014 every part of the kit that is\n" +
+    "  the hand. Stated plainly so nobody re-opens this expecting to find it cheap.\n" +
+    "  What is KEPT is the part that makes the furniture read as a set: the face,\n" +
+    "  the ink and the ground are the plates' own.\n\n" +
+    "WHAT CHANGES FROM TODAY, which is the real answer to 'it is neither':\n" +
+    "  the typeface, the ink colour and the ground all become the kit's, and the\n" +
+    "  outline goes. That is the whole diff \u2014 cheap, and it converts an accident\n" +
+    "  into a decision.\n" +
+    '</pre>' +
+    '<p>The <code>force_style</code> string for Option B, against the current one. ' +
+    '<b>Unverified:</b> I cannot run libass here — the colours, the face and the box are straightforward ' +
+    'ASS fields, but the padding <code>MarginV</code> and the box\u2019s exact inset want one render to confirm.</p>' +
+    '<pre>' +
+    "TODAY\n" +
+    "  FontName=Arial,FontSize=22,PrimaryColour=&amp;H00FFFFFF,OutlineColour=&amp;H00000000,\n" +
+    "  BorderStyle=1,Outline=2,Shadow=0,Bold=1\n\n" +
+    "OPTION B \u2014 the kit's materials, plainly set\n" +
+    "  FontName=Courier Prime,FontSize=22,Bold=0,\n" +
+    "  PrimaryColour=&amp;H002A221C,        # kit structure ink #1C222A, ASS is BGR\n" +
+    "  BackColour=&amp;H12C9DDE6,           # kit ground #E6DDC9 at ~93%, BGR + alpha\n" +
+    "  BorderStyle=4,                   # opaque box, not an outline\n" +
+    "  Outline=0,Shadow=0,\n" +
+    "  Alignment=2,MarginV=64\n\n" +
+    "  BorderStyle=4 is the load-bearing field: it replaces the outline with a box,\n" +
+    "  which is the same argument the title card and the lower third both make \u2014\n" +
+    "  type carries its own ground rather than borrowing one. That is what makes\n" +
+    "  this the SAME decision as \u00a71.1 rather than a separate one.\n" +
+    '</pre>');
+})();
+</script>
+</body>
+</html>

@@ -1,112 +1,59 @@
 {
  "family": "frames",
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
- "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
- "assets": {
+ "pack": "delta-14",
+ "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "exportScale": 2,
+ "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
+ "assetCount": 8,
+ "plates": {
   "frames/media-frame-t1-16x9": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/media-frame-t1-16x9",
+   "dir": "frames",
+   "aspect": "16x9",
    "canvas": [
     1920,
     1080
    ],
-   "exportScale": 2,
    "delivered": [
     3840,
     2160
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t1-16x9_f01.svg",
-     "png": "media-frame-t1-16x9_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t1-16x9_f02.svg",
-     "png": "media-frame-t1-16x9_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "media-frame-t1-16x9.png",
-    "svg": "media-frame-t1-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "media-frame-t1-16x9.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t1-16x9_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "f88ea0b4"
+     },
+     {
+      "file": "media-frame-t1-16x9_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "dcacc5de"
+     },
+     {
+      "file": "media-frame-t1-16x9_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "0ce58d48"
+     }
+    ]
    },
-   "slots": {
-    "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
-     "x": 307,
-     "y": 130,
-     "w": 1306,
-     "h": 648
-    },
-    "caption": {
-     "align": "left",
-     "role": "label",
-     "x": 307,
-     "y": 848,
-     "w": 1306,
-     "h": 70,
-     "maxChars": 95
-    },
-    "source": {
-     "align": "left",
-     "role": "caption",
-     "x": 307,
-     "y": 932,
-     "w": 1306,
-     "h": 56,
-     "maxChars": 83
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "tape-1",
-     "x": 257,
-     "y": 58,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-2",
-     "x": 1503,
-     "y": 64,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-3",
-     "x": 263,
-     "y": 728,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-4",
-     "x": 1497,
-     "y": 734,
-     "w": 170,
-     "h": 100
-    }
-   ],
-   "aspect": "16x9",
-   "family": "structure",
-   "type": "media-frame-t1",
+   "slotCount": 3,
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
@@ -115,7 +62,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 83,
-     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
@@ -123,110 +70,141 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 95,
-     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), was 30"
     }
    },
-   "treatment": 1
+   "slots": {
+    "media": {
+     "x": 307,
+     "y": 130,
+     "w": 1306,
+     "h": 648,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
+    },
+    "caption": {
+     "x": 307,
+     "y": 848,
+     "w": 1306,
+     "h": 70,
+     "role": "label",
+     "align": "left",
+     "maxChars": 95
+    },
+    "source": {
+     "x": 307,
+     "y": 932,
+     "w": 1306,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 83
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     3840,
+     2160
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t1-16x9.svg",
+      "png": "media-frame-t1-16x9.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t1-16x9.png",
+     "svg": "media-frame-t1-16x9.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "tape-1",
+      "x": 257,
+      "y": 58,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-2",
+      "x": 1503,
+      "y": 64,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-3",
+      "x": 263,
+      "y": 728,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-4",
+      "x": 1497,
+      "y": 734,
+      "w": 170,
+      "h": 100
+     }
+    ],
+    "aspect": "16x9",
+    "family": "structure",
+    "type": "media-frame-t1",
+    "treatment": 1
+   }
   },
   "frames/media-frame-t1-9x16": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/media-frame-t1-9x16",
+   "dir": "frames",
+   "aspect": "9x16",
    "canvas": [
     1080,
     1920
    ],
-   "exportScale": 2,
    "delivered": [
     2160,
     3840
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t1-9x16_f01.svg",
-     "png": "media-frame-t1-9x16_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t1-9x16_f02.svg",
-     "png": "media-frame-t1-9x16_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "media-frame-t1-9x16.png",
-    "svg": "media-frame-t1-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "media-frame-t1-9x16.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t1-9x16_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "92211f08"
+     },
+     {
+      "file": "media-frame-t1-9x16_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "b3bc2728"
+     },
+     {
+      "file": "media-frame-t1-9x16_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "3bfeb6d8"
+     }
+    ]
    },
-   "slots": {
-    "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
-     "x": 97,
-     "y": 499,
-     "w": 886,
-     "h": 845
-    },
-    "caption": {
-     "align": "left",
-     "role": "label",
-     "x": 97,
-     "y": 1414,
-     "w": 886,
-     "h": 90,
-     "maxChars": 64
-    },
-    "source": {
-     "align": "left",
-     "role": "caption",
-     "x": 97,
-     "y": 1518,
-     "w": 886,
-     "h": 56,
-     "maxChars": 56
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "tape-1",
-     "x": 47,
-     "y": 427,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-2",
-     "x": 873,
-     "y": 433,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-3",
-     "x": 53,
-     "y": 1294,
-     "w": 170,
-     "h": 100
-    },
-    {
-     "label": "tape-4",
-     "x": 867,
-     "y": 1300,
-     "w": 170,
-     "h": 100
-    }
-   ],
-   "aspect": "9x16",
-   "family": "structure",
-   "type": "media-frame-t1",
+   "slotCount": 3,
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
@@ -235,7 +213,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
@@ -243,89 +221,271 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
     }
    },
-   "treatment": 1
+   "slots": {
+    "media": {
+     "x": 97,
+     "y": 499,
+     "w": 886,
+     "h": 845,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
+    },
+    "caption": {
+     "x": 97,
+     "y": 1414,
+     "w": 886,
+     "h": 90,
+     "role": "label",
+     "align": "left",
+     "maxChars": 64
+    },
+    "source": {
+     "x": 97,
+     "y": 1518,
+     "w": 886,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 56
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     2160,
+     3840
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t1-9x16.svg",
+      "png": "media-frame-t1-9x16.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t1-9x16.png",
+     "svg": "media-frame-t1-9x16.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "tape-1",
+      "x": 47,
+      "y": 427,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-2",
+      "x": 873,
+      "y": 433,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-3",
+      "x": 53,
+      "y": 1294,
+      "w": 170,
+      "h": 100
+     },
+     {
+      "label": "tape-4",
+      "x": 867,
+      "y": 1300,
+      "w": 170,
+      "h": 100
+     }
+    ],
+    "aspect": "9x16",
+    "family": "structure",
+    "type": "media-frame-t1",
+    "treatment": 1
+   }
   },
   "frames/media-frame-t2-16x9": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/media-frame-t2-16x9",
+   "dir": "frames",
+   "aspect": "16x9",
    "canvas": [
     1920,
     1080
    ],
-   "exportScale": 2,
    "delivered": [
     3840,
     2160
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t2-16x9_f01.svg",
-     "png": "media-frame-t2-16x9_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t2-16x9_f02.svg",
-     "png": "media-frame-t2-16x9_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "media-frame-t2-16x9.png",
-    "svg": "media-frame-t2-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "media-frame-t2-16x9.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t2-16x9_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "7b9ae4a0"
+     },
+     {
+      "file": "media-frame-t2-16x9_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "e8e88dfe"
+     },
+     {
+      "file": "media-frame-t2-16x9_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "0209730a"
+     }
+    ]
+   },
+   "slotCount": 3,
+   "typeRoles": {
+    "caption": {
+     "font": "Courier Prime",
+     "size": 26,
+     "weight": 400,
+     "colour": "structure",
+     "opacity": 0.72,
+     "maxChars": 83,
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
+    },
+    "label": {
+     "font": "Archivo Narrow",
+     "size": 34,
+     "weight": 500,
+     "colour": "structure",
+     "maxChars": 95,
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), was 30"
+    }
    },
    "slots": {
     "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648
+     "h": 648,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
     },
     "caption": {
-     "align": "left",
-     "role": "label",
      "x": 307,
      "y": 928,
      "w": 1306,
      "h": 70,
+     "role": "label",
+     "align": "left",
      "maxChars": 95
     },
     "source": {
-     "align": "left",
-     "role": "caption",
      "x": 307,
      "y": 1012,
      "w": 1306,
      "h": 56,
+     "role": "caption",
+     "align": "left",
      "maxChars": 83
     }
    },
-   "decorBoxes": [
-    {
-     "label": "stand",
-     "x": 830,
-     "y": 816,
-     "w": 260,
-     "h": 92
-    }
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     3840,
+     2160
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t2-16x9.svg",
+      "png": "media-frame-t2-16x9.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t2-16x9.png",
+     "svg": "media-frame-t2-16x9.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "stand",
+      "x": 830,
+      "y": 816,
+      "w": 260,
+      "h": 92
+     }
+    ],
+    "aspect": "16x9",
+    "family": "structure",
+    "type": "media-frame-t2",
+    "treatment": 2
+   }
+  },
+  "frames/media-frame-t2-9x16": {
+   "key": "frames/media-frame-t2-9x16",
+   "dir": "frames",
+   "aspect": "9x16",
+   "canvas": [
+    1080,
+    1920
    ],
-   "aspect": "16x9",
-   "family": "structure",
-   "type": "media-frame-t2",
+   "delivered": [
+    2160,
+    3840
+   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "files": {
+    "base": "media-frame-t2-9x16.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t2-9x16_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "744f66a8"
+     },
+     {
+      "file": "media-frame-t2-9x16_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "16765554"
+     },
+     {
+      "file": "media-frame-t2-9x16_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "37d9788c"
+     }
+    ]
+   },
+   "slotCount": 3,
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
@@ -333,197 +493,129 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.72,
-     "maxChars": 83,
-     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
+     "maxChars": 56,
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
      "size": 34,
      "weight": 500,
      "colour": "structure",
-     "maxChars": 95,
-     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
+     "maxChars": 64,
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
     }
-   },
-   "treatment": 2
-  },
-  "frames/media-frame-t2-9x16": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
-   "canvas": [
-    1080,
-    1920
-   ],
-   "exportScale": 2,
-   "delivered": [
-    2160,
-    3840
-   ],
-   "frameCount": 2,
-   "fps": 2,
-   "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t2-9x16_f01.svg",
-     "png": "media-frame-t2-9x16_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t2-9x16_f02.svg",
-     "png": "media-frame-t2-9x16_f02.png",
-     "boil": 2
-    }
-   ],
-   "files": {
-    "png": "media-frame-t2-9x16.png",
-    "svg": "media-frame-t2-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
    },
    "slots": {
     "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
      "x": 97,
      "y": 499,
      "w": 886,
-     "h": 845
+     "h": 845,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
     },
     "caption": {
-     "align": "left",
-     "role": "label",
      "x": 97,
      "y": 1494,
      "w": 886,
      "h": 90,
+     "role": "label",
+     "align": "left",
      "maxChars": 64
     },
     "source": {
-     "align": "left",
-     "role": "caption",
      "x": 97,
      "y": 1598,
      "w": 886,
      "h": 56,
+     "role": "caption",
+     "align": "left",
      "maxChars": 56
     }
    },
-   "decorBoxes": [
-    {
-     "label": "stand",
-     "x": 410,
-     "y": 1382,
-     "w": 260,
-     "h": 92
-    }
-   ],
-   "aspect": "9x16",
-   "family": "structure",
-   "type": "media-frame-t2",
-   "typeRoles": {
-    "caption": {
-     "font": "Courier Prime",
-     "size": 26,
-     "weight": 400,
-     "colour": "structure",
-     "opacity": 0.72,
-     "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     2160,
+     3840
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t2-9x16.svg",
+      "png": "media-frame-t2-9x16.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t2-9x16.png",
+     "svg": "media-frame-t2-9x16.svg"
     },
-    "label": {
-     "font": "Archivo Narrow",
-     "size": 34,
-     "weight": 500,
-     "colour": "structure",
-     "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
-    }
-   },
-   "treatment": 2
+    "decorBoxes": [
+     {
+      "label": "stand",
+      "x": 410,
+      "y": 1382,
+      "w": 260,
+      "h": 92
+     }
+    ],
+    "aspect": "9x16",
+    "family": "structure",
+    "type": "media-frame-t2",
+    "treatment": 2
+   }
   },
   "frames/media-frame-t3-16x9": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/media-frame-t3-16x9",
+   "dir": "frames",
+   "aspect": "16x9",
    "canvas": [
     1920,
     1080
    ],
-   "exportScale": 2,
    "delivered": [
     3840,
     2160
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t3-16x9_f01.svg",
-     "png": "media-frame-t3-16x9_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t3-16x9_f02.svg",
-     "png": "media-frame-t3-16x9_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "media-frame-t3-16x9.png",
-    "svg": "media-frame-t3-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "media-frame-t3-16x9.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t3-16x9_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "802cdffa"
+     },
+     {
+      "file": "media-frame-t3-16x9_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "e3fb6f28"
+     },
+     {
+      "file": "media-frame-t3-16x9_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "f2600d76"
+     }
+    ]
    },
-   "slots": {
-    "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
-     "x": 307,
-     "y": 130,
-     "w": 1306,
-     "h": 648
-    },
-    "caption": {
-     "align": "left",
-     "role": "label",
-     "x": 307,
-     "y": 848,
-     "w": 1306,
-     "h": 70,
-     "maxChars": 95
-    },
-    "source": {
-     "align": "left",
-     "role": "caption",
-     "x": 307,
-     "y": 932,
-     "w": 1306,
-     "h": 56,
-     "maxChars": 83
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "pin",
-     "x": 926,
-     "y": 66,
-     "w": 68,
-     "h": 68
-    }
-   ],
-   "aspect": "16x9",
-   "family": "structure",
-   "type": "media-frame-t3",
+   "slotCount": 3,
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
@@ -532,7 +624,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 83,
-     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 83 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
@@ -540,89 +632,120 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 95,
-     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), authored was 30"
+     "budget": "derived from the slot boxes that set this role; 95 is the floor (narrowest of 1), was 30"
     }
    },
-   "treatment": 3
+   "slots": {
+    "media": {
+     "x": 307,
+     "y": 130,
+     "w": 1306,
+     "h": 648,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
+    },
+    "caption": {
+     "x": 307,
+     "y": 848,
+     "w": 1306,
+     "h": 70,
+     "role": "label",
+     "align": "left",
+     "maxChars": 95
+    },
+    "source": {
+     "x": 307,
+     "y": 932,
+     "w": 1306,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 83
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     3840,
+     2160
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t3-16x9.svg",
+      "png": "media-frame-t3-16x9.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t3-16x9.png",
+     "svg": "media-frame-t3-16x9.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "pin",
+      "x": 926,
+      "y": 66,
+      "w": 68,
+      "h": 68
+     }
+    ],
+    "aspect": "16x9",
+    "family": "structure",
+    "type": "media-frame-t3",
+    "treatment": 3
+   }
   },
   "frames/media-frame-t3-9x16": {
-   "author": "mediaFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/media-frame-t3-9x16",
+   "dir": "frames",
+   "aspect": "9x16",
    "canvas": [
     1080,
     1920
    ],
-   "exportScale": 2,
    "delivered": [
     2160,
     3840
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "media-frame-t3-9x16_f01.svg",
-     "png": "media-frame-t3-9x16_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "media-frame-t3-9x16_f02.svg",
-     "png": "media-frame-t3-9x16_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "media-frame-t3-9x16.png",
-    "svg": "media-frame-t3-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "media-frame-t3-9x16.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "media-frame-t3-9x16_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "13558830"
+     },
+     {
+      "file": "media-frame-t3-9x16_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "3279a8a8"
+     },
+     {
+      "file": "media-frame-t3-9x16_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "67fec9b0"
+     }
+    ]
    },
-   "slots": {
-    "media": {
-     "role": "media",
-     "region": true,
-     "fit": "cover",
-     "note": "stock footage or a photograph plays inside here",
-     "x": 97,
-     "y": 499,
-     "w": 886,
-     "h": 845
-    },
-    "caption": {
-     "align": "left",
-     "role": "label",
-     "x": 97,
-     "y": 1414,
-     "w": 886,
-     "h": 90,
-     "maxChars": 64
-    },
-    "source": {
-     "align": "left",
-     "role": "caption",
-     "x": 97,
-     "y": 1518,
-     "w": 886,
-     "h": 56,
-     "maxChars": 56
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "pin",
-     "x": 506,
-     "y": 435,
-     "w": 68,
-     "h": 68
-    }
-   ],
-   "aspect": "9x16",
-   "family": "structure",
-   "type": "media-frame-t3",
+   "slotCount": 3,
    "typeRoles": {
     "caption": {
      "font": "Courier Prime",
@@ -631,7 +754,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 56,
-     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 56 is the floor (narrowest of 1), was 60"
     },
     "label": {
      "font": "Archivo Narrow",
@@ -639,108 +762,120 @@
      "weight": 500,
      "colour": "structure",
      "maxChars": 64,
-     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), authored was 30"
+     "budget": "derived from the slot boxes that set this role; 64 is the floor (narrowest of 1), was 30"
     }
    },
-   "treatment": 3
+   "slots": {
+    "media": {
+     "x": 97,
+     "y": 499,
+     "w": 886,
+     "h": 845,
+     "role": "media",
+     "region": true,
+     "note": "stock footage or a photograph plays inside here"
+    },
+    "caption": {
+     "x": 97,
+     "y": 1414,
+     "w": 886,
+     "h": 90,
+     "role": "label",
+     "align": "left",
+     "maxChars": 64
+    },
+    "source": {
+     "x": 97,
+     "y": 1518,
+     "w": 886,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 56
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     2160,
+     3840
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "media-frame-t3-9x16.svg",
+      "png": "media-frame-t3-9x16.png"
+     }
+    ],
+    "files": {
+     "png": "media-frame-t3-9x16.png",
+     "svg": "media-frame-t3-9x16.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "pin",
+      "x": 506,
+      "y": 435,
+      "w": 68,
+      "h": 68
+     }
+    ],
+    "aspect": "9x16",
+    "family": "structure",
+    "type": "media-frame-t3",
+    "treatment": 3
+   }
   },
   "frames/capture-frame-16x9": {
-   "author": "captureFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/capture-frame-16x9",
+   "dir": "frames",
+   "aspect": "16x9",
    "canvas": [
     1920,
     1080
    ],
-   "exportScale": 2,
    "delivered": [
     3840,
     2160
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "capture-frame-16x9_f01.svg",
-     "png": "capture-frame-16x9_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "capture-frame-16x9_f02.svg",
-     "png": "capture-frame-16x9_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "capture-frame-16x9.png",
-    "svg": "capture-frame-16x9.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "capture-frame-16x9.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "capture-frame-16x9_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "73422458"
+     },
+     {
+      "file": "capture-frame-16x9_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "351a4f5c"
+     },
+     {
+      "file": "capture-frame-16x9_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "24f0567c"
+     }
+    ]
    },
-   "slots": {
-    "source": {
-     "align": "left",
-     "role": "source",
-     "x": 435,
-     "y": 206,
-     "w": 1050,
-     "h": 52,
-     "maxChars": 67
-    },
-    "headline": {
-     "align": "left",
-     "role": "headline",
-     "x": 435,
-     "y": 280,
-     "w": 1050,
-     "h": 140,
-     "maxCharsPerLine": 48,
-     "maxLines": 2
-    },
-    "body": {
-     "align": "left",
-     "role": "body",
-     "x": 435,
-     "y": 470,
-     "w": 1050,
-     "h": 190,
-     "maxCharsPerLine": 87,
-     "maxLines": 3
-    },
-    "mark": {
-     "role": "highlight-band",
-     "region": true,
-     "overlay": "overlays/row-band",
-     "x": 421,
-     "y": 462,
-     "w": 1078,
-     "h": 70
-    },
-    "caption": {
-     "align": "left",
-     "role": "caption",
-     "x": 365,
-     "y": 990,
-     "w": 1190,
-     "h": 56,
-     "maxChars": 76
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "staple",
-     "x": 383,
-     "y": 148,
-     "w": 68,
-     "h": 44
-    }
-   ],
-   "aspect": "16x9",
-   "family": "structure",
-   "type": "capture-frame",
+   "slotCount": 5,
    "typeRoles": {
     "source": {
      "font": "Courier Prime",
@@ -749,7 +884,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 67,
-     "budget": "derived from the slot boxes that set this role; 67 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 67 is the floor (narrowest of 1), was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -758,7 +893,7 @@
      "colour": "structure",
      "maxLines": 2,
      "maxCharsPerLine": 48,
-     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), authored was 40"
+     "budget": "derived from the slot boxes that set this role; 48 is the floor (narrowest of 1), was 40"
     },
     "body": {
      "font": "Archivo Narrow",
@@ -767,7 +902,7 @@
      "colour": "structure",
      "maxLines": 3,
      "maxCharsPerLine": 87,
-     "budget": "derived from the slot boxes that set this role; 87 is the floor (narrowest of 1), authored was 62"
+     "budget": "derived from the slot boxes that set this role; 87 is the floor (narrowest of 1), was 62"
     },
     "caption": {
      "font": "Courier Prime",
@@ -776,107 +911,138 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 76,
-     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 76 is the floor (narrowest of 1), was 60"
     }
+   },
+   "slots": {
+    "source": {
+     "x": 435,
+     "y": 206,
+     "w": 1050,
+     "h": 52,
+     "role": "source",
+     "align": "left",
+     "maxChars": 67
+    },
+    "headline": {
+     "x": 435,
+     "y": 280,
+     "w": 1050,
+     "h": 140,
+     "role": "headline",
+     "align": "left",
+     "maxCharsPerLine": 48,
+     "maxLines": 2
+    },
+    "body": {
+     "x": 435,
+     "y": 470,
+     "w": 1050,
+     "h": 190,
+     "role": "body",
+     "align": "left",
+     "maxCharsPerLine": 87,
+     "maxLines": 3
+    },
+    "mark": {
+     "x": 421,
+     "y": 462,
+     "w": 1078,
+     "h": 70,
+     "role": "highlight-band",
+     "region": true
+    },
+    "caption": {
+     "x": 365,
+     "y": 990,
+     "w": 1190,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 76
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     3840,
+     2160
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "capture-frame-16x9.svg",
+      "png": "capture-frame-16x9.png"
+     }
+    ],
+    "files": {
+     "png": "capture-frame-16x9.png",
+     "svg": "capture-frame-16x9.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "staple",
+      "x": 383,
+      "y": 148,
+      "w": 68,
+      "h": 44
+     }
+    ],
+    "aspect": "16x9",
+    "family": "structure",
+    "type": "capture-frame"
    }
   },
   "frames/capture-frame-9x16": {
-   "author": "captureFrame",
-   "seed": 1,
-   "surface": "night-card",
+   "key": "frames/capture-frame-9x16",
+   "dir": "frames",
+   "aspect": "9x16",
    "canvas": [
     1080,
     1920
    ],
-   "exportScale": 2,
    "delivered": [
     2160,
     3840
    ],
-   "frameCount": 2,
-   "fps": 2,
+   "exportScale": 2,
    "playback": "loop",
-   "frames": [
-    {
-     "tag": "_f01",
-     "svg": "capture-frame-9x16_f01.svg",
-     "png": "capture-frame-9x16_f01.png",
-     "boil": 1
-    },
-    {
-     "tag": "_f02",
-     "svg": "capture-frame-9x16_f02.svg",
-     "png": "capture-frame-9x16_f02.png",
-     "boil": 2
-    }
-   ],
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "capture-frame-9x16.png",
-    "svg": "capture-frame-9x16.svg",
-    "baseIsFrame": "_f01",
-    "note": "The base file is the SAME RENDER as _f01, byte for byte — not a third draw. A player that shows the base and then enters the loop must not see the line jump on the first frame."
+    "base": "capture-frame-9x16.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "capture-frame-9x16_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "1f531d20"
+     },
+     {
+      "file": "capture-frame-9x16_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "f9d92460"
+     },
+     {
+      "file": "capture-frame-9x16_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "31f304d0"
+     }
+    ]
    },
-   "slots": {
-    "source": {
-     "align": "left",
-     "role": "source",
-     "x": 122,
-     "y": 448,
-     "w": 837,
-     "h": 52,
-     "maxChars": 53
-    },
-    "headline": {
-     "align": "left",
-     "role": "headline",
-     "x": 122,
-     "y": 516,
-     "w": 837,
-     "h": 180,
-     "maxCharsPerLine": 43,
-     "maxLines": 2
-    },
-    "body": {
-     "align": "left",
-     "role": "body",
-     "x": 122,
-     "y": 750,
-     "w": 837,
-     "h": 260,
-     "maxCharsPerLine": 75,
-     "maxLines": 3
-    },
-    "mark": {
-     "role": "highlight-band",
-     "region": true,
-     "overlay": "overlays/row-band",
-     "x": 108,
-     "y": 742,
-     "w": 865,
-     "h": 84
-    },
-    "caption": {
-     "align": "left",
-     "role": "caption",
-     "x": 76,
-     "y": 1634,
-     "w": 929,
-     "h": 56,
-     "maxChars": 59
-    }
-   },
-   "decorBoxes": [
-    {
-     "label": "staple",
-     "x": 94,
-     "y": 402,
-     "w": 68,
-     "h": 44
-    }
-   ],
-   "aspect": "9x16",
-   "family": "structure",
-   "type": "capture-frame",
+   "slotCount": 5,
    "typeRoles": {
     "source": {
      "font": "Courier Prime",
@@ -885,7 +1051,7 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 53,
-     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 53 is the floor (narrowest of 1), was 60"
     },
     "headline": {
      "font": "Archivo Narrow",
@@ -894,7 +1060,7 @@
      "colour": "structure",
      "maxLines": 2,
      "maxCharsPerLine": 43,
-     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), authored was 26"
+     "budget": "derived from the slot boxes that set this role; 43 is the floor (narrowest of 1), was 26"
     },
     "body": {
      "font": "Archivo Narrow",
@@ -903,7 +1069,7 @@
      "colour": "structure",
      "maxLines": 3,
      "maxCharsPerLine": 75,
-     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), authored was 38"
+     "budget": "derived from the slot boxes that set this role; 75 is the floor (narrowest of 1), was 38"
     },
     "caption": {
      "font": "Courier Prime",
@@ -912,15 +1078,90 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 59,
-     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 59 is the floor (narrowest of 1), was 60"
     }
+   },
+   "slots": {
+    "source": {
+     "x": 122,
+     "y": 448,
+     "w": 837,
+     "h": 52,
+     "role": "source",
+     "align": "left",
+     "maxChars": 53
+    },
+    "headline": {
+     "x": 122,
+     "y": 516,
+     "w": 837,
+     "h": 180,
+     "role": "headline",
+     "align": "left",
+     "maxCharsPerLine": 43,
+     "maxLines": 2
+    },
+    "body": {
+     "x": 122,
+     "y": 750,
+     "w": 837,
+     "h": 260,
+     "role": "body",
+     "align": "left",
+     "maxCharsPerLine": 75,
+     "maxLines": 3
+    },
+    "mark": {
+     "x": 108,
+     "y": 742,
+     "w": 865,
+     "h": 84,
+     "role": "highlight-band",
+     "region": true
+    },
+    "caption": {
+     "x": 76,
+     "y": 1634,
+     "w": 929,
+     "h": 56,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 59
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     2160,
+     3840
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "capture-frame-9x16.svg",
+      "png": "capture-frame-9x16.png"
+     }
+    ],
+    "files": {
+     "png": "capture-frame-9x16.png",
+     "svg": "capture-frame-9x16.svg"
+    },
+    "decorBoxes": [
+     {
+      "label": "staple",
+      "x": 94,
+      "y": 402,
+      "w": 68,
+      "h": 44
+     }
+    ],
+    "aspect": "9x16",
+    "family": "structure",
+    "type": "capture-frame"
    }
   }
- },
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "exportScale": 2,
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ }
 }

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§2 — the confession: two treatments</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px;max-width:1280px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:30px 0 8px}
+  p{max-width:84ch;color:#8d968f}
+  p.lead{color:#C9C2B4}
+  pre{background:#1B1F24;padding:12px 14px;border-radius:2px;overflow:auto;margin:8px 0;max-width:110ch}
+  code{color:#C7A86B}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  .row{display:flex;flex-wrap:wrap;gap:18px;margin:12px 0 4px}
+  /* PAIRED ROWS ARE A GRID, NOT WRAPPING FLEX. The side-by-side IS the argument
+     on this page, so it cannot be width-dependent: flex wraps on the declared
+     basis rather than on min-width, so 440x2+18 > 868 stacked the two treatments
+     600px apart and the reviewer had to hold one in memory while scrolling to
+     the other. A 2-up grid guarantees it instead. */
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:12px 0 4px}
+  .trio{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:18px;margin:12px 0 4px}
+  .cell{border:1px solid #262c33;background:#0f1215;min-width:0}
+  .cap{color:#8d968f;padding:8px 10px;border-top:1px solid #262c33}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .stage{position:relative;container-type:inline-size}
+  .stage svg{display:block;width:100%;height:auto}
+  .fill{position:absolute;display:flex;align-items:flex-start;color:#1C222A;pointer-events:none}
+  .fill span{width:100%;text-wrap:pretty}
+  .fill.over{outline:2px dashed #D98A7A;outline-offset:1px}
+  #over{margin:22px 0 0;padding:12px 14px;background:#1B1F24;border:1px solid #262c33;color:#8d968f;white-space:pre-wrap}
+  #over b{color:#D98A7A;font-weight:400}
+</style>
+</head>
+<body>
+<main>
+  <h1>§2 — the confession: two treatments</h1>
+
+  <p class="lead">Roughly one video in three carries the moment the host says he got something wrong
+  about this company before. The pipeline tracks them in a ledger; on screen it has been reaching for
+  whatever generic plate the chapter happened to have. Two treatments below, filled with real words,
+  side by side in both aspects — <b>my recommendation is <code>ledger</code></b>, and the reasoning is
+  under the renders.</p>
+
+  <p><b>What both plates refuse, in the geometry rather than in a comment.</b> No cross, no
+  strike-through, no red, no rule through the old claim. All three bodies are <b>one type role at one
+  size</b> in <code>structure</code>, so neither plate can mark which of them is the bad one. The
+  register is a person saying plainly "I had this wrong, here is what I missed" — a credibility move,
+  not an apology — and a plate that performs either the shame or the shrug has taken the tone out of
+  the host's hands.</p>
+
+  <p><b>And it is not <code>said-happened</code> re-pointed.</b> That plate is a <em>company's</em>
+  claim against the outcome, drawn as a two-track timeline and built to read as an indictment. Aimed at
+  the host it would make the plate an indictment of him, which is the opposite of what a confession is
+  for.</p>
+
+  <div id="out">building…</div>
+  <div id="over"></div>
+</main>
+<script>
+(function () {
+  const PL = window.PLATES, H = window.HAND, B = window.BUILD;
+  const out = document.getElementById("out");
+  const OVER = [];
+  const ROLE_FONT = { label: "'Courier Prime'", entry: "'Courier Prime'", kicker: "'Courier Prime'",
+    caption: "'Courier Prime'", body: "'Archivo Narrow'" };
+
+  function draw(key) {
+    const item = B.LIB.filter((i) => i.key === key)[0];
+    if (!item) throw new Error("not in LIB: " + key);
+    return B.draw(item, null, { boil: 1 });
+  }
+
+  // Fills are positioned in % (against the plate) and sized in cqw (against the
+  // plate's own container). The container has to be the STAGE, not its wrapper —
+  // furniture.html got that wrong and rendered every lower third 2.33x oversized
+  // with the type spilling out of its card. Same mistake, noted here so the next
+  // proof page does not make it a third time.
+  function place(host, m, data, key) {
+    const roles = m.typeRoles || {};
+    Object.keys(data).forEach(function (k) {
+      const s = m.slots[k];
+      if (!s || s.region) return;
+      const r = roles[s.role] || {};
+      // Over-budget fills are FLAGGED, not clipped: budget.js's own note is that
+      // the compositor errors on a fill longer than its box and the shot does not
+      // render, so a truncated fill here is a shot that would not exist. One-line
+      // boxes take the whole string; wrapping boxes take the whole block, and
+      // only authored lines are checked per line.
+      const str = String(data[k]);
+      const lines = str.split("\n");
+      let over = false, why = "";
+      if (s.maxChars != null) {
+        if (str.length > s.maxChars) { over = true; why = str.length + " characters in a " + s.maxChars + "-character box"; }
+      } else if (s.maxCharsPerLine != null) {
+        const maxLines = s.maxLines || 1;
+        if (lines.length > 1) {
+          const longest = Math.max.apply(null, lines.map((l) => l.length));
+          if (longest > s.maxCharsPerLine) { over = true; why = "an authored line of " + longest + " in a " + s.maxCharsPerLine + "-per-line box"; }
+          else if (lines.length > maxLines) { over = true; why = lines.length + " authored lines in a " + maxLines + "-line box"; }
+        } else if (str.length > s.maxCharsPerLine * maxLines) {
+          over = true; why = str.length + " characters in a block holding " + (s.maxCharsPerLine * maxLines);
+        }
+      }
+      if (over) OVER.push(key + " · " + k + ": " + why);
+      const d = document.createElement("div");
+      d.className = "fill" + (over ? " over" : "");
+      d.style.left = (s.x / m.canvas[0] * 100) + "%";
+      d.style.top = (s.y / m.canvas[1] * 100) + "%";
+      d.style.width = (s.w / m.canvas[0] * 100) + "%";
+      d.style.height = (s.h / m.canvas[1] * 100) + "%";
+      d.style.justifyContent = s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start";
+      const sp = document.createElement("span");
+      sp.textContent = str;
+      sp.style.font = (r.weight || 400) + " " + ((r.size || 28) / m.canvas[0] * 100) + "cqw " + (ROLE_FONT[s.role] || "'Archivo Narrow'");
+      sp.style.lineHeight = 1.16;
+      sp.style.letterSpacing = r.tracking || "0";
+      sp.style.textAlign = s.align === "right" ? "right" : "left";
+      if (r.opacity != null) sp.style.opacity = r.opacity;
+      d.appendChild(sp);
+      host.appendChild(d);
+    });
+  }
+
+  // TWO WORKBOOKS, and they are deliberately different KINDS of error.
+  //
+  // A is a missed fact — the information was in the filing and he did not read
+  // it. B is a missed judgement: he read everything and weighed it wrong. Those
+  // are the two confessions this channel actually makes, and a plate that only
+  // holds the first would quietly push the script towards admitting clerical
+  // mistakes rather than analytical ones.
+  const A = {
+    kicker: "I GOT THIS WRONG",
+    "entry-no": "no. 14",
+    "said-label": "WHAT I SAID",
+    said: "The buyback was management backing itself",
+    "happened-label": "WHAT HAPPENED",
+    happened: "They borrowed to fund it, at 9%",
+    "wrong-label": "WHAT I GOT WRONG",
+    wrong: "I never checked where the cash came from",
+    caption: "March 2024. The debt was in the same filing.",
+  };
+  const B2 = {
+    kicker: "I HAD THIS WRONG",
+    "entry-no": "no. 9",
+    "said-label": "WHAT I SAID",
+    said: "Cheap at six times earnings",
+    "happened-label": "WHAT HAPPENED",
+    happened: "Earnings fell 40%. It is 11x now.",
+    "wrong-label": "WHAT I GOT WRONG",
+    wrong: "I priced the multiple, not the earnings",
+    caption: "Eighteen months ago. Nothing was hidden.",
+  };
+
+  function cell(key, data, note, portrait) {
+    const c = document.createElement("div");
+    c.className = "cell" + (portrait ? " p" : "");
+    const P = draw(key), m = P.manifest();
+    const stage = document.createElement("div");
+    stage.className = "stage";
+    stage.innerHTML = P.toSVG();
+    place(stage, m, data, key);
+    c.appendChild(stage);
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.innerHTML = "<b>" + key + "</b><br>" + note +
+      "<br>body " + m.slots.said.maxCharsPerLine + "ch \u00d7 " + m.slots.said.maxLines +
+      "L \u00b7 fills " + Math.round(m.fit.fillsBand * 100) + "% of the band \u00b7 blocks congruent: " + m.congruent;
+    c.appendChild(cap);
+    return c;
+  }
+
+  out.innerHTML = '<h2>the two treatments, same words, side by side</h2>' +
+    '<p>Workbook A: a <b>missed fact</b> \u2014 the information was in the filing and he did not read it. ' +
+    'The only fair way to judge tone is the same words in both plates.</p>' +
+    '<p class="warn">ONE CONFOUND, NAMED: the statement treatment spends measure on its rail, so it gets ' +
+    'fewer characters a line than the ledger (34 against 37 in portrait, 66 against 68 in landscape). ' +
+    'Identical copy can therefore wrap to two lines in one and sit on one line in the other. That is a ' +
+    'real property of the two treatments rather than a rendering artefact — but it means "the same words" ' +
+    'is not a perfectly controlled comparison, and the wrap you see is partly the rail\u2019s cost.</p>' +
+    '<div class="pair" id="r1"></div>' +
+    '<h2>the other kind of error, and the other aspect</h2>' +
+    '<p>Workbook B: a <b>missed judgement</b> \u2014 he read everything and weighed it wrong. Those are the two ' +
+    'confessions this channel actually makes, and a plate that only held the first would quietly push the ' +
+    'script towards admitting clerical mistakes rather than analytical ones.</p><div class="trio" id="r2"></div>' +
+    '<div id="rec"></div>';
+
+  document.getElementById("r1").appendChild(cell("structure/confession-statement-16x9", A,
+    "<b>statement</b> \u2014 three blocks as one continuous statement: one left edge, one type size, one rail with a spur into each. Nothing marks the third block. The credibility is in the equal weight."));
+  document.getElementById("r1").appendChild(cell("structure/confession-ledger-16x9", A,
+    "<b class=\"pass\">ledger \u2605</b> \u2014 numbered, dated, on a ruled sheet. The credibility is in the existence of the record. Note the <code>no. 14</code>: that is the count the pipeline already holds."));
+  const r2 = document.getElementById("r2");
+  r2.appendChild(cell("structure/confession-statement-9x16", B2, "<b>statement</b>, portrait. 34 characters a line, so the three statements have to be written short before the script is recorded.", true));
+  r2.appendChild(cell("structure/confession-ledger-9x16", B2, "<b class=\"pass\">ledger \u2605</b>, portrait. The entry number survives the crop, which the statement treatment has nothing to lose.", true));
+  r2.appendChild(cell("structure/confession-ledger-16x9", B2, "<b>ledger</b> with the second workbook \u2014 a missed judgement rather than a missed fact. Same plate, no author decision.", false));
+
+  document.getElementById("rec").innerHTML =
+    '<h2>the recommendation: <code>ledger</code></h2>' +
+    '<pre>' +
+    "WHY, IN ONE LINE: it is the only one of the two that cannot be read as a\n" +
+    "performance.\n\n" +
+    "A single confession laid out carefully is still a confession laid out\n" +
+    "carefully. A viewer can reasonably wonder whether this is the one he chose to\n" +
+    "admit \u2014 and on a channel whose whole premise is real numbers, that doubt is\n" +
+    "expensive. \"No. 14, and I write them all down\" closes it off, and it is the\n" +
+    "one thing a single-confession treatment structurally cannot say.\n\n" +
+    "IT ALSO MATCHES THE DATA. The pipeline already tracks these in a ledger. The\n" +
+    "count exists; entry-no is the slot that puts it on screen. The statement\n" +
+    "treatment has nowhere to put it, which is not an oversight \u2014 a number in a\n" +
+    "continuous statement reads as a footnote, and a footnoted count is worse than\n" +
+    "no count.\n\n" +
+    "THE RISK IT RUNS, and how the plate answers it: a ledger entry drawn small and\n" +
+    "neat is the confession hidden at the bottom of the frame, which is the other\n" +
+    "half of the brief's ban. So the body type is the SAME SIZE as the statement\n" +
+    "treatment's \u2014 ruled like a book, set like a headline. Deliberately.\n\n" +
+    "WHEN TO USE statement ANYWAY: the first confession about a given company,\n" +
+    "where there is no count worth showing. 'No. 1' says less than nothing.\n\n" +
+    "WHY BOTH SHIP: unlike \u00a71's title ground these are not mutually exclusive \u2014 a\n" +
+    "chapter reaches for one or the other, and keeping both costs four assets. If\n" +
+    "one is never used after a real cut, delete it then.\n" +
+    '</pre>' +
+    '<h2>what changed during the build, because the numbers caught it</h2>' +
+    '<pre>' +
+    "THE PORTRAIT PLATES HAD 680 UNITS OF DEAD SPACE. At an authored gap the three\n" +
+    "blocks finished at y=1023 on a 1920-tall frame with the caption at 1734 \u2014 the\n" +
+    "whole statement bunched into the top half, reading as though the plate had been\n" +
+    "cropped. The gap is now derived from the band between the head and the caption\n" +
+    "and clamped (so landscape does not go airy and a tight frame still separates\n" +
+    "the blocks), and the group is centred in what is left. meta.fit.fillsBand\n" +
+    "publishes it: 0.77 landscape, 0.59 portrait.\n\n" +
+    "THE LEDGER'S entry-no BOX WAS A THIRD OF THE MEASURE, which budget.js derived\n" +
+    "as 26 characters \u2014 room for a sentence in a slot whose job is 'no. 14'.\n" +
+    "Narrowed to 24% of the measure: 17 characters landscape, 10 portrait. Third\n" +
+    "time this trap has appeared (language-shift's year, the lower third's ticker),\n" +
+    "and the pattern is always the same: a right-aligned identifier given the full\n" +
+    "measure because nothing was going to sit next to it.\n" +
+    '</pre>';
+
+  const el = document.getElementById("over");
+  el.innerHTML = OVER.length
+    ? "<b>" + OVER.length + " OVER-BUDGET FILL" + (OVER.length > 1 ? "S" : "") + "</b> \u2014 the compositor errors on these and the shot does not render:\n\n" +
+      OVER.join("\n") + "\n\nThe sample copy is what is wrong, not the plate: budgets are derived from the box by engine/budget.js. Shorten the string."
+    : "Budgets: every fill on this page is inside the derived budget for its box \u2014 checked against slots[name].maxChars / maxCharsPerLine / maxLines, the per-box numbers budget.js writes rather than the role floor.";
+})();
+</script>
+</body>
+</html>

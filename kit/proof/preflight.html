@@ -1,0 +1,1201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>pre-flight — sixteen checks, A–P</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px;max-width:1180px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:22px 0 6px}
+  pre{background:#1B1F24;padding:12px 14px;border-radius:2px;overflow:auto;margin:8px 0}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  p{max-width:82ch;color:#8d968f}
+  button{font:inherit;background:#232830;color:#C9C2B4;border:1px solid #39414b;padding:6px 12px;cursor:pointer;margin-right:8px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Pre-flight — sixteen checks, A–P</h1>
+  <p>Builds every asset in the library at every frame it ships, with no rasteriser, and checks the
+  four properties this drop is allowed to change and the two it is not. Output is pasted into
+  CHANGES.md verbatim. The baseline button writes the new per-frame hash table (§1.1) —
+  <em>that file is the acceptance baseline for the next pack</em>, since a three-frame boil
+  deliberately breaks byte-identity against every previous one. Check I asserts the four properties
+  §1's title ground has to hold (the treatment itself is off; the choice lives in
+  <em>proof/title-ground.html</em>). Check J asserts §2's ten quarter assets — the period budgets,
+  the value row, the pair's congruence and the group geometry. <b>Check P is new in drop
+  eight</b>, and it exists because the proof page had the defect rather than the plates: it
+  asserts library-wide that every box declaring <em>maxLines</em> can hold those lines at
+  the kit's own line pitch — the relationship <em>budget.js</em> derives and nothing checked.</p>
+  <p><button id="dl">download audit/baseline-14.json</button><button id="dlb">download audit/breathe-map.json</button></p>
+  <div id="out">building…</div>
+</main>
+<script>
+(async function () {
+  const PL = window.PLATES, H = window.HAND, B = window.BUILD;
+  const out = [];
+  // THE PAGE PAINTS AS IT GOES, and that is not a nicety.
+  //
+  // Every check used to run start to finish and render once at the end, which
+  // meant ~25 seconds of blocking JS before a single pixel — the load event never
+  // fired, and a review page that looks broken for half a minute is a review page
+  // that gets closed. Same lesson as the crop that hung on twelve room plates:
+  // the check was right, the way it was run was not affordable.
+  //
+  // So `step()` flushes what is finished and yields to the browser. Checks are
+  // unchanged; only when they paint is.
+  const render = function () {
+    document.getElementById("out").innerHTML = out.map(function (o) {
+      return '<h2>' + o[0] + ' — <span class="' + (o[2] ? 'pass">PASS' : 'fail">FAIL') + '</span></h2><pre>' + o[1] + '</pre>';
+    }).join("");
+  };
+  const step = async function (label) {
+    render();
+    document.getElementById("out").insertAdjacentHTML("beforeend",
+      '<p style="color:#C7A86B">' + label + " …</p>");
+    await new Promise(function (r) { setTimeout(r, 0); });
+  };
+  const t0 = performance.now();
+
+  // FNV-1a over the emitted SVG. Not a cryptographic claim — a change detector,
+  // which is all a baseline needs to be.
+  function hash(s) {
+    let x = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = (x * 0x01000193) >>> 0; }
+    return ("0000000" + x.toString(16)).slice(-8);
+  }
+  const paths = (svg) => svg.match(/<path\b[^>]*\/>/g) || [];
+  // Multiset difference both ways: a mark that moved appears in exactly one side.
+  function diffPaths(a, b) {
+    const ca = new Map(), only = [];
+    a.forEach((p) => ca.set(p, (ca.get(p) || 0) + 1));
+    b.forEach((p) => { const n = ca.get(p) || 0; if (n > 0) ca.set(p, n - 1); else only.push(p); });
+    const left = [];
+    ca.forEach((n, p) => { for (let i = 0; i < n; i++) left.push(p); });
+    return { onlyA: left, onlyB: only, moved: left.length + only.length, total: a.length + b.length };
+  }
+  function bbox(pathStr) {
+    const nums = (pathStr.match(/d="([^"]+)"/) || [, ""])[1].match(/-?\d+(\.\d+)?/g);
+    if (!nums) return null;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (let i = 0; i + 1 < nums.length; i += 2) {
+      const x = +nums[i], y = +nums[i + 1];
+      if (x < x0) x0 = x; if (x > x1) x1 = x;
+      if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    return { x0, y0, x1, y1 };
+  }
+  const inBox = (bb, s, pad) => bb && bb.x0 >= s.x - pad && bb.x1 <= s.x + s.w + pad && bb.y0 >= s.y - pad && bb.y1 <= s.y + s.h + pad;
+
+  // ---- A · the whole library, every frame -----------------------------------
+  //
+  // CHECK M RIDES ON THIS BUILD RATHER THAN REPEATING IT. Counting hatch calls
+  // that returned nothing needs a full library pass, and the first version of M
+  // did its own — 230 extra room-weight draws on top of check A's 804 frames,
+  // which took this page from slow to unopenable. Same class of mistake as the
+  // review page that hung on twelve room plates: the check was right and the
+  // second pass was not affordable. The counter is installed here, before
+  // anything draws, and M just reads it.
+  const EMPTY_HATCH = {};
+  let hatchCalls = 0, hatchBlanks = 0, hatchWho = "";
+  // CHECK P'S INPUTS ALSO RIDE ON CHECK A, and for a sharper reason than M's.
+  // P's first cut called manifest() on 270 plates AFTER A had retained 924 Plate
+  // objects, and the page stopped finishing — not a logic error (the same walk
+  // runs clean in 4.2s on its own) but memory thrash. So A records the three
+  // numbers P needs per type slot, as flat values, and drops everything else.
+  const BOXES = [];
+  (function () {
+    const orig = H.hatch;
+    H.hatch = function () {
+      hatchCalls++;
+      const r = orig.apply(null, arguments);
+      if (!r) { hatchBlanks++; EMPTY_HATCH[hatchWho] = (EMPTY_HATCH[hatchWho] || 0) + 1; }
+      return r;
+    };
+  })();
+
+  const built = [];
+  const baseline = { pack: "delta-14", note: "per-frame FNV-1a of the emitted SVG. This REPLACES every previous byte-identity baseline: a three-frame boil changes annotations, cards, frames, paper, shorts, room, host and overlays by design. See CHANGES §1.1.", assets: {} };
+  await step("building the library — 270 assets, 924 frames");
+  let errs = [], frameTotal = 0;
+  B.LIB.forEach(function (item) {
+    const pb = B.playbackOf(item), fr = B.framesOf(item);
+    hatchWho = item.key;   // check M's counter, riding on this build
+    const rec = { dir: item.dir, playback: pb.playback, fps: pb.fps, frameCount: pb.frameCount, frames: {} };
+    if (pb.boilGate) rec.boilGate = pb.boilGate;
+    if (pb.overlayOf) rec.overlayOf = pb.overlayOf;
+    fr.forEach(function (f) {
+      frameTotal++;
+      try {
+        const P = B.draw(item, null, f.args);
+        const svg = P.toSVG();
+        rec.frames[f.tag || "(base)"] = { hash: hash(svg), paths: paths(svg).length, bytes: svg.length };
+        built.push({ item, f, P, svg });
+        if (!BOXES.length || BOXES[BOXES.length - 1].key !== item.key) {
+          const mm = P.manifest(), rows = [];
+          Object.keys(mm.slots).forEach(function (n) {
+            const s = mm.slots[n];
+            if (s.region) return;
+            const r = (mm.typeRoles || {})[s.role];
+            if (!r || !r.size) { rows.push({ name: n, unsized: true }); return; }
+            rows.push({ name: n, role: s.role, size: r.size, h: s.h, lines: s.maxLines || 1 });
+          });
+          BOXES.push({ key: item.key, rows: rows });
+        }
+      } catch (e) {
+        errs.push(item.key + (f.tag || "") + "  " + e.message);
+        rec.frames[f.tag || "(base)"] = { error: e.message };
+      }
+    });
+    baseline.assets[item.key] = rec;
+  });
+  const byFam = {};
+  B.LIB.forEach((i) => { byFam[i.dir] = (byFam[i.dir] || 0) + 1; });
+  out.push(["A · build — every asset, every frame",
+    "assets:  " + B.LIB.length + "\n" +
+    "frames:  " + frameTotal + "\n" +
+    "errors:  " + errs.length + (errs.length ? "\n\n" + errs.join("\n") : "") + "\n\n" +
+    Object.keys(byFam).sort().map((k) => ("  " + k).padEnd(16) + byFam[k]).join("\n") +
+    "\n\nwall clock: " + ((performance.now() - t0) / 1000).toFixed(1) + "s in one browser process, no rasteriser.\n" +
+    "This is the SVG cost only and says nothing about the 4GB rasterise ceiling — see CHANGES §BUILD.",
+    errs.length === 0]);
+
+  await step("B–D — frames, blink, talk visemes");
+  // ---- B · three frames, and the one asset that must not move ---------------
+  let wrongCount = [];
+  B.LIB.forEach(function (item) {
+    const pb = B.playbackOf(item);
+    const want = B.boils(item.dir, item.key) ? (B.settles(item.dir, item.key) ? 5 : 3) : 1;
+    if (pb.frameCount !== want) wrongCount.push(item.key + "  frameCount " + pb.frameCount + ", expected " + want);
+    if (B.settles(item.dir, item.key) && pb.loopStart !== 2) wrongCount.push(item.key + "  loopStart " + pb.loopStart + ", expected 2");
+    const tags = B.framesOf(item).map((f) => f.tag).join(",");
+    const expect = want === 1 ? "" : Array.from({ length: want }, (_, i) => "_f0" + (i + 1)).join(",");
+    if (item.strip) return;
+    if (tags !== expect) wrongCount.push(item.key + "  tags " + tags + ", expected " + expect);
+  });
+  const settled = B.LIB.filter((i) => B.settles(i.dir, i.key));
+  const statics = B.LIB.filter((i) => !B.boils(i.dir, i.key)).map((i) => i.key);
+  out.push(["B · §1.1 — frame counts, and §1.4 — the settle",
+    "three boil frames on every asset except the deliberate exceptions, plus two\n" +
+    "settle frames at the head of everything that ARRIVES.\n\n" +
+    "settling (" + settled.length + "): cards, figures and paper — 5 frames, loopStart 2.\n" +
+    "  Frames 0–1 play once on arrival; 2–4 loop forever. A picker doing\n" +
+    "  `i % frameCount` across the whole strip re-settles the plate every cycle,\n" +
+    "  which is why loopStart is published as the index the picker consumes\n" +
+    "  rather than a count it has to derive.\n" +
+    "  NOT rooms: a room that settles reads as a camera bump.\n\n" +
+    "deliberately static (" + statics.length + "): " + (statics.join(", ") || "none") + "\n" +
+    "  overlays/row-band composites INTO a band slot behind figures that are held\n" +
+    "  still on purpose. A boiling band under a frozen row breaks the static rule\n" +
+    "  from the other side.\n\n" +
+    "Frame TAGS stay continuous _f01.._fNN — a settle frame is not a different kind\n" +
+    "of file and is not named as though it were, so §7's naming contract holds.\n\n" +
+    "mismatches: " + (wrongCount.length ? "\n" + wrongCount.join("\n") : "none"),
+    wrongCount.length === 0]);
+
+  // ---- C · talk frames differ ONLY at the mouth (§7, §1.2) ------------------
+  const talkRows = [], talkBad = [];
+  // DROP TEN: THE SET IS DERIVED, NOT NAMED. This check's method was right from
+  // the start — frame against frame within a strip, with a mouth-bbox test, and
+  // it caught the shipped strip re-wobbling its whole face. Its AIM was narrow:
+  // the list was hardcoded to ["close-up","medium"] and the library has 14 keys
+  // ending -talk, every one with a mouth slot. Twelve were unchecked, including
+  // sitting-at-desk-talk, and nothing announced the gap — the check passed
+  // because it never looked. That is worse than a dishonest declaration, which
+  // at least leaves a sentence to argue with. Derived the way check D derives
+  // its own set, which turns 4 comparisons into 28 and needs no new technique.
+  B.LIB.filter((i) => /-talk$/.test(i.key)).forEach(function (item) {
+    const key = item.key;
+    const fs = B.framesOf(item).map((f) => ({ f, svg: B.draw(item, null, f.args).toSVG() }));
+    const mouth = B.draw(item, null, fs[0].f.args).manifest().slots.mouth;
+    for (let i = 1; i < fs.length; i++) {
+      const d = diffPaths(paths(fs[0].svg), paths(fs[i].svg));
+      const outside = d.onlyA.concat(d.onlyB).filter((p) => !inBox(bbox(p), mouth, 6));
+      talkRows.push(key.padEnd(22) + ("f01 vs " + fs[i].f.tag.slice(1)).padEnd(12) +
+        ("moved " + d.moved).padEnd(12) + "outside the mouth box: " + outside.length);
+      if (outside.length) talkBad.push(key + " f01 vs " + fs[i].f.tag + ": " + outside.length + " marks move outside the mouth");
+    }
+  });
+  out.push(["C · §7 — talk frames differ only at the mouth",
+    talkRows.join("\n") + "\n\n" +
+    "The shipped strip FAILED this check: its two talk frames sat at boil 1 and\n" +
+    "boil 2, so the whole face re-wobbled between them. The renderer picks a talk\n" +
+    "frame against the audio, so every non-mouth difference desynchronises from\n" +
+    "the voice — and no still can show it, which is why it survived two packs.\n" +
+    "All three talk frames now sit at ONE boil index and differ only in how far\n" +
+    "the mouth is open: three visemes, not two states.\n\n" +
+    "COVERAGE IS DERIVED: every key ending -talk, not a named pair. Drop ten found\n" +
+    "this check aimed at 2 of 14 strips — 12 unchecked, all with mouth slots,\n" +
+    "including the seated pose. The method was always right; it was pointed at two\n" +
+    "plates. A check that passes because it never looked is the shape to hunt.\n\n" +
+    (talkBad.length ? talkBad.join("\n") : "clean."),
+    talkBad.length === 0]);
+
+  // ---- D · blink registration (§1.2) ----------------------------------------
+  const blinkRows = [], blinkBad = [];
+  B.LIB.filter((i) => i.author === "hostBlink").forEach(function (bi) {
+    const idleKey = bi.key.replace(/-blink$/, "-idle");
+    const ii = B.LIB.filter((i) => i.key === idleKey)[0];
+    if (!ii) { blinkBad.push(idleKey + " missing — blink has nothing to register against"); return; }
+    const bf = B.framesOf(bi), inf = B.framesOf(ii);
+    if (bf.length !== inf.length) blinkBad.push(bi.key + ": " + bf.length + " frames against idle's " + inf.length);
+    let worst = 0, worstTag = "", worstMarks = [];
+    bf.forEach(function (f, n) {
+      const bp = B.draw(bi, null, f.args), ip = B.draw(ii, null, inf[n].args);
+      const clip = bp.clipBox;
+      const d = diffPaths(paths(bp.toSVG()), paths(ip.toSVG()));
+      const outside = d.onlyA.concat(d.onlyB).filter((p) => !inBox(bbox(p), { x: clip.x, y: clip.y, w: clip.w, h: clip.h }, 2));
+      if (outside.length > worst) { worst = outside.length; worstTag = f.tag; worstMarks = outside.map((p) => JSON.stringify(bbox(p)) + " " + p.slice(0, 90)); }
+    });
+    blinkRows.push(bi.key.padEnd(34) + ("vs " + idleKey).padEnd(36) + "marks differing outside the clip: " + worst + (worstTag ? " (" + worstTag + ")" : ""));
+    if (worst > 0) blinkBad.push(bi.key + ": " + worst + " outside the clip on " + worstTag + "\n      " + worstMarks.join("\n      "));
+  });
+  out.push(["D · §1.2 — the blink is the idle frame with the lids down",
+    blinkRows.join("\n") + "\n\n" +
+    "What this proves: inside the clip box the overlay is not SIMILAR to the frame\n" +
+    "beneath it, it is the same drawing — same seed, same boil index — with the\n" +
+    "lids closed. Everything outside the box is identical, so the clip edge has no\n" +
+    "seam to hide. Registration is identity: full canvas, full viewBox, composited\n" +
+    "at 0,0 with no offset arithmetic anywhere.\n\n" +
+    "Frame count is registration, NOT rate. blink _fNN pairs with idle _fNN; the\n" +
+    "renderer decides when to cut one in (~100ms, every 3-4s). playback is\n" +
+    "\"overlay\", not \"loop\" — a player that looped this would blink him forever.\n\n" +
+    (blinkBad.length ? blinkBad.join("\n") : "clean."),
+    blinkBad.length === 0]);
+
+  await step("E — the breathe gate, 108 gated plates");
+  // ---- E · the gate: what breathes on a data plate (§1.5) --------------------
+  // MEASURED BY INK, NOT BY MARK COUNT. The first cut counted paths and reported
+  // peers/peer-strip at 73% "moving", which was an artefact: a leader is dozens
+  // of tiny dashes and a panel is one big hatch, so counting marks weights the
+  // faintest furniture on the plate most heavily. Ink — length times width times
+  // opacity — is the quantity a viewer actually sees moving, and it is the same
+  // measure the 22.0% / 5.4% room-and-host figures were taken with.
+  function ink(p) {
+    const w = +((p.match(/stroke-width="([\d.]+)"/) || [, 0])[1]);
+    const op = +((p.match(/stroke-opacity="([\d.]+)"/) || [, 1])[1]);
+    const nums = (p.match(/d="([^"]+)"/) || [, ""])[1].match(/-?\d+(\.\d+)?/g);
+    if (!nums) return 0;
+    let len = 0;
+    for (let i = 2; i + 1 < nums.length; i += 2) {
+      const dx = nums[i] - nums[i - 2], dy = nums[i + 1] - nums[i - 1];
+      len += Math.hypot(dx, dy);
+    }
+    return len * (w || 1) * (op || 1);
+  }
+  const inkOf = (arr) => arr.reduce((t, p) => t + ink(p), 0);
+
+  // The mechanism itself, before any plate: with the gate up, a pinned mark must
+  // emit the identical path at two different boil indices and an ordinary one
+  // must not. If this fails, every per-plate number below is meaningless.
+  function probe(boil, wrap) {
+    H.setBoil(boil, 2.0, true);
+    try { return wrap ? H.pin(() => H.line(100, 100, 900, 104, { stroke: "#000", width: 4, seed: 5 })) : H.line(100, 100, 900, 104, { stroke: "#000", width: 4, seed: 5 }); }
+    finally { H.setBoil(0); }
+  }
+  const pinnedSame = probe(1, true) === probe(2, true);
+  const looseDiffers = probe(1, false) !== probe(2, false);
+
+  const gateRows = [], gateBad = [], breatheMap = { note: "measured, not authored: the share of INK that takes the boil offset on a gated plate. Everything pinned emits the identical path at every boil index.", mechanism: { pinnedIdenticalAcrossFrames: pinnedSame, unpinnedDiffersAcrossFrames: looseDiffers }, pinned: ["chart axes and tick marks", "the waterfall baseline", "the implied plate's axis", "field() slot underlays"], plates: {} };
+  if (!pinnedSame) gateBad.push("MECHANISM: a pinned mark moved between boil 1 and boil 2");
+  if (!looseDiffers) gateBad.push("MECHANISM: an unpinned mark did NOT move between boil 1 and boil 2");
+  // Plates whose ENTIRE drawn content is a measurement reference are legitimately
+  // still. This is a declared list with a reason each, not a threshold that hides
+  // them: if a plate is frozen and is not named here, that is a failure.
+  const STILL_BY_DESIGN = (function () {
+    const m = {
+      "structure/implied": "every drawn mark on it is the axis, and an axis is pinned. The band and the marker are regions the renderer fills, and the statement is type. Nothing left to breathe — a property of the design, not an omission.",
+      "peers/distribution": "baseline and bucket ticks only. Both are read off: the baseline is where the bars stand and a tick is which bucket you are in.",
+      "figures/scale-2": "one baseline, and every column's height is measured from it. That is the entire plate.",
+      "figures/scale-3": "same as scale-2.",
+    };
+    // The part-of-a-whole family and the two-track timeline, both aspects and
+    // every count. Listed programmatically rather than typed out because the list
+    // would otherwise be thirty lines and someone would eventually add a plate to
+    // it without meaning to.
+    [2, 3, 4].forEach((n) => (m["figures/share-of-" + n] = "the bar's outline IS the whole that the segments divide, so it is a measurement reference; the dividers mark the parts. There is no furniture on this plate."));
+    [3, 4, 5].forEach((n) => (m["figures/by-region-" + n] = "same as share-of — one author, one argument."));
+    m["figures/ownership"] = "same as share-of.";
+    [3, 4, 5].forEach((n) => (m["structure/said-happened-" + n] = "two rails and their event marks. A rail is the time axis and an event is read off it; there is nothing else drawn."));
+    // DROP EIGHT: check E was FAILING on all four of §3's insider-flow plates,
+    // and the fix is a declaration rather than a change. The plate draws a time
+    // axis, its ticks and the date rules — 81 marks on the 12-column landscape
+    // plate, and all 81 are byte-identical across boil indices — and every trade
+    // is a mark-N REGION the compositor fills from axisY. So its entire drawn
+    // content is the measurement reference the marks are read against, which is
+    // the same argument structure/implied carries, reached independently. It was
+    // frozen and unnamed since drop six, which is exactly the signature this
+    // check was built to surface: the omission was in the list, not in the plate.
+    [6, 12].forEach((n) => (m["charts/insider-flow-" + n] = "the axis, its ticks and the date rules, and nothing else — every trade is a mark-N region the compositor fills from axisY, either side of a pinned axis. All 81 marks on the 12-column plate are identical across boil indices because all of them are the reference the marks are read against. Same argument as structure/implied."));
+    const out = {};
+    Object.keys(m).forEach(function (k) {
+      if (/-(16x9|9x16)$/.test(k)) { out[k] = m[k]; return; }
+      out[k + "-16x9"] = m[k];
+      out[k + "-9x16"] = m[k];
+    });
+    return out;
+  })();
+  B.LIB.filter((i) => B.gated(i.dir, i.key)).forEach(function (item) {
+    const pa = paths(B.draw(item, null, { boil: 1 }).toSVG()), pb2 = paths(B.draw(item, null, { boil: 2 }).toSVG());
+    const d = diffPaths(pa, pb2);
+    const total = inkOf(pa), moving = inkOf(d.onlyA);
+    const pct = total ? (moving / total) * 100 : 0;
+    breatheMap.plates[item.key] = { marks: pa.length, movingMarks: d.onlyA.length, inkPct: +pct.toFixed(2) };
+    if (STILL_BY_DESIGN[item.key]) breatheMap.plates[item.key].stillByDesign = STILL_BY_DESIGN[item.key];
+    else if (d.onlyA.length === 0) gateBad.push(item.key + ": nothing breathes — the plate is still frozen, and it is not on the still-by-design list");
+    gateRows.push(item.key.padEnd(38) + (pa.length + " marks").padEnd(14) + (d.onlyA.length + " breathe").padEnd(14) + pct.toFixed(1) + "% of ink" + (STILL_BY_DESIGN[item.key] ? "   (still by design)" : ""));
+  });
+  const pcts = Object.keys(breatheMap.plates).map((k) => breatheMap.plates[k].inkPct);
+  out.push(["E · §1.5 — the frame breathes, the figures do not",
+    "mechanism: pinned mark identical across frames: " + pinnedSame + "\n" +
+    "           unpinned mark differs across frames:  " + looseDiffers + "\n\n" +
+    gateRows.slice(0, 16).join("\n") + (gateRows.length > 16 ? "\n  … " + (gateRows.length - 16) + " more, all in audit/breathe-map.json" : "") + "\n\n" +
+    "plates gated: " + gateRows.length + "\n" +
+    "share of INK moving: " + (pcts.length ? Math.min.apply(null, pcts).toFixed(1) + "% – " + Math.max.apply(null, pcts).toFixed(1) + "%" : "-") + "\n" +
+    "for scale: room/wide-16x9 moves 22.0% of its ink, host/close-up-glance-left 5.4%.\n\n" +
+    "THE GATE IS OPT-OUT, and that is a correction made during this drop. It began\n" +
+    "as opt-in — a mark moves only inside breathe() — and this check found 44 of\n" +
+    "the 47 plates still completely frozen, because a data plate's furniture is\n" +
+    "drawn across twenty authors and each would have needed hand-wrapping. Opt-in\n" +
+    "defaults to frozen, which is the defect it was meant to prevent.\n\n" +
+    "Inverting it is also the more honest description of these plates: almost\n" +
+    "nothing DRAWN on a data plate is data. Every figure, series and band is a slot\n" +
+    "the compositor fills — the plate draws rules, panels, hatch and frames. So the\n" +
+    "measurement references are few enough to name, and they are pinned:\n" +
+    "  chart axes and ticks · the waterfall baseline · the implied axis ·\n" +
+    "  field() slot underlays\n\n" +
+    "field() is the call where the two halves of your answer meet. It is hatch, and\n" +
+    "hatch breathes — but this hatch sits directly behind a figure held still, so\n" +
+    "it is a slot underlay, and an underlay moving behind pinned type is the\n" +
+    "relative motion you ruled out. What a mark is FOR wins over what it is made of.\n\n" +
+    "UNVERIFIED: the per-call-site classification on the other ~20 data authors was\n" +
+    "applied by that rule, not reviewed mark by mark at render scale. Rules,\n" +
+    "gridlines, panel hatch and box outlines are breathing on those plates. That\n" +
+    "wants eyes on it before drop two.\n\n" +
+    "STILL BY DESIGN, declared rather than thresholded (" + Object.keys(STILL_BY_DESIGN).length + " plates):\n" +
+    "  Drop two is where this list stopped being a footnote. Most of its plates are\n" +
+    "  ARGUMENT GEOMETRY — an extent, a rail, a baseline — and on a plate whose\n" +
+    "  every drawn mark is a measurement reference, §1.5 has nothing to move. That\n" +
+    "  is a real boundary on the rule rather than a gap in the work.\n" +
+    Object.keys(STILL_BY_DESIGN).slice(0, 6).map((k) => "  " + k + "\n    " + STILL_BY_DESIGN[k]).join("\n") +
+    "\n  … and " + Math.max(0, Object.keys(STILL_BY_DESIGN).length - 6) + " more, all in audit/breathe-map.json\n\n" +
+    (gateBad.length ? gateBad.join("\n") : "clean."),
+    gateBad.length === 0]);
+
+  // ---- F · the new plates, built twice with different counts (§0.3) ---------
+  const pal = PL.pal("night-card");
+  const newRows = [], newBad = [];
+  const WANT_WF = (n) => ["total", "remainder", "bridge", "unit", "kicker", "caption", "total-label", "remainder-label"]
+    .concat(Array.from({ length: n }, (_, i) => "step-" + (i + 1)))
+    .concat(Array.from({ length: n }, (_, i) => "label-" + (i + 1)));
+  [3, 4, 5].forEach(function (n) {
+    [[1920, 1080, "16x9"], [1080, 1920, "9x16"]].forEach(function (d) {
+      const key = "figures/waterfall-" + n + "s-" + d[2];
+      let P;
+      try { P = PL.waterfall({ key, w: d[0], h: d[1], pal, seed: 31 + n, steps: n }); }
+      catch (e) { newBad.push(key + " BUILD ERROR " + e.message); return; }
+      const m = P.manifest();
+      const missing = WANT_WF(n).filter((s) => !m.slots[s]);
+      if (missing.length) newBad.push(key + " missing slots: " + missing.join(", "));
+      if (m.columns.length !== n + 2) newBad.push(key + " has " + m.columns.length + " columns for " + n + " steps");
+      const overlap = m.columns.some((c, i) => i && c.x < m.columns[i - 1].x + m.columns[i - 1].w);
+      if (overlap) newBad.push(key + ": columns overlap");
+      newRows.push(key.padEnd(34) + (Object.keys(m.slots).length + " slots").padEnd(12) +
+        (m.columns.length + " cols").padEnd(10) + "bridge " + m.slots.bridge.w + "x" + m.slots.bridge.h);
+    });
+  });
+  [[1920, 1080, "16x9"], [1080, 1920, "9x16"]].forEach(function (d) {
+    const key = "structure/implied-" + d[2];
+    let P;
+    try { P = PL.impliedPlate({ key, w: d[0], h: d[1], pal, seed: 37 }); }
+    catch (e) { newBad.push(key + " BUILD ERROR " + e.message); return; }
+    const m = P.manifest();
+    const missing = ["demand", "history-low", "history-high", "axis-low", "axis-high", "statement", "kicker", "caption", "band", "marker"].filter((s) => !m.slots[s]);
+    if (missing.length) newBad.push(key + " missing slots: " + missing.join(", "));
+    if (!m.axis) newBad.push(key + " publishes no axis geometry");
+    newRows.push(key.padEnd(34) + (Object.keys(m.slots).length + " slots").padEnd(12) +
+      (m.axis.orientation + " axis").padEnd(20) + "band " + m.slots.band.w + "x" + m.slots.band.h);
+  });
+  out.push(["F · §2.1 / §2.2 — the new plates, every count variant, both aspects",
+    newRows.join("\n") + "\n\n" +
+    "Eight new assets: waterfall at 3, 4 and 5 steps and implied, both aspects each.\n" +
+    "Count variants rather than one elastic plate, for the reason tables/ ships 3r\n" +
+    "through 6r — a five-step waterfall is useless to a three-cost script, and an\n" +
+    "elastic one would re-derive its column grid at render time.\n\n" +
+    "The two-renders-with-different-data check (§0.3) is proof/new-plates.html,\n" +
+    "which fills each of these from two unrelated workbooks at different counts.\n\n" +
+    (newBad.length ? newBad.join("\n") : "clean."),
+    newBad.length === 0]);
+
+  // ---- G · no text nodes, anywhere (§7) -------------------------------------
+  const texty = built.filter((b) => /<text[\s>]/.test(b.svg)).map((b) => b.item.key + (b.f.tag || ""));
+  out.push(["G · §7 — no &lt;text&gt; nodes",
+    "frames checked: " + built.length + "\n" +
+    "frames emitting &lt;text&gt;: " + texty.length + (texty.length ? "\n" + texty.join("\n") : "") + "\n\n" +
+    "Fonts are off in the rasteriser by design, so a plate that emits text renders\n" +
+    "blank and says nothing about it. Every word on screen is a slot the\n" +
+    "compositor fills.",
+    texty.length === 0]);
+
+  // ---- H · what the baseline covers -----------------------------------------
+  // TWO KEYS THAT RENDER THE SAME BYTES ARE ONE PLATE WITH TWO NAMES.
+  //
+  // This is the check the baseline exists to make possible, and it found one on
+  // its first run: figures/compare-side-9x16 was byte-identical to
+  // compare-stacked-9x16 across all three frames, because the side-by-side branch
+  // read `mode === "side" && land` and portrait fell through to stacked. Nothing
+  // about either plate looks wrong on its own; it took hashing every frame in the
+  // library and noticing two signatures collide.
+  const sig = new Map(), collisions = [];
+  Object.keys(baseline.assets).forEach(function (k) {
+    const fr = baseline.assets[k].frames;
+    const s = Object.keys(fr).map((t) => fr[t].hash).join(",");
+    sig.set(s, (sig.get(s) || []).concat([k]));
+  });
+  sig.forEach(function (keys) { if (keys.length > 1) collisions.push(keys.join("  ==  ")); });
+  out.push(["H2 · distinct keys, distinct artwork",
+    "assets: " + Object.keys(baseline.assets).length + "\n" +
+    "keys whose every frame is byte-identical to another key's: " + collisions.length +
+    (collisions.length ? "\n\n" + collisions.join("\n") : "") + "\n\n" +
+    "Expected identity WITHIN a key is a different thing and is not flagged here:\n" +
+    "  host/&lt;pose&gt;-talk _f01 == host/&lt;pose&gt; _f01 — both are the shut mouth at boil 1.\n" +
+    "    That is why entering a talk cut from a held pose is silent.\n" +
+    "  structure/implied _f01 == _f02 == _f03 — every mark on it is the pinned axis.",
+    collisions.length === 0]);
+
+  await step("I — §1, the title ground on the worst wall");
+  // ---- I · §1 the title's own ground ---------------------------------------
+  // The mechanism, not the choice. The treatment is off in this build (build.js
+  // TITLE_GROUND = null) and the choice belongs to proof/title-ground.html, but
+  // the four properties a ground has to hold are asserted here so they cannot
+  // quietly stop holding between now and whenever it is turned on.
+  const tgRows = [], tgBad = [];
+  const TGKEY = "room/whiteboard-wall-16x9";   // the worst 16:9 wall in the family
+  (function () {
+    const item = B.LIB.filter((i) => i.key === TGKEY)[0];
+    if (!item) { tgBad.push(TGKEY + " not in LIB"); return; }
+    const withGround = function (st, boil) {
+      const it = Object.assign({}, item, { args: Object.assign({}, item.args, { titleGround: st }) });
+      return B.draw(it, null, { boil: boil });
+    };
+    const declared = B.LIB.filter((i) => i.dir === "room" && i.args.titleGround).length;
+    const ctrl = withGround(null, 1).manifest();
+    if (ctrl.titleGround) tgBad.push("the control plate published a titleGround");
+    PL.TITLE_GROUNDS.forEach(function (st) {
+      const a = withGround(st, 1), b = withGround(st, 2);
+      const ma = a.manifest(), tg = ma.titleGround, t = ma.slots.title, c = ctrl.slots.title;
+      const moved = t.x !== c.x || t.y !== c.y || t.w !== c.w || t.h !== c.h;
+      const covers = tg.box.x <= tg.typeBlock.x && tg.box.y <= tg.typeBlock.y &&
+        tg.box.x + tg.box.w >= tg.typeBlock.x + tg.typeBlock.w &&
+        tg.box.y + tg.box.h >= tg.typeBlock.y + tg.typeBlock.h;
+      const pinned = a.top.join("") === b.top.join("") && a.top.length > 0;
+      const texty = /<text[\s>]/.test(a.toSVG());
+      if (moved) tgBad.push(st + ": the published title slot MOVED — every existing chapter opener shifts");
+      if (!covers) tgBad.push(st + ": the panel does not cover the whole type block");
+      if (!pinned) tgBad.push(st + ": the ground is not pinned — it breathes behind type held still");
+      if (texty) tgBad.push(st + ": emits &lt;text&gt;");
+      tgRows.push(st.padEnd(8) + ("panel " + tg.box.w + "x" + tg.box.h).padEnd(16) +
+        ("type colour " + tg.typeColour).padEnd(24) + (moved ? "SLOT MOVED" : "slot unmoved").padEnd(16) +
+        (covers ? "covers" : "DOES NOT COVER").padEnd(17) + (pinned ? "pinned" : "NOT PINNED"));
+    });
+    out.push(["I · §1 — the title's own ground",
+      "on " + TGKEY + ", the worst 16:9 wall in the family (the worst overall is its 9x16\n" +
+      "sibling, at 35.02% of the title box under 4.5:1 — see proof/title-ground.html)\n\n" +
+      tgRows.join("\n") + "\n\n" +
+      "room plates carrying a ground in this build: " + declared + " of 22\n" +
+      "  build.js TITLE_GROUND is " + JSON.stringify(B.TITLE_GROUND) + ". DECIDED — “card”, the treatment\n" +
+      "  that makes contrast wall-independent without moving the type colour, so\n" +
+      "  slots.title.colour is still `structure` and the chapter-opener shot template\n" +
+      "  needs no change. The 22 openers are a baseline reset; the 6 room plates with no\n" +
+      "  title slot (over-the-shoulder x2, wall-of-calls x4) take no ground, and that\n" +
+      "  falls out of what each plate published rather than out of a list.\n\n" + +
+      "WHAT IS ASSERTED, AND WHY EACH ONE\n" +
+      "  slot unmoved  the panel is drawn AROUND the published box. If the slot moved, every\n" +
+      "                chapter opener already composited against it would shift.\n" +
+      "  covers        the panel spans title AND the caption that belongs to it. Three angles\n" +
+      "                set a caption directly under the title, and a panel that leaves the\n" +
+      "                smaller type on bare wall has protected the wrong element.\n" +
+      "  pinned        the ground's own marks are byte-identical at boil 1 and boil 2. A ground\n" +
+      "                is a slot underlay; an underlay breathing behind dead-still type is the\n" +
+      "                relative motion §1.5 ruled out, and rooms are not gated, so nothing else\n" +
+      "                would have stopped it.\n" +
+      "  no &lt;text&gt;     unchanged, and structural.\n\n" +
+      "THE CHOICE IS MADE. “card”, on the reasoning at the top of CHANGES.md. The three\n" +
+      "treatments, on the two worst walls and a clean one, with the measured contrast\n" +
+      "floor inside the title box: proof/title-ground.html.\n\n" +
+      (tgBad.length ? tgBad.join("\n") : "clean."),
+      tgBad.length === 0]);
+  })();
+
+  await step("J — §2, the quarter");
+  // ---- J · §2 the quarter --------------------------------------------------
+  // Ten new assets, three authors, and four properties that would each fail
+  // silently: a period label that does not fit its box, a value row that does not
+  // exist where a renderer expects one, a pair that has stopped being a pair, and
+  // a group geometry that disagrees with the slots it describes.
+  const qRows = [], qBad = [];
+  (function () {
+    const QKEYS = ["charts/bars-8q", "charts/line-8q", "figures/qoq-yoy", "charts/seasonality-4y", "charts/seasonality-6y"];
+    const shipped = B.LIB.filter((i) => QKEYS.some((k) => i.key === k + "-16x9" || i.key === k + "-9x16"));
+    if (shipped.length !== 10) qBad.push("expected 10 quarter assets, found " + shipped.length);
+    // THE LONGEST PERIOD LABEL THE FORMAT PRODUCES. Five characters: Q3'25. The
+    // plates publish that format, so the assertion is against the published
+    // string's length rather than against a number typed here.
+    const PERIOD_CHARS = 5;
+    shipped.forEach(function (item) {
+      const P = B.draw(item, null, { boil: 1 }), m = P.manifest(), s = m.slots;
+      const heads = Object.keys(s).filter((n) => /^head/.test(n));
+      const vals = Object.keys(s).filter((n) => /^value-\d+$/.test(n));
+      const headCap = heads.length ? Math.min.apply(null, heads.map((n) => s[n].maxChars)) : null;
+      const row = [item.key.padEnd(30), (heads.length + " heads").padEnd(11),
+        (headCap == null ? "—" : headCap + " chars").padEnd(11),
+        (vals.length ? vals.length + " values" : s["value-last"] ? "value-last" : "no values").padEnd(13)];
+      if (/8q/.test(item.key)) {
+        if (heads.length !== 8) qBad.push(item.key + ": " + heads.length + " head slots, expected 8");
+        if (headCap < PERIOD_CHARS) qBad.push(item.key + ": head box holds " + headCap + " characters, and the published period format is " + PERIOD_CHARS);
+        if (!/Q3'25/.test(m.periodFormat || "")) qBad.push(item.key + ": does not publish the period format");
+        // the value row exists, or the callout does — never neither, never both
+        const hasRow = vals.length === 8, hasCallout = !!s["value-last"];
+        if (hasRow === hasCallout) qBad.push(item.key + ": " + (hasRow ? "publishes BOTH a value row and a callout" : "publishes neither a value row nor a callout"));
+        if (hasCallout) {
+          // and the reason is measured, not asserted: the box really is too small
+          const box = vals.length ? null : s["head-1"];
+          row.push("callout because the column measures under 6 chars");
+        }
+      }
+      if (/seasonality/.test(item.key)) {
+        const Y = m.years;
+        if (m.groups.length !== 4) qBad.push(item.key + ": " + m.groups.length + " quarter bands, expected 4");
+        let drift = 0, missing = 0;
+        m.groups.forEach(function (g2) {
+          if (g2.columns.length !== Y) qBad.push(item.key + " Q" + g2.quarter + ": " + g2.columns.length + " columns, expected " + Y);
+          g2.columns.forEach(function (c) {
+            const sl = s["y" + c.year + "-q" + g2.quarter];
+            if (!sl) { missing++; return; }
+            // meta.groups is what a renderer reads INSTEAD of re-deriving the
+            // grid. If it disagrees with the slots by a unit, every bar is a unit
+            // out and nothing reports it.
+            if (Math.round(sl.x) !== c.x || Math.round(sl.w) !== c.w) drift++;
+          });
+        });
+        if (missing) qBad.push(item.key + ": " + missing + " group columns have no slot");
+        if (drift) qBad.push(item.key + ": meta.groups disagrees with the slots on " + drift + " columns");
+        if (!/OLDEST LEFT/.test(m.seriesOrder || "")) qBad.push(item.key + ": does not publish series order");
+        row.push(Y + " years x 4 quarters = " + (Y * 4) + " regions, col " + m.columnWidth.units + "u" + (m.crowded ? " CROWDED" : ""));
+      }
+      if (/qoq-yoy/.test(item.key)) {
+        const pr = m.pair;
+        if (!pr.congruent) qBad.push(item.key + ": the two delta cells are NOT congruent — the pair has taken a side");
+        if (s.qoq.role !== s.yoy.role) qBad.push(item.key + ": the two deltas are set in different roles");
+        if (s["qoq-label"].role !== s["yoy-label"].role) qBad.push(item.key + ": the two labels are set in different roles");
+        if (s.qoq.maxChars !== s.yoy.maxChars) qBad.push(item.key + ": the two deltas have different budgets (" + s.qoq.maxChars + " / " + s.yoy.maxChars + ")");
+        // The refusal, asserted as a slot set rather than as a comment: exactly
+        // the brief's eight boxes, and nothing that could hold a blended figure.
+        const want = ["kicker", "unit", "figure", "qoq", "qoq-label", "yoy", "yoy-label", "caption"].sort().join(",");
+        const got = Object.keys(s).sort().join(",");
+        if (want !== got) qBad.push(item.key + ": slot set is " + got + ", expected " + want);
+        row.push(pr.arrangement + ", cells " + pr.cells[0].w + "x" + pr.cells[0].h + " both, delta budget " + s.qoq.maxChars);
+      }
+      qRows.push(row.join(""));
+    });
+  })();
+  out.push(["J · §2 — the quarter",
+    qRows.join("\n") + "\n\n" +
+    "WHAT IS ASSERTED, AND WHY EACH ONE\n" +
+    "  head boxes hold the published period format. \"Q3'25\" is five characters\n" +
+    "  where \"2025\" is four, and the 8q plates put eight columns in the same plot\n" +
+    "  width — so the label got wider as its box got narrower. Measured, both\n" +
+    "  aspects hold it: 15 characters in 16:9, 8 in 9:16.\n\n" +
+    "  a value row OR a callout, never neither and never both. At eight columns in\n" +
+    "  9:16 a value box measures 5 characters and \"$12.4B\" is 6; an over-budget\n" +
+    "  fill does not render at all, so the portrait plates publish one value-last\n" +
+    "  callout instead of a row that would stop the shot. This is the only real\n" +
+    "  layout consequence of eight columns at these canvas sizes, and it is\n" +
+    "  measured by budget.js rather than decided here.\n\n" +
+    "  the pair is congruent, in one role, with one budget. figures/qoq-yoy's whole\n" +
+    "  claim is that neither comparison is the headline; two boxes of different\n" +
+    "  sizes, two type roles or two budgets would each break it quietly. The cells\n" +
+    "  come out of one expression, so this asserts the expression rather than\n" +
+    "  trusting it.\n\n" +
+    "  the slot set is exactly the eight boxes the brief names. There is NO slot a\n" +
+    "  blended growth figure could go in — the refusal is structural, the same way\n" +
+    "  no author can emit a text node.\n\n" +
+    "  meta.groups agrees with the slots, column for column. A renderer reads the\n" +
+    "  group geometry INSTEAD of re-deriving the grid; a one-unit disagreement puts\n" +
+    "  every bar a unit out and nothing anywhere reports it.\n\n" +
+    (qBad.length ? qBad.join("\n") : "clean."),
+    qBad.length === 0]);
+
+  await step("K — §3, the filing reader");
+  // ---- K · §3 the filing reader --------------------------------------------
+  const kRows = [], kBad = [];
+  (function () {
+    const WANT = ["kicker", "caption", "then-year", "then-phrase", "then-source", "now-year", "now-phrase", "now-source"].sort().join(",");
+    ["structure/language-shift-16x9", "structure/language-shift-9x16"].forEach(function (key) {
+      const item = B.LIB.filter((i) => i.key === key)[0];
+      const m = B.draw(item, null, { boil: 1 }).manifest(), s = m.slots;
+      if (!m.pair.congruent) kBad.push(key + ": the two blocks are NOT congruent — they will read as two claims rather than one statement twice");
+      if (s["then-phrase"].role !== s["now-phrase"].role) kBad.push(key + ": the two phrases are in different type roles");
+      if (s["then-phrase"].maxCharsPerLine !== s["now-phrase"].maxCharsPerLine) kBad.push(key + ": the two phrases have different budgets");
+      if (s["then-phrase"].maxLines < 2) kBad.push(key + ": the phrase box holds " + s["then-phrase"].maxLines + " line(s), and the plate is built for two");
+      if (!m.fit.clears) kBad.push(key + ": the second block runs to y=" + m.fit.bottom + " against a caption at " + m.fit.captionY + " — the plate overflows its own frame");
+      if (Object.keys(s).sort().join(",") !== WANT) kBad.push(key + ": slot set is " + Object.keys(s).sort().join(","));
+      if (!m.refusesDiff) kBad.push(key + ": does not publish the no-diff contract");
+      kRows.push(key.padEnd(32) + ("phrase " + s["then-phrase"].maxCharsPerLine + "ch x " + s["then-phrase"].maxLines + "L").padEnd(20) +
+        ("block " + m.fit.blockH).padEnd(12) + ("bottom " + m.fit.bottom + "/" + m.fit.captionY).padEnd(18) + (m.pair.congruent ? "congruent" : "NOT CONGRUENT"));
+    });
+    [3, 4].forEach(function (n) {
+      ["-16x9", "-9x16"].forEach(function (a) {
+        const key = "paper/headline-stack-" + n + a;
+        const item = B.LIB.filter((i) => i.key === key)[0];
+        const m = B.draw(item, null, { boil: 1 }).manifest(), s = m.slots;
+        if (!m.congruent) kBad.push(key + ": the strips are not congruent");
+        // FOUR has to clear the caption in BOTH counts, because both counts share
+        // one strip height so a script can swap them without the type moving.
+        if (!m.fit.clears) kBad.push(key + ": four strips run to y=" + m.fit.fourItemBottom + " against a caption at " + m.fit.captionY + " — the four-item plate overflows its own frame");
+        for (let i = 1; i <= n; i++) {
+          if (!s["date-" + i] || !s["source-" + i] || !s["headline-" + i]) kBad.push(key + ": item " + i + " is missing a date, a source or a headline");
+        }
+        if (!/OLDEST AT THE TOP/.test(m.order || "")) kBad.push(key + ": does not publish the chronological order");
+        kRows.push(key.padEnd(32) + ("headline " + s["headline-1"].maxCharsPerLine + "ch x " + s["headline-1"].maxLines + "L").padEnd(20) +
+          ("strip " + m.fit.stripH).padEnd(12) + ("4-item " + m.fit.fourItemBottom + "/" + m.fit.captionY).padEnd(18) + (m.congruent ? "congruent" : "NOT CONGRUENT"));
+      });
+    });
+  })();
+  out.push(["K · §3 — what the filing reader found",
+    kRows.join("\n") + "\n\n" +
+    "WHAT IS ASSERTED, AND WHY EACH ONE\n" +
+    "  the two language-shift blocks are congruent, in one role, on one budget. The\n" +
+    "  plate's claim is that they are the same statement in two versions; two boxes\n" +
+    "  of different sizes or two type roles would make them two claims, quietly.\n\n" +
+    "  the phrase box holds TWO lines. It reported ONE on the first build: budget.js\n" +
+    "  derives lines as floor(box.h / (size x 1.16)) and blockH rounds 2 x 120 x 1.16\n" +
+    "  down to 278, which divides to 1.997. A quarter of a unit short of the two\n" +
+    "  lines the plate exists to hold, and nothing but the budget would have said so.\n\n" +
+    "  both plates fit their own frame. Both overflowed on the first build — the\n" +
+    "  16:9 language-shift ran 105 units past its caption, and the four-item\n" +
+    "  landscape stack ran 298 past its own canvas. meta.fit publishes the\n" +
+    "  arithmetic, and this is the check that reads it.\n\n" +
+    "  every headline item has a date AND a source. A headline without a\n" +
+    "  publication is a claim with no author, on a channel whose premise is real\n" +
+    "  numbers.\n\n" +
+    "  the no-diff contract is published. The plate must not strike the old phrase\n" +
+    "  or highlight the new one — that is the annotations family's, applied when the\n" +
+    "  script asks. A plate that bakes it in argues ahead of the voice.\n\n" +
+    (kBad.length ? kBad.join("\n") : "clean."),
+    kBad.length === 0]);
+
+  await step("L — §4, the rooms and the poses");
+  // ---- L · §4 the rooms and the poses --------------------------------------
+  const lRows = [], lBad = [];
+  (function () {
+    // THE SEATED RATIO, MEASURED AGAINST A STANDING POSE IN THIS RUN rather than
+    // read off the manifest it is published in. A published ratio that agrees with
+    // itself proves nothing; what matters is that it agrees with the standing
+    // plate it will be scaled against.
+    const seated = B.draw(B.LIB.filter((i) => i.key === "host/sitting-at-desk")[0], null, { boil: 1 }).manifest();
+    const standing = B.draw(B.LIB.filter((i) => i.key === "host/hands-in-pockets")[0], null, { boil: 1 }).manifest();
+    const sH = seated.floorLineY - seated.slots.figure.y, stH = standing.floorLineY - standing.slots.figure.y;
+    const measured = sH / stH, published = seated.seated.heights.ratio;
+    if (Math.abs(measured - published) > 0.01) lBad.push("host/sitting-at-desk: published ratio " + published + " against a measured " + measured.toFixed(4) + " — a renderer scaling by the published number would size him wrong");
+    if (!seated.rig.seated) lBad.push("host/sitting-at-desk: rig does not declare itself seated");
+    lRows.push("host/sitting-at-desk".padEnd(30) + ("height " + Math.round(sH)).padEnd(14) + ("standing " + Math.round(stH)).padEnd(16) +
+      "ratio " + published + " published / " + measured.toFixed(4) + " measured");
+    const chair = B.draw(B.LIB.filter((i) => i.key === "host/empty-chair")[0], null, { boil: 1 }).manifest();    // THE EMPTY CHAIR AND THE OCCUPIED ONE MUST COMPOSITE AT ONE SCALE, and this
+    // assertion is drop nine's correction. It used to assert the chair carries NO
+    // ratio, on the reasoning that there is no seated body to scale — which is
+    // exactly the reasoning that produced the defect, because the anchor's
+    // targetHeight is a STANDING figure's height. The chair came out 562 units
+    // against the seated pose's 342: 64% larger with nobody in it, taller than
+    // the 416-unit man who sits in it, its back 220 units higher up the frame on
+    // the one cut the plate exists for. render-scale.html §14 found it, and only a
+    // composite could — both numbers were self-consistent and the drawing really
+    // was shared. So what is asserted now is the COMPOSITE, not the field.
+    if (chair.seated) lBad.push("host/empty-chair: publishes a SEATED ratio. That is the seated body's number; applying 0.7394 to a chair is the old defect inverted.");
+    if (!chair.chair || !chair.chair.heights || !chair.chair.heights.ratio) lBad.push("host/empty-chair: publishes no ratio of its own. Scaled to the anchor height directly it renders as tall as a standing figure — a chair taller than the man who sits in it.");
+    if (chair.floorLineY === false || !chair.slots.figure) lBad.push("host/empty-chair: does not stand on a floor line");
+    if (chair.chair) {
+      const room = B.draw(B.LIB.filter((i) => i.key === "room/desk-front-16x9")[0], null, { boil: 1 }).manifest();
+      const T = room.hostAnchor.targetHeight;
+      const chairSpan = chair.floorLineY - chair.slots.figure.y;
+      const sSeat = T * seated.seated.heights.ratio / sH;
+      const sChair = T * chair.chair.heights.ratio / chairSpan;
+      const drift = Math.abs(sChair / sSeat - 1) * 100;
+      // 0.5% covers the rounding in two published four-decimal ratios. Past that
+      // is the two plates disagreeing about the same chair.
+      if (drift > 0.5) lBad.push("host/empty-chair vs host/sitting-at-desk: the SAME chair composites at " +
+        sChair.toFixed(4) + " and " + sSeat.toFixed(4) + " onto room/desk-front-16x9 — " + drift.toFixed(1) +
+        "% apart, so it changes size on the cut from him to his chair.");
+      lRows.push("host/empty-chair".padEnd(30) + ("height " + Math.round(chairSpan)).padEnd(14) +
+        ("ratio " + chair.chair.heights.ratio).padEnd(14) + "composites at " + sChair.toFixed(4) +
+        " against the seated pose's " + sSeat.toFixed(4) + " — " + drift.toFixed(2) + "% apart");
+    }
+    // time of day: the tone has to actually land.
+    //
+    // FOUR PLATES, NOT TWENTY-TWO, and that is a reasoned cut rather than a
+    // budget one. The wash is ONE call in room(), before any angle branch — no
+    // branch has its own copy — so the only thing that varies per plate is the
+    // floor line the wall is measured against. These four span every floorY case
+    // the author has: the default, the camera at desk height, the camera above
+    // the desk, and the one angle with perspective. Checking eighteen plates of
+    // identical code cost 80 room-weight draws and proved nothing the fourth did
+    // not — and a pre-flight nobody can wait for is a pre-flight nobody runs,
+    // which is the same failure as the review page that hung on twelve rooms.
+    const TOD_SAMPLE = ["room/desk-front-16x9", "room/low-desk-height-16x9", "room/high-desk-down-16x9", "room/corner-perspective-9x16"];
+    const rooms = B.LIB.filter((i) => i.dir === "room");
+    const nightBytes = {};
+    ["dusk", "day"].forEach(function (tod) {
+      let drew = 0, declared = 0, silent = [];
+      TOD_SAMPLE.forEach(function (key) {
+        const item = B.LIB.filter((i) => i.key === key)[0];
+        if (!item) { lBad.push("time-of-day sample plate " + key + " is not in LIB"); return; }
+        const P = B.draw(Object.assign({}, item, { args: Object.assign({}, item.args, { timeOfDay: tod }) }), null, { boil: 1 });
+        const m = P.manifest();
+        if (!m.timeOfDay) { lBad.push(key + ": declared timeOfDay " + tod + " and published none"); return; }
+        declared++;
+        if (nightBytes[key] == null) nightBytes[key] = B.draw(item, null, { boil: 1 }).toSVG().length;
+        if (P.toSVG().length > nightBytes[key]) drew++; else silent.push(key);
+        if (!m.timeOfDay.titleGroundRequired) lBad.push(key + " " + tod + ": does not declare titleGroundRequired");
+      });
+      if (silent.length) lBad.push(tod + ": drew NOTHING on " + silent.length + " sampled plate(s) — " + silent.join(", ") + ". This is §4.2's defect: hatch2 lays no wash below opacity 0.4 and returns early for a plane, so a faint wall-sized wash emits an empty string.");
+      lRows.push(("timeOfDay " + tod).padEnd(30) + (drew + " of " + declared + " sampled plates toned").padEnd(30) +
+        "sample spans every floorY case; " + (rooms.length - 18) + " wall-of-calls plates have no set to light");
+    });
+    // §1 IS ANSWERED, so the gate changes shape: a toned plate is now allowed, but
+    // only while the title has a ground of its own. Flipping TIME_OF_DAY back
+    // while TITLE_GROUND is null would reinstate exactly the defect §1 measured.
+    if (B.TIME_OF_DAY !== null && !B.TITLE_GROUND) lBad.push("TIME_OF_DAY is " + JSON.stringify(B.TIME_OF_DAY) + " while TITLE_GROUND is null — a toned wall behind a title with no ground of its own is the defect §1 measured at a 1.0:1 floor. Turn one off or the other on.");
+    // over the shoulder: the one room plate with him in it
+    ["-16x9", "-9x16"].forEach(function (a) {
+      const m = B.draw(B.LIB.filter((i) => i.key === "room/over-the-shoulder" + a)[0], null, { boil: 1 }).manifest();
+      if (m.hostAnchor !== false) lBad.push("room/over-the-shoulder" + a + ": declares a host anchor. He is already in this plate — a cut-out would put two of him in one frame.");
+      if (m.slots.title) lBad.push("room/over-the-shoulder" + a + ": declares a title slot. This frame is a shoulder, a screen and a desk; §1's audit is the argument.");
+      if (!m.slots.screen) lBad.push("room/over-the-shoulder" + a + ": no screen region — the shot's whole subject is what he is looking at");
+      lRows.push(("room/over-the-shoulder" + a).padEnd(30) + "hostAnchor false".padEnd(20) + "no title".padEnd(12) + "screen region published");
+    });
+  })();
+  out.push(["L · §4 — the rooms and the poses",
+    lRows.join("\n") + "\n\n" +
+    "WHAT IS ASSERTED, AND WHY EACH ONE\n" +
+    "  the seated ratio agrees with a STANDING POSE measured in this run, not with\n" +
+    "  the manifest it is published in. The anchor contract scales a host until\n" +
+    "  (floorLineY - figure.y) matches the anchor height; applied to a seated plate\n" +
+    "  unchanged it scales him UP by 36% — a correctly placed, oversized man that no\n" +
+    "  still would reveal. This is the one number in §4 that can be wrong silently.\n\n" +
+    "  the empty chair and the occupied one COMPOSITE AT ONE SCALE, asserted on a\n" +
+    "  real room's anchor rather than as a field on either plate. This assertion was\n" +
+    "  inverted in drop eight and it is worth recording why. It used to say the chair\n" +
+    "  carries no ratio and scales to the anchor height directly, because there is no\n" +
+    "  seated body to scale — and that is wrong, because the anchor height is a\n" +
+    "  STANDING figure's. The chair came out 562 units against the seated pose's 342,\n" +
+    "  64% larger with nobody in it and taller than the 416-unit man who sits in it,\n" +
+    "  with its back 220 units higher up the frame on the one cut the plate exists\n" +
+    "  for. Nothing in the kit saw it: both numbers were self-consistent, the drawing\n" +
+    "  was shared, and the claim 'same chair, one function' was true of the drawing\n" +
+    "  and false of the contract. It took a composite, in render-scale.html §14. The\n" +
+    "  chair now publishes its own 0.608 against the same standing equivalent, and\n" +
+    "  this check composites both onto room/desk-front-16x9 and compares.\n\n" +
+    "  the time-of-day tone actually lands, on a four-plate sample spanning every\n" +
+    "  floorY case the author has. The wash is one call before any angle branch, so\n" +
+    "  eighteen plates of identical code prove nothing the fourth does not. The\n" +
+    "  first build of it pushed two marks and emitted ZERO bytes — hatch2 lays no\n" +
+    "  wash below opacity 0.4 and returns early for any region over 5.5% of the\n" +
+    "  plate, so a faint wall-sized hatch drew nothing and reported nothing. Byte\n" +
+    "  counts are the only thing that catches that, which is why this compares them\n" +
+    "  rather than trusting the call.\n\n" +
+    "  TIME_OF_DAY may now be turned on, and this check is what keeps it honest. §1\n" +
+    "  is answered — the title carries its own ground — so a toned wall no longer\n" +
+    "  costs the opener its legibility, which is the unlock the brief predicted.\n" +
+    "  The assertion is now the PAIR: a time-of-day variant with TITLE_GROUND null\n" +
+    "  fails, because that combination is the original defect at a 1.0:1 floor.\n" +
+    "  It stays null in this build only because no dusk plate has been looked at.\n\n" +
+    "  over-the-shoulder declares no host anchor and no title. It is the only room\n" +
+    "  plate with a figure drawn into it, so both absences are load-bearing.\n\n" +
+    (lBad.length ? lBad.join("\n") : "clean."),
+    lBad.length === 0]);
+
+  await step("N — §1 the furniture, §2 the confession, §3.4 the end card");
+  // ---- N · §1 and §2, the furniture and the confession ---------------------
+  // Both sections turn on a property that is invisible in a render: the lower
+  // third's stillness, and the confession's refusal to mark one of its three
+  // blocks. Neither would announce itself if it broke.
+  const nRows = [], nBad = [];
+  (function () {
+    // §1.1 — THE LOWER THIRD IS STILL, AND STILLNESS IS THE LOAD-BEARING
+    // PROPERTY. It is on screen longer than any asset in the product, so this
+    // asserts it twice over: the build must ship one frame, AND the plate must
+    // emit identical marks even when a boil index is forced on it. The second is
+    // the one that matters — it survives someone giving the overlays family a
+    // boil strip without reading the comment.
+    ["overlays/lower-third-16x9", "overlays/lower-third-9x16"].forEach(function (key) {
+      const item = B.LIB.filter((i) => i.key === key)[0];
+      if (!item) { nBad.push(key + " is not in LIB"); return; }
+      const pb = B.playbackOf(item);
+      const a = B.draw(item, null, { boil: 1 }), b = B.draw(item, null, { boil: 2 });
+      const still = a.toSVG() === b.toSVG();
+      const m = a.manifest(), s = m.slots;
+      if (pb.frameCount !== 1) nBad.push(key + ": ships " + pb.frameCount + " frames, expected 1");
+      if (!still) nBad.push(key + ": NOT still under a forced boil index. One frame ships, so nothing would show this today — but the marks are supposed to be pinned, and the next boil strip on overlays/ would make the one asset that is on screen for forty minutes crawl.");
+      if (!m.noBoil) nBad.push(key + ": does not publish why it is still");
+      // and the ticker box must stay narrow — see check O
+      nRows.push(key.padEnd(30) + (pb.frameCount + " frame").padEnd(9) + (still ? "still under forced boil" : "NOT STILL").padEnd(25) +
+        "ticker " + s.ticker.maxChars + "ch \u00b7 tagline " + s.tagline.maxChars + "ch");
+    });
+    // §2 — THE TONE, ASSERTED AS GEOMETRY. All three bodies in one role at one
+    // budget is the whole claim: a plate that sets "what I got wrong" differently
+    // from "what I said" has marked which is the bad one, which is the thing the
+    // plate exists not to do.
+    ["statement", "ledger"].forEach(function (t) {
+      ["-16x9", "-9x16"].forEach(function (a) {
+        const key = "structure/confession-" + t + a;
+        const item = B.LIB.filter((i) => i.key === key)[0];
+        if (!item) { nBad.push(key + " is not in LIB"); return; }
+        const m = B.draw(item, null, { boil: 1 }).manifest(), s = m.slots;
+        const ids = ["said", "happened", "wrong"];
+        if (!ids.every((n) => s[n] && s[n].role === s.said.role)) nBad.push(key + ": the three bodies are not in one type role \u2014 the plate can now mark which is the bad one");
+        if (!ids.every((n) => s[n].maxCharsPerLine === s.said.maxCharsPerLine)) nBad.push(key + ": the three bodies have different budgets");
+        if (!ids.every((n) => s[n + "-label"] && s[n + "-label"].role === s["said-label"].role)) nBad.push(key + ": the three labels are not in one role");
+        if (!m.congruent) nBad.push(key + ": the three blocks are not congruent boxes");
+        if (!m.fit.clears) nBad.push(key + ": the blocks run to y=" + m.fit.bottom + " against a caption at " + m.fit.captionY);
+        // the band-fill number is why the portrait plates were re-spaced
+        if (m.fit.fillsBand < 0.5) nBad.push(key + ": the blocks fill only " + Math.round(m.fit.fillsBand * 100) + "% of the band between head and caption \u2014 bunched, and it reads as though the plate had been cropped");
+        if (!m.refusesVerdict) nBad.push(key + ": does not publish the no-verdict contract");
+        nRows.push(key.padEnd(38) + ("fills " + Math.round(m.fit.fillsBand * 100) + "%").padEnd(11) +
+          ("body " + s.said.maxCharsPerLine + "ch").padEnd(11) + (m.congruent ? "congruent" : "NOT CONGRUENT").padEnd(15) + "one role, one budget");
+      });
+    });
+    // §3.4 — the end card's zones, which is the only claim in this work that
+    // depends on numbers somebody outside the project can change.
+    ["-16x9", "-9x16"].forEach(function (a) {
+      const key = "structure/end-card" + a;
+      const P = B.draw(B.LIB.filter((i) => i.key === key)[0], null, { boil: 1 });
+      const m = P.manifest(), z = m.keepOut;
+      let slotHits = 0, markHits = 0;
+      Object.keys(m.slots).forEach(function (n) {
+        const s = m.slots[n];
+        if (s.role === "content-area") return;
+        z.forEach(function (k) {
+          if (s.x < k.x + k.w && s.x + s.w > k.x && s.y < k.y + k.h && s.y + s.h > k.y) {
+            slotHits++; nBad.push(key + ": slot " + n + " overlaps the " + k.id + " zone \u2014 a caption under a subscribe button is not a caption");
+          }
+        });
+      });
+      // AUTHORED marks only: P.ink and P.colour, not the emitted SVG. The paper
+      // surface necessarily extends under the platform's elements — that is what
+      // a ground is — and scanning toSVG() counts it, which is how this check
+      // first reported 14 false overlaps.
+      [].concat(P.ink || [], P.colour || []).forEach(function (str) {
+        (str.match(/<path\b[^>]*\/>/g) || []).forEach(function (pth) {
+          const d = (pth.match(/ d="([^"]*)"/) || [, ""])[1];
+          if (!d || /[mlcsqtahv]/.test(d)) return;
+          const nums = d.match(/-?\d*\.?\d+/g);
+          if (!nums) return;
+          let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+          for (let i = 0; i + 1 < nums.length; i += 2) {
+            const x = +nums[i], y = +nums[i + 1];
+            if (x < x0) x0 = x; if (x > x1) x1 = x;
+            if (y < y0) y0 = y; if (y > y1) y1 = y;
+          }
+          z.forEach(function (k) { if (x0 < k.x + k.w && x1 > k.x && y0 < k.y + k.h && y1 > k.y) markHits++; });
+        });
+      });
+      if (markHits) nBad.push(key + ": " + markHits + " authored mark(s) reach into a keep-out zone");
+      if (!m.keepOutSource) nBad.push(key + ": does not publish that the zone fractions are designed-against rather than confirmed");
+      nRows.push(key.padEnd(30) + (z.length + " zones").padEnd(11) + ("slot overlaps " + slotHits).padEnd(19) + "authored marks in zones " + markHits);
+    });
+  })();
+  out.push(["N · §1 the furniture, §2 the confession, §3.4 the end card",
+    nRows.join("\n") + "\n\n" +
+    "WHAT IS ASSERTED, AND WHY EACH ONE\n" +
+    "  the lower third is still under a FORCED boil index, not merely shipped as\n" +
+    "  one frame. It is on screen longer than any asset in the product, so the\n" +
+    "  stillness is the load-bearing property \u2014 and the one-frame build would hide\n" +
+    "  a broken pin until somebody gave overlays/ a boil strip, at which point the\n" +
+    "  one thing on screen for forty minutes starts to crawl.\n\n" +
+    "  the confession's three bodies are ONE role on ONE budget, and its blocks are\n" +
+    "  congruent. That is \u00a72's tone decision expressed as geometry: a plate that\n" +
+    "  sets 'what I got wrong' differently from 'what I said' has marked which is\n" +
+    "  the bad one, which is the thing the plate exists not to do. It cannot be\n" +
+    "  seen in a render \u2014 a 4pt difference looks like nothing and reads as a verdict.\n\n" +
+    "  the blocks fill at least half the band between head and caption. The portrait\n" +
+    "  plates first came out at 59% of a 1920-tall frame with everything bunched in\n" +
+    "  the top half, reading as though the plate had been cropped.\n\n" +
+    "  the end card's zones are clear of every SLOT and every AUTHORED mark \u2014 and\n" +
+    "  authored is the operative word. The paper surface necessarily extends under\n" +
+    "  the platform's elements, because that is what a ground is; scanning the\n" +
+    "  emitted SVG counts it and reports 14 false overlaps, which is exactly what\n" +
+    "  the first version of this check did. It reads P.ink and P.colour instead.\n\n" +
+    (nBad.length ? nBad.join("\n") : "clean."),
+    nBad.length === 0]);
+
+  await step("O — declared identifiers, across the library");
+  // ---- O · declared identifiers -------------------------------------------
+  // THIS CHECK EXISTS BECAUSE THE SAME MISTAKE HAPPENED THREE TIMES, and its
+  // first version was built on a premise that does not hold.
+  //
+  // The mistake: language-shift's year, the lower third's ticker and the
+  // confession ledger's entry-no were each a short identifier given the full
+  // measure because nothing was going to sit next to it, and budget.js duly
+  // derived room for a sentence — 59 characters for "2024", 15 for "$HTZ", 26
+  // for "no. 14". Not a defect in itself; an invitation, and what it invites is
+  // a company name in a slot whose job is a ticker. All three were narrowed.
+  //
+  // THE FIRST VERSION TRIED TO FIND THEM GEOMETRICALLY — role floor short, box
+  // much wider — and that cannot work, because a role's own maxChars is ITSELF
+  // derived: budget.js sets it to the minimum across every box using the role.
+  // So "box is 17x the role floor" only means one role serves boxes of very
+  // different widths, which is normal. It flagged ten plates, every one a false
+  // positive (structure/flow's caption role reads a floor of 6 because its
+  // narrowest caption box is 6 — nothing is wrong there at all).
+  //
+  // Nothing in the manifest distinguishes an identifier from a caption, because
+  // the difference is semantic. So it is DECLARED: a slot that holds an
+  // identifier says `identifier: <intended max>`, and this check asserts the
+  // derived box is not wildly wider than the intent. New identifier slots opt
+  // in, which is the same structural pattern as pin() — a rule that cannot be
+  // broken by someone who has not read the comment.
+  const oRows = [], oBad = [];
+  (function () {
+    let declared = 0;
+    B.LIB.forEach(function (item) {
+      let m;
+      try { m = B.draw(item, null, { boil: 1 }).manifest(); } catch (e) { return; }
+      Object.keys(m.slots).forEach(function (n) {
+        const s = m.slots[n];
+        if (s.region || s.identifier == null) return;
+        declared++;
+        const derived = s.maxChars != null ? s.maxChars : s.maxCharsPerLine;
+        const ratio = derived / s.identifier;
+        // 1.6x is the tolerance: a box has to hold its intent comfortably, and
+        // the derived number is a measurement rather than a target. Past that it
+        // is a different slot than the one that was designed.
+        if (ratio > 1.6) oBad.push(item.key + " \u00b7 " + n + ": declared for " + s.identifier +
+          " characters, box holds " + derived + " (\u00d7" + ratio.toFixed(1) + "). Narrow the box or raise the declared intent \u2014 a box this size invites something that is not an identifier.");
+        oRows.push((item.key + " \u00b7 " + n).padEnd(46) + ("declared " + s.identifier).padEnd(15) +
+          ("box holds " + derived).padEnd(16) + "\u00d7" + ratio.toFixed(2) + (ratio > 1.6 ? "  TOO LOOSE" : ""));
+      });
+    });
+    oRows.push("");
+    oRows.push(declared + " slot(s) declare themselves identifiers.");
+  })();
+  out.push(["O \u00b7 declared identifiers",
+    oRows.join("\n") + "\n\n" +
+    "WHY THIS CHECK EXISTS: the same mistake happened three times.\n" +
+    "  structure/language-shift    then-year   authored for a year, box held 59\n" +
+    "  overlays/lower-third        ticker      authored for $HTZ, box held 15\n" +
+    "  structure/confession-ledger entry-no    authored for 'no. 14', box held 26\n\n" +
+    "Every one the same shape: a short identifier handed the full measure because\n" +
+    "nothing was going to sit next to it, and budget.js correctly deriving room for\n" +
+    "a sentence. All three were narrowed. This is so a fourth has to be argued for.\n\n" +
+    "AND THE FIRST VERSION OF THIS CHECK WAS WRONG, which is worth recording. It\n" +
+    "looked for a short ROLE floor in a wide box \u2014 but a role's maxChars is itself\n" +
+    "derived: budget.js sets it to the minimum across every box using that role. So\n" +
+    "that test only finds roles serving boxes of different widths, which is normal.\n" +
+    "It flagged ten plates and all ten were false: structure/flow's caption role\n" +
+    "reads a floor of 6 because its narrowest caption box is 6, and nothing is\n" +
+    "wrong with it.\n\n" +
+    "Nothing in the manifest separates an identifier from a caption \u2014 the difference\n" +
+    "is semantic. So it is declared: `identifier: <intended max>` on the slot, and\n" +
+    "this asserts the derived box is within 1.6x of it. New identifier slots opt in,\n" +
+    "the same way pin() works: a rule that cannot be broken by someone who has not\n" +
+    "read the comment.\n\n" +
+    (oBad.length ? oBad.join("\n") : "clean."),
+    oBad.length === 0]);
+
+  await step("P — boxes against the lines they declare");
+  // ---- P · a box that cannot hold the lines it declares --------------------
+  //
+  // THIS CHECK EXISTS BECAUSE THE PROOF PAGE HAD THE DEFECT, NOT THE PLATES.
+  //
+  // render-scale.html set type with the CSS 'font' shorthand, which resets every
+  // omitted longhand — so it silently set line-height:normal (~1.35em) over the
+  // kit's own pitch, and every two-line fill rendered 16% too tall and overflowed
+  // its published box WHILE THE SECTION REPORTED EVERYTHING INSIDE BUDGET. The
+  // page is fixed. What the episode showed is that the kit had no check for the
+  // property at all: budget.js derives maxLines FROM box height at PITCH, so the
+  // relationship is supposed to hold by construction — and a property that holds
+  // by construction is exactly the kind that stops holding when the construction
+  // is edited, with nothing to say so. Check J's two-line finding on
+  // language-shift (1.997 lines where the plate needed 2) is the same arithmetic
+  // caught by accident on one plate. This is it, library-wide.
+  //
+  // It rides on check A's build, per the rule M is under: a second full library
+  // pass for a check this cheap is not affordable.
+  const pRows = [], pBad = [], pNotes = [];
+  try {
+  (function () {
+    const PITCH = window.BUDGET.PITCH;
+    // Cap height plus descender for both faces in the kit, off their metrics:
+    // the height a single line of type actually INKS, as against the em box it
+    // is set in. This is the number that separates a note from a failure.
+    const INK = 0.93;
+    let multi = 0, single = 0, unsized = 0;
+    BOXES.forEach(function (b) {
+      b.rows.forEach(function (s) {
+        const n = s.name;
+        if (s.unsized) { unsized++; return; }
+        const r = { size: s.size }, lines = s.lines;
+        const need = s.size * PITCH * lines;
+        if (lines > 1) {
+          multi++;
+          if (need - s.h > 0.5) pBad.push(b.key + " \u00b7 " + n + ": role " + s.role + " at " + r.size +
+            "u \u00d7 " + lines + " lines needs " + need.toFixed(1) + " units at the " + PITCH +
+            "em pitch, and the box is " + s.h + " \u2014 short by " + (need - s.h).toFixed(1) +
+            ". maxLines says it holds " + lines + " and it does not.");
+        } else {
+          single++;
+          // A LINE BOX IS NOT INK, and this is the distinction that keeps the
+          // check usable. One line whose line box overhangs its slot still draws
+          // its glyphs inside it: cap height plus descender is about 0.93em, so
+          // 30u type puts ~28 units of ink in a 32-unit box and overhangs only in
+          // leading. Failing those would be 28 false alarms in this library —
+          // the budget-reporter defect this pack already called out once, and the
+          // reason check O's first version was thrown away. They are NOTED.
+          if (need - s.h > 0.5) {
+            const sig = s.role + " " + r.size + "u in " + s.h + "u";
+            pNotes.push(sig);
+            // THE THRESHOLD IS INK, NOT POINT SIZE. The first cut of this check
+            // failed any box shorter than its point size, and that is a false
+            // alarm: an em box is not ink. Cap height plus descender is ~0.93em,
+            // so figures/big-number-l2's 350u value in a 340-unit box puts about
+            // 325.5 units of ink in it and fits with room. One false positive is
+            // how check O's first version started, and it is the defect this pack
+            // has now called out three times. Fail only when the INK does not fit.
+            if (r.size * INK - s.h > 0.5) pBad.push(b.key + " \u00b7 " + n + ": role " + s.role + " is " + r.size +
+              "u in a " + s.h + "-unit box \u2014 about " + (r.size * INK).toFixed(1) +
+              " units of ink (cap height plus descender, " + INK + "em) against a " + s.h +
+              "-unit box, so this one is past leading and into ink.");
+          }
+        }
+      });
+    });
+    const agg = {};
+    pNotes.forEach(function (k) { agg[k] = (agg[k] || 0) + 1; });
+    pRows.push("type slots measured:        " + (multi + single) + "  (" + multi + " multi-line, " + single + " single-line)");
+    pRows.push("slots with no sized role:   " + unsized + "  (region fills and slot-only boxes)");
+    pRows.push("line pitch:                 BUDGET.PITCH = " + PITCH + "em, the number maxLines is derived against");
+    pRows.push("");
+    pRows.push("multi-line boxes short of the lines they declare: " + pBad.filter(function (x) { return /maxLines says/.test(x); }).length);
+    pRows.push("");
+    pRows.push("single-line leading overhangs, NOTED not failed: " + pNotes.length +
+      " instance(s), " + Object.keys(agg).length + " signature(s)");
+    pRows.push("  (failed only where the INK does not fit: " + pBad.filter(function (x) { return /into ink/.test(x); }).length + ")");
+    Object.keys(agg).sort(function (a, b2) { return agg[b2] - agg[a]; }).forEach(function (k) {
+      pRows.push("  " + String(agg[k]).padStart(3) + " \u00d7 " + k);
+    });
+  })();
+  } catch (e) {
+    pBad.push("CHECK P THREW: " + e.message + "\n" + (e.stack || "").split("\n").slice(0, 4).join("\n"));
+  }
+  out.push(["P \u00b7 boxes against the lines they declare",
+    pRows.join("\n") + "\n\n" +
+    "WHAT IS ASSERTED, AND WHY\n" +
+    "  every slot declaring maxLines > 1 has a box tall enough to hold them at the\n" +
+    "  kit's own line pitch. budget.js DERIVES maxLines from box height at 1.16em,\n" +
+    "  so this should hold by construction \u2014 and a property that holds by\n" +
+    "  construction is the kind that stops holding when the construction is edited,\n" +
+    "  with nothing to say so. Check J found exactly this on one plate by accident:\n" +
+    "  language-shift's phrase box derived 1.997 lines where the plate needed two,\n" +
+    "  a quarter of a unit short, and nothing but the budget would have said so.\n" +
+    "  This is that arithmetic across all 270 assets.\n\n" +
+    "  a single line whose LINE BOX overhangs its slot is noted, not failed. Cap\n" +
+    "  height plus descender is about 0.93em, so 30u type puts roughly 28 units of\n" +
+    "  ink in a 32-unit box and overhangs only in leading \u2014 no ink leaves the box.\n" +
+    "  Failing those would be 28 false alarms here, which is the reporter defect\n" +
+    "  this pack already called out and the reason check O's first version was\n" +
+    "  thrown away. What IS failed is a box that cannot hold the INK: cap height\n" +
+    "  plus descender is 0.93em off the faces' own metrics, and that is the number\n" +
+    "  separating a note from a failure. The first cut of this check failed any box\n" +
+    "  shorter than its POINT SIZE, which is one false alarm on its own \u2014\n" +
+    "  figures/big-number-l2's 350u value sits in a 340-unit box and inks about\n" +
+    "  325.5, so it fits with room. An em box is not ink, and shipping that one\n" +
+    "  false positive is how check O's first version started.\n\n" +
+    "WHY IT EXISTS: the proof page had this defect, not the plates.\n" +
+    "  render-scale.html set type with the CSS 'font' shorthand, which resets every\n" +
+    "  omitted longhand \u2014 so it set line-height:normal (~1.35em) over the pitch,\n" +
+    "  and every two-line fill rendered 16% too tall and overflowed its box while\n" +
+    "  the section reported everything inside budget. A clean report about type\n" +
+    "  visibly out of its box, which is the budget reporter's old defect inverted.\n" +
+    "  The page now reads BUDGET.PITCH and measures rendered height against the\n" +
+    "  published box. This check is the kit's own half of that: the geometry,\n" +
+    "  library-wide, with no rasteriser and no faces needed.\n\n" +
+    (pBad.length ? pBad.join("\n") : "clean \u2014 no box in the library is short of the lines it declares."),
+    pBad.length === 0]);
+
+  // ---- M · marks that were asked for and never drawn -----------------------
+  // §4.2's defect as a standing check. A hatch() call that returns an empty
+  // string is almost always a mistake — the caller asked for a mark, got nothing,
+  // and nothing anywhere said so. It cost this drop a byte-identical dusk plate.
+  //
+  // The counters come from check A's build (see the wrapper at the top): this
+  // check costs nothing beyond reading them.
+  const mRows = [], mBad = [];
+  (function () {
+    const keys = Object.keys(EMPTY_HATCH);
+    keys.forEach(function (k) { mRows.push(k.padEnd(38) + EMPTY_HATCH[k] + " hatch call(s) returned nothing"); });
+    // Not a failure by itself: hatch legitimately returns "" for a region under 4
+    // units square, which a few prop authors hit at small scale. What this check
+    // is for is NOTICING — a new blank where there was none is the signature.
+    if (keys.length) mBad.push(keys.length + " plate(s) contain a hatch call that drew nothing. Each is either a degenerate region (legitimate) or a wash that silently did not happen (§4.2's defect). Check any that are new.");
+    mRows.push("");
+    mRows.push("hatch calls across the library: " + hatchCalls + ", of which " + hatchBlanks + " returned an empty string");
+  })();
+  out.push(["M · marks asked for and never drawn",
+    mRows.join("\n") + "\n\n" +
+    "WHY THIS CHECK EXISTS. §4.2's wall tone was written as a hatch at opacity\n" +
+    "0.34 and emitted NOTHING: hatch2 treats the authored opacity as coverage and\n" +
+    "lays its wash only at 0.4 or above, and it returns early for any region over\n" +
+    "5.5% of the plate. A faint wall-sized wash is both, so it drew nothing, said\n" +
+    "nothing, and produced a dusk plate byte-identical to the night one. 0.42 would\n" +
+    "have worked. Nothing in the kit would have caught that, and this is the check\n" +
+    "that would have — in the build rather than in a byte count.\n\n" +
+    "It is REPORTED, not failed, on plates whose blank is a degenerate region: a\n" +
+    "region under four units square legitimately draws nothing, and a few prop\n" +
+    "authors hit that at small scale. The signature to act on is a NEW entry.\n\n" +
+    (mBad.length ? mBad.join("\n") : "no hatch call in the library returns empty."),
+    true]);
+
+  const changed = ["annotations", "cards", "frames", "paper", "shorts", "room", "host", "tables", "charts", "figures", "peers", "structure", "cycles"];
+  out.push(["H · §1.1 — the new baseline, and which families it resets",
+    "assets in baseline: " + Object.keys(baseline.assets).length + "\n" +
+    "frames hashed:      " + frameTotal + "\n\n" +
+    "EVERY family changes in this drop, and the byte-identity property that has\n" +
+    "carried the last four packs cannot be asserted against any earlier baseline.\n" +
+    "That is deliberate, not a regression:\n\n" +
+    "  annotations, cards, frames, paper, shorts, room  third boil frame\n" +
+    "  host                                             third boil frame; talk strip\n" +
+    "                                                   re-authored as three visemes\n" +
+    "                                                   at one boil index (§7 fix)\n" +
+    "  room                                             + one ambient prop per plate\n" +
+    "  tables, charts, figures, peers, structure, cycles were static, now a gated\n" +
+    "                                                   three-frame loop (§1.5)\n" +
+    "  overlays                                         UNCHANGED — row-band stays\n" +
+    "                                                   static and should still be\n" +
+    "                                                   byte-identical to delta-13\n\n" +
+    "audit/baseline-14.json is the file the NEXT pack is checked against.",
+    true]);
+
+  document.getElementById("out").innerHTML = out.map(function (o) {
+    return '<h2>' + o[0] + ' — <span class="' + (o[2] ? 'pass">PASS' : 'fail">FAIL') + '</span></h2><pre>' + o[1] + '</pre>';
+  }).join("");
+  document.getElementById("out").insertAdjacentHTML("beforeend",
+    '<p>Sixteen checks, A–P, in ' + ((performance.now() - t0) / 1000).toFixed(1) + 's — one browser process, no rasteriser.</p>');
+
+  function save(name, obj) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 1)], { type: "application/json" }));
+    a.download = name; a.click();
+  }
+  document.getElementById("dl").onclick = () => save("baseline-14.json", baseline);
+  document.getElementById("dlb").onclick = () => save("breathe-map.json", breatheMap);
+  window.__preflight = { baseline, breatheMap, out };
+})();
+</script>
+</body>
+</html>

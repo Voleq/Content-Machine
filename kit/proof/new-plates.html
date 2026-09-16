@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the new plates, filled twice — §0.3</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script><link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px 26px 60px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:30px 0 4px}
+  p{max-width:86ch;color:#8d968f}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:12px 0 8px}
+  .cell{background:#1B1F24;border:1px solid #262c33}
+  .cap{padding:7px 10px;border-bottom:1px solid #262c33;color:#8d968f;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .stage{position:relative}
+  .stage svg{display:block;width:100%;height:auto}
+  .fill{position:absolute;display:flex;overflow:hidden}
+  .fill span{width:100%;text-wrap:pretty}
+  .fill.over{outline:2px dashed #D98A7A;outline-offset:1px}
+  #over{margin:26px 0 0;padding:12px 14px;background:#1B1F24;border:1px solid #262c33;color:#8d968f;white-space:pre-wrap}
+  #over b{color:#D98A7A;font-weight:400}
+</style>
+</head>
+<body>
+<main>
+  <h1>The new plates, filled twice</h1>
+  <p>§0.3: a plate rendered only against the sample workbook has not been tested, it has been
+  illustrated. So each new plate is filled here from two unrelated sets of numbers at
+  <em>different counts</em> — the check that catches a five-step waterfall being useless to a
+  three-cost script.</p>
+  <p>Nothing on screen is drawn into the artwork. Every word and every bar below is placed from the
+  plate's own manifest by the filler in this page, standing in for the compositor and for
+  <code>engine/series.js</code>. The plates themselves contain no text and no data: that is the
+  point of the exercise, and <code>preflight.html</code> check G asserts it.</p>
+  <div id="out"></div>
+  <div id="over"></div>
+</main>
+<script>
+(function () {
+  const PL = window.PLATES, B = window.BUILD, pal = PL.pal("night-card");
+  const out = document.getElementById("out");
+  // every over-budget fill this page produces, reported at the foot rather than
+  // quietly cut off at the box edge
+  const OVER = [];
+  const ROLE_FONT = { end: "'Courier Prime'", step: "'Courier Prime'", demand: "'Courier Prime'", band: "'Courier Prime'", axis: "'Courier Prime'", huge: "'Courier Prime'", figure: "'Courier Prime'", delta: "'Courier Prime'", value: "'Courier Prime'", series: "'Courier Prime'", unit: "'Courier Prime'", kicker: "'Courier Prime'", caption: "'Courier Prime'" };
+
+  function place(stage, P, m, data) {
+    const roles = m.typeRoles || {};
+    Object.keys(data).forEach(function (k) {
+      const s = m.slots[k];
+      if (!s || s.region) return;
+      const r = roles[s.role] || {};
+      // OVER-BUDGET FILLS ARE FLAGGED, NOT CLIPPED.
+      //
+      // budget.js's own note: the compositor ERRORS on a fill longer than the
+      // budget for its box, and the shot does not render. So a fill this page
+      // shows truncated is a fill the pipeline would refuse outright — and a
+      // proof page that silently truncates the defect it was built to surface
+      // has the same problem as a title borrowing its legibility from the wall.
+      // The slot carries the DERIVED number (budget.js writes it per box), so
+      // this is measured rather than guessed.
+      const str = String(data[k]);
+      const lines = str.split("\n");
+      // SINGLE-LINE AND WRAPPING ROLES ARE DIFFERENT QUESTIONS, and the first
+      // version of this reporter asked the wrong one of the second kind.
+      //
+      // maxChars is a one-line box: the whole string has to fit, full stop.
+      // maxCharsPerLine is a wrapping box, and the compositor breaks it by
+      // MEASURED WIDTH across maxLines lines — so an unbroken 52-character
+      // statement in a 33-per-line box that holds three lines is fine, and
+      // flagging it as over budget (which this page did) is a false alarm that
+      // trains people to ignore the report. What is genuinely over is a string
+      // longer than the whole block can hold, or an AUTHORED line (one with a
+      // newline in it, as the qoq-yoy labels have) that overruns on its own.
+      let over = false, why = "";
+      if (s.maxChars != null) {
+        if (str.length > s.maxChars) { over = true; why = str.length + " characters in a " + s.maxChars + "-character box"; }
+      } else if (s.maxCharsPerLine != null) {
+        const maxLines = s.maxLines || 1;
+        if (lines.length > 1) {
+          const longest = Math.max.apply(null, lines.map((l) => l.length));
+          if (longest > s.maxCharsPerLine) { over = true; why = "an authored line of " + longest + " characters in a " + s.maxCharsPerLine + "-per-line box"; }
+          else if (lines.length > maxLines) { over = true; why = lines.length + " authored lines in a " + maxLines + "-line box"; }
+        } else if (str.length > s.maxCharsPerLine * maxLines) {
+          over = true; why = str.length + " characters in a block holding " + (s.maxCharsPerLine * maxLines) + " (" + s.maxCharsPerLine + " x " + maxLines + " lines)";
+        }
+      }
+      const overLines = false;
+      if (over) OVER.push((P.key || m.type || "?") + " · " + k + ": " + why);
+      const d = document.createElement("div");
+      d.className = "fill" + (over || overLines ? " over" : "");
+      if (over || overLines) d.title = "OVER BUDGET — the compositor would refuse this fill";
+      const pc = (v, total) => (v / total * 100) + "%";
+      d.style.left = pc(s.x, m.canvas[0]); d.style.top = pc(s.y, m.canvas[1]);
+      d.style.width = pc(s.w, m.canvas[0]); d.style.height = pc(s.h, m.canvas[1]);
+      d.style.alignItems = "flex-start";
+      d.style.justifyContent = s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start";
+      const sp = document.createElement("span");
+      sp.textContent = data[k];
+      sp.style.whiteSpace = "pre-line";   // a two-line label is two lines, not one wrapped string
+      sp.style.font = (r.weight || 400) + " " + ((r.size || 28) / m.canvas[0] * 100) + "cqw " + (ROLE_FONT[s.role] || "'Archivo Narrow'");
+      sp.style.lineHeight = 1.14;
+      sp.style.color = "#1C222A";
+      sp.style.letterSpacing = r.tracking || "normal";
+      sp.style.textAlign = s.align || "left";
+      sp.style.opacity = r.opacity == null ? 1 : r.opacity;
+      d.appendChild(sp);
+      stage.appendChild(d);
+    });
+  }
+
+  // Stand-in for series.waterfall. The point it demonstrates: SIGN comes off the
+  // value, so an upward step needs no second plate and no author decision.
+  function drawBridge(stage, m, steps, total) {
+    const box = m.slots.bridge, cols = m.columns;
+    const svgns = "http://www.w3.org/2000/svg";
+    const g = document.createElementNS(svgns, "svg");
+    g.setAttribute("viewBox", "0 0 " + m.canvas[0] + " " + m.canvas[1]);
+    g.style.cssText = "position:absolute;inset:0;width:100%;height:auto";
+    const vals = [total].concat(steps).concat([0]);
+    let running = total;
+    const ends = [];
+    steps.forEach(function (v) { running += v; ends.push(running); });
+    const peak = Math.max(total, Math.max.apply(null, ends.concat([total])));
+    const unit = (box.h * 0.86) / peak;
+    const baseY = box.y + box.h;
+    function bar(c, y0, y1, solid) {
+      const r = document.createElementNS(svgns, "rect");
+      r.setAttribute("x", c.x); r.setAttribute("width", c.w);
+      r.setAttribute("y", Math.min(y0, y1)); r.setAttribute("height", Math.abs(y1 - y0));
+      r.setAttribute("fill", "#1C222A"); r.setAttribute("fill-opacity", solid ? 0.82 : 0.42);
+      g.appendChild(r);
+    }
+    bar(cols[0], baseY, baseY - total * unit, true);
+    let top = total;
+    steps.forEach(function (v, i) {
+      const from = top, to = top + v;
+      bar(cols[i + 1], baseY - from * unit, baseY - to * unit, false);
+      top = to;
+    });
+    bar(cols[cols.length - 1], baseY, baseY - top * unit, true);
+    stage.appendChild(g);
+    return top;
+  }
+
+  function drawImplied(stage, m, lo, hi, demand) {
+    const svgns = "http://www.w3.org/2000/svg";
+    const g = document.createElementNS(svgns, "svg");
+    g.setAttribute("viewBox", "0 0 " + m.canvas[0] + " " + m.canvas[1]);
+    g.style.cssText = "position:absolute;inset:0;width:100%;height:auto";
+    const b = m.slots.band, mk = m.slots.marker, vert = m.axis.orientation === "vertical";
+    const t = (v) => Math.max(0, Math.min(1, v));
+    const clamped = demand < 0 || demand > 1;
+    const r = document.createElementNS(svgns, "rect");
+    if (vert) {
+      r.setAttribute("x", b.x); r.setAttribute("width", b.w);
+      r.setAttribute("y", b.y + (1 - t(hi)) * b.h); r.setAttribute("height", (t(hi) - t(lo)) * b.h);
+    } else {
+      r.setAttribute("y", b.y); r.setAttribute("height", b.h);
+      r.setAttribute("x", b.x + t(lo) * b.w); r.setAttribute("width", (t(hi) - t(lo)) * b.w);
+    }
+    r.setAttribute("fill", "#7C6A52"); r.setAttribute("fill-opacity", 0.55);
+    g.appendChild(r);
+    const l = document.createElementNS(svgns, "line");
+    if (vert) {
+      const y = mk.y + (1 - t(demand)) * mk.h;
+      l.setAttribute("x1", mk.x); l.setAttribute("x2", mk.x + mk.w); l.setAttribute("y1", y); l.setAttribute("y2", y);
+    } else {
+      const x = mk.x + t(demand) * mk.w;
+      l.setAttribute("y1", mk.y); l.setAttribute("y2", mk.y + mk.h); l.setAttribute("x1", x); l.setAttribute("x2", x);
+    }
+    l.setAttribute("stroke", "#1C222A"); l.setAttribute("stroke-width", 7);
+    if (clamped) l.setAttribute("stroke-dasharray", "16 10");
+    g.appendChild(l);
+    stage.appendChild(g);
+    return clamped;
+  }
+
+  function cell(title, note) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    c.innerHTML = '<div class="cap"><b>' + title + '</b> &nbsp;' + note + '</div><div class="stage" style="container-type:inline-size"></div>';
+    return c;
+  }
+
+  function section(h, blurb, cells) {
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>" + h + "</h2><p>" + blurb + "</p>";
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    cells.forEach((c) => pair.appendChild(c));
+    s.appendChild(pair);
+    out.appendChild(s);
+  }
+
+  // ---- waterfall, two workbooks, two counts ---------------------------------
+  const wfA = {
+    steps: 3, aspect: "16x9", w: 1920, h: 1080,
+    values: [-402, -188, -96], total: 1240,
+    text: { kicker: "WHERE THE REVENUE WENT", unit: "$m, FY", "total-label": "Revenue", "remainder-label": "Operating profit",
+      "label-1": "Cost of sales", "label-2": "Research", "label-3": "Selling & admin",
+      caption: "Three costs. A script with three costs has a plate with three columns." },
+  };
+  const wfB = {
+    steps: 5, aspect: "9x16", w: 1080, h: 1920,
+    values: [-284, -119, 31, -64, -30], total: 741,
+    text: { kicker: "THE BRIDGE", unit: "\u00a5bn, H1", "total-label": "Net sales", "remainder-label": "Retained",
+      "label-1": "Materials", "label-2": "Labour", "label-3": "FX gain", "label-4": "Depreciation", "label-5": "Tax",
+      caption: "Step three is a GAIN. Same plate, no decision." },
+  };
+  [wfA, wfB].forEach(function (d) {
+    d.cell = cell("figures/waterfall-" + d.steps + "s-" + d.aspect, d.steps + " steps \u00b7 " + (d.values.some((v) => v > 0) ? "one upward step" : "all subtractions"));
+  });
+  section("delta-14 §2.1 · waterfall \u2014 three costs and five, different workbooks",
+    "The right-hand plate carries an <b>upward</b> step at position three. The geometry takes it without a different plate and without the author choosing one: nothing in the artwork is drawn descending, the connector stubs are horizontal, and the sign comes off the value. Note also that nothing is coloured <em>down</em> \u2014 a cost is the ordinary operation of a business, and colouring five subtractions red would make the plate argue ahead of the voice-over.",
+    [wfA.cell, wfB.cell]);
+  [wfA, wfB].forEach(function (d) {
+    const P = PL.waterfall({ key: "figures/waterfall-" + d.steps + "s-" + d.aspect, w: d.w, h: d.h, pal: pal, seed: 31 + d.steps, steps: d.steps });
+    const m = P.manifest();
+    const stage = d.cell.querySelector(".stage");
+    stage.innerHTML = P.toSVG();
+    const left = drawBridge(stage, m, d.values, d.total);
+    const fmt = (v) => (v < 0 ? "\u2212" : "") + Math.abs(v).toLocaleString();
+    const text = Object.assign({}, d.text, { total: fmt(d.total), remainder: fmt(left) });
+    d.values.forEach(function (v, i) { text["step-" + (i + 1)] = fmt(v); });
+    place(stage, P, m, text);
+  });
+
+  // ---- implied, two workbooks, both aspects ---------------------------------
+  const imA = { aspect: "16x9", w: 1920, h: 1080, lo: 0.18, hi: 0.46, demand: 0.74,
+    text: { kicker: "WHAT HAS TO BE TRUE", statement: "At 22x, the market needs 14% growth for eight years.",
+      demand: "14.0%", "demand-label": "IMPLIED, EIGHT YEARS", "history-low": "4.1%", "history-high": "9.3%",
+      "history-label": "ITS OWN RANGE, TEN YEARS", "axis-low": "0%", "axis-high": "20%",
+      caption: "The demand sits above everything the company has ever done." } };
+  const imB = { aspect: "9x16", w: 1080, h: 1920, lo: 0.30, hi: 0.88, demand: 0.41,
+    text: { kicker: "WHAT HAS TO BE TRUE", statement: "At 11x, it needs 5% \u2014 which it has beaten most years.",
+      demand: "5.2%", "demand-label": "IMPLIED, FIVE YEARS", "history-low": "3.1%", "history-high": "9.0%",
+      "history-label": "ITS OWN RANGE, TEN YEARS", "axis-low": "0%", "axis-high": "10%",
+      caption: "Same plate, opposite verdict. It does not know which." } };
+  [imA, imB].forEach(function (d) { d.cell = cell("structure/implied-" + d.aspect, d.demand > d.hi ? "marker OUTSIDE the band" : "marker inside the band"); });
+  section("delta-14 §2.2 · what has to be true \u2014 the same plate arguing both ways",
+    "One demand, one history, one axis. The left plate's marker sits above the band and the right plate's sits inside it \u2014 the whole argument is that relationship, which is why the two regions share a single published axis rather than being measured twice. A marker outside 0\u20131 is a real reading and the most important thing the plate can say: the renderer clamps it to the end and <em>marks</em> it rather than dropping it.",
+    [imA.cell, imB.cell]);
+  [imA, imB].forEach(function (d) {
+    const P = PL.impliedPlate({ key: "structure/implied-" + d.aspect, w: d.w, h: d.h, pal: pal, seed: 37 });
+    const m = P.manifest();
+    const stage = d.cell.querySelector(".stage");
+    stage.innerHTML = P.toSVG();
+    drawImplied(stage, m, d.lo, d.hi, d.demand);
+    place(stage, P, m, d.text);
+  });
+  // ---- DROP TWO · §0.3, twelve families, filled twice ----------------------
+  //
+  // Text only, deliberately. §0.3 exists to catch a plate that is fine until real
+  // words go in it — and both defects it caught in drop one were exactly that: a
+  // figure box that fitted "7,41" and a type stack that collided at three lines.
+  // The region fills (bars, segments, markers) are the renderer's and are checked
+  // by the pre-flight's geometry assertions; what cannot be checked without words
+  // is whether a box holds its longest plausible string.
+  //
+  // So every value below is chosen to be AWKWARD rather than tidy: the longest
+  // label a real script would write, a five-digit figure where a three-digit one
+  // would fit, a two-line statement next to a three-line one.
+  const D2 = [
+    { key: "charts/dilution-6y", a: "16x9", note: "six periods", text: {
+      kicker: "SHARES OUTSTANDING", unit: "millions, diluted",
+      "head-1": "FY19", "head-2": "FY20", "head-3": "FY21", "head-4": "FY22", "head-5": "FY23", "head-6": "FY24",
+      "value-1": "1,284", "value-2": "1,341", "value-3": "1,402", "value-4": "1,477", "value-5": "1,559", "value-6": "1,638",
+      "y-1": "1,200", "y-2": "1,350", "y-3": "1,500", "y-4": "1,650", "y-5": "1,800" } },
+    { key: "charts/maturities", a: "9x16", note: "a zero year in the middle", text: {
+      kicker: "WHEN IT COMES DUE", unit: "$bn, face value",
+      "head-1": "2026", "head-2": "2027", "head-3": "2028", "head-4": "2029", "head-5": "2030", "head-6": "2031+",
+      "value-1": "1.4", "value-2": "0", "value-3": "6.8", "value-4": "2.1", "value-5": "0", "value-6": "11.3",
+      "y-1": "0", "y-2": "4", "y-3": "8", "y-4": "12" } },
+    { key: "charts/guided-vs-actual-6y", a: "16x9", note: "two series, one scale", text: {
+      kicker: "WHAT THEY GUIDED, WHAT HAPPENED", unit: "revenue growth, %",
+      "head-1": "FY19", "head-2": "FY20", "head-3": "FY21", "head-4": "FY22", "head-5": "FY23", "head-6": "FY24",
+      "value-1": "14/12", "value-2": "15/9", "value-3": "16/17", "value-4": "18/11", "value-5": "20/8", "value-6": "22/4",
+      "y-1": "0%", "y-2": "8%", "y-3": "16%", "y-4": "24%" } },
+    { key: "peers/distribution", a: "16x9", note: "subject outside the spread", text: {
+      kicker: "WHERE IT SITS", unit: "forward P/E, 41 peers",
+      "marker-label": "This company, 38.4x", "axis-low": "6x", "axis-high": "32x",
+      caption: "Eleven of forty-one trade above twenty. None trade here." } },
+    { key: "figures/share-of-4", a: "16x9", note: "four segments, long labels", text: {
+      kicker: "WHERE THE REVENUE DOLLAR GOES",
+      headline: "Fifty-eight cents of every dollar never reaches the operating line.",
+      "value-1": "31%", "label-1": "Cost of revenue",
+      "value-2": "27%", "label-2": "Stock-based compensation",
+      "value-3": "19%", "label-3": "Sales and marketing",
+      "value-4": "23%", "label-4": "Everything else",
+      caption: "Fiscal 2024. Percentages of total revenue." } },
+    { key: "figures/by-region-5", a: "9x16", note: "five regions on a phone", text: {
+      kicker: "WHERE IT SELLS",
+      headline: "Two thirds of it is outside the reporting currency.",
+      "value-1": "34%", "label-1": "United States",
+      "value-2": "22%", "label-2": "Greater China",
+      "value-3": "18%", "label-3": "Europe ex-UK",
+      "value-4": "14%", "label-4": "Rest of Asia",
+      "value-5": "12%", "label-5": "Latin America",
+      caption: "Trailing twelve months." } },
+    { key: "figures/ownership", a: "16x9", note: "the devastating line", text: {
+      kicker: "WHO OWNS IT",
+      headline: "Management owns nought point four percent of this.",
+      "value-1": "0.4%", "label-1": "Insiders",
+      "value-2": "71.2%", "label-2": "Institutions",
+      "value-3": "28.4%", "label-3": "Everyone else",
+      caption: "Latest proxy. Includes unvested awards." } },
+    { key: "figures/scale-3", a: "16x9", note: "three references, one scale", text: {
+      kicker: "WHAT THE CASH PILE IS",
+      anchor: "$1.28B", "anchor-label": "Cash and equivalents",
+      "ref-label-1": "One year of operating expense",
+      "ref-label-2": "Annual R&D",
+      "ref-label-3": "The 2027 maturity",
+      caption: "They can afford to be wrong for eight years." } },
+    { key: "paper/receipt-8", a: "16x9", note: "eight lines, line 5 is the point", text: {
+      kicker: "THE INCOME STATEMENT, AS AN OBJECT", head: "FY2024", takings: "$4,912M",
+      "label-1": "Cost of revenue", "line-1": "1,522",
+      "label-2": "Research", "line-2": "884",
+      "label-3": "Sales & marketing", "line-3": "731",
+      "label-4": "General & admin", "line-4": "298",
+      "label-5": "Stock comp", "line-5": "1,046",
+      "label-6": "Restructuring", "line-6": "112",
+      "label-7": "Interest", "line-7": "64",
+      "label-8": "Tax", "line-8": "31",
+      left: "$224M", footnote: "THANK YOU FOR YOUR CAPITAL" } },
+    { key: "structure/said-happened-5", a: "16x9", note: "five events, two diverge", text: {
+      kicker: "THEY SAID, THEN LOOK",
+      "rail-said": "SAID", "rail-happened": "HAPPENED",
+      "date-1": "Q1 23", "said-1": "Margins inflect in the second half", "happened-1": "Margins fell 210bp",
+      "date-2": "Q2 23", "said-2": "Inventory is clean", "happened-2": "Wrote down $180M",
+      "date-3": "Q3 23", "said-3": "No further discounting", "happened-3": "Average price fell 9%",
+      "date-4": "Q4 23", "said-4": "Demand is returning", "happened-4": "Orders flat",
+      "date-5": "Q1 24", "said-5": "Confident in the guide", "happened-5": "Guide cut in May",
+      caption: "Five quarters. Two of them are the reason for this video." } },
+    { key: "structure/sensitivity", a: "16x9", note: "cell 3-1 marked", text: {
+      kicker: "WHAT IT IS WORTH",
+      "col-axis": "REVENUE GROWTH", "row-axis": "TERMINAL MARGIN",
+      "col-1": "4%", "col-2": "8%", "col-3": "12%",
+      "row-1": "14%", "row-2": "18%", "row-3": "22%",
+      "cell-1-1": "$41", "cell-1-2": "$52", "cell-1-3": "$67",
+      "cell-2-1": "$58", "cell-2-2": "$74", "cell-2-3": "$96",
+      "cell-3-1": "$79", "cell-3-2": "$101", "cell-3-3": "$132",
+      caption: "It trades at $88. Cheap only in the bottom-right quadrant." } },
+    { key: "charts/multiples-grid-6", a: "16x9", note: "six tiles, per-tile scales", text: {
+      kicker: "EVERY SEGMENT, AND ONLY ONE IS MOVING",
+      "label-1": "Cloud", "value-1": "+34%",
+      "label-2": "Licence", "value-2": "\u22129%",
+      "label-3": "Services", "value-3": "+2%",
+      "label-4": "Hardware", "value-4": "\u221214%",
+      "label-5": "Maintenance", "value-5": "+1%",
+      "label-6": "Other", "value-6": "\u22123%",
+      caption: "Indexed to the first period. Each tile on its own scale." } },
+  ];
+
+  {
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>\u00a70.3 \u00b7 drop two \u2014 the twelve new families, with words in them</h2>" +
+      "<p>Text only, deliberately. This check exists to catch a plate that is fine until real words go in it, and both defects it caught in drop one were exactly that \u2014 a figure box that fitted <code>7,41</code>, and a type stack that collided at three lines. Every value here is chosen to be AWKWARD rather than tidy: the longest label a script would really write, a five-digit figure where three would fit.</p>";
+    out.appendChild(s);
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    s.appendChild(pair);
+    D2.forEach(function (d) {
+      const key = d.key + "-" + d.a;
+      const it = B.LIB.filter((i) => i.key === key)[0];
+      if (!it) return;
+      const c = cell(key, d.note);
+      pair.appendChild(c);
+      const P = B.draw(it, null, { boil: 1 });
+      const m = P.manifest();
+      const stage = c.querySelector(".stage");
+      stage.style.containerType = "inline-size";
+      stage.innerHTML = P.toSVG();
+      place(stage, P, m, d.text);
+    });
+  }
+  // ---- §2 · THE QUARTER ----------------------------------------------------
+  //
+  // Region fillers standing in for engine/series.js. Both read geometry the plate
+  // already published (slots, meta.groups) and neither re-derives a grid — which
+  // is the property the quarter plates were built for.
+  function svgLayer(m) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    g.setAttribute("viewBox", "0 0 " + m.canvas[0] + " " + m.canvas[1]);
+    g.style.cssText = "position:absolute;inset:0;width:100%;height:auto";
+    return g;
+  }
+  function bars(stage, m, entries, peak) {
+    const g = svgLayer(m);
+    entries.forEach(function (e) {
+      const s = m.slots[e.slot];
+      if (!s) return;
+      const hh = (s.h * 0.94) * (e.v / peak);
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("x", s.x); r.setAttribute("width", s.w);
+      r.setAttribute("y", s.y + s.h - hh); r.setAttribute("height", Math.max(0, hh));
+      r.setAttribute("fill", "#1C222A");
+      r.setAttribute("fill-opacity", e.op == null ? 0.8 : e.op);
+      g.appendChild(r);
+    });
+    stage.appendChild(g);
+  }
+  function path(stage, m, vals, peak) {
+    const g = svgLayer(m);
+    const pts = vals.map(function (v, i) {
+      const s = m.slots["point-" + (i + 1)];
+      return (s.anchorX) + "," + (s.y + s.h - (s.h * 0.9) * (v / peak));
+    });
+    const l = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    l.setAttribute("points", pts.join(" "));
+    l.setAttribute("fill", "none"); l.setAttribute("stroke", "#1C222A"); l.setAttribute("stroke-width", 6);
+    g.appendChild(l);
+    pts.forEach(function (p) {
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("cx", p.split(",")[0]); c.setAttribute("cy", p.split(",")[1]); c.setAttribute("r", 9);
+      c.setAttribute("fill", "#1C222A");
+      g.appendChild(c);
+    });
+    stage.appendChild(g);
+  }
+
+  // 2.1 — eight quarters, both aspects, two workbooks. The portrait plate is the
+  // one that publishes value-last instead of a per-column row: the box measures
+  // five characters there and an over-budget fill does not render at all.
+  {
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>the quarter brief \u00a72.1 \u00b7 eight quarters \u2014 the sheet the pipeline loads</h2>" +
+      "<p>Eight columns and a five-character period label. Both plates carry the same furniture as <code>bars-6y</code> and <code>line-6y</code> \u2014 same margins, same tick convention, same pinned axes \u2014 so a quarterly chart cuts against an annual one without the grid moving. <b>The portrait plate has no per-column value row</b>, and that is measured rather than chosen: at eight columns in 9:16 the box takes five characters, \u201c$12.4B\u201d is six, and an over-budget fill does not render. It publishes one <code>value-last</code> callout instead.</p>";
+    out.appendChild(s);
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    s.appendChild(pair);
+    const Q = [
+      { key: "charts/bars-8q-16x9", note: "8 quarters \u00b7 per-column values fit (9 chars)",
+        vals: [3.91, 4.42, 4.18, 5.87, 4.02, 4.61, 4.33, 6.12],
+        text: { kicker: "REVENUE BY QUARTER", unit: "$bn, reported",
+          "head-1": "Q4'23", "head-2": "Q1'24", "head-3": "Q2'24", "head-4": "Q3'24",
+          "head-5": "Q4'24", "head-6": "Q1'25", "head-7": "Q2'25", "head-8": "Q3'25",
+          "value-1": "3.91", "value-2": "4.42", "value-3": "4.18", "value-4": "5.87",
+          "value-5": "4.02", "value-6": "4.61", "value-7": "4.33", "value-8": "6.12",
+          "y-1": "0", "y-2": "2", "y-3": "4", "y-4": "6", "y-5": "8" } },
+      { key: "charts/bars-8q-9x16", note: "different workbook \u00b7 value-last only",
+        vals: [812, 906, 744, 690, 648, 601, 588, 520],
+        text: { kicker: "SUBSCRIBERS", unit: "thousands, end of period",
+          "head-1": "Q4'23", "head-2": "Q1'24", "head-3": "Q2'24", "head-4": "Q3'24",
+          "head-5": "Q4'24", "head-6": "Q1'25", "head-7": "Q2'25", "head-8": "Q3'25",
+          "value-last": "520k",
+          "y-1": "0", "y-2": "250", "y-3": "500", "y-4": "750", "y-5": "1,000" } },
+    ];
+    Q.forEach(function (d) {
+      const it = B.LIB.filter((i) => i.key === d.key)[0];
+      const c = cell(d.key, d.note);
+      pair.appendChild(c);
+      const P = B.draw(it, null, { boil: 1 }), m = P.manifest();
+      const stage = c.querySelector(".stage");
+      stage.style.containerType = "inline-size";
+      stage.innerHTML = P.toSVG();
+      bars(stage, m, d.vals.map((v, i) => ({ slot: "bar-" + (i + 1), v: v })), Math.max.apply(null, d.vals) * 1.1);
+      place(stage, P, m, d.text);
+    });
+    const pair2 = document.createElement("div");
+    pair2.className = "pair";
+    s.appendChild(pair2);
+    [{ key: "charts/line-8q-16x9", note: "the same eight quarters as a path",
+      vals: [3.91, 4.42, 4.18, 5.87, 4.02, 4.61, 4.33, 6.12],
+      text: { kicker: "REVENUE BY QUARTER", unit: "$bn, reported",
+        "head-1": "Q4'23", "head-2": "Q1'24", "head-3": "Q2'24", "head-4": "Q3'24",
+        "head-5": "Q4'24", "head-6": "Q1'25", "head-7": "Q2'25", "head-8": "Q3'25",
+        "value-4": "5.87", "value-8": "6.12",
+        "y-1": "0", "y-2": "2", "y-3": "4", "y-4": "6", "y-5": "8" } }].forEach(function (d) {
+      const it = B.LIB.filter((i) => i.key === d.key)[0];
+      const c = cell(d.key, d.note);
+      pair2.appendChild(c);
+      const P = B.draw(it, null, { boil: 1 }), m = P.manifest();
+      const stage = c.querySelector(".stage");
+      stage.style.containerType = "inline-size";
+      stage.innerHTML = P.toSVG();
+      path(stage, m, d.vals, Math.max.apply(null, d.vals) * 1.1);
+      place(stage, P, m, d.text);
+    });
+    const n = document.createElement("div");
+    n.className = "cell";
+    n.innerHTML = '<div class="cap"><b>the trap this plate sets</b> &nbsp;and the plate that answers it</div>' +
+      '<div style="padding:12px 14px;color:#8d968f;line-height:1.6">Eight quarters is two years, so <b>Q4 appears twice and so does Q1</b>. ' +
+      'Read left to right, the left-hand plate looks like a company that grew 57% in the last quarter. It is a company whose Q4 is ' +
+      'always its best quarter, and whose Q4 grew 4%. <br><br>The plate carries that warning in ' +
+      '<code>meta.seasonalityWarning</code> rather than drawing an argument about it, because the comparison belongs to ' +
+      '<code>figures/qoq-yoy</code> below \u2014 which is the next section, and the reason \u00a72.2 calls it the most valuable plate in the brief.</div>';
+    pair2.appendChild(n);
+  }
+
+  // 2.2 — the pair. Two renders: one where the comparisons disagree, one where
+  // they agree, in the two aspects and the two arrangements.
+  {
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>the quarter brief \u00a72.2 \u00b7 figures/qoq-yoy \u2014 both readings, equal weight</h2>" +
+      "<p>The left plate is the case the channel exists for: <b>up 18% on the quarter, down 3% on the year</b>. Reporting the first alone is the mistake; the plate cannot report it alone, because there is no slot for a blended growth figure. The right plate is the case where the two agree \u2014 same plate, no author decision, and the arrangement differs by aspect (side by side in 16:9, stacked in 9:16) because two half-width cells in portrait would cost the deltas two type steps.</p>";
+    out.appendChild(s);
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    s.appendChild(pair);
+    [
+      { key: "figures/qoq-yoy-16x9", note: "the comparisons DISAGREE \u00b7 side by side",
+        text: { kicker: "Q3 FY25 \u00b7 REVENUE", unit: "$bn, reported", figure: "6.12",
+          "qoq-label": "vs Q2 2025\nquarter on quarter", qoq: "+18.4%",
+          "yoy-label": "vs Q3 2024\nyear on year", yoy: "\u22123.1%",
+          caption: "Its best quarter, always. Against last year's, it shrank." } },
+      { key: "figures/qoq-yoy-9x16", note: "they AGREE \u00b7 stacked, congruent",
+        text: { kicker: "Q3 FY25 \u00b7 SUBSCRIBERS", unit: "thousands", figure: "520",
+          "qoq-label": "vs Q2 2025\nquarter on quarter", qoq: "\u221211.6%",
+          "yoy-label": "vs Q3 2024\nyear on year", yoy: "\u221226.3%",
+          caption: "Both readings point the same way. The rare case." } },
+    ].forEach(function (d) {
+      const it = B.LIB.filter((i) => i.key === d.key)[0];
+      const c = cell(d.key, d.note);
+      pair.appendChild(c);
+      const P = B.draw(it, null, { boil: 1 }), m = P.manifest();
+      const stage = c.querySelector(".stage");
+      stage.style.containerType = "inline-size";
+      stage.innerHTML = P.toSVG();
+      place(stage, P, m, d.text);
+    });
+  }
+
+  // 2.3 — seasonality, both count variants, different data.
+  {
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>the quarter brief \u00a72.3 \u00b7 charts/seasonality-{4,6}y \u2014 the shape instead of the sentence</h2>" +
+      "<p>Four quarters across, one series per year, oldest to newest. Left: four years of a retailer, where the December hump repeats so exactly that the seasonality needs no narration. Right: six years of a different business at the other count and the other aspect. <b>One hue, value ramped</b> \u2014 oldest lightest, newest at full ink \u2014 rather than six series colours, which also means the year the script is about is the darkest thing on the plot.</p>";
+    out.appendChild(s);
+    const pair = document.createElement("div");
+    pair.className = "pair";
+    s.appendChild(pair);
+    [
+      { key: "charts/seasonality-4y-16x9", note: "4 years \u00b7 the December hump, four times",
+        data: [[41, 44, 47, 88], [44, 48, 51, 96], [47, 50, 54, 101], [49, 53, 57, 108]],
+        text: { unit: "revenue, $m, by quarter",
+          "series-1": "2022", "series-2": "2023", "series-3": "2024", "series-4": "2025",
+          "head-q1": "Q1", "head-q2": "Q2", "head-q3": "Q3", "head-q4": "Q4",
+          "y-1": "0", "y-2": "30", "y-3": "60", "y-4": "90", "y-5": "120" } },
+      { key: "charts/seasonality-6y-9x16", note: "6 years \u00b7 23-unit columns, published as crowded",
+        data: [[18, 22, 19, 24], [20, 25, 21, 27], [23, 28, 24, 30], [25, 31, 26, 33], [26, 33, 28, 35], [24, 34, 29, 38]],
+        text: { unit: "gross margin, %, by quarter",
+          "series-1": "2020", "series-2": "2021", "series-3": "2022", "series-4": "2023", "series-5": "2024", "series-6": "2025",
+          "head-q1": "Q1", "head-q2": "Q2", "head-q3": "Q3", "head-q4": "Q4",
+          "y-1": "0", "y-2": "10", "y-3": "20", "y-4": "30", "y-5": "40" } },
+    ].forEach(function (d) {
+      const it = B.LIB.filter((i) => i.key === d.key)[0];
+      const c = cell(d.key, d.note);
+      pair.appendChild(c);
+      const P = B.draw(it, null, { boil: 1 }), m = P.manifest();
+      const stage = c.querySelector(".stage");
+      stage.style.containerType = "inline-size";
+      stage.innerHTML = P.toSVG();
+      const Y = d.data.length;
+      const entries = [];
+      let peak = 0;
+      d.data.forEach(function (yr, n) {
+        yr.forEach(function (v, q) {
+          peak = Math.max(peak, v);
+          // the ramp: oldest lightest, newest full ink — meta.seriesColour
+          entries.push({ slot: "y" + (n + 1) + "-q" + (q + 1), v: v, op: 0.26 + 0.56 * (n / (Y - 1)) });
+        });
+      });
+      bars(stage, m, entries, peak * 1.12);
+      place(stage, P, m, d.text);
+      if (m.crowded) {
+        const w = document.createElement("div");
+        w.style.cssText = "padding:8px 10px;border-top:1px solid #262c33;color:#C7A86B";
+        w.textContent = "meta.crowded — " + m.crowded;
+        c.appendChild(w);
+      }
+    });
+  }
+
+  // ---- the budget report ---------------------------------------------------
+  // Every fill this page produced, checked against the DERIVED budget for the
+  // box it landed in. A caption cut off at the box edge looks like a styling
+  // problem in a browser and is a shot that does not render in the pipeline, so
+  // it gets counted rather than clipped.
+  {
+    const el = document.getElementById("over");
+    el.innerHTML = OVER.length
+      ? "<b>" + OVER.length + " OVER-BUDGET FILL" + (OVER.length > 1 ? "S" : "") + " on this page</b> — the compositor errors on these and the shot does not render:\n\n" +
+        OVER.join("\n") + "\n\nThe sample copy is what is wrong, not the plate: the budgets are derived from the box by engine/budget.js. Shorten the string."
+      : "Budgets: every fill on this page is inside the derived budget for its box. Checked against slots[name].maxChars / maxCharsPerLine / maxLines — the per-box numbers budget.js writes, not the role floor.";
+  }
+})();
+</script>
+</body>
+</html>

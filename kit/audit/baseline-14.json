@@ -1,0 +1,6915 @@
+{
+ "pack": "delta-14",
+ "note": "per-frame FNV-1a of the emitted SVG. Regenerated in DROP TEN: structure/confession (all four), figures/big-number-l2 (landscape), tables/cash-flow (both) and structure/sensitivity changed, so byte-identity against the drop-nine baseline does not hold for those and is not asserted. Everything else is unchanged. See CHANGES.md, drop ten.",
+ "assets": {
+  "annotations/scrawl-oval-wide": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "959a0b1c",
+     "paths": 2,
+     "bytes": 8438
+    },
+    "_f02": {
+     "hash": "df78c9d8",
+     "paths": 2,
+     "bytes": 8472
+    },
+    "_f03": {
+     "hash": "6d147671",
+     "paths": 2,
+     "bytes": 8443
+    }
+   }
+  },
+  "annotations/scrawl-oval-tight": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a74c0871",
+     "paths": 2,
+     "bytes": 2968
+    },
+    "_f02": {
+     "hash": "ca871ff1",
+     "paths": 2,
+     "bytes": 2979
+    },
+    "_f03": {
+     "hash": "33c41850",
+     "paths": 2,
+     "bytes": 2965
+    }
+   }
+  },
+  "annotations/underline-swipe": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c4504c06",
+     "paths": 4,
+     "bytes": 5376
+    },
+    "_f02": {
+     "hash": "5dcaad20",
+     "paths": 4,
+     "bytes": 5347
+    },
+    "_f03": {
+     "hash": "23d83b76",
+     "paths": 4,
+     "bytes": 5356
+    }
+   }
+  },
+  "annotations/underline-tight": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "6b10a37a",
+     "paths": 4,
+     "bytes": 2100
+    },
+    "_f02": {
+     "hash": "17ddaaca",
+     "paths": 4,
+     "bytes": 2095
+    },
+    "_f03": {
+     "hash": "7653084e",
+     "paths": 4,
+     "bytes": 2102
+    }
+   }
+  },
+  "annotations/strike-out": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "6f98d810",
+     "paths": 4,
+     "bytes": 2224
+    },
+    "_f02": {
+     "hash": "ca109ae6",
+     "paths": 4,
+     "bytes": 2208
+    },
+    "_f03": {
+     "hash": "4574c52e",
+     "paths": 4,
+     "bytes": 2209
+    }
+   }
+  },
+  "annotations/box-scrawl": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "44c681e1",
+     "paths": 8,
+     "bytes": 8245
+    },
+    "_f02": {
+     "hash": "2295070a",
+     "paths": 8,
+     "bytes": 8257
+    },
+    "_f03": {
+     "hash": "8990345e",
+     "paths": 8,
+     "bytes": 8260
+    }
+   }
+  },
+  "annotations/bracket-rows": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "26ebfbb8",
+     "paths": 4,
+     "bytes": 3219
+    },
+    "_f02": {
+     "hash": "588ca9ee",
+     "paths": 4,
+     "bytes": 3223
+    },
+    "_f03": {
+     "hash": "0fc96368",
+     "paths": 4,
+     "bytes": 3222
+    }
+   }
+  },
+  "annotations/arrow-elbow": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "90f54100",
+     "paths": 6,
+     "bytes": 4262
+    },
+    "_f02": {
+     "hash": "c4098910",
+     "paths": 6,
+     "bytes": 4275
+    },
+    "_f03": {
+     "hash": "e9875f50",
+     "paths": 6,
+     "bytes": 4264
+    }
+   }
+  },
+  "annotations/caret-note": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "132372de",
+     "paths": 4,
+     "bytes": 1838
+    },
+    "_f02": {
+     "hash": "86b46929",
+     "paths": 4,
+     "bytes": 1845
+    },
+    "_f03": {
+     "hash": "06a0c480",
+     "paths": 4,
+     "bytes": 1840
+    }
+   }
+  },
+  "annotations/tick-marks": {
+   "dir": "annotations",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9fe62e39",
+     "paths": 6,
+     "bytes": 2833
+    },
+    "_f02": {
+     "hash": "ac8e1da8",
+     "paths": 6,
+     "bytes": 2853
+    },
+    "_f03": {
+     "hash": "68d00870",
+     "paths": 6,
+     "bytes": 2847
+    }
+   }
+  },
+  "cards/definition-16x9": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "b63414d6",
+     "paths": 223,
+     "bytes": 383033
+    },
+    "_f02": {
+     "hash": "35c18120",
+     "paths": 223,
+     "bytes": 383006
+    },
+    "_f03": {
+     "hash": "0d7b7618",
+     "paths": 223,
+     "bytes": 382887
+    },
+    "_f04": {
+     "hash": "a363500a",
+     "paths": 223,
+     "bytes": 382865
+    },
+    "_f05": {
+     "hash": "aa611b68",
+     "paths": 223,
+     "bytes": 382982
+    }
+   }
+  },
+  "cards/definition-9x16": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "c210d730",
+     "paths": 269,
+     "bytes": 392702
+    },
+    "_f02": {
+     "hash": "700d61f6",
+     "paths": 269,
+     "bytes": 392570
+    },
+    "_f03": {
+     "hash": "3fb91500",
+     "paths": 269,
+     "bytes": 392537
+    },
+    "_f04": {
+     "hash": "846b31a0",
+     "paths": 269,
+     "bytes": 392585
+    },
+    "_f05": {
+     "hash": "6305259a",
+     "paths": 269,
+     "bytes": 392482
+    }
+   }
+  },
+  "cards/quote-pull-16x9": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "fdd1ad61",
+     "paths": 61,
+     "bytes": 78366
+    },
+    "_f02": {
+     "hash": "e8cc54d0",
+     "paths": 61,
+     "bytes": 78367
+    },
+    "_f03": {
+     "hash": "3eebd796",
+     "paths": 61,
+     "bytes": 78319
+    },
+    "_f04": {
+     "hash": "420ecf7c",
+     "paths": 61,
+     "bytes": 78329
+    },
+    "_f05": {
+     "hash": "b64f427e",
+     "paths": 61,
+     "bytes": 78326
+    }
+   }
+  },
+  "cards/quote-pull-9x16": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "7de9be93",
+     "paths": 61,
+     "bytes": 78260
+    },
+    "_f02": {
+     "hash": "de898be6",
+     "paths": 61,
+     "bytes": 78249
+    },
+    "_f03": {
+     "hash": "de7e0f72",
+     "paths": 61,
+     "bytes": 78217
+    },
+    "_f04": {
+     "hash": "154f42e0",
+     "paths": 61,
+     "bytes": 78226
+    },
+    "_f05": {
+     "hash": "c9405b34",
+     "paths": 61,
+     "bytes": 78223
+    }
+   }
+  },
+  "cards/criteria-16x9": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "6b1063dc",
+     "paths": 89,
+     "bytes": 158240
+    },
+    "_f02": {
+     "hash": "fffaaf68",
+     "paths": 89,
+     "bytes": 158199
+    },
+    "_f03": {
+     "hash": "9a3cf536",
+     "paths": 89,
+     "bytes": 158183
+    },
+    "_f04": {
+     "hash": "65ab8520",
+     "paths": 89,
+     "bytes": 158179
+    },
+    "_f05": {
+     "hash": "d84e06a8",
+     "paths": 89,
+     "bytes": 158135
+    }
+   }
+  },
+  "cards/criteria-9x16": {
+   "dir": "cards",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "0c611030",
+     "paths": 111,
+     "bytes": 162940
+    },
+    "_f02": {
+     "hash": "4df103c8",
+     "paths": 111,
+     "bytes": 162940
+    },
+    "_f03": {
+     "hash": "c6fe2418",
+     "paths": 111,
+     "bytes": 162895
+    },
+    "_f04": {
+     "hash": "804b1d16",
+     "paths": 111,
+     "bytes": 162913
+    },
+    "_f05": {
+     "hash": "6a7831be",
+     "paths": 111,
+     "bytes": 162913
+    }
+   }
+  },
+  "charts/line-6y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "23cec921",
+     "paths": 79,
+     "bytes": 109402
+    },
+    "_f02": {
+     "hash": "a5719d50",
+     "paths": 79,
+     "bytes": 109412
+    },
+    "_f03": {
+     "hash": "f676e5e8",
+     "paths": 79,
+     "bytes": 109410
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/line-6y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f8a096f8",
+     "paths": 79,
+     "bytes": 99808
+    },
+    "_f02": {
+     "hash": "7ddf7426",
+     "paths": 79,
+     "bytes": 99811
+    },
+    "_f03": {
+     "hash": "b656c786",
+     "paths": 79,
+     "bytes": 99813
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/line-dense-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "d5a2db8c",
+     "paths": 89,
+     "bytes": 110030
+    },
+    "_f02": {
+     "hash": "753250f2",
+     "paths": 89,
+     "bytes": 110038
+    },
+    "_f03": {
+     "hash": "6d4dcf48",
+     "paths": 89,
+     "bytes": 110043
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/line-dense-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "24d7be58",
+     "paths": 89,
+     "bytes": 102947
+    },
+    "_f02": {
+     "hash": "a3ffa10c",
+     "paths": 89,
+     "bytes": 102959
+    },
+    "_f03": {
+     "hash": "6a7a6790",
+     "paths": 89,
+     "bytes": 102953
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/bars-6y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "fb7531c8",
+     "paths": 79,
+     "bytes": 109402
+    },
+    "_f02": {
+     "hash": "d10217d0",
+     "paths": 79,
+     "bytes": 109412
+    },
+    "_f03": {
+     "hash": "319624e6",
+     "paths": 79,
+     "bytes": 109410
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/bars-6y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "54bb1ad8",
+     "paths": 79,
+     "bytes": 99808
+    },
+    "_f02": {
+     "hash": "ebcf478e",
+     "paths": 79,
+     "bytes": 99811
+    },
+    "_f03": {
+     "hash": "5164ace0",
+     "paths": 79,
+     "bytes": 99813
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-number-l1-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "015f93ce",
+     "paths": 163,
+     "bytes": 304013
+    },
+    "_f02": {
+     "hash": "af830268",
+     "paths": 163,
+     "bytes": 304016
+    },
+    "_f03": {
+     "hash": "6d128bd0",
+     "paths": 163,
+     "bytes": 303973
+    },
+    "_f04": {
+     "hash": "5487b5b8",
+     "paths": 163,
+     "bytes": 303976
+    },
+    "_f05": {
+     "hash": "91afba50",
+     "paths": 163,
+     "bytes": 303981
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-number-l1-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "8c8895d2",
+     "paths": 127,
+     "bytes": 170889
+    },
+    "_f02": {
+     "hash": "c976cb98",
+     "paths": 127,
+     "bytes": 170900
+    },
+    "_f03": {
+     "hash": "c490544e",
+     "paths": 127,
+     "bytes": 170860
+    },
+    "_f04": {
+     "hash": "68172b68",
+     "paths": 127,
+     "bytes": 170857
+    },
+    "_f05": {
+     "hash": "b4129b66",
+     "paths": 127,
+     "bytes": 170858
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-number-l2-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "eb3637c2",
+     "paths": 57,
+     "bytes": 78049
+    },
+    "_f02": {
+     "hash": "3a32f7d6",
+     "paths": 57,
+     "bytes": 78066
+    },
+    "_f03": {
+     "hash": "0de4a9ac",
+     "paths": 57,
+     "bytes": 78022
+    },
+    "_f04": {
+     "hash": "e304a4ca",
+     "paths": 57,
+     "bytes": 78012
+    },
+    "_f05": {
+     "hash": "574fb550",
+     "paths": 57,
+     "bytes": 78027
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-number-l2-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "bea01114",
+     "paths": 57,
+     "bytes": 79735
+    },
+    "_f02": {
+     "hash": "42843090",
+     "paths": 57,
+     "bytes": 79753
+    },
+    "_f03": {
+     "hash": "7db25948",
+     "paths": 57,
+     "bytes": 79714
+    },
+    "_f04": {
+     "hash": "130e41ea",
+     "paths": 57,
+     "bytes": 79708
+    },
+    "_f05": {
+     "hash": "f1e864d0",
+     "paths": 57,
+     "bytes": 79706
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-fraction-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "c1f56908",
+     "paths": 61,
+     "bytes": 81840
+    },
+    "_f02": {
+     "hash": "b9ee1388",
+     "paths": 61,
+     "bytes": 81843
+    },
+    "_f03": {
+     "hash": "a69ea1e8",
+     "paths": 61,
+     "bytes": 81808
+    },
+    "_f04": {
+     "hash": "f8bad5a8",
+     "paths": 61,
+     "bytes": 81819
+    },
+    "_f05": {
+     "hash": "a0b76ab0",
+     "paths": 61,
+     "bytes": 81803
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/big-fraction-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "e210ecd6",
+     "paths": 61,
+     "bytes": 80390
+    },
+    "_f02": {
+     "hash": "1bb08942",
+     "paths": 61,
+     "bytes": 80361
+    },
+    "_f03": {
+     "hash": "d0ae4528",
+     "paths": 61,
+     "bytes": 80358
+    },
+    "_f04": {
+     "hash": "51f345aa",
+     "paths": 61,
+     "bytes": 80373
+    },
+    "_f05": {
+     "hash": "7cf027e0",
+     "paths": 61,
+     "bytes": 80351
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/compare-side-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "99e93f7e",
+     "paths": 57,
+     "bytes": 78232
+    },
+    "_f02": {
+     "hash": "9344ea56",
+     "paths": 57,
+     "bytes": 78244
+    },
+    "_f03": {
+     "hash": "56815540",
+     "paths": 57,
+     "bytes": 78203
+    },
+    "_f04": {
+     "hash": "419a5a91",
+     "paths": 57,
+     "bytes": 78197
+    },
+    "_f05": {
+     "hash": "da14292e",
+     "paths": 57,
+     "bytes": 78203
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/compare-side-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "e06b4588",
+     "paths": 57,
+     "bytes": 78325
+    },
+    "_f02": {
+     "hash": "dae3eff0",
+     "paths": 57,
+     "bytes": 78327
+    },
+    "_f03": {
+     "hash": "b45434b8",
+     "paths": 57,
+     "bytes": 78277
+    },
+    "_f04": {
+     "hash": "e4c41b98",
+     "paths": 57,
+     "bytes": 78287
+    },
+    "_f05": {
+     "hash": "f34209a8",
+     "paths": 57,
+     "bytes": 78285
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/compare-stacked-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "6e122fbe",
+     "paths": 57,
+     "bytes": 81184
+    },
+    "_f02": {
+     "hash": "cc3b1ea9",
+     "paths": 57,
+     "bytes": 81200
+    },
+    "_f03": {
+     "hash": "6f5d5560",
+     "paths": 57,
+     "bytes": 81161
+    },
+    "_f04": {
+     "hash": "fd3cf298",
+     "paths": 57,
+     "bytes": 81180
+    },
+    "_f05": {
+     "hash": "5590d1de",
+     "paths": 57,
+     "bytes": 81163
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/compare-stacked-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "3e9df64e",
+     "paths": 57,
+     "bytes": 79193
+    },
+    "_f02": {
+     "hash": "46f303f8",
+     "paths": 57,
+     "bytes": 79205
+    },
+    "_f03": {
+     "hash": "676eea28",
+     "paths": 57,
+     "bytes": 79150
+    },
+    "_f04": {
+     "hash": "89c96358",
+     "paths": 57,
+     "bytes": 79161
+    },
+    "_f05": {
+     "hash": "1dacec10",
+     "paths": 57,
+     "bytes": 79160
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "frames/media-frame-t1-16x9": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f88ea0b4",
+     "paths": 147,
+     "bytes": 123307
+    },
+    "_f02": {
+     "hash": "dcacc5de",
+     "paths": 147,
+     "bytes": 123319
+    },
+    "_f03": {
+     "hash": "0ce58d48",
+     "paths": 147,
+     "bytes": 123378
+    }
+   }
+  },
+  "frames/media-frame-t1-9x16": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "92211f08",
+     "paths": 147,
+     "bytes": 122097
+    },
+    "_f02": {
+     "hash": "b3bc2728",
+     "paths": 147,
+     "bytes": 122119
+    },
+    "_f03": {
+     "hash": "3bfeb6d8",
+     "paths": 147,
+     "bytes": 122137
+    }
+   }
+  },
+  "frames/media-frame-t2-16x9": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "7b9ae4a0",
+     "paths": 273,
+     "bytes": 536884
+    },
+    "_f02": {
+     "hash": "e8e88dfe",
+     "paths": 273,
+     "bytes": 537197
+    },
+    "_f03": {
+     "hash": "0209730a",
+     "paths": 273,
+     "bytes": 536855
+    }
+   }
+  },
+  "frames/media-frame-t2-9x16": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "744f66a8",
+     "paths": 315,
+     "bytes": 487764
+    },
+    "_f02": {
+     "hash": "16765554",
+     "paths": 315,
+     "bytes": 487829
+    },
+    "_f03": {
+     "hash": "37d9788c",
+     "paths": 315,
+     "bytes": 487720
+    }
+   }
+  },
+  "frames/media-frame-t3-16x9": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "802cdffa",
+     "paths": 81,
+     "bytes": 96975
+    },
+    "_f02": {
+     "hash": "e3fb6f28",
+     "paths": 81,
+     "bytes": 96950
+    },
+    "_f03": {
+     "hash": "f2600d76",
+     "paths": 81,
+     "bytes": 96974
+    }
+   }
+  },
+  "frames/media-frame-t3-9x16": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "13558830",
+     "paths": 81,
+     "bytes": 95640
+    },
+    "_f02": {
+     "hash": "3279a8a8",
+     "paths": 81,
+     "bytes": 95640
+    },
+    "_f03": {
+     "hash": "67fec9b0",
+     "paths": 81,
+     "bytes": 95623
+    }
+   }
+  },
+  "frames/capture-frame-16x9": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "73422458",
+     "paths": 319,
+     "bytes": 571611
+    },
+    "_f02": {
+     "hash": "351a4f5c",
+     "paths": 319,
+     "bytes": 571684
+    },
+    "_f03": {
+     "hash": "24f0567c",
+     "paths": 319,
+     "bytes": 571620
+    }
+   }
+  },
+  "frames/capture-frame-9x16": {
+   "dir": "frames",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "1f531d20",
+     "paths": 425,
+     "bytes": 639225
+    },
+    "_f02": {
+     "hash": "f9d92460",
+     "paths": 425,
+     "bytes": 639313
+    },
+    "_f03": {
+     "hash": "31f304d0",
+     "paths": 425,
+     "bytes": 639271
+    }
+   }
+  },
+  "host/leaning-on-desk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5a2b42e4",
+     "paths": 725,
+     "bytes": 218488
+    },
+    "_f02": {
+     "hash": "22a32060",
+     "paths": 734,
+     "bytes": 219767
+    },
+    "_f03": {
+     "hash": "f6f12a93",
+     "paths": 719,
+     "bytes": 216210
+    }
+   }
+  },
+  "host/leaning-on-desk-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5a2b42e4",
+     "paths": 725,
+     "bytes": 218488
+    },
+    "_f02": {
+     "hash": "ac650050",
+     "paths": 723,
+     "bytes": 217988
+    },
+    "_f03": {
+     "hash": "b3428130",
+     "paths": 723,
+     "bytes": 217992
+    }
+   }
+  },
+  "host/leaning-on-desk-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "94653c98",
+     "paths": 730,
+     "bytes": 218709
+    },
+    "_f02": {
+     "hash": "879afcfa",
+     "paths": 720,
+     "bytes": 217450
+    },
+    "_f03": {
+     "hash": "70b1df2e",
+     "paths": 718,
+     "bytes": 217432
+    }
+   }
+  },
+  "host/hands-in-pockets": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "37b36a60",
+     "paths": 731,
+     "bytes": 219905
+    },
+    "_f02": {
+     "hash": "a1e322be",
+     "paths": 738,
+     "bytes": 221382
+    },
+    "_f03": {
+     "hash": "0dec4852",
+     "paths": 723,
+     "bytes": 218414
+    }
+   }
+  },
+  "host/hands-in-pockets-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "37b36a60",
+     "paths": 731,
+     "bytes": 219905
+    },
+    "_f02": {
+     "hash": "0077a058",
+     "paths": 729,
+     "bytes": 219409
+    },
+    "_f03": {
+     "hash": "9265bbf0",
+     "paths": 729,
+     "bytes": 219409
+    }
+   }
+  },
+  "host/hands-in-pockets-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "67689128",
+     "paths": 735,
+     "bytes": 219969
+    },
+    "_f02": {
+     "hash": "a897fde6",
+     "paths": 726,
+     "bytes": 219709
+    },
+    "_f03": {
+     "hash": "c39a6530",
+     "paths": 720,
+     "bytes": 218719
+    }
+   }
+  },
+  "host/holding-a-page": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "cde954b6",
+     "paths": 806,
+     "bytes": 240347
+    },
+    "_f02": {
+     "hash": "eb490b53",
+     "paths": 813,
+     "bytes": 242554
+    },
+    "_f03": {
+     "hash": "16c34f40",
+     "paths": 796,
+     "bytes": 238168
+    }
+   }
+  },
+  "host/holding-a-page-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "cde954b6",
+     "paths": 806,
+     "bytes": 240347
+    },
+    "_f02": {
+     "hash": "d9e37560",
+     "paths": 804,
+     "bytes": 239850
+    },
+    "_f03": {
+     "hash": "5d13ff1c",
+     "paths": 804,
+     "bytes": 239843
+    }
+   }
+  },
+  "host/holding-a-page-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0dc9c1a4",
+     "paths": 811,
+     "bytes": 240894
+    },
+    "_f02": {
+     "hash": "7208c4d2",
+     "paths": 799,
+     "bytes": 239484
+    },
+    "_f03": {
+     "hash": "5d6c96f0",
+     "paths": 798,
+     "bytes": 239819
+    }
+   }
+  },
+  "host/pointing-down-at-desk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c858e968",
+     "paths": 729,
+     "bytes": 219088
+    },
+    "_f02": {
+     "hash": "593cd3ea",
+     "paths": 736,
+     "bytes": 220724
+    },
+    "_f03": {
+     "hash": "b1fb1968",
+     "paths": 718,
+     "bytes": 216811
+    }
+   }
+  },
+  "host/pointing-down-at-desk-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c858e968",
+     "paths": 729,
+     "bytes": 219088
+    },
+    "_f02": {
+     "hash": "c7827afe",
+     "paths": 727,
+     "bytes": 218592
+    },
+    "_f03": {
+     "hash": "c29bb448",
+     "paths": 727,
+     "bytes": 218587
+    }
+   }
+  },
+  "host/pointing-down-at-desk-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "4eec3f78",
+     "paths": 729,
+     "bytes": 218462
+    },
+    "_f02": {
+     "hash": "145199a0",
+     "paths": 727,
+     "bytes": 218705
+    },
+    "_f03": {
+     "hash": "73c35438",
+     "paths": 721,
+     "bytes": 218128
+    }
+   }
+  },
+  "host/head-in-hands": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "34260d9a",
+     "paths": 699,
+     "bytes": 210154
+    },
+    "_f02": {
+     "hash": "cf2c72d8",
+     "paths": 701,
+     "bytes": 211032
+    },
+    "_f03": {
+     "hash": "a97d9968",
+     "paths": 695,
+     "bytes": 209779
+    }
+   }
+  },
+  "host/head-in-hands-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "34260d9a",
+     "paths": 699,
+     "bytes": 210154
+    },
+    "_f02": {
+     "hash": "1848aad8",
+     "paths": 697,
+     "bytes": 209664
+    },
+    "_f03": {
+     "hash": "12287396",
+     "paths": 697,
+     "bytes": 209664
+    }
+   }
+  },
+  "host/head-in-hands-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "7a915d4e",
+     "paths": 697,
+     "bytes": 209336
+    },
+    "_f02": {
+     "hash": "d4571c86",
+     "paths": 686,
+     "bytes": 208503
+    },
+    "_f03": {
+     "hash": "fcb3cff0",
+     "paths": 688,
+     "bytes": 208528
+    }
+   }
+  },
+  "host/walking-out-of-frame": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "fd832c86",
+     "paths": 729,
+     "bytes": 218935
+    },
+    "_f02": {
+     "hash": "8329b20e",
+     "paths": 737,
+     "bytes": 220947
+    },
+    "_f03": {
+     "hash": "2d66a062",
+     "paths": 720,
+     "bytes": 217240
+    }
+   }
+  },
+  "host/walking-out-of-frame-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "fd832c86",
+     "paths": 729,
+     "bytes": 218935
+    },
+    "_f02": {
+     "hash": "74f68fa6",
+     "paths": 727,
+     "bytes": 218440
+    },
+    "_f03": {
+     "hash": "58690160",
+     "paths": 727,
+     "bytes": 218444
+    }
+   }
+  },
+  "host/walking-out-of-frame-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "06626e48",
+     "paths": 728,
+     "bytes": 218040
+    },
+    "_f02": {
+     "hash": "a3cbfc69",
+     "paths": 721,
+     "bytes": 217982
+    },
+    "_f03": {
+     "hash": "75c7b260",
+     "paths": 723,
+     "bytes": 218605
+    }
+   }
+  },
+  "host/sitting-at-desk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "600d77ec",
+     "paths": 802,
+     "bytes": 239615
+    },
+    "_f02": {
+     "hash": "16cb8746",
+     "paths": 819,
+     "bytes": 244429
+    },
+    "_f03": {
+     "hash": "561eb680",
+     "paths": 798,
+     "bytes": 239013
+    }
+   }
+  },
+  "host/sitting-at-desk-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "600d77ec",
+     "paths": 802,
+     "bytes": 239615
+    },
+    "_f02": {
+     "hash": "956dfede",
+     "paths": 800,
+     "bytes": 239124
+    },
+    "_f03": {
+     "hash": "05cb1050",
+     "paths": 800,
+     "bytes": 239122
+    }
+   }
+  },
+  "host/sitting-at-desk-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c84a53f1",
+     "paths": 814,
+     "bytes": 241467
+    },
+    "_f02": {
+     "hash": "9341c460",
+     "paths": 793,
+     "bytes": 237622
+    },
+    "_f03": {
+     "hash": "be7458ba",
+     "paths": 804,
+     "bytes": 240927
+    }
+   }
+  },
+  "host/close-up": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "463d007e",
+     "paths": 614,
+     "bytes": 188802
+    },
+    "_f02": {
+     "hash": "7d2a810a",
+     "paths": 623,
+     "bytes": 190620
+    },
+    "_f03": {
+     "hash": "4799b5d9",
+     "paths": 616,
+     "bytes": 188945
+    }
+   }
+  },
+  "host/close-up-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "463d007e",
+     "paths": 614,
+     "bytes": 188802
+    },
+    "_f02": {
+     "hash": "3602634e",
+     "paths": 596,
+     "bytes": 183249
+    },
+    "_f03": {
+     "hash": "4a7a4d16",
+     "paths": 611,
+     "bytes": 188095
+    }
+   }
+  },
+  "host/close-up-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "dc25ff96",
+     "paths": 628,
+     "bytes": 192297
+    },
+    "_f02": {
+     "hash": "84655cb0",
+     "paths": 623,
+     "bytes": 190917
+    },
+    "_f03": {
+     "hash": "db9fd6f0",
+     "paths": 613,
+     "bytes": 188983
+    }
+   }
+  },
+  "host/medium": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a48ff550",
+     "paths": 860,
+     "bytes": 278192
+    },
+    "_f02": {
+     "hash": "05465d92",
+     "paths": 864,
+     "bytes": 277941
+    },
+    "_f03": {
+     "hash": "6a050c18",
+     "paths": 856,
+     "bytes": 276633
+    }
+   }
+  },
+  "host/medium-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a48ff550",
+     "paths": 860,
+     "bytes": 278192
+    },
+    "_f02": {
+     "hash": "9a1fce98",
+     "paths": 847,
+     "bytes": 274441
+    },
+    "_f03": {
+     "hash": "1b5336d0",
+     "paths": 856,
+     "bytes": 277450
+    }
+   }
+  },
+  "host/medium-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "86bdac52",
+     "paths": 870,
+     "bytes": 279308
+    },
+    "_f02": {
+     "hash": "dc2d0cc2",
+     "paths": 864,
+     "bytes": 277809
+    },
+    "_f03": {
+     "hash": "2365efe0",
+     "paths": 858,
+     "bytes": 277298
+    }
+   }
+  },
+  "host/close-up-glance-left": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "1bf2e3b8",
+     "paths": 635,
+     "bytes": 195629
+    },
+    "_f02": {
+     "hash": "ef6f9856",
+     "paths": 644,
+     "bytes": 197413
+    },
+    "_f03": {
+     "hash": "73b4bb8e",
+     "paths": 637,
+     "bytes": 195922
+    }
+   }
+  },
+  "host/close-up-glance-left-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "1bf2e3b8",
+     "paths": 635,
+     "bytes": 195629
+    },
+    "_f02": {
+     "hash": "7099a35e",
+     "paths": 617,
+     "bytes": 190101
+    },
+    "_f03": {
+     "hash": "e4e1e250",
+     "paths": 632,
+     "bytes": 194947
+    }
+   }
+  },
+  "host/close-up-glance-left-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "2c035090",
+     "paths": 649,
+     "bytes": 199146
+    },
+    "_f02": {
+     "hash": "6806ced5",
+     "paths": 644,
+     "bytes": 197616
+    },
+    "_f03": {
+     "hash": "3a141136",
+     "paths": 634,
+     "bytes": 195734
+    }
+   }
+  },
+  "host/close-up-glance-right": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "66404378",
+     "paths": 635,
+     "bytes": 195689
+    },
+    "_f02": {
+     "hash": "36d43118",
+     "paths": 644,
+     "bytes": 197454
+    },
+    "_f03": {
+     "hash": "48adb12a",
+     "paths": 637,
+     "bytes": 195920
+    }
+   }
+  },
+  "host/close-up-glance-right-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "66404378",
+     "paths": 635,
+     "bytes": 195689
+    },
+    "_f02": {
+     "hash": "3c1b1cf6",
+     "paths": 617,
+     "bytes": 190129
+    },
+    "_f03": {
+     "hash": "16c08f50",
+     "paths": 632,
+     "bytes": 194975
+    }
+   }
+  },
+  "host/close-up-glance-right-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "6cb1b038",
+     "paths": 649,
+     "bytes": 199132
+    },
+    "_f02": {
+     "hash": "c6dedcbc",
+     "paths": 644,
+     "bytes": 197671
+    },
+    "_f03": {
+     "hash": "c34555a0",
+     "paths": 634,
+     "bytes": 195718
+    }
+   }
+  },
+  "host/medium-glance-left": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ee9caa04",
+     "paths": 873,
+     "bytes": 282562
+    },
+    "_f02": {
+     "hash": "cc49d6ca",
+     "paths": 877,
+     "bytes": 282113
+    },
+    "_f03": {
+     "hash": "e78b41d8",
+     "paths": 870,
+     "bytes": 281328
+    }
+   }
+  },
+  "host/medium-glance-left-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ee9caa04",
+     "paths": 873,
+     "bytes": 282562
+    },
+    "_f02": {
+     "hash": "24038178",
+     "paths": 860,
+     "bytes": 278825
+    },
+    "_f03": {
+     "hash": "f71441b2",
+     "paths": 869,
+     "bytes": 281834
+    }
+   }
+  },
+  "host/medium-glance-left-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "67779d42",
+     "paths": 884,
+     "bytes": 283950
+    },
+    "_f02": {
+     "hash": "b8bf4278",
+     "paths": 878,
+     "bytes": 282293
+    },
+    "_f03": {
+     "hash": "531e8d88",
+     "paths": 871,
+     "bytes": 281423
+    }
+   }
+  },
+  "host/medium-glance-right": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f46d8fb8",
+     "paths": 873,
+     "bytes": 282577
+    },
+    "_f02": {
+     "hash": "ffc656e0",
+     "paths": 877,
+     "bytes": 282095
+    },
+    "_f03": {
+     "hash": "268c1c3a",
+     "paths": 870,
+     "bytes": 281329
+    }
+   }
+  },
+  "host/medium-glance-right-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f46d8fb8",
+     "paths": 873,
+     "bytes": 282577
+    },
+    "_f02": {
+     "hash": "2574d178",
+     "paths": 860,
+     "bytes": 278823
+    },
+    "_f03": {
+     "hash": "6b197b30",
+     "paths": 869,
+     "bytes": 281832
+    }
+   }
+  },
+  "host/medium-glance-right-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0ffd47ba",
+     "paths": 884,
+     "bytes": 283942
+    },
+    "_f02": {
+     "hash": "b3259d72",
+     "paths": 878,
+     "bytes": 282293
+    },
+    "_f03": {
+     "hash": "9d256cba",
+     "paths": 871,
+     "bytes": 281396
+    }
+   }
+  },
+  "host/medium-robe": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "4839b280",
+     "paths": 1002,
+     "bytes": 325151
+    },
+    "_f02": {
+     "hash": "8bc3a5a8",
+     "paths": 1004,
+     "bytes": 324329
+    },
+    "_f03": {
+     "hash": "4ad0cf3a",
+     "paths": 996,
+     "bytes": 322736
+    }
+   }
+  },
+  "host/medium-robe-talk": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 8,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "4839b280",
+     "paths": 1002,
+     "bytes": 325151
+    },
+    "_f02": {
+     "hash": "f81e9bc0",
+     "paths": 989,
+     "bytes": 321400
+    },
+    "_f03": {
+     "hash": "80e4beb8",
+     "paths": 998,
+     "bytes": 324409
+    }
+   }
+  },
+  "host/medium-robe-idle": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 4,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "8ac8b15e",
+     "paths": 1011,
+     "bytes": 325886
+    },
+    "_f02": {
+     "hash": "7dd487b8",
+     "paths": 1003,
+     "bytes": 323585
+    },
+    "_f03": {
+     "hash": "a4a9d9ce",
+     "paths": 999,
+     "bytes": 323965
+    }
+   }
+  },
+  "overlays/row-band": {
+   "dir": "overlays",
+   "playback": "static",
+   "fps": null,
+   "frameCount": 1,
+   "frames": {
+    "(base)": {
+     "hash": "19d69668",
+     "paths": 80,
+     "bytes": 123530
+    }
+   }
+  },
+  "overlays/lower-third-16x9": {
+   "dir": "overlays",
+   "playback": "static",
+   "fps": null,
+   "frameCount": 1,
+   "frames": {
+    "(base)": {
+     "hash": "57a41a88",
+     "paths": 9,
+     "bytes": 21660
+    }
+   }
+  },
+  "overlays/lower-third-9x16": {
+   "dir": "overlays",
+   "playback": "static",
+   "fps": null,
+   "frameCount": 1,
+   "frames": {
+    "(base)": {
+     "hash": "a3080d90",
+     "paths": 9,
+     "bytes": 25856
+    }
+   }
+  },
+  "paper/headline-band-t1-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "61aae246",
+     "paths": 63,
+     "bytes": 86587
+    },
+    "_f02": {
+     "hash": "0770c266",
+     "paths": 63,
+     "bytes": 86594
+    },
+    "_f03": {
+     "hash": "dd8676b6",
+     "paths": 63,
+     "bytes": 86547
+    },
+    "_f04": {
+     "hash": "8121853e",
+     "paths": 63,
+     "bytes": 86526
+    },
+    "_f05": {
+     "hash": "831e8aca",
+     "paths": 63,
+     "bytes": 86552
+    }
+   }
+  },
+  "paper/headline-band-t1-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "ca368374",
+     "paths": 63,
+     "bytes": 84810
+    },
+    "_f02": {
+     "hash": "a7f8b34d",
+     "paths": 63,
+     "bytes": 84837
+    },
+    "_f03": {
+     "hash": "7c0cf9a4",
+     "paths": 63,
+     "bytes": 84775
+    },
+    "_f04": {
+     "hash": "e1949a56",
+     "paths": 63,
+     "bytes": 84792
+    },
+    "_f05": {
+     "hash": "56b12810",
+     "paths": 63,
+     "bytes": 84782
+    }
+   }
+  },
+  "paper/headline-band-t2-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "1696c12e",
+     "paths": 207,
+     "bytes": 435682
+    },
+    "_f02": {
+     "hash": "084052f0",
+     "paths": 207,
+     "bytes": 435463
+    },
+    "_f03": {
+     "hash": "2b646dc6",
+     "paths": 207,
+     "bytes": 435377
+    },
+    "_f04": {
+     "hash": "9656613e",
+     "paths": 207,
+     "bytes": 435600
+    },
+    "_f05": {
+     "hash": "50bfa258",
+     "paths": 207,
+     "bytes": 435628
+    }
+   }
+  },
+  "paper/headline-band-t2-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "50873c98",
+     "paths": 227,
+     "bytes": 341749
+    },
+    "_f02": {
+     "hash": "962a5f47",
+     "paths": 227,
+     "bytes": 341833
+    },
+    "_f03": {
+     "hash": "a7ee5e2a",
+     "paths": 227,
+     "bytes": 341765
+    },
+    "_f04": {
+     "hash": "9a87e13a",
+     "paths": 227,
+     "bytes": 341840
+    },
+    "_f05": {
+     "hash": "7c0bc8c8",
+     "paths": 227,
+     "bytes": 341784
+    }
+   }
+  },
+  "paper/headline-band-t3-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "7b93b656",
+     "paths": 311,
+     "bytes": 612253
+    },
+    "_f02": {
+     "hash": "1c91fd80",
+     "paths": 311,
+     "bytes": 612250
+    },
+    "_f03": {
+     "hash": "a70ea7c0",
+     "paths": 311,
+     "bytes": 612182
+    },
+    "_f04": {
+     "hash": "4e7f7f90",
+     "paths": 311,
+     "bytes": 612155
+    },
+    "_f05": {
+     "hash": "ff046028",
+     "paths": 311,
+     "bytes": 612265
+    }
+   }
+  },
+  "paper/headline-band-t3-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "78779cae",
+     "paths": 361,
+     "bytes": 511941
+    },
+    "_f02": {
+     "hash": "44a6138e",
+     "paths": 361,
+     "bytes": 512023
+    },
+    "_f03": {
+     "hash": "7c1287f6",
+     "paths": 361,
+     "bytes": 511996
+    },
+    "_f04": {
+     "hash": "9841f470",
+     "paths": 361,
+     "bytes": 511959
+    },
+    "_f05": {
+     "hash": "6c2f04b8",
+     "paths": 361,
+     "bytes": 511993
+    }
+   }
+  },
+  "room/wide-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f4f052c8",
+     "paths": 4348,
+     "bytes": 1422538
+    },
+    "_f02": {
+     "hash": "dc7460fe",
+     "paths": 4346,
+     "bytes": 1422343
+    },
+    "_f03": {
+     "hash": "cf968858",
+     "paths": 4346,
+     "bytes": 1422343
+    }
+   }
+  },
+  "room/wide-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f1f44758",
+     "paths": 3950,
+     "bytes": 1273260
+    },
+    "_f02": {
+     "hash": "a9dd7178",
+     "paths": 3948,
+     "bytes": 1272932
+    },
+    "_f03": {
+     "hash": "1b368b70",
+     "paths": 3948,
+     "bytes": 1273055
+    }
+   }
+  },
+  "room/wide-tight-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "d38ace10",
+     "paths": 4806,
+     "bytes": 1609688
+    },
+    "_f02": {
+     "hash": "bdf22870",
+     "paths": 4804,
+     "bytes": 1609615
+    },
+    "_f03": {
+     "hash": "e5388da0",
+     "paths": 4804,
+     "bytes": 1609504
+    }
+   }
+  },
+  "room/wide-tight-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f0313772",
+     "paths": 4377,
+     "bytes": 1443597
+    },
+    "_f02": {
+     "hash": "797bcfaa",
+     "paths": 4375,
+     "bytes": 1443303
+    },
+    "_f03": {
+     "hash": "2c73cac0",
+     "paths": 4375,
+     "bytes": 1443294
+    }
+   }
+  },
+  "room/desk-front-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e128ff88",
+     "paths": 4529,
+     "bytes": 1522843
+    },
+    "_f02": {
+     "hash": "72737740",
+     "paths": 4529,
+     "bytes": 1522814
+    },
+    "_f03": {
+     "hash": "a18633d0",
+     "paths": 4529,
+     "bytes": 1522965
+    }
+   }
+  },
+  "room/desk-front-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5adcb099",
+     "paths": 3861,
+     "bytes": 1267802
+    },
+    "_f02": {
+     "hash": "24b3a548",
+     "paths": 3861,
+     "bytes": 1267542
+    },
+    "_f03": {
+     "hash": "eceb15a0",
+     "paths": 3861,
+     "bytes": 1267713
+    }
+   }
+  },
+  "room/desk-corner-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f158ae88",
+     "paths": 2467,
+     "bytes": 921864
+    },
+    "_f02": {
+     "hash": "1cdcbcb2",
+     "paths": 2466,
+     "bytes": 921850
+    },
+    "_f03": {
+     "hash": "dcca4126",
+     "paths": 2466,
+     "bytes": 921657
+    }
+   }
+  },
+  "room/desk-corner-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "68480850",
+     "paths": 2181,
+     "bytes": 794243
+    },
+    "_f02": {
+     "hash": "384a98fb",
+     "paths": 2180,
+     "bytes": 793932
+    },
+    "_f03": {
+     "hash": "2f9f4b3e",
+     "paths": 2180,
+     "bytes": 794051
+    }
+   }
+  },
+  "room/from-behind-the-monitor-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "cb1b8ce8",
+     "paths": 3125,
+     "bytes": 1095879
+    },
+    "_f02": {
+     "hash": "84766320",
+     "paths": 3124,
+     "bytes": 1095873
+    },
+    "_f03": {
+     "hash": "569a8b18",
+     "paths": 3124,
+     "bytes": 1095789
+    }
+   }
+  },
+  "room/from-behind-the-monitor-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ad7c7b20",
+     "paths": 2613,
+     "bytes": 879493
+    },
+    "_f02": {
+     "hash": "290d55e0",
+     "paths": 2612,
+     "bytes": 879335
+    },
+    "_f03": {
+     "hash": "d6924048",
+     "paths": 2612,
+     "bytes": 879751
+    }
+   }
+  },
+  "room/whiteboard-wall-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "1f47d260",
+     "paths": 3711,
+     "bytes": 1305338
+    },
+    "_f02": {
+     "hash": "8ff7ddb6",
+     "paths": 3710,
+     "bytes": 1305304
+    },
+    "_f03": {
+     "hash": "20f3f998",
+     "paths": 3710,
+     "bytes": 1305562
+    }
+   }
+  },
+  "room/whiteboard-wall-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "3da03994",
+     "paths": 2910,
+     "bytes": 1007840
+    },
+    "_f02": {
+     "hash": "a662d580",
+     "paths": 2909,
+     "bytes": 1007769
+    },
+    "_f03": {
+     "hash": "7fe112c8",
+     "paths": 2909,
+     "bytes": 1007767
+    }
+   }
+  },
+  "room/printer-corner-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5ed1f1a8",
+     "paths": 2303,
+     "bytes": 782803
+    },
+    "_f02": {
+     "hash": "47d1a37a",
+     "paths": 2301,
+     "bytes": 782362
+    },
+    "_f03": {
+     "hash": "d9aa7950",
+     "paths": 2301,
+     "bytes": 782319
+    }
+   }
+  },
+  "room/printer-corner-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a96c0d8c",
+     "paths": 2158,
+     "bytes": 723472
+    },
+    "_f02": {
+     "hash": "f0ea75aa",
+     "paths": 2156,
+     "bytes": 722862
+    },
+    "_f03": {
+     "hash": "c7277ba8",
+     "paths": 2156,
+     "bytes": 723036
+    }
+   }
+  },
+  "room/doorway-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e593f0d0",
+     "paths": 1682,
+     "bytes": 602893
+    },
+    "_f02": {
+     "hash": "6472d1a8",
+     "paths": 1682,
+     "bytes": 602864
+    },
+    "_f03": {
+     "hash": "6ff679f8",
+     "paths": 1682,
+     "bytes": 602911
+    }
+   }
+  },
+  "room/doorway-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f3a15be2",
+     "paths": 1563,
+     "bytes": 569706
+    },
+    "_f02": {
+     "hash": "2ac78628",
+     "paths": 1563,
+     "bytes": 569448
+    },
+    "_f03": {
+     "hash": "c21bf1d2",
+     "paths": 1563,
+     "bytes": 569533
+    }
+   }
+  },
+  "room/corner-perspective-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "599a3472",
+     "paths": 2562,
+     "bytes": 822824
+    },
+    "_f02": {
+     "hash": "d9c42426",
+     "paths": 2560,
+     "bytes": 822592
+    },
+    "_f03": {
+     "hash": "9e88e1da",
+     "paths": 2560,
+     "bytes": 822757
+    }
+   }
+  },
+  "room/corner-perspective-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c7f116a5",
+     "paths": 2515,
+     "bytes": 820761
+    },
+    "_f02": {
+     "hash": "18c95f20",
+     "paths": 2513,
+     "bytes": 820346
+    },
+    "_f03": {
+     "hash": "7c00c3e0",
+     "paths": 2513,
+     "bytes": 820543
+    }
+   }
+  },
+  "room/low-desk-height-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b2ea1c88",
+     "paths": 2343,
+     "bytes": 830940
+    },
+    "_f02": {
+     "hash": "abf6f9c4",
+     "paths": 2342,
+     "bytes": 830685
+    },
+    "_f03": {
+     "hash": "42d64b20",
+     "paths": 2342,
+     "bytes": 830737
+    }
+   }
+  },
+  "room/low-desk-height-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "72e5b488",
+     "paths": 2018,
+     "bytes": 704421
+    },
+    "_f02": {
+     "hash": "d2fa9c88",
+     "paths": 2017,
+     "bytes": 704225
+    },
+    "_f03": {
+     "hash": "418d7fa0",
+     "paths": 2017,
+     "bytes": 704341
+    }
+   }
+  },
+  "room/high-desk-down-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "97883c50",
+     "paths": 2442,
+     "bytes": 817666
+    },
+    "_f02": {
+     "hash": "112d7fd8",
+     "paths": 2440,
+     "bytes": 817408
+    },
+    "_f03": {
+     "hash": "99da47be",
+     "paths": 2440,
+     "bytes": 817636
+    }
+   }
+  },
+  "room/high-desk-down-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "114797f2",
+     "paths": 2015,
+     "bytes": 678293
+    },
+    "_f02": {
+     "hash": "21ed77f8",
+     "paths": 2013,
+     "bytes": 677876
+    },
+    "_f03": {
+     "hash": "eb965cf0",
+     "paths": 2013,
+     "bytes": 677737
+    }
+   }
+  },
+  "room/over-the-shoulder-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "946159c0",
+     "paths": 3719,
+     "bytes": 1314297
+    },
+    "_f02": {
+     "hash": "0777aaf8",
+     "paths": 3718,
+     "bytes": 1314196
+    },
+    "_f03": {
+     "hash": "d5ac72f0",
+     "paths": 3718,
+     "bytes": 1314166
+    }
+   }
+  },
+  "room/over-the-shoulder-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "980ae978",
+     "paths": 2840,
+     "bytes": 990739
+    },
+    "_f02": {
+     "hash": "0a185b68",
+     "paths": 2839,
+     "bytes": 990612
+    },
+    "_f03": {
+     "hash": "99bf5c6e",
+     "paths": 2839,
+     "bytes": 990851
+    }
+   }
+  },
+  "room/wide-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "6aea68f8",
+     "paths": 4414,
+     "bytes": 1443600
+    },
+    "_f02": {
+     "hash": "bdf3d180",
+     "paths": 4412,
+     "bytes": 1443420
+    },
+    "_f03": {
+     "hash": "42538fd8",
+     "paths": 4412,
+     "bytes": 1443387
+    }
+   }
+  },
+  "room/wide-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "eef9a778",
+     "paths": 4016,
+     "bytes": 1292675
+    },
+    "_f02": {
+     "hash": "ff1ce6d6",
+     "paths": 4014,
+     "bytes": 1292361
+    },
+    "_f03": {
+     "hash": "12d34f79",
+     "paths": 4014,
+     "bytes": 1292489
+    }
+   }
+  },
+  "room/wide-tight-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "24e0d628",
+     "paths": 4872,
+     "bytes": 1630750
+    },
+    "_f02": {
+     "hash": "9b2280d2",
+     "paths": 4870,
+     "bytes": 1630692
+    },
+    "_f03": {
+     "hash": "8dd20f0a",
+     "paths": 4870,
+     "bytes": 1630548
+    }
+   }
+  },
+  "room/wide-tight-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ae1780de",
+     "paths": 4443,
+     "bytes": 1463012
+    },
+    "_f02": {
+     "hash": "dd522e99",
+     "paths": 4441,
+     "bytes": 1462732
+    },
+    "_f03": {
+     "hash": "22fdf708",
+     "paths": 4441,
+     "bytes": 1462728
+    }
+   }
+  },
+  "room/desk-front-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "809ef88a",
+     "paths": 4595,
+     "bytes": 1543905
+    },
+    "_f02": {
+     "hash": "61d79628",
+     "paths": 4595,
+     "bytes": 1543891
+    },
+    "_f03": {
+     "hash": "32282a04",
+     "paths": 4595,
+     "bytes": 1544009
+    }
+   }
+  },
+  "room/desk-front-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "457976e0",
+     "paths": 3927,
+     "bytes": 1287217
+    },
+    "_f02": {
+     "hash": "2247f17e",
+     "paths": 3927,
+     "bytes": 1286971
+    },
+    "_f03": {
+     "hash": "41add100",
+     "paths": 3927,
+     "bytes": 1287147
+    }
+   }
+  },
+  "room/desk-corner-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5af28760",
+     "paths": 2533,
+     "bytes": 942926
+    },
+    "_f02": {
+     "hash": "076a9748",
+     "paths": 2532,
+     "bytes": 942927
+    },
+    "_f03": {
+     "hash": "b19466e0",
+     "paths": 2532,
+     "bytes": 942701
+    }
+   }
+  },
+  "room/desk-corner-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0bcd2628",
+     "paths": 2247,
+     "bytes": 813658
+    },
+    "_f02": {
+     "hash": "9395e566",
+     "paths": 2246,
+     "bytes": 813361
+    },
+    "_f03": {
+     "hash": "dd412c68",
+     "paths": 2246,
+     "bytes": 813485
+    }
+   }
+  },
+  "room/from-behind-the-monitor-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f464ef88",
+     "paths": 3191,
+     "bytes": 1116941
+    },
+    "_f02": {
+     "hash": "8d72b9d0",
+     "paths": 3190,
+     "bytes": 1116950
+    },
+    "_f03": {
+     "hash": "3f999d90",
+     "paths": 3190,
+     "bytes": 1116833
+    }
+   }
+  },
+  "room/from-behind-the-monitor-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f0d8074c",
+     "paths": 2679,
+     "bytes": 898908
+    },
+    "_f02": {
+     "hash": "f1537b68",
+     "paths": 2678,
+     "bytes": 898764
+    },
+    "_f03": {
+     "hash": "4b89cec0",
+     "paths": 2678,
+     "bytes": 899185
+    }
+   }
+  },
+  "room/whiteboard-wall-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "32c779c4",
+     "paths": 3777,
+     "bytes": 1326400
+    },
+    "_f02": {
+     "hash": "0f6ce557",
+     "paths": 3776,
+     "bytes": 1326381
+    },
+    "_f03": {
+     "hash": "c71a2a12",
+     "paths": 3776,
+     "bytes": 1326606
+    }
+   }
+  },
+  "room/whiteboard-wall-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9aa8d520",
+     "paths": 2976,
+     "bytes": 1027255
+    },
+    "_f02": {
+     "hash": "31fafda8",
+     "paths": 2975,
+     "bytes": 1027198
+    },
+    "_f03": {
+     "hash": "6c7a1804",
+     "paths": 2975,
+     "bytes": 1027201
+    }
+   }
+  },
+  "room/printer-corner-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "743a0710",
+     "paths": 2369,
+     "bytes": 803865
+    },
+    "_f02": {
+     "hash": "eb6e4b79",
+     "paths": 2367,
+     "bytes": 803439
+    },
+    "_f03": {
+     "hash": "3c0809d8",
+     "paths": 2367,
+     "bytes": 803363
+    }
+   }
+  },
+  "room/printer-corner-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "8498d2fe",
+     "paths": 2224,
+     "bytes": 742887
+    },
+    "_f02": {
+     "hash": "e6edce88",
+     "paths": 2222,
+     "bytes": 742291
+    },
+    "_f03": {
+     "hash": "cbc97770",
+     "paths": 2222,
+     "bytes": 742470
+    }
+   }
+  },
+  "room/doorway-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5e2be038",
+     "paths": 1748,
+     "bytes": 623955
+    },
+    "_f02": {
+     "hash": "67947969",
+     "paths": 1748,
+     "bytes": 623941
+    },
+    "_f03": {
+     "hash": "9e3b8a10",
+     "paths": 1748,
+     "bytes": 623955
+    }
+   }
+  },
+  "room/doorway-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b3925342",
+     "paths": 1629,
+     "bytes": 589121
+    },
+    "_f02": {
+     "hash": "17e62ba8",
+     "paths": 1629,
+     "bytes": 588877
+    },
+    "_f03": {
+     "hash": "7c9a35ec",
+     "paths": 1629,
+     "bytes": 588967
+    }
+   }
+  },
+  "room/corner-perspective-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "87cbbb50",
+     "paths": 2628,
+     "bytes": 843732
+    },
+    "_f02": {
+     "hash": "9f188c24",
+     "paths": 2626,
+     "bytes": 843496
+    },
+    "_f03": {
+     "hash": "2b45ca96",
+     "paths": 2626,
+     "bytes": 843656
+    }
+   }
+  },
+  "room/corner-perspective-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "48981c58",
+     "paths": 2581,
+     "bytes": 839984
+    },
+    "_f02": {
+     "hash": "07d942c0",
+     "paths": 2579,
+     "bytes": 839583
+    },
+    "_f03": {
+     "hash": "8536c618",
+     "paths": 2579,
+     "bytes": 839773
+    }
+   }
+  },
+  "room/low-desk-height-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ec7bc52a",
+     "paths": 2409,
+     "bytes": 853095
+    },
+    "_f02": {
+     "hash": "a666cc02",
+     "paths": 2408,
+     "bytes": 852882
+    },
+    "_f03": {
+     "hash": "a684acb4",
+     "paths": 2408,
+     "bytes": 852885
+    }
+   }
+  },
+  "room/low-desk-height-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9c56f2b0",
+     "paths": 2084,
+     "bytes": 726138
+    },
+    "_f02": {
+     "hash": "a2e95478",
+     "paths": 2083,
+     "bytes": 725953
+    },
+    "_f03": {
+     "hash": "807289e8",
+     "paths": 2083,
+     "bytes": 726046
+    }
+   }
+  },
+  "room/high-desk-down-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "150a06a6",
+     "paths": 2508,
+     "bytes": 842189
+    },
+    "_f02": {
+     "hash": "ec8e1f94",
+     "paths": 2506,
+     "bytes": 841950
+    },
+    "_f03": {
+     "hash": "f7412138",
+     "paths": 2506,
+     "bytes": 842140
+    }
+   }
+  },
+  "room/high-desk-down-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0f48a4b2",
+     "paths": 2081,
+     "bytes": 704525
+    },
+    "_f02": {
+     "hash": "37394248",
+     "paths": 2079,
+     "bytes": 704149
+    },
+    "_f03": {
+     "hash": "6cb7aaa0",
+     "paths": 2079,
+     "bytes": 703994
+    }
+   }
+  },
+  "room/over-the-shoulder-dusk-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "5ce5f50b",
+     "paths": 3785,
+     "bytes": 1335359
+    },
+    "_f02": {
+     "hash": "d9282910",
+     "paths": 3784,
+     "bytes": 1335273
+    },
+    "_f03": {
+     "hash": "5ca4dd58",
+     "paths": 3784,
+     "bytes": 1335210
+    }
+   }
+  },
+  "room/over-the-shoulder-dusk-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "4f40b588",
+     "paths": 2906,
+     "bytes": 1010154
+    },
+    "_f02": {
+     "hash": "2d7747b8",
+     "paths": 2905,
+     "bytes": 1010041
+    },
+    "_f03": {
+     "hash": "381fefbe",
+     "paths": 2905,
+     "bytes": 1010285
+    }
+   }
+  },
+  "room/wall-of-calls-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "4cce4bfe",
+     "paths": 509,
+     "bytes": 287084
+    },
+    "_f02": {
+     "hash": "9ee1b7c8",
+     "paths": 509,
+     "bytes": 287039
+    },
+    "_f03": {
+     "hash": "cfe2701c",
+     "paths": 509,
+     "bytes": 287186
+    }
+   }
+  },
+  "room/wall-of-calls-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b2b47c70",
+     "paths": 458,
+     "bytes": 234967
+    },
+    "_f02": {
+     "hash": "d275a910",
+     "paths": 458,
+     "bytes": 234958
+    },
+    "_f03": {
+     "hash": "88e1e046",
+     "paths": 458,
+     "bytes": 234951
+    }
+   }
+  },
+  "room/wall-of-calls-pinned-16x9": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "bf1882b8",
+     "paths": 569,
+     "bytes": 316360
+    },
+    "_f02": {
+     "hash": "bc1e5518",
+     "paths": 569,
+     "bytes": 316272
+    },
+    "_f03": {
+     "hash": "a0a84df8",
+     "paths": 569,
+     "bytes": 316474
+    }
+   }
+  },
+  "room/wall-of-calls-pinned-9x16": {
+   "dir": "room",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f02ee207",
+     "paths": 519,
+     "bytes": 260285
+    },
+    "_f02": {
+     "hash": "7138a238",
+     "paths": 519,
+     "bytes": 260261
+    },
+    "_f03": {
+     "hash": "e3d0f472",
+     "paths": 519,
+     "bytes": 260267
+    }
+   }
+  },
+  "shorts/hook-card-t1": {
+   "dir": "shorts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "23a7c9fa",
+     "paths": 87,
+     "bytes": 95017
+    },
+    "_f02": {
+     "hash": "511439d4",
+     "paths": 87,
+     "bytes": 95014
+    },
+    "_f03": {
+     "hash": "70f7897a",
+     "paths": 87,
+     "bytes": 95054
+    }
+   }
+  },
+  "shorts/hook-card-t2": {
+   "dir": "shorts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "475100b0",
+     "paths": 273,
+     "bytes": 411503
+    },
+    "_f02": {
+     "hash": "00437488",
+     "paths": 273,
+     "bytes": 411649
+    },
+    "_f03": {
+     "hash": "1c2b4bd6",
+     "paths": 273,
+     "bytes": 411569
+    }
+   }
+  },
+  "shorts/hook-card-t3": {
+   "dir": "shorts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "036acff4",
+     "paths": 63,
+     "bytes": 83860
+    },
+    "_f02": {
+     "hash": "51bca5c8",
+     "paths": 63,
+     "bytes": 83872
+    },
+    "_f03": {
+     "hash": "585015f0",
+     "paths": 63,
+     "bytes": 83898
+    }
+   }
+  },
+  "structure/both-true-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "72c92536",
+     "paths": 65,
+     "bytes": 80807
+    },
+    "_f02": {
+     "hash": "56aa7f30",
+     "paths": 65,
+     "bytes": 80816
+    },
+    "_f03": {
+     "hash": "fcd92af2",
+     "paths": 65,
+     "bytes": 80804
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/both-true-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "fcb70200",
+     "paths": 65,
+     "bytes": 82649
+    },
+    "_f02": {
+     "hash": "225e38f8",
+     "paths": 65,
+     "bytes": 82677
+    },
+    "_f03": {
+     "hash": "d438c4f8",
+     "paths": 65,
+     "bytes": 82645
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/unit-ladder-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "dfee5c78",
+     "paths": 77,
+     "bytes": 101241
+    },
+    "_f02": {
+     "hash": "2874aea0",
+     "paths": 77,
+     "bytes": 101260
+    },
+    "_f03": {
+     "hash": "ef40ecf0",
+     "paths": 77,
+     "bytes": 101212
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/unit-ladder-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ab55d400",
+     "paths": 77,
+     "bytes": 98221
+    },
+    "_f02": {
+     "hash": "ed7980d6",
+     "paths": 77,
+     "bytes": 98249
+    },
+    "_f03": {
+     "hash": "644f17e2",
+     "paths": 77,
+     "bytes": 98210
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/closing-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ca4ed869",
+     "paths": 67,
+     "bytes": 92909
+    },
+    "_f02": {
+     "hash": "3745ad38",
+     "paths": 67,
+     "bytes": 92877
+    },
+    "_f03": {
+     "hash": "2230b7be",
+     "paths": 67,
+     "bytes": 92888
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/closing-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "05093014",
+     "paths": 67,
+     "bytes": 87079
+    },
+    "_f02": {
+     "hash": "8d99cc9e",
+     "paths": 67,
+     "bytes": 87080
+    },
+    "_f03": {
+     "hash": "05948a90",
+     "paths": 67,
+     "bytes": 87089
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/row-spotlight-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "747c1b56",
+     "paths": 243,
+     "bytes": 506643
+    },
+    "_f02": {
+     "hash": "2c3ee712",
+     "paths": 243,
+     "bytes": 506410
+    },
+    "_f03": {
+     "hash": "9cc213ea",
+     "paths": 243,
+     "bytes": 506566
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/row-spotlight-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9f6c42c6",
+     "paths": 285,
+     "bytes": 439154
+    },
+    "_f02": {
+     "hash": "aff07a10",
+     "paths": 285,
+     "bytes": 439069
+    },
+    "_f03": {
+     "hash": "cb049c08",
+     "paths": 285,
+     "bytes": 438959
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/flow-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "84fe9856",
+     "paths": 299,
+     "bytes": 221083
+    },
+    "_f02": {
+     "hash": "21bafa88",
+     "paths": 299,
+     "bytes": 221078
+    },
+    "_f03": {
+     "hash": "605c0724",
+     "paths": 299,
+     "bytes": 221105
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/timeline-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "2abb4c3c",
+     "paths": 69,
+     "bytes": 85794
+    },
+    "_f02": {
+     "hash": "9e14f40c",
+     "paths": 69,
+     "bytes": 85797
+    },
+    "_f03": {
+     "hash": "500aa9d0",
+     "paths": 69,
+     "bytes": 85776
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/timeline-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "624070cc",
+     "paths": 69,
+     "bytes": 84784
+    },
+    "_f02": {
+     "hash": "9b60b078",
+     "paths": 69,
+     "bytes": 84793
+    },
+    "_f03": {
+     "hash": "b2e0d756",
+     "paths": 69,
+     "bytes": 84798
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-3r-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "00685f65",
+     "paths": 181,
+     "bytes": 307261
+    },
+    "_f02": {
+     "hash": "bcf19f1e",
+     "paths": 181,
+     "bytes": 307234
+    },
+    "_f03": {
+     "hash": "a9bc77d0",
+     "paths": 181,
+     "bytes": 307265
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-3r-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "22f6afae",
+     "paths": 219,
+     "bytes": 326239
+    },
+    "_f02": {
+     "hash": "116da8a8",
+     "paths": 219,
+     "bytes": 326246
+    },
+    "_f03": {
+     "hash": "a8d7fb58",
+     "paths": 219,
+     "bytes": 326312
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-4r-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "7ce04c7a",
+     "paths": 247,
+     "bytes": 405587
+    },
+    "_f02": {
+     "hash": "df79759e",
+     "paths": 247,
+     "bytes": 405604
+    },
+    "_f03": {
+     "hash": "6a781c62",
+     "paths": 247,
+     "bytes": 405591
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-4r-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "bfddaff6",
+     "paths": 303,
+     "bytes": 438936
+    },
+    "_f02": {
+     "hash": "5723aff0",
+     "paths": 303,
+     "bytes": 439146
+    },
+    "_f03": {
+     "hash": "80340ea8",
+     "paths": 303,
+     "bytes": 439244
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-5r-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "524994f0",
+     "paths": 227,
+     "bytes": 356056
+    },
+    "_f02": {
+     "hash": "31b0693e",
+     "paths": 227,
+     "bytes": 356201
+    },
+    "_f03": {
+     "hash": "6e1d2610",
+     "paths": 227,
+     "bytes": 356091
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-5r-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f370e408",
+     "paths": 267,
+     "bytes": 377788
+    },
+    "_f02": {
+     "hash": "d2aad07a",
+     "paths": 267,
+     "bytes": 377982
+    },
+    "_f03": {
+     "hash": "040f73e6",
+     "paths": 267,
+     "bytes": 378002
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-6r-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a52e81e6",
+     "paths": 283,
+     "bytes": 423849
+    },
+    "_f02": {
+     "hash": "512789e0",
+     "paths": 283,
+     "bytes": 423832
+    },
+    "_f03": {
+     "hash": "5f610c70",
+     "paths": 283,
+     "bytes": 423826
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-6r-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "75fc00a5",
+     "paths": 327,
+     "bytes": 448835
+    },
+    "_f02": {
+     "hash": "9172a660",
+     "paths": 327,
+     "bytes": 449159
+    },
+    "_f03": {
+     "hash": "9a374068",
+     "paths": 327,
+     "bytes": 449137
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-6r-spark-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "31bc6040",
+     "paths": 285,
+     "bytes": 421215
+    },
+    "_f02": {
+     "hash": "25929558",
+     "paths": 285,
+     "bytes": 421209
+    },
+    "_f03": {
+     "hash": "1c972a00",
+     "paths": 285,
+     "bytes": 421230
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/numbers-sheet-4r-spark-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c23770c8",
+     "paths": 305,
+     "bytes": 440973
+    },
+    "_f02": {
+     "hash": "73b9fd36",
+     "paths": 305,
+     "bytes": 441159
+    },
+    "_f03": {
+     "hash": "22bd6c0e",
+     "paths": 305,
+     "bytes": 441242
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/cash-flow-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "56eb1e46",
+     "paths": 67,
+     "bytes": 103072
+    },
+    "_f02": {
+     "hash": "2e404fab",
+     "paths": 67,
+     "bytes": 103049
+    },
+    "_f03": {
+     "hash": "2e52a8e8",
+     "paths": 67,
+     "bytes": 103041
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/cash-flow-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9472246c",
+     "paths": 67,
+     "bytes": 93076
+    },
+    "_f02": {
+     "hash": "72184a30",
+     "paths": 67,
+     "bytes": 93067
+    },
+    "_f03": {
+     "hash": "78367b38",
+     "paths": 67,
+     "bytes": 93054
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/multiples-strip-16x9": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "8c163b90",
+     "paths": 99,
+     "bytes": 115491
+    },
+    "_f02": {
+     "hash": "4befccfe",
+     "paths": 99,
+     "bytes": 115500
+    },
+    "_f03": {
+     "hash": "6891f190",
+     "paths": 99,
+     "bytes": 115482
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "tables/multiples-strip-9x16": {
+   "dir": "tables",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "87357736",
+     "paths": 81,
+     "bytes": 98841
+    },
+    "_f02": {
+     "hash": "84d077d0",
+     "paths": 81,
+     "bytes": 98875
+    },
+    "_f03": {
+     "hash": "b3b129f8",
+     "paths": 81,
+     "bytes": 98823
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/multiple-bridge-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b189c122",
+     "paths": 315,
+     "bytes": 270231
+    },
+    "_f02": {
+     "hash": "33559a4e",
+     "paths": 315,
+     "bytes": 270136
+    },
+    "_f03": {
+     "hash": "f82c9fb6",
+     "paths": 315,
+     "bytes": 270234
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "peers/peer-strip-16x9": {
+   "dir": "peers",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "141479e0",
+     "paths": 233,
+     "bytes": 134581
+    },
+    "_f02": {
+     "hash": "9af1e420",
+     "paths": 233,
+     "bytes": 134568
+    },
+    "_f03": {
+     "hash": "27b48e4a",
+     "paths": 233,
+     "bytes": 134573
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "peers/peer-strip-9x16": {
+   "dir": "peers",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "975170ec",
+     "paths": 135,
+     "bytes": 105763
+    },
+    "_f02": {
+     "hash": "77d3ffe9",
+     "paths": 135,
+     "bytes": 105758
+    },
+    "_f03": {
+     "hash": "7a3c7c90",
+     "paths": 135,
+     "bytes": 105746
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "cycles/cycle-frame-16x9": {
+   "dir": "cycles",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9ec7d708",
+     "paths": 287,
+     "bytes": 379064
+    },
+    "_f02": {
+     "hash": "acb91278",
+     "paths": 287,
+     "bytes": 379076
+    },
+    "_f03": {
+     "hash": "259a107e",
+     "paths": 287,
+     "bytes": 379046
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "cycles/cycle-frame-9x16": {
+   "dir": "cycles",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "8583e4fe",
+     "paths": 263,
+     "bytes": 348828
+    },
+    "_f02": {
+     "hash": "5d150970",
+     "paths": 263,
+     "bytes": 348815
+    },
+    "_f03": {
+     "hash": "d4339bca",
+     "paths": 263,
+     "bytes": 348849
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-3s-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "9b925a60",
+     "paths": 89,
+     "bytes": 89353
+    },
+    "_f02": {
+     "hash": "631988ce",
+     "paths": 89,
+     "bytes": 89342
+    },
+    "_f03": {
+     "hash": "f9fdb908",
+     "paths": 89,
+     "bytes": 89321
+    },
+    "_f04": {
+     "hash": "2f1aea76",
+     "paths": 89,
+     "bytes": 89333
+    },
+    "_f05": {
+     "hash": "24c30dce",
+     "paths": 89,
+     "bytes": 89321
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-3s-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "2831f8e6",
+     "paths": 73,
+     "bytes": 83333
+    },
+    "_f02": {
+     "hash": "d743455a",
+     "paths": 73,
+     "bytes": 83330
+    },
+    "_f03": {
+     "hash": "fc780dd0",
+     "paths": 73,
+     "bytes": 83300
+    },
+    "_f04": {
+     "hash": "11459c99",
+     "paths": 73,
+     "bytes": 83310
+    },
+    "_f05": {
+     "hash": "0615d7f2",
+     "paths": 73,
+     "bytes": 83302
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-4s-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "ab881ed0",
+     "paths": 87,
+     "bytes": 89976
+    },
+    "_f02": {
+     "hash": "5cc9675e",
+     "paths": 87,
+     "bytes": 89970
+    },
+    "_f03": {
+     "hash": "3d656b68",
+     "paths": 87,
+     "bytes": 89931
+    },
+    "_f04": {
+     "hash": "c034365f",
+     "paths": 87,
+     "bytes": 89947
+    },
+    "_f05": {
+     "hash": "e05aac60",
+     "paths": 87,
+     "bytes": 89932
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-4s-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "2a3ee108",
+     "paths": 77,
+     "bytes": 85508
+    },
+    "_f02": {
+     "hash": "54010592",
+     "paths": 77,
+     "bytes": 85506
+    },
+    "_f03": {
+     "hash": "4c4b7460",
+     "paths": 77,
+     "bytes": 85466
+    },
+    "_f04": {
+     "hash": "80234fd0",
+     "paths": 77,
+     "bytes": 85481
+    },
+    "_f05": {
+     "hash": "e7d89eba",
+     "paths": 77,
+     "bytes": 85466
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-5s-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "23342f80",
+     "paths": 93,
+     "bytes": 90746
+    },
+    "_f02": {
+     "hash": "43404b4a",
+     "paths": 93,
+     "bytes": 90740
+    },
+    "_f03": {
+     "hash": "1be564de",
+     "paths": 93,
+     "bytes": 90700
+    },
+    "_f04": {
+     "hash": "ce07c196",
+     "paths": 93,
+     "bytes": 90718
+    },
+    "_f05": {
+     "hash": "90099aaa",
+     "paths": 93,
+     "bytes": 90704
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/waterfall-5s-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "0a50f208",
+     "paths": 81,
+     "bytes": 85550
+    },
+    "_f02": {
+     "hash": "a96e5756",
+     "paths": 81,
+     "bytes": 85549
+    },
+    "_f03": {
+     "hash": "9b027f90",
+     "paths": 81,
+     "bytes": 85511
+    },
+    "_f04": {
+     "hash": "5c569648",
+     "paths": 81,
+     "bytes": 85524
+    },
+    "_f05": {
+     "hash": "00b7d3ea",
+     "paths": 81,
+     "bytes": 85510
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/implied-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "be1c43a6",
+     "paths": 57,
+     "bytes": 78416
+    },
+    "_f02": {
+     "hash": "be1c43a6",
+     "paths": 57,
+     "bytes": 78416
+    },
+    "_f03": {
+     "hash": "be1c43a6",
+     "paths": 57,
+     "bytes": 78416
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/implied-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "485e2a68",
+     "paths": 57,
+     "bytes": 79393
+    },
+    "_f02": {
+     "hash": "485e2a68",
+     "paths": 57,
+     "bytes": 79393
+    },
+    "_f03": {
+     "hash": "485e2a68",
+     "paths": 57,
+     "bytes": 79393
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/dilution-6y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "be2f2292",
+     "paths": 79,
+     "bytes": 109544
+    },
+    "_f02": {
+     "hash": "4f0d9482",
+     "paths": 79,
+     "bytes": 109554
+    },
+    "_f03": {
+     "hash": "a74e6e12",
+     "paths": 79,
+     "bytes": 109552
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/dilution-6y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "3dc25596",
+     "paths": 79,
+     "bytes": 99843
+    },
+    "_f02": {
+     "hash": "59ab9cf0",
+     "paths": 79,
+     "bytes": 99846
+    },
+    "_f03": {
+     "hash": "9b06a248",
+     "paths": 79,
+     "bytes": 99848
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/maturities-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "73f72487",
+     "paths": 79,
+     "bytes": 109507
+    },
+    "_f02": {
+     "hash": "c30b951e",
+     "paths": 79,
+     "bytes": 109517
+    },
+    "_f03": {
+     "hash": "72b97b96",
+     "paths": 79,
+     "bytes": 109515
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/maturities-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9acfa3c0",
+     "paths": 79,
+     "bytes": 99876
+    },
+    "_f02": {
+     "hash": "882ba7ca",
+     "paths": 79,
+     "bytes": 99879
+    },
+    "_f03": {
+     "hash": "cbe83c34",
+     "paths": 79,
+     "bytes": 99881
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/guided-vs-actual-6y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e0c3e588",
+     "paths": 79,
+     "bytes": 109334
+    },
+    "_f02": {
+     "hash": "b60397fc",
+     "paths": 79,
+     "bytes": 109344
+    },
+    "_f03": {
+     "hash": "755f5efe",
+     "paths": 79,
+     "bytes": 109342
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/guided-vs-actual-6y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "35c0b254",
+     "paths": 79,
+     "bytes": 99612
+    },
+    "_f02": {
+     "hash": "94a03d70",
+     "paths": 79,
+     "bytes": 99615
+    },
+    "_f03": {
+     "hash": "14607090",
+     "paths": 79,
+     "bytes": 99617
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-2-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "451369e0",
+     "paths": 137,
+     "bytes": 217210
+    },
+    "_f02": {
+     "hash": "4a5b906e",
+     "paths": 137,
+     "bytes": 217214
+    },
+    "_f03": {
+     "hash": "afd38d58",
+     "paths": 137,
+     "bytes": 217176
+    },
+    "_f04": {
+     "hash": "afd38d58",
+     "paths": 137,
+     "bytes": 217176
+    },
+    "_f05": {
+     "hash": "afd38d58",
+     "paths": 137,
+     "bytes": 217176
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-2-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "c2363eb7",
+     "paths": 127,
+     "bytes": 159622
+    },
+    "_f02": {
+     "hash": "571f7fe0",
+     "paths": 127,
+     "bytes": 159626
+    },
+    "_f03": {
+     "hash": "7091a068",
+     "paths": 127,
+     "bytes": 159588
+    },
+    "_f04": {
+     "hash": "7091a068",
+     "paths": 127,
+     "bytes": 159588
+    },
+    "_f05": {
+     "hash": "7091a068",
+     "paths": 127,
+     "bytes": 159588
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-3-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "1d38f0f8",
+     "paths": 139,
+     "bytes": 217391
+    },
+    "_f02": {
+     "hash": "c33d021a",
+     "paths": 139,
+     "bytes": 217395
+    },
+    "_f03": {
+     "hash": "07e33520",
+     "paths": 139,
+     "bytes": 217357
+    },
+    "_f04": {
+     "hash": "07e33520",
+     "paths": 139,
+     "bytes": 217357
+    },
+    "_f05": {
+     "hash": "07e33520",
+     "paths": 139,
+     "bytes": 217357
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-3-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "9992d2a8",
+     "paths": 129,
+     "bytes": 159871
+    },
+    "_f02": {
+     "hash": "66e999b0",
+     "paths": 129,
+     "bytes": 159875
+    },
+    "_f03": {
+     "hash": "2d96d6a2",
+     "paths": 129,
+     "bytes": 159837
+    },
+    "_f04": {
+     "hash": "2d96d6a2",
+     "paths": 129,
+     "bytes": 159837
+    },
+    "_f05": {
+     "hash": "2d96d6a2",
+     "paths": 129,
+     "bytes": 159837
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-4-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "b78181b0",
+     "paths": 141,
+     "bytes": 217564
+    },
+    "_f02": {
+     "hash": "447f58d4",
+     "paths": 141,
+     "bytes": 217568
+    },
+    "_f03": {
+     "hash": "9e364118",
+     "paths": 141,
+     "bytes": 217530
+    },
+    "_f04": {
+     "hash": "9e364118",
+     "paths": 141,
+     "bytes": 217530
+    },
+    "_f05": {
+     "hash": "9e364118",
+     "paths": 141,
+     "bytes": 217530
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/share-of-4-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "7005fe38",
+     "paths": 131,
+     "bytes": 160307
+    },
+    "_f02": {
+     "hash": "6a041f8c",
+     "paths": 131,
+     "bytes": 160311
+    },
+    "_f03": {
+     "hash": "84f6c798",
+     "paths": 131,
+     "bytes": 160273
+    },
+    "_f04": {
+     "hash": "84f6c798",
+     "paths": 131,
+     "bytes": 160273
+    },
+    "_f05": {
+     "hash": "84f6c798",
+     "paths": 131,
+     "bytes": 160273
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-3-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "d242e5e8",
+     "paths": 139,
+     "bytes": 217472
+    },
+    "_f02": {
+     "hash": "a530ccbe",
+     "paths": 139,
+     "bytes": 217476
+    },
+    "_f03": {
+     "hash": "1d3e19b8",
+     "paths": 139,
+     "bytes": 217438
+    },
+    "_f04": {
+     "hash": "1d3e19b8",
+     "paths": 139,
+     "bytes": 217438
+    },
+    "_f05": {
+     "hash": "1d3e19b8",
+     "paths": 139,
+     "bytes": 217438
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-3-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "7ce9d6aa",
+     "paths": 129,
+     "bytes": 160241
+    },
+    "_f02": {
+     "hash": "10078f0c",
+     "paths": 129,
+     "bytes": 160245
+    },
+    "_f03": {
+     "hash": "0e58469a",
+     "paths": 129,
+     "bytes": 160207
+    },
+    "_f04": {
+     "hash": "0e58469a",
+     "paths": 129,
+     "bytes": 160207
+    },
+    "_f05": {
+     "hash": "0e58469a",
+     "paths": 129,
+     "bytes": 160207
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-4-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "3d130e32",
+     "paths": 141,
+     "bytes": 217888
+    },
+    "_f02": {
+     "hash": "1cdb3f86",
+     "paths": 141,
+     "bytes": 217892
+    },
+    "_f03": {
+     "hash": "30bd6648",
+     "paths": 141,
+     "bytes": 217854
+    },
+    "_f04": {
+     "hash": "30bd6648",
+     "paths": 141,
+     "bytes": 217854
+    },
+    "_f05": {
+     "hash": "30bd6648",
+     "paths": 141,
+     "bytes": 217854
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-4-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "5a5ad2ea",
+     "paths": 131,
+     "bytes": 160699
+    },
+    "_f02": {
+     "hash": "b991e3b0",
+     "paths": 131,
+     "bytes": 160703
+    },
+    "_f03": {
+     "hash": "be2f1694",
+     "paths": 131,
+     "bytes": 160665
+    },
+    "_f04": {
+     "hash": "be2f1694",
+     "paths": 131,
+     "bytes": 160665
+    },
+    "_f05": {
+     "hash": "be2f1694",
+     "paths": 131,
+     "bytes": 160665
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-5-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "32215250",
+     "paths": 143,
+     "bytes": 219193
+    },
+    "_f02": {
+     "hash": "42372cb7",
+     "paths": 143,
+     "bytes": 219197
+    },
+    "_f03": {
+     "hash": "b1ba5300",
+     "paths": 143,
+     "bytes": 219159
+    },
+    "_f04": {
+     "hash": "b1ba5300",
+     "paths": 143,
+     "bytes": 219159
+    },
+    "_f05": {
+     "hash": "b1ba5300",
+     "paths": 143,
+     "bytes": 219159
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/by-region-5-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "638ebe0e",
+     "paths": 133,
+     "bytes": 161974
+    },
+    "_f02": {
+     "hash": "96b80280",
+     "paths": 133,
+     "bytes": 161978
+    },
+    "_f03": {
+     "hash": "9f7d26f8",
+     "paths": 133,
+     "bytes": 161940
+    },
+    "_f04": {
+     "hash": "9f7d26f8",
+     "paths": 133,
+     "bytes": 161940
+    },
+    "_f05": {
+     "hash": "9f7d26f8",
+     "paths": 133,
+     "bytes": 161940
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/ownership-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "37267446",
+     "paths": 139,
+     "bytes": 216868
+    },
+    "_f02": {
+     "hash": "0acdf4ec",
+     "paths": 139,
+     "bytes": 216872
+    },
+    "_f03": {
+     "hash": "41b06622",
+     "paths": 139,
+     "bytes": 216834
+    },
+    "_f04": {
+     "hash": "41b06622",
+     "paths": 139,
+     "bytes": 216834
+    },
+    "_f05": {
+     "hash": "41b06622",
+     "paths": 139,
+     "bytes": 216834
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/ownership-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "872f9a41",
+     "paths": 129,
+     "bytes": 159388
+    },
+    "_f02": {
+     "hash": "45e774f6",
+     "paths": 129,
+     "bytes": 159392
+    },
+    "_f03": {
+     "hash": "4c2bfc38",
+     "paths": 129,
+     "bytes": 159354
+    },
+    "_f04": {
+     "hash": "4c2bfc38",
+     "paths": 129,
+     "bytes": 159354
+    },
+    "_f05": {
+     "hash": "4c2bfc38",
+     "paths": 129,
+     "bytes": 159354
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "peers/distribution-16x9": {
+   "dir": "peers",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "7bdf1068",
+     "paths": 71,
+     "bytes": 88251
+    },
+    "_f02": {
+     "hash": "7bdf1068",
+     "paths": 71,
+     "bytes": 88251
+    },
+    "_f03": {
+     "hash": "7bdf1068",
+     "paths": 71,
+     "bytes": 88251
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "peers/distribution-9x16": {
+   "dir": "peers",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "8d79d9a6",
+     "paths": 71,
+     "bytes": 85901
+    },
+    "_f02": {
+     "hash": "8d79d9a6",
+     "paths": 71,
+     "bytes": 85901
+    },
+    "_f03": {
+     "hash": "8d79d9a6",
+     "paths": 71,
+     "bytes": 85901
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/scale-2-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "d32cf3e2",
+     "paths": 57,
+     "bytes": 81766
+    },
+    "_f02": {
+     "hash": "90dfb4c0",
+     "paths": 57,
+     "bytes": 81770
+    },
+    "_f03": {
+     "hash": "6d2557c8",
+     "paths": 57,
+     "bytes": 81732
+    },
+    "_f04": {
+     "hash": "6d2557c8",
+     "paths": 57,
+     "bytes": 81732
+    },
+    "_f05": {
+     "hash": "6d2557c8",
+     "paths": 57,
+     "bytes": 81732
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/scale-2-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "9c96562a",
+     "paths": 57,
+     "bytes": 80167
+    },
+    "_f02": {
+     "hash": "ce33862a",
+     "paths": 57,
+     "bytes": 80171
+    },
+    "_f03": {
+     "hash": "b91a667a",
+     "paths": 57,
+     "bytes": 80133
+    },
+    "_f04": {
+     "hash": "b91a667a",
+     "paths": 57,
+     "bytes": 80133
+    },
+    "_f05": {
+     "hash": "b91a667a",
+     "paths": 57,
+     "bytes": 80133
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/scale-3-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "97759290",
+     "paths": 57,
+     "bytes": 81386
+    },
+    "_f02": {
+     "hash": "a95767a0",
+     "paths": 57,
+     "bytes": 81390
+    },
+    "_f03": {
+     "hash": "0cff21c0",
+     "paths": 57,
+     "bytes": 81352
+    },
+    "_f04": {
+     "hash": "0cff21c0",
+     "paths": 57,
+     "bytes": 81352
+    },
+    "_f05": {
+     "hash": "0cff21c0",
+     "paths": 57,
+     "bytes": 81352
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/scale-3-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "de7028e6",
+     "paths": 57,
+     "bytes": 79579
+    },
+    "_f02": {
+     "hash": "105fdf68",
+     "paths": 57,
+     "bytes": 79583
+    },
+    "_f03": {
+     "hash": "b601985c",
+     "paths": 57,
+     "bytes": 79545
+    },
+    "_f04": {
+     "hash": "b601985c",
+     "paths": 57,
+     "bytes": 79545
+    },
+    "_f05": {
+     "hash": "b601985c",
+     "paths": 57,
+     "bytes": 79545
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "paper/receipt-4-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "78caaa40",
+     "paths": 219,
+     "bytes": 189484
+    },
+    "_f02": {
+     "hash": "9e4fd870",
+     "paths": 219,
+     "bytes": 189460
+    },
+    "_f03": {
+     "hash": "89324ea8",
+     "paths": 219,
+     "bytes": 189443
+    },
+    "_f04": {
+     "hash": "62998b20",
+     "paths": 219,
+     "bytes": 189474
+    },
+    "_f05": {
+     "hash": "5f07bd40",
+     "paths": 219,
+     "bytes": 189445
+    }
+   }
+  },
+  "paper/receipt-4-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "cc2bc9c6",
+     "paths": 315,
+     "bytes": 309678
+    },
+    "_f02": {
+     "hash": "43c3d450",
+     "paths": 315,
+     "bytes": 309645
+    },
+    "_f03": {
+     "hash": "025eb2ac",
+     "paths": 315,
+     "bytes": 309669
+    },
+    "_f04": {
+     "hash": "e56d8548",
+     "paths": 315,
+     "bytes": 309617
+    },
+    "_f05": {
+     "hash": "7ff157a4",
+     "paths": 315,
+     "bytes": 309556
+    }
+   }
+  },
+  "paper/receipt-6-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "ea8d18be",
+     "paths": 245,
+     "bytes": 213074
+    },
+    "_f02": {
+     "hash": "22a1e169",
+     "paths": 245,
+     "bytes": 213095
+    },
+    "_f03": {
+     "hash": "382f7d6e",
+     "paths": 245,
+     "bytes": 213048
+    },
+    "_f04": {
+     "hash": "11fbf4d8",
+     "paths": 245,
+     "bytes": 213097
+    },
+    "_f05": {
+     "hash": "aa9d7698",
+     "paths": 245,
+     "bytes": 213074
+    }
+   }
+  },
+  "paper/receipt-6-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "d3eeacae",
+     "paths": 363,
+     "bytes": 368074
+    },
+    "_f02": {
+     "hash": "17fb6abb",
+     "paths": 363,
+     "bytes": 367978
+    },
+    "_f03": {
+     "hash": "e8034290",
+     "paths": 363,
+     "bytes": 367993
+    },
+    "_f04": {
+     "hash": "34ab7fb0",
+     "paths": 363,
+     "bytes": 367946
+    },
+    "_f05": {
+     "hash": "d6d8e292",
+     "paths": 363,
+     "bytes": 367869
+    }
+   }
+  },
+  "paper/receipt-8-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "0f48c7fa",
+     "paths": 271,
+     "bytes": 236252
+    },
+    "_f02": {
+     "hash": "5d410506",
+     "paths": 271,
+     "bytes": 236300
+    },
+    "_f03": {
+     "hash": "ae618558",
+     "paths": 271,
+     "bytes": 236217
+    },
+    "_f04": {
+     "hash": "b00efc46",
+     "paths": 271,
+     "bytes": 236309
+    },
+    "_f05": {
+     "hash": "dae76782",
+     "paths": 271,
+     "bytes": 236235
+    }
+   }
+  },
+  "paper/receipt-8-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "4b30cbf8",
+     "paths": 409,
+     "bytes": 423521
+    },
+    "_f02": {
+     "hash": "c3b75170",
+     "paths": 409,
+     "bytes": 423323
+    },
+    "_f03": {
+     "hash": "7a726fe0",
+     "paths": 409,
+     "bytes": 423344
+    },
+    "_f04": {
+     "hash": "ca858e9a",
+     "paths": 409,
+     "bytes": 423355
+    },
+    "_f05": {
+     "hash": "2b7d9c6c",
+     "paths": 409,
+     "bytes": 423254
+    }
+   }
+  },
+  "structure/said-happened-3-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "31a6ea90",
+     "paths": 103,
+     "bytes": 102214
+    },
+    "_f02": {
+     "hash": "31a6ea90",
+     "paths": 103,
+     "bytes": 102214
+    },
+    "_f03": {
+     "hash": "31a6ea90",
+     "paths": 103,
+     "bytes": 102214
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/said-happened-3-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c47b5cf8",
+     "paths": 131,
+     "bytes": 108390
+    },
+    "_f02": {
+     "hash": "c47b5cf8",
+     "paths": 131,
+     "bytes": 108390
+    },
+    "_f03": {
+     "hash": "c47b5cf8",
+     "paths": 131,
+     "bytes": 108390
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/said-happened-4-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "ea41740f",
+     "paths": 121,
+     "bytes": 108305
+    },
+    "_f02": {
+     "hash": "ea41740f",
+     "paths": 121,
+     "bytes": 108305
+    },
+    "_f03": {
+     "hash": "ea41740f",
+     "paths": 121,
+     "bytes": 108305
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/said-happened-4-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "19db839e",
+     "paths": 159,
+     "bytes": 118590
+    },
+    "_f02": {
+     "hash": "19db839e",
+     "paths": 159,
+     "bytes": 118590
+    },
+    "_f03": {
+     "hash": "19db839e",
+     "paths": 159,
+     "bytes": 118590
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/said-happened-5-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "246b7526",
+     "paths": 135,
+     "bytes": 113717
+    },
+    "_f02": {
+     "hash": "246b7526",
+     "paths": 135,
+     "bytes": 113717
+    },
+    "_f03": {
+     "hash": "246b7526",
+     "paths": 135,
+     "bytes": 113717
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/said-happened-5-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "9ee0b3b2",
+     "paths": 185,
+     "bytes": 127732
+    },
+    "_f02": {
+     "hash": "9ee0b3b2",
+     "paths": 185,
+     "bytes": 127732
+    },
+    "_f03": {
+     "hash": "9ee0b3b2",
+     "paths": 185,
+     "bytes": 127732
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/sensitivity-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "36424f7a",
+     "paths": 255,
+     "bytes": 466631
+    },
+    "_f02": {
+     "hash": "fe1941a0",
+     "paths": 255,
+     "bytes": 466642
+    },
+    "_f03": {
+     "hash": "293b8b36",
+     "paths": 255,
+     "bytes": 466647
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/sensitivity-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c678dc70",
+     "paths": 285,
+     "bytes": 402547
+    },
+    "_f02": {
+     "hash": "c4819dee",
+     "paths": 285,
+     "bytes": 402541
+    },
+    "_f03": {
+     "hash": "8234a1d2",
+     "paths": 285,
+     "bytes": 402547
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/whiteboard-3-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "123f5618",
+     "paths": 607,
+     "bytes": 745664
+    },
+    "_f02": {
+     "hash": "bfc0501e",
+     "paths": 607,
+     "bytes": 745875
+    },
+    "_f03": {
+     "hash": "2c217d28",
+     "paths": 607,
+     "bytes": 745604
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/whiteboard-3-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "267e78f0",
+     "paths": 715,
+     "bytes": 730424
+    },
+    "_f02": {
+     "hash": "943c5816",
+     "paths": 715,
+     "bytes": 730282
+    },
+    "_f03": {
+     "hash": "1e075c20",
+     "paths": 715,
+     "bytes": 730424
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/whiteboard-4-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e1bca57f",
+     "paths": 613,
+     "bytes": 724049
+    },
+    "_f02": {
+     "hash": "c0c79df6",
+     "paths": 613,
+     "bytes": 724100
+    },
+    "_f03": {
+     "hash": "b6098e16",
+     "paths": 613,
+     "bytes": 723918
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/whiteboard-4-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "45fdce80",
+     "paths": 767,
+     "bytes": 776028
+    },
+    "_f02": {
+     "hash": "5991512e",
+     "paths": 767,
+     "bytes": 775898
+    },
+    "_f03": {
+     "hash": "86636fa0",
+     "paths": 767,
+     "bytes": 776066
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/multiples-grid-4-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a135c328",
+     "paths": 63,
+     "bytes": 81764
+    },
+    "_f02": {
+     "hash": "f9575f3e",
+     "paths": 63,
+     "bytes": 81766
+    },
+    "_f03": {
+     "hash": "f3222f48",
+     "paths": 63,
+     "bytes": 81769
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/multiples-grid-4-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b5272f60",
+     "paths": 63,
+     "bytes": 82597
+    },
+    "_f02": {
+     "hash": "ba8d6218",
+     "paths": 63,
+     "bytes": 82590
+    },
+    "_f03": {
+     "hash": "01696568",
+     "paths": 63,
+     "bytes": 82583
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/multiples-grid-6-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f2557d6a",
+     "paths": 67,
+     "bytes": 86475
+    },
+    "_f02": {
+     "hash": "8f4e3748",
+     "paths": 67,
+     "bytes": 86478
+    },
+    "_f03": {
+     "hash": "1a257f98",
+     "paths": 67,
+     "bytes": 86475
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/multiples-grid-6-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c8b3bd88",
+     "paths": 67,
+     "bytes": 85268
+    },
+    "_f02": {
+     "hash": "f8e0feee",
+     "paths": 67,
+     "bytes": 85272
+    },
+    "_f03": {
+     "hash": "d6f8fe18",
+     "paths": 67,
+     "bytes": 85246
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/bars-8q-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c7715ce1",
+     "paths": 83,
+     "bytes": 110936
+    },
+    "_f02": {
+     "hash": "c0ef1b36",
+     "paths": 83,
+     "bytes": 110946
+    },
+    "_f03": {
+     "hash": "ea20d1e6",
+     "paths": 83,
+     "bytes": 110944
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/bars-8q-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f6b8d588",
+     "paths": 83,
+     "bytes": 101427
+    },
+    "_f02": {
+     "hash": "9f664ff8",
+     "paths": 83,
+     "bytes": 101430
+    },
+    "_f03": {
+     "hash": "a9562b82",
+     "paths": 83,
+     "bytes": 101432
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/line-8q-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "bfec70d0",
+     "paths": 83,
+     "bytes": 111158
+    },
+    "_f02": {
+     "hash": "68044dc0",
+     "paths": 83,
+     "bytes": 111168
+    },
+    "_f03": {
+     "hash": "93b607fe",
+     "paths": 83,
+     "bytes": 111166
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/line-8q-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "3d5f0c19",
+     "paths": 83,
+     "bytes": 101533
+    },
+    "_f02": {
+     "hash": "c64bd246",
+     "paths": 83,
+     "bytes": 101536
+    },
+    "_f03": {
+     "hash": "bb1f9e8c",
+     "paths": 83,
+     "bytes": 101538
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/qoq-yoy-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "35c05236",
+     "paths": 61,
+     "bytes": 95021
+    },
+    "_f02": {
+     "hash": "c833797c",
+     "paths": 61,
+     "bytes": 95018
+    },
+    "_f03": {
+     "hash": "900d9fae",
+     "paths": 61,
+     "bytes": 94986
+    },
+    "_f04": {
+     "hash": "674e5916",
+     "paths": 61,
+     "bytes": 94998
+    },
+    "_f05": {
+     "hash": "be83abd0",
+     "paths": 61,
+     "bytes": 95007
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/qoq-yoy-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "991419c0",
+     "paths": 61,
+     "bytes": 95557
+    },
+    "_f02": {
+     "hash": "828efd80",
+     "paths": 61,
+     "bytes": 95583
+    },
+    "_f03": {
+     "hash": "d4061c60",
+     "paths": 61,
+     "bytes": 95553
+    },
+    "_f04": {
+     "hash": "35b358f8",
+     "paths": 61,
+     "bytes": 95510
+    },
+    "_f05": {
+     "hash": "80aea158",
+     "paths": 61,
+     "bytes": 95534
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/seasonality-4y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a16cee86",
+     "paths": 77,
+     "bytes": 107666
+    },
+    "_f02": {
+     "hash": "13bda34e",
+     "paths": 77,
+     "bytes": 107696
+    },
+    "_f03": {
+     "hash": "29d9b38e",
+     "paths": 77,
+     "bytes": 107661
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/seasonality-4y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c34136b8",
+     "paths": 77,
+     "bytes": 97849
+    },
+    "_f02": {
+     "hash": "be9d766e",
+     "paths": 77,
+     "bytes": 97826
+    },
+    "_f03": {
+     "hash": "54230d68",
+     "paths": 77,
+     "bytes": 97824
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/seasonality-6y-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "f3db6cf0",
+     "paths": 77,
+     "bytes": 108339
+    },
+    "_f02": {
+     "hash": "0d9cceb8",
+     "paths": 77,
+     "bytes": 108369
+    },
+    "_f03": {
+     "hash": "41440a28",
+     "paths": 77,
+     "bytes": 108334
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/seasonality-6y-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "1662d54e",
+     "paths": 77,
+     "bytes": 98333
+    },
+    "_f02": {
+     "hash": "b29c3b36",
+     "paths": 77,
+     "bytes": 98310
+    },
+    "_f03": {
+     "hash": "5bd56248",
+     "paths": 77,
+     "bytes": 98308
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/confession-statement-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "d3e11cc8",
+     "paths": 63,
+     "bytes": 80763
+    },
+    "_f02": {
+     "hash": "f397e012",
+     "paths": 63,
+     "bytes": 80762
+    },
+    "_f03": {
+     "hash": "8b62e500",
+     "paths": 63,
+     "bytes": 80773
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/confession-statement-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "55d37448",
+     "paths": 63,
+     "bytes": 81594
+    },
+    "_f02": {
+     "hash": "45834fce",
+     "paths": 63,
+     "bytes": 81573
+    },
+    "_f03": {
+     "hash": "22bceac8",
+     "paths": 63,
+     "bytes": 81582
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/confession-ledger-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0d6fab8a",
+     "paths": 63,
+     "bytes": 96679
+    },
+    "_f02": {
+     "hash": "a200da48",
+     "paths": 63,
+     "bytes": 96682
+    },
+    "_f03": {
+     "hash": "baf80bc4",
+     "paths": 63,
+     "bytes": 96667
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/confession-ledger-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b1d53d28",
+     "paths": 63,
+     "bytes": 88724
+    },
+    "_f02": {
+     "hash": "0637d32e",
+     "paths": 63,
+     "bytes": 88712
+    },
+    "_f03": {
+     "hash": "aece8506",
+     "paths": 63,
+     "bytes": 88735
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/short-interest-16x9": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "594be7fe",
+     "paths": 59,
+     "bytes": 92493
+    },
+    "_f02": {
+     "hash": "ff70063e",
+     "paths": 59,
+     "bytes": 92496
+    },
+    "_f03": {
+     "hash": "67417bc0",
+     "paths": 59,
+     "bytes": 92458
+    },
+    "_f04": {
+     "hash": "e23f878f",
+     "paths": 59,
+     "bytes": 92454
+    },
+    "_f05": {
+     "hash": "241e34fa",
+     "paths": 59,
+     "bytes": 92473
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "figures/short-interest-9x16": {
+   "dir": "figures",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "9e71db88",
+     "paths": 59,
+     "bytes": 86153
+    },
+    "_f02": {
+     "hash": "ca73b8d4",
+     "paths": 59,
+     "bytes": 86161
+    },
+    "_f03": {
+     "hash": "8d604838",
+     "paths": 59,
+     "bytes": 86140
+    },
+    "_f04": {
+     "hash": "39f0a2c0",
+     "paths": 59,
+     "bytes": 86137
+    },
+    "_f05": {
+     "hash": "1e4f5024",
+     "paths": 59,
+     "bytes": 86124
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/insider-flow-6-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "bc5de588",
+     "paths": 69,
+     "bytes": 86499
+    },
+    "_f02": {
+     "hash": "bc5de588",
+     "paths": 69,
+     "bytes": 86499
+    },
+    "_f03": {
+     "hash": "bc5de588",
+     "paths": 69,
+     "bytes": 86499
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/insider-flow-6-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "a6d0c85e",
+     "paths": 69,
+     "bytes": 84409
+    },
+    "_f02": {
+     "hash": "a6d0c85e",
+     "paths": 69,
+     "bytes": 84409
+    },
+    "_f03": {
+     "hash": "a6d0c85e",
+     "paths": 69,
+     "bytes": 84409
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/insider-flow-12-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "6b554cd6",
+     "paths": 81,
+     "bytes": 92387
+    },
+    "_f02": {
+     "hash": "6b554cd6",
+     "paths": 81,
+     "bytes": 92387
+    },
+    "_f03": {
+     "hash": "6b554cd6",
+     "paths": 81,
+     "bytes": 92387
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/insider-flow-12-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "c979f060",
+     "paths": 81,
+     "bytes": 90217
+    },
+    "_f02": {
+     "hash": "c979f060",
+     "paths": 81,
+     "bytes": 90217
+    },
+    "_f03": {
+     "hash": "c979f060",
+     "paths": 81,
+     "bytes": 90217
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/macro-series-16x9": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "688b8f58",
+     "paths": 159,
+     "bytes": 136587
+    },
+    "_f02": {
+     "hash": "da9729ca",
+     "paths": 159,
+     "bytes": 136584
+    },
+    "_f03": {
+     "hash": "39fa2054",
+     "paths": 159,
+     "bytes": 136578
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "charts/macro-series-9x16": {
+   "dir": "charts",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "76f7c60c",
+     "paths": 159,
+     "bytes": 128874
+    },
+    "_f02": {
+     "hash": "c93b5825",
+     "paths": 159,
+     "bytes": 128868
+    },
+    "_f03": {
+     "hash": "ffd16f54",
+     "paths": 159,
+     "bytes": 128875
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/end-card-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e4e7ac00",
+     "paths": 57,
+     "bytes": 79154
+    },
+    "_f02": {
+     "hash": "fdf30a00",
+     "paths": 57,
+     "bytes": 79163
+    },
+    "_f03": {
+     "hash": "c2c1f7b6",
+     "paths": 57,
+     "bytes": 79151
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/end-card-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "e37566c8",
+     "paths": 57,
+     "bytes": 79302
+    },
+    "_f02": {
+     "hash": "8e813cf8",
+     "paths": 57,
+     "bytes": 79297
+    },
+    "_f03": {
+     "hash": "872c6268",
+     "paths": 57,
+     "bytes": 79302
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/language-shift-16x9": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "7b858a12",
+     "paths": 61,
+     "bytes": 79371
+    },
+    "_f02": {
+     "hash": "475b1a18",
+     "paths": 61,
+     "bytes": 79386
+    },
+    "_f03": {
+     "hash": "a48d6fb0",
+     "paths": 61,
+     "bytes": 79389
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "structure/language-shift-9x16": {
+   "dir": "structure",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "42dfe0e2",
+     "paths": 61,
+     "bytes": 79713
+    },
+    "_f02": {
+     "hash": "42d3d950",
+     "paths": 61,
+     "bytes": 79705
+    },
+    "_f03": {
+     "hash": "5d5104f6",
+     "paths": 61,
+     "bytes": 79709
+    }
+   },
+   "boilGate": "frame-only"
+  },
+  "paper/headline-stack-3-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "67bd99e8",
+     "paths": 255,
+     "bytes": 548980
+    },
+    "_f02": {
+     "hash": "604d99a2",
+     "paths": 255,
+     "bytes": 548826
+    },
+    "_f03": {
+     "hash": "7d45bff0",
+     "paths": 255,
+     "bytes": 548798
+    },
+    "_f04": {
+     "hash": "c75acae6",
+     "paths": 255,
+     "bytes": 548936
+    },
+    "_f05": {
+     "hash": "3668f030",
+     "paths": 255,
+     "bytes": 548876
+    }
+   }
+  },
+  "paper/headline-stack-3-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "fc49100e",
+     "paths": 305,
+     "bytes": 461180
+    },
+    "_f02": {
+     "hash": "b1fb3a31",
+     "paths": 305,
+     "bytes": 461315
+    },
+    "_f03": {
+     "hash": "d27d83de",
+     "paths": 305,
+     "bytes": 461020
+    },
+    "_f04": {
+     "hash": "fdafd6f0",
+     "paths": 305,
+     "bytes": 461188
+    },
+    "_f05": {
+     "hash": "80b38bb8",
+     "paths": 305,
+     "bytes": 461103
+    }
+   }
+  },
+  "paper/headline-stack-4-16x9": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "1cdbf386",
+     "paths": 327,
+     "bytes": 695778
+    },
+    "_f02": {
+     "hash": "d608213e",
+     "paths": 327,
+     "bytes": 695605
+    },
+    "_f03": {
+     "hash": "3c8bc32e",
+     "paths": 327,
+     "bytes": 695631
+    },
+    "_f04": {
+     "hash": "1082bdb2",
+     "paths": 327,
+     "bytes": 695793
+    },
+    "_f05": {
+     "hash": "26a918b2",
+     "paths": 327,
+     "bytes": 695613
+    }
+   }
+  },
+  "paper/headline-stack-4-9x16": {
+   "dir": "paper",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 5,
+   "frames": {
+    "_f01": {
+     "hash": "f7df9bb0",
+     "paths": 389,
+     "bytes": 588248
+    },
+    "_f02": {
+     "hash": "a01061ec",
+     "paths": 389,
+     "bytes": 588491
+    },
+    "_f03": {
+     "hash": "2bbce990",
+     "paths": 389,
+     "bytes": 588187
+    },
+    "_f04": {
+     "hash": "0d4b4690",
+     "paths": 389,
+     "bytes": 588310
+    },
+    "_f05": {
+     "hash": "9613f51a",
+     "paths": 389,
+     "bytes": 588204
+    }
+   }
+  },
+  "host/close-up-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "76f9fef2",
+     "paths": 521,
+     "bytes": 160955
+    },
+    "_f02": {
+     "hash": "5b4a6ea6",
+     "paths": 520,
+     "bytes": 160803
+    },
+    "_f03": {
+     "hash": "8c1064d2",
+     "paths": 512,
+     "bytes": 158786
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/close-up-glance-left-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "faef3311",
+     "paths": 542,
+     "bytes": 167829
+    },
+    "_f02": {
+     "hash": "d735213c",
+     "paths": 541,
+     "bytes": 167529
+    },
+    "_f03": {
+     "hash": "5f42a2f2",
+     "paths": 533,
+     "bytes": 165559
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/close-up-glance-right-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "0c726518",
+     "paths": 542,
+     "bytes": 167820
+    },
+    "_f02": {
+     "hash": "b7a13680",
+     "paths": 541,
+     "bytes": 167589
+    },
+    "_f03": {
+     "hash": "d7aa4530",
+     "paths": 533,
+     "bytes": 165557
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/medium-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "86509bb0",
+     "paths": 792,
+     "bytes": 257139
+    },
+    "_f02": {
+     "hash": "c54c07b6",
+     "paths": 788,
+     "bytes": 256061
+    },
+    "_f03": {
+     "hash": "c70937fa",
+     "paths": 784,
+     "bytes": 256370
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/medium-glance-left-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "24dea5c0",
+     "paths": 806,
+     "bytes": 261786
+    },
+    "_f02": {
+     "hash": "03d9b8c2",
+     "paths": 802,
+     "bytes": 260556
+    },
+    "_f03": {
+     "hash": "9eca4598",
+     "paths": 797,
+     "bytes": 260533
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/medium-glance-right-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "b8d35290",
+     "paths": 806,
+     "bytes": 261796
+    },
+    "_f02": {
+     "hash": "b77554a6",
+     "paths": 802,
+     "bytes": 260564
+    },
+    "_f03": {
+     "hash": "70a152a0",
+     "paths": 797,
+     "bytes": 260504
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/medium-robe-blink": {
+   "dir": "host",
+   "playback": "overlay",
+   "fps": null,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "05e1c34b",
+     "paths": 933,
+     "bytes": 303727
+    },
+    "_f02": {
+     "hash": "41afa3c0",
+     "paths": 927,
+     "bytes": 301847
+    },
+    "_f03": {
+     "hash": "8b0f1eec",
+     "paths": 925,
+     "bytes": 303047
+    }
+   },
+   "overlayOf": "-idle"
+  },
+  "host/empty-chair": {
+   "dir": "host",
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
+   "frames": {
+    "_f01": {
+     "hash": "2b960f58",
+     "paths": 200,
+     "bytes": 60941
+    },
+    "_f02": {
+     "hash": "b672e5c6",
+     "paths": 201,
+     "bytes": 61907
+    },
+    "_f03": {
+     "hash": "8bb9a7ae",
+     "paths": 201,
+     "bytes": 61316
+    }
+   }
+  }
+ }
+}

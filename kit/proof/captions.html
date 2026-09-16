@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§5 — the captions, two options</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow:wght@500;600;700&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px 26px 70px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:30px 0 6px;border-top:1px solid #262c33;padding-top:16px}
+  p{max-width:86ch;color:#8d968f;margin:7px 0}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:14px 0}
+  .cell{background:#1B1F24;border:1px solid #262c33}
+  .cap{padding:8px 11px;border-bottom:1px solid #262c33;color:#8d968f;font-size:11px;letter-spacing:.05em;text-transform:uppercase}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .stage{position:relative;container-type:inline-size}
+  .stage svg{display:block;width:100%;height:auto}
+  .capline{position:absolute;left:0;right:0;display:flex;justify-content:center}
+  .bar{display:flex;gap:16px;align-items:center;margin:14px 0 2px}
+  label{display:inline-flex;align-items:center;gap:7px}
+  b.k{color:#C9C2B4;font-weight:400}
+  .n{color:#C7A86B}
+  table{border-collapse:collapse;margin:10px 0;font-size:12px}
+  td,th{border:1px solid #262c33;padding:6px 10px;text-align:left;vertical-align:top;color:#8d968f}
+  th{color:#C9C2B4;font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:11px}
+</style>
+</head>
+<body>
+<main>
+  <h1>§5 — the captions</h1>
+  <p>They are on screen for one hundred percent of every video and they are the only element that
+  does not look drawn. Everything in the frame is hand-made and then the words arrive in standard
+  subtitle styling. It is the largest surface in the product and the least considered.</p>
+  <p>This is the one item in the brief you asked to see <b class="k">two options</b> for before
+  choosing, so that is what this page is. It is not a plate and it does not ship in the kit: captions
+  live on the renderer's caption path, which is why this is a conversation rather than a delivery.</p>
+
+  <div class="bar">
+    <label><input id="txt" type="radio" name="s" checked> ordinary line</label>
+    <label><input id="txt2" type="radio" name="s"> the longest line a script writes</label>
+    <label><input id="numeral" type="radio" name="s"> a line that is mostly numbers</label>
+    <label>size <input id="sz" type="range" min="26" max="64" step="1" value="40"><b class="k" id="szv">40</b> <span class="n">canvas units</span></label>
+  </div>
+
+  <h2>The two options</h2>
+  <table>
+    <tr><th></th><th>A · drawn container, clean type</th><th>B · hand-lettered face</th></tr>
+    <tr><th>what is drawn</th>
+      <td>A hand-drawn band or underlay in the kit's hand — a torn paper strip with the kit's own tooth and wobble. The words stay a clean grotesque.</td>
+      <td>The words themselves are the drawn element: a lettering face with per-glyph variation, no container at all.</td></tr>
+    <tr><th>forty minutes of it</th>
+      <td>Fine. The band is furniture; the eye stops seeing it in ten seconds, which is what you want from something present the whole time.</td>
+      <td><span class="n">The risk.</span> Irregular letterforms cost a little legibility per word, and that cost compounds across forty minutes in a way a still cannot show.</td></tr>
+    <tr><th>9:16 legibility floor</th>
+      <td>Survives. Type is a clean face at whatever size the floor demands, and the band scales with it.</td>
+      <td><span class="n">Unproven.</span> Hand-lettering is least legible exactly where it is smallest.</td></tr>
+    <tr><th>numbers</th>
+      <td>Numerals stay in the kit's Courier, which is already what every figure on every plate uses — the caption agrees with the plates for free.</td>
+      <td>Hand-lettered numerals are the worst case: <b class="k">3/8, 5/6, 1/7</b> are the pairs a viewer must not confuse on a channel about figures.</td></tr>
+    <tr><th>build cost</th>
+      <td>One drawn asset per aspect, boiled like anything else. It is a plate in everything but name.</td>
+      <td>A full face, or a renderer that perturbs glyph outlines per frame. Much larger, and it is the piece most likely to still be unfinished at video forty.</td></tr>
+  </table>
+
+  <h2>Seen against the room, at caption size</h2>
+  <p>Both options over the same frame, at the size a caption actually sits. Use the controls above —
+  the long line and the numeral line are where the difference stops being aesthetic.</p>
+  <div class="pair" id="out"></div>
+
+  <h2>My read, and it is a recommendation rather than a decision</h2>
+  <p><b class="k">Option A.</b> The instinct in your brief is right: the drawn thing should be the
+  container, not the words. The reason is not taste — it is that the caption is the only element in
+  the frame whose job is to be <em>read</em> rather than looked at, and every other element earns its
+  hand by being looked at. A hand-lettered caption spends legibility, which is the one currency this
+  element cannot spend, in exchange for a texture nobody will consciously notice after ten seconds.</p>
+  <p>The band gets you the whole win \u2014 the words stop arriving from another piece of software \u2014 at a
+  fraction of the cost and none of the risk. And it composes: a torn strip in the kit's hand sitting
+  under clean Courier numerals is exactly what the plates already do.</p>
+  <p>What would change my mind: if you want the captions to be <em>funny</em> rather than
+  transparent. Hand-lettering is a joke you can keep telling for forty minutes, and that is a
+  editorial call about the channel's voice that I should not make for you.</p>
+  <p><span class="n">Unverified, and it is the thing to test before committing either way:</span> neither
+  option here has been watched in motion for more than a few seconds, and the entire question is about
+  what forty minutes feels like. A one-minute cut with real captions over real plates would settle it
+  faster than any amount of argument on this page.</p>
+</main>
+<script>
+(function () {
+  const B = window.BUILD;
+  const LINES = {
+    txt: "The market needs fourteen percent growth for eight years.",
+    txt2: "And that is before you count the stock-based compensation, which they would very much like you to treat as a non-cash item.",
+    numeral: "At 22x on $4,912M of revenue, 38.4x forward, against a peer median of 16.8x.",
+  };
+  const room = B.LIB.filter((i) => i.key === "room/wide-16x9")[0];
+  const svg = B.draw(room, null, { boil: 1 }).toSVG();
+  const out = document.getElementById("out");
+
+  function build(title, note, kind) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    c.innerHTML = '<div class="cap"><b>' + title + '</b> &nbsp;' + note + '</div><div class="stage">' + svg + '</div>';
+    const st = c.querySelector(".stage");
+    const line = document.createElement("div");
+    line.className = "capline";
+    line.style.bottom = "7%";
+    st.appendChild(line);
+    out.appendChild(c);
+    return line;
+  }
+
+  // A · the drawn container. The band is a plate-style torn strip: same tooth,
+  // same wobble, boiled like anything else. Standing in for it here with a
+  // clip-path so the shape is judged rather than described.
+  const a = build("A \u00b7 drawn container", "clean type on a hand-torn band", "a");
+  // B · hand-lettered. Approximated with per-glyph rotation and offset, which is
+  // what a lettering face buys you and also what costs the legibility.
+  const b = build("B \u00b7 hand-lettered face", "no container, the words are the drawn thing", "b");
+
+  function render() {
+    const key = document.querySelector('input[name=s]:checked').id;
+    const text = LINES[key];
+    const size = +document.getElementById("sz").value;
+    document.getElementById("szv").textContent = size;
+
+    // SIZED IN cqw, NOT PIXELS.
+    //
+    // The slider is in CANVAS units — the same units the plates are drawn in — so
+    // 36 means 36 units on a 1920-wide frame, which is what a caption actually is.
+    // Sizing it in CSS pixels instead makes the caption grow when the preview is
+    // wide and shrink when it is narrow, which is the one thing that would make
+    // this page unable to answer the question it exists to ask.
+    const cq = (v) => (v / 1920 * 100).toFixed(3) + "cqw";
+
+    a.innerHTML = "";
+    const band = document.createElement("div");
+    band.style.cssText = "background:#E6DDC9;padding:" + cq(size * 0.34) + " " + cq(size * 0.9) + ";max-width:78%;" +
+      "clip-path:polygon(0.6% 8%,12% 2%,31% 9%,49% 1%,68% 8%,86% 2%,99.4% 9%,99% 92%,84% 98%,66% 91%,48% 99%,29% 92%,13% 98%,1% 90%);" +
+      "font:600 " + cq(size) + " 'Archivo Narrow',sans-serif;color:#1C222A;line-height:1.25;text-align:center;text-wrap:pretty";
+    band.textContent = text;
+    a.appendChild(band);
+
+    b.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "max-width:82%;text-align:center;line-height:1.3;text-wrap:pretty";
+    text.split(" ").forEach(function (word, wi) {
+      const sp = document.createElement("span");
+      sp.style.cssText = "display:inline-block;margin-right:" + cq(size * 0.26) + "";
+      word.split("").forEach(function (ch, i) {
+        const g = document.createElement("span");
+        g.textContent = ch;
+        const r = Math.sin((wi * 17 + i * 31) * 1.7);
+        g.style.cssText = "display:inline-block;font:700 " + cq(size) + " 'Archivo Narrow',sans-serif;color:#1C222A;" +
+          "transform:rotate(" + (r * 3.4).toFixed(2) + "deg) translateY(" + (Math.cos(i * 2.3 + wi) * size * 0.045 / 1920 * 100).toFixed(3) + "cqw);" +
+          "text-shadow:0 0 1px #1C222A";
+        sp.appendChild(g);
+      });
+      wrap.appendChild(sp);
+    });
+    b.appendChild(wrap);
+  }
+  document.querySelectorAll('input[name=s]').forEach((r) => (r.onchange = render));
+  document.getElementById("sz").oninput = render;
+  render();
+})();
+</script>
+</body>
+</html>

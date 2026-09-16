@@ -35,6 +35,73 @@
     },
   };
 
+  // §2 — THE POSE CONSTANT, PUBLISHED FROM THE SOLVED RIG.
+  //
+  //   C = (rig.forearmY - slots.figure.y) / (floorLineY - slots.figure.y)
+  //
+  // Closed form, per pose, exactly as the decision asks: never a typed constant,
+  // so a room that one day declares a contact for pointing-down-at-desk or
+  // holding-a-page gets that pose's own C without anybody revisiting this. It is
+  // filled in by hostFigure() when a pose is actually drawn, because forearmY is
+  // only known once the arms have been solved — a table of literals here would
+  // be the thing the decision rules out.
+  //
+  // A room built in the same run as its host pose therefore has C; a room built
+  // alone does not, and falls back to the authored desk height. build.js emits
+  // host/ before room/, so a kit build always has it.
+  // MEMO ONLY — never a channel between plates. delta-13c's §2 did not execute
+  // for exactly that reason: the table was filled by hostFigure() and read by
+  // room(), which works in a single-context kit build and silently yields null
+  // anywhere the two are not built in the same run and the same order. A pack
+  // whose correctness depends on emission order is not correct.
+  //
+  // So contactC() SOLVES the pose on demand: it builds the host pose once on a
+  // nominal canvas, reads the rig it published, and memoises the ratio. The
+  // ratio is dimensionless, so the nominal canvas cancels. The probe is drawn
+  // with the shipped hand and its own key, and the caller's render profile is
+  // saved and restored around it — a probe that left PROFILE moved would be the
+  // same class of bug as the role-floor accumulation.
+  const POSE_CONTACT_C = {};
+  function contactC(pose) {
+    if (POSE_CONTACT_C[pose] === undefined) {
+      POSE_CONTACT_C[pose] = null;
+      const prev = H.profile();
+      // AND THE BOIL, WHICH THE PROFILE FIX MISSED.
+      //
+      // This memo is filled by whichever plate asks for a pose first, and it was
+      // filled with the CALLER'S boil state still set globally. The probe passes
+      // boil: 0 in its own arguments, but that only governs the geometry the
+      // author derives itself — every mark it makes still goes through the global
+      // offset, so a rig value read back off the probe depended on which plate
+      // happened to be drawn first in the build.
+      //
+      // That is the same bug as the profile leak one line above and the same bug
+      // as the role-floor accumulation: a cache capturing ambient state. Caught
+      // by pre-flight check D, which reported a stray mark on one blink frame
+      // that could not be reproduced when the plate was drawn on its own — the
+      // signature of an order dependency, not of a geometry error.
+      const pb = H.boilFrame(), pa = H.boilAmp(), pg = H.boilGate();
+      H.setBoil(0);
+      try {
+        const probe = hostFigure({
+          key: "_probe/" + pose, w: 1080, h: 1920, pal: pal("night-card"),
+          seed: 1, pose: pose, mouthOpen: false, bob: 0, boil: 0, profile: "hand-1",
+        });
+        const fy = probe.meta.rig && probe.meta.rig.forearmY;
+        const figY = probe.slots.figure && probe.slots.figure.y;
+        const fl = probe.meta.floorLineY;
+        if (fy != null && figY != null && fl != null && fl !== figY) {
+          POSE_CONTACT_C[pose] = (fy - figY) / (fl - figY);
+        }
+      } catch (e) {
+        POSE_CONTACT_C[pose] = null;
+      }
+      H.setBoil(pb, pa, pg);
+      H.setProfile(prev);
+    }
+    return POSE_CONTACT_C[pose];
+  }
+
   function pal(surfaceKey) {
     const s = SURFACES[surfaceKey];
     const p = { ground: s.ground, ground2: s.ground2, grain: s.grain, surfaceKey };
@@ -211,6 +278,658 @@
     return P;
   }
 
+  /* ---------------- §1.1 · THE LOWER THIRD ----------------
+
+     The most visible inconsistency in the product, and the cheapest to fix.
+     render_long.py builds it with simple_text() — PIL, Courier Bold, a stroke
+     outline — so the one persistent brand element in a forty-minute video is a
+     font with an outline sitting in a library of drawn ink.
+
+     THREE THINGS DECIDE THIS PLATE, and two of them are not obvious.
+
+     1. IT CARRIES ITS OWN GROUND, for exactly the reason the title took the
+        `card`. This sits over a room, a chart, a filing screenshot and stock
+        footage — there is no wall to borrow legibility from, and unlike the
+        chapter opener there is not even a family of walls to measure against.
+        So: an opaque panel, its own bloom rim, its own cast. §1's audit is the
+        argument and this plate is the case where it is unarguable.
+
+        NO TAPE, though, and that is the one place it departs from the card. Tape
+        says "this arrived after the room did" — true of a chapter title, false
+        of the channel's own furniture. The lower third was always there.
+
+     2. IT DOES NOT BOIL. It is on screen longer than any other asset in the
+        product, and a wobble that re-draws three times a second at the edge of
+        vision for forty minutes is not craft, it is a crawl. `overlays/row-band`
+        is already in NO_BOIL_KEYS for the narrower version of this reason —
+        movement under type that is deliberately still. Here the type is still
+        and the viewer is not looking at it, which is worse. Drawn once, dead
+        still, forever.
+
+        This is the one asset where the hand is in the DRAWING and not in the
+        MOTION, and it is deliberate rather than an omission.
+
+     3. THE TICKER AND THE TAGLINE ARE TWO SLOTS, NOT ONE STRING. The renderer
+        currently formats `$TICKER · noise or signal?` and hands it to PIL as a
+        single line. Two slots, two roles, two budgets: the ticker is a proper
+        noun that must not wrap and the tagline is copy that might change, and
+        one string cannot carry two different failure modes. A five-character
+        ticker and a short tagline both sit comfortably — measured, not hoped. */
+  function lowerThird(o) {
+    const land = o.w > o.h;
+    const p = o.pal;
+    const W = o.w, HH = o.h;
+    const roles = {
+      ticker: { font: "Courier Prime", size: land ? 78 : 86, weight: 700, colour: "structure", tracking: "0.01em", maxChars: 9 },
+      tagline: { font: "Archivo Narrow", size: land ? 34 : 38, weight: 600, colour: "structure", opacity: 0.86, tracking: "0.02em", maxChars: 30 },
+    };
+    const P = H.Plate({
+      key: o.key, w: W, h: HH, seed: 1401,
+      // ground "none": it is an overlay and composites onto whatever is behind
+      // it. The PANEL it draws is its own ground — that is the whole point — but
+      // the plate itself has no surface and no grain.
+      pal: Object.assign({}, p, { ground: "none", grain: null }),
+      meta: {
+        aspect: land ? "16x9" : "9x16", family: "overlays", type: "lower-third",
+        composite: "alpha, over anything",
+        typeRoles: roles,
+      },
+    });
+    const q = (n) => n * (land ? 1 : 1.06);
+    const m = q(10);                       // the cast needs room inside the canvas
+    const panel = { x: m, y: m, w: W - m * 2 - q(12), h: HH - m * 2 - q(12) };
+    const ink = p.structure;
+    const ring = (g2) => H.polyRect(panel.x - g2, panel.y - g2, panel.w + g2 * 2, panel.h + g2 * 2);
+    // Emitted directly rather than through hatch(): hatch treats its authored
+    // opacity as COVERAGE and multiplies to solid, and this panel's contrast
+    // floor is the exact alpha. Same call the title ground makes.
+    const wash = function (poly, colour, alpha, sd) {
+      const pts = H.wobble(poly.concat([poly[0]]), { amp: q(2), over: 0, seed: sd, step: q(26) });
+      P.colourAdd(`<path d="${H.toPath(pts)}Z" fill="${colour}" fill-opacity="${H.num(alpha)}"/>`);
+    };
+    // EVERY MARK ON THIS PLATE IS PINNED, which is belt and braces on purpose.
+    // The build declares it static so only one frame ever ships — but a plate that
+    // is still because of its frame count is still by accident, and the next
+    // person to give the overlays family a boil strip gets a crawling lower third
+    // with nothing to warn them. Pinned, it cannot wobble even if asked.
+    // Structural guarantee rather than relying on care, same as no text nodes.
+    H.pin(function () {
+      // light is upper-left across the whole kit, so the cast goes down and right
+      const off = Math.max(q(6), panel.w * 0.011);
+      wash(H.polyRect(panel.x + off * 1.7, panel.y + off * 1.7, panel.w, panel.h), ink, 0.05, 1403);
+      wash(H.polyRect(panel.x + off, panel.y + off, panel.w, panel.h), ink, 0.1, 1405);
+      wash(ring(0), p.ground, 1, 1407);
+      const rim = H.polyRect(panel.x + q(8), panel.y + q(8), panel.w - q(16), panel.h - q(16));
+      P.colourAdd(H.stroke(rim.concat([rim[0]]), { stroke: H.darken(p.ground, 0.86), width: q(5), opacity: 0.5, amp: 1.2, over: 0, seed: 1409, silhouette: true }));
+      P.inkAdd(H.outline(ring(0), { stroke: ink, width: q(3.6), opacity: 0.92, amp: 3.2, over: q(12), seed: 1411 }));
+    });
+
+    const padX = q(30), padY = q(24);
+    const L = panel.x + padX, R = panel.x + panel.w - padX;
+    const tH = blockH(roles.ticker, 1), gH = blockH(roles.tagline, 1);
+    const tY = panel.y + padY;
+    // THE TICKER BOX IS 44% OF THE MEASURE, not all of it, and the reason is the
+    // same one the language-shift year box ran into: at full width budget.js
+    // derived fifteen characters, which is an invitation to put a company name in
+    // a slot whose job is $HTZ. Narrowed, it derives six — a five-character ticker
+    // with its sigil, and nothing more.
+    const tickW = Math.round((R - L) * 0.44);
+    P.slot("ticker", L, tY, tickW, tH, { align: "left", role: "ticker", identifier: 9, note: "the ticker as the script names it, e.g. $HTZ. Must not wrap. The box is deliberately narrow: at full measure it would hold a company name, and this slot is not for one." });
+    // The rule between them is furniture — it separates a proper noun from copy.
+    // Pinned with everything else on the plate.
+    const rY = Math.round(tY + tH + q(9));
+    H.pin(function () {
+      P.inkAdd(H.line(L, rY, R, rY - 2, { stroke: ink, width: q(3), opacity: 0.45, amp: 2.2, over: q(8), seed: 1413 }));
+    });
+    P.slot("tagline", L, rY + q(11), R - L, gH, { align: "left", role: "tagline", note: "the channel's line, e.g. 'noise or signal?'. Copy, so it may change — which is why it is its own slot with its own budget rather than half of a formatted string." });
+
+    P.meta.panel = { x: Math.round(panel.x), y: Math.round(panel.y), w: Math.round(panel.w), h: Math.round(panel.h), opaque: true };
+    P.meta.noBoil = "DELIBERATE, AND THE REASON IS DURATION. This is on screen longer than any other asset in the product. A wobble re-drawn three times a second at the edge of vision for forty minutes is not craft, it is a crawl — overlays/row-band is already exempt for the narrower case (movement under type held still), and here the viewer is not even looking at it. The hand is in the drawing, not in the motion. Enforced twice: engine/build.js NO_BOIL_KEYS ships one frame, AND every mark is inside pin(), so the plate cannot wobble even if a later boil strip asks it to.";
+    P.meta.ownGround = "It composites over a room, a chart, a filing screenshot and stock footage, so there is no wall to borrow legibility from — not even a family of walls to measure against, as the chapter openers had. Hence an opaque panel with its own bloom rim and its own cast: §1's finding, applied where it is unarguable. NO TAPE, unlike the title card: tape says the object arrived after the room did, which is true of a chapter title and false of the channel's own furniture.";
+    P.meta.replaces = "render_long.py:1450 simple_text() from rasters.py — PIL, Courier Bold, stroke outline. Two slots replace one formatted string: the ticker is a proper noun that must not wrap and the tagline is copy that might change, and one string cannot carry two failure modes.";
+    P.meta.placement = "the renderer positions this plate; it does not fill a frame. Bottom-left at one panel-height of margin is what it was designed against. It is its own size for the same reason overlays/row-band is — an overlay the compositor places, not a full-frame plate.";
+    P.meta.captionRegister = "SEE THE CAPTION DECISION IN CHANGES.md §1.2. This plate is drawn in the kit's hand because it is large, persistent and a brand element. Captions are NOT, and get the kit's materials without its hand — the two are one decision, and they differ on purpose.";
+    return P;
+  }
+
+  /* ---------------- §2 · THE CONFESSION ----------------
+
+     The most distinctive thing the channel does, and it had no plate — roughly
+     one video in three carries the moment the host says he got something wrong
+     about this company before, and on screen it has been reaching for whatever
+     generic plate the chapter happened to have.
+
+     WHAT IT IS NOT. The shape is close to `structure/said-happened` and the
+     difference is the whole point: said-happened is a company's claim against
+     the outcome, drawn as a two-track timeline, and it is built to read as an
+     indictment. Pointing that instrument at the host would make the plate an
+     indictment of him, which is the opposite of what a confession is for.
+
+     THE TONE IS THE BRIEF, so it is worth writing down what is banned and why:
+     no cross, no strike-through, no red, no rule through the old claim, nothing
+     that performs contrition. Equally, not small type at the bottom of the
+     frame. The register is a person saying plainly "I had this wrong, here is
+     what I missed", which is a CREDIBILITY move rather than an apology — and a
+     plate that performs either the shame or the shrug has taken the tone out of
+     the host's hands, which is mistake 3 in a new costume.
+
+     TWO TREATMENTS, because tone cannot be chosen from a description. They
+     differ on a nameable axis \u2014 what carries the credibility:
+
+       statement  THE CORRECTION IS AS CONSIDERED AS THE CLAIM WAS. Three blocks
+                  in one continuous statement, one left edge, one type size, one
+                  rail down the side. "What I got wrong" is set in exactly the
+                  weight of "what I said" \u2014 nothing marks it as the bad one. The
+                  credibility is in the EQUAL WEIGHT: he is not flinching and he
+                  is not shrugging, and the geometry is what says so.
+
+       ledger     HE KEEPS A RECORD OF THESE. The entry is numbered and dated on
+                  a ruled sheet, because the pipeline already tracks confessions
+                  in a ledger and the plate can say so. The credibility is in the
+                  EXISTENCE OF THE RECORD rather than in this admission: one
+                  confession performed carefully still reads as a performance,
+                  where "no. 14, and I write them all down" cannot.
+
+                  The risk it runs is the other failure mode \u2014 a ledger entry
+                  drawn small and neat is the confession hidden at the bottom of
+                  the frame. So the body type here is the SAME SIZE as the
+                  statement treatment's. It is ruled like a book and set like a
+                  headline, deliberately. */
+  const CONFESSION_TREATMENTS = ["statement", "ledger"];
+
+  function confession(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const T = o.treatment;
+    if (CONFESSION_TREATMENTS.indexOf(T) < 0) throw new Error("unknown confession treatment " + T);
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      // ONE role for all three bodies, and that is the tone decision expressed
+      // as code. Three roles is how "what I got wrong" becomes the loud one or
+      // the quiet one; there is no size at which a correction set differently
+      // from its claim reads as level.
+      body: { font: "Archivo Narrow", size: land ? 58 : 62, weight: 600, colour: "structure", tracking: "-.01em", maxLines: 2, maxCharsPerLine: land ? 44 : 30 },
+      label: { font: "Courier Prime", size: land ? 27 : 26, weight: 700, colour: "structure", opacity: 0.72, tracking: "0.06em", maxChars: 22 },
+      entry: { font: "Courier Prime", size: land ? 34 : 32, weight: 700, colour: "structure", opacity: 0.8, tracking: "0.03em", maxChars: 14 },
+    };
+    const P = base(o, "confession-" + T, roles);
+    P.meta.family = "structure";
+    P.meta.treatment = T;
+    const u = unitOf(h);
+    const L = land ? 190 : 84, R = w - (land ? 150 : 76);
+    const kickY = land ? 84 : 190, kickH = blockH(roles.kicker, 1);
+    P.slot("kicker", L, kickY, (R - L) * 0.62, kickH, { align: "left", role: "kicker" });
+    if (T === "ledger") {
+      // the entry number and date sit on the kicker's line, right-aligned: a
+      // ledger entry is identified before it is read
+      P.slot("entry-no", L + (R - L) * 0.76, kickY - u * 0.2, (R - L) * 0.24, blockH(roles.entry, 1),
+        { align: "right", role: "entry", identifier: 12, note: "the ledger entry, e.g. 'no. 14'. Deliberately a narrow box \u2014 at a third of the measure budget.js derived 26 characters, which is room for a sentence in a slot whose job is a number. The pipeline already has the count; this is what puts it on screen, and it is the treatment's whole argument: not one careful admission, a practice." });
+    }
+
+    // DROP EIGHT: the descender allowance went 4 -> 12. Two lines of body set at
+    // the compositor's 1.16em pitch occupy 134.6 of what was a 139-unit box, so the
+    // second line's descenders sat 4.4 units off the rule below it on the ledger —
+    // measured at 1:1 in render-scale.html §9, not computed. Twelve units puts the
+    // clearance at 12.4 and costs 24 units out of the band across the three blocks.
+    // Applied to BOTH treatments deliberately: the statement has no rule to clear,
+    // but the two plates share one body geometry and that congruence is §2's tone
+    // decision expressed as geometry.
+    const labH = blockH(roles.label, 1), bodyH = blockH(roles.body, 2) + 12;
+    const blockH2 = labH + Math.round(u * 0.5) + bodyH;
+    const capY = h - (land ? 118 : 186);
+    const headBottom = Math.round(kickY + kickH + u * (land ? 2.0 : 2.6));
+    // THE GAP IS DERIVED FROM THE BAND, NOT AUTHORED, and the portrait plate is
+    // why. At a fixed gap the three blocks finished at y=1023 on a 1920-tall
+    // frame with the caption at 1734 — 680 units of dead space, the whole
+    // statement bunched into the top half and reading as though the plate had
+    // been cropped. Three blocks and two gaps have to USE the band between the
+    // head and the caption, so the gap is what is left over — clamped, so
+    // landscape does not get airier than it should and a tight frame still
+    // keeps the blocks apart.
+    const band = capY - Math.round(u * 1.1) - headBottom;
+    const slack = band - 3 * blockH2;
+    const gap = Math.max(Math.round(u * 1.5), Math.min(Math.round(u * (land ? 2.1 : 4.2)), Math.floor(slack / 2)));
+    // and the group is centred in whatever band is left over, so neither aspect
+    // hangs off the top
+    const top = headBottom + Math.max(0, Math.round((band - (3 * blockH2 + 2 * gap)) / 2));
+    // DROP TEN: THE INDENT IS THE SAME ON BOTH TREATMENTS, and only the statement
+    // draws a rail in it. It used to be 0 on the ledger, which made the ledger's
+    // measure 51 landscape units and 72 portrait units WIDER — 68 characters a
+    // line against the statement's 66, and 37 against 34. Each plate was correct;
+    // the PAIR was never measured, which is host/empty-chair's failure shape
+    // exactly. The consequence was that a confession written to the ledger at 37
+    // characters a line does not fit the statement, and an over-budget fill
+    // renders nothing — so picking a treatment after the copy was written blanked
+    // the plate. Both now derive the SAME body box from the same indent, so a
+    // confession written once fits either and the treatment is a drawing choice
+    // rather than a copy constraint. The ledger gives up the 2-3 characters a line
+    // it had; that is the cost, and it is the right direction because the rail is
+    // real and the ledger had the room to give.
+    const indent = Math.round(u * (land ? 3.0 : 2.4));
+    const NAMES = ["said", "happened", "wrong"];
+    const boxes = [];
+    NAMES.forEach(function (nm, i) {
+      const by = top + i * (blockH2 + gap);
+      const bx = L + indent;
+      boxes.push({ name: nm, x: bx, y: by, w: R - bx, h: blockH2 });
+      P.slot(nm + "-label", bx, by, (R - bx) * 0.5, labH, { align: "left", role: "label" });
+      P.slot(nm, bx, by + labH + Math.round(u * 0.5), R - bx, bodyH, { align: "left", role: "body" });
+    });
+
+    if (T === "statement") {
+      // ONE rail across all three blocks, with a spur into each. One rail is
+      // what makes them one statement; three rails would be three claims, and a
+      // rail that stopped short of the third block would mark it out.
+      const railX = L + Math.round(indent * 0.44);
+      const railTop = top + Math.round(labH * 0.3);
+      const railBot = top + 2 * (blockH2 + gap) + labH + Math.round(bodyH * 0.45);
+      P.inkAdd(H.breathe(function () {
+        return H.line(railX, railTop, railX + 2, railBot, { stroke: p.structure, width: 4.2, opacity: 0.55, amp: 2.8, over: 11, seed: 1511 });
+      }));
+      boxes.forEach(function (b, i) {
+        const sy = b.y + Math.round(labH * 0.52);
+        P.inkAdd(H.breathe(function () {
+          return H.line(railX, sy, b.x - Math.round(u * 0.5), sy - 1, { stroke: p.structure, width: 3.2, opacity: 0.48, amp: 1.8, over: 7, seed: 1520 + i * 9 });
+        }));
+      });
+    } else {
+      // A RULED SHEET, and the rules run the full measure under each body — the
+      // page of a book he writes these in. They are furniture: they say "this is
+      // a record", nothing is measured off them, so they breathe.
+      boxes.forEach(function (b, i) {
+        const ry = b.y + b.h + Math.round(gap * 0.42);
+        P.inkAdd(H.breathe(function () {
+          return H.line(L - u * 0.4, ry, R + u * 0.4, ry - 2, { stroke: p.structure, width: 2.6, opacity: 0.34, amp: 2.4, over: 9, seed: 1540 + i * 11 });
+        }));
+      });
+      // and one rule under the kicker row, closing the entry's head
+      const hy = Math.round(kickY + kickH + u * 0.8);
+      P.inkAdd(H.breathe(function () {
+        return H.line(L - u * 0.4, hy, R + u * 0.4, hy - 1, { stroke: p.structure, width: 3.4, opacity: 0.5, amp: 2.4, over: 10, seed: 1535 });
+      }));
+    }
+
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    const bottom = top + 3 * blockH2 + 2 * gap + (T === "ledger" ? Math.round(gap * 0.42) : 0);
+    P.meta.fit = { top: top, blockH: blockH2, gap: gap, band: band, bottom: bottom, captionY: capY,
+      clears: bottom < capY - Math.round(u * 0.6), fillsBand: +((bottom - top) / band).toFixed(3) };
+    P.meta.blocks = boxes;
+    P.meta.congruent = boxes.every((b) => b.h === boxes[0].h && b.w === boxes[0].w);
+    P.meta.notSaidHappened = "structure/said-happened is a COMPANY's claim against the outcome, drawn as a two-track timeline and built to read as an indictment. This is the host's own claim. Pointing that instrument at him would make the plate an indictment of him, which is the opposite of what a confession is for \u2014 so it is a separate author rather than a variant, and it has no rails, no intervals and no event marks.";
+    P.meta.refusesVerdict = "NO CROSS, NO STRIKE-THROUGH, NO RED, NO RULE THROUGH THE OLD CLAIM. All three bodies are ONE type role at ONE size in `structure`, so the plate cannot mark which of them is the bad one. If the script wants the old claim struck, that is annotations/strike-out applied by the compositor \u2014 and worth arguing about before it is asked for, because a confession that strikes its own claim is performing contrition, which is the thing this plate exists not to do.";
+    P.meta.tone = "the register is 'I had this wrong, here is what I missed' \u2014 a credibility move, not an apology. The plate carries the weight by giving the correction the same weight as the claim; it does not shout it and it does not hide it. Neither the shame nor the shrug is drawn in, because both belong to the voice.";
+    P.meta.labelContract = "the -label slots carry the STEP, not a judgement: 'WHAT I SAID', 'WHAT HAPPENED', 'WHAT I GOT WRONG'. A label reading 'MY MISTAKE' or 'IN FAIRNESS' on the third block is the plate taking the tone out of the host's hands.";
+    P.meta.argument = T === "statement"
+      ? "THE CORRECTION IS AS CONSIDERED AS THE CLAIM WAS. Three blocks, one continuous statement, one left edge, one type size, one rail down the side with a spur into each. Nothing marks the third block as the bad one \u2014 the credibility is in the equal weight, and it is geometry rather than intent, so it is assertable."
+      : "HE KEEPS A RECORD OF THESE. A numbered, dated entry on a ruled sheet \u2014 the pipeline already tracks confessions in a ledger, and this plate says so on screen. The credibility is in the existence of the record rather than in this admission: one confession performed carefully still reads as a performance; 'no. 14, and I write them all down' cannot. Ruled like a book and set like a headline, because a ledger entry drawn small and neat is the confession hidden at the bottom of the frame.";
+    return P;
+  }
+
+  /* ---------------- §3.1 · SHORT INTEREST ----------------
+
+     There is a `short-interest` chapter type and it has been filling its
+     evidence beat with `figures/big-number-l2` — days-to-cover as a big number.
+     A number on its own is the one thing this plate exists to replace.
+
+     A SQUEEZE SETUP IS FOUR QUANTITIES THAT MEAN NOTHING INDIVIDUALLY: float,
+     shares short, days to cover, cost to borrow. "Forty million shares short" is
+     enormous or trivial depending entirely on the float, and the plate's job is
+     to make the RELATIONSHIP legible rather than to stack four figures.
+
+     SO THE PROPORTION IS DRAWN AND THE DURATION IS NOT, and that is the whole
+     design. Two of the four are a share of something: shares short against
+     float. That gets the bar — the outline IS the float, the region inside it is
+     the short interest, and the reader does not divide anything. The other two
+     are not proportions at all: days-to-cover is a duration and cost-to-borrow
+     is a rate, and drawing either as a bar would invite a comparison that means
+     nothing. They sit as figures, paired, under the bar.
+
+     WHAT IS NOT DRAWN: the bar's outline is the float, so it is a measurement
+     reference and the plate is otherwise still — see the breathe map's
+     still-by-design list, same as `figures/share-of`.
+
+     AND NOTHING IS PRE-COLOURED. A 30%-of-float short position is a squeeze
+     setup or a nothing depending on who holds it and why, and the script decides
+     which. No alarm colour, no threshold, no mark at some level the plate thinks
+     is interesting. */
+  function shortInterest(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption, unit: TR.detail,
+      // ONE role for all four values: they are four readings of one situation,
+      // and a plate that sets days-to-cover larger than cost-to-borrow has
+      // decided which one the story is.
+      value: { font: "Courier Prime", size: land ? 88 : 78, weight: 700, colour: "structure", maxChars: 8 },
+      label: { font: "Archivo Narrow", size: land ? 30 : 28, weight: 600, colour: "structure", opacity: 0.8, tracking: "0.03em", maxLines: 2, maxCharsPerLine: land ? 20 : 18 },
+      barLabel: { font: "Courier Prime", size: land ? 30 : 28, weight: 700, colour: "structure", opacity: 0.85, maxChars: 18 },
+    };
+    const P = base(o, "short-interest", roles);
+    P.meta.family = "figures";
+    const u = unitOf(h);
+    const L = land ? 170 : 80, R = w - (land ? 150 : 76);
+    const kickY = land ? 86 : 192, kickH = blockH(roles.kicker, 1);
+    P.slot("kicker", L, kickY, (R - L) * 0.64, kickH, { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.66, kickY, (R - L) * 0.34, kickH, { align: "right", role: "unit" });
+
+    // ---- the proportion ----
+    const barY = Math.round(kickY + kickH + u * (land ? 2.4 : 3.0));
+    const barH = Math.round(land ? u * 4.6 : u * 4.0);
+    // the outline IS the float: a measurement reference, so it is pinned
+    H.pin(function () {
+      P.inkAdd(H.outline(H.polyRect(L, barY, R - L, barH), { stroke: p.structure, width: land ? 4.4 : 4, opacity: 0.9, amp: 3, over: q12(u), seed: 1611 }));
+    });
+    P.slot("float", L, barY, R - L, barH, {
+      role: "whole", region: true, container: true,
+      note: "THE FLOAT IS THE WHOLE BAR. Do not fill this region \u2014 its outline is already drawn and it is the reference everything else is read against. It is published as a region only so the compositor knows the extent that `short` is a share of.",
+    });
+    P.slot("short", L, barY, R - L, barH, {
+      role: "bar", region: true, growth: "right-from-left", extentOf: "float",
+      note: "shares short, drawn as a share of the float region from the left edge. THE POINT OF THE PLATE: the reader does not divide anything. Fill to (sharesShort / float) of the width.",
+    });
+    P.slot("float-label", L, barY + barH + Math.round(u * 0.6), (R - L) * 0.48, blockH(roles.barLabel, 1), { align: "left", role: "barLabel", note: "what the bar is, e.g. 'free float 84.2m'" });
+    P.slot("short-label", L + (R - L) * 0.52, barY + barH + Math.round(u * 0.6), (R - L) * 0.48, blockH(roles.barLabel, 1), { align: "right", role: "barLabel", note: "the filled part, e.g. '31.4m short'. Right-aligned so it reads off the end of the bar rather than competing with the float label." });
+
+    // ---- the two that are not proportions ----
+    const figTop = Math.round(barY + barH + blockH(roles.barLabel, 1) + u * (land ? 2.6 : 3.2));
+    const valH = blockH(roles.value, 1), labH = blockH(roles.label, 2);
+    const cellW = Math.round(((R - L) - u * (land ? 2.4 : 2.0)) / 2);
+    const gut = (R - L) - cellW * 2;
+    [["days", "days to cover \u2014 a DURATION, not a share of anything. At one day's average volume."],
+     ["borrow", "cost to borrow \u2014 a RATE. Annualised, as the script quotes it."]].forEach(function (pr, i) {
+      const cx = L + i * (cellW + gut);
+      P.slot(pr[0], cx, figTop, cellW, valH, { align: "left", role: "value", note: pr[1] });
+      P.slot(pr[0] + "-label", cx, figTop + valH + Math.round(u * 0.4), cellW, labH, { align: "left", role: "label" });
+    });
+    // one rule between the proportion and the two figures: they are different
+    // KINDS of quantity and the plate should not let them read as a set of four
+    const rY = Math.round(figTop - u * (land ? 1.3 : 1.6));
+    P.inkAdd(H.breathe(function () {
+      return H.line(L, rY, R, rY - 2, { stroke: p.structure, width: 3, opacity: 0.4, amp: 2.4, over: 9, seed: 1621 });
+    }));
+
+    const capY = h - (land ? 118 : 186);
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.fit = { figuresBottom: figTop + valH + Math.round(u * 0.4) + labH, captionY: capY,
+      clears: figTop + valH + Math.round(u * 0.4) + labH < capY - Math.round(u * 0.6) };
+    P.meta.argument = "four quantities that mean nothing individually. Two of them are a share of something \u2014 shares short against float \u2014 and those get the bar, so the relationship is drawn rather than divided. The other two are a duration and a rate: they sit as figures, because drawing them as bars would invite a comparison that means nothing.";
+    P.meta.replaces = "figures/big-number-l2 in the short-interest chapter's evidence beat. A number on its own is what this plate exists to replace: 'forty million shares short' is enormous or trivial entirely depending on the float.";
+    P.meta.signAgnostic = "NOTHING IS PRE-COLOURED AND NOTHING IS MARKED. A 30%-of-float short position is a squeeze setup or a nothing depending on who holds it and why; the script decides. No alarm colour, no threshold line, no tick at a level the plate finds interesting.";
+    P.meta.valueRole = "all four values are ONE type role at ONE size. A plate that sets days-to-cover larger than cost-to-borrow has decided which of the four the story is, which is the script's job.";
+    P.meta.stillByDesign = "the bar outline is the float, which is a measurement reference, so it is pinned. Only the dividing rule breathes.";
+    return P;
+  }
+
+  /* ---------------- §3.2 · INSIDER FLOW ----------------
+
+     The pipeline pulls Form 4 filings — who bought or sold, when, how much.
+     `figures/ownership` covers the static picture; nothing covered the flow,
+     which is arguably the highest-signal thing in the filings stack.
+
+     A TIMELINE WITH THE TRADES AS MARKS, SIZED BY VALUE. The axis is drawn and
+     pinned; each mark is a region the renderer fills from the axis, in the
+     direction the trade went.
+
+     ABOVE AND BELOW THE AXIS IS NOT A VERDICT, and this is worth being explicit
+     about because it looks like one. Up-for-buy and down-for-sell is the same
+     encoding `figures/waterfall` uses for a step that adds or subtracts: the
+     direction IS the data, not a judgement about it. What would be a verdict is
+     colour — green-good, red-bad — and there is none. Both directions are one
+     ink at one weight, and a plate of all sells looks exactly like a plate of
+     all buys, inverted.
+
+     COUNT VARIANTS ON MARKS: 6 and 12. Six is a normal quarter's filings; twelve
+     is the case the plate exists for, where the pattern is the argument. Both are
+     authored rather than one elastic plate, for tables/'s reason — an elastic one
+     would re-derive its pitch at render time. */
+  function insiderFlow(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const N = o.marks;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption, unit: TR.detail,
+      date: { font: "Archivo Narrow", size: land ? 26 : 22, weight: 600, colour: "structure", opacity: 0.78, maxChars: 8 },
+      who: { font: "Courier Prime", size: land ? 24 : 21, weight: 400, colour: "structure", opacity: 0.72, maxChars: 14 },
+      axis: { font: "Courier Prime", size: land ? 25 : 23, weight: 400, colour: "structure", opacity: 0.7, maxChars: 9 },
+    };
+    const P = base(o, "insider-flow-" + N, roles);
+    P.meta.family = "charts";
+    P.meta.marks = N;
+    const u = unitOf(h);
+    const L = land ? 200 : 96, R = w - (land ? 150 : 80);
+    const kickY = land ? 84 : 190, kickH = blockH(roles.kicker, 1);
+    P.slot("kicker", L, kickY, (R - L) * 0.62, kickH, { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.64, kickY, (R - L) * 0.36, kickH, { align: "right", role: "unit" });
+
+    const capY = h - (land ? 120 : 188);
+    const plotTop = Math.round(kickY + kickH + u * (land ? 2.2 : 2.8));
+    const plotBot = Math.round(capY - u * (land ? 3.2 : 3.6));
+    const axisY = Math.round((plotTop + plotBot) / 2);
+    P.slot("plot-area", L, plotTop, R - L, plotBot - plotTop, { role: "plot-area", container: true, note: "code draws the marks in here only" });
+    // THE AXIS IS TIME AND IT IS THE ZERO LINE FOR VALUE. Pinned: every mark's
+    // height is measured from it, which is the waterfall's baseline argument.
+    H.pin(function () {
+      P.inkAdd(H.line(L - u * 0.5, axisY, R + u * 0.5, axisY - 2, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.92, amp: 3, over: q12(u), seed: 1711 }));
+    });
+    // two scale references, one each side, so a mark's size is readable at all
+    [["above", -1], ["below", 1]].forEach(function (pr, i) {
+      const y = axisY + pr[1] * Math.round((plotBot - plotTop) * 0.5);
+      P.slot("scale-" + pr[0], L - (land ? 170 : 90), y - 26, land ? 150 : 76, 52, { align: "right", role: "axis",
+        note: "the value at the top of the " + pr[0] + " half, e.g. '$4m'. Both halves share ONE scale \u2014 a plate whose buys and sells are scaled independently is unreadable and would be a verdict by arithmetic." });
+    });
+
+    const step = (R - L) / N;
+    const markW = Math.round(step * (N > 8 ? 0.5 : 0.42));
+    P.meta.marksGeo = [];
+    for (let i = 1; i <= N; i++) {
+      const cx = L + step * (i - 0.5);
+      // one region per trade, spanning BOTH halves. The renderer fills from the
+      // axis in the direction the trade went — it does not pick a slot, which is
+      // what keeps the plate from encoding the direction itself.
+      P.slot("mark-" + i, Math.round(cx - markW / 2), plotTop, markW, plotBot - plotTop, {
+        role: "mark", region: true, growth: "from-axis-both-ways", axisY: axisY, index: i,
+        note: "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement \u2014 one ink, one weight, both ways.",
+      });
+      // a tick where the trade sits on the time axis: read off, so pinned
+      H.pin(function () {
+        P.inkAdd(H.line(cx, axisY - 9, cx, axisY + 9, { stroke: p.structure, width: 2.2, opacity: 0.62, amp: 1.1, seed: 1720 + i * 7 }));
+      });
+      P.slot("date-" + i, Math.round(cx - step / 2), plotBot + Math.round(u * 0.5), Math.round(step), blockH(roles.date, 1),
+        { align: "center", role: "date", note: "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it." });
+    }
+    // WHO TRADED, only where it measures out. At twelve marks in 9:16 a name box
+    // is under four characters, and a row of initials is worse than no row —
+    // budget.js decides, not me.
+    const whoFits = g.BUDGET.capacity({ w: step }, "who", roles.who) >= 6;
+    if (whoFits) {
+      for (let i = 1; i <= N; i++) {
+        const cx = L + step * (i - 0.5);
+        P.slot("who-" + i, Math.round(cx - step / 2), plotBot + Math.round(u * 0.5) + blockH(roles.date, 1), Math.round(step), blockH(roles.who, 1),
+          { align: "center", role: "who", note: "who, e.g. 'CFO'. A role rather than a name where it fits \u2014 the argument is almost never about the individual." });
+      }
+    } else {
+      P.slot("who-note", L, plotBot + Math.round(u * 0.5) + blockH(roles.date, 1), R - L, blockH(roles.who, 1),
+        { align: "left", role: "who", note: "ONE line standing in for a per-mark who row, which does not fit at this count in this aspect: the box measures under six characters and an over-budget fill does not render. e.g. 'all four officers'." });
+    }
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+
+    P.meta.axisY = axisY;
+    P.meta.argument = N + " Form 4 trades on a time axis, sized by value. figures/ownership is the static picture; this is the flow \u2014 and at " + N + " marks the " + (N > 8 ? "pattern is the argument" : "individual trades still are") + ".";
+    P.meta.signAgnostic = "ABOVE FOR A PURCHASE, BELOW FOR A SALE \u2014 direction is the DATA, exactly as a waterfall step can add or subtract. What would be a verdict is colour, and there is none: one ink, one weight, both ways, so a plate of all sells looks like a plate of all buys inverted. No green, no red, no arrow.";
+    P.meta.oneScale = "BOTH HALVES SHARE ONE SCALE. Scaling buys and sells independently would make a $200k purchase look like a $4m sale \u2014 a verdict reached by arithmetic, which is the hardest kind to notice. scale-above and scale-below are published separately so the renderer can state the scale, not so it can use two.";
+    P.meta.counts = "6 and 12. Six is a normal quarter's filings; twelve is the case the plate exists for. Authored rather than elastic \u2014 an elastic plate re-derives its pitch at render time, and the pitch is the thing that has to stay still between cuts.";
+    P.meta.whoRow = whoFits ? "per-mark who row published \u2014 the box measures " + g.BUDGET.capacity({ w: step }, "who", roles.who) + " characters." : "NO per-mark who row at this count and aspect: the box measures under six characters and an over-budget fill does not render. One who-note line instead.";
+    return P;
+  }
+
+  /* ---------------- §3.3 · MACRO SERIES ----------------
+
+     The pipeline pulls FRED series for the `macro` format. `charts/line-6y` is
+     built for six annual company periods; a macro series is decades long with a
+     much denser axis, and it needs somewhere to put recession bands. Same name,
+     different plate — and the count convention does not apply, because the
+     periods here are not the company's.
+
+     THE BANDS ARE REGIONS, NOT DRAWN. A recession band's extent is data — when
+     it started and when it ended — so drawing one would be drawing the data.
+     Four band regions are published across the plot and the renderer fills the
+     ones the series actually spans, at low value, behind the line.
+
+     THE AXIS IS DENSE AND ONLY SOME OF IT IS LABELLED. Ten labelled decades and
+     forty unlabelled minor ticks: the minor ticks give the eye the scale without
+     forty labels competing with the series. Both pinned \u2014 they are read off. */
+  function macroSeries(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption, unit: TR.detail,
+      axis: { font: "Courier Prime", size: land ? 25 : 22, weight: 400, colour: "structure", opacity: 0.7, maxChars: 9 },
+      period: { font: "Archivo Narrow", size: land ? 26 : 22, weight: 600, colour: "structure", opacity: 0.78, maxChars: 6 },
+      source: { font: "Courier Prime", size: land ? 22 : 20, weight: 400, colour: "structure", opacity: 0.62, maxChars: 44 },
+    };
+    const P = base(o, "macro-series", roles);
+    P.meta.family = "charts";
+    const u = unitOf(h);
+    const L = land ? 210 : 110, R = w - (land ? 140 : 76);
+    const kickY = land ? 84 : 190, kickH = blockH(roles.kicker, 1);
+    P.slot("kicker", L, kickY, (R - L) * 0.62, kickH, { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.64, kickY, (R - L) * 0.36, kickH, { align: "right", role: "unit" });
+    const srcH = blockH(roles.source, 1);
+    const capY = h - (land ? 116 : 182);
+    const srcY = Math.round(capY - srcH - u * 0.5);
+    const y0 = Math.round(kickY + kickH + u * (land ? 2.0 : 2.6));
+    const y1 = Math.round(srcY - u * (land ? 3.0 : 3.4));
+    P.slot("plot-area", L, y0, R - L, y1 - y0, { role: "plot-area", container: true, note: "code draws the series and the bands in here only" });
+
+    // gridlines breathe, axes are pinned — §1.5, same as every chart
+    for (let i = 0; i <= 4; i++) {
+      const y = y1 - ((y1 - y0) / 4) * i;
+      if (i > 0) P.inkAdd(H.breathe(function () {
+        return H.line(L, y, R, y, { stroke: p.structure, width: 1.7, opacity: 0.19, amp: 2.6, over: 7, seed: 1810 + i * 7 });
+      }));
+      P.slot("y-" + (i + 1), L - (land ? 170 : 100), i === 4 ? y + 6 : y - 26, land ? 150 : 86, 52, { align: "right", role: "axis" });
+    }
+    H.pin(function () {
+      P.inkAdd(H.line(L, y0 - 14, L, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 1821 }));
+      P.inkAdd(H.line(L, y1, R + 16, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 1822 }));
+    });
+    // ten labelled decades, forty minor ticks between them
+    const MAJOR = 10, MINOR = 4;
+    const mstep = (R - L) / (MAJOR - 1);
+    for (let i = 0; i < MAJOR; i++) {
+      const x = L + mstep * i;
+      H.pin(function () {
+        P.inkAdd(H.line(x, y1, x, y1 + 15, { stroke: p.structure, width: 2.4, opacity: 0.75, amp: 1.1, seed: 1830 + i * 7 }));
+      });
+      P.slot("head-" + (i + 1), Math.round(x - mstep * 0.5), y1 + Math.round(u * 0.55), Math.round(mstep), blockH(roles.period, 1),
+        { align: "center", role: "period", anchorX: Math.round(x), note: "a decade, e.g. '1990'. Ten of them \u2014 the count convention does not apply here: these are not the company's periods." });
+      if (i < MAJOR - 1) {
+        for (let k = 1; k <= MINOR; k++) {
+          const mx = x + (mstep / (MINOR + 1)) * k;
+          H.pin(function () {
+            P.inkAdd(H.line(mx, y1, mx, y1 + 7, { stroke: p.structure, width: 1.7, opacity: 0.5, amp: 0.9, seed: 1860 + i * 11 + k }));
+          });
+        }
+      }
+    }
+    P.slot("series", L, y0, R - L, y1 - y0, {
+      role: "series", region: true,
+      note: "THE SERIES. One path across the plot \u2014 the shape is the data and it is not drawn here. Subject ink, single weight.",
+    });
+    // FOUR BAND REGIONS. A recession's extent is data (when it began, when it
+    // ended), so the plate publishes places a band may go and fills none.
+    for (let i = 1; i <= 4; i++) {
+      P.slot("band-" + i, L, y0, R - L, y1 - y0, {
+        role: "band", region: true, index: i, spans: "x-only",
+        note: "a recession band: full plot height, x extent set by the renderer from the dates. Fill at LOW value behind the series \u2014 a band that out-contrasts the line has become the subject. Four are published because a long series usually spans three or four; fill only the ones the data has, and leave the rest empty rather than distributing them.",
+      });
+    }
+    P.slot("source", L, srcY, R - L, srcH, { align: "left", role: "source",
+      note: "the series and its provenance, e.g. 'FRED: UNRATE, monthly, seasonally adjusted'. REQUIRED on this plate \u2014 a macro series with no source is the one chart on a real-numbers channel that nobody can check." });
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.axis = { major: MAJOR, minorPerMajor: MINOR, labelled: MAJOR };
+    P.meta.argument = "a decades-long series with recession bands. charts/line-6y is six annual company periods; this is the same name and a different plate \u2014 denser axis, band regions, and a source line that is not optional.";
+    P.meta.bandsNotDrawn = "A RECESSION'S EXTENT IS DATA \u2014 when it began and when it ended. Drawing one would be drawing the data, so four band regions are published and none is filled. Fill the ones the series spans and leave the others empty; do not distribute four bands across the plot because four exist.";
+    P.meta.densityNote = MAJOR + " labelled decades and " + (MAJOR - 1) * MINOR + " unlabelled minor ticks. The minor ticks give the eye the scale without forty labels competing with the series. All pinned: a tick is read off.";
+    return P;
+  }
+
+  /* ---------------- §3.4 · THE END CARD ----------------
+
+     `structure/closing` exists as a chapter plate, but YouTube end screens have
+     fixed geometry: the platform overlays subscribe and next-video elements in
+     specific rectangles over the final twenty seconds. A closing plate that does
+     not know where they land gets covered up.
+
+     THIS IS THE ONE PLATE IN THE KIT WHOSE LAYOUT IS DICTATED FROM OUTSIDE IT,
+     so the zones are published in the manifest rather than described here — the
+     composition has to work with the platform's furniture sitting in it, and the
+     next person to touch this plate needs the numbers, not my account of them.
+
+     THE ZONES ARE LEFT DELIBERATELY EMPTY. Not "kept clear where convenient":
+     no slot, no mark and no region overlaps them, and preflight can assert it.
+     A caption that runs under a subscribe button is not a caption.
+
+     WHAT IS UNVERIFIED, AND IT MATTERS HERE: I designed against YouTube's
+     end-screen element grid as I understand it — elements are placed on a
+     coarse grid in the 16:9 frame, video cards are 16:9, the subscribe element
+     is circular. I could not check the current spec, so the numbers below are
+     DESIGNED-AGAINST rather than confirmed, and they are published precisely so
+     that when someone checks them the plate can be corrected in one place. */
+  function endCard(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      line: { font: "Archivo Narrow", size: land ? 82 : 76, weight: 700, colour: "structure", tracking: "-.01em", maxLines: 2, maxCharsPerLine: land ? 26 : 22 },
+      hand: { font: "Courier Prime", size: land ? 30 : 28, weight: 400, colour: "structure", opacity: 0.74, maxLines: 2, maxCharsPerLine: land ? 34 : 28 },
+    };
+    const P = base(o, "end-card", roles);
+    P.meta.family = "structure";
+    const u = unitOf(h);
+    // THE PLATFORM'S FURNITURE, as fractions of the frame. Fractions rather than
+    // units so the same numbers describe both aspects and survive a canvas change.
+    const ZONES = land
+      ? [{ id: "video-1", kind: "video card", x: 0.505, y: 0.14, w: 0.225, h: 0.30 },
+         { id: "video-2", kind: "video card", x: 0.755, y: 0.14, w: 0.225, h: 0.30 },
+         { id: "subscribe", kind: "subscribe (circular)", x: 0.505, y: 0.56, w: 0.16, h: 0.285 }]
+      : [{ id: "video-1", kind: "video card", x: 0.10, y: 0.60, w: 0.36, h: 0.115 },
+         { id: "video-2", kind: "video card", x: 0.52, y: 0.60, w: 0.36, h: 0.115 },
+         { id: "subscribe", kind: "subscribe (circular)", x: 0.40, y: 0.755, w: 0.20, h: 0.11 }];
+    // The content band is what is left. Derived from the zones rather than
+    // authored beside them, so moving a zone moves the type — which is the whole
+    // point of publishing them.
+    const keepOut = ZONES.map(function (z) {
+      return { id: z.id, kind: z.kind, x: Math.round(z.x * w), y: Math.round(z.y * h), w: Math.round(z.w * w), h: Math.round(z.h * h) };
+    });
+    const L = land ? 150 : 84;
+    const R = land ? Math.round(Math.min.apply(null, keepOut.map((z) => z.x)) - u * 1.6) : w - 84;
+    const topB = land ? Math.round(h * 0.16) : Math.round(h * 0.17);
+    const botB = land ? Math.round(h * 0.84) : Math.round(Math.min.apply(null, keepOut.map((z) => z.y)) - u * 1.8);
+    P.slot("content-area", L, topB, R - L, botB - topB, { role: "content-area", container: true,
+      note: "everything on this plate lives here. It is DERIVED from the keep-out zones, not authored beside them, so correcting a zone moves the type with it." });
+
+    const kickH = blockH(roles.kicker, 1), lineH = blockH(roles.line, 2) + 4, handH = blockH(roles.hand, 2);
+    const stackH = kickH + Math.round(u * 0.8) + lineH + Math.round(u * 1.1) + handH;
+    const sTop = topB + Math.max(0, Math.round((botB - topB - stackH) / 2));
+    P.slot("kicker", L, sTop, R - L, kickH, { align: "left", role: "kicker" });
+    P.slot("line", L, sTop + kickH + Math.round(u * 0.8), R - L, lineH, { align: "left", role: "line",
+      note: "the closing line, two lines at " + roles.line.maxCharsPerLine + " characters measured. Not a sign-off: the script's last claim." });
+    const hY = sTop + kickH + Math.round(u * 0.8) + lineH + Math.round(u * 1.1);
+    P.slot("hand", L, hY, R - L, handH, { align: "left", role: "hand",
+      note: "what the viewer does next, in the host's own register, e.g. 'the ledger is in the description'. NOT 'like and subscribe' \u2014 the platform is already drawing a subscribe button four hundred units to the right, and saying it twice is worse than not saying it." });
+    // a rule under the stack, stopping short of the first zone
+    const rY = Math.round(hY + handH + u * 0.9);
+    if (rY < botB) P.inkAdd(H.breathe(function () {
+      return H.line(L, rY, R, rY - 2, { stroke: p.structure, width: 3.2, opacity: 0.42, amp: 2.4, over: 9, seed: 1911 });
+    }));
+
+    P.meta.keepOut = keepOut;
+    P.meta.keepOutSource = "DESIGNED-AGAINST, NOT CONFIRMED. YouTube's end-screen elements sit on a coarse grid in the 16:9 frame; video cards are 16:9 and the subscribe element is circular. I could not check the current published spec, so treat these fractions as the numbers this composition was built for rather than as the platform's. They are in the manifest so that when someone checks them, the plate is corrected in ONE place and the content band moves with them.";
+    P.meta.zonesEmpty = "NO SLOT AND NO AUTHORED MARK overlaps a keep-out zone \u2014 not 'kept clear where convenient'. Measured on both aspects: 0 slot overlaps, 0 ink or colour marks reaching a zone. THE PAPER SURFACE DOES extend under them, necessarily and correctly: that is what a ground is, and the platform draws opaque elements on top of it. What must not be under a subscribe button is CONTENT \u2014 type, and the marks that organise type. Preflight can assert the content half because the zones are published.";
+    P.meta.notClosing = "structure/closing is a chapter plate and knows nothing about the platform. This one's layout is dictated from outside the kit, which is why it is a separate plate rather than a variant \u2014 and the only plate here whose geometry someone else can change without telling us.";
+    P.meta.duration = "the platform draws its elements over the final twenty seconds. If the cut holds this plate for less than that, the zones are empty for no reason \u2014 which is a director's problem, not the plate's, but worth knowing.";
+    return P;
+  }
+
+  // small helper: the standard overshoot at this scale
+  function q12(u) { return Math.round(u * 0.42); }
+
   // ---------------- board demos (not shipping plates: these carry drawn data) ----------------
   function threeSeries(o) {
     const p = o.pal, w = o.w, h = o.h;
@@ -280,16 +999,1179 @@
     return P;
   }
 
+  // ---------------- waterfall: what the revenue turns into ----------------
+  // §2.1. USE WHEN the claim is where a figure WENT — revenue at the top, each
+  // cost knocking a chunk out of it, what is left at the bottom.
+  //
+  // Not structure/flow and not structure/multiple-bridge. Both of those are
+  // about VALUATION — flow walks a process, the bridge changes a denominator at
+  // every step. This is quantity: one unit, one scale, and every bar measured
+  // against the same zero. That is why it cannot be either of them with different
+  // labels.
+  //
+  // WHY THE BARS ARE A REGION AND THE COLUMNS ARE DRAWN.
+  //
+  // A waterfall's bar heights ARE the data — a plate that drew them would be a
+  // chart of invented numbers, which §0.1 forbids. But the COLUMN GRID is
+  // structural: how many steps there are, where each sits, and that they share
+  // one baseline is true before any number arrives. So the plate draws the
+  // baseline, the column centres and the connector stubs, and `bridge` is a
+  // region that engine/series.js fills. With no data in it the plate still reads
+  // as a waterfall with nothing in it yet, rather than as an empty box.
+  //
+  // SIGN IS THE RENDERER'S, NOT THE AUTHOR'S. A step can ADD as well as subtract
+  // — a tax credit, a one-off gain — and the brief is explicit that this must not
+  // send the author to a different plate. So nothing here is drawn downward:
+  // there is no arrow, no pre-drawn descent, and the connector stubs are
+  // horizontal. series.waterfall decides up or down per step from the value's own
+  // sign, and the geometry accommodates either because it commits to neither.
+  //
+  // The step columns are also NOT pre-coloured down. A cost is not a loss — it is
+  // the ordinary operation of a business — and colouring five subtractions red
+  // before the script has spoken makes the plate argue ahead of the voice-over.
+  function waterfall(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.steps;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption, unit: TR.unit || TR.detail,
+      // The end figures are the two the viewer is asked to hold — what came in
+      // and what was left — so they are the largest type on the plate.
+      end: { font: "Courier Prime", size: land ? 76 : 64, weight: 700, colour: "structure", maxChars: 8 },
+      // A step figure is read against the end figures, never on its own, so it is
+      // deliberately smaller. Same family, one step down.
+      step: { font: "Courier Prime", size: land ? 44 : 38, weight: 700, colour: "structure", maxChars: 8 },
+      // Cost names are the longest strings on the plate and the most variable
+      // ("Stock-based compensation" against "Tax"). Narrow face, two lines.
+      stepLabel: { font: "Archivo Narrow", size: land ? 28 : 26, weight: 500, colour: "structure", opacity: 0.86, maxLines: 2, maxCharsPerLine: land ? 15 : 13 },
+      endLabel: { font: "Archivo Narrow", size: land ? 32 : 30, weight: 600, colour: "structure", tracking: "0.04em", maxLines: 2, maxCharsPerLine: land ? 14 : 12 },
+    };
+    const P = base(o, "waterfall-" + n + "s", roles);
+    P.meta.family = "figures";
+    P.meta.steps = n;
+    const u = unitOf(h);
+    const L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 88 : 196, (R - L) * 0.7, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.72, land ? 88 : 196, (R - L) * 0.28, blockH(roles.kicker, 1), { align: "right", role: "unit" });
+
+    // The column grid. n steps plus the two ends, one baseline under all of them.
+    const cols = n + 2;
+    const top = land ? 210 : 330;
+    const labelH = blockH(roles.stepLabel, 2) + u;
+    const figH = blockH(roles.end, 1);
+    const capH = blockH(roles.caption, 1);
+    const baseY = h - (land ? 150 : 230) - capH - labelH - u;
+    const plotH = baseY - top - figH - u;
+    const gut = (R - L) / cols;
+    // Bars take three-quarters of their column, so the gap between them is the
+    // quarter — enough to read as separate quantities rather than a filled block.
+    const barW = Math.round(gut * 0.74);
+    const colX = (i) => Math.round(L + gut * i + (gut - barW) / 2);
+
+    // THE BASELINE IS THE ONE DRAWN MEASUREMENT REFERENCE ON THIS PLATE, and it
+    // is pinned: every bar is read against it. §1.5's rule at the point it costs
+    // something.
+    H.pin(function () {
+      P.inkAdd(H.line(L - u, baseY, R + u, baseY - 3, { stroke: p.structure, width: 5.2, opacity: 0.92, amp: 3.2, over: 13, seed: 301 }));
+    });
+
+    // Connector stubs: horizontal, one between each pair of columns, at no
+    // particular height — series.waterfall raises each to the top of the step it
+    // leaves. Drawn faint so an unfilled plate still shows the chain.
+    for (let i = 0; i < cols - 1; i++) {
+      const x2 = colX(i) + barW, x3 = colX(i + 1);
+      leader(P, x2, x3, baseY - Math.round(plotH * 0.44), 320 + i * 11, 0.2);
+    }
+
+    P.slot("bridge", L, top + figH + u, R - L, plotH, {
+      role: "bridge", region: true, renderer: "series.waterfall", steps: n, columns: cols,
+      note: "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
+    });
+    P.meta.columns = [];
+    for (let i = 0; i < cols; i++) P.meta.columns.push({ x: colX(i), w: barW, role: i === 0 ? "total" : i === cols - 1 ? "remainder" : "step-" + i });
+
+    // Figures ABOVE the plot for the two ends, labels BELOW for everything.
+    // A step's own figure sits with its label, because a number floating over a
+    // bar whose height the plate does not know can collide with the bar.
+    // THE END FIGURES ARE NOT CONSTRAINED TO THEIR COLUMN, and this is a fix the
+    // two-workbook check earned. At five steps in portrait a column is ~130 units
+    // wide, which will not hold a five-digit figure at end weight — the first cut
+    // put "7,410" in a box that fitted "7,41". The two end values are the pair the
+    // viewer is asked to hold, they sit above the plot where there is nothing else,
+    // and the first and last columns are at the two edges anyway: so they get half
+    // the plate each and align outward. Nothing about that depends on step count,
+    // which is the property that was missing.
+    P.slot("total", L, top, (R - L) * 0.46, figH, { align: "left", role: "end" });
+    P.slot("remainder", L + (R - L) * 0.54, top, (R - L) * 0.46, figH, { align: "right", role: "end" });
+    P.slot("total-label", colX(0) - Math.round(gut * 0.2), baseY + u, barW + Math.round(gut * 0.4), labelH, { align: "center", role: "endLabel" });
+    P.slot("remainder-label", colX(cols - 1) - Math.round(gut * 0.2), baseY + u, barW + Math.round(gut * 0.4), labelH, { align: "center", role: "endLabel" });
+    for (let i = 1; i <= n; i++) {
+      const x = colX(i) - Math.round(gut * 0.13), cw = barW + Math.round(gut * 0.26);
+      P.slot(`step-${i}`, x, baseY + Math.round(u * 0.3), cw, blockH(roles.step, 1), { align: "center", role: "step" });
+      P.slot(`label-${i}`, x, baseY + Math.round(u * 0.3) + blockH(roles.step, 1), cw, labelH - Math.round(u * 0.3), { align: "center", role: "stepLabel" });
+    }
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, capH, { align: "left", role: "caption" });
+    return P;
+  }
+
+  // ---------------- what has to be true ----------------
+  // §2.2. The price as a DEMAND rather than as a number: at this multiple the
+  // market needs this much growth for this long — and here is what the company
+  // has actually managed, beside it, on the same axis.
+  //
+  // The whole argument is the COMPARISON, and specifically whether the marker
+  // sits inside the band or outside it. So the two live on one axis and the axis
+  // is drawn: its extent is what makes "outside" mean anything, and it is true
+  // before any value arrives.
+  //
+  // The band and the marker are regions for the reason every other data region
+  // in this kit is one — the plate cannot know a growth rate. But they are two
+  // regions rather than one, because they have different failure modes: a band
+  // wider than the axis is a legitimate reading that the renderer clamps and
+  // marks, and a marker outside the axis is the most important thing the plate
+  // can ever say and must never be silently dropped.
+  //
+  // Fixed shape, no count variants: there is one demand and one history. A
+  // second band would be a different argument and a different plate.
+  function impliedPlate(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      // The statement IS the plate. It is the sentence the marker is evidence
+      // for, and it is set at headline weight because on a 9:16 phone it is what
+      // survives when the axis is small.
+      statement: { font: "Archivo Narrow", size: land ? 62 : 54, weight: 700, colour: "structure", tracking: "-.01em", maxLines: 3, maxCharsPerLine: land ? 30 : 22 },
+      demand: { font: "Courier Prime", size: land ? 58 : 50, weight: 700, colour: "structure", maxChars: 7 },
+      band: { font: "Courier Prime", size: land ? 30 : 28, weight: 700, colour: "otherParty", maxChars: 7 },
+      axis: { font: "Courier Prime", size: land ? 26 : 25, weight: 400, colour: "structure", opacity: 0.7, maxChars: 7 },
+      tag: { font: "Archivo Narrow", size: land ? 27 : 26, weight: 600, colour: "structure", opacity: 0.74, tracking: "0.06em", maxChars: land ? 24 : 18 },
+    };
+    const P = base(o, "implied", roles);
+    P.meta.family = "structure";
+    const u = unitOf(h);
+    const L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 88 : 190, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+
+    // The axis. Landscape puts it right of the statement and runs it vertically —
+    // growth over time reads as height, and a horizontal axis beside a
+    // left-aligned sentence would fight the sentence for the same eye-line.
+    // Portrait puts it under the statement and runs it horizontally, because a
+    // vertical axis on a phone leaves the band a few pixels wide.
+    const vert = land;
+    let ax;
+    if (vert) {
+      const x = Math.round(L + (R - L) * 0.72);
+      const y0 = Math.round(h * 0.2), y1 = Math.round(h * 0.78);
+      ax = { x0: x, y0: y0, x1: x, y1: y1, len: y1 - y0 };
+      // PINNED: the band and the marker are both read off this line.
+      H.pin(function () { P.inkAdd(H.line(x, y0 - u, x, y1 + u, { stroke: p.structure, width: 4.4, opacity: 0.9, amp: 2.8, over: 12, seed: 401 })); });
+      P.slot("axis-high", x + u * 2, y0 - Math.round(blockH(roles.axis, 1) * 0.5), R - x - u * 2, blockH(roles.axis, 1), { align: "left", role: "axis" });
+      P.slot("axis-low", x + u * 2, y1 - Math.round(blockH(roles.axis, 1) * 0.5), R - x - u * 2, blockH(roles.axis, 1), { align: "left", role: "axis" });
+      P.slot("band", x - Math.round(u * 3.4), y0, Math.round(u * 2.6), y1 - y0, {
+        role: "band", region: true, renderer: "series.historyBand", axis: "vertical",
+        note: "the company's own range, from history-low and history-high as fractions of the axis. Drawn as a band on the axis, not as a bar from zero: it is an extent, and a bar would claim a baseline the plate does not have.",
+      });
+      P.slot("marker", x + Math.round(u * 0.6), y0, Math.round(u * 5), y1 - y0, {
+        role: "marker", region: true, renderer: "series.axisMark", axis: "vertical",
+        note: "the demand, at one position on the same axis. A value outside 0-1 means the market is asking for something outside the company's own history in the direction of the overshoot — clamp to the end and MARK it. Dropping it silently removes the only claim the plate makes.",
+      });
+    } else {
+      const y = Math.round(h * 0.6);
+      const x0 = L, x1 = R;
+      ax = { x0: x0, y0: y, x1: x1, y1: y, len: x1 - x0 };
+      // PINNED, same as the landscape axis.
+      H.pin(function () { P.inkAdd(H.line(x0 - u, y, x1 + u, y - 3, { stroke: p.structure, width: 4.4, opacity: 0.9, amp: 2.8, over: 12, seed: 401 })); });
+      P.slot("axis-low", x0, y + u * 2, (x1 - x0) * 0.4, blockH(roles.axis, 1), { align: "left", role: "axis" });
+      P.slot("axis-high", x0 + (x1 - x0) * 0.6, y + u * 2, (x1 - x0) * 0.4, blockH(roles.axis, 1), { align: "right", role: "axis" });
+      P.slot("band", x0, y + Math.round(u * 0.8), x1 - x0, Math.round(u * 2.6), {
+        role: "band", region: true, renderer: "series.historyBand", axis: "horizontal",
+        note: "the company's own range, from history-low and history-high as fractions of the axis. Drawn as a band on the axis, not as a bar from zero: it is an extent, and a bar would claim a baseline the plate does not have.",
+      });
+      P.slot("marker", x0, y - Math.round(u * 5.6), x1 - x0, Math.round(u * 5), {
+        role: "marker", region: true, renderer: "series.axisMark", axis: "horizontal",
+        note: "the demand, at one position on the same axis. A value outside 0-1 means the market is asking for something outside the company's own history in the direction of the overshoot — clamp to the end and MARK it. Dropping it silently removes the only claim the plate makes.",
+      });
+    }
+    P.meta.axis = { x0: ax.x0, y0: ax.y0, x1: ax.x1, y1: ax.y1, orientation: vert ? "vertical" : "horizontal", note: "one axis, both regions on it. The band and the marker MUST share this scale or the comparison is a lie — which is why the geometry is published here rather than measured twice." };
+
+    // A STACK, MEASURED, rather than three fractions of the height that happen not
+    // to collide on one aspect. The first cut put the demand figure at 0.2h and the
+    // statement at 0.16h with three lines to run into it, and at three lines they
+    // overlapped — on the landscape plate, with the sample text, visibly. Stacking
+    // off the measured block heights means a two-line statement and a three-line
+    // one both work, which is what maxLines is for.
+    let sy = land ? 160 : 270;
+    const colW = land ? (R - L) * 0.52 : R - L;
+    P.slot("statement", L, sy, colW, blockH(roles.statement, 3), { align: "left", role: "statement" });
+    sy += blockH(roles.statement, 3) + u * 2;
+    P.slot("demand", L, sy, colW, blockH(roles.demand, 1), { align: "left", role: "demand" });
+    sy += blockH(roles.demand, 1);
+    P.slot("demand-label", L, sy, colW, blockH(roles.tag, 1), { align: "left", role: "tag" });
+    sy += blockH(roles.tag, 1) + u * 2;
+    P.slot("history-low", L, sy, colW * 0.46, blockH(roles.band, 1), { align: "left", role: "band" });
+    P.slot("history-high", L + colW * 0.5, sy, colW * 0.46, blockH(roles.band, 1), { align: "left", role: "band" });
+    sy += blockH(roles.band, 1);
+    P.slot("history-label", L, sy, colW, blockH(roles.tag, 1), { align: "left", role: "tag" });
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    return P;
+  }
+
+  // ---------------- part of a whole: one bar that divides ----------------
+  // §2.6 share-of, §2.12 ownership, §2.14 by-region — ONE AUTHOR.
+  //
+  // All three are the same picture: a single bar, divided, labelled. What differs
+  // is the count and what the segments MEAN, which lives in the key and the
+  // manifest rather than in the geometry. Same call as the six-period charts, and
+  // for the same reason: a shared drawing with different meaning is a family.
+  //
+  // §2.14 is deliberately a bar and not a map. The argument is the PROPORTION,
+  // not the geography — a map is a different and much larger problem, and it
+  // would put Kansas and Karnataka on the same visual footing as their revenue.
+  //
+  // The segments are ONE region, not n regions. A part-of-a-whole divides a fixed
+  // length: if each segment were its own box the renderer could produce a set that
+  // does not sum to the bar, which is the one thing this plate must never show.
+  function proportionBar(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.segments, kind = o.kind;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      headline: { font: "Archivo Narrow", size: land ? 58 : 50, weight: 700, colour: "structure", tracking: "-.01em", maxLines: 2, maxCharsPerLine: land ? 34 : 24 },
+      segLabel: { font: "Archivo Narrow", size: land ? 30 : 27, weight: 600, colour: "structure", maxLines: 2, maxCharsPerLine: land ? 18 : 14 },
+      segValue: { font: "Courier Prime", size: land ? 46 : 40, weight: 700, colour: "structure", maxChars: 6 },
+    };
+    const P = base(o, kind + "-" + n, roles);
+    P.meta.family = kind === "ownership" ? "figures" : "figures";
+    P.meta.segments = n;
+    P.meta.kind = kind;
+    const u = unitOf(h), L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    P.slot("headline", L, land ? 156 : 272, land ? (R - L) * 0.8 : R - L, blockH(roles.headline, 2), { align: "left", role: "headline" });
+    const barY = Math.round(h * (land ? 0.44 : 0.42));
+    const barH = Math.round(h * (land ? 0.13 : 0.075));
+    field(P, L, barY, R - L, barH, 601, 0.34);
+    H.pin(function () {
+      P.inkAdd(H.outline(H.polyRect(L, barY, R - L, barH), { stroke: p.structure, width: 4.4, opacity: 0.92, amp: 3, over: 12, seed: 602 }));
+    });
+    P.slot("segments", L, barY, R - L, barH, {
+      role: "segments", region: true, renderer: "series.divide", count: n,
+      note: "ONE region, divided into " + n + " by the renderer from " + n + " values that sum to the whole. Not " + n + " boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
+    });
+    const colW = (R - L) / n;
+    for (let i = 1; i <= n; i++) {
+      const x = L + colW * (i - 1);
+      P.slot(`value-${i}`, x, barY + barH + u, colW - u, blockH(roles.segValue, 1), { align: "left", role: "segValue" });
+      P.slot(`label-${i}`, x, barY + barH + u + blockH(roles.segValue, 1), colW - u, blockH(roles.segLabel, 2), { align: "left", role: "segLabel" });
+      if (i > 1) H.pin(function () { P.inkAdd(H.line(x, barY - u * 0.6, x, barY + barH + u * 0.6, { stroke: p.structure, width: 2, opacity: 0.22, amp: 1.6, over: 4, seed: 610 + i })); });
+    }
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    if (kind === "ownership") {
+      P.meta.argument = "insider, institutional, and everyone else. Both figures are already in the workbook and 'management owns nought point four percent of this' had nowhere to land.";
+      P.meta.fixedCount = "three, and not a variant. A fourth slice is a different argument.";
+    }
+    if (kind === "by-region") {
+      P.meta.argument = "where the revenue actually comes from. Matters enormously for macro and tariff stories.";
+      P.meta.notAMap = "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue.";
+    }
+    if (kind === "share-of") {
+      P.meta.argument = "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half.";
+    }
+    return P;
+  }
+
+  // ---------------- distribution — §2.5 ----------------
+  // A histogram of the peer set with the subject marked in it. "22x earnings" is
+  // only cheap or expensive against a spread; peers/peer-strip gives a LIST, which
+  // is not a judgement.
+  function distribution(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const buckets = 7;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      axis: { font: "Courier Prime", size: land ? 26 : 24, weight: 400, colour: "structure", opacity: 0.7, maxChars: 8 },
+      marker: { font: "Archivo Narrow", size: land ? 34 : 30, weight: 700, colour: "structure", maxLines: 2, maxCharsPerLine: land ? 20 : 16 },
+      unit: { font: "Courier Prime", size: 26, weight: 400, colour: "structure", opacity: 0.72, tracking: "0.04em", maxChars: land ? 46 : 38 },
+    };
+    const P = base(o, "distribution", roles);
+    P.meta.family = "peers";
+    P.meta.buckets = buckets;
+    const u = unitOf(h), L = land ? 170 : 80, R = w - (land ? 170 : 80);
+    P.slot("kicker", L, land ? 92 : 200, (R - L) * 0.7, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.72, land ? 92 : 200, (R - L) * 0.28, blockH(roles.kicker, 1), { align: "right", role: "unit" });
+    const baseY = Math.round(h * (land ? 0.74 : 0.66));
+    const plotT = Math.round(h * (land ? 0.30 : 0.34));
+    H.pin(function () {
+      P.inkAdd(H.line(L - u, baseY, R + u, baseY - 3, { stroke: p.structure, width: 4.6, opacity: 0.92, amp: 3, over: 12, seed: 651 }));
+    });
+    const step = (R - L) / buckets, barW = step * 0.78;
+    for (let i = 1; i <= buckets; i++) {
+      const x = L + step * (i - 1) + (step - barW) / 2;
+      P.slot(`bucket-${i}`, Math.round(x), plotT, Math.round(barW), baseY - plotT, {
+        role: "bucket", region: true, growth: "up-from-baseline", baselineY: Math.round(baseY),
+        note: "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
+      });
+      H.pin(function () { P.inkAdd(H.line(x + barW / 2, baseY, x + barW / 2, baseY + u * 0.7, { stroke: p.structure, width: 2.2, opacity: 0.6, amp: 1.1, seed: 660 + i })); });
+    }
+    P.slot("marker", L, plotT - u * 2, R - L, baseY - plotT + u * 2, {
+      role: "marker", region: true, renderer: "series.axisMark", axis: "horizontal",
+      note: "the SUBJECT's position on the same axis as the buckets, 0 at axis-low and 1 at axis-high. This is the whole plate: a spread without the subject in it is a statistic, and the subject without the spread is a number. A position outside 0-1 means the subject is off the peer range — clamp to the end and MARK it, never drop it.",
+    });
+    P.slot("marker-label", L, plotT - u * 2 - blockH(roles.marker, 2), (R - L) * 0.5, blockH(roles.marker, 2), { align: "left", role: "marker" });
+    P.slot("axis-low", L, baseY + u * 1.6, (R - L) * 0.4, blockH(roles.axis, 1), { align: "left", role: "axis" });
+    P.slot("axis-high", L + (R - L) * 0.6, baseY + u * 1.6, (R - L) * 0.4, blockH(roles.axis, 1), { align: "right", role: "axis" });
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.axisNote = "the buckets and the marker share one horizontal scale, published here. Two scales would put the subject in the wrong bucket, which is a lie the plate would tell silently.";
+    return P;
+  }
+
+  // ---------------- scale — §2.7 ----------------
+  // A large figure with one or two human-sized things beside it, to the same
+  // scale. "$1.28B in cash" is a noise; next to a year of operating expense it
+  // becomes "they can afford to be wrong for eight years."
+  function scaleFig(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const refs = o.refs;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      anchorLabel: { font: "Archivo Narrow", size: land ? 34 : 30, weight: 700, colour: "structure", maxLines: 2, maxCharsPerLine: land ? 22 : 18 },
+      refLabel: { font: "Archivo Narrow", size: land ? 28 : 26, weight: 600, colour: "structure", opacity: 0.88, maxLines: 2, maxCharsPerLine: land ? 20 : 16 },
+    };
+    const P = base(o, "scale-" + refs, roles);
+    P.meta.family = "figures";
+    P.meta.refs = refs;
+    const u = unitOf(h), L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    const baseY = Math.round(h * (land ? 0.78 : 0.70));
+    const plotT = Math.round(h * (land ? 0.22 : 0.28));
+    H.pin(function () {
+      P.inkAdd(H.line(L - u, baseY, R + u, baseY - 3, { stroke: p.structure, width: 4.6, opacity: 0.92, amp: 3, over: 12, seed: 671 }));
+    });
+    const cols = refs + 1, gut = (R - L) / cols, colW = Math.round(gut * 0.72);
+    const cx = (i) => Math.round(L + gut * i + (gut - colW) / 2);
+    P.slot("anchor", cx(0), plotT, colW, baseY - plotT, {
+      role: "anchor", region: true, growth: "up-from-baseline", baselineY: Math.round(baseY),
+      note: "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate.",
+    });
+    P.slot("anchor-label", cx(0) - Math.round(gut * 0.1), baseY + u, colW + Math.round(gut * 0.2), blockH(roles.anchorLabel, 2), { align: "left", role: "anchorLabel" });
+    for (let i = 1; i <= refs; i++) {
+      P.slot(`ref-${i}`, cx(i), plotT, colW, baseY - plotT, {
+        role: "ref", region: true, growth: "up-from-baseline", baselineY: Math.round(baseY),
+        note: "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
+      });
+      P.slot(`ref-label-${i}`, cx(i) - Math.round(gut * 0.1), baseY + u, colW + Math.round(gut * 0.2), blockH(roles.refLabel, 2), { align: "left", role: "refLabel" });
+    }
+    P.meta.columns = [];
+    for (let i = 0; i < cols; i++) P.meta.columns.push({ x: cx(i), w: colW, role: i ? "ref-" + i : "anchor" });
+    P.meta.scaleNote = "ONE scale across every column, and the renderer must not normalise each to its own height. The whole argument is that the reference is small next to the anchor — rescaling them to fill the plot destroys it and would look tidier, which is how it would get done by accident.";
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    return P;
+  }
+
+  // ---------------- the receipt — §2.8 ----------------
+  // Costs as a till roll, torn at the bottom edge. Tactile, faintly funny, and it
+  // turns an income statement into an OBJECT rather than a table.
+  function receipt(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const lines = o.lines;
+    const roles = {
+      kicker: TR.kicker,
+      head: { font: "Courier Prime", size: land ? 34 : 30, weight: 700, colour: "structure", tracking: "0.08em", maxChars: 22 },
+      item: { font: "Courier Prime", size: land ? 27 : 25, weight: 400, colour: "structure", maxChars: 22 },
+      itemBold: { font: "Courier Prime", size: land ? 27 : 25, weight: 700, colour: "structure", maxChars: 22 },
+      amount: { font: "Courier Prime", size: land ? 27 : 25, weight: 700, colour: "structure", maxChars: 10 },
+      total: { font: "Courier Prime", size: land ? 38 : 34, weight: 700, colour: "structure", maxChars: 10 },
+      foot: { font: "Courier Prime", size: 22, weight: 400, colour: "structure", opacity: 0.7, maxChars: 30 },
+    };
+    const P = base(o, "receipt-" + lines, roles);
+    P.meta.family = "paper";
+    P.meta.lines = lines;
+    const u = unitOf(h);
+    // The roll is a fixed narrow column whatever the aspect — a till roll that
+    // fills a 16:9 frame is a poster, not a receipt.
+    const rollW = Math.round(land ? h * 0.46 : w * 0.62);
+    const x = Math.round((w - rollW) / 2);
+    const top = Math.round(h * (land ? 0.10 : 0.16));
+    const rowH = Math.round(u * 2.5);
+    const bodyTop = top + Math.round(u * 5.5);
+    const bot = bodyTop + rowH * lines + Math.round(u * 6);
+    // the roll itself
+    P.colourAdd(H.breathe(function () {
+      return H.hatch(H.polyRect(x, top, rollW, bot - top), { color: p.ground2, opacity: 0.3, gap: 7, width: 11, angle: -2, over: 14, seed: 681 });
+    }));
+    P.inkAdd(H.breathe(function () {
+      return H.stroke([{ x: x, y: top }, { x: x, y: bot }], { stroke: p.structure, width: 2.6, opacity: 0.5, amp: 2.4, over: 5, seed: 682 });
+    }));
+    P.inkAdd(H.breathe(function () {
+      return H.stroke([{ x: x + rollW, y: top }, { x: x + rollW, y: bot }], { stroke: p.structure, width: 2.6, opacity: 0.5, amp: 2.4, over: 5, seed: 683 });
+    }));
+    // THE TORN EDGE. Drawn, not a slot: a tear is the object, not the data.
+    const teeth = 18, tw = rollW / teeth, pts = [];
+    for (let i = 0; i <= teeth; i++) pts.push({ x: x + tw * i, y: bot + (i % 2 ? u * 0.55 : -u * 0.2) });
+    P.inkAdd(H.breathe(function () {
+      return H.stroke(pts, { stroke: p.structure, width: 2.8, opacity: 0.72, amp: 1.8, over: 4, seed: 684 });
+    }));
+    // THE KICKER BELONGS TO THE PLATE, NOT TO THE ROLL.
+    //
+    // It was given the roll's width, which is ~497 canvas units on a 16:9 plate —
+    // and a kicker at 28px Courier needs roughly 670 to hold the length the role
+    // declares. So a normal-length kicker wrapped to two lines in a one-line box.
+    // Found by the §0.3 pass with real words in it; invisible with short ones,
+    // which is exactly why that pass exists.
+    //
+    // The roll is narrow because a till roll that fills the frame is a poster. The
+    // kicker has no such constraint: it is a label for the plate, there is empty
+    // ground either side of the roll, and it takes the full text column.
+    const kickL = land ? 150 : 72;
+    P.slot("kicker", kickL, top - u * 2.4, w - kickL * 2, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    P.slot("head", x + u, top + u, rollW - u * 2, blockH(roles.head, 1), { align: "center", role: "head" });
+    P.slot("takings", x + u, top + u + blockH(roles.head, 1) + u * 0.4, rollW - u * 2, blockH(roles.amount, 1), { align: "center", role: "amount" });
+    leader(P, x + u, x + rollW - u, bodyTop - u * 0.8, 690, 0.3);
+    for (let i = 1; i <= lines; i++) {
+      const y = bodyTop + rowH * (i - 1);
+      P.slot(`label-${i}`, x + u, y, rollW * 0.6 - u, rowH - 4, { align: "left", role: "item" });
+      P.slot(`line-${i}`, x + rollW * 0.6, y, rollW * 0.4 - u, rowH - 4, { align: "right", role: "amount" });
+    }
+    const ly = bodyTop + rowH * lines;
+    H.pin(function () { P.inkAdd(H.line(x + u, ly + u * 0.6, x + rollW - u, ly + u * 0.5, { stroke: p.structure, width: 3, opacity: 0.7, amp: 2, over: 6, seed: 692 })); });
+    P.slot("left", x + u, ly + u * 1.4, rollW - u * 2, blockH(roles.total, 1), { align: "right", role: "total" });
+    P.slot("footnote", x + u, ly + u * 1.4 + blockH(roles.total, 1), rollW - u * 2, blockH(roles.foot, 1), { align: "center", role: "foot" });
+    P.meta.highlight = {
+      slot: "highlight-index",
+      note: "1-based index of the line that is the point, or 0 for none. The bot sets it and the renderer sets THAT line in the itemBold role — one plate, not a second plate per highlightable line. A highlight is a weight change, never a colour: the receipt has no direction in it.",
+      roles: ["item", "itemBold"],
+    };
+    P.slot("highlight-index", x, ly, 0, 0, { role: "control", region: true, note: "not drawn. See meta.highlight." });
+    return P;
+  }
+
+  // ---------------- two-track timeline — §2.9 ----------------
+  // What they said along the top rail, what happened along the bottom, and a mark
+  // where the two diverge. structure/timeline has ONE rail; a contradiction needs
+  // two, and putting the second one underneath is what makes the gap legible as a
+  // gap rather than as a longer list.
+  function saidHappened(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.events;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      date: { font: "Courier Prime", size: land ? 28 : 25, weight: 700, colour: "structure", maxChars: 8 },
+      said: { font: "Archivo Narrow", size: land ? 28 : 25, weight: 600, colour: "otherParty", maxLines: 3, maxCharsPerLine: land ? 24 : 20 },
+      happened: { font: "Archivo Narrow", size: land ? 28 : 25, weight: 600, colour: "structure", maxLines: 3, maxCharsPerLine: land ? 24 : 20 },
+      rail: { font: "Archivo Narrow", size: land ? 26 : 24, weight: 700, colour: "structure", opacity: 0.7, tracking: "0.08em", maxChars: 16 },
+    };
+    const P = base(o, "said-happened-" + n, roles);
+    P.meta.family = "structure";
+    P.meta.events = n;
+    const u = unitOf(h), L = land ? 200 : 80, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    const midY = Math.round(h * (land ? 0.5 : 0.46));
+    const gap = Math.round(h * (land ? 0.12 : 0.09));
+    const saidY = midY - gap, hapY = midY + gap;
+    // Two rails. PINNED: they are the time axis, and an event is read off them.
+    H.pin(function () {
+      P.inkAdd(H.line(L, saidY, R, saidY - 3, { stroke: p.structure, width: 3.6, opacity: 0.62, amp: 2.6, over: 10, seed: 701 }));
+      P.inkAdd(H.line(L, hapY, R, hapY - 3, { stroke: p.structure, width: 4.6, opacity: 0.92, amp: 3, over: 12, seed: 702 }));
+    });
+    P.slot("rail-said", L - (land ? 180 : 76), saidY - blockH(roles.rail, 1) / 2, land ? 160 : 70, blockH(roles.rail, 1), { align: "right", role: "rail" });
+    P.slot("rail-happened", L - (land ? 180 : 76), hapY - blockH(roles.rail, 1) / 2, land ? 160 : 70, blockH(roles.rail, 1), { align: "right", role: "rail" });
+    const step = (R - L) / n, colW = Math.round(step * 0.88);
+    for (let i = 1; i <= n; i++) {
+      const cx = Math.round(L + step * (i - 0.5));
+      const x = cx - Math.round(colW / 2);
+      H.pin(function () {
+        P.inkAdd(H.outline(ellipse(cx, saidY, u * 0.5, u * 0.5, 10, 0.08, 710 + i), { stroke: p.structure, width: 2.6, opacity: 0.6, amp: 1.2, over: 3, seed: 712 + i }));
+        P.colourAdd(H.hatch(ellipse(cx, hapY, u * 0.55, u * 0.55, 10, 0.08, 720 + i), { color: p.structure, opacity: 0.8, gap: 3, width: 5, angle: -40, seed: 722 + i }));
+      });
+      P.slot(`date-${i}`, x, midY - blockH(roles.date, 1) / 2, colW, blockH(roles.date, 1), { align: "center", role: "date" });
+      P.slot(`said-${i}`, x, saidY - u * 1.2 - blockH(roles.said, 3), colW, blockH(roles.said, 3), { align: "center", role: "said" });
+      P.slot(`happened-${i}`, x, hapY + u * 1.2, colW, blockH(roles.happened, 3), { align: "center", role: "happened" });
+      P.slot(`diverge-${i}`, x, saidY, colW, hapY - saidY, {
+        role: "diverge", region: true, optional: true,
+        note: "set only where the two tracks CONTRADICT each other. The renderer draws the tie between the pair in `attention`. Leaving every one of them set would make the plate shout at every column and say nothing — the mark means something because it is rare.",
+      });
+    }
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.railNote = "the SAID rail is drawn lighter and its marks are hollow; the HAPPENED rail is heavier and its marks are filled. A claim and an outcome are not the same kind of fact and the plate should not draw them as though they were.";
+    return P;
+  }
+
+  // ---------------- sensitivity — §2.10 ----------------
+  // Three by three outcomes with the axes labelled and one cell markable. "Cheap
+  // only if the margin keeps climbing on eight percent growth" is a sentence in
+  // the sample script, and it is a picture.
+  function sensitivity(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      axisTitle: { font: "Archivo Narrow", size: land ? 27 : 25, weight: 700, colour: "structure", opacity: 0.72, tracking: "0.08em", maxChars: 20 },
+      head: { font: "Archivo Narrow", size: land ? 30 : 27, weight: 600, colour: "structure", maxChars: 8 },
+      cell: { font: "Courier Prime", size: land ? 44 : 36, weight: 700, colour: "structure", maxChars: 6 },
+    };
+    const P = base(o, "sensitivity", roles);
+    P.meta.family = "structure";
+    const u = unitOf(h), L = land ? 320 : 96, R = w - (land ? 220 : 72);
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    const gridT = Math.round(h * (land ? 0.28 : 0.34));
+    const gridB = Math.round(h * (land ? 0.80 : 0.70));
+    const cw = (R - L) / 3, ch = (gridB - gridT) / 3;
+    field(P, L, gridT, R - L, gridB - gridT, 731, 0.26);
+    // The grid lines are separators between cells, not a scale — nothing is
+    // measured off them, so they breathe.
+    for (let i = 0; i <= 3; i++) {
+      const gx = L + cw * i, gy = gridT + ch * i;
+      P.inkAdd(H.breathe(function () { return H.line(gx, gridT, gx, gridB, { stroke: p.structure, width: i === 0 || i === 3 ? 3.6 : 2, opacity: i === 0 || i === 3 ? 0.85 : 0.34, amp: 2.4, over: 8, seed: 740 + i }); }));
+      P.inkAdd(H.breathe(function () { return H.line(L, gy, R, gy, { stroke: p.structure, width: i === 0 || i === 3 ? 3.6 : 2, opacity: i === 0 || i === 3 ? 0.85 : 0.34, amp: 2.4, over: 8, seed: 750 + i }); }));
+    }
+    P.slot("col-axis", L, gridT - u * 3.2, R - L, blockH(roles.axisTitle, 1), { align: "center", role: "axisTitle" });
+    P.slot("row-axis", L - (land ? 300 : 92), gridT - u * 3.2, land ? 280 : 88, blockH(roles.axisTitle, 1), { align: "right", role: "axisTitle" });
+    for (let c = 1; c <= 3; c++) {
+      P.slot(`col-${c}`, L + cw * (c - 1), gridT - u * 1.6, cw, blockH(roles.head, 1), { align: "center", role: "head" });
+      P.slot(`row-${c}`, L - (land ? 300 : 92), gridT + ch * (c - 1) + ch / 2 - blockH(roles.head, 1) / 2, land ? 280 : 88, blockH(roles.head, 1), { align: "right", role: "head" });
+      for (let r = 1; r <= 3; r++) {
+        P.slot(`cell-${r}-${c}`, L + cw * (c - 1), gridT + ch * (r - 1) + ch / 2 - blockH(roles.cell, 1) / 2, cw, blockH(roles.cell, 1), { align: "center", role: "cell", region: true });
+      }
+    }
+    P.meta.mark = {
+      slots: ["mark-row", "mark-col"],
+      note: "1-3 each, or 0 for no mark. The renderer rings THAT cell in `attention`. Two integers rather than a marked cell slot, because the mark is a claim about which scenario the script is arguing for — it moves with the voice-over, and a plate per cell would be nine plates.",
+    };
+    // DROP TEN: declared as CONTROL CHANNELS rather than as zero-sized regions.
+    // Both carried region: true at 0x0 with "not drawn" in a note — and "not
+    // drawn" and "zero-sized" are different claims, of which the plate published
+    // the second. A renderer computing a fill area got zero, one scaling into the
+    // box divided by zero, and one trusting the note got no help. It reported
+    // success either way. These two slots carry two INTEGERS; x,y locate the grid
+    // they index and w/h are meaningless by design, which is now said in the
+    // field rather than implied by a zero.
+    const CTRL = { role: "control", region: true, control: true, drawn: false,
+      dimensionless: true, note: "A CONTROL CHANNEL, NOT AN AREA. Carries an integer 1-3 (or 0 for no mark) naming which row/column the script is arguing about; the renderer rings that cell in 'attention'. w and h are 0 because this slot has no extent — do not compute a fill area or a scale from it. x,y locate the grid it indexes. See meta.mark." };
+    P.slot("mark-row", L, gridT, 0, 0, CTRL);
+    P.slot("mark-col", L, gridT, 0, 0, CTRL);
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.gridNote = "three by three, fixed. A sensitivity table is read by SHAPE — where the outcome flips — and a grid whose dimensions change between chapters cannot be compared with the previous one.";
+    return P;
+  }
+
+  // ---------------- small multiples — §2.13 ----------------
+  // Four or six tiny charts in a grid, each with its own label and series. The
+  // "here is everything at once, and only one of them is moving" beat.
+  function multiplesGrid(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.cells;
+    const cols = land ? (n === 4 ? 4 : 3) : 2, rows = Math.ceil(n / cols);
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      tileLabel: { font: "Archivo Narrow", size: land ? 26 : 24, weight: 700, colour: "structure", maxLines: 2, maxCharsPerLine: land ? 16 : 14 },
+      tileValue: { font: "Courier Prime", size: land ? 30 : 28, weight: 700, colour: "structure", maxChars: 7 },
+    };
+    const P = base(o, "multiples-grid-" + n, roles);
+    P.meta.family = "charts";
+    P.meta.cells = n;
+    P.meta.grid = { cols: cols, rows: rows };
+    const u = unitOf(h), L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    const gridT = Math.round(h * (land ? 0.26 : 0.30));
+    const gridB = Math.round(h * (land ? 0.80 : 0.74));
+    const gx = (R - L) / cols, gy = (gridB - gridT) / rows;
+    const padX = Math.round(gx * 0.08), padY = Math.round(gy * 0.1);
+    P.meta.tiles = [];
+    for (let i = 1; i <= n; i++) {
+      const c = (i - 1) % cols, r = Math.floor((i - 1) / cols);
+      const x = Math.round(L + gx * c + padX), y = Math.round(gridT + gy * r + padY);
+      const tw = Math.round(gx - padX * 2), th = Math.round(gy - padY * 2);
+      const labH = blockH(roles.tileLabel, 2), valH = blockH(roles.tileValue, 1);
+      const plotY = y + labH + Math.round(u * 0.4), plotH = th - labH - valH - Math.round(u * 0.8);
+      P.slot(`label-${i}`, x, y, tw, labH, { align: "left", role: "tileLabel" });
+      P.slot(`value-${i}`, x, y + th - valH, tw, valH, { align: "left", role: "tileValue" });
+      P.slot(`series-${i}`, x, plotY, tw, plotH, {
+        role: "series", region: true, points: 6,
+        note: "six points, its own vertical scale. Each tile is a SHAPE, not a quantity — the reader is comparing whether one is rising while the others are flat, and forcing a shared scale would flatten every tile whose numbers are small.",
+      });
+      // NOT PINNED, and this is the one place in the pack where the rule pointed
+      // the other way from the instinct. A tile baseline looks like a chart axis,
+      // but this plate's own note says each tile is read as a SHAPE rather than a
+      // quantity — nobody reads a value off it. Pinning it would have contradicted
+      // the manifest one line below.
+      P.inkAdd(H.breathe(function () {
+        return H.line(x, plotY + plotH, x + tw, plotY + plotH - 2, { stroke: p.structure, width: 2.4, opacity: 0.6, amp: 1.8, over: 6, seed: 760 + i * 7 });
+      }));
+      P.meta.tiles.push({ i: i, x: x, y: plotY, w: tw, h: plotH });
+    }
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.scaleNote = "PER-TILE scales, deliberately, and it is the opposite of the rule on figures/scale. There the argument is relative size, so one scale; here the argument is relative SHAPE — which one is moving — so each tile gets its own. Publishing both notes is how the renderer is supposed to tell them apart.";
+    return P;
+  }
+
+  // ---------------- the whiteboard as a plate — §3.2 ----------------
+  // room/whiteboard-wall is a room he STANDS IN. This is a whiteboard where the
+  // diagram IS the content, drawn by the same hand that draws everything else —
+  // the most on-brand explainer surface the kit can have.
+  //
+  // Kept genuinely generic per the brief: three or four labelled nodes and their
+  // links, not a pre-drawn diagram of one idea. The boxes and the connectors are
+  // drawn because a diagram's SHAPE is structural — which things connect to which
+  // is the argument's skeleton and is true before any label arrives — and every
+  // word in it is a slot.
+  //
+  // The links are authored as a fixed spine: 1→2→3(→4) left to right, with the
+  // last node also tied back to the first when there are four. That is the shape
+  // nearly every explainer diagram on this channel actually has, and a plate that
+  // let the bot choose arbitrary edges would need an edge-routing renderer, which
+  // is a different and much larger problem — the same call as §2.14's map.
+  function whiteboard(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.nodes;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      node: { font: "Archivo Narrow", size: land ? 40 : 34, weight: 700, colour: "structure", maxLines: 2, maxCharsPerLine: land ? 14 : 12 },
+      link: { font: "Archivo Narrow", size: land ? 26 : 24, weight: 600, colour: "structure", opacity: 0.8, maxLines: 2, maxCharsPerLine: land ? 16 : 13 },
+      title: { font: "Archivo Narrow", size: land ? 54 : 46, weight: 700, colour: "structure", tracking: "-.01em", maxLines: 2, maxCharsPerLine: land ? 30 : 22 },
+    };
+    const P = base(o, "whiteboard-" + n, roles);
+    P.meta.family = "structure";
+    P.meta.nodes = n;
+    const u = unitOf(h), k = land ? w / 1920 : w / 1080;
+    const S = inkScale(k);
+    const L = land ? 140 : 64, R = w - (land ? 140 : 64);
+    // THE BOARD. A whiteboard is a pale panel with a tray and old ghost-erase
+    // smears — the smears are what stop it reading as a blank rectangle, and they
+    // are texture, so they breathe.
+    const bT = Math.round(h * (land ? 0.17 : 0.22)), bB = Math.round(h * (land ? 0.86 : 0.80));
+    P.colourAdd(H.breathe(function () {
+      return S.hatch(H.polyRect(L - u, bT, R - L + u * 2, bB - bT), { color: p.ground2, opacity: 0.22, gap: 11, width: 16, angle: -2, over: 22, seed: 1101 });
+    }));
+    P.inkAdd(H.breathe(function () {
+      return S.outline(H.polyRect(L - u, bT, R - L + u * 2, bB - bT), { stroke: p.structure, width: 4, opacity: 0.6, amp: 3.2, over: 12, seed: 1102 });
+    }));
+    for (let i = 0; i < 3; i++) {
+      P.colourAdd(H.breathe(function () {
+        return S.hatch(ellipse(L + (R - L) * (0.2 + i * 0.31), bT + (bB - bT) * (0.26 + (i % 2) * 0.44), (R - L) * 0.12, (bB - bT) * 0.11, 14, 0.16, 1110 + i * 7), { color: p.ground2, opacity: 0.2, gap: 6, width: 10, angle: -22 + i * 14, over: 9, seed: 1114 + i });
+      }));
+    }
+    // the tray, and a pen on it
+    P.inkAdd(H.breathe(function () {
+      return S.line(L - u, bB + u * 0.5, R + u, bB + u * 0.42, { stroke: p.structure, width: 5, opacity: 0.7, amp: 2.6, over: 9, seed: 1120 });
+    }));
+    P.inkAdd(H.breathe(function () {
+      return S.line(L + (R - L) * 0.62, bB + u * 0.22, L + (R - L) * 0.73, bB + u * 0.2, { stroke: p.structure, width: 7, opacity: 0.8, amp: 1.6, over: 4, seed: 1121 });
+    }));
+
+    P.slot("kicker", L, bT - u * 2.6, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+    P.slot("title", L + u, bT + u * 1.1, (R - L) * 0.72, blockH(roles.title, 2), { align: "left", role: "title" });
+
+    // Nodes on one rail in landscape, stacked in portrait. A left-to-right chain
+    // has no portrait form at four boxes wide, so 9:16 is a re-author down the
+    // frame rather than the same row squeezed.
+    const rowY = bT + (bB - bT) * 0.62;
+    const boxW = land ? Math.round((R - L) / n * 0.72) : Math.round((R - L) * 0.6);
+    const boxH = Math.round(land ? boxW * 0.52 : (bB - bT) * 0.13);
+    const pos = [];
+    for (let i = 0; i < n; i++) {
+      if (land) pos.push({ x: Math.round(L + ((R - L) / n) * (i + 0.5) - boxW / 2), y: Math.round(rowY - boxH / 2 + (i % 2 ? u * 1.6 : -u * 1.6)) });
+      else pos.push({ x: Math.round(L + (R - L) * (i % 2 ? 0.34 : 0.04)), y: Math.round(bT + (bB - bT) * (0.30 + i * (0.56 / Math.max(1, n - 1))) - boxH / 2) });
+    }
+    pos.forEach(function (q2, i) {
+      P.colourAdd(H.hatch(H.polyRect(q2.x, q2.y, boxW, boxH), { color: p.ground, opacity: 0.92, gap: 8, width: 13, angle: -3, over: 14, seed: 1130 + i * 5 }));
+      P.inkAdd(H.breathe(function () {
+        return S.outline(H.polyRect(q2.x, q2.y, boxW, boxH), { stroke: p.structure, width: 4.6, opacity: 0.94, amp: 3.4, over: 13, seed: 1136 + i * 5 });
+      }));
+      P.slot(`node-${i + 1}`, q2.x + u * 0.6, q2.y + boxH * 0.5 - blockH(roles.node, 2) / 2, boxW - u * 1.2, blockH(roles.node, 2), { align: "center", role: "node" });
+    });
+    // the links, and a label slot on each
+    P.meta.links = [];
+    for (let i = 0; i < n - 1; i++) {
+      const a = pos[i], b = pos[i + 1];
+      const ax = land ? a.x + boxW : a.x + boxW * 0.5, ay = land ? a.y + boxH * 0.5 : a.y + boxH;
+      const bx = land ? b.x : b.x + boxW * 0.5, by = land ? b.y + boxH * 0.5 : b.y;
+      P.inkAdd(H.breathe(function () {
+        return S.stroke([{ x: ax, y: ay }, { x: (ax + bx) / 2, y: (ay + by) / 2 }, { x: bx, y: by }], { stroke: p.structure, width: 3.6, opacity: 0.85, amp: 2.8, over: 7, seed: 1150 + i * 4 });
+      }));
+      // the head, drawn: an arrow means direction and direction is structure
+      const dx = bx - ax, dy = by - ay, dl = Math.hypot(dx, dy) || 1;
+      const hx = bx - (dx / dl) * u * 0.9, hy = by - (dy / dl) * u * 0.9;
+      P.inkAdd(H.breathe(function () {
+        return S.stroke([
+          { x: hx - (dy / dl) * u * 0.5, y: hy + (dx / dl) * u * 0.5 },
+          { x: bx, y: by },
+          { x: hx + (dy / dl) * u * 0.5, y: hy - (dx / dl) * u * 0.5 },
+        ], { stroke: p.structure, width: 3.6, opacity: 0.85, amp: 1.6, over: 3, seed: 1156 + i * 4 });
+      }));
+      const lw2 = Math.round(Math.abs(land ? bx - ax : boxW) * 0.9) || Math.round(u * 8);
+      P.slot(`link-${i + 1}`, Math.round((ax + bx) / 2 - lw2 / 2), Math.round((ay + by) / 2 - blockH(roles.link, 2) - u * 0.4), lw2, blockH(roles.link, 2), { align: "center", role: "link" });
+      P.meta.links.push({ from: i + 1, to: i + 2, label: "link-" + (i + 1) });
+    }
+    P.slot("caption", L, h - (land ? 92 : 150), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    P.meta.shapeNote = "a fixed spine: node 1 to 2 to 3 (to 4), left to right in 16:9 and down the frame in 9:16. Arbitrary edges would need an edge-routing renderer, which is a different and much larger problem — the same call as §2.14 being a bar rather than a map. If a script needs a shape this cannot draw, that is a new plate, not an argument to this one.";
+    P.meta.genericNote = "nothing on it is a diagram of any particular idea. Three or four labelled boxes and their links, every word a slot.";
+    return P;
+  }
+
   // ---------------- charts ----------------
   // Axes, ticks, gridlines and frame are drawn. Code draws only the data path
   // inside plot-area. Every column/point gets its own slot.
-  function chartFrame(o) {
+  // One callout instead of a row of figures that will not fit. Not a fallback
+  // with a shrug: the last quarter is the one the script is talking about, and
+  // the other seven are a shape.
+  function valueCallout(P, x0, y0, x1, land) {
+    P.slot("value-last", x1 - (land ? 300 : 220), y0 - 50, land ? 300 : 220, 46, {
+      align: "right", role: "value",
+      note: "the latest period's figure, and the only one. Per-column values are not published at this column count in this aspect — the box measures under the six-character floor, and an over-budget fill does not render. Put the rest in the voice-over.",
+    });
+  }
+
+  // What a quarterly plate says about itself. The label SHAPE is the part a
+  // renderer gets wrong silently: "Q3'25" is five characters where "2025" is
+  // four, and a compositor that formats quarters as "Q3 2025" (seven) walks
+  // straight into the budget on the narrow aspects.
+  function quarterly(P, land, kind) {
+    P.meta.periods = "quarters";
+    P.meta.periodFormat = "Q3'25 — quarter, apostrophe, two-digit year. FIVE characters. Not 'Q3 2025' and not '2025 Q3': the head boxes are budgeted at this column count, and a seven-character label is an over-budget fill, which does not render at all.";
+    P.meta.argument = kind === "bars"
+      ? "eight quarters as columns. The sheet the pipeline now loads, at the count it loads it — two years of quarters, which is the shortest span in which a seasonal pattern is visible at all."
+      : "eight quarters as a path. Same data as bars-8q; the line is for when the shape between quarters is the point rather than the size of each one.";
+    P.meta.seasonalityWarning = "EIGHT QUARTERS IS TWO YEARS, so Q4 appears twice and so does Q1. A rise from Q3 to Q4 on this plate is not growth until it has been read against the other Q4 — which is figures/qoq-yoy's whole job. This plate does not make that comparison and must not be captioned as if it had.";
+    P.meta.seriesNote = "one series, subject colour. No up, no down: a quarter is not a verdict.";
+  }
+
+  // ---------------- §2.2 · the seasonality pair ----------------
+  /* figures/qoq-yoy — AN EDITORIAL INSTRUMENT, NOT A CHART.
+
+     A quarter can be read two ways and they routinely disagree: against the
+     previous quarter (is it moving?) and against the same quarter a year ago (is
+     it actually moving, or is this just what Q4 always looks like?). A retailer's
+     Q4 beats its Q3 every single year, and reporting that as growth is what this
+     channel exists to puncture.
+
+     So the plate presents BOTH comparisons at once, labelled, as a pair — and it
+     cannot present one. There is no slot on it for a blended growth figure, which
+     is the same kind of structural refusal as there being no way to emit a text
+     node: a rule nothing can accidentally break beats a rule everyone agrees with.
+
+     EQUAL WEIGHT IS GEOMETRY, NOT INTENT. The two cells come out of one
+     expression with only an offset differing, so they are congruent by
+     construction rather than by care, and preflight asserts it. If one read as
+     the headline and the other as a footnote, the plate would have taken a side
+     the data has not.
+
+     THE ARRANGEMENT DIFFERS BY ASPECT, and that is the one real decision here.
+     16:9 sets the cells side by side. 9:16 STACKS them: two 470-unit cells side
+     by side in portrait would force the delta type down two steps, and deltas
+     that small lose the pair its weight against the figure above — the same
+     failure from the other direction. Stacked congruent cells keep both. Reading
+     order is the nearer comparison first, which is as arbitrary as
+     left-before-right and no more so.
+
+     Sign-agnostic, for the reason waterfall is: a delta can be either sign, and
+     a plate that pre-colours one has argued ahead of the voice. */
+  function quarterPair(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption, unit: TR.detail,
+      // The quarter's own figure: the subject of the plate, and the only thing on
+      // it that is a quantity rather than a comparison.
+      // DROP EIGHT: portrait stepped 220 -> 190. At 220u the derived box held SEVEN
+      // characters and "$15.64bn" is eight, so the plate rendered blank where the
+      // quarter goes — an over-budget fill does not render. Two decimals in billions
+      // is what a real script writes, and render-scale.html §10 is where it was
+      // caught. The figure is still ~4x the delta beside it, which is the weighting
+      // the plate's argument needs; the delta is untouched.
+      figure: { font: "Courier Prime", size: 190, weight: 700, colour: "structure", maxChars: 7 },
+      // ONE role for both deltas. Two roles is how they stop being equal.
+      delta: { font: "Courier Prime", size: land ? 110 : 130, weight: 700, colour: "structure", maxChars: 7 },
+      deltaLabel: { font: "Archivo Narrow", size: land ? 34 : 36, weight: 600, colour: "structure", opacity: 0.88, tracking: "0.03em", maxLines: 2, maxCharsPerLine: land ? 18 : 22 },
+    };
+    const P = base(o, "qoq-yoy", roles);
+    P.meta.family = "figures";
+    const u = unitOf(h);
+    const L = land ? 150 : 72, R = w - (land ? 150 : 72);
+    const kickY = land ? 88 : 196, kickH = blockH(roles.kicker, 1);
+    P.slot("kicker", L, kickY, (R - L) * 0.66, kickH, { align: "left", role: "kicker" });
+    P.slot("unit", L + (R - L) * 0.68, kickY, (R - L) * 0.32, kickH, { align: "right", role: "unit" });
+
+    const figY = kickY + kickH + u * 2, figH = blockH(roles.figure, 1);
+    P.slot("figure", L, figY, R - L, figH, { align: "left", role: "figure" });
+
+    // The rule under the figure separates the quantity from the two readings of
+    // it, so it breathes. Nobody reads a value off it.
+    const ruleY = Math.round(figY + figH + u * 1.4);
+    P.inkAdd(H.breathe(function () {
+      return H.line(L, ruleY, R, ruleY - 2, { stroke: p.structure, width: 3.4, opacity: 0.5, amp: 2.4, over: 9, seed: 411 });
+    }));
+
+    const labH = blockH(roles.deltaLabel, 2), delH = blockH(roles.delta, 1);
+    const pad = Math.round(u * 1.2);
+    const cellH = pad * 2 + labH + Math.round(u * 0.8) + delH;
+    const gut = Math.round(u * (land ? 2.4 : 2.0));
+    const cellW = land ? Math.round((R - L - gut) / 2) : (R - L);
+    const top = Math.round(ruleY + u * 2.2);
+
+    // ONE expression, two cells.
+    const boxes = [];
+    ["qoq", "yoy"].forEach(function (nm, i) {
+      const cx = land ? L + i * (cellW + gut) : L;
+      const cy = land ? top : top + i * (cellH + gut);
+      boxes.push({ name: nm, x: Math.round(cx), y: Math.round(cy), w: cellW, h: cellH });
+      // The cell edge is furniture: it groups, it is not measured against.
+      P.inkAdd(H.breathe(function () {
+        return H.outline(H.polyRect(cx, cy, cellW, cellH), { stroke: p.structure, width: 3, opacity: 0.42, amp: 2.6, over: 10, seed: 420 + i * 17 });
+      }));
+      P.slot(nm + "-label", cx + pad, cy + pad, cellW - pad * 2, labH, { align: "center", role: "deltaLabel" });
+      P.slot(nm, cx + pad, cy + pad + labH + Math.round(u * 0.8), cellW - pad * 2, delH, { align: "center", role: "delta" });
+    });
+
+    P.slot("caption", L, h - (land ? 130 : 200), R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+
+    P.meta.pair = {
+      arrangement: land ? "side-by-side" : "stacked",
+      cells: boxes,
+      congruent: boxes[0].w === boxes[1].w && boxes[0].h === boxes[1].h,
+      typeRole: "both deltas are set in ONE role (delta) and both labels in ONE role (deltaLabel). Two roles is how a pair stops being a pair.",
+      note: land
+        ? "side by side, equal boxes, equal type. Neither position is the headline."
+        : "stacked, equal boxes, equal type. Side-by-side halves in 9:16 would force the deltas down two type steps, which costs the pair its weight against the figure — the same failure from the other direction. Order is the nearer comparison first, which is as arbitrary as left-before-right.",
+    };
+    P.meta.refusesSingleFigure = "THERE IS NO SLOT FOR A BLENDED GROWTH FIGURE, and that absence is the plate. A quarter read against the previous quarter and against the same quarter a year ago are two statements that routinely disagree; resolving them into one number is the failure this plate exists to prevent, not an output it declines to offer. A script that wants one growth number wants figures/big-number.";
+    P.meta.signAgnostic = "Neither delta carries direction. No colour, no arrow, no order preference, and the two cells are identical, so a fall and a rise are drawn the same. Sign comes from the value the compositor fills; the script decides what is bad. Same call as figures/waterfall.";
+    P.meta.labelContract = "the -label slots carry the BASIS, not a verdict: 'vs Q2 2025' and 'vs Q3 2024', or 'quarter on quarter' and 'year on year'. Two lines each, budgeted. A label reading 'growth' on one cell and 'seasonal' on the other breaks the pair as surely as a colour would.";
+    return P;
+  }
+
+  // ---------------- §2.3 · seasonality ----------------
+  /* charts/seasonality-{4,6}y — Q1 to Q4 across, one series per year.
+
+     Seasonality stops being an argument the script has to make and becomes a
+     shape on screen: four years of identical December humps is self-evident in a
+     way no sentence is.
+
+     Its own author rather than a chartFrame type, because the horizontal is not a
+     period axis — it is four positions that every series shares, and the series
+     are the years. That inverts what a column means, which is the one thing
+     chartFrame's slot naming cannot absorb: `bar-3` would be ambiguous between
+     "Q3" and "the third year", and an ambiguous slot name on a data plate is how
+     a renderer fills the right number into the wrong column.
+
+     COUNT VARIANTS ON YEARS. The quarters are always four. */
+  function seasonality(o) {
     const p = o.pal, w = o.w, h = o.h, land = w > h;
     const s = SURFACES[p.surfaceKey];
+    const Y = o.years;
     const P = H.Plate({
       key: o.key, w, h, seed: o.seed, pal: p,
       meta: {
-        aspect: land ? "16x9" : "9x16", family: "charts", type: o.type, columns: 6,
+        aspect: land ? "16x9" : "9x16", family: "charts", type: "seasonality-" + Y + "y",
+        columns: 4, quarters: 4, years: Y,
+        typeRoles: {
+          unit: { font: "Courier Prime", size: 26, weight: 400, colour: "structure", opacity: 0.72, tracking: "0.04em", maxChars: 46 },
+          period: { font: "Archivo Narrow", size: land ? 30 : 28, weight: 600, colour: "structure", maxChars: 4 },
+          axis: { font: "Courier Prime", size: land ? 26 : 24, weight: 400, colour: "structure", opacity: 0.7, maxChars: 7 },
+          series: { font: "Courier Prime", size: land ? 28 : 26, weight: 700, colour: "structure", maxChars: 5 },
+        },
+        seriesRoles: { subject: "structure", neutral: "neutralData", mark: "attention" },
+      },
+    });
+    P.colourAdd(H.breathe(function () { return surfaceFurniture(P, s); }));
+    // A deeper top margin than chartFrame: the legend row is the one thing this
+    // plate has that the others do not, and it gets its own band rather than
+    // sharing the value row's.
+    const m = land ? { l: 200, r: 130, t: 290, b: 170 } : { l: 150, r: 90, t: 430, b: 420 };
+    const x0 = m.l, x1 = w - m.r, y0 = m.t, y1 = h - m.b;
+    P.slot("unit", land ? 118 : 60, land ? 92 : 200, x1 - (land ? 118 : 60), land ? 42 : 50, { align: "left", role: "unit" });
+    P.slot("plot-area", x0, y0, x1 - x0, y1 - y0, { role: "plot-area", container: true, note: "code draws the data in here only" });
+
+    // gridlines breathe, axes are pinned — §1.5, same as every chart
+    const gl = 4;
+    for (let i = 0; i <= gl; i++) {
+      const y = y1 - ((y1 - y0) / gl) * i;
+      if (i > 0) P.inkAdd(H.breathe(function () {
+        return H.line(x0, y, x1, y, { stroke: p.structure, width: 1.8, opacity: 0.2, amp: 2.6, over: 7, seed: 610 + i * 7 });
+      }));
+      P.slot(`y-${i + 1}`, x0 - (land ? 160 : 130), i === gl ? y + 6 : y - 26, land ? 140 : 112, 52, { align: "right", role: "axis" });
+    }
+    H.pin(function () {
+      P.inkAdd(H.line(x0, y0 - 16, x0, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 621 }));
+      P.inkAdd(H.line(x0, y1, x1 + 18, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 622 }));
+    });
+
+    // Four quarter bands, Y columns inside each — one per year, oldest left.
+    const bandW = (x1 - x0) / 4;
+    const inner = bandW * 0.78;
+    const colW = inner / Y;
+    const colGap = Math.max(2, Math.round(colW * 0.14));
+    P.meta.groups = [];
+    for (let q = 1; q <= 4; q++) {
+      const bx = x0 + bandW * (q - 1);
+      const ix = bx + (bandW - inner) / 2;
+      // a band boundary is a tick: it says where a quarter IS, so it is pinned
+      H.pin(function () { P.inkAdd(H.line(bx, y1, bx, y1 + 16, { stroke: p.structure, width: 2.4, opacity: 0.75, amp: 1.2, seed: 630 + q * 11 })); });
+      P.slot(`head-q${q}`, bx, y1 + 30, bandW, 52, { align: "center", role: "period", note: "Q1 … Q4. Always four, and never a year." });
+      const cols = [];
+      for (let n = 1; n <= Y; n++) {
+        const cxx = ix + colW * (n - 1) + colGap / 2, cw = colW - colGap;
+        P.slot(`y${n}-q${q}`, cxx, y0, cw, y1 - y0, {
+          role: "bar", region: true, growth: "up-from-baseline", baselineY: Math.round(y1),
+          year: n, quarter: q, anchorX: Math.round(cxx + cw / 2),
+        });
+        cols.push({ year: n, x: Math.round(cxx), w: Math.round(cw), anchorX: Math.round(cxx + cw / 2) });
+      }
+      P.meta.groups.push({ quarter: q, x: Math.round(bx), w: Math.round(bandW), columns: cols });
+    }
+    H.pin(function () { P.inkAdd(H.line(x1, y1, x1, y1 + 16, { stroke: p.structure, width: 2.4, opacity: 0.75, amp: 1.2, seed: 679 })); });
+
+    // The legend row: one slot per year, in series order. It is the only place on
+    // the plate that says which column is which, so it is not optional.
+    const legW = (x1 - x0) / Y;
+    for (let n = 1; n <= Y; n++) {
+      P.slot(`series-${n}`, x0 + legW * (n - 1), y0 - (land ? 78 : 92), legW, 50, {
+        align: "center", role: "series", year: n,
+        note: "the year this series is, e.g. 2025. Position in the legend row matches position within every quarter band.",
+      });
+    }
+
+    P.meta.argument = "four quarters across, " + Y + " years deep. The same December hump repeated is an argument the plate makes on its own — the script stops having to assert seasonality and starts pointing at it.";
+    P.meta.seriesOrder = "OLDEST LEFT, NEWEST RIGHT, in every band, and series-1 is the oldest. A renderer that fills them the other way round inverts the reading with the furniture unchanged, which is the one error this plate cannot show you.";
+    P.meta.seriesColour = "ONE HUE, VALUE RAMPED: oldest lightest, newest at full subject ink. Y distinct series colours is what this plate refuses — six hues on one plot is a different channel, and this kit's own doctrine is light as value falloff rather than as new colour. The ramp also does the editorial work for free: the year the script is about is the darkest thing on the plot.";
+    P.meta.rendererNote = "BARS OR A LINE, from the same geometry. Fill each y{n}-q{q} region for grouped columns, or join the four anchorX points of one year for a line per year. meta.groups carries every column's x, width and anchor already measured, so neither route re-derives the grid — the property that keeps a seasonality plate and a bars-8q in the same cut.";
+    P.meta.zeroNote = "a missing quarter is a GAP, not a zero. Draw nothing in that region and leave its head label — a zero-height bar on the baseline reads as 'they sold nothing', which is a different and much stronger claim than 'we do not have it'.";
+    // MEASURED, AND SAID OUT LOUD WHERE IT IS TIGHT. Y x 4 columns is 24 bars on
+    // the 6y plate, and in 9:16 that is a 23-unit column — 46 delivered pixels at
+    // exportScale 2. It draws and it is legible on a desktop; on a phone it is
+    // the thinnest data mark in the library. The plate publishes the number
+    // rather than the judgement, so a shot template can decide.
+    const drawnW = Math.round(colW - colGap);
+    P.meta.columnWidth = { units: drawnW, deliveredPx: drawnW * 2 };
+    if (drawnW < 30) P.meta.crowded = "a " + drawnW + "-unit column (" + drawnW * 2 + "px delivered) is the thinnest data mark in the kit. It renders and it is legible at desk distance; for a SHORT prefer seasonality-4y, whose column is 35 units in this aspect. Not a defect — a measured limit of " + (Y * 4) + " bars in a 9:16 plot.";
+    return P;
+  }
+
+  // ---------------- §3.1 · language shift ----------------
+  /* structure/language-shift — THE SAME THING, DESCRIBED TWO DIFFERENT WAYS, A
+     YEAR APART.
+
+     The filing reader now produces what CHANGED between this year's report and
+     last year's: risk factors that appeared or vanished, management language that
+     shifted, segments that moved. That output had nowhere to land.
+
+     `structure/said-happened` is close and is not it: that is a two-track
+     timeline of claim against outcome, N events wide. This is narrower and it is
+     one pair — the same statement in two versions.
+
+     THE TWO BLOCKS ARE STACKED, NOT SIDE BY SIDE, and that is the whole design.
+     Side by side is what `figures/compare-side` is, and it reads as two claims
+     about two things. Stacked, at one left edge, at one width, in one type role,
+     with one rail down the side joining them, it reads as one statement written
+     twice — which is what the data actually is.
+
+     IT ENFORCES THE PHRASE RATHER THAN INVITING A PARAGRAPH. A language shift is
+     four or five words ("committed to disciplined growth" becoming "focused on
+     cash generation"), and the failure mode is a compositor pasting in the whole
+     sentence from the filing. So the type is set LARGE and the box holds two
+     lines: measured, that is ~30 characters a line in 16:9 and ~21 in 9:16, so a
+     paragraph does not fit and does not render. The constraint is the plate's,
+     not the writer's discipline.
+
+     AND IT DOES NOT DRAW THE DIFF. No strike-through on the old, no highlight on
+     the new. That is the annotations family's job, applied by the compositor when
+     the script asks for it — baking it in makes the plate argue ahead of the
+     voice. */
+  function languageShift(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      // The year is the whole reason the pair means anything, so it is set in the
+      // figure face rather than as a label: it is a date, not a heading.
+      year: { font: "Courier Prime", size: land ? 40 : 36, weight: 700, colour: "structure", opacity: 0.8, tracking: "0.04em", maxChars: 10 },
+      // ONE role for both phrases. Two roles is how "the same statement twice"
+      // becomes "a claim and a correction".
+      phrase: { font: "Archivo Narrow", size: 96, weight: 700, colour: "structure", tracking: "-.02em", maxLines: 2, maxCharsPerLine: land ? 30 : 21 },      source: { font: "Courier Prime", size: land ? 24 : 22, weight: 400, colour: "structure", opacity: 0.68, maxChars: 40 },
+    };
+    const P = base(o, "language-shift", roles);
+    P.meta.family = "structure";
+    const u = unitOf(h);
+    const L = land ? 200 : 88, R = w - (land ? 150 : 72);
+    const indent = Math.round(u * (land ? 3.4 : 2.6));   // room for the rail
+    P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+
+    const yearH = blockH(roles.year, 1), srcH = blockH(roles.source, 1);
+    // +4 UNITS, AND NOT A ROUNDING NICETY. budget.js derives maxLines as
+    // floor(box.h / (size * 1.16)), and blockH rounds 2 x 120 x 1.16 down to 278
+    // — which divides to 1.997 lines and floors to ONE. The box was a quarter of
+    // a unit short of holding the two lines it was built for, and the derived
+    // budget said so: this is the first render of this plate reporting
+    // maxLines 1 in 16:9. Clearing the boundary rather than authoring around it.
+    const phraseH = blockH(roles.phrase, 2) + 4;
+    const blockH2 = yearH + Math.round(u * 0.5) + phraseH + Math.round(u * 0.6) + srcH;
+    const gap = Math.round(u * (land ? 2.6 : 3.2));
+    // TWO BLOCKS PLUS THEIR GAP HAS TO CLEAR THE CAPTION, and in 16:9 that is
+    // what set the phrase size rather than taste. At 120 the second block ran to
+    // y=1055 against a caption at 950 — the plate overflowed its own frame, and
+    // the only thing that reported it was this arithmetic. 96 fits both aspects,
+    // which also means one phrase size and one budget across the two.
+    const top = Math.round(h * (land ? 0.2 : 0.22));
+    const capY = h - (land ? 130 : 200);
+
+    // ONE expression, two blocks. Congruence is what makes them versions.
+    const boxes = [];
+    ["then", "now"].forEach(function (nm, i) {
+      const by = top + i * (blockH2 + gap);
+      boxes.push({ name: nm, x: L + indent, y: by, w: R - (L + indent), h: blockH2 });
+      // The year box is a THIRD of the measure, not all of it. Full width made
+      // the derived budget 59 characters, which is an invitation to put "FY2024
+      // annual report, risk factors" in a slot whose job is "2024".
+      P.slot(nm + "-year", L + indent, by, Math.round((R - (L + indent)) * 0.22), yearH, { align: "left", role: "year", identifier: 10 });
+      P.slot(nm + "-phrase", L + indent, by + yearH + Math.round(u * 0.5), R - (L + indent), phraseH, { align: "left", role: "phrase" });
+      P.slot(nm + "-source", L + indent, by + yearH + Math.round(u * 0.5) + phraseH + Math.round(u * 0.6), R - (L + indent), srcH, { align: "left", role: "source" });
+    });
+
+    // THE RAIL. One mark down the left of both blocks, with a short spur into
+    // each: the thing that says these are two versions of one statement rather
+    // than two statements. It breathes — it groups, and nobody reads a value off
+    // it — but it is drawn as ONE line across both blocks rather than as two,
+    // because two rails would be two claims again.
+    const railX = L + Math.round(indent * 0.42);
+    const railTop = top + Math.round(yearH * 0.3);
+    const railBot = top + blockH2 + gap + Math.round(yearH * 0.3) + Math.round(phraseH * 0.5);
+    P.inkAdd(H.breathe(function () {
+      return H.line(railX, railTop, railX + 2, railBot, { stroke: p.structure, width: 4.2, opacity: 0.55, amp: 2.8, over: 11, seed: 811 });
+    }));
+    boxes.forEach(function (b, i) {
+      const sy = b.y + Math.round(yearH * 0.55);
+      P.inkAdd(H.breathe(function () {
+        return H.line(railX, sy, b.x - Math.round(u * 0.5), sy - 1, { stroke: p.structure, width: 3.4, opacity: 0.5, amp: 1.8, over: 7, seed: 820 + i * 9 });
+      }));
+    });
+
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    const stackBottom = top + blockH2 * 2 + gap;
+    P.meta.fit = { top: top, blockH: blockH2, gap: gap, bottom: stackBottom, captionY: capY, clears: stackBottom < capY - Math.round(u * 0.8) };
+
+    P.meta.pair = {
+      arrangement: "stacked, one left edge, one width, one type role",
+      blocks: boxes,
+      congruent: boxes[0].w === boxes[1].w && boxes[0].h === boxes[1].h,
+      note: "the two blocks are identical boxes at the same left edge, joined by one rail. That is what makes them read as the same statement in two versions rather than as two unrelated claims — and it is geometry rather than intent, so preflight can assert it.",
+    };
+    P.meta.order = "THEN ON TOP, NOW BELOW. Reading down is time passing, and the slot names say so rather than leaving a renderer to infer it from the years it happens to fill in.";
+    P.meta.refusesDiff = "THE PLATE DOES NOT DRAW THE DIFF. No strike-through on the old phrase, no highlight on the new, no colour on either — both phrases are one type role in `structure`. Emphasis is the annotations family's, applied by the compositor when the script asks for it: annotations/strike-out over then-phrase, annotations/underline-tight under now-phrase. Baking it in would make the plate argue ahead of the voice.";
+    P.meta.phraseContract = "A PHRASE, NOT A SENTENCE. Two lines at " + roles.phrase.maxCharsPerLine + " characters measured — a shift is four or five words, and the box is sized so a pasted filing sentence does not fit and therefore does not render. If the shift genuinely needs a sentence, it is a quote and wants cards/quote-pull.";
+    P.meta.notSaidHappened = "structure/said-happened is a two-track TIMELINE, N events wide, claim against outcome. This is one pair: the same thing described two ways a year apart. Using said-happened for it would imply the second block is what HAPPENED, when it is what they now SAY.";
+    return P;
+  }
+
+  // ---------------- §3.2 · headline stack ----------------
+  /* paper/headline-stack-{3,4} — several headlines, dated, stacked
+     chronologically. The visual form of "this has been building for a while",
+     which a single band cannot say.
+
+     News headlines now reach the writer and `paper/headline-band` carries ONE.
+     The band is a clipping; this is the pile.
+
+     OLDEST AT THE TOP. Reading down is time passing, and the argument is
+     accumulation — the plate is not a timeline (that is `structure/said-happened`
+     and it has rails and gaps), it is a stack of things that each happened.
+
+     Count variants at three and four, for tables/'s reason: the strips are a
+     fixed measure so the headline budget is stable, and one elastic plate would
+     re-derive its strip height at render time. Three is what a 16:9 chapter beat
+     uses and four is the ceiling before the headline type drops below the band's;
+     five would be a list, and a list is a different argument. */
+  function headlineStack(o) {
+    const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
+    const n = o.items;
+    const roles = {
+      kicker: TR.kicker, caption: TR.caption,
+      date: { font: "Courier Prime", size: land ? 28 : 26, weight: 700, colour: "structure", opacity: 0.82, tracking: "0.04em", maxChars: 12 },
+      // Smaller than headline-band's 96, and sized to FIT FOUR. See the strip
+      // arithmetic below: the four-item plate is the constraint, and both counts
+      // share one strip height and one headline size so a script can swap three
+      // for four without the budget moving.
+      headline: { font: "Archivo Narrow", size: land ? 42 : 56, weight: 700, colour: "structure", tracking: "-.02em", maxLines: 2, maxCharsPerLine: land ? 46 : 40 },
+      source: { font: "Courier Prime", size: land ? 22 : 21, weight: 400, colour: "structure", opacity: 0.66, maxChars: 30 },
+    };
+    const P = base(o, "headline-stack-" + n, roles);
+    P.meta.family = "paper";
+    P.meta.items = n;
+    const u = unitOf(h);
+    const L = land ? 160 : 76, R = w - (land ? 160 : 76);
+    P.slot("kicker", L, land ? 88 : 196, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
+
+    const dateH = blockH(roles.date, 1), srcH = blockH(roles.source, 1);
+    // +4, same boundary as language-shift's phrase box. See the note there.
+    const headH = blockH(roles.headline, 2) + 4;
+    const pad = Math.round(u * 1.1);
+    // The source sits on the date's row (right-aligned), so its height is NOT
+    // added again here. It was, in the first build, and those 33 units a strip
+    // are most of why the four-item landscape stack overflowed its own frame.
+    const stripH = pad * 2 + dateH + Math.round(u * 0.4) + headH;
+    const gap = Math.round(u * 1.2);
+    // THE STACK IS SIZED FOR FOUR IN BOTH COUNTS, and the first build of this
+    // plate is why the arithmetic is written down. At the authored 60/48 the
+    // four-item strips ran to y=1288 on a 1080 canvas and the three-item ones to
+    // 1015 against a caption at 960 — the plate overflowed its own frame and
+    // nothing but the numbers said so. Four strips plus three gaps has to clear
+    // the caption, so the type is set from that and not the other way round.
+    const top = Math.round(h * (land ? 0.16 : 0.18));
+    const capY = h - (land ? 90 : 190);
+    const boxes = [];
+    for (let i = 1; i <= n; i++) {
+      const sy = top + (i - 1) * (stripH + gap);
+      // Each item is a clipping: a ground-coloured strip with a drawn edge top
+      // and bottom, laid on the surface. NOT ROTATED, and that is a contract
+      // rather than a style — a rotated strip needs rotated slots, and every box
+      // in this library is axis-aligned because the compositor's fill is. The
+      // askew comes from the hand on the edges, which is where it can.
+      P.colourAdd(H.hatch(H.polyRect(L - pad, sy, R - L + pad * 2, stripH), { color: p.ground, opacity: 0.9, gap: 7, width: 14, angle: -2 + i, over: 16, seed: 851 + i * 7 }));
+      P.inkAdd(H.line(L - pad, sy, R + pad, sy + (i % 2 ? 3 : -2), { stroke: p.structure, width: 2.8, opacity: 0.5, amp: 2.6, over: 10, seed: 860 + i * 7 }));
+      P.inkAdd(H.line(L - pad, sy + stripH, R + pad, sy + stripH + (i % 2 ? -2 : 3), { stroke: p.structure, width: 2.2, opacity: 0.38, amp: 2.6, over: 10, seed: 870 + i * 7 }));
+      const iy = sy + pad;
+      P.slot(`date-${i}`, L, iy, Math.round((R - L) * 0.22), dateH, { align: "left", role: "date" });
+      P.slot(`source-${i}`, L + Math.round((R - L) * 0.66), iy, Math.round((R - L) * 0.34), dateH, { align: "right", role: "source" });
+      // 16:9 gives the headline 72% of the measure rather than all of it. At full
+      // width the derived budget came out 78 characters a line, and 78 x 2 at
+      // headline weight is a paragraph wearing a headline's clothes — the stack's
+      // whole argument is that there are three or four of these, which fails if
+      // any one of them can run long enough to be read as the only one.
+      P.slot(`headline-${i}`, L, iy + dateH + Math.round(u * 0.4), land ? Math.round((R - L) * 0.72) : (R - L), headH, { align: "left", role: "headline" });
+      boxes.push({ item: i, x: L - pad, y: sy, w: R - L + pad * 2, h: stripH });
+    }
+    P.slot("caption", L, capY, R - L, blockH(roles.caption, 1), { align: "left", role: "caption" });
+    // measured, not assumed: the four-item stack has to end above the caption
+    const stackBottom = top + 4 * stripH + 3 * gap;
+    P.meta.fit = { top: top, stripH: stripH, gap: gap, fourItemBottom: stackBottom, captionY: capY, clears: stackBottom < capY - Math.round(u * 0.8) };
+
+    P.meta.strips = boxes;
+    P.meta.congruent = boxes.every((b) => b.h === boxes[0].h && b.w === boxes[0].w);
+    P.meta.order = "OLDEST AT THE TOP, NEWEST AT THE BOTTOM. date-1 is the oldest. Reading down is time passing; filled the other way the plate says the opposite with the same ink, and nothing would report it.";
+    P.meta.argument = n + " headlines, dated, stacked. paper/headline-band carries one story; this carries the fact that there have been " + n + " of them. That accumulation is the whole difference — it is the picture of 'this has been building for a while'.";
+    P.meta.notATimeline = "this is not structure/said-happened and not structure/timeline. There is no rail, no interval and no gap: the strips are evenly spaced whatever the dates say, because the argument is HOW MANY, not how far apart. If the spacing matters, the script wants the timeline.";
+    P.meta.seriesNote = "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.";
+    P.meta.sourceContract = "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for " + roles.source.maxChars + " characters, which holds a masthead, not a URL.";
+    P.meta.headlineBudgetNote = "the headline box is CAPACITY, not a target. At " + (P.slots["headline-1"] ? P.slots["headline-1"].maxChars || "~48" : "~48") + " characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been.";
+    return P;
+  }
+
+  // §2.1 — EIGHT QUARTERS, AND WHY THEY ARE TYPES ON THIS AUTHOR.
+  //
+  // The pipeline reads a Quarters sheet carrying six to eight quarters. Every
+  // chart in the kit was annual, so the data path existed and the video had
+  // nowhere to put it.
+  //
+  // Eight columns rather than six, and a period label of a different shape:
+  // Q3'25, not 2025. Both are layout, not content, which is why they are a
+  // COLUMN COUNT on this author rather than a second one — the margins, the
+  // gridlines, the axis pinning and the tick convention are the things that have
+  // to be identical for a quarterly chart to sit in the same cut as an annual
+  // one, and sharing the author makes that true by construction.
+  //
+  // What does NOT transfer is the value row. See vFits below: it is measured.
+  const QUARTERLY = { "bars-8q": 1, "line-8q": 1 };
+
+  function chartFrame(o) {
+    const p = o.pal, w = o.w, h = o.h, land = w > h;
+    const s = SURFACES[p.surfaceKey];
+    const N = QUARTERLY[o.type] ? 8 : 6;
+    const P = H.Plate({
+      key: o.key, w, h, seed: o.seed, pal: p,
+      meta: {
+        aspect: land ? "16x9" : "9x16", family: "charts", type: o.type, columns: N,
         typeRoles: {
           unit: { font: "Courier Prime", size: 26, weight: 400, colour: "structure", opacity: 0.72, tracking: "0.04em", maxChars: land ? 46 : 38 },
           period: { font: "Archivo Narrow", size: land ? 28 : 26, weight: 600, colour: "structure", maxChars: 6 },
@@ -299,10 +2181,30 @@
         seriesRoles: { subject: "structure", neutral: "neutralData", otherParty: "otherParty", up: "up", down: "down", mark: "attention" },
       },
     });
-    P.colourAdd(surfaceFurniture(P, s));
+    P.colourAdd(H.breathe(function () { return surfaceFurniture(P, s); }));
     const m = land ? { l: 200, r: 130, t: 190, b: 170 } : { l: 150, r: 90, t: 330, b: 420 };
     const x0 = m.l, x1 = w - m.r, y0 = m.t, y1 = h - m.b;
-    const ticks = o.type === "line-dense" ? 12 : 6;
+    const ticks = o.type === "line-dense" ? 12 : N;
+
+    // THE VALUE ROW IS MEASURED, NOT ASSUMED, and this is the whole of what
+    // §2.1's "real layout difference" turns out to be at these canvas sizes.
+    //
+    // At six columns a value box holds a money string in both aspects. At eight
+    // in 9:16 it does not: the plot is 840 units wide, a column is 105, and the
+    // value role is 30-unit Courier at 0.5996em — 18 units a character, so the
+    // box takes five. "$1.2B" fits and "$12.4B" does not, and an over-budget
+    // fill does not render at all (budget.js). A row of per-column figures that
+    // silently stops the shot is worse than no row.
+    //
+    // So the per-column value row exists where it measures out, and where it does
+    // not the plate publishes ONE value callout instead — which is also the
+    // honest picture: nobody reads eight stacked figures off a phone screen.
+    // Six is the floor because it is the shortest useful money string with a
+    // sign and a unit ("-$1.2B", "+12.4%").
+    const VALUE_FLOOR = 6;
+    const fitsValue = function (boxW) {
+      return g.BUDGET.capacity({ w: boxW }, "value", P.meta.typeRoles.value) >= VALUE_FLOOR;
+    };
 
     P.slot("unit", land ? 118 : 60, land ? 92 : 200, x1 - (land ? 118 : 60), land ? 42 : 50, { align: "left", role: "unit" });
     P.slot("plot-area", x0, y0, x1 - x0, y1 - y0, { role: "plot-area", container: true, note: "code draws the data path in here only" });
@@ -311,36 +2213,112 @@
     const gl = o.type === "line-dense" ? 3 : 4;
     for (let i = 0; i <= gl; i++) {
       const y = y1 - ((y1 - y0) / gl) * i;
-      if (i > 0) P.inkAdd(H.line(x0, y, x1, y, { stroke: p.structure, width: 1.8, opacity: 0.2, amp: 2.6, over: 7, seed: 210 + i * 7 }));
+      // §1.5 — GRIDLINES BREATHE, AXES DO NOT, and this is the exact line where
+      // the distinction has to be made rather than described. A gridline is a
+      // separator: nobody reads a value off it, they read it off the axis label
+      // beside it. The axis below is a measurement reference — move it and the
+      // data appears to move even though every series point is pinned.
+      if (i > 0) P.inkAdd(H.breathe(function () {
+        return H.line(x0, y, x1, y, { stroke: p.structure, width: 1.8, opacity: 0.2, amp: 2.6, over: 7, seed: 210 + i * 7 });
+      }));
       // the topmost label tucks under its gridline, so it never reaches the value row
       P.slot(`y-${i + 1}`, x0 - (land ? 160 : 130), i === gl ? y + 6 : y - 26, land ? 140 : 112, 52, { align: "right", role: "axis" });
     }
-    // axes
-    P.inkAdd(H.line(x0, y0 - 16, x0, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 21 }));
-    P.inkAdd(H.line(x0, y1, x1 + 18, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 22 }));
+    // axes — PINNED. See the gridline note above. An axis is a measurement
+    // reference: move it and the data appears to move even though every series
+    // point is held still.
+    H.pin(function () {
+      P.inkAdd(H.line(x0, y0 - 16, x0, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 21 }));
+      P.inkAdd(H.line(x0, y1, x1 + 18, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 22 }));
+    });
 
-    if (o.type === "bars-6y") {
-      const step = (x1 - x0) / 6, barW = step * 0.56;
-      for (let c = 1; c <= 6; c++) {
+    // §2.3 / §2.4 / §2.11 — THREE NEW SIX-PERIOD CHARTS, AND WHY THEY ARE TYPES
+    // ON THIS AUTHOR RATHER THAN THREE NEW ONES.
+    //
+    // Dilution, the debt wall and guidance-versus-actual are all "six periods on
+    // one plot", which is exactly what this author already is. A new author would
+    // duplicate the margins, the gridlines, the axis pinning and the tick
+    // convention — and the brief is explicit that these must sit in the same cut
+    // as an existing chart without the years changing width mid-video. Sharing
+    // the author makes that true by construction rather than by care.
+    //
+    // What differs per type is the SLOT SET and what the plate says about itself,
+    // which is the part that belongs to the argument:
+    //
+    //   dilution-6y   share count rising. Same slots as bars-6y so it drops in
+    //                 beside the others — but its own key, because "shares
+    //                 outstanding" is not "revenue" and the manifest should not
+    //                 pretend a script can swap them.
+    //   maturities    the debt wall. Also bars, also six periods, and the one of
+    //                 the three where a column can legitimately be ZERO.
+    //   guided-vs-actual-6y  two series on one plot, one scale, published once —
+    //                 for the same reason the implied plate publishes its axis.
+    const BARS = { "bars-6y": 1, "bars-8q": 1, "dilution-6y": 1, "maturities": 1 };
+    if (BARS[o.type]) {
+      const step = (x1 - x0) / N, barW = step * 0.56;
+      const vFits = fitsValue(step);
+      for (let c = 1; c <= N; c++) {
         const cx = x0 + step * (c - 0.5);
-        P.inkAdd(H.line(cx, y1, cx, y1 + 16, { stroke: p.structure, width: 2.4, opacity: 0.75, amp: 1.2, seed: 300 + c * 11 }));
+        // PINNED: a tick is where a period IS. It is read off, not decoration.
+        H.pin(function () { P.inkAdd(H.line(cx, y1, cx, y1 + 16, { stroke: p.structure, width: 2.4, opacity: 0.75, amp: 1.2, seed: 300 + c * 11 })); });
         P.slot(`bar-${c}`, cx - barW / 2, y0, barW, y1 - y0, { role: "bar", region: true, growth: "up-from-baseline", baselineY: Math.round(y1) });
-        P.slot(`value-${c}`, cx - step / 2, y0 - 50, step, 46, { align: "center", role: "value" });
+        if (vFits) P.slot(`value-${c}`, cx - step / 2, y0 - 50, step, 46, { align: "center", role: "value" });
         P.slot(`head-${c}`, cx - step / 2, y1 + 30, step, 52, { align: "center", role: "period" });
       }
+      if (!vFits) valueCallout(P, x0, y0, x1, land);
+      if (o.type === "dilution-6y") {
+        P.meta.argument = "shares outstanding, rising. Stock comp appears in every script and nothing else in the kit shows the viewer what it costs THEM.";
+        P.meta.seriesNote = "one series, subject colour. NOT drawn in `down` — a rising share count is a rise, and colouring it as a loss makes the plate deliver the verdict before the voice-over does.";
+        P.meta.unitNote = "a COUNT, not a percentage. The dilution is the line going up; a percentage hides that behind a denominator.";
+      }
+      if (o.type === "bars-8q") quarterly(P, land, "bars");
+      if (o.type === "maturities") {
+        P.meta.argument = "when the debt comes due, by year. The thing that decides whether a bad year is survivable, and the kit could not draw it.";
+        P.meta.zeroNote = "A ZERO COLUMN IS DATA. A year with nothing due is the good news in this picture, and the shape of the wall depends on that gap being visible. Render a zero as a zero-height bar ON the baseline with its head label intact — do not drop the column.";
+        P.meta.seriesNote = "one series, subject colour. The bars are a schedule, not a performance: no up, no down.";
+      }
+    } else if (o.type === "guided-vs-actual-6y") {
+      const step = (x1 - x0) / 5;
+      for (let c = 1; c <= 6; c++) {
+        const cx = x0 + step * (c - 1);
+        H.pin(function () { P.inkAdd(H.line(cx, y1, cx, y1 + 16, { stroke: p.structure, width: 2.4, opacity: 0.7, amp: 1.2, seed: 300 + c * 11 })); });
+        const px = Math.max(x0, Math.min(x1 - 84, cx - 42));
+        P.slot(`guided-${c}`, px, y0, 84, y1 - y0, {
+          role: "point-column", region: true, series: "guided", anchorX: Math.round(cx),
+          note: "what they forecast. Drawn FAINT and WIDE — a forecast is a claim with a width, and giving it the same weight as the outcome is the plate arguing that a guess and a result are the same kind of thing.",
+        });
+        P.slot(`actual-${c}`, px, y0, 84, y1 - y0, {
+          role: "point-column", region: true, series: "actual", anchorX: Math.round(cx),
+          note: "what happened. Solid and narrow, over the guided band. Same column, same scale — the gap between them IS the argument.",
+        });
+        const vw = Math.min(152, step * 0.8);
+        P.slot(`value-${c}`, cx - vw / 2, y0 - 50, vw, 46, { align: "center", role: "value" });
+        P.slot(`head-${c}`, cx - (land ? 84 : 62), y1 + 30, land ? 168 : 124, 52, { align: "center", role: "period" });
+      }
+      P.meta.argument = "the forecast faint and wide, the outcome solid and narrow. The whole format is 'they said, then look' — this is that sentence as a picture.";
+      P.meta.scaleNote = "guided-N and actual-N are measured against the SAME plot-area on the SAME scale. Two series on two scales is not a comparison, and the plate publishes one plot-area precisely so a renderer cannot accidentally use two.";
+      P.meta.seriesNote = "guided is otherParty — it is someone else's claim about the future; actual is subject. Neither is up or down: a miss is not a fall.";
     } else {
       const step = (x1 - x0) / (ticks - 1);
+      const isLine = o.type === "line-6y" || o.type === "line-8q";
+      // a point column is a fixed 84 wide, so at eight quarters the value box is
+      // the column rather than the pitch — measure the box that actually exists
+      const vFits = isLine && fitsValue(Math.min(152, step * 0.8));
       for (let c = 1; c <= ticks; c++) {
         const cx = x0 + step * (c - 1);
-        P.inkAdd(H.line(cx, y1, cx, y1 + (o.type === "line-dense" ? 11 : 16), { stroke: p.structure, width: o.type === "line-dense" ? 1.9 : 2.4, opacity: 0.7, amp: 1.2, seed: 300 + c * 11 }));
-        if (o.type === "line-6y") {
+        // PINNED, same reason as the bar ticks.
+        H.pin(function () { P.inkAdd(H.line(cx, y1, cx, y1 + (o.type === "line-dense" ? 11 : 16), { stroke: p.structure, width: o.type === "line-dense" ? 1.9 : 2.4, opacity: 0.7, amp: 1.2, seed: 300 + c * 11 })); });
+        if (isLine) {
           const px = Math.max(x0, Math.min(x1 - 84, cx - 42));
           P.slot(`point-${c}`, px, y0, 84, y1 - y0, { role: "point-column", region: true, anchorX: Math.round(cx) });
           const vw = Math.min(152, step * 0.8);
-          P.slot(`value-${c}`, cx - vw / 2, y0 - 50, vw, 46, { align: "center", role: "value" });
-          P.slot(`head-${c}`, cx - (land ? 84 : 62), y1 + 30, land ? 168 : 124, 52, { align: "center", role: "period" });
+          if (vFits) P.slot(`value-${c}`, cx - vw / 2, y0 - 50, vw, 46, { align: "center", role: "value" });
+          const hw = Math.min(land ? 168 : 124, step * 0.94);
+          P.slot(`head-${c}`, cx - hw / 2, y1 + 30, hw, 52, { align: "center", role: "period", anchorX: Math.round(cx) });
         }
       }
+      if (isLine && !vFits) valueCallout(P, x0, y0, x1, land);
+      if (o.type === "line-8q") quarterly(P, land, "line");
       if (o.type === "line-dense") {
         // a price chart is labelled at a handful of dates, not at every tick
         const anchors = [1, 5, 9, 12];
@@ -400,7 +2378,25 @@
       label: { font: "Archivo Narrow", size: fit(0.5, 24, 30), weight: 400, colour: "structure", maxChars: land ? 30 : 22 },
       figure: { font: "Courier Prime", size: fit(0.52, 24, 32), weight: 400, colour: "structure", maxChars: 7 },
       subtotal: { font: "Courier Prime", size: fit(0.52, 24, 32), weight: 700, colour: "structure", maxChars: 7 },
-      total: { font: "Courier Prime", size: fit(0.72, 30, 44), weight: 700, colour: "structure", maxChars: 7 },
+      // DROP TEN: THE PORTRAIT TOTAL TAKES THE CELLS' SIZE; LANDSCAPE IS UNTOUCHED.
+      // At fit(0.72,30,44) the portrait total was 44u in a 103-unit column and
+      // derived THREE characters, while the 32u cells beneath it derived five — so
+      // the total could not hold "1,284" or "(482)" and the line items it totals
+      // could. A total tighter than its own lines cannot be right in a cash-flow
+      // table.
+      //
+      // I tried keeping landscape's step up, since 36u derives 8 there and every
+      // realistic total I tested fits. Measured, that still violates the rule:
+      // the landscape CELLS derive 11, so a 9-digit total blanks while its own
+      // line items render — the same defect, needing a bigger number. A total is
+      // a sum, so it is the value most likely to be the longest on the plate, and
+      // a 173-unit column cannot hold both the step up and the cells' budget.
+      // So the budget wins on both aspects and the total is distinguished by
+      // weight 700 and by the rule above it, which is how the rest of the kit
+      // marks a total anyway. Landscape gives up 36u for 26u; that is the cost,
+      // and it buys the invariant that a total can never blank where its own
+      // lines render.
+      total: { font: "Courier Prime", size: fit(0.52, 24, 32), weight: 700, colour: "structure", maxChars: 7 },
     };
     blocks.forEach((n, bi) => {
       const b = bi + 1;
@@ -532,7 +2528,10 @@
       key: o.key, w: o.w, h: o.h, seed: o.seed, pal: p,
       meta: { aspect: land ? "16x9" : "9x16", family: "structure", type: type, typeRoles: roles },
     });
-    P.colourAdd(surfaceFurniture(P, SURFACES[p.surfaceKey]));
+    // §1.5 — the surface's own furniture BREATHES. Pad rules and board smears are
+    // decoration of the sheet: nobody reads a value off them, and on a gated
+    // plate they are the largest thing on screen that is allowed to move.
+    P.colourAdd(H.breathe(function () { return surfaceFurniture(P, SURFACES[p.surfaceKey]); }));
     return P;
   }
   // ---------------- composition ----------------
@@ -552,13 +2551,17 @@
   // giving a bar a rail to sit on. Drawn as separate strokes rather than a dash
   // array, because a dashed line is one path with one tremor — the dashes would
   // all waver identically, which is the one thing a hand never does.
+  // §1.5: a leader is a separator, so it breathes. It ties a label to a figure;
+  // it is not a scale anyone reads the figure off.
   function leader(P, x1, x2, y, seed, op) {
     const step = 21, len = 7;
     let i = 0;
     for (let x = x1; x < x2 - len; x += step) {
-      P.inkAdd(H.line(x, y, x + len, y - 1, {
-        stroke: P.pal.structure, width: 2, opacity: op == null ? 0.24 : op,
-        amp: 1.1, over: 0, step: 4, seed: seed + i * 3,
+      P.inkAdd(H.breathe(function () {
+        return H.line(x, y, x + len, y - 1, {
+          stroke: P.pal.structure, width: 2, opacity: op == null ? 0.24 : op,
+          amp: 1.1, over: 0, step: 4, seed: seed + i * 3,
+        });
       }));
       i += 1;
     }
@@ -566,7 +2569,17 @@
 
   // A ground2 panel. Gives a figure something to stand on — the single biggest
   // reason the old figure plates read as floating in a void.
+  //
+  // §1.5: PINNED, and this is the call that decides what the rule actually means.
+  // It is hatch, and hatch breathes — but this hatch is a SLOT UNDERLAY: it sits
+  // directly behind a figure the plate holds still. An underlay moving behind
+  // pinned type creates RELATIVE motion, which reads worse than either moving
+  // alone. "Texture fills breathe" and "underlays do not" are both true and this
+  // is where they meet; what the mark is FOR wins over what it is made of.
   function field(P, x, y, w, h, seed, op) {
+    return H.pin(function () { return fieldMarks(P, x, y, w, h, seed, op); });
+  }
+  function fieldMarks(P, x, y, w, h, seed, op) {
     P.colourAdd(H.hatch(H.polyRect(x, y, w, h), {
       color: P.pal.ground2, opacity: op == null ? 0.5 : op,
       gap: 7, width: 7.8, angle: -3, over: 9, seed: seed || 900,
@@ -592,8 +2605,11 @@
         const rh = ruleH(spec.unit);
         const rw = b.width == null ? spec.w : spec.w * b.width;
         const rx = (spec.align === "center") ? spec.x + (spec.w - rw) / 2 : spec.x;
-        P.inkAdd(H.line(rx, y + rh / 2, rx + rw, y + rh / 2 - 5, {
-          stroke: P.pal.structure, width: b.weight || 6, opacity: 0.9, amp: 3.4, over: 13, seed: b.seed || 211,
+        // §1.5: a composition rule is furniture, not a measurement reference.
+        P.inkAdd(H.breathe(function () {
+          return H.line(rx, y + rh / 2, rx + rw, y + rh / 2 - 5, {
+            stroke: P.pal.structure, width: b.weight || 6, opacity: 0.9, amp: 3.4, over: 13, seed: b.seed || 211,
+          });
         }));
         y += rh;
         return;
@@ -624,6 +2640,70 @@
       { x: cx, y: tipY },
       { x: cx + s * 0.36, y: dir === "down" ? tipY - s * 0.42 : tipY + s * 0.42 },
     ], { stroke: col, width: wt, amp: 1.8, over: 4, seed: seed + 1 }));
+  }
+
+  // The face's own skin token, in ONE place. hostFigure and hostHead each
+  // carried their own copy of the literal, which was harmless while they were the
+  // only two authors of a face — §1.2's blink overlay is a third, and it has to
+  // paint over the open eye it replaces, so a divergence here would show as a
+  // patch of the wrong colour on his face and nowhere else.
+  const SKIN = "#C99A6E";
+
+  // §4.1 — WHICH POSES ARE SEATED. Declared at module level because hostFigure
+  // reads it while solving proportion, which happens before its own POSE table is
+  // in scope. One entry, and the emptyChair author below shares the chair it
+  // implies.
+  const POSE_SEATED = { "sitting-at-desk": 1 };
+
+  /* §4.1/§4.3 — THE CHAIR, ONCE.
+
+     It is drawn on the HOST plate rather than in the room, and that is a decision
+     with a cost. A seated cut-out composited onto a room whose set has no chair is
+     a man hovering at desk height; the chair has to travel with him. The price is
+     that his chair is the same chair in every room, which is the lesser problem —
+     it is his chair.
+
+     It is drawn QUIETLY: half the figure's hatch opacity and two-thirds its line
+     weight. room/ doctrine is that Dennis is the highest-contrast object in any
+     frame he is in, and a chair drawn at his weight competes with him inside his
+     own cut-out.
+
+     Geometry is one function so the seated pose and the empty chair cannot drift
+     apart — the empty chair IS this chair with nobody in it, and two copies of
+     the arithmetic would eventually make them two different chairs. */
+  function hostChair(o) {
+    const P = o.P, S = o.S, HU = o.HU, cx = o.cx, seatY = o.seatY, floorY = o.floorY;
+    const ink = o.ink, fwd = o.fwd;
+    const wood = "#6B5A46";
+    const quad = function (a, b, wa, wb) {
+      const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
+      const nx = -dy / L, ny = dx / L;
+      return [{ x: a.x + nx * wa, y: a.y + ny * wa }, { x: b.x + nx * wb, y: b.y + ny * wb },
+        { x: b.x - nx * wb, y: b.y - ny * wb }, { x: a.x - nx * wa, y: a.y - ny * wa }];
+    };
+    const part = function (poly, colour, op, lw, angle, seed) {
+      P.colourAdd(S.hatch(poly, { color: colour, opacity: op, gap: 6.2, width: 10, angle: angle, over: 9, seed: seed }));
+      P.inkAdd(S.outline(poly, { stroke: ink, width: lw, opacity: 0.8, amp: 2, over: 8, seed: seed + 3 }));
+    };
+    // the seat, seen slightly from the side: a slab running back from under the
+    // hips, away from the direction the knees go
+    const seatFront = { x: cx + fwd * HU * 0.62, y: seatY + HU * 0.04 };
+    const seatBack = { x: cx - fwd * HU * 0.96, y: seatY };
+    part(quad(seatFront, seatBack, HU * 0.14, HU * 0.16), wood, 0.5, 3.2, -6, 1101);
+    // the back: one post and one rail, behind him. Two posts would close the
+    // silhouette behind his shoulders and he would read as being in a box.
+    const postTop = { x: seatBack.x - fwd * HU * 0.06, y: seatY - HU * 2.05 };
+    part(quad(seatBack, postTop, HU * 0.11, HU * 0.09), wood, 0.44, 3, -80, 1111);
+    const railA = { x: postTop.x + fwd * HU * 0.1, y: postTop.y + HU * 0.16 };
+    const railB = { x: postTop.x - fwd * HU * 0.78, y: postTop.y + HU * 0.3 };
+    part(quad(railA, railB, HU * 0.13, HU * 0.11), wood, 0.44, 3, -10, 1117);
+    // two legs, front and back, splayed as a real chair is
+    [[seatFront, 0.18], [seatBack, -0.22]].forEach(function (pr, i) {
+      const topP = { x: pr[0].x, y: pr[0].y + HU * 0.1 };
+      const footP = { x: pr[0].x + fwd * HU * pr[1], y: floorY - HU * 0.02 };
+      part(quad(topP, footP, HU * 0.08, HU * 0.07), wood, 0.42, 2.8, -78, 1121 + i * 7);
+    });
+    return { seatFront: seatFront, seatBack: seatBack, postTop: postTop };
   }
 
   const TR = {
@@ -881,7 +2961,21 @@
     // column: Courier advances at ~0.6em, so size = columnWidth / (maxChars*0.6).
     // Picking a size first and hoping is how you get a 7-character value running
     // off the plate.
-    const P = base(o, "big-number-l" + o.layout, figRoles(land, land ? 350 : 250));
+    // DROP TEN: THE SIZE IS DERIVED PER LAYOUT, because the two layouts do not
+    // share a column. The comment above is the kit's own rule — size =
+    // columnWidth / (maxChars * 0.6) — and layout 1 obeys it: 1,480 units of
+    // measure at 350u holds its seven characters. Layout 2 hardcodes a 900-unit
+    // number column and INHERITED layout 1's 350u, which derives FOUR characters,
+    // so "87.4%", "1,284" and "$15.6bn" all rendered blank — in the plate whose
+    // entire job is one number. A borrowed quantity, correct where it came from.
+    // Portrait was already right by luck: its column is 920 and 250u derives six.
+    const hugeCols = o.layout === 1 ? (land ? 1480 : 900) : (land ? 900 : w - 160);
+    const hugeChars = land ? 7 : 6;
+    const hugeSize = Math.min(land ? 350 : 250, Math.floor(hugeCols / (hugeChars * 0.5996)));
+    const P = base(o, "big-number-l" + o.layout, figRoles(land, hugeSize));
+    P.meta.hugeDerivation = "size = numberColumn / (maxChars x 0.5996), capped at the layout-1 size. Layout " +
+      o.layout + ": column " + hugeCols + " units, target " + hugeChars + " characters, size " + hugeSize +
+      "u. Never authored — layout 2 shipped at layout 1's 350u against a 900-unit column and could not draw a five-character number.";
     P.meta.layout = o.layout;
     const p = o.pal;
     if (o.layout === 1) {
@@ -953,7 +3047,33 @@
 
   function compare(o) {
     const land = o.w > o.h, w = o.w, h = o.h, p = o.pal;
-    const P = base(o, "compare-" + o.mode, figRoles(land, land ? 170 : 160));
+    // PORTRAIT `side` WAS THE STACKED PLATE UNDER ANOTHER NAME.
+    //
+    // The branch read `o.mode === "side" && land`, so in 9:16 the side-by-side
+    // fell through to stacked — and `figures/compare-side-9x16` shipped as a
+    // distinct key whose three frames are BYTE-IDENTICAL to
+    // `figures/compare-stacked-9x16`. Two assets, one drawing, and a manifest
+    // saying `type: "compare-side"` over artwork that is not.
+    //
+    // Found by the new per-frame baseline (§1.1), which is the first artefact in
+    // this project able to see it: nothing about a single plate is wrong, and no
+    // screenshot of either one would look like a defect. It took hashing every
+    // frame in the library and noticing two signatures collide.
+    //
+    // Fixed by making portrait `side` a real re-author rather than a fall-through.
+    // The reason it was avoided is real — two columns in 9:16 are ~430 units wide
+    // and the landscape figure size does not fit — so the figure is sized to the
+    // column by the same rule bigNumber uses: size = columnWidth / (maxChars *
+    // 0.6), Courier's advance. A short comparing two numbers is a real beat and
+    // now it has a real plate.
+    const sideCols = !land && o.mode === "side";
+    const roles = figRoles(land, land ? 170 : 160);
+    if (sideCols) {
+      const colW = (w - 160 - 40) / 2;
+      roles.huge = Object.assign({}, roles.huge, { size: Math.floor(colW / (roles.huge.maxChars * 0.6)) });
+      roles.label = Object.assign({}, roles.label, { maxCharsPerLine: 14 });
+    }
+    const P = base(o, "compare-" + o.mode, roles);
     P.meta.mode = o.mode;
     const L = land ? 150 : 80, R = w - (land ? 150 : 80);
     P.slot("kicker", L, land ? 110 : 250, R - L, 54, { align: "left", role: "kicker" });
@@ -966,6 +3086,21 @@
         P.slot(`value-${i + 1}`, X, 410, W, 220, { align: "left", role: "huge" });
         P.slot(`detail-${i + 1}`, X, 660, W, 150, { align: "left", role: "detail" });
       });
+    } else if (sideCols) {
+      // Two columns, a rule between them, figures sized to the column. The same
+      // composition as the landscape plate at a size a phone can carry — which is
+      // what "a re-author, never a crop" means here.
+      const cx = w / 2, gap = 20;
+      const colW = (R - L - gap * 2) / 2;
+      const top = Math.round(h * 0.30);
+      P.inkAdd(H.line(cx, top - 30, cx - 8, top + 560, { stroke: p.structure, width: 4, opacity: 0.78, amp: 4.2, over: 13, seed: 231 }));
+      [0, 1].forEach(function (i) {
+        const X = i ? cx + gap : L;
+        P.slot(`label-${i + 1}`, X, top, colW, 96, { align: "left", role: "label" });
+        P.slot(`value-${i + 1}`, X, top + 118, colW, blockH(roles.huge, 1), { align: "left", role: "huge" });
+        P.slot(`detail-${i + 1}`, X, top + 132 + blockH(roles.huge, 1), colW, 210, { align: "left", role: "detail" });
+      });
+      P.slot("delta", L, top + 620, R - L, 110, { align: "left", role: "figure" });
     } else {
       // stacked: one above the other, the second offset so they never read as a pair of equals
       const top = land ? 210 : 380;
@@ -986,8 +3121,13 @@
   // ---------------- cards ----------------
   function cardShell(P, x, y, w, h, seed) {
     const p = P.pal;
-    P.colourAdd(H.hatch(H.polyRect(x, y, w, h), { color: p.ground2, opacity: 0.45, gap: 8.5, width: 13, angle: -3, over: 20, seed: seed }));
-    P.inkAdd(H.outline(H.polyRect(x, y, w, h), { stroke: p.structure, width: 4.2, opacity: 0.9, amp: 3.6, over: 14, seed: seed + 1 }));
+    // §1.5: the card's own edge and its tooth. The paper, not the words on it.
+    P.colourAdd(H.breathe(function () {
+      return H.hatch(H.polyRect(x, y, w, h), { color: p.ground2, opacity: 0.45, gap: 8.5, width: 13, angle: -3, over: 20, seed: seed });
+    }));
+    P.inkAdd(H.breathe(function () {
+      return H.outline(H.polyRect(x, y, w, h), { stroke: p.structure, width: 4.2, opacity: 0.9, amp: 3.6, over: 14, seed: seed + 1 });
+    }));
   }
 
   function definitionCard(o) {
@@ -1670,6 +3810,18 @@
      target instead of the teller. */
   function hostFace(o) {
     const P = o.P, S = o.S, ell = o.ell, dot = o.dot;
+    /* §3.6 — THE DETAIL BUDGET GOES ON THE FACE, and only under the revised hand.
+
+       H2 is true exactly when engine/hand.js has bound the hand-2 profile for
+       this plate (host/ and room/). Everything gated on it is additive detail in
+       the one place the operator's reference puts it: the eyes are the single
+       resolved element in an otherwise battered frame, and here they were the
+       muddiest thing on screen — two scribbled dark blobs behind a doubled rim.
+
+       Nothing here is gated OFF for hand-1, so the twelve untouched families and
+       any plate still drawn by the shipped hand emit the identical string
+       sequence they always did. */
+    const H2 = !!(H.profile && H.profile() === "hand-2");
     const hcx = o.cx, hcy = o.cy, R = o.R;
     const ink = o.ink, skin = o.skin, hair = o.hair;
     const lw = o.lw || 1, seg = o.seg || 0, fine = !!o.fine;
@@ -1727,8 +3879,18 @@
     P.colourAdd(S.hatch(jaw, { color: ink, opacity: 0.105, gap: 5.2, width: 8, angle: -74, over: 5, seed: 766 }));
     P.colourAdd(S.hatch(clipHalf(jaw, -1, 0, -(hcx + R * 0.1)) || jaw, { color: ink, opacity: 0.07, gap: 6.4, width: 9, angle: -30, over: 4, seed: 768 }));
 
-    P.inkAdd(S.outline(head, { stroke: ink, width: 6.4 * lw, opacity: 0.97, amp: 2.4, over: 10, seed: 708 }));
-    P.inkAdd(S.outline(head, { stroke: ink, width: 4.2 * lw, opacity: 0.92, amp: 2.6, over: 12, seed: 703 }));
+    // ONE CONTOUR ON THE SKULL. Two outlines over the same polygon is where the
+    // doubled rim came from — it is not a heavier line, it is two lines, and at
+    // close-up size they read as an abandoned underdrawing. hand-2 draws it once,
+    // flagged as silhouette: the outer edge of a head against empty ground is the
+    // least important line in the picture, and the weight it gives up here is
+    // spent on the eyes below.
+    if (H2) {
+      P.inkAdd(S.outline(head, { stroke: ink, width: 6.4 * lw, opacity: 0.97, amp: 2.4, over: 10, seed: 708, silhouette: true }));
+    } else {
+      P.inkAdd(S.outline(head, { stroke: ink, width: 6.4 * lw, opacity: 0.97, amp: 2.4, over: 10, seed: 708 }));
+      P.inkAdd(S.outline(head, { stroke: ink, width: 4.2 * lw, opacity: 0.92, amp: 2.6, over: 12, seed: 703 }));
+    }
     [-1, 1].forEach(function (s, i) {
       P.inkAdd(S.stroke(M([
         { x: hcx + s * R * 0.82, y: hcy - R * 0.1 },
@@ -1776,6 +3938,14 @@
       const lx = hcx + s * R * 0.35;
       const lens = GM(ell(lx, eyeY, R * 0.29, R * 0.235, seg ? 20 : 18, 0.03, 721 + i));
       P.colourAdd(S.hatch(lens, { color: "#FFFFFF", opacity: 0.26, gap: 6, width: 9, angle: -60, over: 6, seed: 723 + i }));
+      // CLEAN WHITES. The eye itself, inside the lens: a real wash at a real
+      // value rather than the lens glint standing in for one. Without it the
+      // pupil sits on skin and the whole eye reads as a smudge, which is what
+      // made the eyes the muddiest thing on the plate.
+      if (H2) {
+        const sclera = GM(ell(lx, eyeY + R * 0.035, R * 0.205, R * 0.125, 16, 0.02, 901 + i));
+        P.colourAdd(S.hatch(sclera, { color: "#F3EEE4", opacity: 0.94, gap: 6, width: 9, seed: 903 + i, material: true }));
+      }
 
       // HALF-LIDDED. The lid comes down over the top third of the eye and the pupil
       // sits low and partly under it. This is the single strongest fatigue cue on
@@ -1793,8 +3963,27 @@
         ]), { stroke: ink, width: 3.4 * lw, opacity: 0.88, amp: 1, over: 4, seed: 777 + i }));
       }
 
-      P.topAdd(S.outline(lens, { stroke: ink, width: 3.4 * lw, opacity: 0.9, amp: 1.6, over: 6, seed: 725 + i }));
-      P.topAdd(S.stroke(GM([{ x: lx + s * R * 0.28, y: eyeY - R * 0.05 }, { x: hcx + s * R * 0.83, y: hcy - R * 0.04 }]), { stroke: ink, width: 2.6, opacity: 0.66, amp: 1.2, over: 4, seed: 727 + i }));
+      // §5 — THE RIM IS HARDWARE, NOT A SILHOUETTE. Under hand-2 the light-facing
+      // spans thinned it to near-invisible grey; glasses are the one manufactured
+      // object on his face and they hold one confident line at full weight.
+      P.topAdd(S.outline(lens, H2
+        ? { stroke: ink, width: 4.4 * lw, opacity: 1, amp: 1.2, seed: 725 + i, heavy: 1.15 }
+        : { stroke: ink, width: 3.4 * lw, opacity: 0.9, amp: 1.6, over: 6, seed: 725 + i }));
+      // ONE CONFIDENT LINE FOR THE GLASSES, TEMPLE ARM ATTACHED. The shipped arm
+      // started 0.01R inside the rim and drifted further out with the overshoot,
+      // so it floated off the frame. hand-2 starts it ON the rim, carries real
+      // weight at the hinge (heavy) and lands on the skull edge.
+      if (H2) {
+        // TWO POINTS, not three. A catmull-rom through three points that turn a
+        // corner at the hinge overshoots into a loop, which is the floating
+        // diamond by the camera-left ear. Rim to skull, one segment.
+        P.topAdd(S.stroke(GM([
+          { x: lx + s * R * 0.29, y: eyeY - R * 0.045 },
+          { x: hcx + s * R * 0.84, y: hcy - R * 0.02 },
+        ]), { stroke: ink, width: 3.4 * lw, opacity: 0.95, amp: 0.9, seed: 727 + i, heavy: 1.22 }));
+      } else {
+        P.topAdd(S.stroke(GM([{ x: lx + s * R * 0.28, y: eyeY - R * 0.05 }, { x: hcx + s * R * 0.83, y: hcy - R * 0.04 }]), { stroke: ink, width: 2.6, opacity: 0.66, amp: 1.2, over: 4, seed: 727 + i }));
+      }
       // a smudge on one lens, because he has taken them off and put them back on
       if (s < 0) {
         P.topAdd(S.stroke(GM([{ x: lx - R * 0.16, y: eyeY + R * 0.12 }, { x: lx + R * 0.05, y: eyeY - R * 0.10 }]), { stroke: "#FFFFFF", width: 5, opacity: 0.3, amp: 1.4, over: 4, seed: 779 }));
@@ -1835,6 +4024,17 @@
         const lead = s === glance;
         const gx = glance * R * (lead ? 0.155 : 0.115);
         dot(G({ x: lx + s * R * 0.03 + gx, y: eyeY + R * 0.075 }), R * 0.075, 733 + i * 5);
+        // A DEFINITE PUPIL, and the catchlight that makes it one. The iris ring
+        // sits under the pupil dot the line above already drew, and the highlight
+        // goes upper-left because that is where the light is (§3.1) — the same
+        // vector every other shaded thing on the plate refers to. This is the
+        // whole of the reference's technique on the eye: one bright, resolved
+        // element and everything else modelled.
+        if (H2) {
+          const px = lx + s * R * 0.03 + gx, py = eyeY + R * 0.075;
+          P.topAdd(S.hatch(GM(ell(px, py, R * 0.105, R * 0.1, 14, 0.03, 905 + i)), { color: ink, opacity: 0.42, gap: 5, width: 7, seed: 906 + i, material: false }));
+          P.topAdd(S.hatch(GM(ell(px - R * 0.035, py - R * 0.032, R * 0.026, R * 0.024, 10, 0.05, 907 + i)), { color: "#FFFFFF", opacity: 0.96, gap: 3, width: 4, seed: 908 + i, material: true }));
+        }
       }
     });
 
@@ -1858,8 +4058,19 @@
     // The asymmetry is doing the work: a perfectly level mouth reads as composed,
     // and one dropped corner reads as a man who has heard it all before. It is
     // deliberately NOT turned down at both ends, which would be sulking.
-    if (mouthOpen) {
-      const m = M(ell(hcx, hcy + R * 0.62, R * 0.15, R * 0.11, seg ? 16 : 14, 0.05, 751));
+    // §1.2 — A TALK FRAME IS A VISEME, AND THE MOUTH OPENS BY DEGREES.
+    //
+    // mouthOpen was a boolean, so a talk strip could only alternate shut and
+    // wide — and to get a third frame out of it the shipped strip varied the
+    // BOIL between talk frames as well, which breaks §7's one hard rule: talk
+    // frames differ only at the mouth. A number gives three visemes at one boil
+    // index, so the rule is satisfied in the artwork rather than in a comment.
+    // `true` is 1, so every existing call is unchanged.
+    const MO = mouthOpen === true ? 1 : (typeof mouthOpen === "number" ? Math.max(0, Math.min(1, mouthOpen)) : 0);
+    if (MO > 0.04) {
+      // the aperture, not the mouth: a viseme at 0.45 is the same lips less open
+      const ax = R * 0.15 * (0.52 + 0.48 * MO), ay = R * 0.11 * (0.26 + 0.74 * MO);
+      const m = M(ell(hcx, hcy + R * 0.62, ax, ay, seg ? 16 : 14, 0.05, 751));
       P.colourAdd(S.hatch(m, { color: ink, opacity: 0.36, gap: 5, width: 8, angle: -70, over: 6, seed: 752 }));
       P.topAdd(S.outline(m, { stroke: ink, width: 3 * lw, opacity: 0.86, amp: 1.2, over: 5, seed: 753 }));
     } else {
@@ -1872,6 +4083,18 @@
       P.topAdd(S.stroke(M([
         { x: hcx + R * 0.25 + YAW * 0.5, y: hcy + R * 0.60 }, { x: hcx + R * 0.30 + YAW * 0.5, y: hcy + R * 0.70 },
       ]), { stroke: ink, width: 2.2, opacity: 0.42, amp: 1, over: 3, seed: 757 }));
+      // A MOUTH WITH FORM. The set line stays exactly where it is — it is the
+      // expression and it was argued for. What it lacked was a lip: a shadow
+      // under the lower one and a short plane above the upper, both shading
+      // passes rather than lines, so the mouth has thickness without gaining a
+      // second contour. Still flat, still not turned down at both ends.
+      if (H2) {
+        // Deeper and wider than the first cut: at 0.13 and 0.09 over a small
+        // region these came out as a 0.10 wash and did not survive to render
+        // scale. Still shading passes, still no second contour on the mouth.
+        P.colourAdd(S.hatch(M(ell(hcx + YAW * 0.5, hcy + R * 0.70, R * 0.225, R * 0.075, 14, 0.08, 910)), { color: ink, opacity: 0.3, gap: 6, width: 8, seed: 911, material: false }));
+        P.colourAdd(S.hatch(M(ell(hcx + YAW * 0.5, hcy + R * 0.558, R * 0.19, R * 0.055, 14, 0.08, 912)), { color: ink, opacity: 0.2, gap: 6, width: 8, seed: 913, material: false }));
+      }
     }
     P.topAdd(S.stroke(M([{ x: hcx - R * 0.2, y: hcy + R * 0.76 }, { x: hcx + R * 0.2, y: hcy + R * 0.755 }]), { stroke: ink, width: 2.2, opacity: 0.3, amp: 1, over: 4, seed: 756 }));
     return { eyeY: eyeY, tilt: tilt, glance: glance };
@@ -1907,7 +4130,11 @@
     const OUTFITS = HOST_OUTFITS;
     const OUT = OUTFITS[o.outfit] || OUTFITS[HOST_OUTFIT_DEFAULT];
     P.meta.outfit = o.outfit || HOST_OUTFIT_DEFAULT;
-    const shirt = OUT.top, trouser = OUT.leg, shoeC = "#1E242B", skin = "#C99A6E", hair = "#3B3129";
+    const shirt = OUT.top, trouser = OUT.leg, shoeC = "#1E242B", skin = SKIN, hair = "#3B3129";
+    // §3.6, the paying half: under hand-2 the clothing gives up its quiet
+    // secondary lines so the face can afford resolved eyes. Same flag as
+    // hostFace() and hostHead(), and nothing is gated off for hand-1.
+    const H2 = !!(H.profile && H.profile() === "hand-2");
     const floorY = Math.round(h * 0.9);
     P.meta.floorLineY = floorY;
     const BOFF = (o.boil | 0) * 9173;
@@ -1923,10 +4150,27 @@
     const figH = h * 0.665;
     const topY = floorY - figH;
     const HU = figH / 6.8;
-    const at = function (n) { return topY + HU * n; };
+    // §4.1 — THE SEAT DROP, and it is why a seated pose is a rig term rather than
+    // a new drawing. Every landmark on this figure comes out of at(n), so lowering
+    // the hip by moving `at` itself carries the head, the shoulders, the spine
+    // curve, the arms and the face with it, unchanged. Nothing above the hip knows
+    // it is sitting down.
+    //
+    // 1.8 head units: standing, the hip sits 3.7HU above the floor; on a chair it
+    // sits at knee height, which this rig puts at 1.95HU. So the drop is the
+    // difference, and the seated figure occupies 5.0HU against the standing 6.8 —
+    // a height ratio of 0.735, published in meta because the renderer cannot
+    // scale a seated cut-out the way it scales a standing one. See seatedNote.
+    const SEATED = !!POSE_SEATED[pose];
+    const SEAT_DROP = SEATED ? HU * 1.8 : 0;
+    const at = function (n) { return topY + HU * n + SEAT_DROP; };
     const headCy = at(0.46) + bob;
     const shoulderY = at(1.30) + bob * 0.5, chestY = at(1.85), waistY = at(2.6);
     const hipY = at(3.1), kneeY = at(4.85), ankleY = at(6.55);
+    // Seated, the foot is on the floor rather than at the bottom of a standing
+    // leg: at(6.55) with the seat drop applied sits 1.55HU BELOW the floor line,
+    // which would have put his shoes through it.
+    const ankY = SEATED ? floorY - HU * 0.1 : ankleY;
     const shoulderHalf = HU * 0.86, chestHalf = HU * 0.8, waistHalf = HU * 0.66, hipHalf = HU * 0.78;
 
     // ---- pose -------------------------------------------------------------
@@ -1990,6 +4234,23 @@
         arms: [[0.30, 0.55, -0.49, -0.91], [0.34, 0.60, 0.19, -1.17]] },
       "walking-out-of-frame": { lean: 0.20, stride: 0.40, weight: 1, slump: 0.22,
         arms: [[0.46, 1.20, 0.24, 2.32], [0.56, 1.10, 0.90, 2.04]] },
+      // §4.1 — SITTING DOWN. The highest-value pose in the brief by some distance:
+      // every LONG is him standing for forty minutes, and a seated pose is the
+      // cheapest way to make a long chapter feel like a different scene.
+      //
+      // It is a RIG term, not an arm arrangement — see SEAT_DROP below. The hip
+      // descends to seat height and the whole upper body comes with it, the thighs
+      // run forward instead of down, and the shins drop vertically to the floor.
+      // Everything above the hip is the figure that already exists, which is the
+      // point: it has to be recognisably the same man sitting down, not a second
+      // character.
+      //
+      // He sits FORWARD, elbow on the desk, the deepest lean in the set bar
+      // head-in-hands. A man sitting upright in a chair reads as an interview; a
+      // man leaning into his own desk at three in the morning reads as this
+      // channel.
+      "sitting-at-desk": { lean: 0.34, stride: 0, weight: 1, slump: 0.40, seated: true,
+        arms: [[0.36, 1.14, 0.98, 1.44], [0.52, 1.26, 0.26, 2.06]], forearm: "left" },
     }[pose] || { lean: 0.06, stride: 0.04, weight: 1, slump: 0.28,
       arms: [[0.54, 1.06, 0.30, 1.98], [0.48, 1.10, 0.36, 1.92]] };
 
@@ -2045,17 +4306,90 @@
     // material hatch runs heavier than anything in the set, and each part carries
     // a neutral weight pass on its inboard side — the room's furniture tops out
     // at a 0.19 ink hatch, and he sits well above that.
-    const mass = function (poly, colour, op, lw, ang, seed) {
+    // §3 — NO BLOOM ON A MASS. Every polygon that comes through here is a
+    // CONSTRUCTION polygon: a torso quad whose bottom is under the trousers, a
+    // limb quad whose ends are inside the shoulder and the hand it joins. Their
+    // boundaries are not the material's boundary, so rimming them draws exactly
+    // what the review found — a quadrilateral across the shirt, a parallelogram
+    // where the forearm crosses the sleeve, a hard rectangle at the elbow,
+    // horizontal breaks at the knees. Same rule the neck quad already uses; the
+    // silhouette is carried by outline() below, which is the line that is real.
+    // §5c — THE OUTLINE CLAUSE. delta-12 suppressed the bloom on construction
+    // polygons and left their CONTOUR, which is the line the rule deliberately
+    // preserves — and on a buried edge that line is not real either. The review
+    // found it on the neck: two verticals from inside the jaw to mid-shirt, on
+    // the most-used plate in the kit. Same defect as the quadrilateral across the
+    // shirt, one layer up.
+    //
+    // So the clause: on a construction polygon, the silhouette stays and the
+    // INTERIOR edges go — outline and rim both. Which edges are interior is a
+    // property of the construction, so it is derived from the construction rather
+    // than listed per call:
+    //
+    //   "quad"   a limb from quad(a, b, wa, wb): points are [a+n, b+n, b-n, a-n],
+    //            so edges 1 and 3 are the ENDS — inside the shoulder and inside
+    //            the hand the limb joins. The two long sides are the silhouette.
+    //   "trunk"  a torso: the shoulder-to-shoulder top edge is under the collar
+    //            and the hip-to-hip bottom edge is under the trousers. Both
+    //            derived as the edges whose endpoints both sit at the extreme of
+    //            the polygon's y-range, so it holds for either torso poly without
+    //            being told their point order.
+    //
+    // Edges that remain are drawn as OPEN strokes, which is also why they read
+    // better: stroke2 tapers the ends of an open span, so a silhouette now fades
+    // where the form goes under a garment instead of stopping on a corner.
+    const interiorEdges = function (poly, mode) {
+      const n = poly.length;
+      if (mode === "quad") return { 1: 1, 3: 1 };
+      const ys = poly.map(function (p) { return p.y; });
+      const y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+      const band = (y1 - y0) * 0.08, out = {};
+      for (let i = 0; i < n; i++) {
+        const a = poly[i], b = poly[(i + 1) % n];
+        if ((a.y <= y0 + band && b.y <= y0 + band) || (a.y >= y1 - band && b.y >= y1 - band)) out[i] = 1;
+      }
+      return out;
+    };
+    const contour = function (poly, mode, o) {
+      if (!H2 || !mode) return P.inkAdd(S.outline(poly, o));
+      // "none" — every edge is interior. The neck is the case: BOTH its long
+      // sides are buried at the top (inside the skull) and at the bottom (under
+      // the collar), so there is no whole edge left to draw and the visible span
+      // has to be cut from the drawing's own boundaries instead. The caller draws
+      // it; see the neck below.
+      if (mode === "none") return P;
+      const skip = interiorEdges(poly, mode);
+      const n = poly.length;
+      let run = [];
+      for (let i = 0; i < n; i++) {
+        if (skip[i]) {
+          if (run.length > 1) P.inkAdd(S.stroke(run, Object.assign({}, o, { silhouette: true })));
+          run = [];
+        } else {
+          if (!run.length) run.push(poly[i]);
+          run.push(poly[(i + 1) % n]);
+        }
+      }
+      if (run.length > 1) P.inkAdd(S.stroke(run, Object.assign({}, o, { silhouette: true })));
+      return P;
+    };
+    const mass = function (poly, colour, op, lw, ang, seed, mode) {
       const c = centroid(poly);
-      P.colourAdd(S.hatch(poly, { color: colour, opacity: op, gap: 6.8, width: 11.5, angle: ang, over: 11, seed: seed }));
+      const noRim = H2 ? { rim: false } : null;
+      P.colourAdd(S.hatch(poly, Object.assign({ color: colour, opacity: op, gap: 6.8, width: 11.5, angle: ang, over: 11, seed: seed }, noRim)));
       // the turned form, in ink: this is what carries his contrast
       const inboard = c.x < cx ? clipHalf(poly, -1, 0, -c.x) : clipHalf(poly, 1, 0, c.x);
       if (inboard) P.colourAdd(S.hatch(inboard, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: ang - 6, over: 8, seed: seed + 3 }));
-      P.inkAdd(S.outline(poly, { stroke: ink, width: lw * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: seed + 1 }));
+      contour(poly, mode, { stroke: ink, width: lw * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: seed + 1 });
     };
     const dot = function (x, y, r, seed) {
       P.topAdd(S.hatch(ell(x, y, r, r, 12, 0.05, seed), { color: ink, opacity: 0.95, gap: 2.4, width: 4.4, angle: -60, over: 3, seed: seed + 1 }));
     };
+
+    // ---- the chair, drawn BEFORE the legs so he sits in front of it --------
+    if (SEATED) {
+      hostChair({ P: P, S: S, HU: HU, cx: cx, seatY: hipY + HU * 0.5, floorY: floorY, ink: ink, fwd: -1 });
+    }
 
     // ---- legs (behind the shirt hem) --------------------------------------
     // The loaded leg is straight and vertical under its own raised hip; the free
@@ -2076,24 +4410,69 @@
       const ankP = loaded
         ? { x: hipP.x - s * HU * 0.06, y: ankleY }
         : { x: hipP.x - s * hipHalf * 0.26 + sw, y: ankleY };
-      mass(quad(hipP, kneeP, HU * 0.31, HU * 0.24), trouser, 0.88, 4.2, -70 + i * 8, 601 + i * 9);
-      mass(quad(kneeP, ankP, HU * 0.24, HU * 0.17), trouser, 0.88, 4.0, -70 + i * 8, 615 + i * 9);
+      // §4.1 — SEATED: the thigh runs FORWARD at seat height instead of down, and
+      // the shin drops vertically to the floor. The near leg carries its knee a
+      // little further out and a little lower, so the pair reads as two legs at
+      // different depths rather than as one leg drawn twice — the same reason the
+      // standing rig refuses mirrored legs.
+      const seatedKnee = { x: hipP.x - HU * (1.02 + (i === 0 ? 0.2 : 0)), y: hipY + HU * (0.1 + (i === 0 ? 0.06 : 0)) };
+      const seatedAnk = { x: seatedKnee.x - HU * 0.06, y: ankY };
+      const kP = SEATED ? seatedKnee : kneeP, aP = SEATED ? seatedAnk : ankP;
+      mass(quad(hipP, kP, HU * 0.31, HU * 0.24), trouser, 0.88, 4.2, SEATED ? -10 + i * 6 : -70 + i * 8, 601 + i * 9, "quad");
+      mass(quad(kP, aP, HU * 0.24, HU * 0.17), trouser, 0.88, 4.0, -70 + i * 8, 615 + i * 9, "quad");
       const dir = pose === "walking-out-of-frame" ? 1 : (i === 0 ? -1 : 1);
       const L = HU * 0.6, hgt = HU * 0.19;
       const sh = [
-        { x: ankP.x - L * 0.3 * dir, y: ankleY + hgt * 0.1 },
-        { x: ankP.x + L * 0.72 * dir, y: ankleY + hgt * 0.42 },
-        { x: ankP.x + L * 0.7 * dir, y: floorY }, { x: ankP.x - L * 0.34 * dir, y: floorY },
+        { x: aP.x - L * 0.3 * dir, y: ankY + hgt * 0.1 },
+        { x: aP.x + L * 0.72 * dir, y: ankY + hgt * 0.42 },
+        { x: aP.x + L * 0.7 * dir, y: floorY }, { x: aP.x - L * 0.34 * dir, y: floorY },
       ];
       P.colourAdd(S.hatch(sh, { color: shoeC, opacity: 0.66, gap: 5.6, width: 9, angle: -8, over: 8, seed: 626 + i }));
       P.inkAdd(S.outline(sh, { stroke: ink, width: 3.6, opacity: 0.92, amp: 2, over: 8, seed: 629 + i }));
+      // the shoe's welt line stays: it is a real edge on a real object, and a
+      // shoe without one reads as a slipper.
       P.inkAdd(S.line(sh[3].x, floorY - hgt * 0.3, sh[2].x, floorY - hgt * 0.32, { stroke: ink, width: 2.4, opacity: 0.5, amp: 1.3, over: 5, step: 6, seed: 633 + i }));
     });
 
     // ---- neck, drawn BEFORE the shirt so the collar sits on top of it ------
     const nTop = { x: cx + leanAt(headCy + HU * 0.4), y: headCy + HU * 0.36 + HEAD_SINK };
     const nBot = { x: cx + leanAt(shoulderY), y: shoulderY + HU * 0.12 };
-    mass(quad(nTop, nBot, HU * 0.19, HU * 0.24), skin, 0.44, 3.0, -84, 641);
+    // §5c, the span — and this is the pair the review measured. "quad" kept the
+    // two LONG sides, which is right for a limb and wrong for a neck: a limb's
+    // long sides are its silhouette, whereas a neck's are buried at BOTH ends —
+    // the top inside the skull (nTop sits HU*0.11 above the head's lower
+    // boundary, by construction) and the bottom under the collar (nBot is
+    // HU*0.12 below the shoulder line). So the quad's own extent is not its
+    // visible extent, which is exactly the symptom: seven times too long, and
+    // still ending in mid-garment.
+    //
+    // The visible span is cut from the drawing's own boundaries instead of from
+    // the quad: it starts where the HEAD ELLIPSE's lower edge crosses the neck's
+    // own half-width, and ends just inside the shirt. Nothing is hand-tuned —
+    // both bounds are the geometry already in scope, so a change to head size,
+    // sink or shoulder height carries the neck with it.
+    const nq = quad(nTop, nBot, HU * 0.19, HU * 0.24);
+    mass(nq, skin, 0.44, 3.0, -84, 641, "none");
+    if (H2) {
+      // the head's radius, HU * 0.47, taken from HU rather than from R because R
+      // is declared further down this author — same number, no forward reference
+      const halfW = HU * 0.19, headRad = HU * 0.47;
+      const jawY = headCy + HEAD_SINK + Math.sqrt(Math.max(1, headRad * headRad - halfW * halfW));
+      const tuckY = shoulderY + HU * 0.03;
+      const span = (nBot.y - nTop.y) || 1;
+      const sideAt = function (a, b, y) {
+        const t = Math.max(0, Math.min(1, (y - nTop.y) / span));
+        return { x: a.x + (b.x - a.x) * t, y: y };
+      };
+      [[nq[0], nq[1]], [nq[3], nq[2]]].forEach(function (e, i) {
+        if (tuckY - jawY < HU * 0.04) return;
+        P.inkAdd(S.stroke([sideAt(e[0], e[1], jawY), sideAt(e[0], e[1], tuckY)], {
+          stroke: ink, width: 3.0 * 1.35, opacity: 0.95, amp: 2, seed: 646 + i, heavy: 1.18,
+        }));
+      });
+    } else {
+      P.inkAdd(S.outline(nq, { stroke: ink, width: 3.0 * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: 642 }));
+    }
 
     // ---- torso: shoulders, waist, hip. A body has a middle ----------------
     // The outline now follows the RIG rather than carrying its own cosmetic dip:
@@ -2111,7 +4490,7 @@
       { x: cx - waistHalf + lW, y: waistY },
       { x: cx - chestHalf + lC, y: chestY - WGT * HU * 0.03 },
     ];
-    mass(torso, shirt, 0.88, 4.8, -78, 651);
+    mass(torso, shirt, 0.88, 4.8, -78, 651, "trunk");
     // THE COLLAR HAS LOST ITS SHAPE — a crew neck stretched wide and sagging
     // off-centre, with a second slack line where the ribbing has given up. Same
     // neckline as the close-up, at full-figure scale: one shirt, two framings.
@@ -2124,7 +4503,10 @@
       { x: cx + CW * 0.78 + lS, y: shYof(0.5) + HU * 0.17 },
       { x: cx + CW * 1.06 + lS, y: shYof(1) + HU * 0.06 },
     ], { stroke: ink, width: 3.4, opacity: 0.84, amp: 2.2, over: 6, seed: 655 }));
-    P.inkAdd(S.stroke([
+    // THE SLACK SECOND COLLAR LINE comes off under hand-2 — a 0.36 line a few
+    // units below a 0.84 one is the tentative-second-edge read this revision
+    // exists to remove, and the collar's sag is already in the line above it.
+    if (!H2) P.inkAdd(S.stroke([
       { x: cx - CW * 0.86 + lS, y: shYof(-1) + HU * 0.10 },
       { x: cx + CW * 0.06 + lS, y: shoulderY + CD * 1.92 + cSag },
       { x: cx + CW * 0.86 + lS, y: shYof(1) + HU * 0.12 },
@@ -2157,8 +4539,11 @@
     // The rolled cuff is drawn with the ARM, not here: the arms are laid down
     // after the torso, so a cuff drawn at this point would sit under the sleeve it
     // is supposed to be a fold in. OUT.sleeves is read at the arm loop below.
-    // placket and hem: two quiet lines that tell you it is a shirt
-    P.inkAdd(S.line(cx + leanAt(shoulderY + HU * 0.4), shoulderY + HU * 0.4, cx + leanAt(waistY), waistY + HU * 0.2, { stroke: ink, width: 2.2, opacity: 0.3, amp: 2.2, over: 5, step: 7, seed: 657 }));
+    // placket and hem: two quiet lines that tell you it is a shirt. Under hand-2
+    // the PLACKET goes and the HEM stays: the hem is the garment's bottom edge,
+    // which is structure, and the placket is decoration on a torso that is now
+    // modelled by a wash and does not need a seam drawn down it.
+    if (!H2) P.inkAdd(S.line(cx + leanAt(shoulderY + HU * 0.4), shoulderY + HU * 0.4, cx + leanAt(waistY), waistY + HU * 0.2, { stroke: ink, width: 2.2, opacity: 0.3, amp: 2.2, over: 5, step: 7, seed: 657 }));
     P.inkAdd(S.line(cx - hipHalf * 0.92, hipY + HU * 0.06, cx + hipHalf * 0.92, hipY + HU * 0.02, { stroke: ink, width: 2.6, opacity: 0.34, amp: 2.4, over: 6, step: 7, seed: 659 }));
 
     // ---- arms, over the trunk ---------------------------------------------
@@ -2186,12 +4571,12 @@
         forearmY = fy;
       }
       // rolled sleeves stop at the elbow: upper arm in cloth, forearm bare
-      mass(quad(sh, el, HU * 0.27, HU * 0.21), shirt, 0.86, 4.0, -60 + i * 20, 661 + i * 17);
-      mass(quad(el, hd, HU * 0.19, HU * 0.15), OUT.sleeves === "rolled" ? skin : skin, 0.46, 3.6, -60 + i * 20, 681 + i * 17);
+      mass(quad(sh, el, HU * 0.27, HU * 0.21), shirt, 0.86, 4.0, -60 + i * 20, 661 + i * 17, "quad");
+      mass(quad(el, hd, HU * 0.19, HU * 0.15), OUT.sleeves === "rolled" ? skin : skin, 0.46, 3.6, -60 + i * 20, 681 + i * 17, "quad");
       if (OUT.sleeves === "rolled") {
         // the fold itself: a short heavy band across the elbow
         P.inkAdd(S.stroke([{ x: el.x - HU * 0.2, y: el.y - HU * 0.04 }, { x: el.x + HU * 0.2, y: el.y + HU * 0.02 }], { stroke: ink, width: 5.4, opacity: 0.9, amp: 2, over: 6, seed: 751 + i }));
-        P.colourAdd(S.hatch(quad(sh, el, HU * 0.27, HU * 0.21).slice(0, 4), { color: shirt, opacity: 0.3, gap: 8, width: 11, angle: -60 + i * 20, over: 8, seed: 755 + i }));
+        P.colourAdd(S.hatch(quad(sh, el, HU * 0.27, HU * 0.21).slice(0, 4), { color: shirt, opacity: 0.3, gap: 8, width: 11, angle: -60 + i * 20, over: 8, seed: 755 + i, rim: false }));
       }
       if (OUT.layer === "cardigan") {
         // the cardigan carries down the upper arm
@@ -2201,6 +4586,26 @@
       const hand = ell(hd.x, hd.y + HU * 0.12, HU * 0.19, HU * 0.17, 16, 0.06, 691 + i);
       P.colourAdd(S.hatch(hand, { color: skin, opacity: 0.5, gap: 5.6, width: 9, angle: -70, over: 7, seed: 695 + i }));
       P.inkAdd(S.outline(hand, { stroke: ink, width: 3.4, opacity: 0.9, amp: 1.9, over: 7, seed: 699 + i }));
+      // §6 — A THUMB AND ONE KNUCKLE BREAK. The hand was a circle: an
+      // undifferentiated mitten, and at render scale a blob. A hand resting on a
+      // surface is the most legible "this person is doing something" signal on
+      // the plate, and two strokes is all it takes at this size — more than that
+      // is fingers, and fingers at 0.43 scale are noise. The thumb goes on the
+      // INBOARD side (toward the body, which is where a thumb is when a palm is
+      // down) and carries occlusion weight where it leaves the hand; the knuckle
+      // break runs across the back, not around it.
+      if (H2) {
+        const hx = hd.x, hy = hd.y + HU * 0.12;
+        P.inkAdd(S.stroke([
+          { x: hx - s * HU * 0.15, y: hy + HU * 0.04 },
+          { x: hx - s * HU * 0.235, y: hy - HU * 0.055 },
+          { x: hx - s * HU * 0.165, y: hy - HU * 0.135 },
+        ], { stroke: ink, width: 3.2, opacity: 0.93, amp: 1.1, seed: 960 + i, heavy: 1.2 }));
+        P.inkAdd(S.stroke([
+          { x: hx - s * HU * 0.09, y: hy - HU * 0.105 },
+          { x: hx + s * HU * 0.13, y: hy - HU * 0.05 },
+        ], { stroke: ink, width: 2.3, opacity: 0.62, amp: 0.9, seed: 962 + i }));
+      }
       hands.push({ x: hd.x, y: hd.y + HU * 0.12 });
     });
 
@@ -2247,6 +4652,7 @@
     // room plate's own slots["host-anchor"].contact.y instead of guessing a height.
     P.meta.rig = {
       pose: pose,
+      seated: SEATED,
       weightOn: WGT < 0 ? "camera-left leg" : "camera-right leg",
       lean: POSE.lean,
       slump: SLUMP,
@@ -2274,10 +4680,114 @@
     P.slot("mouth", hcx - R * 0.26, hcy + R * 0.44, R * 0.52, R * 0.34, { role: "mouth", region: true, note: "talk frames differ here only" });
     P.slot("head", hcx - R, hcy - R * 1.15, R * 2, R * 2.2, { role: "head", region: true });
     P.slot("figure", cx - shoulderHalf * 1.9, hcy - R * 1.35, shoulderHalf * 3.8, floorY - hcy + R * 1.5, { role: "figure", region: true, note: "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes" });
+    // §4.1 — WHAT A SEATED CUT-OUT NEEDS THE RENDERER TO KNOW, and it is not what
+    // a standing one needs.
+    //
+    // The anchor contract scales a host until (floorLineY - figure.y) equals the
+    // anchor's height. Applied to this plate unchanged, a seated Dennis is scaled
+    // UP until his 5.0HU seated height fills a 6.8HU standing anchor — a 36%
+    // oversized man sitting in exactly the right place. The plate publishes the
+    // ratio rather than leaving the renderer to notice, because no still would
+    // show it: he would simply look close to camera.
+    if (SEATED) {
+      P.meta.seated = {
+        // DERIVED, not authored. The seat drop is the only difference between this
+        // plate's scaling height and a standing pose's, so the ratio comes out of
+        // the rig rather than out of a head count: measured 959 against 1297 on a
+        // 1920-tall plate, which is the 0.738 below.
+        heights: {
+          seatedScaleHeight: Math.round(floorY - (hcy - R * 1.35)),
+          standingEquivalent: Math.round(floorY - (hcy - R * 1.35) + SEAT_DROP),
+          seatDrop: Math.round(SEAT_DROP),
+          ratio: +((floorY - (hcy - R * 1.35)) / (floorY - (hcy - R * 1.35) + SEAT_DROP)).toFixed(4),
+        },
+        anchorScale: "STANDING-EQUIVALENT. Scale so (floorLineY - figure.y) equals anchor.targetHeight x heights.ratio, NOT the target height. The floor pin is unchanged — his feet are on the floor and floorLineY still lands on the room's floorLineY.",
+        chair: "drawn ON THIS PLATE, not in the room. A seated cut-out over a set with no chair is a man hovering at desk height, so the chair travels with him. The cost is that it is the same chair in every room, which is the lesser problem: it is his chair.",
+        chairContrast: "the chair is hatched at about half the figure's opacity and outlined at two thirds its weight. room/ doctrine is that he is the highest-contrast object in any frame he is in, and that has to hold inside his own cut-out too.",
+        note: "seated and leaning into the desk, not upright in a chair: a man sitting straight reads as an interview, and this channel is a man at his own desk at three in the morning.",
+      };
+    }
     return P;
   }
 
-  const HOST_POSES = ["leaning-on-desk", "hands-in-pockets", "holding-a-page", "pointing-down-at-desk", "head-in-hands", "walking-out-of-frame"];
+  /* §4.3 — THE EMPTY CHAIR. His chair, with nobody in it.
+
+     One plate, and it is the same chair the seated pose sits on — literally the
+     same function, so the two cannot drift into being two different chairs. That
+     shared geometry is the only reason this asset is cheap enough to ship in this
+     drop while over-the-shoulder is not.
+
+     What it is FOR: the cut-away at the end of a long chapter, or under a line the
+     voice-over delivers over an empty set. It is the one host-family plate with no
+     host on it, which is the whole point — the absence reads because the chair is
+     recognisably the one he was in.
+
+     It publishes floorLineY and stands on it like a figure does, so it composites
+     onto an existing host-anchor with no new contract: the chair's own height is
+     1.0 by definition, and the seated ratio does not apply because there is no
+     seated body to scale. */
+  function emptyChair(o) {
+    const w = o.w, h = o.h, p = o.pal;
+    const P = H.Plate({
+      key: o.key, w, h, seed: o.seed, pal: Object.assign({}, p, { ground: "none", grain: null }),
+      meta: {
+        aspect: w > h ? "16x9" : "9x16", family: "host", type: "empty-chair",
+        dataPolicy: "alpha cut-out, no ground: it composites onto a room's host-anchor exactly as a figure does",
+      },
+    });
+    const floorY = Math.round(h * 0.9);
+    P.meta.floorLineY = floorY;
+    const S = boilShift(inkScale(h / 1920), o.boil | 0);
+    const HU = (h * 0.665) / 6.8;
+    const cx = w * 0.5;
+    const ink = ROLES.structure.hex;
+    const seatY = floorY - HU * 1.95;   // the same seat height the rig sits at
+    const geo = hostChair({ P: P, S: S, HU: HU, cx: cx, seatY: seatY, floorY: floorY, ink: ink, fwd: -1 });
+    // The contact shadow, the same pair the figure gets — without it the chair
+    // hovers, which is the defect this plate exists to avoid in the first place.
+    P.colourAdd(S.hatch(ellipse(cx - HU * 0.1, floorY + HU * 0.02, HU * 0.9, HU * 0.1, 14, 0.08, 1191), { color: "#1C222A", opacity: 0.26, gap: 4.5, width: 8, angle: -6, over: 5, seed: 1192 }));
+    // THE CHAIR CARRIES ITS OWN RATIO, and this is drop eight's correction.
+    //
+    // It used to say: scale (floorLineY - figure.y) to the anchor height DIRECTLY,
+    // because there is no seated body to scale. That reasoning is wrong in a way
+    // only a composite shows, and render-scale.html §14 is where it showed. The
+    // anchor's targetHeight is a STANDING figure's height. Scaling a chair to it
+    // makes the chair as tall as a standing man: on room/desk-front-16x9 the same
+    // chair came out at 562 units under this plate and 342 under the seated pose —
+    // 64% larger with nobody in it, and taller than the 416-unit man who sits in
+    // it — with its back 220 units higher up the frame on the one cut the plate
+    // exists for. The claim that hid it was true of the drawing and false of the
+    // contract: same chair, one function, two sizes.
+    //
+    // So it publishes a ratio like the seated pose does, against the same standing
+    // equivalent, and the two now composite at one scale. DERIVED, not authored:
+    // the seated pose publishes standingEquivalent as 0.6755 of canvas height, and
+    // the ratio is this plate's own span over that. preflight check L asserts it
+    // against a seated pose measured in the same run, so neither can drift alone.
+    const figY = geo.postTop.y - HU * 0.2, chairSpan = floorY - figY;
+    const STANDING_EQUIV = h * 0.6755;
+    P.slot("figure", cx - HU * 1.5, figY, HU * 3, chairSpan + HU * 0.2, {
+      role: "figure", region: true,
+      note: "cut-out bounds; stand on floorLineY, same as a host figure. Scale so (floorLineY - figure.y) equals anchor.targetHeight x chair.heights.ratio — NOT the target height directly. The anchor height is a STANDING figure's; a chair scaled to it is a chair taller than the man who sits in it.",
+    });
+    P.meta.chair = {
+      heights: {
+        chairHeight: Math.round(chairSpan),
+        standingEquivalent: Math.round(STANDING_EQUIV),
+        ratio: +(chairSpan / STANDING_EQUIV).toFixed(4),
+      },
+      anchorScale: "STANDING-EQUIVALENT, exactly as the seated pose. Scale so (floorLineY - figure.y) equals anchor.targetHeight x heights.ratio. The floor pin is unchanged — the chair stands on the floor and floorLineY still lands on the room's floorLineY.",
+      matchesSeated: "this ratio and host/sitting-at-desk's are different numbers against the SAME standing equivalent, and they are what make the chair one size across the cut: him, then his chair. A renderer that applies the seated 0.7394 here, or no ratio at all, breaks that in opposite directions.",
+    };
+    P.meta.emptyChair = {
+      shares: "engine/plates.js hostChair() — the identical function the sitting-at-desk pose draws, so the empty chair and the occupied one are the same object by construction rather than by care.",
+      use: "the cut-away at the end of a long chapter, or under a line delivered over an empty set. The absence reads because the chair is recognisably the one he was in.",
+      note: "no host, and no host-anchor contract of its own. It is furniture that composites where he would have been.",
+    };
+    return P;
+  }
+
+  const HOST_POSES = ["leaning-on-desk", "hands-in-pockets", "holding-a-page", "pointing-down-at-desk", "head-in-hands", "walking-out-of-frame", "sitting-at-desk"];
 
   /* THE HOST, CLOSE. Two framings: head-and-shoulders and waist-up.
 
@@ -2317,7 +4827,8 @@
     const ink = p.structure;
     const OUT = HOST_OUTFITS[o.outfit] || HOST_OUTFITS[HOST_OUTFIT_DEFAULT];
     P.meta.outfit = o.outfit || HOST_OUTFIT_DEFAULT;
-    const shirt = OUT.top, skin = "#C99A6E", hair = "#3B3129";
+    const shirt = OUT.top, skin = SKIN, hair = "#3B3129";
+    const H2 = !!(H.profile && H.profile() === "hand-2");
     const BOFF = (o.boil | 0) * 9173;
     const S = boilShift(inkScale(h / 1920), o.boil | 0);
     const ell = function (cx2, cy2, rx, ry, n, jit, seed) { return ellipse(cx2, cy2, rx, ry, n, jit, seed + BOFF); };
@@ -2345,12 +4856,61 @@
     const chestHalf = close ? R * 2.0 : HU * 0.8;
     const waistHalf = HU * 0.66, hipHalf = HU * 0.78;
 
-    const mass = function (poly, colour, op, lw, ang, seed) {
+    // §3 — NO BLOOM ON A MASS. Every polygon that comes through here is a
+    // CONSTRUCTION polygon: a torso quad whose bottom is under the trousers, a
+    // limb quad whose ends are inside the shoulder and the hand it joins. Their
+    // boundaries are not the material's boundary, so rimming them draws exactly
+    // what the review found — a quadrilateral across the shirt, a parallelogram
+    // where the forearm crosses the sleeve, a hard rectangle at the elbow,
+    // horizontal breaks at the knees. Same rule the neck quad already uses; the
+    // silhouette is carried by outline() below, which is the line that is real.
+    // §5c — the outline clause, same derivation as hostFigure: on a construction
+    // polygon the silhouette stays and the interior edges go, outline as well as
+    // rim. "quad" drops a limb's two buried ends; "trunk" drops the edges whose
+    // endpoints both sit at the extreme of the polygon's y-range — the
+    // shoulder-to-shoulder top, under the collar, and the hem, under the frame.
+    const interiorEdges = function (poly, mode) {
+      const n = poly.length;
+      if (mode === "quad") return { 1: 1, 3: 1 };
+      const ys = poly.map(function (p) { return p.y; });
+      const y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+      const band = (y1 - y0) * 0.08, out = {};
+      for (let i = 0; i < n; i++) {
+        const a = poly[i], b = poly[(i + 1) % n];
+        if ((a.y <= y0 + band && b.y <= y0 + band) || (a.y >= y1 - band && b.y >= y1 - band)) out[i] = 1;
+      }
+      return out;
+    };
+    const contour = function (poly, mode, o) {
+      if (!H2 || !mode) return P.inkAdd(S.outline(poly, o));
+      // "none" — every edge is interior. The neck is the case: BOTH its long
+      // sides are buried at the top (inside the skull) and at the bottom (under
+      // the collar), so there is no whole edge left to draw and the visible span
+      // has to be cut from the drawing's own boundaries instead. The caller draws
+      // it; see the neck below.
+      if (mode === "none") return P;
+      const skip = interiorEdges(poly, mode);
+      const n = poly.length;
+      let run = [];
+      for (let i = 0; i < n; i++) {
+        if (skip[i]) {
+          if (run.length > 1) P.inkAdd(S.stroke(run, Object.assign({}, o, { silhouette: true })));
+          run = [];
+        } else {
+          if (!run.length) run.push(poly[i]);
+          run.push(poly[(i + 1) % n]);
+        }
+      }
+      if (run.length > 1) P.inkAdd(S.stroke(run, Object.assign({}, o, { silhouette: true })));
+      return P;
+    };
+    const mass = function (poly, colour, op, lw, ang, seed, mode) {
       const c = centroid(poly);
-      P.colourAdd(S.hatch(poly, { color: colour, opacity: op, gap: 6.8, width: 11.5, angle: ang, over: 11, seed: seed }));
+      const noRim = H2 ? { rim: false } : null;
+      P.colourAdd(S.hatch(poly, Object.assign({ color: colour, opacity: op, gap: 6.8, width: 11.5, angle: ang, over: 11, seed: seed }, noRim)));
       const inboard = c.x < cx ? clipHalf(poly, -1, 0, -c.x) : clipHalf(poly, 1, 0, c.x);
       if (inboard) P.colourAdd(S.hatch(inboard, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: ang - 6, over: 8, seed: seed + 3 }));
-      P.inkAdd(S.outline(poly, { stroke: ink, width: lw * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: seed + 1 }));
+      contour(poly, mode, { stroke: ink, width: lw * 1.35, opacity: 0.97, amp: 2.8, over: 10, seed: seed + 1 });
     };
     const dot = function (x, y, r, seed) {
       P.topAdd(S.hatch(ell(x, y, r, r, 12, 0.05, seed), { color: ink, opacity: 0.95, gap: 2.4, width: 4.4, angle: -60, over: 3, seed: seed + 1 }));
@@ -2405,20 +4965,77 @@
     // The neck is SHORT in both: it starts under the jaw rather than at the head's
     // centre, which is what keeps it from reading as a trunk.
     const neckTop = hcy + R * 0.56;
-    const neckBot = shoulderY - R * (close ? 0.18 : 0.14);
+    const neckBot = shoulderY - R * (close ? 0.18 : 0.14) + (H2 ? R * 0.5 : 0);
     const neckPoly = quad({ x: hcx, y: neckTop }, { x: cx, y: neckBot }, R * 0.36, R * 0.42);
     // NO CLOSED OUTLINE ON THE NECK. mass() puts every hatch on the colour layer
     // and every line on the ink layer, so a neck outlined as a quad has its bottom
     // edge painted on top of the shirt that is meant to cover it. At full-figure
     // size the collar hides that; at these sizes it is a box drawn on his chest.
     // Two side lines from jaw to collar is all a neck needs.
-    P.colourAdd(S.hatch(neckPoly, { color: skin, opacity: 0.44, gap: 6.8, width: 11.5, angle: -84, over: 11, seed: 641 }));
+    //
+    // AND UNDER hand-2 THE SAME PROBLEM COMES BACK THROUGH THE COLOUR LAYER. A
+    // wash has an edge where a hatch had none, so the quad's straight bottom and
+    // its rim drew the box on his chest that the note above is about. Two fixes,
+    // both local to the construction: `rim: false` (the quad's boundary is not
+    // the material's — the bottom is under the collar and the sides are under the
+    // jaw), and the quad runs half a head-radius further down so its end is
+    // behind the shirt that mass() lays over it on the next line.
+    const neckRim = H2 ? { rim: false } : null;
+    P.colourAdd(S.hatch(neckPoly, Object.assign({ color: skin, opacity: 0.44, gap: 6.8, width: 11.5, angle: -84, over: 11, seed: 641 }, neckRim)));
     const inb = clipHalf(neckPoly, -1, 0, -cx);
-    if (inb) P.colourAdd(S.hatch(inb, { color: ink, opacity: 0.2, gap: 8, width: 12, angle: -90, over: 8, seed: 644 }));
+    if (inb) P.colourAdd(S.hatch(inb, Object.assign({ color: ink, opacity: 0.2, gap: 8, width: 12, angle: -90, over: 8, seed: 644 }, neckRim)));
+    // §5c — AND THE NECK'S OWN SIDES ARE THE CASE THAT FOUND THE CLAUSE. They
+    // ran the full height of the quad: the top end starts at neckTop, which is
+    // inside the head ellipse (ry is R*0.98 against a neckTop of R*0.56), and the
+    // bottom end lands on the shirt, because ink draws over colour. A line that
+    // passes through a jaw and stops in mid-garment is not an edge.
+    //
+    // Under hand-2 the visible span only: it begins where the jaw's silhouette
+    // leaves off and ends above the collar line, and stroke2 tapers both ends, so
+    // the neck goes under the shirt rather than stopping on it. Full height under
+    // hand-1, as shipped.
     [-1, 1].forEach(function (s, i) {
-      P.inkAdd(S.stroke([{ x: cx + s * R * 0.36, y: neckTop }, { x: cx + s * R * 0.40, y: neckBot }], { stroke: ink, width: close ? 4.4 : 3.8, opacity: 0.9, amp: 2, over: 7, seed: 646 + i }));
+      // THE SPAN IS THE VISIBLE SKIN, and both ends are now read off the two
+      // shapes that actually occlude it rather than estimated from the quad.
+      //
+      // top: the head is drawn by hostFace as ell(hcx, hcy, R*0.86, R*0.98), so
+      // its lower boundary at the neck's own half-width is exact — plus R*0.12,
+      // because that boundary carries a 6.4-wide outline and the skin only
+      // starts below it. delta-13c still began inside the jaw; this is why.
+      //
+      // bottom: scanned off the TORSO polygon at the same x. delta-13c used
+      // shoulderY + R*0.05, which is below the shirt's upper edge — so the line
+      // got LONGER, not shorter, which is exactly what the crop shows. The shirt
+      // is the thing that hides the neck, so the shirt is what the line must
+      // stop at: its own boundary, minus a hair so the taper finishes on skin.
+      const upperAt = function (poly, xq) {
+        let best = null;
+        for (let q = 0; q < poly.length; q++) {
+          const a = poly[q], b = poly[(q + 1) % poly.length];
+          if ((a.x <= xq && b.x > xq) || (b.x <= xq && a.x > xq)) {
+            const yq = a.y + ((xq - a.x) / (b.x - a.x)) * (b.y - a.y);
+            if (best === null || yq < best) best = yq;
+          }
+        }
+        return best;
+      };
+      const xq = cx + s * R * 0.38;
+      const shirtTop = upperAt(torso, xq);
+      const y0 = H2
+        ? hcy + R * (0.98 * Math.sqrt(Math.max(0, 1 - Math.pow(0.38 / 0.86, 2))) + 0.12)
+        : neckTop;
+      const y1 = H2
+        ? (shirtTop == null ? shoulderY - R * 0.12 : shirtTop - R * 0.03)
+        : shoulderY - R * (close ? 0.18 : 0.14);
+      if (H2 && y1 - y0 < R * 0.05) return;
+      // PUBLISHED, so the span is checkable without a rasteriser and without an
+      // endpoint detector guessing which marks are the neck. The drawn line is
+      // this interval plus wobble and minus the taper, never outside it: hand-2
+      // sets the stroke overshoot to 0, so there is no end extension to add.
+      if (s < 0) P.meta.neckSpan = [Math.round(y0), Math.round(y1)];
+      P.inkAdd(S.stroke([{ x: cx + s * R * 0.36, y: y0 }, { x: cx + s * R * 0.40, y: y1 }], { stroke: ink, width: close ? 4.4 : 3.8, opacity: 0.9, amp: 2, over: 7, seed: 646 + i, heavy: H2 ? 1.2 : 1 }));
     });
-    mass(torso, shirt, 0.88, close ? 5.6 : 5, -78, 651);
+    mass(torso, shirt, 0.88, close ? 5.6 : 5, -78, 651, "trunk");
     // THE COLLAR HAS LOST ITS SHAPE. The shipped neckline was a tidy V — smart
     // casual, a man dressed to be seen. This is a crew neck stretched wide and
     // sagging off-centre, with a second slack line where the ribbing has given up.
@@ -2431,7 +5048,13 @@
       { x: cx + CW * 0.80, y: shoulderY + R * 0.01 + DROP * 0.6 },
       { x: cx + CW * 1.14, y: shoulderY - R * 0.40 + DROP * 0.7 },
     ], { stroke: ink, width: (close ? 5.2 : 4.4) * 0.92, opacity: 0.88, amp: 2.4, over: 7, seed: 655 }));
-    P.inkAdd(S.stroke([
+    // AND THE JACKET PAYS FOR THE FACE. §3.6: detail everywhere is the same as
+    // detail nowhere, so the second slack collar line — the ribbing that has
+    // given up — comes off under hand-2. It was a 0.4-opacity line a couple of
+    // units below a 0.88 one, which at close-up size is the same tentative
+    // second edge this revision exists to remove, and the collar's shape is
+    // already carried by the line above it and the wash under it.
+    if (!H2) P.inkAdd(S.stroke([
       { x: cx - CW * 0.92, y: shoulderY - R * 0.10 },
       { x: cx - CW * 0.22, y: shoulderY + CD * 1.26 },
       { x: cx + CW * 0.38, y: shoulderY + CD * 1.10 + DROP * 0.5 },
@@ -2487,7 +5110,7 @@
         }
       }
     }
-    P.inkAdd(S.line(cx, shoulderY + HU * 0.4, cx, close ? h : waistY + HU * 0.2, { stroke: ink, width: 2.2, opacity: 0.3, amp: 2.2, over: 5, step: 7, seed: 657 }));
+    if (!H2) P.inkAdd(S.line(cx, shoulderY + HU * 0.4, cx, close ? h : waistY + HU * 0.2, { stroke: ink, width: 2.2, opacity: 0.3, amp: 2.2, over: 5, step: 7, seed: 657 }));
     // ---- arms: only the medium has them in frame --------------------------
     if (!close) {
       [-1, 1].forEach(function (s, i) {
@@ -2528,7 +5151,7 @@
       P: P, S: S, ell: ell, dot: function (q, r, sd) { dot(q.x, q.y, r, sd); },
       cx: hcx, cy: hcy, R: R, ink: ink, skin: skin, hair: hair,
       lw: close ? 1.3 : 1, seg: 20, fine: true, tilt: HEAD_TILT,
-      mouthOpen: mouthOpen, closedEyes: false, glance: o.glance || 0,
+      mouthOpen: mouthOpen, closedEyes: !!o.closedEyes, glance: o.glance || 0,
     });
     const eyeY = FACE.eyeY;
     P.meta.glance = o.glance ? (o.glance < 0 ? "camera-left" : "camera-right") : "to camera";
@@ -2555,10 +5178,101 @@
       note: "A close-up is placed on its EYE LINE, not on a bounding box: scale so slots.head height is the fraction of frame height the shot wants (0.42-0.56 for the close-up, 0.16-0.22 for the medium), then put eyeLineY on the frame's upper third. Both framings run off the left and right edges by design — the width is not a bound, and cropping to it re-frames the shot.",
       cropsAt: close ? "shoulders leave frame left, right and bottom" : "hands leave frame at the bottom",
     };
-    P.slot("mouth", hcx - R * 0.26, hcy + R * 0.44, R * 0.52, R * 0.34, { role: "mouth", region: true, note: "talk frames differ here only" });
+    // THE MOUTH REGION IS THE REGION THAT VARIES, not the aperture.
+    //
+    // §7 says talk frames differ only at the mouth, and the pre-flight checks it
+    // by asserting every mark that moves between talk frames falls inside this
+    // box. It failed on three marks — the nasolabial fold on the outboard cheek,
+    // which moves with the mouth because on a face it does.
+    //
+    // The fix is the box, not the drawing. Suppressing the fold to satisfy the
+    // rule would make him talk with a rigid cheek, and the rule does not exist to
+    // forbid that motion: it exists so the renderer knows WHICH REGION varies
+    // when it cuts a talk frame against the audio. A slot that understates the
+    // varying region is the defect — it described the aperture while the artwork
+    // varied a wider area, exactly the sort of quiet disagreement between
+    // manifest and plate this pack exists to remove.
+    P.slot("mouth", hcx - R * 0.4, hcy + R * 0.4, R * 0.8, R * 0.42, { role: "mouth", region: true, note: "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C." });
     P.slot("eyes", hcx - R * 0.7, eyeY - R * 0.3, R * 1.4, R * 0.6, { role: "eyes", region: true, note: "the eye line is fit.eyeLineY; this box is the pair" });
     P.slot("head", hcx - R * 0.9, hcy - R * 1.12, R * 1.8, R * 2.1, { role: "head", region: true });
     P.slot("figure", 0, hcy - R * 1.2, w, h - (hcy - R * 1.2), { role: "figure", region: true, note: "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit" });
+    return P;
+  }
+
+  // §1.2 — THE BLINK, AND WHY IT IS ITS OWN STRIP.
+  //
+  // A blink is about a tenth of a second. The idle boil frame is 250ms at 4fps.
+  // Those are different clocks and they must not share a strip: three open
+  // frames then three closed makes a 750ms blink, which does not read as a blink
+  // — it reads as falling asleep. One extra frame inside the looping idle strip
+  // is worse, because a non-loop frame in a looping strip blinks at i % 4,
+  // roughly once a second, forever.
+  //
+  // So: a separate overlay strip, on the anchor the contract already provides —
+  // `eyes` is region: true on every hostHead plate, which is a documented box for
+  // exactly this. The compositing question was answered before it was asked.
+  //
+  // THE FRAME COUNT IS NOT THE BLINK'S OWN RATE. It is three because the idle
+  // strip is three: the overlay has to be drawn at the SAME boil index as the
+  // frame it covers, or the lid meets a socket that has wobbled somewhere else.
+  // So blink _fNN pairs with idle _fNN by index, and the renderer chooses WHEN
+  // to show one — a tenth of a second, every three to four seconds — on its own
+  // schedule. Frame count is registration; the schedule is the renderer's.
+  //
+  // On the previous kit's `dennis-both-hands-blink_f01..f03`: worth reading for
+  // the lid shape and the timing, but its structure does not transfer. It had no
+  // three-frame boil to stay registered against.
+  function hostBlink(o) {
+    const P = hostHead(Object.assign({}, o, { closedEyes: true }));
+    // THE CLIP IS MEASURED, NOT AUTHORED.
+    //
+    // It was the eyes slot plus a guessed pad, and the pre-flight caught a mark
+    // on the close-up variants that differed and reached past it — which would
+    // have clipped part of a stroke the overlay needed to replace, leaving the
+    // idle frame's own version of it showing through the other half.
+    //
+    // So the box comes from the difference itself: draw the open-eyed head the
+    // overlay will sit on, take every mark that is not in both, and clip to the
+    // union of their extents. That cannot be short by construction, and it stays
+    // correct if the lid shape, the glasses or the head size ever change.
+    //
+    // Padding costs nothing — a wider box only includes more marks that already
+    // agree — but being short costs a visible seam, so the error is taken in the
+    // direction that is free.
+    const openP = hostHead(Object.assign({}, o, { closedEyes: false }));
+    const marksOf = (p) => (p.toSVG().match(/<path\b[^>]*\/>/g) || []);
+    const have = new Map();
+    marksOf(openP).forEach((m) => have.set(m, (have.get(m) || 0) + 1));
+    const differing = [];
+    marksOf(P).forEach((m) => { const n = have.get(m) || 0; if (n > 0) have.set(m, n - 1); else differing.push(m); });
+    have.forEach((n, m) => { for (let i = 0; i < n; i++) differing.push(m); });
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    differing.forEach(function (m) {
+      const nums = (m.match(/d="([^"]+)"/) || [, ""])[1].match(/-?\d+(\.\d+)?/g);
+      if (!nums) return;
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        const x = +nums[i], y = +nums[i + 1];
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    });
+    const e = P.slots.eyes;
+    if (!isFinite(x0)) { x0 = e.x; y0 = e.y; x1 = e.x + e.w; y1 = e.y + e.h; }
+    // Union with the declared anchor, so the overlay always covers the box the
+    // contract names even if a future lid shape sits entirely inside it.
+    x0 = Math.min(x0, e.x); y0 = Math.min(y0, e.y);
+    x1 = Math.max(x1, e.x + e.w); y1 = Math.max(y1, e.y + e.h);
+    const pad = Math.round(e.h * 0.35);
+    P.clipTo(x0 - pad, y0 - pad, (x1 - x0) + pad * 2, (y1 - y0) + pad * 2);
+    P.meta.overlay = true;
+    P.meta.overlayAnchor = "eyes";
+    P.meta.clipDerivedFrom = "the measured difference against the open-eyed head, unioned with the eyes slot and padded. Not a hand-set box.";
+    P.meta.pairing = "index-matched: blink _fNN composites over idle _fNN, at the same boil. Not interchangeable — a blink frame over the wrong idle frame puts the lids on a socket that has moved.";
+    P.meta.schedule = "renderer-owned: ~100ms, every 3-4s, idle strips only. The strip does not encode a rate.";
+    // The talk contract, restated where it can be violated: this overlay never
+    // goes over a talk frame. Talk frames differ only at the mouth, and an eye
+    // closing between two talk frames is a difference that is not the mouth.
+    P.meta.notOnTalk = true;
     return P;
   }
 
@@ -2635,6 +5349,9 @@
 
   function roomKit(P, p, k, sc) {
     const S = inkScale(k || 1);
+    // §4 — the cast-and-contact pass is hand-2 only, like every other change in
+    // these two packs. Under hand-1 a room emits exactly what it always did.
+    const H2 = !!(H.profile && H.profile() === "hand-2");
     const q = function (n) { return n * (k || 1); };
     const ink = p.structure, paper = p.ground, wood = p.ground2;
     // set colours, not data roles
@@ -2668,6 +5385,14 @@
       return Math.pow(t, 1.7);
     };
     const PLANE = { wall: 0.04, back: 0.3, desk: 0.55, floor: 0.78, near: 1 };
+    // §1.3 — WHAT THE ROOM HAS THAT COULD MOVE, recorded as it is drawn.
+    //
+    // The ambient prop is CHOSEN from what the plate already put on screen rather
+    // than authored angle by angle: every branch that draws a mug or a monitor
+    // registers it here, and ambient() picks one at the end. Eleven angles plus
+    // wallOfCalls needed one call each, not eleven placements to keep in step
+    // with furniture that moves whenever the desk height rule does.
+    const AMB = { mugs: [], screens: [], spills: [], cards: [] };
     const emit = (s) => P.inkAdd(s);
     // opaque mask, so a near prop can cover a far prop's line as well as its tone
     const solid = function (poly, colour, opacity, seed) {
@@ -2725,6 +5450,65 @@
       // wall, the floor, the paper, or anything the eye should pass over.
       if (opt.weight) {
         P.inkAdd(S.hatch(poly, { color: ink, opacity: (0.1 + 0.09 * (1 - lum)) * (opt.weight === true ? 1 : opt.weight), gap: 9, width: 13, angle: ang + 6, over: 10, seed: seed + 61 }));
+      }
+      // §4 — CAST AND CONTACT. The room had a light MODEL (two declared sources,
+      // falloff, a turned-away face per mass) and no light EVIDENCE: nothing cast
+      // a shadow, nothing darkened where it met the thing it stood on, and floor
+      // and wall sat at one value separated by a line. After §3.1 Dennis is
+      // modelled and the room was not, so he composited as a cut-out on a
+      // backdrop — two levels of finish in one frame.
+      //
+      // Two marks per mass, both derived from the key source this mass is already
+      // lit by, so the direction cannot disagree with the shading above:
+      //   the cast    a low quad on the plane below, thrown AWAY from the key and
+      //               tapering — it is a shadow, so it is a wash and not a line.
+      //   the contact the kit's own contact(), tight against the base. This is
+      //               the one the review missed most: a desk leg meeting a floor
+      //               with nothing at the join reads as a sticker.
+      //
+      // Restraint, per the two constraints: nothing whose base is above 36% of frame height, so
+      // the title box stays on flat wall and the chapter openers keep a clean
+      // ground for type; and nothing on a mass narrower than a few units, so
+      // wall-of-calls' eight data slots do not acquire a shadow each.
+      if (H2 && opt.cast !== false && !opt.flat) {
+        const xs = poly.map(function (p) { return p.x; }), ys = poly.map(function (p) { return p.y; });
+        const bx0 = Math.min.apply(null, xs), bx1 = Math.max.apply(null, xs);
+        const by = Math.max.apply(null, ys), wdt = bx1 - bx0;
+        // A DESK IS NOT A PROP. The first pass ran this on every mass, so the
+        // desk — 1075 units wide — got a contact ellipse 473 units across and the
+        // room grew black lagoons. Contact belongs to things that SIT on a plane
+        // at prop scale; the desk's own join is what underDesk() is for, and it
+        // is already drawn. So: prop-scale masses only, and the contact is capped
+        // in absolute units as well as in proportion.
+        if (by > P.h * 0.36 && wdt > q(26) && wdt < P.w * 0.3) {
+          const kk = fall(c.x, c.y, lampL) >= fall(c.x, c.y, screenL) ? lampL : screenL;
+          const dir = c.x - kk.x >= 0 ? 1 : -1;
+          // §4b — OFFSET AND SOFTNESS FOLLOW STAND-OFF. The first pass gave every
+          // object the same offset and the same edge, which at render scale is the
+          // signature of a drop shadow applied per object rather than one light in
+          // a room: a clock standing well off the wall and a sheet pinned nearly
+          // flush had comparable shadows. Stand-off is already declared — it is
+          // opt.depth, the plane the object sits on — so the shadow reads it.
+          // A flush object (PLANE.wall) throws a tight, near shadow; a near object
+          // throws a long, soft one.
+          const so = Math.max(0, Math.min(1, ((opt.depth == null ? PLANE.back : opt.depth) - PLANE.wall) / (1 - PLANE.wall)));
+          const off = Math.max(q(3), wdt * (0.05 + 0.16 * so));
+          const dep = Math.max(q(2), wdt * (0.025 + 0.075 * so));
+          const dens = 0.09 + 0.07 * (1 - lum);
+          const throwQuad = function (m, o2) {
+            return [
+              { x: bx0 + dir * off * 0.35 * m, y: by - dep * 0.2 * m },
+              { x: bx1 + dir * off * 0.55 * m, y: by - dep * 0.2 * m },
+              { x: bx1 + dir * off * m, y: by + dep * m },
+              { x: bx0 + dir * off * 0.7 * m, y: by + dep * m },
+            ];
+          };
+          // core, then a wider halo whose spread is the softness. A flush object
+          // gets almost no halo; a near one gets a penumbra you can see.
+          solid(throwQuad(1, dens), ink, dens, seed + 77);
+          if (so > 0.25) solid(throwQuad(1.35 + so * 0.5), ink, dens * 0.42 * so, seed + 78);
+          contact(c.x, by, Math.min(wdt * 0.44, q(70)), seed + 79);
+        }
       }
       // The line: ink, always, at full strength — the darkest thing in frame.
       // Only its WEIGHT reads depth, and the range has to be wide enough to SEE:
@@ -2798,6 +5582,17 @@
           { x: x + w2 * 0.03, y: y }, { x: x + w2 * 0.97, y: y },
           { x: x + w2 * 0.93, y: y + h2 }, { x: x + w2 * 0.07, y: y + h2 },
         ], seed, 0.66, 0, "top");
+        // §4b — IT WAS READING AS A HOLE, not a shadow: hard on all four sides
+        // and the same density to the floor. A recess is darkest immediately
+        // under the top and lets the ground back through as it comes forward, and
+        // it does not end on a line — so the density comes down and the last of
+        // it spills PAST the opening onto the floor, wider than the recess.
+        if (H2) {
+          deep([
+            { x: x + w2 * 0.09, y: y + h2 * 0.45 }, { x: x + w2 * 0.91, y: y + h2 * 0.45 },
+            { x: x + w2 * 1.02, y: y + h2 + q(22) }, { x: x - w2 * 0.02, y: y + h2 + q(18) },
+          ], seed + 30, 0.2, 0, "top");
+        }
       },
       // ONE object clearly in the foreground, cropped by the frame edge. Every
       // angle in revisions 01 and 02 laid its props along a single horizontal
@@ -2815,6 +5610,52 @@
           deep(rect(bx + bw * 0.06, top + bh * 0.42, bw * 0.88, bh * 0.55), seed + 20, 0.5, 0, "bottom");
           P.inkAdd(S.outline(rect(bx + bw * 0.08, top + bh * 0.14, bw * 0.84, bh * 0.7), { stroke: ink, width: 4.4, opacity: 0.5, amp: 2.6, over: 10, seed: seed + 3 }));
           mass(rect(bx + bw * 0.42, top + bh, bw * 0.12, HH * 0.2), wood, 0.5, seed + 8, -76, 6, { weight: 1, depth: PLANE.near });
+        } else if (kind === "shoulder") {
+          /* §4.3 — THE BACK OF HIM, CROPPED BY THE FRAME EDGE.
+
+             The over-the-shoulder shot's foreground is the shot. It lives in this
+             function because this function's whole job is "one object clearly in
+             front of everything else, cut by the edge" — the crop IS the depth
+             cue, and that is as true of a shoulder as of a mug.
+
+             HE GETS THE HEAVIEST LINE AND THE HEAVIEST TONE, which no other
+             foreground kind does. The comment above is right that a near prop
+             needs only the line: a mug with both competes with the host. This
+             near object IS the host, and room/ doctrine is that he is the
+             highest-contrast thing in any frame he is in — so here the two rules
+             point the same way for once.
+
+             It is a SILHOUETTE, not a portrait: no face, no features, no eyeline.
+             We are behind him. Anything more would be a second Dennis, drawn by a
+             different author from the host family, disagreeing with the real one
+             about who he is — the exact defect hostFace() exists to prevent. */
+          const shW = W * 0.42, shTop = floorY2 - HH * 0.30;
+          const bx2 = s < 0 ? -W * 0.14 : W * 0.72;
+          // the shoulder and upper arm, rising out of the bottom edge
+          const shoulder = [
+            { x: bx2, y: floorY2 + HH * 0.2 },
+            { x: bx2 + shW * 0.06, y: shTop + HH * 0.07 },
+            { x: bx2 + shW * 0.34, y: shTop },
+            { x: bx2 + shW * 0.72, y: shTop + HH * 0.035 },
+            { x: bx2 + shW, y: shTop + HH * 0.16 },
+            { x: bx2 + shW * 1.04, y: floorY2 + HH * 0.2 },
+          ];
+          mass(shoulder, ink, 0.72, seed, -70, 7.2, { weight: 1, depth: PLANE.near });
+          // the head, seen from behind: a plain dome sitting on the shoulder line,
+          // with the hair mass a shade heavier at the crown
+          const hr = HH * 0.135, hcx2 = bx2 + shW * (s < 0 ? 0.62 : 0.38), hcy2 = shTop - hr * 0.72;
+          const dome = [];
+          for (let i = 0; i <= 20; i++) {
+            const a = Math.PI * (1 + i / 20);
+            dome.push({ x: hcx2 + Math.cos(a) * hr * 1.02, y: hcy2 + Math.sin(a) * hr * 1.16 });
+          }
+          dome.push({ x: hcx2 + hr * 0.92, y: shTop + HH * 0.02 });
+          dome.push({ x: hcx2 - hr * 0.92, y: shTop + HH * 0.02 });
+          mass(dome, ink, 0.74, seed + 11, -68, 7.2, { weight: 1, depth: PLANE.near });
+          // and the one edge that says which way he is facing: the ear side, read
+          // as a notch in the silhouette rather than as a drawn ear
+          P.inkAdd(S.line(hcx2 + s * hr * 0.86, hcy2 + hr * 0.25, hcx2 + s * hr * 0.98, hcy2 + hr * 0.72,
+            { stroke: ink, width: 5.2, opacity: 0.55, amp: 2, over: 6, seed: seed + 17 }));
         } else if (kind === "stack") {
           const bw = W * 0.26, top = floorY2 - HH * 0.2;
           for (let i = 0; i < 5; i++) {
@@ -2929,6 +5770,7 @@
       // Light falling out of an open door onto a dark floor: warm, because it is
       // the lit hallway, and it stops where the throw stops.
       doorSpill: function (dx, dy, dw, floorY2, hh2, land2, seed) {
+        AMB.spills.push({ x0: dx + dw * 0.06, x1: dx + dw * 0.94, y0: dy + (floorY2 - dy) * 0.12, y1: floorY2, seed: seed });
         const poly = [
           { x: dx + dw * 0.06, y: floorY2 }, { x: dx + dw * 0.94, y: floorY2 },
           { x: dx + dw * 1.34, y: hh2 }, { x: dx - dw * 0.28, y: hh2 },
@@ -2971,6 +5813,20 @@
         // floor: heavier at the very front, where it is nearest camera
         P.colourAdd(S.hatch(rect(-20, floorY, w + 40, h - floorY), { color: wood, opacity: 0.3, gap: 9, width: 14, angle: -7, over: 26, seed: seed + 4 }));
         P.colourAdd(S.hatch(rect(-20, floorY + (h - floorY) * 0.5, w + 40, (h - floorY) * 0.5), { color: wood, opacity: 0.22, gap: 10, width: 15, angle: -7, over: 26, seed: seed + 5 }));
+        // §4b — THE GROUND PLANE. Floor and wall sat at one value separated by a
+        // single line, so nothing told the eye that one surface is horizontal and
+        // the other vertical — which is why the room had no ground even with the
+        // floor line at full ink. Two marks, and neither is a new colour:
+        //   a value STEP, densest right at the junction and gone a third of the
+        //   way down, because a floor is always darker where it meets a wall; and
+        //   a second pass ACROSS the boards, so the two surfaces have different
+        //   grain direction as well as different value. A plane is legible from
+        //   the direction of its texture before it is legible from its tone.
+        if (H2) {
+          const fh = h - floorY;
+          P.colourAdd(S.hatch(rect(-20, floorY, w + 40, fh * 0.34), { color: ink, opacity: 0.1, gap: 11, width: 15, angle: -7, over: 24, seed: seed + 30, material: false, plane: false }));
+          P.colourAdd(S.hatch(rect(-20, floorY, w + 40, fh), { color: wood, opacity: 0.13, gap: 26, width: 11, angle: -84, over: 20, seed: seed + 32, material: false, plane: false }));
+        }
         thin([{ x: -20, y: h * 0.05 }, { x: w + 20, y: h * 0.04 }], 0.24, 3, seed + 6);
         mass(rect(-20, floorY - q(24), w + 40, q(24)), wood, 0.42, seed + 8, -4, 3, { depth: 0.5 });
         // the floor line: the anchor of the whole drawing, so it is full ink
@@ -2986,14 +5842,50 @@
         mass(rect(x + w * 0.04, y + h * 0.2, w * 0.06, h * 0.8), wood, 0.44, seed + 8, -74, 4, { weight: 1 });
         mass(rect(x + w * 0.9, y + h * 0.2, w * 0.06, h * 0.8), wood, 0.44, seed + 12, -74, 4, { weight: 1 });
         mass(rect(x + w * 0.2, y + h * 0.24, w * 0.6, h * 0.28), wood, 0.11, seed + 16, -76, 1.6);
-        contact(x + w * 0.07, y + h, w * 0.05, seed + 60);
-        contact(x + w * 0.93, y + h, w * 0.05, seed + 64);
+        // §4b — THE DESK IS THE ROOM'S DEPTH, and it was carrying none of it. The
+        // cast pass in mass() skips anything wider than 30% of frame (a desk is
+        // not a prop), so the desk's own three shadows have to be authored here.
+        // They are the largest depth cues available on the plate and all three
+        // were absent: the review is right that the wall was the easier half.
+        if (H2) {
+          const kk = fall(x + w * 0.5, y + h, lampL) >= fall(x + w * 0.5, y + h, screenL) ? lampL : screenL;
+          const dir = x + w * 0.5 - kk.x >= 0 ? 1 : -1;
+          // 1 — the desk on the floor. A big object standing on the plane below
+          // it: long throw, soft, and it starts under the apron rather than at
+          // the leg, because the whole mass occludes.
+          solid([
+            { x: x + dir * w * 0.02, y: y + h - q(4) },
+            { x: x + w + dir * w * 0.06, y: y + h - q(4) },
+            { x: x + w + dir * w * 0.15, y: y + h + q(30) },
+            { x: x + dir * w * 0.08, y: y + h + q(26) },
+          ], ink, 0.13, seed + 68);
+          solid([
+            { x: x + dir * w * 0.04, y: y + h + q(8) },
+            { x: x + w + dir * w * 0.1, y: y + h + q(8) },
+            { x: x + w + dir * w * 0.24, y: y + h + q(58) },
+            { x: x + dir * w * 0.14, y: y + h + q(50) },
+          ], ink, 0.055, seed + 70);
+          // 2 — the desk top onto the desk front. The nearest occlusion in the
+          // composition and the cheapest: an overhang always shades what is
+          // directly under it, hard at the lip and gone within a few units.
+          // Tight: an overhang shadow is a few units of dark right at the lip,
+          // not a band across the furniture. The first cut ran 12% of the desk's
+          // height at 0.16 and read as a painted stripe.
+          solid(rect(x + q(6), y + h * 0.15, w - q(12), h * 0.035), ink, 0.13, seed + 72);
+          solid(rect(x + q(6), y + h * 0.185, w - q(12), h * 0.028), ink, 0.05, seed + 74);
+        }
+        // 3 — the legs meet the floor. These existed and were too small to see at
+        // render scale: a leg is 6% of the desk, so 5% of the desk width was a
+        // smear a third of the leg's own width.
+        contact(x + w * 0.07, y + h, w * (H2 ? 0.1 : 0.05), seed + 60, H2 ? 1.35 : 1);
+        contact(x + w * 0.93, y + h, w * (H2 ? 0.1 : 0.05), seed + 64, H2 ? 1.35 : 1);
       },
 
       // sits ON deskTop: foot plate on the surface, neck, then the panel above it
       monitor: function (x, deskTop, w, hh, seed) {
         const ww = w, hd = hh;
         const bot = deskTop - q(46), top = bot - hd;
+        AMB.screens.push({ x: x, y: top, w: ww, h: hd, seed: seed });
         mass(rect(x, top, ww, hd), wood, 0.5, seed, -76, 4, { weight: 0.9 });
         // The panel is a source, so it is the LIGHTEST thing in frame: bare
         // ground inside its bezel, no fill at all. Revision 01 hatched it cold
@@ -3033,6 +5925,7 @@
       // a cylinder, not a disc seen from above — and chipped, nine years in
       mug: function (x, baseY, r, seed, chipped) {
         contact(x, baseY, r * 0.95, seed + 30);
+        AMB.mugs.push({ x: x, top: baseY - r * 1.5, r: r, seed: seed });
         mass([{ x: x - r, y: baseY - r * 1.5 }, { x: x + r, y: baseY - r * 1.5 }, { x: x + r * 0.85, y: baseY }, { x: x - r * 0.85, y: baseY }], wood, 0.6, seed, -74, 3.4);
         P.inkAdd(S.outline(ellipse(x, baseY - r * 1.5, r, r * 0.3, 14, 0.05, seed + 2), { stroke: ink, width: 3, opacity: 0.75, amp: 1.6, over: 6, seed: seed + 3 }));
         P.inkAdd(S.stroke([{ x: x + r * 0.95, y: baseY - r * 1.18 }, { x: x + r * 1.7, y: baseY - r * 0.86 }, { x: x + r * 0.9, y: baseY - r * 0.34 }], { stroke: ink, width: 3.2, opacity: 0.8, amp: 1.8, over: 5, seed: seed + 5 }));
@@ -3088,6 +5981,118 @@
         for (let i = 0; i < 5; i++) thin([{ x: x + q(16), y: y + hh * (0.26 + i * 0.14) }, { x: x + w * (0.46 + (i % 3) * 0.17), y: y + hh * (0.26 + i * 0.14) - q(3) }], 0.32, 2.2, seed + i * 4);
         mass(rect(x + w * 0.36, y - q(13), w * 0.28, q(22)), p.attention, 0.24, seed + 30, -5, 2.2);
       },
+      // §1.3 — ONE THING MOVING, AND IT IS STEAM BY DEFAULT.
+      //
+      // The candidate props do not have the same clock. A cursor blinks at about
+      // 1 Hz in life and a room strip runs at 2 fps, so a caret driven off the
+      // frame index blinks two or three times a second and reads as nervous; a
+      // second hand at 2 fps is visibly wrong and a minute hand does not move
+      // within a shot at all. Both want a clock of their own, which is the same
+      // problem the blink has and the same answer — a separate strip — and that
+      // is more than a decorative prop earns.
+      //
+      // Steam is the one candidate whose natural rate matches the boil's.
+      // It DRIFTS, and drift looks correct at any frame rate, so it can ride the
+      // room's own three-frame clock without lying about its speed. Nothing here
+      // is synchronised to anything: the wisps are at three different phases in
+      // the same rise, and which phase each is at comes off the frame index.
+      //
+      // Drawn in `paper` over a room that is darker than it: steam is lighter
+      // than what is behind it, and this adds no colour token.
+      steam: function (x, topY, r, seed, ph) {
+        const f = ((ph | 0) % 3 + 3) % 3;
+        for (let i = 0; i < 3; i++) {
+          const t = ((f * 0.34 + i * 0.33) % 1);
+          const rise = r * (1.4 + 2.7 * t);
+          const sway = r * 0.44 * Math.sin(t * 5.4 + i * 2.1);
+          const x0 = x + (i - 1) * r * 0.32;
+          // it thins as it rises, and it is gone before it reaches the top
+          P.inkAdd(S.stroke([
+            { x: x0, y: topY - r * 0.18 },
+            { x: x0 + sway * 0.5, y: topY - rise * 0.42 },
+            { x: x0 - sway * 0.4, y: topY - rise * 0.76 },
+            { x: x0 + sway, y: topY - rise },
+          ], {
+            stroke: paper, width: q(4.4) * (1 - t * 0.45), opacity: 0.30 * (1 - t) + 0.05,
+            amp: 2.6, over: 0, seed: seed + 70 + i * 7 + f * 31,
+          }));
+        }
+      },
+      // The exception, and it has to be earned: on the angle where the SCREEN is
+      // the subject, the thing that should be alive is the screen. A caret is
+      // on for two frames of three, which at 2 fps is the slowest blink the
+      // strip can express and still be a blink.
+      cursor: function (sx, sy, seed, ph) {
+        if (((ph | 0) % 3) === 2) return;
+        P.inkAdd(S.line(sx, sy, sx, sy + q(30), { stroke: paper, width: q(8), opacity: 0.42, amp: 1.1, over: 0, seed: seed + 88 }));
+      },
+      // Called once per plate, AFTER the furniture. Returns the descriptor
+      // whatever the frame index is — so the manifest says the same thing on
+      // every frame — and draws only when there is a frame to draw on. A boil-0
+      // hold is the identity and nothing moves on it.
+      ambient: function (frame, subject) {
+        const f = frame | 0;
+        const biggest = (a) => a.reduce(function (m, v) { return (v.r || v.w) > (m.r || m.w) ? v : m; });
+        let d = null;
+        if (subject === "screen" && AMB.screens.length) {
+          const s = biggest(AMB.screens);
+          d = { prop: "cursor", on: "monitor", x: Math.round(s.x + s.w * 0.17), y: Math.round(s.y + s.h * 0.28) };
+          if (f) this.cursor(s.x + s.w * 0.17, s.y + s.h * 0.28, s.seed, f);
+        } else if (AMB.cards.length) {
+          // §3.3 takes priority over the mug where a card has just been pinned: it
+          // is a BEAT, and the room should move where the story is.
+          const c = AMB.cards[AMB.cards.length - 1];
+          d = { prop: "flutter", on: "pinned-card", x: Math.round(c.x), y: Math.round(c.y) };
+          if (f) this.flutter(c.x, c.y, c.s, c.seed, f);
+        } else if (AMB.mugs.length) {
+          const m = biggest(AMB.mugs);
+          d = { prop: "steam", on: "mug", x: Math.round(m.x), y: Math.round(m.top) };
+          if (f) this.steam(m.x, m.top, m.r, m.seed, f);
+        } else if (AMB.screens.length) {
+          const s = biggest(AMB.screens);
+          d = { prop: "cursor", on: "monitor", x: Math.round(s.x + s.w * 0.17), y: Math.round(s.y + s.h * 0.28) };
+          if (f) this.cursor(s.x + s.w * 0.17, s.y + s.h * 0.28, s.seed, f);
+        } else if (AMB.spills.length) {
+          const v = AMB.spills[0];
+          d = { prop: "spill", on: "doorway", x: Math.round(v.x0), y: Math.round(v.y0) };
+          if (f) this.spill(v.x0, v.x1, v.y0, v.y1, v.seed, f);
+        }
+        if (d) {
+          d.note = "one unsynchronised prop, riding this plate's own three-frame clock. Nobody looks at it directly; it is what stops the room being a photograph. A second one reads as a screensaver.";
+          d.clock = "the boil index. Steam drifts, so it is honest at any frame rate; the cursor is on for two frames of three, which is the slowest blink a 2fps strip can express.";
+        }
+        return d;
+      },
+      // §1.3 — the wavering edge of light from the hall. The doorway draws no mug
+      // and no monitor, so without this it is one of three rooms with nothing
+      // alive in it. A spill edge drifts for the same reason steam does — it is
+      // air and light, not a mechanism — so it stays honest at any frame rate.
+      spill: function (x0, x1, y0, y1, seed, ph) {
+        const f = ((ph | 0) % 3 + 3) % 3;
+        for (let i = 0; i < 2; i++) {
+          const t = ((f * 0.34 + i * 0.5) % 1);
+          const k2 = q(9) * (0.5 + t);
+          P.inkAdd(S.stroke([
+            { x: x0 + k2 * 0.4, y: y0 },
+            { x: (x0 + x1) / 2 + k2 * Math.sin(t * 4.1), y: (y0 + y1) / 2 },
+            { x: x1 - k2 * 0.6, y: y1 },
+          ], { stroke: paper, width: q(5) * (1 - t * 0.4), opacity: 0.20 * (1 - t) + 0.06, amp: 3.2, over: 0, seed: seed + 61 + i * 13 + f * 29 }));
+        }
+      },
+      // §3.3 — a card that has just been pinned sits proud of the others and has
+      // not settled. One corner lifts and falls: the newest thing on the wall is
+      // the only thing on it still moving, which is the gag doing double duty as
+      // §1.3's one moving prop.
+      flutter: function (x, y, s2, seed, ph) {
+        const f = ((ph | 0) % 3 + 3) % 3;
+        const lift = q(7) * [0.2, 1, 0.55][f];
+        P.inkAdd(S.stroke([
+          { x: x, y: y },
+          { x: x + s2 * 0.5, y: y - lift * 0.6 },
+          { x: x + s2, y: y - lift },
+        ], { stroke: ink, width: q(3.4), opacity: 0.72, amp: 1.6, over: 3, seed: seed + 77 + f * 19 }));
+      },
+      registerCard: function (x, y, s2, seed) { AMB.cards.push({ x: x, y: y, s: s2, seed: seed }); },
       clock: function (x, y, r, seed) {
         mass(ellipse(x, y, r, r, 22, 0.025, seed), paper, 0.8, seed, -70, 3.6);
         thin([{ x: x, y: y }, { x: x, y: y - r * 0.62 }], 0.7, 3.4, seed + 4);
@@ -3272,6 +6277,21 @@
         // horizon, so the floor gets bigger as the wall goes away.
         P.colourAdd(S.hatch(rect(-20, floorY, W + 40, HH - floorY + 20), { color: wood, opacity: 0.3, gap: 9, width: 14, angle: -7, over: 26, seed: seed + 44 }));
         P.colourAdd(S.hatch([{ x: cornerX, y: floorY }, { x: xR, y: jF(xR) }, { x: xR, y: floorY }], { color: wood, opacity: 0.26, gap: 10, width: 15, angle: -7, over: 24, seed: seed + 46 }));
+        // §4b IN THE CORNER ROOM. shell() got the ground plane and this did not,
+        // which is worse than either room being unconverted: two rooms at two
+        // levels of finish in one cut. Same two marks, and the value step follows
+        // the junction rather than a horizontal — in here the junction is the
+        // receding line jF(x), so the step is a band between the floor line and
+        // its own offset, and it opens up as the wall goes away exactly as the
+        // floor does.
+        if (H2) {
+          const fh = HH - floorY;
+          P.colourAdd(S.hatch([
+            { x: -20, y: floorY }, { x: cornerX, y: floorY }, { x: xR, y: jF(xR) },
+            { x: xR, y: jF(xR) + fh * 0.3 }, { x: cornerX, y: floorY + fh * 0.34 }, { x: -20, y: floorY + fh * 0.34 },
+          ], { color: ink, opacity: 0.1, gap: 11, width: 15, angle: -7, over: 24, seed: seed + 60, material: false, plane: false }));
+          P.colourAdd(S.hatch(rect(-20, floorY, W + 40, HH - floorY + 20), { color: wood, opacity: 0.13, gap: 26, width: 11, angle: -84, over: 20, seed: seed + 62, material: false, plane: false }));
+        }
         // FLOOR BOARDS, converging. Six lines from the bottom edge of the frame to
         // the vanishing point. This is the cheapest perspective cue on the plate
         // and the one the eye reads first.
@@ -3289,8 +6309,17 @@
         // the two junction lines, and the corner
         P.inkAdd(S.line(-20, floorY, cornerX, floorY - 3, { stroke: ink, width: 4.4, opacity: 0.9, amp: 3.6, over: 22, seed: seed + 80 }));
         P.inkAdd(S.stroke([{ x: cornerX, y: floorY }, V.to(cornerX, floorY, tFar * 0.55), V.to(cornerX, floorY, tFar)], { stroke: ink, width: 4.2, opacity: 0.88, amp: 3.2, over: 20, seed: seed + 82 }));
-        thin([{ x: -20, y: ceilY }, { x: cornerX, y: ceilY + 2 }], 0.3, 3, seed + 84);
-        thin([{ x: cornerX, y: ceilY }, V.to(cornerX, ceilY, tFar * 0.6), V.to(cornerX, ceilY, tFar)], 0.3, 3, seed + 86);
+        // THE TWO DIAGONALS IN THE EMPTY UPPER RIGHT. These are the ceiling
+        // junction, so they are real architecture — but on a large flat field
+        // with nothing else in it they read as construction left in the drawing,
+        // which the render-scale pass called correctly. A ceiling line earns its
+        // place where it meets something; out in the open it is two lines across
+        // nothing. Under hand-2 the near wall's junction stays (it terminates on
+        // the corner, which explains it) and the receding one stops at 45% of the
+        // run, tapering out instead of crossing the whole field.
+        thin([{ x: -20, y: ceilY }, { x: cornerX, y: ceilY + 2 }], H2 ? 0.22 : 0.3, 3, seed + 84);
+        if (H2) thin([{ x: cornerX, y: ceilY }, V.to(cornerX, ceilY, tFar * 0.28), V.to(cornerX, ceilY, tFar * 0.45)], 0.14, 2.4, seed + 86);
+        else thin([{ x: cornerX, y: ceilY }, V.to(cornerX, ceilY, tFar * 0.6), V.to(cornerX, ceilY, tFar)], 0.3, 3, seed + 86);
         // THE CORNER. Near camera, so it is the heaviest vertical in frame.
         P.inkAdd(S.stroke([{ x: cornerX, y: ceilY - 4 }, { x: cornerX + q(3), y: (ceilY + floorY) / 2 }, { x: cornerX, y: floorY + 4 }], { stroke: ink, width: 5.4, opacity: 0.9, amp: 3, over: 18, seed: seed + 88 }));
         // skirting, on both walls, following their own junction
@@ -3449,6 +6478,10 @@
       // A mug from above is a RING, not a cylinder — the one prop that only this
       // camera can draw, and the reason the high angle is worth a plate.
       planMug: function (x, y, r, seed) {
+        // §1.3 — registered like any other mug. It was missed because a plan-view
+        // mug is drawn by a different call than an elevation one, which left
+        // high-desk-down as one of three rooms with nothing alive in it.
+        AMB.mugs.push({ x: x, top: y - r * 0.2, r: r, seed: seed });
         mass(ellipse(x, y, r, r * 0.97, 20, 0.03, seed), wood, 0.5, seed, -74, 4.2, { depth: 0.72, weight: 0.7 });
         deep(ellipse(x, y, r * 0.78, r * 0.76, 18, 0.04, seed + 4), seed + 4, 0.72, 3, "top");
         P.inkAdd(S.outline(ellipse(x, y, r * 0.78, r * 0.76, 18, 0.04, seed + 6), { stroke: ink, width: 3.4, opacity: 0.82, amp: 1.8, over: 7, seed: seed + 7 }));
@@ -3481,6 +6514,183 @@
     };
   }
 
+  // ---------------- §1 · THE TITLE'S OWN GROUND ----------------
+  /* Chapter-opener titles are legible today because the wall behind them happens
+     to be flat and pale. That is a property of the WALL, borrowed — not a
+     property of the title. The rule keeping it true is undocumented and obeyed
+     by accident: mass() suppresses every cast shadow whose base sits above 36%
+     of frame height so "the title box stays on flat wall", and no angle puts a
+     prop, a tone or a shadow behind that box. One toned wall, one dusk variant,
+     one taped page moved up the wall, and the chapter opener loses its
+     legibility silently — on the one plate where a chapter title reaches the
+     screen at all.
+
+     So the title carries its own ground. Three treatments, because this cannot
+     be chosen from a description:
+
+       card   an opaque drawn card, taped, with its own rim and its own cast.
+              Paper on the wall. Contrast is GUARANTEED and identical on every
+              wall, because nothing behind it reaches the type.
+       scrim  no object and no edge: the wall goes quiet. Three feathered washes
+              of the ground colour, frayed at the rim, so the room still reads
+              through faintly. Keeps the plate a room; does NOT guarantee
+              contrast, because what it cannot cover it can only dilute.
+       slab   a heavy ink block with the title REVERSED OUT of it. The most
+              robust of the three on any ground, and the largest change to what
+              a chapter opener looks like — it is the one treatment that moves
+              the type colour, which is why it publishes typeColour rather than
+              leaving the renderer to infer it.
+
+     THREE PROPERTIES EVERY TREATMENT HOLDS.
+
+     1. THE TITLE SLOT DOES NOT MOVE. The panel is drawn AROUND the published
+        box — same x, y, w, h on every plate, so nothing already composited
+        against slots.title shifts by a pixel. What changes is what is behind it.
+
+     2. IT IS PINNED. A ground is a slot underlay, and an underlay moving behind
+        pinned type is the relative motion §1.5 ruled out — the same call field()
+        makes on a data plate, for the same reason. Rooms are not gated, so
+        without pin() this panel would breathe against dead-still type at the
+        one size on the plate where it would be visible. What a mark is FOR wins
+        over which family it landed in.
+
+     3. IT COVERS THE WHOLE TYPE BLOCK, not just the title. Three angles set a
+        caption directly under the title — desk-corner, corner-perspective and
+        high-desk-down — and a panel behind the title with the caption hanging
+        off its bottom edge onto bare wall is worse than no panel at all: the
+        smaller type is the one that needs the ground more. So the panel spans
+        the union of title and caption where the caption sits within one
+        title-height of it.
+
+     It draws into P.top, which is emitted after colour and ink, because the
+     ground has to sit over whatever the room already put on that wall. That is
+     the whole mechanism: nothing about the room art changes, and no angle needs
+     a placement of its own. */
+  const TITLE_GROUNDS = ["card", "scrim", "slab"];
+
+  // The type block this ground has to cover. Title, plus a caption that belongs
+  // to it — measured off the published boxes, never authored per angle.
+  function typeBlockOf(P) {
+    const t = P.slots.title;
+    if (!t) return null;
+    const c = P.slots.caption;
+    const b = { x: t.x, y: t.y, w: t.w, h: t.h, joined: false };
+    if (c && c.y >= t.y && c.y - (t.y + t.h) < t.h * 1.5) {
+      const x0 = Math.min(t.x, c.x), y0 = Math.min(t.y, c.y);
+      const x1 = Math.max(t.x + t.w, c.x + c.w), y1 = Math.max(t.y + t.h, c.y + c.h);
+      b.x = x0; b.y = y0; b.w = x1 - x0; b.h = y1 - y0; b.joined = true;
+    }
+    return b;
+  }
+
+  function titleGround(P, treatment, k, seed) {
+    if (!treatment) return null;
+    if (TITLE_GROUNDS.indexOf(treatment) < 0) throw new Error("unknown titleGround " + treatment);
+    const blk = typeBlockOf(P);
+    if (!blk) return null;
+    const p = P.pal, ink = p.structure;
+    const q = function (n) { return n * (k || 1); };
+    const padX = Math.max(q(26), blk.w * 0.055);
+    const padY = Math.max(q(22), blk.h * 0.11);
+    const m = q(12); // the panel never touches the plate edge
+    const x0 = Math.max(m, blk.x - padX), y0 = Math.max(m, blk.y - padY);
+    const x1 = Math.min(P.w - m, blk.x + blk.w + padX), y1 = Math.min(P.h - m, blk.y + blk.h + padY);
+    const panel = { x: Math.round(x0), y: Math.round(y0), w: Math.round(x1 - x0), h: Math.round(y1 - y0) };
+    const ring = function (g2) { return H.polyRect(panel.x - g2, panel.y - g2, panel.w + g2 * 2, panel.h + g2 * 2); };
+    // An opaque area of colour with a drawn edge. Emitted directly rather than
+    // through hatch(), because hatch()'s authored opacity is COVERAGE and gets
+    // multiplied to solid — and the scrim's whole argument is the exact alpha.
+    const wash = function (poly, colour, alpha, sd) {
+      const pts = H.wobble(poly.concat([poly[0]]), { amp: q(2), over: 0, seed: sd, step: q(26) });
+      P.topAdd(`<path d="${H.toPath(pts)}Z" fill="${colour}" fill-opacity="${H.num(alpha)}"/>`);
+    };
+    const out = {
+      treatment: treatment,
+      box: panel,
+      typeBlock: { x: blk.x, y: blk.y, w: blk.w, h: blk.h, joinedCaption: blk.joined },
+      slotsCovered: blk.joined ? ["title", "caption"] : ["title"],
+      opaque: treatment !== "scrim",
+      typeColour: treatment === "slab" ? "ground" : "structure",
+      pinned: true,
+      pinNote: "the ground is a slot underlay and emits the identical path at every boil index. An underlay breathing behind dead-still type is relative motion, which reads worse than either moving alone.",
+    };
+    H.pin(function () {
+      if (treatment === "card") {
+        // LIGHT is upper-left for the whole kit, so the cast goes down and right.
+        // Two quads, the wider one fainter: a card stands a few millimetres off a
+        // wall, so its shadow is tight and its penumbra is small.
+        const off = Math.max(q(7), panel.w * 0.013);
+        wash(H.polyRect(panel.x + off * 1.7, panel.y + off * 1.7, panel.w, panel.h), ink, 0.055, seed + 3);
+        wash(H.polyRect(panel.x + off, panel.y + off, panel.w, panel.h), ink, 0.1, seed + 5);
+        wash(ring(0), p.ground, 1, seed + 7);
+        // the bloom rim: pigment pooling just inside the edge of a wash, value
+        // only — the ground token multiplied down, no new colour
+        const rim = H.polyRect(panel.x + q(9), panel.y + q(9), panel.w - q(18), panel.h - q(18));
+        P.topAdd(H.stroke(rim.concat([rim[0]]), { stroke: H.darken(p.ground, 0.86), width: q(5), opacity: 0.5, amp: 1.2, over: 0, seed: seed + 11, silhouette: true }));
+        P.topAdd(H.outline(ring(0), { stroke: ink, width: q(3.6), opacity: 0.92, amp: 3.2, over: q(12), seed: seed + 13 }));
+        // Two pieces of tape across the top corners, crooked. The card is the
+        // only thing in the frame that arrived after the room did.
+        [[panel.x, -1], [panel.x + panel.w, 1]].forEach(function (c, i) {
+          const tw = Math.max(q(46), panel.w * 0.075), th = q(26);
+          const cx = c[0], cy = panel.y, d = c[1];
+          const a = (i ? -0.42 : 0.42);
+          const co = Math.cos(a), si = Math.sin(a);
+          const pt = function (dx, dy) { return { x: cx + (dx * co - dy * si) * 1, y: cy + (dx * si + dy * co) }; };
+          const tp = [pt(-tw * 0.5 * d, -th * 0.5), pt(tw * 0.5 * d, -th * 0.5), pt(tw * 0.5 * d, th * 0.5), pt(-tw * 0.5 * d, th * 0.5)];
+          wash(tp, p.ground2, 0.62, seed + 21 + i * 4);
+          P.topAdd(H.outline(tp, { stroke: ink, width: q(2), opacity: 0.34, amp: 1.6, over: q(4), seed: seed + 23 + i * 4 }));
+        });
+      } else if (treatment === "scrim") {
+        // No object and no edge. Three washes, each smaller and stronger than the
+        // last, so the boundary is a gradient rather than a line — and a fray of
+        // short ground-coloured strokes across the outer rim, so where it stops
+        // it frays instead of stopping.
+        // The alphas are the treatment. Three layers multiply, so the middle
+        // transmits 0.78 x 0.66 x 0.42 = 21.6% of whatever is behind it, the band
+        // outside the panel transmits 51%, and the outermost 78%. The number that
+        // matters is the first one: a fifth of the wall still reaches the type,
+        // which is why this treatment IMPROVES the floor and cannot guarantee it.\n        wash(ring(padX * 0.95), p.ground, 0.22, seed + 31);
+        wash(ring(padX * 0.45), p.ground, 0.34, seed + 33);
+        wash(ring(0), p.ground, 0.58, seed + 35);
+        const per = ring(padX * 0.95);
+        for (let i = 0; i < 18; i++) {
+          const t = i / 18, e = t * 4, sd = Math.floor(e), f = e - sd;
+          const a = per[sd % 4], b = per[(sd + 1) % 4];
+          const px = a.x + (b.x - a.x) * f, py = a.y + (b.y - a.y) * f;
+          const ox = px - (panel.x + panel.w / 2), oy = py - (panel.y + panel.h / 2);
+          const l = Math.hypot(ox, oy) || 1, len = q(30) + (i % 3) * q(12);
+          P.topAdd(H.stroke([{ x: px - (ox / l) * len * 0.4, y: py - (oy / l) * len * 0.4 },
+            { x: px + (ox / l) * len, y: py + (oy / l) * len }],
+            { stroke: p.ground, width: q(13), opacity: 0.42, amp: 2.2, over: 0, seed: seed + 40 + i }));
+        }
+      } else {
+        // slab: the type reverses out of it, so the block itself has to be the
+        // darkest thing in the frame rather than a mid-tone with type over it.
+        // 0.96 rather than 1: the room doctrine keeps the ground visible
+        // everywhere in frame, and a fully opaque black rectangle reads as a hole
+        // punched in the plate. What shows through at 4% is a texture, not a
+        // shape — measured tonal range inside the box is 1.0 L against the
+        // control's 70.9.
+        wash(ring(0), ink, 0.96, seed + 51);
+        // a torn terminating edge instead of a mechanical one. Biased INWARD: a
+        // stroke that mostly sticks out reads as a peg, and the first render came
+        // out looking stitched to the wall.
+        const per = ring(0);
+        for (let i = 0; i < 22; i++) {
+          const t = i / 22, e = t * 4, sd = Math.floor(e), f = e - sd;
+          const a = per[sd % 4], b = per[(sd + 1) % 4];
+          const px = a.x + (b.x - a.x) * f, py = a.y + (b.y - a.y) * f;
+          const ox = px - (panel.x + panel.w / 2), oy = py - (panel.y + panel.h / 2);
+          const l = Math.hypot(ox, oy) || 1, len = q(9) + (i % 4) * q(4);
+          P.topAdd(H.stroke([{ x: px - (ox / l) * len, y: py - (oy / l) * len },
+            { x: px + (ox / l) * len * 0.16, y: py + (oy / l) * len * 0.16 }],
+            { stroke: ink, width: q(8), opacity: 0.9, amp: 2.4, over: 0, seed: seed + 60 + i }));
+        }
+      }
+    });
+    return out;
+  }
+
   function room(o) {
     const land = o.w > o.h, w = o.w, h = o.h, p = o.pal, angle = o.angle;
     const P = base(o, "room-" + angle, {
@@ -3489,6 +6699,9 @@
     });
     P.meta.family = "room";
     P.meta.angle = angle;
+    // the profile is bound by Plate() off the key's family, so this is just the
+    // gate every other change in these packs uses
+    const H2 = !!(H.profile && H.profile() === "hand-2");
     // FLOOR LINE, AND WHY IT IS NO LONGER THE SAME NUMBER ON EVERY PLATE.
     //
     // Eight angles all put it at 0.8h (0.7h portrait), which is another way of
@@ -3512,9 +6725,125 @@
     // thing these three exist to stop doing.
     if (!CAM) K.shell(floorY, w, h, 801);
 
+    /* §4.2 — TIME OF DAY, AS A VARIANT AXIS ON THE EXISTING ROOMS.
+
+       The set is built for three in the morning: one warm desk lamp, one cold
+       monitor, everything else falling away. A time-of-day variant is not a new
+       room, it is that room at a different hour — so it is an argument to this
+       author rather than eight more angles, and every prop, shadow and anchor
+       stays exactly where it is.
+
+       WHAT IT DRAWS: a tone on the wall above the floor line, and nothing else.
+       Dusk warms and darkens the upper wall; day lifts it. Both are washes under
+       everything the angle branch then draws, which is why no branch needs to
+       know about it.
+
+       AND THEY ARE EMITTED AS FILLS RATHER THAN THROUGH hatch(), which is the
+       one real finding in this section. The first build called
+       H.hatch(wall, {opacity: 0.34, …}) and the dusk plate came out BYTE-IDENTICAL
+       to the night plate: two marks pushed onto the colour layer, zero bytes in
+       the SVG. hatch2() — the hand-2 path, which every room draws through — treats
+       the authored opacity as COVERAGE and only lays its wash when
+       `op >= 0.4` (material) or the region is under 2600 units square; and it
+       returns early for a `plane`, meaning any region over 5.5% of the plate.
+       A low-alpha wash the size of a wall is both non-material AND a plane, so it
+       drew nothing and said nothing. 0.42 would have worked and 0.34 silently did
+       not.
+
+       That is a trap for anything that wants a large area of faint tone, so the
+       wash here is what titleGround() already uses for the same reason: a wobbled
+       path with a real fill-opacity. The alpha is then the alpha.
+
+       WHAT IT DOES NOT DRAW, stated rather than implied: the props' cast shadows
+       still fall the way the lamp and the monitor put them. A real relight moves
+       every shadow in the room, and that is not in this drop — so these variants
+       read as the same room at a different hour, not as the same room lit from a
+       different place. For a dusk plate that is close to true (the lamp is still
+       the source); for `day` it is the honest limit of the change.
+
+       AND IT IS WHY §1 COMES FIRST. A toned wall behind the title box is exactly
+       the borrowed-legibility failure §1 measures — the chapter openers are
+       legible today because that wall is flat and pale. So a non-night variant
+       DECLARES that it needs a title ground, and until one is chosen these
+       variants are not allowed in a chapter-opener template. The declaration is
+       in the manifest rather than in a comment, so the kit gate can see it. */
+    if (o.timeOfDay && o.timeOfDay !== "night") {
+      const tod = o.timeOfDay;
+      if (["dusk", "day"].indexOf(tod) < 0) throw new Error("unknown timeOfDay " + tod);
+      // A wash: opaque area of colour with a hand edge, and a real alpha. See the
+      // hatch2 note above for why this is not a hatch() call.
+      const wash = function (poly, colour, alpha, sd) {
+        const pts = H.wobble(poly.concat([poly[0]]), { amp: 3.2, over: 0, seed: sd, step: 44 });
+        P.colourAdd(`<path d="${H.toPath(pts)}Z" fill="${colour}" fill-opacity="${H.num(alpha)}"/>`);
+      };
+      // The wall, and a band at the ceiling joint. The join between them is a
+      // frayed run of strokes rather than an edge — a tone that stops on a line
+      // is a painted stripe, and this is meant to be the light in the room.
+      // (k, not the branch-local zoom: `u` is declared further down this author,
+      // after the angle branches, and this wash runs before them.)
+      const fray = function (y, colour, alpha, sd) {
+        for (let i = 0; i < 26; i++) {
+          const x = (w / 26) * i;
+          P.colourAdd(H.stroke([{ x: x, y: y - k * 18 }, { x: x + w / 22, y: y + k * 26 }],
+            { stroke: colour, width: k * 34, opacity: alpha, amp: 3, over: 0, seed: sd + i }));
+        }
+      };
+      if (tod === "dusk") {
+        // warm, and heaviest at the top: the light left in the room is coming in
+        // low from outside, so the ceiling joint goes first.
+        wash(H.polyRect(0, 0, w, floorY), p.ground2, 0.3, 1301);
+        wash(H.polyRect(0, 0, w, floorY * 0.4), p.ground2, 0.26, 1303);
+        fray(floorY * 0.4, p.ground2, 0.2, 1305);
+      } else {
+        // day: the wall lifts. The ground token at a real alpha over the surface,
+        // so the paper grain still reads through it — grain is emitted after the
+        // colour layer, which is what keeps this from killing the surface.
+        wash(H.polyRect(0, 0, w, floorY), p.ground, 0.34, 1311);
+        wash(H.polyRect(0, 0, w, floorY * 0.46), p.ground, 0.22, 1313);
+        fray(floorY * 0.46, p.ground, 0.16, 1315);
+      }
+      P.meta.timeOfDay = {
+        variant: tod,
+        draws: tod === "dusk"
+          ? "two warm washes on the wall, the upper one heavier, with a frayed join at the ceiling band — the light left in the room is coming in low from outside, so the joint goes first."
+          : "two pale washes lifting the wall, frayed at the join. The paper grain is emitted after the colour layer, so it still reads through.",
+        emittedAs: "fills with a real fill-opacity, NOT hatch(). hatch2 lays no wash below opacity 0.4 and returns early for any region over 5.5% of the plate, so a faint wall-sized hatch draws nothing and reports nothing — see the note in engine/plates.js. Anything else in this kit that wants a large faint tone has the same trap.",
+        doesNotDraw: "THE RELIGHT. Every prop's cast shadow still falls where the lamp and the monitor put it. A real change of hour moves all of them, and that is not in this drop — so this reads as the same room at a different hour rather than the same room lit from a different place.",
+        titleGroundRequired: true,
+        titleGroundNote: "§1. This variant puts TONE behind the chapter-opener title box, which is exactly the borrowed legibility the flat pale wall was providing for free. Until engine/build.js TITLE_GROUND names a treatment, this plate must not be used in a chapter-opener template — the title has nothing of its own to sit on. Every other shot template is unaffected.",
+      };
+    }
+
     const zoom = k * (angle === "wide-tight" || angle === "desk-corner" ? 1.45 : 1);
     const u = function (n) { return n * zoom; };
-    const deskH = u(230), deskTop = floorY - deskH;
+    // §2 — THE DRAWN DESK DERIVES FROM THE ANCHOR, and that is what makes the
+    // decision's closed form true in the ARTWORK rather than only in the
+    // manifest. Substituting deskH = (1 - C) * anchorH into deskTop = floorY -
+    // deskH, with anchorY = floorY - anchorH, gives
+    //
+    //   contact.y = deskTop = anchorY + C * anchorH
+    //
+    // which is the decision's equation exactly. The difference is only which
+    // quantity moves to satisfy it: the manifest number, or the desk he leans
+    // on. contact.y here is already Math.round(deskTop) — emitted by the code
+    // that draws the desk, which is why the three 16:9 plates share 634 (same
+    // floorY, same deskH, zoom 1) rather than having been copied once. Deriving
+    // the manifest number from the rig would have overwritten a measurement with
+    // a wish; this way the number stays measured AND becomes right, because the
+    // desk is now drawn at the height his forearm reaches.
+    //
+    // anchorH is hoisted from the anchor block at the foot of this author — the
+    // same expression, unchanged. It stays AUTHORED, so he is one consistent size
+    // across the family and the "he is too small" composition change flows
+    // straight through into a taller desk.
+    const anchorH = angle === "low-desk-height" ? floorY - Math.round(h * 0.20) : Math.round(h * 0.52);
+    // low-desk-height is the deliberate variant: its desk is SUPPOSED to be
+    // somewhere else, so it keeps its authored height and stays out of this.
+    const CC = contactC("leaning-on-desk");
+    const deskH = (H2 && CC != null && angle !== "low-desk-height")
+      ? Math.round((1 - CC) * anchorH)
+      : u(230);
+    const deskTop = floorY - deskH;
     // Where his hand, hip or elbow actually meets the furniture on this plate.
     // Set by the branches that HAVE furniture he can reach; left null by the ones
     // that are open floor, because inventing a contact point on a plate with
@@ -3639,6 +6968,48 @@
       K.cable(w * 0.32, deskTop + u(110), w * 0.4, floorY - u(10), 926);
       K.foreground("stack", 1, floorY - u(4), 984);
       P.slot("title", w * 0.08, 100, w * 0.5, land ? 280 : 320, { align: "left", role: "title" });
+    } else if (angle === "over-the-shoulder") {
+      /* §4.3 — OVER THE SHOULDER. The one angle where he is IN the plate.
+
+         Every other room is a set with a hole in it for a host cut-out. This one
+         is the shot you get by standing behind him: his shoulder and the back of
+         his head crop the near corner, and what we are looking at is the screen
+         he is looking at. So it declares NO host anchor — compositing a cut-out
+         onto it would put two of him in one frame — and the figure is drawn as a
+         near silhouette by K.foreground("shoulder"), the one function in the kit
+         whose job is a cropped near object.
+
+         AND NO TITLE SLOT. A chapter opener needs a flat quiet ground for type;
+         this frame is a man's shoulder, a lit screen and a desk. §1's own audit is
+         the argument — sixteen of twenty-two existing openers already have ink
+         under the title box, and this plate would be the worst of them by a wide
+         margin. It is a cut-away, not an opener, and roles.json says so.
+
+         What it is FOR: the moment the script reads something off the screen. The
+         viewer is behind him looking at the same thing, which is a different
+         relationship to the material than watching him talk about it. */
+      K.lights({ x: w * 0.12, y: deskTop - u(150), r: w * 0.4 }, { x: w * 0.6, y: deskTop - u(240), r: w * 0.52 });
+      K.desk(w * 0.02, deskTop, w * 0.96, deskH, 826);
+      K.underDesk(w * 0.04, deskTop + deskH * 0.18, w * 0.92, deskH * 0.82, 994);
+      // the monitor front-on and large: it is the subject of this shot
+      K.monitor(w * 0.52, deskTop, u(300), u(210), 851);
+      K.cable(w * 0.56, deskTop - u(60), w * 0.2, floorY - u(10), 928);
+      K.keyboard(w * 0.44, deskTop - u(2), u(250), 847);
+      K.mouse(w * 0.66, deskTop + u(26), u(56), 859);
+      K.openReport(w * 0.2, deskTop + u(2), u(250), 966);
+      K.mug(w * 0.34, deskTop + u(26), u(34), 855, true);
+      K.ringStain(w * 0.4, deskTop + u(8), u(30), 963);
+      K.stack(w * 0.78, deskTop + u(2), u(160), 2, 876);
+      K.pen(w * 0.3, deskTop + u(24), u(86), 857);
+      K.windowNight(w * 0.86, floorY - u(740), u(260), u(300), 958);
+      K.plant(w * 0.95, floorY - u(4), u(130), 886);
+      // HIM, in the near corner, cut by the frame edge. Drawn after the set so he
+      // is in front of all of it.
+      K.foreground("shoulder", -1, floorY - u(4), 988);
+      P.slot("screen", w * 0.545, deskTop - u(258), u(258), u(150), {
+        role: "screen", region: true,
+        note: "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
+      });
     } else if (angle === "whiteboard-wall") {
       K.lights({ x: w * 0.19, y: deskTop - u(130), r: w * 0.46 }, { x: w * 0.72, y: deskTop - u(120), r: w * 0.36 });
       K.whiteboard(w * (land ? 0.1 : 0.07), h * 0.11, w * (land ? 0.52 : 0.86), h * (land ? 0.42 : 0.3), 815);
@@ -3687,7 +7058,12 @@
       const cornerX = w * (land ? 0.30 : 0.26);
       const V = K.vanish(w * (land ? 0.70 : 0.78), h * (land ? 0.46 : 0.44));
       const tFar = 0.78;
-      const deskTopY = floorY - h * (land ? 0.22 : 0.17);
+      // §2 — the receding desk takes the same derivation as the elevations, so
+      // the ONE camera with perspective in it is not the one plate where the
+      // furniture disagrees with the man.
+      const deskTopY = (H2 && CC != null)
+        ? floorY - Math.round((1 - CC) * anchorH)
+        : floorY - h * (land ? 0.22 : 0.17);
       const backX = cornerX + w * 0.02, offX = -w * 0.09, offY = h * (land ? 0.19 : 0.14);
       // Both sources sit at a DEPTH now, not just at an x: the lamp is a third of
       // the way down the receding desk and the monitor is further along it, so the
@@ -3739,7 +7115,45 @@
       // geometry, and the near mug at this size read as a bin standing in the
       // middle of the floor — the darkest thing in frame, sitting on nothing, next
       // to the one part of the drawing worth looking at.
-      contact = { pose: "leaning-on-desk", surface: "desk top, near end", x: Math.round(edge.x - u(150) * edge.s), y: Math.round(edge.y) };
+      // AND THE CONTACT POINT MOVES ALONG THE DESK INSTEAD OF THE DESK MOVING.
+      // On an elevation the desk top is one height, so deriving the height is the
+      // whole fix. Here the desk RECEDES: its surface passes through a range of
+      // screen heights, so there is a point on it that is already at his forearm
+      // height, and the honest contact is that point rather than the near corner.
+      // This is why corner-perspective was the one plate still at +412 after the
+      // elevations came into line — its contact was pinned to the near end by
+      // construction, and the near end is the lowest part of the surface.
+      const cp = (function () {
+        if (!(H2 && CC != null)) return { x: edge.x, y: edge.y, s: edge.s };
+        const want = (floorY - anchorH) + CC * anchorH;
+        // TWO parameters, not one. D.at(t, v) takes a depth t down the desk AND a
+        // lateral v across it, and the surface height varies with both — so a
+        // search over t alone at a fixed v = 0.78 can only ever reach the band of
+        // heights that one lateral line passes through. That is why the first cut
+        // came down to +60 and stopped: the point it wanted was further back
+        // across the surface, not further along it.
+        // Coarse sweep, then two refinements around the best cell. A single pass
+        // at grid resolution leaves a residual the size of the grid — which is
+        // how this plate sat at +3.6 and +15.5 while every elevation was inside
+        // half a unit. The bar is one unit, so the search has to beat one unit.
+        let bt = 0.02, bv = 0.78, bd = Infinity;
+        const sweep = function (t0, t1, v0, v1, steps) {
+          const dt = (t1 - t0) / steps, dv = (v1 - v0) / steps;
+          for (let i = 0; i <= steps; i++) {
+            for (let j = 0; j <= steps; j++) {
+              const t = t0 + dt * i, v = v0 + dv * j;
+              const q = D.at(t, v), dd = Math.abs(q.y - want);
+              if (dd < bd) { bd = dd; bt = t; bv = v; }
+            }
+          }
+          return { dt: dt, dv: dv };
+        };
+        let g = sweep(0.02, 0.66, 0.02, 0.98, 48);
+        g = sweep(bt - g.dt, bt + g.dt, bv - g.dv, bv + g.dv, 16);
+        sweep(bt - g.dt, bt + g.dt, bv - g.dv, bv + g.dv, 16);
+        return D.at(bt, bv);
+      })();
+      contact = { pose: "leaning-on-desk", surface: "desk top, at forearm height", x: Math.round(cp.x - u(150) * cp.s), y: Math.round(cp.y) };
       P.slot("title", w * (land ? 0.035 : 0.05), h * (land ? 0.48 : 0.42), w * (land ? 0.24 : 0.4), land ? 210 : 250, { align: "left", role: "title" });
       P.slot("caption", w * (land ? 0.035 : 0.05), h * (land ? 0.68 : 0.60), w * (land ? 0.22 : 0.35), 64, { align: "left", role: "caption" });
     } else if (angle === "low-desk-height") {
@@ -3859,6 +7273,38 @@
       P.slot("title", w * (land ? 0.12 : 0.07), h * 0.5, w * (land ? 0.36 : 0.5), land ? 260 : 300, { align: "left", role: "title" });
     }
 
+    // §1.3 — the one moving thing, chosen from what this angle actually drew.
+    // `from-behind-the-monitor` is the angle whose SUBJECT is the screen, so it
+    // is the one plate where the caret earns the job over the mug.
+    P.meta.ambient = K.ambient(o.boil | 0, angle === "from-behind-the-monitor" ? "screen" : null);
+
+    // §1 — THE TITLE'S OWN GROUND. One call, after every branch has drawn and
+    // declared its boxes, so no angle carries a placement of its own and a new
+    // angle gets the ground for free. Off by default: see build.js TITLE_GROUND.
+    const TG = titleGround(P, o.titleGround, k, 700);
+    if (TG) {
+      P.meta.titleGround = TG;
+      const t = P.slots.title;
+      // the slot box is re-declared unchanged — geometry always wins in P.slot(),
+      // so this adds fields without moving anything already composited here
+      P.slot("title", t.x, t.y, t.w, t.h, Object.assign({}, t, { ground: TG.treatment, groundBox: TG.box, colour: TG.typeColour }));
+      if (TG.typeBlock.joinedCaption && P.slots.caption) {
+        const c = P.slots.caption;
+        P.slot("caption", c.x, c.y, c.w, c.h, Object.assign({}, c, { ground: TG.treatment, groundBox: TG.box, colour: TG.typeColour }));
+      }
+      if (TG.typeColour !== "structure") {
+        // CLONED, NEVER MUTATED. TR.caption is one shared object across the
+        // library — re-colouring it in place would reverse the caption on every
+        // plate that borrows it. Same class of bug as the role-floor accumulation.
+        P.meta.typeRoles = Object.assign({}, P.meta.typeRoles, {
+          title: Object.assign({}, P.meta.typeRoles.title, { colour: TG.typeColour }),
+        });
+        if (TG.typeBlock.joinedCaption && P.meta.typeRoles.caption) {
+          P.meta.typeRoles.caption = Object.assign({}, P.meta.typeRoles.caption, { colour: TG.typeColour });
+        }
+      }
+    }
+
     // host-anchor: the region IS the host's target box, not a hint
     //
     // The spec question was whether the renderer should read this height as the
@@ -3887,11 +7333,21 @@
     //    code branches on the boolean; hostAnchorNote is for the human reading the
     //    manifest. A room plate that declares NEITHER a host-anchor slot nor
     //    hostAnchor === false is a bug, and the audit is what catches it.
-    if (angle === "high-desk-down") {
+    if (angle === "high-desk-down" || angle === "over-the-shoulder") {
       P.meta.hostAnchor = false;
-      P.meta.hostAnchorNote = "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.";
+      if (angle === "over-the-shoulder") {
+        P.meta.hostAnchorNote = "Deliberately none, and for the opposite reason to high-desk-down: he is ALREADY IN THIS PLATE. The near silhouette in the corner is him, drawn by K.foreground('shoulder'), so compositing a host cut-out onto this frame would put two of him in one shot. It is the only room plate with a figure in it.";
+        P.meta.overTheShoulder = {
+          figure: "drawn into the plate as a near silhouette — no face, no features, no eyeline, because we are behind him. Anything more would be a second Dennis drawn by a different author, disagreeing with hostFace() about who he is.",
+          contrast: "he keeps the heaviest line AND the heaviest tone in frame, which no other foreground kind gets. room/ doctrine is that he is the highest-contrast object in any frame he is in, and here the near-object rule and the host rule point the same way for once.",
+          noTitle: "NO title slot. A chapter opener needs a quiet flat ground and this frame is a shoulder, a lit screen and a desk — §1's family audit is the argument. This is a cut-away, not an opener.",
+          screen: "the one room plate that publishes a `screen` region. Fill it with what the script is reading off it, at low value.",
+          use: "the moment the script reads something off the screen. The viewer is behind him looking at the same thing, which is a different relationship to the material than watching him talk about it.",
+        };
+      } else {
+        P.meta.hostAnchorNote = "Deliberately none. This camera is above the desk looking down at the surface: no floor line is in frame, and a standing cut-out has nothing to stand on. Cut to this plate over his voice, or pair it with a hand or forearm plate — which this pack does not yet carry. Do not synthesise a position.";
+      }
     } else {
-      const anchorH = angle === "low-desk-height" ? floorY - Math.round(h * 0.20) : Math.round(h * 0.52);
       const anchorX = Math.round(w * (angle === "doorway" ? 0.62 : angle === "low-desk-height" ? 0.27 : angle === "corner-perspective" ? 0.05 : 0.14));
       const anchorW = Math.round(w * (angle === "low-desk-height" ? 0.26 : 0.34));
       P.slot("host-anchor", anchorX, floorY - anchorH, anchorW, anchorH, Object.assign({
@@ -3962,6 +7418,62 @@
       P.colourAdd(S.hatch(ellipse(px, y + q(14), q(15), q(14), 12, 0.08, 960 + i), { color: p.down, opacity: 0.62, gap: 4, width: 7, angle: -70, seed: 965 + i }));
       P.inkAdd(S.outline(ellipse(px, y + q(14), q(15), q(14), 12, 0.08, 960 + i), { stroke: p.structure, width: 2.4, opacity: 0.5, amp: 1.2, over: 4, seed: 968 + i }));
       P.artBox(`pin-${i}`, px - q(20), y - q(2), q(40), q(34));
+    }
+
+    // §3.3 — SOMETHING JUST PINNED TO THE BOARD.
+    //
+    // A variant, not a second plate: `pinned: true` lays one more slip over the
+    // others, crooked, with its own pin and its own ticker-and-outcome slots. A
+    // beat, a callback and a running gag in one asset — and it is the same
+    // wall, so cutting between the two states is the card ARRIVING.
+    //
+    // It also earns the room its §1.3 prop. The board draws no mug and no
+    // monitor, so it was one of three rooms with nothing alive in it; the newest
+    // card is the only thing on a wall of settled paper that has not settled, and
+    // one lifted corner is both the beat and the motion. Nothing else on the
+    // plate moves — a wall of fluttering cards is a noticeboard in a gale.
+    if (o.pinned) {
+      const py = top + rowH * (rows - 2.35);
+      const pL = L + (R - L) * 0.16, pW = (R - L) * 0.76, pH = rowH * 1.15;
+      const tilt = q(26);
+      K.mass([
+        { x: pL, y: py + tilt }, { x: pL + pW, y: py },
+        { x: pL + pW - q(6), y: py + pH }, { x: pL - q(8), y: py + pH + tilt },
+      ], p.ground, 0.92, 980, -3);
+      P.inkAdd(S.outline([
+        { x: pL, y: py + tilt }, { x: pL + pW, y: py },
+        { x: pL + pW - q(6), y: py + pH }, { x: pL - q(8), y: py + pH + tilt },
+      ], { stroke: p.structure, width: q(3.4), opacity: 0.9, amp: 3, over: 10, seed: 982 }));
+      const npx = pL + pW * 0.5;
+      P.colourAdd(S.hatch(ellipse(npx, py + q(18), q(17), q(16), 12, 0.08, 984), { color: p.attention, opacity: 0.7, gap: 4, width: 7, angle: -70, seed: 985 }));
+      P.inkAdd(S.outline(ellipse(npx, py + q(18), q(17), q(16), 12, 0.08, 984), { stroke: p.structure, width: 2.6, opacity: 0.55, amp: 1.2, over: 4, seed: 986 }));
+      P.slot("new-ticker", pL + q(24), py + pH * 0.26, pW * 0.3, pH * 0.5, { align: "left", role: "ticker" });
+      P.slot("new-date", pL + pW * 0.34, py + pH * 0.34, pW * 0.24, pH * 0.42, { align: "left", role: "date" });
+      P.slot("new-outcome", pL + pW * 0.58, py + pH * 0.26, pW * 0.38, pH * 0.5, { align: "right", role: "outcome" });
+      P.artBox("pin-new", npx - q(22), py, q(44), q(38));
+      // the corner that has not settled
+      K.registerCard(pL - q(8), py + pH + tilt, q(70), 988);
+      P.meta.pinned = {
+        note: "the newest call, laid over the others and not straightened. Cut from the un-pinned plate to this one and the card has just arrived.",
+        slots: ["new-ticker", "new-date", "new-outcome"],
+        pin: "drawn in `attention` rather than `down` — the pin marks WHICH card is new, and nothing about a new call is a loss yet.",
+      };
+    }
+    // §1.3 — STATED, EVEN THOUGH IT IS EMPTY.
+    //
+    // wallOfCalls draws pinned cards and no desk, so it registers neither a mug
+    // nor a monitor and this returns null. Calling it anyway means the manifest
+    // SAYS the plate has no ambient prop rather than simply not mentioning one —
+    // an absent field and a field that is null are different claims, and only the
+    // second is checkable.
+    //
+    // It is the plate that most obviously wants a prop: a card that has just been
+    // pinned, slightly crooked, over the others, is §3.3's beat. Deliberately not
+    // invented here — that is drop three, and it is a writing decision as much as
+    // a drawing one.
+    P.meta.ambient = K.ambient(o.boil | 0, null);
+    if (!P.meta.ambient) {
+      P.meta.ambientNote = "None, and declared rather than missed. §1.3 asks for one moving thing in each ROOM — a set he is standing in, which should not read as a photograph. This is not one: it declares hostAnchor false and is a full-frame data plate cut to over his voice, a wall of settled paper with nothing on it that moves. The variant that DOES have a beat is room/wall-of-calls-pinned, where the newest card has not settled yet.";
     }
     return P;
   }
@@ -4336,5 +7848,5 @@
   const ROOM_CAMERA_ANGLES = ["corner-perspective", "low-desk-height", "high-desk-down"];
   const HOST_FRAMINGS = ["close-up", "medium"];
 
-  g.PLATES = { ROLES, SURFACES, pal, multiplesStrip, multipleBridge, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
+  g.PLATES = { ROLES, SURFACES, pal, titleGround, typeBlockOf, TITLE_GROUNDS, quarterPair, seasonality, languageShift, headlineStack, emptyChair, hostChair, lowerThird, confession, CONFESSION_TREATMENTS, shortInterest, insiderFlow, macroSeries, endCard, multiplesStrip, multipleBridge, numbersSheet, rowBand, threeSeries, swatch, surfaceCard, chartFrame, cashFlow, headlineBand, bothTrue, unitLadder, closingPlate, rowSpotlight, flowPlate, bigNumber, bigFraction, compare, definitionCard, quotePull, criteriaCard, timeline, mediaFrame, captureFrame, hookCard, hostFigure, hostHead, hostBlink, waterfall, impliedPlate, proportionBar, distribution, scaleFig, receipt, saidHappened, sensitivity, multiplesGrid, whiteboard, HOST_POSES, HOST_FRAMINGS, HOST_OUTFITS, ellipse, room, wallOfCalls, ROOM_ANGLES, ROOM_CAMERA_ANGLES, annotation, ANNOTATIONS, peerStrip, cycleFrame };
 })(typeof window !== "undefined" ? window : globalThis);
