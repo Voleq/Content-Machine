@@ -616,3 +616,72 @@ def test_the_dusk_rule_is_recorded_where_a_catalogue_note_cannot_reach():
     assert not any(str(k).startswith("room/") for k in DIRECTING_NOTES), (
         "a room rule is in the writer-facing catalogue, where a script "
         "cannot act on it")
+
+
+# --------------------------------------------------------------------------
+# §8 — insider-flow's shared-scale contract.
+# --------------------------------------------------------------------------
+
+
+def test_the_insider_flow_marks_declare_one_scale_for_both_directions():
+    """§8: `charts/insider-flow-6` and `-12` draw buys and sells as marks
+    sized by value. A compositor that scales the two directions
+    independently draws a plate that looks entirely correct and shows a
+    false relationship — a small buy and a large sell the same size, with
+    nothing on screen to give it away.
+
+    The plate declares the contract itself, and this pins it: one `scale`
+    divides both directions, and both are measured against the same
+    half-height from the same axis.
+    """
+    shipped = _shipped()
+    for key in ("charts/insider-flow-6-16x9", "charts/insider-flow-12-16x9"):
+        plate = shipped[key]
+        assert "axisY" in plate["meta"], f"{key} has no axis to measure from"
+        marks = [s for n, s in plate["slots"].items() if s.get("role") == "mark"]
+        assert marks, f"{key} declares no mark slots"
+
+        note = marks[0].get("note", "")
+        assert "value / scale" in note, (
+            f"{key}'s mark slot no longer states the shared-scale contract:\n"
+            f"{note}")
+        assert "half-height" in note
+
+        # Every mark is the same box, measured off the same axis. Two scales
+        # would need two geometries, so this is the shape of the contract as
+        # well as its words.
+        heights = {s["h"] for s in marks}
+        tops = {s["y"] for s in marks}
+        assert len(heights) == 1 and len(tops) == 1, (
+            f"{key}'s marks do not share one geometry: heights={heights} "
+            f"tops={tops} — a per-direction scale would look like this")
+
+
+def test_the_series_fillers_that_exist_already_use_one_domain():
+    """Nothing fills a `mark` slot yet — the role is new in delta-14 and no
+    code path in `pipeline/` draws one, so the two-scale defect is not live.
+    What this holds is the house pattern the filler must match when it is
+    written: every existing series scales positives and negatives against a
+    single domain that spans zero."""
+    import inspect
+
+    from pipeline import chart
+
+    for fn in (chart.draw_bars, chart.draw_row_bars):
+        src = inspect.getsource(fn)
+        assert "min(0.0, min(vals))" in src and "max(0.0, max(vals))" in src, (
+            f"{fn.__name__} no longer derives one domain spanning zero; a "
+            f"per-direction scale draws a false relationship")
+
+    # And nothing draws a `mark` slot today, which is what makes the
+    # two-scale defect not live. Asked of the function that decides, with a
+    # slot shaped like insider-flow's own.
+    from pipeline.plate_tags import _draws_a_series
+    from pipeline.plates import Slot
+
+    mark = Slot(name="mark-1", x=276, y=153, w=110, h=753, role="mark",
+                region=True)
+    assert not _draws_a_series(mark), (
+        "a `mark` slot is now drawn through a series — it must honour "
+        "insider-flow's one-scale contract, and this assertion should "
+        "become one about what it draws rather than about its absence")
