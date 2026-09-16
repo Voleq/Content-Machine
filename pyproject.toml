@@ -97,4 +97,15 @@ markers = [
     #
     # Deselecting it does not clear the render block; only the fetch does.
     "audio_provenance: a build product the operator must fetch (P0b)",
+    # The same shape, one layer over: a pack lands in `kit/` as manifests and
+    # an engine, and `assets/plates/` only changes when someone runs the
+    # ingest. Between the two the render path draws the old library while the
+    # curation and the prompts describe the new one, so a green suite here
+    # would be the suite lying about which kit is installed.
+    #
+    #     pytest -m "not kit_ingest"
+    #
+    # Deselecting it does not install the kit; only `scripts/ingest_kit.py`
+    # does.
+    "kit_ingest: compares the installed registry against the shipped pack",
 ]

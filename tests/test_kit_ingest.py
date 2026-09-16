@@ -685,3 +685,40 @@ def test_the_series_fillers_that_exist_already_use_one_domain():
         "a `mark` slot is now drawn through a series — it must honour "
         "insider-flow's one-scale contract, and this assertion should "
         "become one about what it draws rather than about its absence")
+
+
+def test_the_preflight_notices_an_installed_kit_from_a_different_pack(tmp_path):
+    """A pack lands in `kit/` as manifests and an engine; `assets/plates/`
+    only changes when the ingest runs. In between, the render path draws the
+    OLD library while the curation, the prompts and the reachability report
+    all describe the new one — and nothing about a finished video would look
+    wrong, because every plate it drew exists. It is just the wrong kit.
+
+    This is the state the repository is in until the operator ingests, so
+    the check has to name it rather than report a plate count and pass.
+    """
+    import os
+    import subprocess
+    import sys as _sys
+
+    env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": str(ROOT),
+           "MOCK_MODE": "true"}
+    got = subprocess.run(
+        [_sys.executable, str(ROOT / "scripts" / "check_preflight.py")],
+        capture_output=True, text=True, env=env, cwd=ROOT, timeout=180)
+
+    shipped = len(ingest._shipped_manifests(KIT))
+    from pipeline.plates import load_plates
+    from config import Settings
+
+    installed = len(load_plates(
+        Settings(MOCK_MODE=True, _env_file=None).assets_dir).keys())
+
+    if installed == shipped:
+        assert "[PASS] design kit" in got.stdout
+        assert "matching the shipped pack" in got.stdout
+    else:
+        assert "[FAIL] design kit" in got.stdout, got.stdout
+        assert "never ingested" in got.stdout
+        assert "ingest_kit.py" in got.stdout
+        assert got.returncode == 1

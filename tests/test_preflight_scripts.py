@@ -198,7 +198,7 @@ def test_the_backup_archives_state_and_can_be_restored(tmp_path):
         tar.extractall(restored)
 
     back = restored / "state"
-    assert json.loads((back / "spend.json").read_text())["2026-09"]["usd"] == 12.34
+    assert json.loads((back / "spend.json").read_text(encoding="utf-8"))["2026-09"]["usd"] == 12.34
     assert (back / "thesis.json").is_file()
     assert (back / "jobs" / "abc123.json").is_file()
     # The ledger is called out by name, because it is the one whose loss
@@ -287,8 +287,37 @@ def test_the_preflight_blocks_on_a_missing_design_kit(tmp_path):
     assert "ingest_kit.py" in got.stdout
 
 
+def _installed_matches_shipped() -> bool:
+    """Is `assets/plates/` the pack that is in `kit/`?
+
+    `check_preflight` compares the two, and the repository is deliberately
+    allowed to sit between them: a pack lands as manifests and an engine,
+    and the ingest is the operator's step. While it does, the design-kit row
+    fails for a true reason and the passing case below is not reachable.
+    """
+    import importlib.util
+
+    try:
+        from config import Settings
+        from pipeline.plates import PlateError, load_plates
+
+        spec = importlib.util.spec_from_file_location(
+            "_ingest_probe", SCRIPTS / "ingest_kit.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        shipped = set(mod._shipped_manifests(ROOT / "kit"))
+        installed = set(load_plates(
+            Settings(MOCK_MODE=True, _env_file=None).assets_dir).keys())
+    except (PlateError, OSError, KeyError):
+        return False
+    return bool(shipped) and shipped <= installed
+
+
 @pytest.mark.skipif(not (ROOT / "assets" / "plates").is_dir(),
                     reason="the design kit is not built in this checkout")
+@pytest.mark.skipif(not _installed_matches_shipped(),
+                    reason="assets/plates/ is an older pack than kit/ — run "
+                           "scripts/ingest_kit.py and this passes again")
 def test_the_preflight_passes_once_both_blockers_are_cleared(tmp_path):
     """The passing case must be reachable, or the script is a wall rather
     than a check. Everything else it reports is advisory."""
@@ -344,6 +373,9 @@ def test_the_readme_preflight_and_the_script_name_the_same_scripts():
     # The two hard blockers are steps 1 and 3, and the sound gate is per file.
     assert "nothing renders on either lane" in section
     assert "room tone alone leaves fourteen" in section
-    # And the deselect escape hatch, which does not clear the block.
-    assert 'pytest -m "not audio_provenance"' in section
-    assert "does not clear the render block" in section
+    # And the deselect escape hatch for both gates, which clears neither.
+    assert "not audio_provenance" in section
+    assert "not kit_ingest" in section, (
+        "the preflight does not mention the kit-ingest gate, so a suite red "
+        "for a stale registry reads as a broken test")
+    assert "Deselecting either changes nothing about the blocker" in section

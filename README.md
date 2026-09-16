@@ -1040,11 +1040,26 @@ Two settings that are decisions rather than defaults:
   Eastern. For a US-markets channel that may be exactly right or exactly
   wrong; either way it should be chosen, not inherited.
 
-And one note on the suite: `tests/test_asset_reach.py::test_every_shipped_sound_has_provenance`
-**fails until step 3 is done**. That is the gate, not a broken test — a green
-suite there would be the suite lying about a production blocker. Deselect it
-with `pytest -m "not audio_provenance"` if you need a clean run first;
-deselecting does not clear the render block.
+And two notes on the suite. Both of these **fail until the step that clears
+them is done**, and in both cases that is the gate rather than a broken test
+— a green suite there would be the suite lying about a production blocker:
+
+- `test_every_shipped_sound_has_provenance` (marker `audio_provenance`)
+  fails until **step 3**, the Freesound fetch.
+- `test_the_engine_and_the_delivery_agree_on_every_type_role` (marker
+  `kit_ingest`) fails until **step 1**, the ingest, whenever `assets/plates/`
+  is an older pack than the one in `kit/`. While it is, the render path
+  draws the old library and the curation, the prompts and the reachability
+  report all describe the new one — and nothing about a finished video would
+  look wrong, because every plate it drew exists. It is just the wrong kit.
+  `scripts/check_preflight.py` reports the same mismatch on its design-kit
+  row.
+
+```bash
+pytest -m "not audio_provenance and not kit_ingest"   # a clean run first
+```
+
+Deselecting either changes nothing about the blocker; only the step does.
 
 ## Operations
 

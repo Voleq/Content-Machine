@@ -66,10 +66,31 @@ def _kit(settings, report: Report) -> None:
                    f"{str(e)[:80]}… — run `npm install` then "
                    f"`python scripts/ingest_kit.py kit`")
         return
-    keys = reg.keys() if callable(getattr(reg, "keys", None)) else []
+    keys = set(reg.keys() if callable(getattr(reg, "keys", None)) else [])
+
+    # IS THE INSTALLED KIT THE SHIPPED ONE? A pack lands in `kit/` as
+    # manifests and an engine; `assets/plates/` only changes when the ingest
+    # runs. In between, the render path draws the old library while the
+    # curation and the prompts describe the new one — and nothing about a
+    # finished video would look wrong, because every plate it drew exists.
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_ingest_for_preflight", Path(__file__).with_name("ingest_kit.py"))
+    ingest = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ingest)
+    shipped = set(ingest._shipped_manifests(ROOT / "kit"))
+    missing = shipped - keys
+    if missing:
+        report.add(FAIL, "design kit",
+                   f"{len(keys)} plates installed, {len(shipped)} shipped — "
+                   f"{len(missing)} never ingested (e.g. "
+                   f"{sorted(missing)[0]}). Re-run "
+                   f"`python scripts/ingest_kit.py kit`")
+        return
     report.add(PASS, "design kit",
-               f"{len(keys)} plates — now run `/kit doctor`, while the "
-               f"host/room change is still fresh")
+               f"{len(keys)} plates, matching the shipped pack — now run "
+               f"`/kit doctor`, while the host/room change is still fresh")
 
 
 def _sfx(settings, report: Report) -> None:
