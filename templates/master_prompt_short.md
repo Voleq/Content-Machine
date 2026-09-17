@@ -20,25 +20,28 @@ Keep it TIGHT — a short has no room to waste. Almost no teaching: this is the 
 
 ## INPUT
 Ticker: {{ticker}}
-Why it's moving (from the screener): {{move_context}}
+What it has done and why (live quote first, screener context after — any figure labelled with an age is AS OF THAT TIME, so say so rather than calling it today's): {{move_context}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
+
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
+VALUATION DATA — the evidence for the CHEAP OR TRAP beat. A perpetuity sanity check ("priced for X, has delivered Y"), NOT a fair value. Name the multiple from here, then say what would have to be true for it to be cheap:
+{{valuation_data}}
 
 Peer percentiles (OPTIONAL — where THIS ticker ranks vs its peers; the gut check may drop at most ONE as a one-liner, never a table):
 {{peer_percentiles}}
 
 Chartable metrics present in THIS data — every `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
 
-## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
+## THE KIT — for reference, not for placement
 
-Owned memes — [MEME: key] (optional, at most one):
-{{meme_catalog}}
+A SHORT'S VISUALS ARE NOT YOURS TO PLACE. The shot template decides every
+frame and binds it to the structured fields below; nothing you write puts a
+picture on screen. The catalogue is here so you know what the video will
+look like as you write to it — the frames a viewer will actually see:
 
-Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
-{{broll_palette}}
-
-Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these. Nothing else resolves:
 {{plate_catalogue}}
 
 {{tagging_density}}
@@ -67,90 +70,43 @@ The beats are fixed; the added runtime goes to keeping the viewer, never to more
 4. Room in the gut check for ONE more number IF it changes the read — a number, not more narration.
 Still NO verdict stamps: the payoff stays deadpan free text and the viewer draws the conclusion.
 
-## THE TAG GRAMMAR — inline in `audio_script`
-Place a tag immediately before the word it should hit. The parser strips every tag out before anything is spoken or counted, and fires it on that word. Three kinds:
+## WHAT REACHES THE SCREEN, AND WHAT DOES NOT
 
-**Evidence — takes the frame for a beat.** Dennis cuts away to it and comes back.
-### [PLATE] — you name the plate and write what goes on it
-The kit is a library of drawn plates. YOU choose which one and YOU write every
-word and figure on it. The renderer puts your text in the declared slots and
-does nothing else — it never picks a plate and it never works out a number.
+**The visuals of a short are a fixed shot template, not something you place.**
+`templates/shots/short.json` decides which plate carries each beat and in what
+order; the renderer binds YOUR WORDS into its slots. So the way you control
+what a viewer sees is the structured fields below — `hook_text`,
+`move_summary`, `headlines`, `numbers` and `numbers_comment`, `turn_line`,
+`cheap_or_trap`, `conclusion` — and writing those well is the whole job.
 
-```
-[PLATE: hook-card-t1 | ticker=EXMPL | move=+29% | hook=a plateau in a costume | sub=five years of drift]
-[PLATE: numbers-sheet-3r-9x16 | unit=$M | head=FY21,FY22,FY23,FY24,FY25,LTM | label-1=Revenue | row-1=400,412,441,468,479,496]
-```
+**Nothing you write places a visual, in either form.**
 
-SIX PERIODS, ALWAYS: four fiscal years, the last full year, LTM. A row whose
-length does not match the header is rejected, as is an unknown plate, an
-undeclared slot, and a plate this chapter's type may not use.
+`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`, `[SHOW ARTICLE]`,
+`[SCREENGRAB]` and `[SCRIBBLE]` written inside `audio_script` are LONG-form
+grammar. A short parses them, reports them as ignored, and draws none.
 
-**`marker-N` takes NUMBERS, not words — and in 9:16 it carries the peer number
-as well as the subject's.** `multiples-strip-9x16` draws a rail per row: the
-peer range low-to-high, with the subject marked on it.
+The JSON fields `meme`, `broll` and `annotations` are the same story one
+level up: they validate, they are counted on the cost report, and no shot
+template binds them, so they reach no frame either. They are accepted and
+reported as ignored. Do not spend a decision on them.
 
-```
-[PLATE: multiples-strip-9x16 | unit=Multiples, current | head-subject=EXMPL
-  | label-1=P/E | subject-1=58.2x | marker-1=t:0.94, median:0.41
-  | label-2=EV / EBITDA | subject-2=42.7x | marker-2=t:0.88, median:0.38
-  | label-3=P/S | subject-3=28.4x | marker-3=t:1.4, median:0.44
-  | caption=Rail ends are p10 and p90 of 8 peers ]
-```
-
-* `t` is the subject's position and `median` is the peer set's, both on one
-  scale: `0` is the peer low, `1` is the peer high. Both come off the data
-  (`Peers!I` and `Peers!J`). Write them named — they look alike.
-* **`median:` IS NOT OPTIONAL HERE.** The portrait strip is three columns —
-  metric, subject, rail — and carries no median column at all. The tick the
-  rail draws IS the peer number, so leaving it out shows a position with
-  nothing to be positioned against. There is no `median-N` and no
-  `head-median` on this plate; writing either is rejected.
-* **THREE ROWS, NOT SIX.** The portrait strip is a re-author, not the landscape
-  one cropped. Pick the three metrics that carry the argument.
-* **`t` outside 0–1 is a real reading — write it as it comes.** The ends are the
-  10th and 90th percentile, so a subject priced above every peer is `t = 1.4`,
-  and that is the row worth saying out loud. The renderer puts the dot on the
-  end tick with a chevron past it. Do not clamp it to be safe.
-* **Never write words into `marker-N`**, and never colour a row `up` or `down`
-  here: cheap is not up and expensive is not down. Position carries the claim.
-* **`structure/multiple-bridge` does not exist in 9:16** — do not reach for it.
-* `multiples-strip` rows are METRICS; `peers/peer-strip` rows are COMPANIES.
-  They are inverses, not variants.
-- `[SHOW FILING: file]` — a screenshot already pulled from the 10-K.
-- `[SHOW ARTICLE]` — a screenshot of the REAL article's headline. Use it on the WHY beat when the headline is the evidence; a paraphrased card loses the one thing that makes it evidence, which is that somebody published it. **Write it bare** — the renderer matches your first headline against the data export's own news rows and finds the link itself. `[SHOW ARTICLE: 2]` picks the SECOND news row in the data above by number — use it when two of this week's headlines cover the same theme and the match could go either way; `[SHOW ARTICLE: Reuters on the export licence]` names a different one of those rows in words; `[SHOW ARTICLE: https://…]` pins an exact page. If nothing matches or the page can't be reached the designed card carries the beat, so it is always safe to ask for.
-- `[SCREENGRAB: name]` — an operator-supplied capture (blocks if the file isn't there).
-- `[IMG: query]` / `[PRODUCT: query]` — real imagery.
-- `[MEME: key]` / `[CLIP: key or subject]` — a meme is STILL and comes from the catalog above; a clip MOVES and may name any specific subject. Both take an optional `| hold=2.0` — seconds on screen, 0.8–5.0 — when you know whether it is a glance or a beat to sit in. Sparingly.
-
-Data beats (a filing, an article, a card, a number) hold 3–8 seconds and are never cut short. Punctuation beats (a prop, a meme, a reaction) run 0.6–2 seconds over the frame. **Never put two data beats back to back** — with nothing between them the second one doesn't get read, and the renderer will move it.
-
-**Marks — ride on top of whatever is showing.** The channel's visual language is crude marker doodles. Use them to punctuate the UNDERCUT, not the teach.
-- `[SCRIBBLE: style -> target]` — a drawn mark plus the target as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
+Either way it is work asked of you for nothing, so this prompt no longer
+asks. Write the fields the template binds.
 
 **Delivery — never reaches the screen, only the voice.** The vocabulary, the mode each tag serves and the ceilings are in DELIVERY DIRECTION above, generated from the code that performs them. A [BEAT] before the payoff is what turns a sentence into a joke. Four or five across a short is plenty.
 
-Budget: roughly 22–30 visual events across the whole short. Two layers, and they are counted separately because they do different jobs:
-- **4–8 data beats** — a figure, a card, a filing, an article. These are READ, so each holds 3–8 seconds. More than eight and something gets cut short.
-- **8–14 punctuation beats** — a prop, a reaction, a transformation, a doodle. These ride over whatever is up for under two seconds and cost the viewer nothing. This is the layer that gives short-form its pulse, and it is the one scripts consistently under-write: eight is the FLOOR, not the target.
-
-Dennis is on camera at the open, at the close, and every four or five beats in between — you don't place those, but write knowing the cut returns to his face.
-
-**If a beat has a figure in it and no `[PLATE]`, the renderer draws the room. The room is not a beat.** Every number you say out loud needs a plate built to carry it. Reach for a DIFFERENT one each time — repeating one plate twice reads as a template.
-
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — inline `[PLATE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts the SPOKEN words only — delivery tags are stripped before counting.
 2. `move_summary`: how much / how active, e.g. "+34% today · 6× average volume". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the on-screen headline (short, as reported). `meaning` = what it actually means for the stock, in your voice.
 4. `numbers`: 1–6 rows from the history table above, each with 2–6 values OLDEST → NEWEST as display strings ("$1.2B", "-18%", "365M"). Set `years` to the matching labels. Pick the rows that answer "is the business going anywhere?" — revenue, income, cash, share count. The longer runtime has room for ONE more row than before IF it changes the read; don't pad.
 5. `numbers_comment`: the holistic read of the trend, ≤ 300 chars.
 6. `conclusion`: free text, ≤ 220 chars, opening with the call the way you'd mutter it ("Noise." / "Signal, unfortunately." / "Mostly noise, one number worth watching."). NEVER a label from a taxonomy.
-7. `annotations`: up to 4 scribbles. `target` "chart" (circles the move) or "numbers" with `row_index`; `anchor_word` must appear VERBATIM in `audio_script` where the scribble should fire; optional `note` ≤ 40 chars, lowercase, terse.
-8. `meme` (optional, use ONLY if it genuinely lands — most videos don't need one): `{"key": "<from the meme keys above>", "anchor_word": "<word in audio_script>"}`. `broll` (optional) the same shape with a palette key.
-9. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
-10. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
-11. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
-12. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
-13. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
+7. `chart_style`: "marker" or "clean". Omit it and you get "marker", the napkin chart. Ask for "clean" when the beat needs a precise read of the line.
+8. NEVER name any data vendor, terminal, or data product anywhere. On screen, data is "from the 10-K" — source unnamed.
+9. The kit is fixed — do NOT request custom assets in the SHORT. If the story truly needs a bespoke diagram, it belongs in the LONG edition; skip it here.
+10. Both-ways honesty: if the numbers are genuinely good, the joke is the market ignoring five clean years — praise through gritted teeth, sarcasm aimed at the crowd's blindness, never manufactured doom.
+11. **EVERY FIGURE IN `audio_script` IS WRITTEN THE WAY IT IS SAID.** The spoken line is read aloud by a text-to-speech voice, and a voice reads a symbol, a thousands comma and a decimal point literally — `$1,234.56` does not come out as money. Spell the spoken figure out: "fifty-nine point six percent", "a hundred and sixty-two percent", "one point four billion dollars", "minus eighty-nine million". Decimals are read digit by digit after "point". This applies ONLY to `audio_script`: `numbers` values, `move_summary` and every `[PLATE]` slot are ON SCREEN and stay as display strings ("$1.2B", "-18%").
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
 The operator ratifies or regenerates, so make your reasoning legible. Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
@@ -160,7 +116,20 @@ The operator ratifies or regenerates, so make your reasoning legible. Emit these
 3. SCRIPT — the `audio_script` (180–210 words), written with the ★ hook as its first sentence, ONE mid-point re-hook (~30s), and — optionally — a single second-look line right before the verbatim conclusion.
 4. TAGS — one line noting the doodle/scribble/meme keys you placed and why (all from the catalogs).
 
-THEN, as the final block, the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
+THEN the strict JSON object below — keys exactly as shown, the ONLY braces in your reply. The bot parses this object; the prose above is for the operator.
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the four prose sections in the chat and the JSON object in the `.txt` file.
 
 {
   "ticker": "{{ticker}}",

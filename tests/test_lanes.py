@@ -198,29 +198,40 @@ def test_an_explicit_format_still_wins(core, settings, short_valid_json):
 
 
 # --------------------------------------------------------------------------
-# /new survives one release as an alias.
+# /new is gone (L3). It could not know the lane, so it prepared both prompts
+# and left the workspace lane-less — one of the inputs to the format-
+# resolution mess. Its last caller was the screener's candidate buttons, and
+# those now carry the candidate's own lane.
 # --------------------------------------------------------------------------
 
 
-def test_new_still_works_and_says_it_is_deprecated(core, settings):
-    core.new_ticker(CHAT, "EXMPL")
-    _with_data(core, "EXMPL")
-    reply = core.prompts_reply(CHAT)
-    names = sorted(f.name for f in reply.files)
-    assert names == ["prompt_long_angle.md", "prompt_short.md"], names
-    assert "deprecated" in reply.text
-    assert "/short TICKER" in reply.text
+def test_the_lane_less_alias_is_gone_from_the_core_and_the_frontend():
+    from bot import handlers
+
+    assert not hasattr(handlers.BotCore, "new_ticker")
+    src = Path(handlers.__file__).read_text(encoding="utf-8")
+    assert 'CommandHandler("new"' not in src
+    assert 'CommandHandler("refresh"' not in src
 
 
-def test_new_leaves_the_lane_unset_which_is_what_makes_it_the_old_behaviour(
-        core, settings):
-    core.new_ticker(CHAT, "EXMPL")
-    assert core.context.get(CHAT).lane() == ""
+def test_a_screener_button_opens_the_lane_the_screen_put_it_in(core, settings):
+    """G3: the candidate's lane rides in the callback data.
 
+    Asserting on the workspace the button produces, not on the string that
+    was handed to Telegram — the old button routed to a lane-less alias and
+    a test on the callback text would have passed either way.
+    """
+    from bot.keyboards import CODE_LANES, candidates_keyboard
 
-def test_new_with_a_bad_ticker_points_at_the_replacements(core):
-    text = core.new_ticker(CHAT, "").text
-    assert "/short TICKER" in text and "/long TICKER" in text
+    kb = candidates_keyboard([("EXMPL", "short"), ("OTHER", "long")])
+    data = [b.callback_data for row in kb.inline_keyboard for b in row]
+    assert data == ["n|s|EXMPL", "n|l|OTHER"]
+
+    for payload, expected in zip(data, ("short", "long")):
+        op, code, ticker = payload.split("|")
+        assert op == "n"
+        core.start_lane(CHAT, CODE_LANES[code], ticker)
+        assert core.context.get(CHAT).lane() == expected
 
 
 # --------------------------------------------------------------------------
@@ -235,3 +246,251 @@ def test_the_lane_survives_a_restart(core, settings):
     assert ws is not None
     assert ws.lane() == "long"
     assert ws.current_format() == "long"
+
+
+# --------------------------------------------------------------------------
+# GROUP C — intake routes by the lane, and the lane is never inferred.
+# --------------------------------------------------------------------------
+
+
+def test_a_chat_remark_does_not_become_a_long_script(core, settings):
+    """The headline defect: `ws.lane()` was never consulted and
+    `parse_long_script` rejected only empty input, so a note to the operator
+    was saved as a forty-minute script."""
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+
+    reply = core.intake_script(
+        CHAT, "hold on, the revenue number in row 2 looks wrong")
+
+    assert ws.load_long() is None, "a chat remark must not land as a script"
+    assert "⛔" in reply.text
+
+
+def test_a_short_on_a_short_lane_reports_the_shorts_own_rejection(core, settings):
+    """It used to retry a failed SHORT as a LONG whenever the text contained
+    brackets — which every SHORT does — and the LONG accepted it."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+
+    reply = core.intake_script(CHAT, '{"format": "short", "hook_text": "[x]"}')
+
+    assert "SHORT script rejected" in reply.text
+    assert ws.load_long() is None, "a failed SHORT must not become a LONG"
+
+
+def test_a_paste_at_telegrams_cut_point_is_refused_not_saved(core, settings):
+    """C2: Telegram splits over 4,096 characters and each fragment arrives
+    as its own paste. The first one used to be saved as a whole script."""
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+
+    fragment = "A" * 4096
+    reply = core.intake_script(CHAT, fragment)
+
+    assert ws.load_long() is None
+    assert ".txt" in reply.text, "the refusal has to say what to do instead"
+
+
+def test_the_same_text_as_a_file_is_accepted(core, settings, long_valid_text):
+    """A file cannot be split, so the refusal must not apply to one."""
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+
+    core.handle_upload(CHAT, "script.txt", long_valid_text.encode("utf-8"))
+
+    assert ws.load_long() is not None
+
+
+def test_the_format_follows_the_lane_not_the_files_on_disk(core, settings,
+                                                           short_valid_json,
+                                                           long_valid_text):
+    """C3: `current_format()` preferred LONG unconditionally, so one stray
+    paste made every keyed command target the wrong script for the day."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    _with_data(core, "EXMPL")
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(settings, "EXMPL")
+
+    # A LONG lands in the same folder (a second lane on the same date).
+    ws.save_long(*_parse_long(settings, long_valid_text))
+
+    assert ws.load_long() is not None, "the LONG really is on disk"
+    assert ws.current_format() == "short", \
+        "the declared lane decides, not which file exists"
+    assert ws.format_conflict() == "long", "and the disagreement is visible"
+
+
+def _parse_long(settings, text):
+    from pipeline.parser_long import parse_long_script
+
+    script, _ = parse_long_script(text, "EXMPL", settings)
+    return script, text
+
+
+def test_both_formats_on_one_date_are_each_reachable(core, settings,
+                                                     short_valid_json,
+                                                     long_valid_text):
+    """C4: there was no `/render_short`, so the SHORT became unreachable the
+    moment a LONG existed."""
+    core.start_lane(CHAT, "short", "EXMPL")
+    _with_data(core, "EXMPL")
+    core.intake_script(CHAT, short_valid_json)
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.save_long(*_parse_long(settings, long_valid_text))
+    ws.approve("short", ws.load_short().content_sha(), "report")
+    ws.approve("long", ws.load_long().content_sha(), "report")
+
+    from pipeline.models import JobKind
+
+    kind, _, _ = core.render_request("EXMPL", "short", False)
+    assert kind is JobKind.RENDER_SHORT
+    kind, _, _ = core.render_request("EXMPL", "long", False)
+    assert kind is JobKind.RENDER_LONG
+
+
+def test_render_short_is_registered_and_documented():
+    """`tests/test_docs.py` checks the table against the handlers; this
+    checks the handler exists at all."""
+    from pathlib import Path
+
+    from bot import handlers
+
+    src = Path(handlers.__file__).read_text(encoding="utf-8")
+    assert 'CommandHandler("render_short"' in src
+
+
+def test_a_missing_design_kit_surfaces_as_a_refusal_not_an_internal_error(
+        core, settings, tmp_path, monkeypatch):
+    """C5, reproduced on a kit-less checkout before the kit was ingested.
+
+    `parse_long_script` calls `load_plates` for a `[PLATE:]` tag, and
+    `assets/plates/` is gitignored and built by `scripts/ingest_kit.py`. On a
+    checkout without it that raises `PlateError`, which is not
+    `LongScriptError` — so it escaped `intake_script`'s handler entirely and
+    the operator saw an internal error instead of the rejection.
+    """
+    from pipeline import plates
+
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+
+    def no_kit(_assets_dir):
+        raise plates.PlateError(
+            "no plates-registry.json — run `python scripts/ingest_kit.py kit`")
+
+    monkeypatch.setattr("pipeline.parser_long.load_plates", no_kit)
+
+    text = ("EXMPL is down sixty percent from its high and nobody is left to "
+            "sell it, which is the only moment worth reading a filing in. "
+            "The revenue line went four hundred million to four ninety six "
+            "over five years, which is technically growth in the way a coma "
+            "is technically rest, and the losses widened every single year "
+            "underneath it. [PLATE: cards/hook-card-t1 | title: Hello] "
+            "I will be up at three in the morning either way. "
+            "See you at the next filing.")
+    reply = core.intake_script(CHAT, text)
+
+    assert "design kit is not installed" in reply.text
+    assert "ingest_kit" in reply.text
+
+
+# --------------------------------------------------------------------------
+# G4 / G5 / G6 / G7 — the rest of the command surface.
+# --------------------------------------------------------------------------
+
+
+def test_no_swap_button_can_exceed_telegrams_callback_limit(core, settings):
+    """G4: `k` was a free-text clip key, and the fixed prefix left about 44
+    bytes for a subject the prompt encourages writing in full. Over that,
+    Telegram rejects the WHOLE markup and the menu fails with "internal
+    error"."""
+    from bot.keyboards import CALLBACK_DATA_MAX, swap_keyboard
+
+    verbose = [
+        "a wide shot of an abandoned shopping mall escalator at night, "
+        "nobody on it, the lights still on",
+        "an office plant nobody has watered since the last funding round",
+    ]
+    kb = swap_keyboard("EXMPL", "2026-09-12", verbose)
+
+    for row in kb.inline_keyboard:
+        for b in row:
+            assert len(b.callback_data.encode("utf-8")) <= CALLBACK_DATA_MAX, \
+                b.callback_data
+
+
+def test_swapping_one_occurrence_leaves_the_other_alone(core, settings):
+    """G5: an override keyed on the payload swapped every beat that shared
+    it — and the prompt encourages reusing palette keys."""
+    from pipeline.workspace import Workspace
+
+    text = (
+        "EXMPL is down sixty percent from its high and nobody is left to "
+        "sell it, which is the only moment worth reading a filing in at "
+        "three in the morning. [CLIP: tumbleweed] The chart nobody "
+        "screenshots looks like this, and it has looked like this for a "
+        "year and a half without anybody writing it up. The revenue line "
+        "went four hundred million to four ninety six over five years, "
+        "which is technically growth in the way a coma is technically "
+        "rest, and the losses widened every single year underneath it. "
+        "[CLIP: tumbleweed] Same silence, a year later, and the same "
+        "people telling me it is a coiled spring. I will be up at three "
+        "either way. See you at the next filing.")
+    core.start_lane(CHAT, "long", "EXMPL")
+    _with_data(core, "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    ws.clear_awaiting_angle()
+    core.intake_script(CHAT, text)
+
+    slots = core.swappable_slots(ws.load_long())
+    assert [p for _t, p in slots] == ["tumbleweed", "tumbleweed"], \
+        "two occurrences, not one deduplicated key"
+
+    core.swap_key(CHAT, "EXMPL", ws.workdate, "0")
+    overrides = ws.broll_overrides()
+
+    assert overrides.get("CLIP:0") == 1
+    assert "CLIP:1" not in overrides, \
+        "swapping one occurrence must not move the other"
+
+
+def test_watch_drop_with_no_ticker_prints_usage(core):
+    """G6: the guard required a second argument and there was no else, so
+    `/watch drop` started watching a stock called DROP."""
+    reply = core.watch_command(["drop"])
+
+    assert "Usage" in reply.text
+    assert "DROP" not in core.watch_command([]).text
+
+
+def test_the_headline_mode_reaches_the_renderer(core, settings):
+    """G7: `render_short` defaulted to "short" on every call from the bot,
+    so `templates/shots/earnings.json` and `macro.json` were reachable only
+    from the sample script — the mode changed the prompt and nothing else."""
+    from pipeline.workspace import Workspace
+
+    core.headline_command(CHAT, ["NVDA", "[earnings]", "NVDA", "tops",
+                                 "Q3", "estimates", "and", "raises", "guide"])
+    ws = Workspace.latest_for(settings, "NVDA")
+
+    assert ws.headline()["mode"] == "earnings"
+    assert core.short_format_name(ws) == "earnings"
+    assert ws.lane() == "short", "and the lane is set, which it never was"
+
+
+def test_a_plain_short_still_renders_through_the_plain_template(core, settings):
+    from pipeline.workspace import Workspace
+
+    core.start_lane(CHAT, "short", "EXMPL")
+    ws = Workspace.latest_for(settings, "EXMPL")
+    assert core.short_format_name(ws) == "short"

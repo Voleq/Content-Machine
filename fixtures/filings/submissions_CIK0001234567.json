@@ -1,19 +1,86 @@
 {
   "cik": "1234567",
   "name": "Example Corp",
-  "tickers": ["EXMPL"],
-  "exchanges": ["Nasdaq"],
+  "tickers": [
+    "EXMPL"
+  ],
+  "exchanges": [
+    "Nasdaq"
+  ],
   "filings": {
     "recent": {
       "accessionNumber": [
         "0001234567-26-000012",
         "0001234567-25-000045",
-        "0001234567-25-000031"
+        "0001234567-25-000031",
+        "0001234567-25-000033",
+        "0001234567-25-000021",
+        "0001234567-25-000008",
+        "0001234567-24-000044",
+        "0001234567-24-000032",
+        "0001234567-24-000020",
+        "0001234567-24-000007"
       ],
-      "form": ["10-K", "10-Q", "8-K"],
-      "filingDate": ["2026-02-18", "2025-11-04", "2025-10-30"],
-      "primaryDocument": ["exmpl-20251231.htm", "exmpl-20250930.htm", "exmpl-8k.htm"],
-      "primaryDocDescription": ["10-K", "10-Q", "8-K"]
+      "form": [
+        "10-K",
+        "10-Q",
+        "8-K",
+        "10-Q",
+        "10-Q",
+        "10-K",
+        "10-Q",
+        "10-Q",
+        "10-Q",
+        "10-K"
+      ],
+      "filingDate": [
+        "2026-02-18",
+        "2025-11-04",
+        "2025-10-30",
+        "2025-08-05",
+        "2025-05-06",
+        "2025-02-19",
+        "2024-11-05",
+        "2024-08-06",
+        "2024-05-07",
+        "2024-02-20"
+      ],
+      "primaryDocument": [
+        "exmpl-20251231.htm",
+        "exmpl-20250930.htm",
+        "exmpl-8k.htm",
+        "exmpl-20250630.htm",
+        "exmpl-20250331.htm",
+        "exmpl-20241231.htm",
+        "exmpl-20240930.htm",
+        "exmpl-20240630.htm",
+        "exmpl-20240331.htm",
+        "exmpl-20231231.htm"
+      ],
+      "primaryDocDescription": [
+        "Annual report",
+        "Quarterly report",
+        "Current report",
+        "Quarterly report",
+        "Quarterly report",
+        "Annual report",
+        "Quarterly report",
+        "Quarterly report",
+        "Quarterly report",
+        "Annual report"
+      ],
+      "reportDate": [
+        "2025-12-31",
+        "2025-09-30",
+        "2025-10-30",
+        "2025-06-30",
+        "2025-03-31",
+        "2024-12-31",
+        "2024-09-30",
+        "2024-06-30",
+        "2024-03-31",
+        "2023-12-31"
+      ]
     }
   }
 }

@@ -281,6 +281,19 @@ def parse_long_script(raw: str, ticker: str, settings: Settings) -> tuple[LongSc
             f"{budget}. Trim and resend (no TTS was called)."
         )
 
+    # The floor (C1). Without one this function rejected only empty input, so
+    # anything that was not JSON became a LONG script — a chat remark, half a
+    # Telegram-split paste, an angle reply that arrived a moment late. Each
+    # was saved over the real script and triggered the full slow intake.
+    floor = getattr(settings, "long_min_chars", 0)
+    if floor and len(narration) < floor:
+        raise LongScriptError(
+            f"Narration is {len(narration)} chars — a LONG runs to tens of "
+            f"thousands, and anything under {floor} is a message rather than "
+            f"a script. If this really is the script, send it as a .txt file; "
+            f"if it was a note to me, it did not overwrite anything."
+        )
+
     chapter_list, chapter_warnings = parse_chapters(chapters)
     warnings.extend(chapter_warnings)
     if not chapter_list:

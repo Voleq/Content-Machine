@@ -19,6 +19,7 @@ LONG uses.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from dataclasses import dataclass
@@ -731,9 +732,33 @@ def render_frames(result: BuildResult, resolver, duration: float,
 # Entry point
 # ---------------------------------------------------------------------------
 
+def _provenance(script, settings, workspace: Path, duration: float,
+                prices, tts, format_name: str, *, proof: bool):
+    """The render's provenance record (N3)."""
+    from pipeline import provenance as prov
+
+    label = format_name or "short"
+    if proof:
+        label = f"{label}-proof"
+    return prov.build(
+        ticker=getattr(script, "ticker", ""), fmt=label,
+        workdate=workspace.name, duration_s=duration,
+        # WHICH CODE DREW THIS (P4). The shot template is picked per video
+        # from the headline mode, so `short`, `earnings` and `macro` are
+        # three different beat orders out of one renderer — and `long` means
+        # this is `render_long_shots`, the engine with no production
+        # mileage. None of that was recoverable from the artefact.
+        render={"engine": "shots", "format": format_name},
+        prices=prices,
+        # A SHORT's visuals are the shot template's plates plus whatever the
+        # resolver fetched; the fetched half is what has provenance worth
+        # recording, and a SHORT fetches none today.
+        visual_sources={}, filings={}, tts=tts, settings=settings)
+
+
 def render_short(script, tts, workspace: Path, settings, *,
                  content=None, prices=None, proof: bool = False,
-                 out_name: str = "short_final.mp4",
+                 out_name: str | None = None,
                  format_name: str = "short",
                  resolver=None, anchors=None) -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
@@ -741,7 +766,15 @@ def render_short(script, tts, workspace: Path, settings, *,
     Interpolated word timings must never be the master clock of a published
     cut, so draft audio cannot make a FINAL. A PROOF is the deliberate
     exception: it exists to be looked at and never delivered.
+
+    A proof therefore writes `short_proof.mp4`, not `short_final.mp4` (D5).
+    It used to default to the final's name and the proof call did not
+    override it, so a pass rendered with the free voice replaced a paid
+    final — and `/upload`, which reads `short_final.mp4`, would then send
+    the proof to YouTube. The LONG path has always done this correctly.
     """
+    if out_name is None:
+        out_name = "short_proof.mp4" if proof else "short_final.mp4"
     if not proof and getattr(tts, "draft", False):
         raise RenderError(
             f"refusing to render a SHORT from {tts.tier} draft audio — its "
@@ -865,14 +898,24 @@ def render_short(script, tts, workspace: Path, settings, *,
                     "-crf", "20", "-pix_fmt", "yuv420p", str(burned)])
         silent = burned
 
+    # Write beside the target and `os.replace` into position (D2). Muxing
+    # straight over the existing file meant any failure past this point left
+    # the operator with nothing — not the new render and not the good one
+    # they already had. `segments._encode_one` already worked this way; this
+    # is the same pattern, which is why it is not a new one.
     out = Path(workspace) / out_name
+    part = out.with_suffix(".part.mp4")
     audio = getattr(tts, "audio_path", None)
     if audio and Path(audio).exists():
         run_ffmpeg(["-y", "-i", str(silent), "-i", str(audio),
                     "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
-                    "-shortest", str(out)])
+                    "-shortest", str(part)])
     else:
-        silent.replace(out)
+        silent.replace(part)
+    if not part.exists() or part.stat().st_size == 0:
+        part.unlink(missing_ok=True)
+        raise RenderError(f"the SHORT mux produced nothing at {part}")
+    os.replace(part, out)
 
     manifest_path = Path(workspace) / f"{Path(out_name).stem}.manifest.json"
     manifest_path.write_text(json.dumps({
@@ -884,9 +927,24 @@ def render_short(script, tts, workspace: Path, settings, *,
         # post-expansion shots as beats made the long look like 38 ideas
         # instead of nine.
         "beats": n_beats,
+        # The engine, beside the template it ran. `render_long_shots`
+        # delegates here with format_name="long" (P4).
+        "engine": "shots",
         "shots_count": len(spans),
         "anchored_shots": sum(1 for sp in spans if sp.anchored),
         "kit": "v2-plates",
+        # Where the numbers on the chart came from, and whether they are
+        # real (B1). `degraded` means the live feed failed and the seeded
+        # floor drew the chart instead — which is invisible on screen, so
+        # the artefact has to say it.
+        "prices": {
+            "source": getattr(prices, "source", ""),
+            "degraded": bool(getattr(prices, "degraded", False)),
+        },
+        # THE WHOLE RECORD (N3). Same shape as the LONG's, so the delivery
+        # message is built the same way for both formats.
+        "provenance": _provenance(script, settings, Path(workspace), duration,
+                                  prices, tts, fmt.name, proof=proof).to_json(),
         "duration_s": round(duration, 3),
         "frame": {"w": result.frame[0], "h": result.frame[1]},
         "shots": [{

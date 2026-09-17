@@ -33,10 +33,11 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import date, datetime, time as dt_time, timezone
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from config import Settings
+from pipeline.models import RATE_FIELDS
 from pipeline.spoken import eye_written_figures
 
 log = logging.getLogger(__name__)
@@ -61,6 +62,17 @@ class Finding:
 @dataclass
 class GateReport:
     findings: list[Finding] = field(default_factory=list)
+    # WHAT EACH GATE DID, not just what it found (N2).
+    #
+    # This held only `findings`, so a gate that ran and found nothing and a
+    # gate that never ran both contributed zero and were indistinguishable.
+    # `skeptic_notes` makes it concrete: it returns `[]` when the LLM is
+    # unavailable and `[]` when the script is clean.
+    #
+    # For a record whose entire purpose is honesty about what happened,
+    # "clean" and "did not check" must not render the same way. Values are
+    # `ok` / `warn` / `block` / `skipped:<why>`.
+    ran: dict[str, str] = field(default_factory=dict)
 
     @property
     def blocking(self) -> list[Finding]:
@@ -69,6 +81,36 @@ class GateReport:
     @property
     def ok(self) -> bool:
         return not self.findings
+
+    def record(self, gate: str, findings: list[Finding]) -> list[Finding]:
+        """Note that `gate` ran, at the worst severity it reported."""
+        worst = "ok"
+        for f in findings:
+            if f.severity == "block":
+                worst = "block"
+                break
+            if f.severity == "warn":
+                worst = "warn"
+        self.ran[gate] = worst
+        return findings
+
+    def skipped(self, gate: str, why: str) -> None:
+        self.ran[gate] = f"skipped:{why}"
+
+    def ran_line(self) -> str:
+        """The provenance record's gates line.
+
+        A skipped gate reads differently from a clean one, which is the
+        whole point of the field.
+        """
+        marks = {"ok": "✓", "warn": "⚠", "block": "⛔"}
+        bits = []
+        for gate, state in sorted(self.ran.items()):
+            if state.startswith("skipped:"):
+                bits.append(f"{gate} SKIPPED ({state.split(':', 1)[1]})")
+            else:
+                bits.append(f"{gate} {marks.get(state, state)}")
+        return " · ".join(bits)
 
     def text(self, limit: int = 20) -> str:
         if self.ok:
@@ -176,6 +218,20 @@ class SpokenNumber:
     value: float
     text: str
     is_percent: bool = False
+    # WHERE IT WAS SAID, not just what was said.
+    #
+    # The caller used to recover the position with `sentence.find(num.text)`,
+    # and for a spoken run `text` is the tokens rejoined with single spaces —
+    # so "minus twenty-four million" produced the text "twenty four million",
+    # `find` returned -1, and both the minus sign and the metric-ownership
+    # scan were computed against character 0 of the sentence. A correct
+    # statement of a negative figure was then reported as a fabrication,
+    # which for a BLOCKING gate is the one failure that matters.
+    #
+    # Hyphenated spoken numbers are how a writer actually spells them, so
+    # the span is carried out rather than re-derived.
+    start: int = -1
+    end: int = -1
 
 
 def extract_numbers(sentence: str) -> list[SpokenNumber]:
@@ -193,9 +249,11 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
         pct = suffix in ("percent", "%")
         if suffix in _SUFFIX:
             value *= _SUFFIX[suffix]
-        out.append(SpokenNumber(value, m.group(0).strip(), pct))
+        out.append(SpokenNumber(value, m.group(0).strip(), pct,
+                                m.start(), m.end()))
 
-    tokens = re.findall(r"[a-z]+|%", low)
+    words = list(re.finditer(r"[a-z]+|%", low))
+    tokens = [w.group(0) for w in words]
     i = 0
     while i < len(tokens):
         if tokens[i] not in _NUMBER_WORDS or tokens[i] in ("and", "a", "point"):
@@ -208,7 +266,8 @@ def extract_numbers(sentence: str) -> list[SpokenNumber]:
         value = _words_to_number(run)
         if value is not None:
             pct = j < len(tokens) and tokens[j] in ("percent", "%")
-            out.append(SpokenNumber(value, " ".join(run), pct))
+            out.append(SpokenNumber(value, " ".join(run), pct,
+                                    words[i].start(), words[j - 1].end()))
         i = max(j, i + 1)
     return out
 
@@ -280,6 +339,14 @@ def _series_for(data, field_name: str) -> list[float]:
         if isinstance(series, (list, tuple)):
             values.extend(float(v) for v in series if isinstance(v, (int, float)))
 
+    # AND THE QUARTERS (O4). `templates/shots/earnings.json` opens on the
+    # print and the beat/miss, and before the Quarters sheet existed the
+    # fact-check had only annual series to compare a stated print against —
+    # so an earnings SHORT could say any number at all and nothing objected.
+    # A quarterly figure is a figure the export carries; it belongs in the
+    # same bag as the annual one.
+    values.extend(_quarters_for(data, field_name))
+
     snap = getattr(data, "dashboard", None)
     if hasattr(snap, "get"):
         latest = snap.get(field_name)
@@ -320,6 +387,28 @@ def _history_for(data, field_name: str) -> list[float]:
         if all(isinstance(v, (int, float)) for v in series) else []
 
 
+def _quarters_for(data, field_name: str) -> list[float]:
+    """The ordered quarterly series alone, or []."""
+    if data is None:
+        return []
+    rows = getattr(data, "quarters", None)
+    series = None
+    if hasattr(rows, "get"):
+        series = rows.get(field_name)
+    elif hasattr(data, "get"):
+        series = (data.get("quarters") or {}).get(field_name)
+    if not isinstance(series, (list, tuple)):
+        return []
+    return [float(v) for v in series if isinstance(v, (int, float))]
+
+
+def _quarter_labels(data) -> list[str]:
+    labels = getattr(data, "quarter_labels", None)
+    if not isinstance(labels, (list, tuple)) and hasattr(data, "get"):
+        labels = data.get("quarter_labels")
+    return [str(x) for x in labels] if isinstance(labels, (list, tuple)) else []
+
+
 def _matches(value: float, known: list[float]) -> bool:
     for k in known:
         if k == 0:
@@ -334,12 +423,340 @@ def _matches(value: float, known: list[float]) -> bool:
     return False
 
 
-def fact_check(narration: str, data) -> list[Finding]:
+# Metrics whose values ARE percentages, so a spoken "sixty-two percent" is a
+# direct claim about them rather than something derived. Every one of these
+# used to be skipped outright, which meant a wrong margin was never checked.
+# One definition, in `models.py`, because the quarterly comparison needs the
+# same distinction: a move in a rate is a move in POINTS (O2).
+_RATE_METRICS = RATE_FIELDS
+
+# Phrases that contain a metric word but name a line the export does not
+# carry. "Two hundred and twelve million on SALES and marketing" is not a
+# claim about revenue, and the same trap as the `cash` note above: matching a
+# figure against the wrong row makes a blocking gate block a correct script,
+# which is the one thing it must never do.
+_DECOY_PHRASES = (
+    "sales and marketing", "sales & marketing", "sales team", "sales force",
+    "salesforce", "cost of sales", "cost of revenue", "sales cycle",
+    "sales pipeline", "research and development",
+)
+
+# A number attached to its own subject by a preposition belongs to that
+# subject, not to a metric named elsewhere in the sentence.
+_ATTACHED_RE = re.compile(r"^\s*(?:on|for|in|per|across|toward|towards)\s+"
+                          r"((?:[a-z][\w'-]*\s+){0,4}[a-z][\w'-]*)")
+
+_NEGATIVE_RE = re.compile(r"(?:minus|negative|-)\s*$")
+
+
+def _unit_scale(series: list[float]) -> float:
+    """What one unit of this series is worth in absolute terms.
+
+    The workbook holds a metric either way — the shipped History sheet
+    carries revenue as 400000000, the Peers sheet carries the same idea as
+    2037.36 — and nothing reconciled that with the magnitude a script speaks
+    in (B4). Inferred from the series rather than configured, because the
+    sheet does not declare it and a setting nobody maintains is how this
+    drifts again.
+    """
+    magnitudes = [abs(v) for v in series if v]
+    if not magnitudes:
+        return 1.0
+    return 1.0 if max(magnitudes) >= 1e5 else 1e6
+
+
+def _shorthand(value: float, target: float) -> float:
+    """`value` brought to `target`'s own order of magnitude.
+
+    A script that has just said "four hundred million" then says "four
+    ninety six" and means 496 million. That shorthand is how anyone reads a
+    series out loud, and a check that cannot follow it reports every recital
+    as a mismatch.
+
+    This walks by factors of a thousand, so it changes the SCALE and never
+    the digits: 912 cannot become 496 by any number of steps, which is the
+    property that keeps a genuinely wrong figure caught.
+    """
+    if not value or not target:
+        return value
+    v, limit = value, abs(target)
+    while abs(v) * 1000 <= limit:
+        v *= 1000
+    while abs(v) > limit * 1000:
+        v /= 1000
+    return v
+
+
+def _comparison_values(series: list[float], *, rate: bool) -> list[float]:
+    """Everything a script can legitimately say about this series.
+
+    Levels, and the period-over-period CHANGE between consecutive levels —
+    "five million of revenue" against a sheet going 491 to 496 is a true
+    statement, and a gate that could only see levels called it a fabrication.
+    """
+    scale = 1.0 if rate else _unit_scale(series)
+    values = [v * scale for v in series]
+    values += [b - a for a, b in zip(values, values[1:])]
+    return values
+
+
+def _growth_rates(series: list[float]) -> list[float]:
+    """Period-over-period growth, in percent — what a spoken percentage
+    against a currency metric ("revenue grew eleven percent") is claiming."""
+    out: list[float] = []
+    for a, b in zip(series, series[1:]):
+        if a:
+            out.append((b - a) / abs(a) * 100.0)
+    if len(series) >= 2 and series[0]:
+        out.append((series[-1] - series[0]) / abs(series[0]) * 100.0)
+    return out
+
+
+def _matches_scaled(value: float, candidates: list[float]) -> bool:
+    """Does `value` land on any of `candidates`, allowing spoken shorthand?"""
+    for target in candidates:
+        if target == 0:
+            if abs(value) < 1e-9:
+                return True
+            continue
+        if abs(_shorthand(value, target) - target) <= abs(target) * _TOLERANCE:
+            return True
+    return False
+
+
+_YEAR_RE = re.compile(r"\b(20\d{2})\b")
+
+
+def _period_index(sentence: str, labels: list[str]) -> int | None:
+    """Which column of the history a sentence is talking about, if it says.
+
+    The comparison ran against every value in the series at once, so a figure
+    from the wrong year passed (B4). When the sentence names a period the
+    export labels, the check narrows to that column.
+    """
+    if not labels:
+        return None
+    low = sentence.lower()
+    for i, label in enumerate(labels):
+        lab = str(label).strip().lower()
+        if lab and lab in low:
+            return i
+    m = _YEAR_RE.search(low)
+    if m:
+        for i, label in enumerate(labels):
+            if m.group(1) in str(label):
+                return i
+    return None
+
+
+_QUARTER_WORDS = {"first": 1, "second": 2, "third": 3, "fourth": 4}
+_QUARTER_NUM_RE = re.compile(r"\bq\s?-?\s?([1-4])\b", re.IGNORECASE)
+_QUARTER_WORD_RE = re.compile(
+    r"\b(first|second|third|fourth)\s+quarter\b", re.IGNORECASE)
+
+
+def _label_quarter(label: str) -> int | None:
+    m = _QUARTER_NUM_RE.search(str(label))
+    return int(m.group(1)) if m else None
+
+
+def _quarter_indices(sentence: str, labels: list[str]) -> list[int]:
+    """Which quarterly columns a sentence is talking about, if it says.
+
+    Returns EVERY column a bare quarter number could mean rather than
+    guessing the newest (O4). An eight-quarter sheet has two Q4s, and a
+    blocking gate that picks one and blocks a script meaning the other is
+    worse than no gate — the one thing the fact-check must never do is
+    refuse a correct script. Two columns is still a far narrower comparison
+    than the whole bag.
+
+    "Last quarter" and "the most recent quarter" deliberately narrow
+    nothing: they are ambiguous between the quarter just reported and the
+    one before it, and the honest answer to an ambiguous reference is the
+    wider comparison.
+    """
+    if not labels:
+        return []
+    low = sentence.lower()
+    for i, label in enumerate(labels):
+        lab = str(label).strip().lower()
+        if lab and lab in low:
+            return [i]
+    q = None
+    m = _QUARTER_NUM_RE.search(low)
+    if m:
+        q = int(m.group(1))
+    else:
+        m = _QUARTER_WORD_RE.search(low)
+        if m:
+            q = _QUARTER_WORDS[m.group(1).lower()]
+    if q is None:
+        return []
+    return [i for i, label in enumerate(labels) if _label_quarter(label) == q]
+
+
+_PERIOD_TOKEN_RE = re.compile(r"\b(?:fy|q|h|cy)\s?-?\s?\d{1,4}\b",
+                              re.IGNORECASE)
+
+# A spoken year. "Free cash flow turned negative in twenty twenty two" is a
+# DATE, and the word-number parser reads it as a quantity — which the old
+# magnitude floor hid and a blocking gate cannot afford to.
+_SPOKEN_YEAR_RE = re.compile(
+    r"\b(?:twenty|two thousand(?:\s+and)?)\s+"
+    r"(?:oh\s+)?"
+    r"(?:twenty|thirty|nineteen|eighteen|seventeen|sixteen|fifteen|fourteen|"
+    r"thirteen|twelve|eleven|ten|one|two|three|four|five|six|seven|eight|nine)"
+    r"(?:\s+(?:one|two|three|four|five|six|seven|eight|nine))?\b",
+    re.IGNORECASE)
+
+_DIGIT_YEAR_RE = re.compile(
+    r"(?:\b(?:in|since|by|during|through|until|from)\s+)((?:19|20)\d{2})\b",
+    re.IGNORECASE)
+
+# "Eleven times earnings" is a MULTIPLE, not an earnings figure. The metric
+# word is there and the number is not a claim about it.
+_MULTIPLE_RE = re.compile(r"^\s*(?:x|times)\b", re.IGNORECASE)
+
+
+def _blank(m) -> str:
+    return "·" * len(m.group(0))
+
+
+def _mask_labels(sentence: str, labels: list[str]) -> str:
+    """Blank period labels and dates so their digits are not read as spoken
+    figures. Same length out as in, so character positions still line up."""
+    out = sentence
+    for label in labels:
+        lab = str(label).strip()
+        if len(lab) >= 2:
+            out = re.sub(re.escape(lab), _blank, out, flags=re.IGNORECASE)
+    out = _PERIOD_TOKEN_RE.sub(_blank, out)
+    out = _SPOKEN_YEAR_RE.sub(_blank, out)
+    return _DIGIT_YEAR_RE.sub(
+        lambda m: m.group(0)[:m.start(1) - m.start(0)] + "·" * len(m.group(1)),
+        out)
+
+
+def _history_labels(data) -> list[str]:
+    labels = getattr(data, "history_years", None)
+    if not isinstance(labels, (list, tuple)) and hasattr(data, "get"):
+        labels = data.get("history_years")
+    return [str(x) for x in labels] if isinstance(labels, (list, tuple)) else []
+
+
+def _mask_decoys(text: str) -> str:
+    """Blank out phrases that contain a metric word but name another line."""
+    for phrase in _DECOY_PHRASES:
+        text = text.replace(phrase, "·" * len(phrase))
+    return text
+
+
+def _metrics_named(low: str) -> dict[str, int]:
+    """metric -> character position of its first mention, decoys removed."""
+    masked = _mask_decoys(low)
+    out: dict[str, int] = {}
+    for metric, words in _METRIC_WORDS.items():
+        best = min((masked.find(w) for w in words if masked.find(w) >= 0),
+                   default=-1)
+        if best >= 0:
+            out[metric] = best
+    return out
+
+
+# Words that, with a period token, make up a phrase naming WHEN rather than
+# WHAT. "In Q4", "in FY-2", "in 2024", "in the fourth quarter", "in that same
+# quarter" — none of them is a subject a number could belong to.
+_PERIOD_WORDS = frozenset({
+    "quarter", "quarters", "year", "years", "fiscal", "half", "period",
+    "the", "that", "this", "last", "latest", "same", "most", "recent",
+    "previous", "prior", "first", "second", "third", "fourth", "q", "fy",
+    "cy", "lt", "ltm", "trailing", "twelve", "months", "month", "ago",
+})
+
+
+def _is_period_phrase(phrase: str) -> bool:
+    """Does this attached phrase name a TIME rather than a subject?
+
+    `_ATTACHED_RE` exists to stop "two hundred and twelve million ON SALES
+    AND MARKETING" being read as a revenue claim. But it also matched "minus
+    forty million IN Q4" and "in FY-0" — and since neither "q4" nor "fy-0"
+    is a metric the export carries, the number was discarded as belonging to
+    something else. Naming the period is exactly what a careful script does,
+    so the narrowing was silently switching the gate off on the sentences
+    most worth checking (O4's interaction with B4).
+    """
+    body = _PERIOD_TOKEN_RE.sub(" ", phrase.lower())
+    body = re.sub(r"\b(?:19|20)\d{2}\b", " ", body)
+    words = [w for w in re.findall(r"[a-z]+", body) if w not in _PERIOD_WORDS]
+    return not words
+
+
+def _owner_of(number_end: int, tail: str, named: dict[str, int],
+              low: str) -> str | None:
+    """Which metric a number is a claim about, or None if it is not one.
+
+    Two rules, in order:
+
+    1. A number attached to its own subject by a preposition belongs to that
+       subject. "Two hundred and twelve million ON SALES AND MARKETING" is
+       not a revenue figure, even in a sentence that goes on to mention
+       revenue — and reading it as one is how a blocking gate blocks a
+       correct script.
+    2. Otherwise the nearest metric mention owns it, which in the common
+       single-metric sentence means all of them — so a recital of a whole
+       series is checked rather than only its first number.
+    """
+    if not named:
+        return None
+    if _MULTIPLE_RE.match(tail):
+        return None          # "eleven times earnings" is a multiple
+    attached = _ATTACHED_RE.match(tail)
+    if attached and not _is_period_phrase(attached.group(1)):
+        phrase = _mask_decoys(attached.group(1))
+        owners = [m for m, words in _METRIC_WORDS.items()
+                  if any(w in phrase for w in words)]
+        owners = [m for m in owners if m in named]
+        if not owners:
+            return None          # attached to something the export has no row for
+        return owners[0]
+    return min(named, key=lambda m: abs(named[m] - number_end))
+
+
+def fact_check(narration: str, data, *,
+               severity: str = "block") -> list[Finding]:
     """Re-read every numeric claim against the loaded company data.
 
-    Only sentences that name a metric are checked, and only against that
-    metric's own values — a number floating free of any metric is prose, not
-    a claim, and flagging it would bury the real mismatches.
+    This is the last line of defence the README describes, and it BLOCKS.
+    Every finding was `severity="warn"` for the life of this function, so
+    Approve stayed available through any mismatch — beside the code's own
+    comment calling this "the one error nobody downstream can catch". An
+    advisory last line of defence is not one.
+
+    Blocking is only safe because the four blind spots below are closed. A
+    gate that blocks has to be right, so every widening here comes with the
+    narrowing that keeps it from firing on a correct script.
+
+    - **No magnitude floor.** Anything under 1,000 was skipped, which is most
+      of a workbook written in millions. The unit scale is derived from the
+      series, and spoken shorthand ("four ninety six" after "four hundred
+      million") is followed by powers of a thousand — a transform that
+      changes scale and never digits, so a wrong figure stays wrong.
+    - **Percentages are checked.** Every one was skipped, so a wrong margin
+      or growth rate was never examined. A rate metric is checked against its
+      own series; a percentage against a currency metric is checked against
+      that metric's period-over-period growth.
+    - **A year-specific claim checks that year.** The comparison ran against
+      the whole series at once, so a figure from the wrong column passed.
+    - **Derived claims are claims.** Levels alone could not verify "five
+      million of revenue" against a sheet going 491 to 496, so consecutive
+      deltas are in the comparison set.
+
+    Sentence-level attribution is the one thing a regex cannot do, and it is
+    handled conservatively: a number attached to its own subject by a
+    preposition is not read as a claim about a metric named elsewhere. The
+    coreference case the tighter rule still cannot reach — a figure whose
+    metric was named in the PREVIOUS sentence — is deliberately out of scope
+    here rather than approximated.
     """
     findings: list[Finding] = []
     if data is None:
@@ -348,26 +765,76 @@ def fact_check(narration: str, data) -> list[Finding]:
     known: dict[str, list[float]] = {
         m: _series_for(data, m) for m in _METRIC_WORDS
     }
+    labels = _history_labels(data)
+    qlabels = _quarter_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
         for sentence in re.split(r"(?<=[.!?])\s+", line):
             low = sentence.lower()
-            for metric, words in _METRIC_WORDS.items():
-                if not any(w in low for w in words):
+            named = {m: pos for m, pos in _metrics_named(low).items()
+                     if known.get(m)}
+            if not named:
+                continue
+            # A period label is not a figure. "In FY-2, revenue was…" carries
+            # a 2 that `extract_numbers` reads as a number, and the old
+            # magnitude floor hid it — dropping the floor exposed it, so the
+            # labels are masked out before anything is extracted.
+            for num in extract_numbers(_mask_labels(sentence, labels)):
+                # The span the extractor recorded, never a re-`find`: a
+                # hyphenated spoken run does not appear verbatim in the
+                # sentence and used to collapse to position 0.
+                pos, end = num.start, num.end
+                metric = _owner_of(end, low[end:], named, low)
+                if metric is None:
                     continue
-                series = known.get(metric) or []
-                if not series:
+
+                series = known[metric]
+                hist = _history_for(data, metric)
+                idx = _period_index(sentence, labels) if hist else None
+                where = ""
+                quarters = _quarters_for(data, metric)
+                # A NAMED QUARTER WINS over a named year (O4). "Q4 FY-0
+                # revenue" says both, and the quarterly column is the one
+                # the sentence is actually about — checking it against the
+                # FY-0 annual total would block a correct print.
+                qidx = (_quarter_indices(sentence, qlabels)
+                        if quarters and len(quarters) == len(qlabels) else [])
+                if qidx:
+                    series = [quarters[i] for i in qidx if i < len(quarters)]
+                    where = " for " + "/".join(qlabels[i] for i in qidx)
+                elif idx is not None and idx < len(hist):
+                    series, where = [hist[idx]], f" for {labels[idx]}"
+
+                is_rate = metric in _RATE_METRICS
+                if num.is_percent and not is_rate:
+                    candidates = _growth_rates(
+                        [v * _unit_scale(series) for v in series])
+                    shown = ", ".join(f"{v:+,.1f}%" for v in candidates[:6])
+                    kind = f"{metric} growth"
+                elif num.is_percent or is_rate:
+                    if not is_rate:
+                        continue
+                    candidates = _comparison_values(series, rate=True)
+                    shown = ", ".join(f"{v:,.1f}%" for v in series[:6])
+                    kind = metric
+                else:
+                    candidates = _comparison_values(series, rate=False)
+                    shown = ", ".join(
+                        f"{v * _unit_scale(series):,.0f}" for v in series[:6])
+                    kind = metric
+                if not candidates:
                     continue
-                for num in extract_numbers(sentence):
-                    if num.is_percent or num.value < 1000:
-                        continue  # rates and small counts are derived, not raw
-                    if not _matches(num.value, series):
-                        findings.append(Finding(
-                            gate="fact-check", severity="warn", line=lineno,
-                            message=(f"“{num.text}” is stated for {metric} but "
-                                     f"the data has "
-                                     f"{', '.join(f'{v:,.0f}' for v in series[:6])}"),
-                            excerpt=sentence.strip()[:140],
-                        ))
+
+                value = num.value
+                before = low[:pos].rstrip() if pos >= 0 else ""
+                if _NEGATIVE_RE.search(before):
+                    value = -value
+                if not _matches_scaled(value, candidates):
+                    findings.append(Finding(
+                        gate="fact-check", severity=severity, line=lineno,
+                        message=(f"“{num.text}” is stated for {kind}{where} "
+                                 f"but the data has {shown}"),
+                        excerpt=sentence.strip()[:140],
+                    ))
     return findings
 
 
@@ -1179,9 +1646,10 @@ def check_freshness(as_of: str, settings: Settings,
     between machines, resets that without touching a single number, which is
     exactly the case this gate exists to catch.
 
-    The COM refresh stamp is still honoured when one is present, but only as a
-    fallback for a workspace populated that way, and only when the sheet
-    carries no date of its own. On the Linux target nothing writes it.
+    A date this cannot READ is a block too, at the same severity as a stale
+    one (B5). It used to be a silent skip, which is the wrong shape: an
+    unreadable date is not evidence of freshness, it is the absence of
+    evidence, and the gate exists precisely to refuse to proceed without it.
     """
     parsed = _parse_as_of(as_of)
 
@@ -1196,41 +1664,75 @@ def check_freshness(as_of: str, settings: Settings,
                          f"and upload dennis_data.xlsx again"))]
         return []
 
-    # No usable date on the sheet. Fall back to a recorded COM refresh if this
-    # workspace has one.
-    if workspace is not None:
-        from pipeline.excel_refresh import refresh_age_days
-
-        now = None
-        if today is not None:
-            now = datetime.combine(today, dt_time(), tzinfo=timezone.utc)
-        age_days = refresh_age_days(workspace, now=now)
-        if age_days is not None:
-            if age_days > settings.data_max_age_days:
-                severity = "block" if settings.data_stale_blocks else "warn"
-                return [Finding(
-                    gate="freshness", severity=severity,
-                    message=(f"the data was last refreshed {age_days:.1f} days "
-                             f"ago (limit {settings.data_max_age_days}) — "
-                             f"refresh it and upload it again"))]
-            return []
-
+    severity = "block" if settings.data_stale_blocks else "warn"
     if not as_of:
-        return [Finding(gate="freshness", severity="warn",
-                        message="the data export carries no as-of date")]
-    return [Finding(gate="freshness", severity="warn",
-                    message=f"could not read the as-of date {as_of!r}")]
+        return [Finding(
+            gate="freshness", severity=severity,
+            message=("the data export carries no as-of date — there is "
+                     "nothing here that says when these numbers were "
+                     "pulled, so they cannot be checked for staleness"))]
+    return [Finding(
+        gate="freshness", severity=severity,
+        message=(f"could not read the as-of date {as_of!r} — an unreadable "
+                 f"date is not evidence of freshness. Write it as "
+                 f"YYYY-MM-DD in the sheet and re-upload"))]
+
+
+# Written as a US date first. The workbook is exported on a US-locale
+# machine against US market data, so `09/03/2026` is 9 March there — read
+# day-first it silently became 3 September, six months adrift and inside
+# any staleness limit either way (B5).
+#
+# The formats after it are the ones the sheet actually produces when the
+# operator's locale, or Excel's own formatting, gets involved; every one of
+# them used to return None and skip the check entirely.
+_AS_OF_FORMATS = (
+    "%Y-%m-%d",      # ISO — what the template asks for
+    "%m/%d/%Y",      # US, before day-first: see above
+    "%d/%m/%Y",      # day-first, for a sheet saved under a European locale
+    "%Y/%m/%d",
+    "%d-%b-%Y",      # 3-Sep-2026
+    "%d %b %Y",      # 3 Sep 2026
+    "%b %d, %Y",     # Sep 3, 2026
+    "%B %d, %Y",     # September 3, 2026
+    "%d-%B-%Y",
+    "%m/%d/%y",
+    "%d.%m.%Y",
+)
+
+# Excel stores a date as days since 1899-12-30 (the 1900 system, with its
+# deliberate leap-year bug already accounted for by that epoch). A cell
+# read as a raw serial reaches here as "46265" or "46265.0".
+_EXCEL_EPOCH = date(1899, 12, 30)
 
 
 def _parse_as_of(as_of: str) -> date | None:
     """The sheet's as-of date, or None when it is absent or unreadable."""
     if not as_of:
         return None
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y"):
-        try:
-            return datetime.strptime(as_of.strip()[:10], fmt).date()
-        except ValueError:
-            continue
+    raw = str(as_of).strip()
+    if not raw:
+        return None
+
+    # A full datetime ("2026-09-03 00:00:00") — take the date half.
+    head = raw.split("T")[0].split(" ")[0] if ("T" in raw or " " in raw[:11]) else raw
+    for candidate in (raw, head):
+        for fmt in _AS_OF_FORMATS:
+            try:
+                return datetime.strptime(candidate[:len(candidate)], fmt).date()
+            except ValueError:
+                continue
+
+    # A raw Excel serial number.
+    try:
+        serial = float(raw)
+    except ValueError:
+        return None
+    # Below ~1000 is not a plausible date (that is 1902); above ~80000 is
+    # past 2119. Either is a number that happens to be in the cell, not a
+    # date, and guessing at it is how a wrong date passes as a right one.
+    if 1000 <= serial <= 80000:
+        return _EXCEL_EPOCH + timedelta(days=int(serial))
     return None
 
 
@@ -1277,6 +1779,74 @@ def check_audio(settings: Settings, *, final: bool = True) -> list[Finding]:
                  f"this render plays are ffmpeg oscillators, not real effects "
                  f"({shown}). Run scripts/fetch_sfx.py before publishing "
                  f"({reason})."))]
+
+
+# --------------------------------------------------------------------------
+# Synthetic price data.
+# --------------------------------------------------------------------------
+
+
+def _reaches_a_price_chart(script) -> bool:
+    """Would this script put a price series on screen?
+
+    A SHORT always does — the price chart is beat 2 of the plain short
+    template and the renderer fills it whether or not the writer asked. A
+    LONG only does when it carries `[CHART: price]`. Anything else never
+    touches the feed, and a gate that fired on it would be reporting on
+    data the video does not contain.
+    """
+    fmt = (getattr(script, "format", "") or "").lower()
+    if fmt == "short" or type(script).__name__ == "ShortScript":
+        return True
+    for event in getattr(script, "events", []) or []:
+        if getattr(getattr(event, "type", None), "value", "") == "CHART" \
+                and str(getattr(event, "payload", "")).strip().lower() == "price":
+            return True
+    return False
+
+
+def check_prices(script, settings: Settings, *,
+                 final: bool = True) -> list[Finding]:
+    """Whether the price chart in this video is drawn from real prices.
+
+    When Yahoo fails, `YahooPriceSource.history()` falls back to
+    `synthetic_series()` — a seeded random walk. That floor is right: a dead
+    feed must never abort a render. What was missing is anyone saying so. The
+    `degraded` flag was set and read by nothing, anywhere, and was dropped by
+    `to_json` the moment the series hit the cache, so a fabricated chart
+    shipped looking exactly like a real one and no surface in the product
+    could reveal it (B1).
+
+    This blocks the same way `check_audio` does, for the same reason: a FINAL
+    render outside `MOCK_MODE` is the thing that gets published. A proof or a
+    draft is for looking at, and `MOCK_MODE` is synthetic by construction —
+    warning there is honest, blocking there would only teach the operator to
+    skip gates.
+    """
+    if not _reaches_a_price_chart(script):
+        return []
+    ticker = (getattr(script, "ticker", "") or "").strip()
+    if not ticker:
+        return []
+
+    from pipeline.prices import get_price_history
+
+    # Cached and never-raising by contract, so this costs a file read on the
+    # path that already fetched it for the render.
+    series = get_price_history(ticker, settings)
+    if not series.degraded:
+        return []
+
+    blocks = final and not settings.mock_mode
+    reason = ("this render is a FINAL and MOCK_MODE is off" if blocks else
+              ("MOCK_MODE is on" if settings.mock_mode else "this is a draft"))
+    return [Finding(
+        gate="prices", severity="block" if blocks else "warn",
+        message=(f"SYNTHETIC PRICE DATA — the {ticker} chart in this video is "
+                 f"a seeded random walk, not market data: the live feed "
+                 f"failed and the deterministic floor took over. Nothing on "
+                 f"screen distinguishes it from a real chart. Retry once the "
+                 f"feed is back, or cut the chart ({reason})."))]
 
 
 # --------------------------------------------------------------------------
@@ -1614,25 +2184,31 @@ _SKEPTIC_SYSTEM = (
 
 
 def skeptic_notes(narration: str, settings: Settings,
-                  max_chars: int = 12000) -> list[Finding]:
+                  max_chars: int = 12000) -> tuple[list[Finding], str]:
     """A separate read of the finished script as a hostile investor.
+
+    Returns `(findings, skip_reason)`. The second half is what makes "clean"
+    distinguishable from "did not check" (N2): this returned `[]` for both,
+    and a gate whose silence means two opposite things is not a gate.
 
     Advisory by construction: the result is appended to the validation report
     as notes. It never rewrites and never blocks.
     """
-    from pipeline.llm import chat
+    from pipeline.llm import chat_result
 
     body = narration[:max_chars]
-    out = chat(
+    out = chat_result(
         f"Script:\n\n{body}\n\n"
         "List at most 5 items. One line each, format: `weakness — counterargument`.",
         settings, system=_SKEPTIC_SYSTEM, purpose="skeptic",
     )
     if not out:
-        return []
-    notes = [ln.strip(" -•\t") for ln in out.splitlines() if ln.strip()]
+        # The REASON, so `run_gates` can say `skipped:no_daemon` rather than
+        # letting a dead daemon read as a clean script (N2).
+        return [], out.reason
+    notes = [ln.strip(" -•\t") for ln in out.text.splitlines() if ln.strip()]
     return [Finding(gate="skeptic", severity="warn", message=n)
-            for n in notes[:5]]
+            for n in notes[:5]], ""
 
 
 # --------------------------------------------------------------------------
@@ -1654,19 +2230,40 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
     """
     narration = getattr(script, "narration", None) or getattr(script, "audio_script", "")
     report = GateReport()
-    report.findings += fact_check(narration, data)
-    report.findings += onscreen_fact_check(script, data)
-    report.findings += voice_lint(delivery_text(script))
-    report.findings += direction_lint(script)
-    report.findings += confession_lint(script, settings)
-    report.findings += valuation_moves(script, settings)
-    report.findings += budget_check(script, settings)
-    report.findings += check_freshness(as_of, settings, workspace=workspace)
-    report.findings += check_audio(settings, final=final)
+    # Every gate records that it RAN, at the worst severity it reported (N2).
+    # A gate that ran and found nothing used to look exactly like one that
+    # never ran, and for a record whose whole purpose is honesty about what
+    # happened, those cannot render the same way.
+    report.findings += report.record("fact-check", fact_check(narration, data))
+    report.findings += report.record("on-screen",
+                                     onscreen_fact_check(script, data))
+    report.findings += report.record("voice", voice_lint(delivery_text(script)))
+    report.findings += report.record("direction", direction_lint(script))
+    report.findings += report.record("confession",
+                                     confession_lint(script, settings))
+    report.findings += report.record("valuation",
+                                     valuation_moves(script, settings))
+    report.findings += report.record("budgets", budget_check(script, settings))
+    report.findings += report.record(
+        "freshness", check_freshness(as_of, settings, workspace=workspace))
+    report.findings += report.record("audio",
+                                     check_audio(settings, final=final))
+    report.findings += report.record(
+        "prices", check_prices(script, settings, final=final))
     kit_findings, kit_stats = kit_doctor(script, settings)
-    report.findings += kit_findings
+    report.findings += report.record("kit", kit_findings)
     if skeptic:
-        report.findings += skeptic_notes(narration, settings)
-    log.info("gates: %d findings (%d blocking); kit uses %d assets",
-             len(report.findings), len(report.blocking), len(kit_stats["used"]))
+        notes, why = skeptic_notes(narration, settings)
+        report.findings += report.record("skeptic", notes)
+        if why:
+            report.skipped("skeptic", why)
+    else:
+        report.skipped("skeptic", "not requested")
+    if data is None:
+        # The two gates that compare against the workbook cannot have run.
+        report.skipped("fact-check", "no company data")
+        report.skipped("on-screen", "no company data")
+    log.info("gates: %d findings (%d blocking); kit uses %d assets; %s",
+             len(report.findings), len(report.blocking),
+             len(kit_stats["used"]), report.ran_line())
     return report

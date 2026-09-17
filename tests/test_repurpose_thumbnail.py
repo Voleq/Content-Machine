@@ -261,3 +261,56 @@ def test_green_means_up_and_only_up(settings):
         "a positive metric is not an up-move"
     assert metric_colour(settings, "22x") == structure
     assert metric_colour(settings, "n/a") == structure
+
+
+# --------------------------------------------------------------------------
+# GROUP I — repurpose. Three clips, one of everything.
+# --------------------------------------------------------------------------
+
+
+def test_a_window_snaps_to_a_spoken_boundary_without_the_voice_cache(settings):
+    """I2: word starts are None whenever the retention sweep has deleted the
+    TTS audio, and the cut then landed wherever the score did — mid-word as
+    often as not. The cue times are positioned off the same master clock, so
+    they are a coarser version of the same information."""
+    from pipeline.repurpose import pick_best_window
+
+    cues = [{"t": 12.5, "kind": "meme"}, {"t": 31.25, "kind": "plate"},
+            {"t": 48.0, "kind": "chart"}]
+
+    start, end = pick_best_window(cues, duration=120.0, window_s=58.0,
+                                  words=None)
+
+    assert start is not None
+    assert start in {0.0, 12.5, 31.25, 48.0}, \
+        f"{start} is not on any boundary the script knows about"
+    assert end - start <= 58.0 + 1e-6
+
+
+def test_a_window_still_prefers_a_word_start_when_there_is_one(settings):
+    from pipeline.repurpose import pick_best_window
+    from pipeline.tts import mock_words
+
+    words = mock_words("A hundred and twenty seconds of narration " * 20, 120.0)
+    cues = [{"t": 31.25, "kind": "plate"}]
+
+    start, _end = pick_best_window(cues, duration=120.0, window_s=58.0,
+                                   words=words)
+
+    assert start in {w.start for w in words}
+
+
+def test_the_clips_use_the_projects_encoder_profile(settings):
+    """I1, with a correction to the diagnosis: this cannot stream-copy. The
+    cut is 16:9 -> 9:16, and a crop changes the geometry, so every frame
+    needs re-encoding whatever the keyframes do. What WAS wasteful is that it
+    hardcoded libx264 while the render path resolves an encoder — so a box
+    that had just spent hours on the GPU did three more clips on the CPU."""
+    import inspect
+
+    from pipeline import repurpose
+
+    src = inspect.getsource(repurpose)
+    assert 'encode_profile(settings, "short")' in src
+    assert '"-c:v", "libx264"' not in src, \
+        "the encoder is the project's choice, not this module's"

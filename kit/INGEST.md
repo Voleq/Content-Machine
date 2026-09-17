@@ -12,7 +12,7 @@ byte for byte. **The engine is the source; the PNGs are a cache.**
 | path | what |
 |---|---|
 | `engine/` | `hand.js` (the drawing hand), `plates.js` (every plate author), `series.js` (data renderers), `build.js` (the declared library — author + seed per asset), `audit.js` |
-| `*/manifest.json` | 14 families, 143 assets, 1,444 slots. Geometry, playback, type roles. Emitted by the same call that draws the plate. |
+| `*/manifest.json` | 14 families, 270 assets, 3,033 slots. Geometry, playback, type roles. Emitted by the same call that draws the plate. **One location**: `kit/<family>/manifest.json`. delta-14 ships its copies under `kit/manifests/<family>/`, which the ingest's glob does not match — placed there they read as zero assets and the reconcile compares against nothing. |
 | `fonts/` | Archivo Narrow + Courier Prime, every weight the manifests reference |
 | `_reference/` | 27 downscaled PNGs, one or two per family, so you can see what a plate looks like without the full pack |
 | `scripts/` | per-family notes on what each plate is for |
@@ -28,6 +28,45 @@ poses is 60 host plates that go stale the moment anything changes.
 
 **Run the engine at ingest and write PNGs out. Do not call it at render time.**
 A bug in `plates.js` should break a build, not a published video.
+
+## The build is memory-bound
+
+924 frames across 270 plates. A single-pass ingest has been OOM-killed part
+way through on a small machine, and the cause is not what it looks like.
+
+**It is not plate cost.** The largest single frame is a room at about 1.5 MB
+of SVG and the whole library serialised is survivable. It is **retention**: a
+caller that walks the library, calls `draw()` per frame and keeps the
+returned plate objects holds 924 path lists, slot tables and manifests at
+once. That is what the kernel kills.
+
+Three routes, in order of what to try:
+
+```bash
+python scripts/ingest_kit.py kit              # one pass — try this first
+python scripts/ingest_kit.py kit --batched    # 14 processes, one per family
+python scripts/ingest_kit.py kit --only room  # re-do one family, verify only
+```
+
+`--batched` is the supported fallback: one process per family, each exiting
+and returning its memory to the OS before the next starts. It costs fourteen
+process starts and fourteen engine parses, shares no work between families,
+and cannot see a cross-family defect — the same blindness the per-family
+manifest generation has. It is slower than one pass and it is meant to be.
+
+`--only FAMILY` builds and reconciles one family and **does not install a
+registry**. A registry holding one family is not a kit, and writing one would
+leave the render path at a library with thirteen holes in it. Use it to
+regenerate the family a batched run failed on, then re-run `--batched`.
+
+`BUILD.stream(fn, opts)` in `engine/build.js` is the in-process fix for the
+same problem: it yields one frame, hands it over and drops every reference
+before building the next, so peak memory is one frame plus whatever the
+consumer keeps. `kit/scripts/build_batch.mjs` is design's own per-family
+driver and documents the contract either route must not break.
+
+**~400 MB lands in `assets/plates/`**, which is gitignored. That directory is
+the build product the render path reads; nothing else reads the kit.
 
 ## Facts the pipeline needs
 

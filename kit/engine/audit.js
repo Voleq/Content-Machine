@@ -170,7 +170,53 @@
     return { ok: !notes.length, want: want, notes: notes };
   }
 
+  /* COVERAGE - what fraction of the plate's PIXELS change between two frames.
+
+     amplitude() answers 'how far does a moved point move'. It cannot answer 'is
+     enough of this plate moving to read as alive', and those are different
+     questions with different failure modes. A plate with one drawn rule on it
+     can post a perfect 1.5-unit amplitude and still be visibly frozen, because
+     one rule is a rounding error in the frame. The pack norm is 1-6% of pixels
+     changing; below about 0.5% a plate reads as a still with one element
+     twitching, which is worse than an honest still.
+
+     Takes two ImageData-shaped {width, height, data} objects. A pixel counts as
+     changed when any channel moves more than tol (default 8/255, which ignores
+     rasteriser dither). */
+  function coverage(a, b, tol) {
+    if (!a || !b || a.width !== b.width || a.height !== b.height) {
+      return { comparable: false, reason: 'frames rasterised at different sizes' };
+    }
+    const t = tol == null ? 8 : tol;
+    const A = a.data, B = b.data;
+    let changed = 0, inked = 0;
+    const n = a.width * a.height;
+    for (let i = 0; i < n; i++) {
+      const o = i * 4;
+      if (A[o + 3] > 16) inked++;
+      if (Math.abs(A[o] - B[o]) > t || Math.abs(A[o + 1] - B[o + 1]) > t ||
+          Math.abs(A[o + 2] - B[o + 2]) > t || Math.abs(A[o + 3] - B[o + 3]) > t) changed++;
+    }
+    return { comparable: true, changedFraction: changed / n,
+      changedOfInked: inked ? changed / inked : 0, pixels: n, changed: changed, inked: inked };
+  }
+
+  // Pack norm, measured across the library's healthy boiled assets.
+  const COVERAGE = { band: [0.01, 0.06], frozenBelow: 0.005 };
+
+  function coverageVerdict(c) {
+    if (!c.comparable) return { ok: null, note: c.reason };
+    const f = c.changedFraction;
+    if (f < COVERAGE.frozenBelow) return { ok: false, note: (f * 100).toFixed(2) + '% of pixels change - frozen; too little drawn ink on the plate to boil' };
+    if (f < COVERAGE.band[0]) return { ok: false, note: (f * 100).toFixed(2) + '% of pixels change - under the 1% pack floor' };
+    if (f > COVERAGE.band[1]) return { ok: false, note: (f * 100).toFixed(1) + '% of pixels change - over the 6% pack ceiling' };
+    return { ok: true, note: (f * 100).toFixed(1) + '% of pixels change' };
+  }
+
   g.AUDIT = {
+    coverage: coverage,
+    coverageVerdict: coverageVerdict,
+    COVERAGE: COVERAGE,
     EXPORT_SCALE: EXPORT_SCALE,
     BOIL: BOIL,
     pathsOf: pathsOf,

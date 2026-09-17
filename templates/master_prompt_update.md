@@ -15,6 +15,9 @@ The register for that is the one you already have and it is the honest one: you 
 ## WHAT YOU SAID LAST TIME (the spine of this video)
 {{prior_coverage}}
 
+THE FILING, ALREADY READ — and graded against what we said. A survey of the latest annual report, the prior year's, and the quarterly pair beside them, plus a pass over the claims above: which of them the filings SUPPORT, which they UNDERMINE, and which they do not address. That grading is the spine of this format — what I said, what happened, was I right, what now — so start there rather than from the numbers.
+{{filing_brief}}
+
 ## THE FOUR MOVEMENTS — this is the whole structure
 An update is not the first-time video with a history paragraph in front of it. Do not re-explain the business model, do not re-run the "how the money is made" chapter, do not rebuild the bull case from scratch. The viewer's question is narrow and you answer exactly it, in this order:
 
@@ -40,6 +43,9 @@ Per the bible: the sincere fake-out is exactly the mechanic this format is built
 Ticker: {{ticker}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
+
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
 
 Chartable metrics for [CHART: metric] (only these have a real series):
 {{chart_metrics}}
@@ -103,6 +109,19 @@ This is a TALKING HOST show. **Untagged narration IS the host**, lip-synced to y
 - Close resigned, not conclusive.
 
 ## OUTPUT
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the HOOK OPTIONS menu in the chat and the narration and its trailers in the `.txt` file.
 The narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin on the claim.
 
 Then append a `=== CHAPTERS ===` trailer, one `mm:ss type | Title` per line, first line `00:00`. The TYPE is one of the sixteen and decides which plates that chapter may use; the TITLE goes ON SCREEN as the chapter opener.
@@ -121,3 +140,11 @@ Then, ONLY if this video carries one, a `=== CONFESSION ===` trailer: one line, 
 An update is the format where a confession is most likely to be earned — "I was wrong" is the premise, not an aside — but "most likely" is still not "always", and the ledger below says what has already been used.
 
 {{confession_ledger}}
+
+### WHAT THE CHANNEL ALREADY KNOWS ABOUT CHAPTER TYPES
+Measured, not guessed: YouTube's own retention for every video published so
+far, averaged per chapter TYPE. It is the only data that should influence the
+plan above — and on an UPDATE it is sharper than usual, because this is a name
+the channel already has retention data for.
+
+{{retention}}

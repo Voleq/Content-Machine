@@ -42,11 +42,20 @@ def reg(settings):
 
 
 def _manifests() -> dict:
-    out: dict = {}
-    for fam in FAMILIES:
-        out.update(json.loads((KIT / fam / "manifest.json")
-                              .read_text(encoding="utf-8"))["assets"])
-    return out
+    """Every plate the shipped manifests declare.
+
+    Through the ingest's own reader, so the table name lives in one place:
+    delta-14 renamed it `assets` -> `plates`, and a second copy of that
+    knowledge here would read zero plates and pass every loop below without
+    checking anything.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_ingest_for_budgets", KIT.parent / "scripts" / "ingest_kit.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod._shipped_manifests(KIT)
 
 
 # --------------------------------------------------------------------------
@@ -181,6 +190,7 @@ def test_check_budgets_measures_against_the_box_not_the_role(settings, reg):
 # --------------------------------------------------------------------------
 # The reconcile that would have caught the shared-role-table bug.
 # --------------------------------------------------------------------------
+@pytest.mark.kit_ingest
 def test_the_engine_and_the_delivery_agree_on_every_type_role(reg):
     """Not just geometry. `typeRoles` carries the face every word is set in AND
     the role floor, and it went 139-of-425 wrong with every geometry field
@@ -191,6 +201,27 @@ def test_the_engine_and_the_delivery_agree_on_every_type_role(reg):
         (Path(reg.root) / "plates-registry.json").read_text(encoding="utf-8")
     )["assets"]
     shipped = _manifests()
+
+    # THE INSTALLED KIT MUST BE THE SHIPPED ONE. A pack lands in `kit/` as
+    # manifests and an engine; `assets/plates/` is only updated when someone
+    # runs the ingest. Between the two the render path draws the old library
+    # while the manifests, the curation and the prompts describe the new one
+    # — and every check below would compare a plate against a manifest for a
+    # different plate, or KeyError on a key the old pack never had.
+    absent = sorted(set(shipped) - set(installed))
+    if absent:
+        pytest.fail(
+            f"the installed registry is a DIFFERENT PACK from the one in "
+            f"kit/: {len(installed)} plates installed, {len(shipped)} "
+            f"shipped, {len(absent)} shipped plates missing "
+            f"(e.g. {absent[:3]}).\n\n"
+            f"This is the ingest not having been run, not a defect:\n"
+            f"    npm install\n"
+            f"    python scripts/ingest_kit.py kit      # or --batched\n"
+            f"    /kit doctor\n\n"
+            f"Until then the render path draws the old library while the "
+            f"curation and the prompts describe the new one.")
+
     problems = []
     for key, want in shipped.items():
         problems += [(key, r) for r, _, _ in _role_diffs(installed[key], want)]

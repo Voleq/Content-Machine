@@ -63,6 +63,18 @@ def main() -> None:
     if not settings.mock_mode:
         log.warning("MOCK_MODE is OFF — paid APIs are live. Spend cap: $%.2f",
                     settings.monthly_spend_cap_usd)
+    # THINGS THAT QUIETLY MAKE VIDEOS WORSE (P9). None of these refuses to
+    # boot and none blocks a render — each costs a feature that degrades
+    # silently by design, which is exactly how you lose three of them and
+    # are told nothing. Beside the mock banner, at the same moment.
+    for warning in settings.deployment_warnings():
+        log.warning("%s", warning)
+    # Said every boot, empty or not: the size of the owned library decides
+    # how often the chain reaches past it, and it is a fact about this box
+    # rather than about the code (P9b).
+    log.info("owned b-roll library: %d clip(s) in %s",
+             settings.broll_library_size(),
+             settings.assets_dir / "broll_library")
 
     core = BotCore(settings)
     app = build_application(settings, core)
@@ -76,12 +88,42 @@ def main() -> None:
 
         def push_file(path, caption: str = "") -> None:
             """Called from the render worker thread — hop back to the bot's
-            loop to actually send."""
+            loop to actually send.
+
+            BY TYPE AND SIZE, not always as a photo (E3). Every push went out
+            through `send_photo`, and two callers send things that are not
+            photos: `_run_proof` pushes the finished proof MP4, and
+            `_send_storyboard` pushes a large multi-tile contact sheet that
+            exceeds `send_photo`'s tighter limits. `push_file` catches the
+            exception and logs it, so the operator saw nothing at all.
+            """
             async def _send() -> None:
+                from pathlib import Path as _P
+
+                p = _P(path)
+                suffix = p.suffix.lower()
+                try:
+                    size = p.stat().st_size
+                except OSError:
+                    size = 0
+                # Telegram's photo endpoint caps at 10 MB and re-encodes;
+                # a contact sheet past that, or any non-image, goes as a
+                # document so it arrives intact.
+                video = suffix in (".mp4", ".mov", ".mkv", ".webm")
+                photo = (suffix in (".png", ".jpg", ".jpeg", ".webp")
+                         and size <= 10_000_000)
                 for chat_id in settings.operator_chat_ids:
-                    with open(path, "rb") as fh:
-                        await application.bot.send_photo(chat_id, fh,
-                                                         caption=caption[:1024])
+                    with open(p, "rb") as fh:
+                        if video:
+                            await application.bot.send_video(
+                                chat_id, fh, caption=caption[:1024],
+                                supports_streaming=True)
+                        elif photo:
+                            await application.bot.send_photo(
+                                chat_id, fh, caption=caption[:1024])
+                        else:
+                            await application.bot.send_document(
+                                chat_id, fh, caption=caption[:1024])
             asyncio.run_coroutine_threadsafe(_send(), loop)
 
         core.file_pusher = push_file
@@ -97,7 +139,24 @@ def main() -> None:
         except ImportError:
             log.info("screener module not present; digest not scheduled")
 
+    async def _post_shutdown(application) -> None:
+        """Let go of anything still reading a filing (P1).
+
+        A reading is eight to ten minutes of SEC pulls and LLM calls. Its
+        worker is a daemon thread so the interpreter never waits for it, and
+        this is where the operator finds out which brief was dropped — a
+        silent abandonment is how you re-run `/long` and wonder why the
+        angle prompt has no filing in it.
+        """
+        abandoned = core.filing_reader.shutdown()
+        if abandoned:
+            log.warning("shutting down with %d filing reading(s) unfinished: "
+                        "%s — re-run /long for those tickers; nothing is lost "
+                        "but the reading itself",
+                        len(abandoned), ", ".join(abandoned))
+
     app.post_init = _post_init
+    app.post_shutdown = _post_shutdown
     log.info("starting polling")
     app.run_polling(allowed_updates=None)
 

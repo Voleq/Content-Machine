@@ -265,21 +265,60 @@ def test_fresh_data_passes():
     assert check_freshness("2026-07-20", s, today=date(2026, 7, 22)) == []
 
 
-def test_stale_data_warns():
+def test_stale_data_blocks_by_default():
+    """B5: the README always listed freshness as a blocking gate."""
     s = Settings(_env_file=None)
     out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
     assert out and "days old" in out[0].message
-    assert out[0].severity == "warn"
-
-
-def test_stale_data_can_be_made_blocking():
-    s = Settings(data_stale_blocks=True, _env_file=None)
-    out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
     assert out[0].severity == "block"
 
 
-def test_a_missing_as_of_date_is_flagged():
-    assert check_freshness("", Settings(_env_file=None))
+def test_stale_data_can_be_made_advisory():
+    s = Settings(data_stale_blocks=False, _env_file=None)
+    out = check_freshness("2026-06-01", s, today=date(2026, 7, 22))
+    assert out[0].severity == "warn"
+
+
+def test_a_missing_as_of_date_blocks_rather_than_skipping():
+    """An absent date is the absence of evidence, not evidence."""
+    out = check_freshness("", Settings(_env_file=None))
+    assert out and out[0].severity == "block"
+
+
+def test_an_unreadable_as_of_date_blocks_rather_than_skipping():
+    out = check_freshness("last tuesday", Settings(_env_file=None))
+    assert out and out[0].severity == "block"
+    assert "not evidence of freshness" in out[0].message
+
+
+@pytest.mark.parametrize("written,expected", [
+    ("2026-09-03", date(2026, 9, 3)),
+    # US format, which is what a US-locale export of US market data writes.
+    # Read day-first this was 3 March — six months adrift and inside any
+    # staleness limit either way, so the gate said nothing.
+    ("09/03/2026", date(2026, 9, 3)),
+    ("3-Sep-2026", date(2026, 9, 3)),
+    ("3 Sep 2026", date(2026, 9, 3)),
+    ("Sep 3, 2026", date(2026, 9, 3)),
+    ("September 3, 2026", date(2026, 9, 3)),
+    ("2026-09-03 00:00:00", date(2026, 9, 3)),
+    # A cell read as a raw Excel serial (days since 1899-12-30).
+    ("46268", date(2026, 9, 3)),
+])
+def test_the_shapes_a_sheet_actually_writes_a_date_in_are_all_read(
+        written, expected):
+    """Every one of these used to return None and skip the check."""
+    from pipeline.gates import _parse_as_of
+
+    assert _parse_as_of(written) == expected
+
+
+def test_a_stale_us_format_date_is_now_caught():
+    """The end-to-end version of the format above: the gate fires."""
+    s = Settings(_env_file=None)
+    # 9 March, read a US sheet correctly -> 100+ days stale on 20 June.
+    out = check_freshness("03/09/2026", s, today=date(2026, 6, 20))
+    assert out and out[0].severity == "block"
 
 
 # ------------------------------------------------ figures that reach the screen
@@ -292,15 +331,20 @@ def _long(text, settings):
     return script
 
 
-def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
+def test_a_wrong_figure_blocks_whether_it_is_spoken_or_on_screen(settings, data,
                                                             long_valid_text):
-    """The asymmetry is the point, not an inconsistency.
+    """The asymmetry is gone: both block now (B4).
 
-    A spoken figure is a sentence a viewer hears once and a linter can misread.
-    A figure in a `[PLATE]` slot is a number the director typed, held on screen
-    for six seconds, and screenshotted by anyone who disagrees with it. The
-    voice gets to be as confident as v2 asks precisely because these were
-    verified before anything rendered.
+    The old reasoning was that a spoken figure is a sentence a viewer hears
+    once and a linter can misread, while a figure in a `[PLATE]` slot is
+    typed by the director and held on screen for six seconds. The first half
+    of that was true of the OLD linter, which skipped every percentage and
+    everything under a thousand and compared against a whole series at once.
+    A check that crude could not be trusted to stop anything.
+
+    It is not that crude any more, and a wrong number is wrong whichever way
+    it reaches the viewer — so the thing the README calls the last line of
+    defence is now allowed to be one.
     """
     from pipeline.gates import onscreen_fact_check
 
@@ -311,7 +355,7 @@ def test_a_figure_on_screen_blocks_where_a_spoken_one_warns(settings, data,
     assert "720" in out[0].message
 
     spoken = fact_check("Revenue was seven hundred and twenty million.", data)
-    assert spoken and all(f.severity == "warn" for f in spoken)
+    assert spoken and all(f.severity == "block" for f in spoken)
 
 
 def test_a_real_figure_under_the_wrong_year_is_caught(settings, data,
@@ -413,18 +457,24 @@ def test_run_gates_is_silent_on_a_clean_script(settings, data, long_valid_text):
     from pipeline.parser_long import parse_long_script
 
     script, _ = parse_long_script(long_valid_text, "EXMPL", settings)
+    # A date the gate would call stale is not a clean script — freshness
+    # blocks by default now (B5) — so the fixture's as-of is read as today.
     report = run_gates(script, settings, data=data,
-                       as_of="2026-07-01", skeptic=False)
+                       as_of=date.today().isoformat(), skeptic=False)
     blocking = [f for f in report.findings if f.severity == "block"]
     assert not blocking, report.text()
 
 
-def test_the_skeptic_never_runs_offline(settings, long_valid_text):
-    """MOCK_MODE must not reach the network, so the pass simply does not run."""
+def test_the_skeptic_never_runs_offline_and_says_so(settings, long_valid_text):
+    """MOCK_MODE must not reach the network, so the pass does not run — and
+    it now reports WHY rather than returning the same `[]` a clean script
+    gets (N2)."""
     from pipeline.gates import skeptic_notes
 
     assert settings.mock_mode
-    assert skeptic_notes("anything at all", settings) == []
+    notes, why = skeptic_notes("anything at all", settings)
+    assert notes == []
+    assert why == "mock"
 
 
 def test_the_battery_carries_the_audio_gate(settings, data, long_valid_text):
@@ -616,3 +666,154 @@ def test_check_audio_passes_outright_once_the_real_effects_are_fetched(
     assert check_audio(fetched, final=True) == [], (
         "a final render is still blocked with the bed gone and real effects "
         "fetched — nothing an operator can do would clear this gate")
+
+
+# --------------------------------------------------------------------------
+# B4 — the fact-check's four blind spots. Each of these is a script that the
+# old gate read and passed, so each asserts on the FINDINGS, not on which
+# branch ran.
+# --------------------------------------------------------------------------
+
+
+def test_a_figure_in_a_millions_sheet_is_checked_not_skipped(settings):
+    """The magnitude floor skipped everything under 1,000 — which is most of
+    a workbook written in millions."""
+    from pipeline.models import CompanyData
+
+    millions = CompanyData(
+        history_years=["FY-2", "FY-1", "FY-0"],
+        history={"revenue": [452.0, 471.0, 486.0]},
+    )
+    clean = fact_check("Revenue was four hundred and eighty six million.",
+                       millions)
+    assert not clean, "486 in a millions sheet IS 486 million"
+
+    wrong = fact_check("Revenue was nine hundred and twelve million.", millions)
+    assert wrong, "a figure under 1,000 in the sheet was never checked at all"
+    assert wrong[0].severity == "block"
+
+
+def test_a_wrong_margin_is_caught(settings, data):
+    """Every percentage used to be skipped, so no margin was ever checked."""
+    assert not fact_check("Gross margin is fifty eight percent.", data)
+    out = fact_check("Gross margin is eighty one percent.", data)
+    assert out and "gross_margin" in out[0].message
+
+
+def test_a_wrong_growth_rate_is_caught(settings, data):
+    """A percentage against a currency metric is a growth claim."""
+    # FY-1 491 -> FY-0 496 is +1.0%; FY-4 400 -> LTM 496 is +24%.
+    assert not fact_check("Revenue grew one percent.", data)
+    out = fact_check("Revenue grew forty percent.", data)
+    assert out and "revenue growth" in out[0].message
+
+
+def test_a_real_figure_under_the_wrong_year_is_caught_in_speech(settings, data):
+    """`_matches` compared against every value at once, so a figure from the
+    wrong column passed."""
+    assert not fact_check("In FY-2, revenue was four hundred and "
+                          "seventy one million.", data)
+    out = fact_check("In FY-2, revenue was four hundred million.", data)
+    assert out and "FY-2" in out[0].message, \
+        "400 is in the series, but it is FY-4's"
+
+
+def test_a_derived_change_is_a_true_claim(settings, data):
+    """491 to 496 is five million of revenue, and the gate has to know it —
+    a blocking gate that cannot see a derived claim blocks correct scripts."""
+    assert not fact_check("They added five million of revenue.", data)
+
+
+def test_a_number_attached_to_another_subject_is_not_a_revenue_claim(
+        settings, data):
+    """"Two hundred and twelve million ON SALES AND MARKETING" is not a
+    revenue figure, even in a sentence that later names revenue."""
+    assert not fact_check(
+        "Two hundred and twelve million on sales and marketing, to add "
+        "five million of revenue.", data)
+
+
+def test_a_spoken_series_recital_is_checked_through_to_the_end(settings, data):
+    """One metric, a run of numbers: all of them are claims about it."""
+    ok = ("Net income, from the actual filing: minus eight, minus twenty "
+          "five, minus forty nine, minus seventy, minus eighty nine.")
+    assert not fact_check(ok, data)
+
+    wrong = ok.replace("minus eighty nine", "minus one hundred and forty")
+    out = fact_check(wrong, data)
+    assert out and "one hundred and forty" in out[0].message, \
+        "the last figure in a recital is as checkable as the first"
+
+
+def test_the_gate_can_still_be_asked_for_advisory_findings(settings, data):
+    """The severity is a decision, and it is recorded as one rather than
+    hard-coded in fourteen places."""
+    out = fact_check("Revenue was nine hundred and twelve million.", data,
+                     severity="warn")
+    assert out and out[0].severity == "warn"
+
+
+# --------------------------------------------------------------------------
+# B3 — the SHORT lane runs the battery. It used to run `build_short_report`
+# and nothing else, on the higher-volume format.
+# --------------------------------------------------------------------------
+
+
+def _short_core(settings):
+    from bot.handlers import BotCore
+
+    return BotCore(settings)
+
+
+def _short_with_data(core, fixtures, ticker="EXMPL"):
+    core.start_lane(5150, "short", ticker)
+    core.handle_upload(
+        5150, "dennis_data.xlsx",
+        (fixtures / "company_data" / "dennis_data.xlsx").read_bytes())
+    return core
+
+
+def test_a_short_with_an_invented_figure_is_refused(settings, fixtures_dir,
+                                                    short_valid_json):
+    """Asserting on the REPORT the operator sees, not on whether a gate
+    function was called."""
+    import json
+
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    payload = json.loads(short_valid_json)
+    payload["audio_script"] = (
+        payload["audio_script"]
+        + " Revenue was nine hundred and twelve million dollars.")
+    reply = core.intake_script(5150, json.dumps(payload))
+
+    assert "fact-check" in reply.text
+    assert "nine hundred and twelve million" in reply.text
+
+
+def test_a_short_that_names_the_data_vendor_is_refused(settings, fixtures_dir,
+                                                       short_valid_json):
+    """The LONG hard-blocks this because it would be spoken and captioned.
+    A SHORT is spoken and captioned too."""
+    import json
+
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    payload = json.loads(short_valid_json)
+    payload["audio_script"] = (
+        "Straight off the Bloomberg terminal. " + payload["audio_script"])
+
+    from pipeline.parser_short import ScriptParseError
+
+    try:
+        reply = core.intake_script(5150, json.dumps(payload))
+    except ScriptParseError as e:
+        assert "bloomberg" in str(e).lower()
+        return
+    assert "bloomberg" in reply.text.lower() or "vendor" in reply.text.lower()
+
+
+def test_a_clean_short_still_passes_the_battery(settings, fixtures_dir,
+                                                short_valid_json):
+    """The gate that blocks a correct script is worse than no gate."""
+    core = _short_with_data(_short_core(settings), fixtures_dir)
+    reply = core.intake_script(5150, short_valid_json)
+    assert "fact-check" not in reply.text

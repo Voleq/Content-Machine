@@ -34,24 +34,13 @@ Article summary (optional — empty if none was fetched; work from the headline 
 Company data (company & earnings modes only; private research — NEVER name any data vendor; on screen everything is "from the 10-K". In macro mode this is a placeholder — ignore it):
 {{company_data}}
 
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
 Peer percentiles (OPTIONAL — where this ticker ranks vs peers; the gut check may drop at most ONE as a one-liner, never a table):
 {{peer_percentiles}}
 
 Chartable metrics present in THIS data — every company/earnings `numbers` row you feature MUST be one of these (they have a multi-year series for the trend bars): {{chart_metrics}}
-
-## VISUAL CATALOGS — use ONLY keys that appear below (validated on paste-back; unknown keys are flagged)
-
-Owned memes — [MEME: key] (optional, at most one):
-{{meme_catalog}}
-
-Ironic b-roll palette — [CLIP: key] / broll (optional cutaway):
-{{broll_palette}}
-
-Designed kit artwork — the frames that ACTUALLY EXIST for the tag keys below.
-Pick from these. Nothing else resolves:
-{{plate_catalogue}}
-
-{{tagging_density}}
 
 ## CRAFT — expressivity and pacing
 {{craft_rules}}
@@ -76,15 +65,32 @@ The beats are fixed; the runtime goes to keeping the viewer, never more talking:
 3. The CHEAP-OR-TRAP beat carries the counter-observation — the strongest point against the read you're about to give — so the payoff lands as considered, not reflexive.
 4. Room for ONE more number IF it changes the read — a number, not more narration.
 
-## PUNCTUATING WITH HAND-DRAWN MARKS
-Place inline in `audio_script`, immediately before the word they hit; the parser strips them (never spoken) and fires them on that word:
-- `[SCRIBBLE: style -> target]` — a drawn mark + the target text as a callout. Styles (each one is a real drawing in the kit): {{scribble_styles}}.
-You may also place DELIVERY DIRECTION inline. The full vocabulary, the modes each one serves and the ceilings on them are in DELIVERY DIRECTION above — that list is generated from the code that performs the tags, so it is the one to trust. A [BEAT] before the payoff is what turns a sentence into a joke.
+## WHAT REACHES THE SCREEN, AND WHAT DOES NOT
 
-Keep it to ~1–3 inline marks. They ride on the fixed beats; they don't replace the JSON `annotations`.
+**The visuals here are the fixed shot template above, not something you
+place.** `templates/shots/<mode>.json` decides which plate carries each beat
+and the renderer binds your words into its slots, so what you control is the
+structured fields — `hook_text`, `move_summary`, `headlines`, `numbers` and
+`numbers_comment`, `cheap_or_trap`, `conclusion`.
+
+**Nothing you write places a visual, in either form.**
+
+`[PLATE]`, `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]`, `[SCREENGRAB]` and
+`[SCRIBBLE]` written inside `audio_script` are LONG-form grammar. This format
+parses them, reports them as ignored, and draws none.
+
+The JSON fields `meme`, `broll` and `annotations` are the same story one
+level up: they validate, they are counted on the cost report, and no shot
+template binds them, so they reach no frame either. Do not spend a decision
+on them — write the fields the template binds.
+
+You MAY place DELIVERY DIRECTION inline — that does reach the voice. The full
+vocabulary, the mode each tag serves and the ceilings are in DELIVERY
+DIRECTION above, generated from the code that performs them. A [BEAT] before
+the payoff is what turns a sentence into a joke.
 
 ## HARD RULES
-1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — inline `[PLATE]`/`[SCRIBBLE]` tags are stripped before counting.
+1. `audio_script`: 180–210 spoken words, ≤ 1400 characters, first sentence = the hook, includes ONE mid-point re-hook (~30s), and it must END with the `conclusion` line spoken VERBATIM (the payoff card syncs to those exact words). The word budget counts SPOKEN words only — delivery tags are stripped before counting.
 2. `move_summary`: one line of context for the news, e.g. "Q3 print · guide raised" or "CPI 3.4% vs 3.1% expected". ≤ 80 chars.
 3. `headlines`: 1–3 items. `text` = the headline as reported (short). `meaning` = what it actually means, in your voice.
 4. `numbers`: 1–6 rows. company/earnings: from the history table above (each with 2–6 values OLDEST → NEWEST as display strings, matching a chartable metric). macro: OPTIONAL/index-based — index levels or a macro series (e.g. "CPI YoY": ["3.7%","3.2%","3.1%","3.4%"]); set `years` to the matching period labels. One extra row is fine IF it changes the read; don't pad.
@@ -99,6 +105,19 @@ Keep it to ~1–3 inline marks. They ride on the fixed beats; they don't replace
 13. Both-ways honesty: let the facts pick the polarity — a real beat gets grudging credit, a nothingburger gets a shrug; never manufacture doom or hype.
 
 ## OUTPUT — SHOW YOUR WORK IN ORDER, THEN THE JSON
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the prose sections in the chat and the JSON object in the `.txt` file.
 Emit these four sections as plain prose FIRST (no JSON, no braces), then the strict JSON object last:
 
 1. READ — one line on the news and which MODE it is, then the 1–5 `numbers` rows you'll feature (or "macro — numbers optional") and one clause each on WHY.

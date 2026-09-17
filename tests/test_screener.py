@@ -118,10 +118,63 @@ def test_stocktwits_network_error_degrades(settings):
     assert src.trending() is None
 
 
+def test_the_digest_fires_on_the_calendar_days_the_cron_names(settings):
+    """F3, and the shape X1 asks for: assert on the DAYS, not the integers.
+
+    The old test read `parse_cron("30 7 * * 1-5")[2] == (0, 1, 2, 3, 4)` —
+    the same assumption the function was making, so it passed whether or not
+    the assumption was right. It was not: PTB 20.0 changed `run_daily(days=)`
+    from Monday-Sunday to Sunday-Saturday, the pinned version is 22.8, and
+    the conversion still shifted every day by one. The weekday morning
+    digest was scheduled for Sunday through Thursday. The author's own
+    comment — `# Sun,Sat -> PTB Sat=5?` — recorded the doubt.
+
+    So this goes through PTB's real scheduler and reads back the dates it
+    would fire on.
+    """
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    from telegram.ext import Application
+
+    from pipeline.screener import parse_cron
+
+    minute, hour, days = parse_cron("30 7 * * 1-5")
+    tz = ZoneInfo("America/New_York")
+
+    async def _noop(ctx):  # pragma: no cover - never runs
+        pass
+
+    app = Application.builder().token("1:aaa").build()
+    jq = app.job_queue
+    jq.set_application(app)
+    jq.scheduler.configure(timezone=tz)
+    job = jq.run_daily(_noop, time=dt.time(hour=hour, minute=minute, tzinfo=tz),
+                       days=days, name="t")
+
+    trigger = job.job.trigger
+    start = dt.datetime(2026, 9, 6, 0, 0, tzinfo=tz)   # a Sunday
+    fires, when = [], start
+    for _ in range(7):
+        when = trigger.get_next_fire_time(None, when)
+        if when is None:
+            break
+        fires.append(when.astimezone(tz))
+        when = when + dt.timedelta(seconds=1)
+
+    names = [f.strftime("%A") for f in fires[:5]]
+    assert names == ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], \
+        f"a weekday cron scheduled the digest on {names}"
+    assert all(f.hour == 7 and f.minute == 30 for f in fires[:5])
+
+
 def test_parse_cron():
-    assert parse_cron("30 7 * * 1-5") == (30, 7, (0, 1, 2, 3, 4))
+    """cron and PTB are both Sunday-first now, so the field passes through."""
+    assert parse_cron("30 7 * * 1-5") == (30, 7, (1, 2, 3, 4, 5))
     assert parse_cron("0 9 * * *")[2] == tuple(range(7))
-    assert parse_cron("15 6 * * 0,6")[2] == (5, 6)  # Sun,Sat -> PTB Sat=5? cron0=Sun->PTB6
+    # cron's 7 is Sunday, the same day as its 0.
+    assert parse_cron("15 6 * * 0,6")[2] == (0, 6)
+    assert parse_cron("15 6 * * 7")[2] == (0,)
     with pytest.raises(ValueError):
         parse_cron("not a cron")
 
@@ -136,3 +189,179 @@ async def test_screen_reply_shape(settings):
     assert reply.keyboard is not None
     reply2 = await screen_reply(core, "bogus")
     assert "Usage" in reply2.text
+
+
+# --------------------------------------------------------------------------
+# B2 — "today" in a SHORT script has to mean today. The screener's cached
+# string says it about the day the SCREEN ran, which is pre-market, which on
+# a Monday is Friday's close.
+# --------------------------------------------------------------------------
+
+
+def test_a_live_quote_is_the_real_intraday_move(settings, monkeypatch):
+    """`_pct_change` on a live quote is last vs previous close."""
+    from pipeline.screener import live_move_context
+
+    live = settings.model_copy(update={"mock_screener": False})
+
+    class FakeSource:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            return [{"symbol": "EXMPL", "regularMarketPrice": 22.0,
+                     "regularMarketChangePercent": 10.4,
+                     "regularMarketVolume": 5_000_000,
+                     "averageDailyVolume3Month": 1_000_000}]
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", FakeSource)
+    text = live_move_context(live, "EXMPL")
+
+    assert "+10.4% so far today" in text
+    assert "5.0x avg" in text
+
+
+def test_a_dead_quote_feed_is_silent_not_wrong(settings, monkeypatch):
+    from pipeline.screener import live_move_context
+
+    live = settings.model_copy(update={"mock_screener": False})
+
+    class Dead:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            raise RuntimeError("yahoo is down")
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", Dead)
+    assert live_move_context(live, "EXMPL") == ""
+
+
+def test_a_stale_screener_line_says_how_stale_it_is(settings):
+    """The word "today" cannot be left standing on a day-old figure."""
+    import json
+    import time
+
+    from pipeline.screener import last_screen_context
+
+    state = settings.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 6 * 3600,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+0.5% today"]}},
+    }), encoding="utf-8")
+
+    text = last_screen_context(settings, "EXMPL")
+    assert "+0.5% today" in text
+    assert "NOT as of now" in text and "6h ago" in text
+
+
+def test_a_fresh_screener_line_is_left_alone(settings):
+    import json
+    import time
+
+    from pipeline.screener import last_screen_context
+
+    state = settings.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 60,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+9.0% today"]}},
+    }), encoding="utf-8")
+
+    assert "NOT as of now" not in last_screen_context(settings, "EXMPL")
+
+
+def test_the_short_prompt_carries_the_live_move_not_the_cached_one(
+        settings, monkeypatch, fixtures_dir):
+    """End to end, on the prompt file the operator actually receives."""
+    import json
+    import time
+
+    from bot.handlers import BotCore
+
+    live = settings.model_copy(update={"mock_screener": False})
+    state = live.state_dir / "last_screen.json"
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({
+        "ts": time.time() - 6 * 3600,
+        "tickers": {"EXMPL": {"lane": "trending", "reasons": ["+0.5% today"]}},
+    }), encoding="utf-8")
+
+    class FakeSource:
+        def __init__(self, *a, **k):
+            pass
+
+        def quotes(self, tickers):
+            return [{"symbol": "EXMPL", "regularMarketPrice": 22.0,
+                     "regularMarketChangePercent": 10.4}]
+
+    monkeypatch.setattr("pipeline.screener.YahooMarketSource", FakeSource)
+
+    core = BotCore(live)
+    core.start_lane(7788, "short", "EXMPL")
+    reply = core.handle_upload(
+        7788, "dennis_data.xlsx",
+        (fixtures_dir / "company_data" / "dennis_data.xlsx").read_bytes())
+    prompt = next(f for f in reply.files if "short" in f.name).read_text(encoding="utf-8")
+
+    assert "+10.4% so far today" in prompt, "the prompt must carry today's move"
+    assert "NOT as of now" in prompt, "and label the stale line it kept"
+
+
+# --------------------------------------------------------------------------
+# F5 — `run_daily` fires once and nothing noticed a miss. A box asleep, or a
+# bot down at 07:30 ET, lost that day's digest with no trace.
+# --------------------------------------------------------------------------
+
+
+def test_the_digest_date_is_remembered_across_a_restart(settings):
+    import datetime as dt
+
+    from pipeline.screener import last_digest_date, mark_digest_sent
+
+    assert last_digest_date(settings) is None
+    mark_digest_sent(settings, dt.date(2026, 9, 11))
+    assert last_digest_date(settings) == dt.date(2026, 9, 11)
+
+
+def test_a_catch_up_is_scheduled_alongside_the_daily_digest(settings):
+    """Asserting that the job exists on the queue, not that a function was
+    defined: a catch-up nothing schedules is the defect, not the fix."""
+    from telegram.ext import Application
+
+    from bot.handlers import BotCore
+    from pipeline.screener import schedule_digest
+
+    app = Application.builder().token("1:aaa").build()
+    app.job_queue.set_application(app)
+    schedule_digest(app, BotCore(settings))
+
+    names = {j.name for j in app.job_queue.jobs()}
+    assert "screen_digest" in names
+    assert "screen_digest_catchup" in names, \
+        "a missed digest has to have something that notices"
+
+
+def test_a_broken_source_is_named_in_the_digest(settings):
+    """J6: Yahoo and StockTwits are both unofficial endpoints. A failure
+    degraded to an empty lane and a log line, and the digest still went out
+    — just shorter. A silently broken screener read exactly like a quiet
+    market."""
+    from pipeline.screener import digest_text
+
+    quiet = digest_text({"trending": [], "value": [],
+                         "sources": {"yahoo": "ok", "stocktwits": "empty"}})
+    broken = digest_text({"trending": [], "value": [],
+                          "sources": {"yahoo": "failed", "stocktwits": "ok"}})
+
+    assert "yahoo ok" in quiet and "DEGRADED" not in quiet
+    assert "yahoo DEGRADED" in broken
+    assert quiet != broken, "the two must not read the same"
+
+
+def test_run_screen_records_what_each_source_did(settings):
+    from pipeline.screener import run_screen
+
+    result = run_screen(settings, "all")
+    assert set(result.get("sources") or {}) >= {"yahoo", "stocktwits"}

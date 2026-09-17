@@ -65,11 +65,37 @@
   // narrowest of them. Returns the audit rows, which build.js collects into
   // audit/budgets.json — including the roles no slot on the plate sets, whose
   // authored numbers are left alone because there is no box to measure.
+  //
+  // AND IT DOES NOT TOUCH THE CALLER'S ROLE TABLE. It used to: `tr.maxChars =
+  // floor` wrote the floor straight onto the role object it was handed, and the
+  // plates hand it a table that is SHARED by every plate in the family (see the
+  // module-level role tables in engine/plates.js — `base(o, "row-spotlight", TR)`
+  // passes the same object to all twelve structure plates).
+  //
+  // So a family build accumulated. Plate 2 took min() against plate 1's already
+  // lowered floor, plate 3 against plate 2's, and by the end of a family every
+  // plate reported ONE set of role floors — the narrowest box anywhere in the
+  // family — while a plate built alone reported its own. `structure/closing-16x9`
+  // came out figure:28 solo and figure:3 in a family run; the counter in the
+  // budget string grew with it ("narrowest of 5" -> "narrowest of 6"), which is
+  // the accumulation signature.
+  //
+  // Slots were never wrong, because a slot belongs to one plate. Only the role
+  // FLOOR was, and the floor is what the 94-unmeasured-roles audit is computed
+  // from — which is why that decision had to wait for this.
+  //
+  // The fix is that derive() now works on a per-plate COPY of the role table and
+  // returns it on `rows.roles` for the caller to emit. An array with a property
+  // on it serialises as an array, so audit/budgets.json is unchanged.
   function derive(slots, roles) {
     const rows = [];
     if (!roles) return rows;
-    Object.keys(roles).forEach(function (rn) {
-      const tr = roles[rn];
+    // per-plate copy: one level deep is enough, the values are scalars
+    const own = {};
+    Object.keys(roles).forEach(function (rn) { own[rn] = Object.assign({}, roles[rn]); });
+    rows.roles = own;
+    Object.keys(own).forEach(function (rn) {
+      const tr = own[rn];
       const budgeted = ("maxChars" in tr) || ("maxCharsPerLine" in tr);
       if (!budgeted) return;
       const names = Object.keys(slots).filter(function (s) { return !slots[s].region && slots[s].role === rn; });

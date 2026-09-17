@@ -14,6 +14,9 @@ Ticker: {{ticker}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
 VALUATION DATA — the reverse-DCF gut-check (a perpetuity sanity check, NOT a fair value; the mandatory valuation chapter cites these):
 {{valuation_data}}
 
@@ -22,7 +25,11 @@ PEER PERCENTILES — where THIS ticker ranks within its peer set:
 
 Chartable metrics present in THIS data (a featured number MUST come from here): {{chart_metrics}}
 Uploaded filing screenshots you could flash: {{available_screenshots}}
-Auto-extracted filing quotes (the receipts, when present):
+
+THE FILING, ALREADY READ. A survey of the latest annual report, the prior year's, and the quarterly pair beside them: what moved in the risk factors, where management's language shifted, which segments moved, and — the line worth starting from — anything in the filing that disagrees with the numbers above. A company contradicting its own reported figures IS the tension you are looking for. This is a survey, not a receipt: every claim you build on it has to be traceable to the data above or to a quote pulled after the angle is chosen.
+{{filing_brief}}
+
+Verbatim filing quotes for a chosen thesis — the receipts, pulled AFTER an angle is picked, so normally empty at this step:
 {{filing_quotes}}
 
 ## YOUR JOB

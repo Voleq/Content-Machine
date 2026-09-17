@@ -20,8 +20,10 @@ validate-then-fail.
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Callable
 
 from config import Settings
 from pipeline.broll import PALETTE, palette_keys
@@ -149,32 +151,43 @@ def broll_catalog() -> str:
     return "\n".join(f"  - {k} — {PALETTE[k]}" for k in palette_keys())
 
 
-def scribble_styles(settings: Settings) -> str:
-    """The `[SCRIBBLE: style -> target]` vocabulary, off the kit on disk.
+# `scribble_styles` was defined twice in this file. The first definition
+# imported `pipeline.kit`, a module that does not exist — so it would have
+# raised on the first call, and never did, because the SECOND definition (a
+# few hundred lines down, reading the plate registry) shadowed it. Harmless
+# in the sense that nothing broke; dangerous in the sense that a reader
+# looking for the live one found the dead one first (J2). The dead one is
+# gone.
 
-    Generated for the same reason every other catalog here is: the templates
-    named three styles while the kit ships twelve marks, and none of the three
-    drew the artwork — so a writer was never told the drawings existed and
-    could not have asked for one. A style whose artwork is missing still
-    renders (a drawn stand-in takes it), but it is not offered.
-    """
-    from pipeline.kit import load_kit
-    from pipeline.rasters import SCRIBBLE_MARKS
-
-    kit = load_kit(settings.assets_dir)
-    have = [s for s, (key, _) in sorted(SCRIBBLE_MARKS.items())
-            if kit.get(key) is not None]
-    return ", ".join(f"`{s}`" for s in have) or "`circle`, `arrow`, `underline`"
-
-
-# --------------------------------------------------------------------------
-# The plate catalogue — generated from the manifests, never written down.
-# --------------------------------------------------------------------------
+# WHAT THE ARTWORK CANNOT FIX, SAID TO THE WRITER INSTEAD.
 #
-# A hand-maintained list drifts the moment the artwork changes, and the failure
-# mode of drift is a script full of names that validate-then-fail. So the
-# catalogue is emitted from the registry that ingest wrote from the kit's own
-# manifests: name, purpose, slot names, and which chapter types may use it.
+# A 1:1 pass over the delta-14 library found two things that are not defects
+# in a plate and cannot be corrected by redrawing one. Both are about which
+# VARIANT to pick, which is a directing decision, so they belong beside the
+# plate in the catalogue the prompts generate rather than in a setting
+# nobody reads or a comment in the kit nobody renders.
+#
+# Keyed by plate stem, or by (stem, aspect) where the rule only holds in one.
+DIRECTING_NOTES: dict = {
+    # Six years of quarters is twenty-four columns. In 9:16 they read as
+    # four groups rising, not six dated years, and no redraw fixes it — a
+    # wider column means fewer years, which is what -4y already is.
+    ("seasonality-6y", "9x16"):
+        "NOT countable at this aspect — twenty-four columns read as four "
+        "groups rising, not six dated years. Use seasonality-4y in 9:16.",
+}
+
+# The same rules, for the surfaces a `[PLATE]` tag never reaches. A room
+# angle is chosen by the renderer from `roomRoles`, so a catalogue note
+# would reach nobody — these are recorded for whoever wires the dusk
+# variants into an episode-level selector.
+RENDERER_DIRECTING_NOTES: dict = {
+    "room/*-dusk":
+        "Dusk fails on the WIDEST room angles. The relight was scoped out, "
+        "so cast shadows still fall where the daylight lamp puts them: on a "
+        "tight angle it reads, on a wide one it does not. A dusk episode "
+        "wants the tighter angles — and never mix hours inside one video.",
+}
 
 
 def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
@@ -208,6 +221,14 @@ def plate_catalogue(settings: Settings, *, fmt: str = "long") -> str:
             slots = _slot_summary(plate)
             if slots:
                 lines.append(f"      slots: {slots}")
+            # Keyed on the STEM: the catalogue prints `seasonality-6y-9x16`
+            # and the rule is about the drawing, which is the same one in
+            # both aspects even where the rule is not.
+            stem = short.removesuffix("-16x9").removesuffix("-9x16")
+            note = (DIRECTING_NOTES.get((stem, aspect))
+                    or DIRECTING_NOTES.get(stem))
+            if note:
+                lines.append(f"      ⚠ {note}")
     return "\n".join(lines).strip() or "(no plates in the registry)"
 
 
@@ -364,8 +385,40 @@ def expressivity_and_pacing() -> str:
 
 
 def chart_metrics_line(data: CompanyData) -> str:
-    """Only metrics with a real multi-year series in THIS data (+ price)."""
-    return ", ".join(data.available_chart_metrics())
+    """Only metrics with a real multi-year series in THIS data (+ price).
+
+    The quarterly series are named separately (O5) rather than folded into
+    the annual list. A writer must not feature a quarterly row the sheet
+    does not carry — the same rule the annual list has always enforced —
+    and the two lists are genuinely different: a ticker can have five years
+    of revenue and no Quarters sheet at all.
+    """
+    line = ", ".join(data.available_chart_metrics())
+    quarterly = data.available_quarter_metrics()
+    if quarterly:
+        line += ("\nQuarterly series present (a quarterly claim MUST come "
+                 "from here): " + ", ".join(quarterly))
+    return line
+
+
+def quarters_block(data: CompanyData) -> str:
+    """The `[quarters]` table, or why there is not one.
+
+    A MISSING SHEET IS SAID OUT LOUD rather than leaving a blank where a
+    table should be. `templates/shots/earnings.json` is a complete 9:16
+    format whose first two beats are `the-print` and `vs-expected`, and
+    before O1 there was no quarterly data behind either: the writer supplied
+    the print from its own training knowledge and `fact_check` could not
+    verify a word of it, because it only had annual series to compare
+    against (O0). A silent blank here reproduces that exactly.
+    """
+    if data.has_quarters:
+        return data.quarters_prompt_block()
+    return ("(no Quarters sheet in this workbook — you have NO quarterly "
+            "data. Do not state a print, a beat/miss, or a quarter-on-quarter "
+            "move: nothing here can check it. Work from the annual series "
+            "above. To get quarterly numbers, refresh the template and fill "
+            "the Quarters sheet.)")
 
 
 def _pct(v) -> str:
@@ -428,18 +481,44 @@ def peer_percentiles_block(data: CompanyData) -> str:
     return "\n".join(lines) if lines else "(no peer-percentile block in this export)"
 
 
+def filing_brief_block(workspace: Path) -> str:
+    """The pre-angle filing survey, or why there is not one (K4).
+
+    A NEW PLACEHOLDER rather than filling `{{filing_quotes}}`: the two
+    artefacts are different shapes — a brief is prose, the quotes are
+    verbatim receipts carrying `[SHOW FILING: …]` flash instructions — and
+    collapsing them means the prompt cannot tell the model which is which.
+    """
+    from pipeline.filing_brief import load_brief
+
+    brief = load_brief(workspace)
+    if brief is None:
+        return ("(the filing has not been read for this ticker yet — the "
+                "pre-angle pass either has not finished or did not run. "
+                "Work from the numbers above.)")
+    return brief.render_text()
+
+
 def filing_quotes_block(workspace: Path) -> str:
-    """Auto-extracted 10-K quotes for the smoking-gun walk (task 5), read from
-    the workspace manifest the auto-filings step writes AFTER the angle is
-    picked. Each line gives the verbatim quote, its section, the one-line why,
-    and the exact [SHOW FILING: file] to flash it. Empty until the angle step
-    has run (or when nothing was found — then the walk is simply skipped)."""
+    """Verbatim 10-K quotes for the smoking-gun walk (task 5), read from the
+    workspace manifest `auto_filings` writes AFTER an angle is picked. Each
+    line gives the quote, its section, the one-line why, and the exact
+    [SHOW FILING: file] to flash it.
+
+    The empty-state text used to say filing material "is pulled after you
+    pick an angle", which was true of the quotes and became misleading the
+    moment `{{filing_brief}}` could be present at angle time (K4) — a reader
+    told that nothing from the filing is available yet will not use the
+    survey sitting directly above it.
+    """
     from pipeline.filings import load_manifest
 
     shots = load_manifest(workspace).get("shots", [])
     if not shots:
-        return ("(no auto-extracted filing quotes for this angle yet — they are pulled "
-                "after you pick an angle; skip the smoking-gun walk if none appear)")
+        return ("(no verbatim quotes yet — these are pulled for a CHOSEN "
+                "angle, so they are normally absent at the angle step. The "
+                "filing survey above is separate and may well be present; "
+                "skip only the smoking-gun walk if no quotes appear.)")
     lines: list[str] = []
     for s in shots:
         quote = (s.get("quote") or "").strip()
@@ -573,6 +652,183 @@ def prior_coverage(settings: Settings, ticker: str) -> str:
             "is written above, and say plainly that the rest is not on record.")
     return "\n".join(lines)
 
+# --------------------------------------------------------------------------
+# The payload, as a table.
+# --------------------------------------------------------------------------
+#
+# This was five hand-written branches, one per prompt, each listing its own
+# placeholders (M6). That is how you get one block computed and discarded,
+# another missing where it is needed, and a third that reaches nobody:
+#
+#   M1  `{{chapter_types}}` was built for `short` and for `headline`, and
+#       NEITHER template contains the token. `chapter_type_catalogue` reads
+#       the plate registry to build a catalogue that was then thrown away on
+#       both paths. Decided rather than papered over: a chapter is a LONG
+#       concept and a SHORT has none, so it is not built for them.
+#   M2  `{{retention}}` went to `long_write` and not to `update`, though both
+#       are 16:9 long-form with the same tag grammar, the same parser and the
+#       same renderer — and per-chapter drop-off is MORE useful on a revisit,
+#       where there is retention data for the name already.
+#   M3  `{{valuation_data}}` went to all three long prompts and not to
+#       `short`, whose beat 8 is cheap-or-trap: "Is the multiple a bargain or
+#       a trap? Name the multiple, then say what would have to be true for it
+#       to be cheap." That asked for a judgement with none of the evidence
+#       for it — no scenarios, no WACC, no reverse-DCF read.
+#   M5  `news` is one entry here rather than five edits.
+#
+# One canonical ORDER, facts before instructions, the same in every prompt so
+# the model is not relearning the layout each time:
+#
+#   subject -> what moved -> the numbers -> valuation -> peers
+#     -> prior coverage -> source material -> voice -> visual catalogs
+#     -> craft rules -> output contract
+#
+# A mismatch between a template's tokens and what this table fills is now a
+# TEST FAILURE rather than a silent no-op: see
+# `tests/test_prompt_payload.py`.
+
+_WRITING = ("short", "long_write", "update", "headline")
+_LONG_FORM = ("long_write", "update")
+_ALL = ("short", "long_angle", "long_write", "update", "headline")
+
+
+@dataclass(frozen=True)
+class PayloadBlock:
+    """One `{{token}}`, who receives it, and what builds it."""
+
+    token: str
+    formats: tuple[str, ...]
+    build: "Callable[[_Ctx], str]"
+
+
+@dataclass
+class _Ctx:
+    """Everything any block could need. Built once per fill."""
+
+    fmt: str
+    ticker: str
+    data: CompanyData | None
+    workspace: Path
+    settings: Settings
+    move_context: str = ""
+    chosen_angle: str = ""
+    headline: str = ""
+    article_summary: str = ""
+    headline_mode: str = ""
+
+
+def _macro(ctx: "_Ctx") -> bool:
+    return ctx.data is None
+
+
+PAYLOAD: tuple[PayloadBlock, ...] = (
+    # --- subject
+    PayloadBlock("{{ticker}}", _ALL, lambda c: c.ticker.upper()),
+    PayloadBlock("{{as_of_date}}", _ALL, lambda c: str(
+        (c.data.get("as_of_date") if c.data is not None else None)
+        or date.today().isoformat())),
+    PayloadBlock("{{mode}}", ("headline",),
+                 lambda c: c.headline_mode or "company"),
+
+    # --- what moved
+    PayloadBlock("{{move_context}}", ("short",), lambda c: c.move_context or (
+        "(no live quote and no screener context — fill in how much it moved "
+        "today, on what volume, and the headline that did it)")),
+    PayloadBlock("{{headline}}", ("headline",),
+                 lambda c: c.headline.strip() or "(no headline text supplied)"),
+    PayloadBlock("{{article_summary}}", ("headline",),
+                 lambda c: c.article_summary.strip() or
+                 "(no article summary — work from the headline itself)"),
+
+    # --- the numbers
+    PayloadBlock("{{company_data}}", _ALL, lambda c: (
+        c.data.as_prompt_block() if c.data is not None else
+        f"(macro mode — no single-company financials; anchor on "
+        f"{c.ticker.upper()} as the index/sector proxy and the macro figures "
+        f"in the headline)")),
+    PayloadBlock("{{quarters}}", _ALL, lambda c: (
+        quarters_block(c.data) if c.data is not None else
+        "(macro mode — no company quarters)")),
+    PayloadBlock("{{chart_metrics}}", _ALL, lambda c: (
+        chart_metrics_line(c.data) if c.data is not None else
+        f"(index-based — the chart is the {c.ticker.upper()} proxy; the "
+        f"numbers beat is optional and, if used, carries index levels or the "
+        f"macro series)")),
+
+    # --- valuation, then peers
+    PayloadBlock("{{valuation_data}}",
+                 ("short", "long_angle", "long_write", "update"),
+                 lambda c: valuation_data_block(c.data)),
+    PayloadBlock("{{peer_percentiles}}", _ALL, lambda c: (
+        "(n/a in macro mode)" if _macro(c)
+        else peer_percentiles_block(c.data))),
+
+    # --- prior coverage
+    PayloadBlock("{{prior_coverage}}", ("update",),
+                 lambda c: prior_coverage(c.settings, c.ticker) or (
+                     "(no thesis on file for this ticker — nothing was "
+                     "recorded from a previous video. Write this as a "
+                     "first-time take instead: /long TICKER.)")),
+    PayloadBlock("{{chosen_angle}}", ("long_write",),
+                 lambda c: c.chosen_angle.strip() or
+                 "(operator did not specify — use your ★recommended angle)"),
+
+    # --- source material
+    #
+    # THE BRIEF BEFORE THE RECEIPTS. A survey of the filings, present at
+    # ANGLE time — which is the whole of K: the angle prompt used to be
+    # built from workbook numbers only, and its filing slot was always
+    # empty because the quotes are pulled after an angle is chosen.
+    PayloadBlock("{{filing_brief}}", ("long_angle", "update"),
+                 lambda c: filing_brief_block(c.workspace)),
+    PayloadBlock("{{filing_quotes}}", ("long_angle", "long_write", "update"),
+                 lambda c: filing_quotes_block(c.workspace)),
+    PayloadBlock("{{available_screenshots}}",
+                 ("long_angle", "long_write", "update"),
+                 lambda c: screenshots_line(c.workspace)),
+
+    # --- voice
+    PayloadBlock("{{voice_bible}}", _WRITING,
+                 lambda c: voice_bible(c.settings)),
+    PayloadBlock("{{confession_ledger}}", _LONG_FORM,
+                 lambda c: confession_ledger(c.settings)),
+    PayloadBlock("{{retention}}", _LONG_FORM,
+                 lambda c: retention_evidence(c.settings)),
+
+    # --- visual catalogs
+    # LONG-FORM ONLY. Both were offered to the SHORT lane as well, where
+    # nothing draws them: a short's frames come from its shot template, and
+    # no template in `templates/shots/` binds `meme`, `broll` or
+    # `annotations`. So the prompt offered a choice that validated, was
+    # counted on the cost report, and reached no frame — forty lines above
+    # the paragraph telling the writer the inline form of the same two tags
+    # was LONG-form grammar (P3).
+    PayloadBlock("{{meme_catalog}}", _LONG_FORM,
+                 lambda c: meme_catalog(c.settings)),
+    PayloadBlock("{{broll_palette}}", _LONG_FORM, lambda c: broll_catalog()),
+    PayloadBlock("{{plate_catalogue}}", ("short", "long_write", "update"),
+                 lambda c: plate_catalogue(
+                     c.settings, fmt="short" if c.fmt == "short" else "long")),
+    PayloadBlock("{{scribble_styles}}", _LONG_FORM,
+                 lambda c: scribble_styles(c.settings)),
+    PayloadBlock("{{chapter_types}}", _LONG_FORM,
+                 lambda c: chapter_type_catalogue(c.settings, fmt=c.fmt)),
+
+    # --- craft rules
+    PayloadBlock("{{tagging_density}}", ("short", "long_write", "update"),
+                 lambda c: TAGGING_DENSITY),
+    PayloadBlock("{{craft_rules}}", _WRITING,
+                 lambda c: expressivity_and_pacing()),
+)
+
+PROMPT_FORMATS = _ALL
+
+
+def payload_tokens(fmt: str) -> set[str]:
+    """The tokens this table fills for `fmt`. The test reads this."""
+    return {b.token for b in PAYLOAD if fmt in b.formats}
+
+
 def fill_prompt(
     fmt: str,
     ticker: str,
@@ -585,111 +841,26 @@ def fill_prompt(
     article_summary: str = "",
     headline_mode: str = "",
 ) -> str:
-    """Fill one master prompt. `fmt` ∈ {short, long_angle, long_write, headline}.
+    """Fill one master prompt from `PAYLOAD`.
 
-    Every prompt gets the catalogs it needs; the writing prompts (short,
-    long_write, headline) additionally get the voice bible. `long_write` also
-    gets the operator's {{chosen_angle}}; `headline` gets the operator's
-    {{headline}} + optional {{article_summary}} + the active {{mode}}. `data`
-    may be None for the macro headline mode (no single-company financials).
+    `fmt` is one of `PROMPT_FORMATS`. Which blocks a prompt receives is
+    declared in the table above rather than in a branch here, so adding one
+    is a single entry and a prompt cannot quietly be handed a block its
+    template does not contain (M6).
+
+    `data` may be None for the macro headline mode (no single-company
+    financials).
     """
+    if fmt not in PROMPT_FORMATS:
+        raise ValueError(f"unknown prompt fmt {fmt!r}")
     template_file = settings.templates_dir / f"master_prompt_{fmt}.md"
     text = template_file.read_text(encoding="utf-8")
 
-    as_of = (data.get("as_of_date") if data is not None else None) or date.today().isoformat()
-    r: dict[str, str] = {
-        "{{ticker}}": ticker.upper(),
-        "{{as_of_date}}": str(as_of),
-        "{{company_data}}": (
-            data.as_prompt_block() if data is not None else
-            f"(macro mode — no single-company financials; anchor on {ticker.upper()} "
-            f"as the index/sector proxy and the macro figures in the headline)"
-        ),
-        "{{chart_metrics}}": (
-            chart_metrics_line(data) if data is not None else
-            f"(index-based — the chart is the {ticker.upper()} proxy; the numbers "
-            f"beat is optional and, if used, carries index levels or the macro series)"
-        ),
-    }
-
-    if fmt == "short":
-        r["{{move_context}}"] = move_context or (
-            "(no screener context — fill in how much it moved today, on what "
-            "volume, and the headline that did it)"
-        )
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-    elif fmt == "long_angle":
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-    elif fmt == "long_write":
-        r["{{chosen_angle}}"] = chosen_angle.strip() or "(operator did not specify — use your ★recommended angle)"
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-        r["{{confession_ledger}}"] = confession_ledger(settings)
-        r["{{retention}}"] = retention_evidence(settings)
-    elif fmt == "update":
-        # An update is a LONG in every mechanical sense — same tag grammar,
-        # same parser, same renderer, same validation — so it takes the long
-        # writer's catalogs unchanged. What differs is the spine, and the
-        # spine's first movement is `prior_coverage`.
-        r["{{prior_coverage}}"] = prior_coverage(settings, ticker) or (
-            "(no thesis on file for this ticker — nothing was recorded from a "
-            "previous video. Write this as a first-time take instead: "
-            "/long TICKER.)"
-        )
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="long")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{available_screenshots}}"] = screenshots_line(workspace)
-        r["{{valuation_data}}"] = valuation_data_block(data)
-        r["{{peer_percentiles}}"] = peer_percentiles_block(data)
-        r["{{filing_quotes}}"] = filing_quotes_block(workspace)
-        r["{{confession_ledger}}"] = confession_ledger(settings)
-    elif fmt == "headline":
-        r["{{headline}}"] = headline.strip() or "(no headline text supplied)"
-        r["{{article_summary}}"] = article_summary.strip() or (
-            "(no article summary — work from the headline itself)"
-        )
-        r["{{mode}}"] = headline_mode or "company"
-        r["{{voice_bible}}"] = voice_bible(settings)
-        r["{{meme_catalog}}"] = meme_catalog(settings)
-        r["{{broll_palette}}"] = broll_catalog()
-        r["{{scribble_styles}}"] = scribble_styles(settings)
-        r["{{plate_catalogue}}"] = plate_catalogue(settings, fmt="short")
-        r["{{chapter_types}}"] = chapter_type_catalogue(settings, fmt=fmt)
-        r["{{tagging_density}}"] = TAGGING_DENSITY
-        r["{{craft_rules}}"] = expressivity_and_pacing()
-        r["{{peer_percentiles}}"] = (
-            peer_percentiles_block(data) if data is not None else "(n/a in macro mode)"
-        )
-    else:
-        raise ValueError(f"unknown prompt fmt {fmt!r}")
-
-    for k, v in r.items():
-        text = text.replace(k, v)
+    ctx = _Ctx(fmt=fmt, ticker=ticker, data=data, workspace=workspace,
+               settings=settings, move_context=move_context,
+               chosen_angle=chosen_angle, headline=headline,
+               article_summary=article_summary, headline_mode=headline_mode)
+    for block in PAYLOAD:
+        if fmt in block.formats:
+            text = text.replace(block.token, block.build(ctx))
     return text

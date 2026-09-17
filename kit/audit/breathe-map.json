@@ -1,0 +1,622 @@
+{
+ "note": "measured, not authored: the share of INK that takes the boil offset on a gated plate. Regenerated in drop ten — the confession, cash-flow and big-number-l2 plates changed geometry.",
+ "pinned": [
+  "chart axes and tick marks",
+  "the waterfall baseline",
+  "the implied plate's axis",
+  "field() slot underlays"
+ ],
+ "plates": {
+  "charts/line-6y-16x9": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.51
+  },
+  "charts/line-6y-9x16": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "charts/line-dense-16x9": {
+   "marks": 89,
+   "movingMarks": 6,
+   "inkPct": 0.38
+  },
+  "charts/line-dense-9x16": {
+   "marks": 89,
+   "movingMarks": 6,
+   "inkPct": 0.2
+  },
+  "charts/bars-6y-16x9": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.51
+  },
+  "charts/bars-6y-9x16": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "figures/big-number-l1-16x9": {
+   "marks": 163,
+   "movingMarks": 2,
+   "inkPct": 0.76
+  },
+  "figures/big-number-l1-9x16": {
+   "marks": 127,
+   "movingMarks": 2,
+   "inkPct": 0.56
+  },
+  "figures/big-number-l2-16x9": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.28
+  },
+  "figures/big-number-l2-9x16": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.89
+  },
+  "figures/big-fraction-16x9": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 2.94
+  },
+  "figures/big-fraction-9x16": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 1.99
+  },
+  "figures/compare-side-16x9": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.51
+  },
+  "figures/compare-side-9x16": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.43
+  },
+  "figures/compare-stacked-16x9": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.82
+  },
+  "figures/compare-stacked-9x16": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.46
+  },
+  "structure/both-true-16x9": {
+   "marks": 65,
+   "movingMarks": 10,
+   "inkPct": 0.69
+  },
+  "structure/both-true-9x16": {
+   "marks": 65,
+   "movingMarks": 10,
+   "inkPct": 1.2
+  },
+  "structure/unit-ladder-16x9": {
+   "marks": 77,
+   "movingMarks": 22,
+   "inkPct": 3.43
+  },
+  "structure/unit-ladder-9x16": {
+   "marks": 77,
+   "movingMarks": 22,
+   "inkPct": 2.94
+  },
+  "structure/closing-16x9": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 1
+  },
+  "structure/closing-9x16": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 0.72
+  },
+  "structure/row-spotlight-16x9": {
+   "marks": 243,
+   "movingMarks": 188,
+   "inkPct": 62.59
+  },
+  "structure/row-spotlight-9x16": {
+   "marks": 285,
+   "movingMarks": 230,
+   "inkPct": 57.07
+  },
+  "structure/flow-16x9": {
+   "marks": 299,
+   "movingMarks": 244,
+   "inkPct": 28.76
+  },
+  "structure/timeline-16x9": {
+   "marks": 69,
+   "movingMarks": 14,
+   "inkPct": 2.08
+  },
+  "structure/timeline-9x16": {
+   "marks": 69,
+   "movingMarks": 14,
+   "inkPct": 1.65
+  },
+  "tables/numbers-sheet-3r-16x9": {
+   "marks": 181,
+   "movingMarks": 126,
+   "inkPct": 50.06
+  },
+  "tables/numbers-sheet-3r-9x16": {
+   "marks": 219,
+   "movingMarks": 164,
+   "inkPct": 50.09
+  },
+  "tables/numbers-sheet-4r-16x9": {
+   "marks": 247,
+   "movingMarks": 192,
+   "inkPct": 58.94
+  },
+  "tables/numbers-sheet-4r-9x16": {
+   "marks": 303,
+   "movingMarks": 248,
+   "inkPct": 61.18
+  },
+  "tables/numbers-sheet-5r-16x9": {
+   "marks": 227,
+   "movingMarks": 172,
+   "inkPct": 53.5
+  },
+  "tables/numbers-sheet-5r-9x16": {
+   "marks": 267,
+   "movingMarks": 212,
+   "inkPct": 55.79
+  },
+  "tables/numbers-sheet-6r-16x9": {
+   "marks": 283,
+   "movingMarks": 228,
+   "inkPct": 58.98
+  },
+  "tables/numbers-sheet-6r-9x16": {
+   "marks": 327,
+   "movingMarks": 272,
+   "inkPct": 60.65
+  },
+  "tables/numbers-sheet-6r-spark-16x9": {
+   "marks": 285,
+   "movingMarks": 230,
+   "inkPct": 59.18
+  },
+  "tables/numbers-sheet-4r-spark-9x16": {
+   "marks": 305,
+   "movingMarks": 250,
+   "inkPct": 61.92
+  },
+  "tables/cash-flow-16x9": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 5.13
+  },
+  "tables/cash-flow-9x16": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 2.98
+  },
+  "tables/multiples-strip-16x9": {
+   "marks": 99,
+   "movingMarks": 44,
+   "inkPct": 2.9
+  },
+  "tables/multiples-strip-9x16": {
+   "marks": 81,
+   "movingMarks": 26,
+   "inkPct": 1.72
+  },
+  "structure/multiple-bridge-16x9": {
+   "marks": 315,
+   "movingMarks": 260,
+   "inkPct": 35.84
+  },
+  "peers/peer-strip-16x9": {
+   "marks": 233,
+   "movingMarks": 178,
+   "inkPct": 2.21
+  },
+  "peers/peer-strip-9x16": {
+   "marks": 135,
+   "movingMarks": 80,
+   "inkPct": 1.37
+  },
+  "cycles/cycle-frame-16x9": {
+   "marks": 287,
+   "movingMarks": 28,
+   "inkPct": 2.95
+  },
+  "cycles/cycle-frame-9x16": {
+   "marks": 263,
+   "movingMarks": 32,
+   "inkPct": 2.32
+  },
+  "figures/waterfall-3s-16x9": {
+   "marks": 89,
+   "movingMarks": 32,
+   "inkPct": 0.01
+  },
+  "figures/waterfall-3s-9x16": {
+   "marks": 73,
+   "movingMarks": 16,
+   "inkPct": 0.01
+  },
+  "figures/waterfall-4s-16x9": {
+   "marks": 87,
+   "movingMarks": 30,
+   "inkPct": 0.01
+  },
+  "figures/waterfall-4s-9x16": {
+   "marks": 77,
+   "movingMarks": 20,
+   "inkPct": 0.01
+  },
+  "figures/waterfall-5s-16x9": {
+   "marks": 93,
+   "movingMarks": 36,
+   "inkPct": 0.01
+  },
+  "figures/waterfall-5s-9x16": {
+   "marks": 81,
+   "movingMarks": 24,
+   "inkPct": 0.01
+  },
+  "structure/implied-16x9": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/implied-9x16": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "charts/dilution-6y-16x9": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/dilution-6y-9x16": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.28
+  },
+  "charts/maturities-16x9": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/maturities-9x16": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.28
+  },
+  "charts/guided-vs-actual-6y-16x9": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/guided-vs-actual-6y-9x16": {
+   "marks": 79,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "figures/share-of-2-16x9": {
+   "marks": 137,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/share-of-2-9x16": {
+   "marks": 127,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/share-of-3-16x9": {
+   "marks": 139,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/share-of-3-9x16": {
+   "marks": 129,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/share-of-4-16x9": {
+   "marks": 141,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/share-of-4-9x16": {
+   "marks": 131,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-3-16x9": {
+   "marks": 139,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-3-9x16": {
+   "marks": 129,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-4-16x9": {
+   "marks": 141,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-4-9x16": {
+   "marks": 131,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-5-16x9": {
+   "marks": 143,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/by-region-5-9x16": {
+   "marks": 133,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/ownership-16x9": {
+   "marks": 139,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/ownership-9x16": {
+   "marks": 129,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "peers/distribution-16x9": {
+   "marks": 71,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "peers/distribution-9x16": {
+   "marks": 71,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/scale-2-16x9": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/scale-2-9x16": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/scale-3-16x9": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "figures/scale-3-9x16": {
+   "marks": 57,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-3-16x9": {
+   "marks": 103,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-3-9x16": {
+   "marks": 131,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-4-16x9": {
+   "marks": 121,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-4-9x16": {
+   "marks": 159,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-5-16x9": {
+   "marks": 135,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/said-happened-5-9x16": {
+   "marks": 185,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "structure/sensitivity-16x9": {
+   "marks": 255,
+   "movingMarks": 16,
+   "inkPct": 2.34
+  },
+  "structure/sensitivity-9x16": {
+   "marks": 285,
+   "movingMarks": 16,
+   "inkPct": 2.07
+  },
+  "structure/whiteboard-3-16x9": {
+   "marks": 607,
+   "movingMarks": 552,
+   "inkPct": 63.98
+  },
+  "structure/whiteboard-3-9x16": {
+   "marks": 715,
+   "movingMarks": 660,
+   "inkPct": 63.41
+  },
+  "structure/whiteboard-4-16x9": {
+   "marks": 613,
+   "movingMarks": 558,
+   "inkPct": 61.96
+  },
+  "structure/whiteboard-4-9x16": {
+   "marks": 767,
+   "movingMarks": 712,
+   "inkPct": 67.63
+  },
+  "charts/multiples-grid-4-16x9": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 0.45
+  },
+  "charts/multiples-grid-4-9x16": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/multiples-grid-6-16x9": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 0.91
+  },
+  "charts/multiples-grid-6-9x16": {
+   "marks": 67,
+   "movingMarks": 12,
+   "inkPct": 0.8
+  },
+  "charts/bars-8q-16x9": {
+   "marks": 83,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/bars-8q-9x16": {
+   "marks": 83,
+   "movingMarks": 8,
+   "inkPct": 0.28
+  },
+  "charts/line-8q-16x9": {
+   "marks": 83,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/line-8q-9x16": {
+   "marks": 83,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "figures/qoq-yoy-16x9": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 1.85
+  },
+  "figures/qoq-yoy-9x16": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 1.84
+  },
+  "charts/seasonality-4y-16x9": {
+   "marks": 77,
+   "movingMarks": 8,
+   "inkPct": 0.51
+  },
+  "charts/seasonality-4y-9x16": {
+   "marks": 77,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "charts/seasonality-6y-16x9": {
+   "marks": 77,
+   "movingMarks": 8,
+   "inkPct": 0.52
+  },
+  "charts/seasonality-6y-9x16": {
+   "marks": 77,
+   "movingMarks": 8,
+   "inkPct": 0.27
+  },
+  "structure/confession-statement-16x9": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 0.33
+  },
+  "structure/confession-statement-9x16": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 0.44
+  },
+  "structure/confession-ledger-16x9": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 1.59
+  },
+  "structure/confession-ledger-9x16": {
+   "marks": 63,
+   "movingMarks": 8,
+   "inkPct": 0.94
+  },
+  "figures/short-interest-16x9": {
+   "marks": 59,
+   "movingMarks": 2,
+   "inkPct": 0.43
+  },
+  "figures/short-interest-9x16": {
+   "marks": 59,
+   "movingMarks": 2,
+   "inkPct": 0.26
+  },
+  "charts/insider-flow-6-16x9": {
+   "marks": 69,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "charts/insider-flow-6-9x16": {
+   "marks": 69,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "charts/insider-flow-12-16x9": {
+   "marks": 81,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "charts/insider-flow-12-9x16": {
+   "marks": 81,
+   "movingMarks": 0,
+   "inkPct": 0
+  },
+  "charts/macro-series-16x9": {
+   "marks": 159,
+   "movingMarks": 8,
+   "inkPct": 0.45
+  },
+  "charts/macro-series-9x16": {
+   "marks": 159,
+   "movingMarks": 8,
+   "inkPct": 0.26
+  },
+  "structure/end-card-16x9": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.24
+  },
+  "structure/end-card-9x16": {
+   "marks": 57,
+   "movingMarks": 2,
+   "inkPct": 0.28
+  },
+  "structure/language-shift-16x9": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 0.29
+  },
+  "structure/language-shift-9x16": {
+   "marks": 61,
+   "movingMarks": 6,
+   "inkPct": 0.34
+  }
+ },
+ "stillByDesign": "32 of the 122 gated plates have movingMarks: 0, and all 32 are on preflight.html check E's declared STILL_BY_DESIGN list with a reason each. This file carries the MEASUREMENT; the reasons live with the check that asserts them, and the two agreeing at 32 is itself the assertion."
+}

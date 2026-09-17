@@ -464,3 +464,60 @@ def test_a_stale_upload_still_lands_but_says_so(settings, tmp_path):
     reply = core.handle_upload(6, "dennis_data.xlsx", old.read_bytes())
     assert (core.context.get(6).path / "dennis_data.xlsx").exists()
     assert "days old" in reply.text
+
+
+# --------------------------------------------------------------------------
+# G2 — the upload is the only data route, so it is the only place an
+# approval can be withdrawn. Deleting the COM refresh (Group L) took the
+# single call that used to do it, and approve → upload → render would
+# otherwise ship figures nobody reviewed.
+# --------------------------------------------------------------------------
+
+
+CHAT = 771
+
+
+@pytest.fixture()
+def core(settings):
+    from bot.handlers import BotCore
+
+    return BotCore(settings)
+
+
+def _approved_long(core, xlsx: bytes, long_valid_text: str):
+    """A workspace with a LONG script the operator has approved."""
+    from pipeline.workspace import Workspace
+
+    core.start_lane(CHAT, "long", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    ws.clear_awaiting_angle()
+    core.intake_script(CHAT, long_valid_text)
+    script = ws.load_long()
+    ws.approve("long", script.content_sha(), "cost report")
+    assert ws.is_approved("long")
+    return ws
+
+
+def test_uploading_a_corrected_workbook_withdraws_the_approval(
+        core, long_valid_text):
+    xlsx = FIXTURE.read_bytes()
+    ws = _approved_long(core, xlsx, long_valid_text)
+
+    reply = core.handle_upload(CHAT, "dennis_data.xlsx", xlsx)
+
+    assert not ws.is_approved("long"), \
+        "new numbers must not keep an approval the operator gave to old ones"
+    assert "approval was withdrawn" in reply.text
+
+
+def test_uploading_does_not_re_arm_the_angle_prompt_over_a_saved_script(
+        core, long_valid_text):
+    """The next plain message after an upload is a script, not an angle pick."""
+    xlsx = FIXTURE.read_bytes()
+    ws = _approved_long(core, xlsx, long_valid_text)
+
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx)
+
+    assert not ws.awaiting_angle(), \
+        "a workspace that already has a LONG script is past the angle step"

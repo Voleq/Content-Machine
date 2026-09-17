@@ -434,3 +434,237 @@ def test_a_gif_clip_keeps_looping_out_of_the_cache(settings, tmp_path):
     assert second.source == "cache" and second.path == first.path
     assert second.loops, "the clip came back from the cache frozen"
     assert m.gif_clients[0].search_calls == [], "a cache hit must not re-fetch"
+
+
+# --------------------------------------------------------------------------
+# A3 / A4 — the Pexels quota. These assert on the COUNT the ledger ends up
+# holding and on whether a request left at all, not on the arguments handed
+# to a client: the old bugs were both invisible from the argument list.
+# --------------------------------------------------------------------------
+
+
+def test_one_clip_costs_one_api_call_not_two(settings, monkeypatch, tmp_path):
+    """A3: search is the API call; the download is a CDN fetch."""
+    import httpx
+
+    from pipeline.broll import RealPexelsClient
+    from pipeline.cost import SpendLedger
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "pexels_api_key": "test-key",
+                                       "pexels_min_interval_s": 0.0})
+    ledger = SpendLedger(live)
+    client = RealPexelsClient(live, ledger)
+
+    monkeypatch.setattr("pipeline.broll.httpx.get", lambda *a, **k: httpx.Response(
+        200, json={"videos": [{"id": 1, "video_files": []}]},
+        request=httpx.Request("GET", "https://x")))
+
+    class _Stream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+        status_code = 200
+
+        def iter_bytes(self, n):
+            yield b"\x00" * 16
+
+    monkeypatch.setattr("pipeline.broll.httpx.stream", lambda *a, **k: _Stream())
+
+    client.search("dumpster fire burning night")
+    client.download("https://cdn.example/clip.mp4", tmp_path / "raw.mp4")
+
+    assert ledger.pexels_calls_this_month() == 1, \
+        "the CDN fetch is not an API call and must not spend quota"
+
+
+def test_a_search_that_never_comes_back_is_still_counted(settings, monkeypatch):
+    """A3: the quota was spent the moment the request left.
+
+    A 429 was already counted, because the old code recorded after the
+    response object existed. A timeout or a dropped connection was not —
+    the exception escaped before the record — and those are precisely the
+    calls a rate limit produces. So the count is taken at dispatch.
+    """
+    import httpx
+
+    from pipeline.broll import RealPexelsClient
+    from pipeline.cost import SpendLedger
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "pexels_api_key": "test-key",
+                                       "pexels_min_interval_s": 0.0})
+    ledger = SpendLedger(live)
+    client = RealPexelsClient(live, ledger)
+
+    def boom(*a, **k):
+        raise httpx.ConnectTimeout("the request never came back")
+
+    monkeypatch.setattr("pipeline.broll.httpx.get", boom)
+
+    with pytest.raises(httpx.ConnectTimeout):
+        client.search("anything")
+    assert ledger.pexels_calls_this_month() == 1, \
+        "a call that left and timed out still consumed the quota"
+
+
+def test_opening_the_swap_menu_spends_no_quota(manager, monkeypatch):
+    """A4: a number on a button is not worth an API call."""
+    searched = []
+    real_search = manager.clip_client.search
+
+    def counting(query, per_page=5):
+        searched.append(query)
+        return real_search(query, per_page)
+
+    monkeypatch.setattr(manager.clip_client, "search", counting)
+
+    n = manager.alternates_count("dumpster_fire")
+
+    assert n >= 1
+    assert searched == [], "the swap menu must read the cache, not the provider"
+
+
+def test_the_swap_count_is_still_a_number_a_swap_can_reach(manager, tmp_path):
+    """Not spending on it must not make it useless.
+
+    The count drives `(choice + 1) % n`, so an n of 1 makes the Swap button
+    a no-op. It has to stay the range the chain can actually address.
+    """
+    n = manager.alternates_count("dumpster_fire")
+    assert n > 1, "a swap has to be able to go somewhere"
+
+    # Every take the count promises resolves to something, and consecutive
+    # takes differ — which is what the operator tapped the button for.
+    seen = {manager.resolve_clip("dumpster_fire", choice=i).path
+            for i in range(n)}
+    assert len(seen) > 1
+
+    # An owned library adds to it, because those are extra reachable takes.
+    lib = tmp_path / "library"
+    lib.mkdir(parents=True, exist_ok=True)
+    (lib / "dumpster_fire.mp4").write_bytes(b"\x00")
+    assert manager.alternates_count("dumpster_fire") > n
+
+
+# --------------------------------------------------------------------------
+# H1 — the raw download filename has to carry the orientation too.
+# --------------------------------------------------------------------------
+
+
+def test_the_two_orientations_do_not_share_a_raw_download_path(manager):
+    """Asserting on the files on disk, not on the string that was built."""
+    manager.resolve_clip("dumpster_fire", portrait=False)
+    manager.resolve_clip("dumpster_fire", portrait=True)
+
+    cdir = manager._clip_cache_dir("dumpster_fire")
+    # The raws are unlinked after normalising, so what is asserted is that
+    # the two normalised outputs both survived — a shared raw path lets the
+    # second fetch delete the first's input mid-normalise.
+    norms = sorted(p.name for p in cdir.glob("normalized_*"))
+    assert norms == ["normalized_0.mp4", "normalized_0_p.mp4"], norms
+
+    import inspect
+
+    src = inspect.getsource(manager._fetch_clip)
+    assert 'raw_{choice}{suffix}' in src, \
+        "the raw filename must be orientation-keyed like the normalised one"
+
+
+# --------------------------------------------------------------------------
+# H3 / H4 — the GIF chain is the most legally exposed surface in the
+# pipeline, and it had no counter, no report line and no ceiling.
+# --------------------------------------------------------------------------
+
+
+def test_gif_sourced_visuals_are_counted_separately(settings):
+    """H3: memes from the OWNED library were capped at one or two; this was
+    uncapped and uncounted."""
+    from pipeline.models import CostReport, VisualPlanItem
+
+    report = CostReport(
+        ticker="EXMPL", fmt="long", gif_cap=2,
+        words=1000, chars=6000, tts_cached=True, est_tts_usd=0.0,
+        visuals=[VisualPlanItem(key="a", kind="clip", source="tenor"),
+                 VisualPlanItem(key="b", kind="clip", source="giphy"),
+                 VisualPlanItem(key="c", kind="clip", source="pexels"),
+                 VisualPlanItem(key="d", kind="img", source="local")],
+    )
+
+    counts = report.visual_counts
+    assert counts["gif"] == 2
+    assert "2/2 from GIF providers" in report.render_text()
+
+
+def test_leaning_on_the_gif_chain_past_the_cap_warns(settings):
+    """Warned, not blocked: the alternative to a GIF here is a filler card,
+    so refusing trades a legal question for a dead beat — and that trade is
+    the operator's."""
+    from pipeline.broll import Visual
+    from pipeline.cost import gif_ceiling_warnings
+
+    plan = [Visual(key=f"k{i}", kind="clip", path=pathlib.Path("x"),
+                   is_video=True, source="tenor") for i in range(4)]
+
+    out = gif_ceiling_warnings(plan, settings)
+    assert out and "over the cap of 2" in out[0]
+    assert gif_ceiling_warnings(plan[:2], settings) == []
+
+
+def test_a_palette_key_is_never_rewritten(manager, monkeypatch):
+    """H4: the 53 palette entries are hand-curated and pre-tested —
+    `dumpster_fire` is "dumpster fire burning night", not "dumpster fire".
+    Rewriting one would be undoing work somebody already did."""
+    called: list[str] = []
+    monkeypatch.setattr("pipeline.llm.chat",
+                        lambda *a, **k: called.append(a[0]) or "something else")
+
+    assert manager._clip_query("dumpster_fire") == "dumpster fire burning night"
+    assert called == [], "a tested query must not go near the rewriter"
+
+
+def test_an_off_palette_subject_is_rewritten_and_cached(settings, tmp_path,
+                                                        monkeypatch):
+    """H4: a free-text subject is the minority that misses on stock footage
+    and falls through to Giphy/Tenor."""
+    from pipeline.broll import ContentManager
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c"})
+    live.ensure_runtime_dirs()
+    m = ContentManager(live, library_dir=tmp_path / "library")
+
+    calls: list[str] = []
+
+    def fake_chat(prompt, _settings, **kw):
+        calls.append(prompt)
+        return "flat desert mesa landscape wide"
+
+    monkeypatch.setattr("pipeline.llm.chat", fake_chat)
+
+    assert m._clip_query("a plateau in a costume") == \
+        "flat desert mesa landscape wide"
+    # Cached on the subject text, so the same subject is rewritten once ever
+    # — not once per off-palette visual per render.
+    assert m._clip_query("a plateau in a costume") == \
+        "flat desert mesa landscape wide"
+    assert len(calls) == 1
+
+
+def test_a_rewrite_that_looks_wrong_falls_back_to_the_raw_subject(
+        settings, tmp_path, monkeypatch):
+    """A query is not a fact: a worse query is much cheaper than a stalled
+    plan, so every failure path is the raw text."""
+    from pipeline.broll import ContentManager
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c2"})
+    live.ensure_runtime_dirs()
+    m = ContentManager(live, library_dir=tmp_path / "library")
+
+    monkeypatch.setattr(
+        "pipeline.llm.chat",
+        lambda *a, **k: "Sure! Here is a query for you: desert mesa.")
+    assert m._clip_query("a plateau in a costume") == "a plateau in a costume"

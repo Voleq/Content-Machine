@@ -182,7 +182,30 @@ class Settings(BaseSettings):
     # chapters (~12 min), a messy one is 7+ (~40 min). The budget is the
     # ceiling for the longest cut (~36k chars ≈ 40 min at deadpan pace), not a
     # target — the writer assembles chapters and runtime falls out of that.
+    # Which LONG engine renders a final (D6). "segments" is the tag-driven
+    # jump-cut compositor in `render_long.py`, which is what the bot has
+    # always used. "shots" is `render_long_shots.py`: the director picks nine
+    # chapter TYPES, each expands to its own shot list from
+    # `templates/chapters/`, and the composition goes through the same
+    # compositor the SHORT uses.
+    #
+    # The shots engine had its own committed samples and manifests and no
+    # path from any command — reachable only from `scripts/render_samples.py`
+    # — which is how a second render engine sat there being genuinely
+    # ambiguous about which code was live. It has a route now. The default
+    # does not move: the segments engine is what every finished video on the
+    # channel was cut with, and switching that is an editorial decision, not
+    # a defect fix.
+    long_render_engine: str = Field(default="segments",
+                                    alias="LONG_RENDER_ENGINE")
     long_max_chars: int = Field(default=36000, alias="LONG_MAX_CHARS")
+    # The LONG parser's floor (C1). It used to reject only EMPTY input, so a
+    # plain chat remark — "hold on, the revenue number in row 2 looks wrong"
+    # — parsed as a valid forty-minute script and was saved over whatever was
+    # there. A real LONG runs to twenty thousand characters; four hundred is
+    # far below anything a writer would send and far above anything an
+    # operator would type into a chat by accident.
+    long_min_chars: int = Field(default=400, alias="LONG_MIN_CHARS")
     # LONG scripts are chunked by paragraph to stay under request limits.
     tts_chunk_chars: int = 4000
 
@@ -222,6 +245,22 @@ class Settings(BaseSettings):
     imgflip_base_url: str = "https://api.imgflip.com"  # get_memes is keyless
     # information-first: a LONG may carry at most this many memes (validated)
     meme_max_per_long: int = 2
+    # GIF-sourced visuals per video (H3). Giphy and Tenor content is
+    # user-uploaded and frequently copyrighted, and the fallback fires
+    # precisely when a clip is specific enough that stock footage misses —
+    # so it was the most legally exposed surface in the pipeline with no
+    # counter, no report line and no ceiling, while memes from the OWNED
+    # library were capped at one or two. Same shape as the meme cap.
+    gif_max_per_video: int = Field(default=2, alias="GIF_MAX_PER_VIDEO")
+    # Rewrite an OFF-PALETTE clip subject into stock-searchable terms before
+    # the Pexels call (H4). The 53-entry palette is hand-curated and
+    # pre-tested and bypasses this entirely — never rewrite a query someone
+    # already tested. Only free-text subjects go through it, and they are the
+    # minority that misses on stock footage and falls through to the GIF
+    # providers. Local-first and cached; off means the raw text is sent, as
+    # it always was.
+    broll_rewrite_offpalette: bool = Field(default=True,
+                                           alias="BROLL_REWRITE_OFFPALETTE")
 
     # ---------------------------------------------- filings (10-K auto-screenshot)
     # Pull the latest 10-K from SEC EDGAR, flag smoking-gun quotes with a cheap
@@ -235,9 +274,30 @@ class Settings(BaseSettings):
     sec_min_interval_s: float = 0.11        # SEC fair-access: keep well under 10 req/s
     filings_include_10q: bool = Field(default=False, alias="FILINGS_INCLUDE_10Q")
     filings_max_shots: int = Field(default=3, alias="FILINGS_MAX_SHOTS")
-    # smoking-gun flagging LLM — swappable. Default: GitHub Models gpt-4o-mini
-    # (free tier, OpenAI-compatible endpoint + a GitHub token). MOCK -> fixture.
-    filings_llm_provider: str = Field(default="github", alias="FILINGS_LLM_PROVIDER")  # github|openai|mock
+    # --- the pre-angle filing brief (K) ----------------------------------
+    # The reading starts the instant `/long TICKER` is typed, in parallel
+    # with the operator refreshing the workbook — a dozen-odd LLM calls over
+    # two annual reports and the quarterly pair beside them, eight to ten
+    # minutes. Ten minutes of dead time AFTER an upload is the difference
+    # between a feature that gets used and one that gets switched off.
+    filing_brief_enabled: bool = Field(default=True, alias="FILING_BRIEF_ENABLED")
+    # How long the upload reply will wait for a reading still in flight. A
+    # slow operator finds it done; a fast one waits. Past this the prompt
+    # goes out without the brief rather than the operator watching a silent
+    # bot — an absent brief is a normal outcome, a hung intake is not.
+    filing_brief_wait_s: float = Field(default=600.0, alias="FILING_BRIEF_WAIT_S")
+    # The filing passes route through `pipeline.llm.chat` like every other
+    # LLM call, so `llm_provider_order` below decides WHERE they run. This
+    # setting's only remaining job is the offline escape hatch: `mock`
+    # serves the fixtures without MOCK_MODE being on globally.
+    #
+    # It used to select the provider itself, for a private httpx client in
+    # `filings.py` that ignored the routing table — so a box with Ollama
+    # running served every gate locally and every filing call over the
+    # network, for money, with nothing saying so (K2).
+    filings_llm_provider: str = Field(default="routed", alias="FILINGS_LLM_PROVIDER")  # routed|mock
+    # The HOSTED model name, read by `llm.py` for the github/openai tiers.
+    # The local tier uses `ollama_model`.
     filings_llm_model: str = Field(default="gpt-4o-mini", alias="FILINGS_LLM_MODEL")
     filings_llm_max_chars: int = 24000      # per-call section budget (free tier is rate-limited)
     filings_llm_usd_per_call: float = 0.0   # free tier; still recorded in the ledger
@@ -252,8 +312,15 @@ class Settings(BaseSettings):
     # fallback. Comma-separated; empty means ollama,github,openai.
     llm_provider_order: str = Field(default="", alias="LLM_PROVIDER_ORDER")
     # A render built on a stale snapshot states old numbers as current.
+    #
+    # Blocking by default (B5). The README's guarantee table has always
+    # listed freshness as a blocking gate; the code shipped it as a warning,
+    # and a row that says "enforced in code" while the code shrugs is worse
+    # than no row. This is also the house rule: a refusal is data, and the
+    # choice between failing loudly and carrying on quietly goes to loud.
+    # Set DATA_STALE_BLOCKS=false to go back to advisory.
     data_max_age_days: int = Field(default=10, alias="DATA_MAX_AGE_DAYS")
-    data_stale_blocks: bool = Field(default=False, alias="DATA_STALE_BLOCKS")
+    data_stale_blocks: bool = Field(default=True, alias="DATA_STALE_BLOCKS")
 
     # ------------------------------------- by-products + status page (P3.6)
     # Every finished render emits the kit's thumbnail layouts, social cards
@@ -338,39 +405,53 @@ class Settings(BaseSettings):
     # value is that it always works. The GPU is reserved for NVENC on finals.
     local_tts_cuda: bool = Field(default=False, alias="LOCAL_TTS_CUDA")
 
-    # ------------------------------------------------- Excel refresh (COM)
-    # The render box runs Windows with Excel and the LSEG/CIQ add-in loaded,
-    # so the bot refreshes the data template itself instead of asking for an
-    # upload. Off-Windows (and with the switch off) the manual upload is the
-    # only path — which is exactly what it was before this existed.
-    excel_refresh_enabled: bool = Field(default=True, alias="EXCEL_REFRESH_ENABLED")
-    excel_template_path: str = Field(default="", alias="EXCEL_TEMPLATE_PATH")
-    # v3.1 template: the plain Capital IQ ticker goes in Snapshot!C3 and every
-    # CIQ formula reads it; B3 DERIVES the Refinitiv RIC from it and must not
-    # be written. Override only if the template moves them.
-    excel_ticker_cell: str = Field(default="C3", alias="EXCEL_TICKER_CELL")
-    excel_ric_cell: str = Field(default="E2", alias="EXCEL_RIC_CELL")
-    # Normally blank: the template looks the RIC suffix up from the exchange
-    # itself (the hidden _RICMap table), which beats guessing. Set this to
-    # force one — ".O" makes PLTR into PLTR.O. Per-ticker pins in
-    # state/excel_symbols.json beat this, and both land in the RIC override
-    # cell, never in the ticker cell.
-    excel_symbol_suffix: str = Field(default="", alias="EXCEL_SYMBOL_SUFFIX")
-    # Which add-in macro fires the refresh differs by vintage; comma-separated
-    # candidates, tried in order, falling back to a full recalculation.
-    excel_refresh_macros: str = Field(default="", alias="EXCEL_REFRESH_MACROS")
-    # CIQ/LSEG refreshes are asynchronous. Finishing early yields a workbook
-    # full of blanks that looks like success, so the poll is generous and a
-    # timeout is a hard failure.
-    excel_refresh_timeout_s: float = Field(default=240.0, alias="EXCEL_REFRESH_TIMEOUT_S")
-    excel_poll_interval_s: float = Field(default=2.0, alias="EXCEL_POLL_INTERVAL_S")
-    # Consecutive unchanged polls before the snapshot is called settled.
-    excel_settle_polls: int = Field(default=3, alias="EXCEL_SETTLE_POLLS")
-    excel_visible: bool = Field(default=False, alias="EXCEL_VISIBLE")
     ollama_base_url: str = Field(default="http://127.0.0.1:11434",
                                  alias="OLLAMA_BASE_URL")
-    ollama_model: str = Field(default="llama3.1:8b", alias="OLLAMA_MODEL")
-    ollama_timeout_s: float = 120.0
+    # THE MODEL THE FILING BRIEF WAS SIZED FOR (K2b). Dense 12B, 256K
+    # context, ~8GB at int4 QAT — fits an RTX 3060 12GB with headroom for
+    # the KV cache. Needs Ollama 0.22 or newer.
+    #
+    # Three properties drove the choice and are worth preserving if you swap:
+    #
+    # - Context. 24k-character sections are fine anywhere, but the
+    #   CONDENSATION pass has to hold every section summary from up to four
+    #   filings plus the workbook dashboard at once. A 32K-context model
+    #   gets tight there.
+    # - Dense, not MoE. A model that spills into system RAM has
+    #   unpredictable latency, and latency failures here are invisible (see
+    #   `ollama_timeout_s` below).
+    # - Fully resident in VRAM. The box renders video on the same hardware.
+    #   ffmpeg's x264 work is CPU-side so contention is minimal, but only if
+    #   the model stays loaded — set `OLLAMA_KEEP_ALIVE` to at least `30m`
+    #   or every section call pays an 8GB reload.
+    #
+    # `qwen3:14b` (~9GB Q4_K_M) is the fallback if the briefs come out thin:
+    # the stronger general reasoner, with a 32K context and a tighter fit.
+    #
+    # A box with a different model pulled sets `OLLAMA_MODEL`. Getting this
+    # wrong costs the optional passes (no brief, no skeptic read, each
+    # saying so) and never a render.
+    ollama_model: str = Field(default="gemma4:12b-it-qat", alias="OLLAMA_MODEL")
+    # The context window Ollama is TOLD to use (K2). Its default has
+    # historically been 2048-4096 tokens; `filings_llm_max_chars` is 24000
+    # (~6,000 tokens), and Ollama does not error on an overflowing prompt —
+    # it drops the front and summarises what remains, so roughly half of
+    # every 10-K section fell off and the brief came back plausible,
+    # confident and partly fiction.
+    #
+    # Here rather than in an Ollama Modelfile: a Modelfile works and hides a
+    # load-bearing value somewhere the repository cannot see, audit or test,
+    # and the whole reason this defect existed is that the budget lived in
+    # one place and the context limit in another.
+    #
+    # `scripts/check_llm_context.py` proves it is actually taking effect.
+    ollama_num_ctx: int = Field(default=16384, alias="OLLAMA_NUM_CTX")
+    # Raised from 120s (K2). Two full 10-Ks is a dozen-plus calls on a
+    # background job with no user waiting on it, and a timeout used to be
+    # swallowed as "unavailable" at debug level — indistinguishable from a
+    # missing daemon. It is logged at warning level now, because a pass that
+    # nearly worked is different information from one that never started.
+    ollama_timeout_s: float = Field(default=300.0, alias="OLLAMA_TIMEOUT_S")
     # headless Chromium for the screenshots; empty -> Playwright default, or the
     # pre-provisioned browser if present.
     playwright_chromium_path: str = Field(default="", alias="PLAYWRIGHT_CHROMIUM_PATH")
@@ -485,9 +566,32 @@ class Settings(BaseSettings):
     # is pure latency: write to a watched folder and post the path. gdrive
     # stays available for when the bot moves to a separate always-on host.
     delivery_backend: str = Field(default="local", alias="DELIVERY_BACKEND")  # gdrive | s3 | telegram | local
+    # When a bare date means (E6). `resolve_publish_at`'s docstring has
+    # described "the configured hour" since it was written and no such
+    # setting existed: a bare date parsed to midnight UTC, so
+    # `/upload TICKER 2026-09-20` published at 2am in Bucharest. Naive times
+    # with an explicit clock are read in this zone too, rather than UTC.
+    # How many times a dropped resumable upload retries before giving up
+    # (E8). The session URI is persisted either way, so a give-up is
+    # resumable rather than a restart.
+    youtube_upload_retries: int = Field(default=4,
+                                        alias="YOUTUBE_UPLOAD_RETRIES")
+    # The language YouTube is told the uploaded .srt is in (E7).
+    captions_language: str = Field(default="en", alias="CAPTIONS_LANGUAGE")
+    publish_timezone: str = Field(default="Europe/Bucharest",
+                                  alias="PUBLISH_TIMEZONE")
+    publish_hour: int = Field(default=17, alias="PUBLISH_HOUR")
+    publish_minute: int = Field(default=0, alias="PUBLISH_MINUTE")
     gdrive_credentials: str = Field(default="", alias="GDRIVE_CREDENTIALS")    # path to service-account/OAuth JSON
     gdrive_root_folder_id: str = Field(default="", alias="GDRIVE_ROOT_FOLDER_ID")
     gdrive_folder_name: str = "Dennis"
+    # Make the uploaded final readable by anyone with the link (E4). OFF:
+    # this used to be applied unconditionally, so every final render of an
+    # unpublished video sat on a public URL — the same exposure the README's
+    # "never public from a machine" row exists to prevent, through a
+    # different door. Off, the link still works for whoever the Drive account
+    # already shares the folder with.
+    gdrive_link_anyone: bool = Field(default=False, alias="GDRIVE_LINK_ANYONE")
     s3_bucket: str = ""
     s3_prefix: str = "dennis"
     s3_region: str = "us-east-1"
@@ -523,32 +627,16 @@ class Settings(BaseSettings):
     # the handle the signature close card signs off with
     brand_handle: str = Field(default="@dennisreads", alias="BRAND_HANDLE")
 
-    # ------------------------------------------------------- the cold open
-    # Where the signature card goes in a SHORT. It used to play FULL-FRAME
-    # from t=0, so the first second and a half of every video — the only part
-    # that decides whether anyone watches the rest — was a channel bumper
-    # rather than the hook.
+    # `SHORT_OPEN_STYLE`, `SHORT_OPEN_BUG_S` and `assets/hook_bank.json`
+    # lived here and nothing read any of them (found by the new
+    # `tests/test_asset_reach.py`, which is what J8 is for).
     #
-    #   "bug"   a small corner mark. The brand is present, the hook is not
-    #           covered. The default.
-    #   "tail"  no open at all; the signature card plays only at the end,
-    #           where `e_close` already is.
-    #   "full"  the original full-frame open, kept so the change is reversible
-    #           against retention data rather than by editing code.
-    short_open_style: str = Field(default="bug", alias="SHORT_OPEN_STYLE")
-    # How long the corner bug holds. Long enough to register, short enough
-    # that it is never what the viewer is looking at.
-    short_open_bug_s: float = Field(default=1.6, alias="SHORT_OPEN_BUG_S")
-
-    @field_validator("short_open_style")
-    @classmethod
-    def _known_open_style(cls, v: str) -> str:
-        allowed = {"bug", "tail", "full"}
-        got = str(v).strip().lower()
-        if got not in allowed:
-            raise ValueError(
-                f"SHORT_OPEN_STYLE={v!r} is not one of {sorted(allowed)}")
-        return got
+    # They described the SHORT's signature open — a corner bug, a sampled
+    # opener line, a length to hold it for — and the SHORT's open is now
+    # whatever `templates/shots/short.json` puts in its `hook` shot. The
+    # README described all three as live and tunable against retention data,
+    # which is the same shape as `assets/brand/`: an instrument documented,
+    # trusted, and wired to nothing.
 
     # ------------------------------------------------------------ mock timing
     # Deterministic mock TTS pacing (words per second) so rendered fixtures
@@ -638,6 +726,58 @@ class Settings(BaseSettings):
         return (f"{prefix}⚠️ MOCK DATA — {' + '.join(active)} "
                 f"{'are' if len(active) > 1 else 'is'} invented, not real. "
                 f"Nothing here is a market observation.")
+
+    def deployment_warnings(self) -> list[str]:
+        """Things about THIS deployment that quietly make videos worse.
+
+        Not errors — nothing here refuses to boot, and none of it blocks a
+        render. Each one costs a feature or a fallback that the operator
+        would otherwise discover from the output weeks later, which is the
+        same shape as every defect the provenance record exists to reveal.
+
+        Said at startup, beside the mock banner, at the same moment: these
+        are facts about the box, so the moment the box starts is when they
+        are true and cheap to act on.
+        """
+        out: list[str] = []
+        if not self.mock_mode and not self.sec_user_agent.strip():
+            # The SEC requires a real name and email in the User-Agent and
+            # rate-limits or 403s generic ones. Every caller falls back to a
+            # literal and every SEC-backed feature degrades SILENTLY by
+            # design — the filing brief, the 8-K news source and
+            # [SHOW FILING] screenshots all return nothing rather than
+            # raising. So three features go missing and nothing says why.
+            out.append(
+                "SEC_USER_AGENT is empty — SEC EDGAR requires a real name "
+                "and email and rate-limits or 403s generic agents. The "
+                "filing brief, the 8-K news source and [SHOW FILING] "
+                "screenshots will degrade to nothing, quietly and by "
+                "design. Set SEC_USER_AGENT='Your Name your@email'.")
+        if self.broll_library_size() == 0:
+            # THE OWNED LIBRARY IS THE FIRST LINK IN THE VISUAL CHAIN, and
+            # the whole of H3's mitigation. Design: owned library → stock
+            # footage → GIF providers. With nothing owned, EVERY clip goes
+            # to Pexels and every Pexels miss goes to Giphy or Tenor — the
+            # most legally exposed surface in the pipeline, on
+            # user-uploaded and frequently copyrighted content. The GIF path
+            # will fire far more often than the design assumes, from the
+            # first video, and the cap is a ceiling rather than a plan.
+            out.append(
+                f"assets/broll_library/ is empty — the owned-first visual "
+                f"chain has nothing to be first. Every [CLIP] will reach "
+                f"for Pexels, and every Pexels miss for Giphy/Tenor, which "
+                f"is the most legally exposed source in the pipeline. "
+                f"GIF_MAX_PER_VIDEO={self.gif_max_per_video} caps it; it "
+                f"does not replace owning clips.")
+        return out
+
+    def broll_library_size(self) -> int:
+        """How many owned clips this deployment actually has."""
+        lib = self.assets_dir / "broll_library"
+        if not lib.is_dir():
+            return 0
+        return sum(1 for f in lib.iterdir()
+                   if f.suffix.lower() in (".mp4", ".mov", ".mkv", ".webm"))
 
     # ------------------------------------------------------------ conveniences
     @property
@@ -822,6 +962,9 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1400",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
     "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',
+    # The SEC refuses a generic agent, so a placeholder here is worse than
+    # nothing: it looks set and behaves as if it is not.
+    "SEC_USER_AGENT": "SEC_USER_AGENT=Your Name your@email",
 }
 
 

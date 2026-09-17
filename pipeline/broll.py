@@ -186,17 +186,26 @@ class RealPexelsClient:
         self._stamp.write_text(str(time.time()), encoding="utf-8")
 
     def search(self, query: str, per_page: int = 5) -> dict:
+        """One API call, counted once, at the point of dispatch.
+
+        Counting after the response returned meant a call that 429'd or
+        timed out was never counted — the exact calls the quota is there to
+        bound. And `check_pexels_budget()` runs before the request, so a
+        count recorded after it was always evaluated one call stale.
+        """
         if not self.settings.pexels_api_key:
             raise PexelsError("PEXELS_API_KEY is not set and MOCK_MODE is off")
         self.ledger.check_pexels_budget()
         self._respect_rate_limit()
+        # Dispatch is the billable event. Whatever comes back — 200, 429, a
+        # dropped connection — the quota was spent the moment this left.
+        self.ledger.record_pexels_call()
         resp = httpx.get(
             f"{self.settings.pexels_base_url}/videos/search",
             params={"query": query, "per_page": per_page},
             headers={"Authorization": self.settings.pexels_api_key},
             timeout=60,
         )
-        self.ledger.record_pexels_call()
         if resp.status_code == 429:
             raise PexelsError("Pexels rate limit hit (429)")
         if resp.status_code != 200:
@@ -204,7 +213,15 @@ class RealPexelsClient:
         return resp.json()
 
     def download(self, url: str, dest: Path) -> Path:
-        self.ledger.check_pexels_budget()
+        """A CDN fetch. NOT an API call, and therefore not counted (A3).
+
+        This used to `record_pexels_call()` too, so one clip cost two units
+        against `PEXELS_MONTHLY_CALL_CAP` and the cap was effectively
+        halved. It was wrong in principle as well as in arithmetic: the
+        video file comes off a CDN, the quota is on the API, and the two are
+        not the same resource. The rate limit still applies — politeness to
+        the host is a separate question from the quota.
+        """
         self._respect_rate_limit()
         dest.parent.mkdir(parents=True, exist_ok=True)
         with httpx.stream("GET", url, timeout=300, follow_redirects=True) as r:
@@ -213,7 +230,6 @@ class RealPexelsClient:
             with open(dest, "wb") as f:
                 for chunk in r.iter_bytes(1 << 16):
                     f.write(chunk)
-        self.ledger.record_pexels_call()
         return dest
 
 
@@ -587,9 +603,75 @@ class ContentManager:
         return self.filler_clip(key)
 
     def _clip_query(self, key: str) -> str:
-        # palette keys map to their pre-tested query; anything else is
-        # treated as a raw query (validation already warned about it)
-        return PALETTE.get(key, key.replace("_", " "))
+        """The stock-search query for a clip key.
+
+        A PALETTE key maps to its pre-tested query and stops there — the 53
+        entries are hand-curated, `dumpster_fire` is
+        `"dumpster fire burning night"` rather than `"dumpster fire"`, and
+        rewriting one would be undoing work somebody already did (H4).
+
+        Anything else is the writer going off-palette, which the prompt
+        discourages and `validate_*_script` already warns about. It is a
+        minority of visuals and precisely the minority that misses on stock
+        footage and falls through to Giphy/Tenor — the most legally exposed
+        surface in the pipeline (H3). So a free-text subject is rewritten
+        into stock-searchable terms first: "a plateau in a costume" is not a
+        stock query, "flat desert mesa landscape wide" is.
+        """
+        if key in PALETTE:
+            return PALETTE[key]
+        raw = key.replace("_", " ")
+        return self._stock_query(raw)
+
+    def _stock_query(self, subject: str) -> str:
+        """`subject` rewritten for a stock library, or `subject` unchanged.
+
+        Cached on the subject text, beside the clip cache: the same subject
+        is rewritten once, ever, rather than once per off-palette visual per
+        render. Degrades to the raw text on every failure path — this is a
+        query, not a fact, and a worse query is much cheaper than a stalled
+        plan.
+        """
+        if not self.settings.broll_rewrite_offpalette or not subject.strip():
+            return subject
+        cache = self.settings.cache_dir / "broll" / "queries.json"
+        try:
+            store = json.loads(cache.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
+            store = {}
+        if subject in store:
+            return str(store[subject]) or subject
+
+        from pipeline.llm import chat
+
+        out = chat(
+            subject,
+            self.settings,
+            system=(
+                "You turn a director's free-text visual note into a search "
+                "query for a stock-footage library. Reply with the query "
+                "ONLY: three to six concrete, literal, photographable nouns "
+                "and adjectives, no punctuation, no quotes, no explanation. "
+                "Drop metaphor and keep what a camera could actually see — "
+                '"a plateau in a costume" becomes "flat desert mesa '
+                'landscape wide". Do not think out loud.'),
+            purpose="broll query",
+        )
+        query = (str(out or "").strip().splitlines() or [""])[0].strip(' "\'')
+        # A rewrite that came back long, empty, or with punctuation in it is
+        # a model answering a different question. The raw text is the floor.
+        if not query or len(query) > 120 or any(c in query for c in ".!?:;"):
+            if out:
+                log.info("broll query rewrite for %r looked wrong (%r) — "
+                         "using the raw subject", subject, out)
+            query = subject
+        store[subject] = query
+        try:
+            cache.parent.mkdir(parents=True, exist_ok=True)
+            cache.write_text(json.dumps(store, indent=2), encoding="utf-8")
+        except OSError as e:  # advisory — a cache miss costs a call, not a run
+            log.warning("could not cache the broll query rewrite: %s", e)
+        return query
 
     def _res(self, portrait: bool) -> tuple[int, int]:
         return self.settings.short_resolution if portrait else self.settings.long_resolution
@@ -660,7 +742,12 @@ class ContentManager:
 
         cdir = self._clip_cache_dir(key)
         suffix = "_p" if portrait else ""
-        raw = cdir / f"raw_{choice}.mp4"
+        # Both names carry the orientation (H1). The normalised output always
+        # did; the raw download did not, so two renders of the same key at
+        # different orientations wrote the same raw path and could read each
+        # other's half-written bytes. Latent at MAX_CONCURRENT_RENDERS=1 and
+        # a real corruption the moment anyone raises it.
+        raw = cdir / f"raw_{choice}{suffix}.mp4"
         norm = cdir / f"normalized_{choice}{suffix}.mp4"
         self.clip_client.download(file_url, raw)
         normalize_clip(raw, norm, self.settings, self._res(portrait))
@@ -788,12 +875,18 @@ class ContentManager:
                 return self.filler_image(query, kind)
 
             pick = results[min(choice, len(results) - 1)]
+            # The directory has to exist BEFORE anything is written into it
+            # (H2). It used to be created after the download, the normalise
+            # and the unlink had all already used it — which made the whole
+            # image chain depend on whichever download client happened to
+            # create parents, and the failure mode was a silent fall-back to
+            # a filler card.
+            cdir.mkdir(parents=True, exist_ok=True)
             raw = cdir / f"raw_{choice}.bin"
             client = self.image_client if source != "company_site" else self.site_client
             client.download(pick["url"], raw)
             normalize_image(raw, norm, self.settings)
             raw.unlink(missing_ok=True)
-            cdir.mkdir(parents=True, exist_ok=True)
             meta.write_text(json.dumps({
                 "query": query, "provider": source, "url": pick["url"],
                 "attribution": pick.get("attribution", ""),
@@ -1003,6 +1096,13 @@ class ContentManager:
         website = str(company_data.get("website") or "") if company_data is not None else ""
         out: list[Visual] = []
         seen: set[tuple[str, str]] = set()
+        # An override is keyed on (TAG, OCCURRENCE INDEX) — `CLIP:3` — not on
+        # the payload text (G5). The prompt encourages reusing palette keys,
+        # so a payload-keyed override swapped every beat that shared one, and
+        # could not tell a `[CLIP]` from an `[IMG]` carrying the same subject.
+        # `swap_index` counts the swappable tags in script order, which is
+        # exactly what the swap menu numbers its buttons by.
+        swap_index = -1
         for e in script.events:
             if e.type in (TagType.CLIP, TagType.BROLL):
                 kind = "clip"
@@ -1016,26 +1116,73 @@ class ContentManager:
                 kind = "screengrab"
             else:
                 continue
+            if e.type in (TagType.CLIP, TagType.BROLL, TagType.IMG,
+                          TagType.PRODUCT, TagType.MEME):
+                swap_index += 1
+            slot = f"{e.type.value}:{swap_index}"
+            choice = overrides.get(slot)
+            if choice is None:
+                # Overrides written before the slot keys existed. Honouring
+                # them keeps a workspace mid-flow working across the change;
+                # the next swap rewrites the key.
+                choice = overrides.get(e.payload, 0)
             style = e.style or "clean"
-            if (kind, e.payload + f":{style}") in seen:
+            # De-duplication is on the RESOLVED identity, so two occurrences
+            # of one payload with different takes are two entries.
+            ident = (kind, f"{e.payload}:{style}:{choice}")
+            if ident in seen:
                 continue
-            seen.add((kind, e.payload + f":{style}"))
+            seen.add(ident)
             out.append(self.resolve_visual(
                 kind, e.payload, ticker=script.ticker,
                 company_data=company_data, website=website,
-                choice=overrides.get(e.payload, 0), style=style,
+                choice=int(choice), style=style,
             ))
         return out
 
     # -------------------------------------------------- approval-flow bits
+    # How many provider takes a swap can address without asking anyone.
+    # `search()` requests `per_page=5` and `_fetch_clip` clamps `choice` to
+    # what came back, so five is the range the chain can reach — the exact
+    # number the old live search was being spent to discover.
+    SWAP_PROVIDER_TAKES = 5
+
     def alternates_count(self, key: str) -> int:
-        """How many swap choices exist for a clip key (library + provider)."""
+        """How many swap choices exist for a clip key, without a live call.
+
+        This number exists to put a digit on a button. It used to run a real
+        Pexels search to get it, so merely OPENING the swap menu spent
+        quota, before the operator had swapped anything — and every failure
+        was swallowed, so the count silently degraded to the owned-library
+        size without saying so (A4).
+
+        It is now the owned library plus the range the provider chain can
+        address. That range is a constant rather than a measurement because
+        measuring it is what cost money: `search()` asks for five results and
+        `_fetch_clip` clamps `choice` to what comes back, so five is what a
+        swap can reach and a sixth tap would land on the fifth clip anyway.
+        Where a key has already been fetched more widely than that, the
+        cached takes win — those are known to exist.
+
+        A key with no provider chain at all (every client removed) counts
+        only what is owned, which is the honest answer there.
+        """
         n = len(self._library_candidates(key))
-        try:
-            n += len((self.clip_client.search(self._clip_query(key)) or {}).get("videos", []))
-        except Exception:
-            pass
-        return max(n, 1)
+        reachable = len(self._cached_provider_takes(key))
+        if self.clip_client is not None or self.gif_clients:
+            reachable = max(reachable, self.SWAP_PROVIDER_TAKES)
+        return max(n + reachable, 1)
+
+    def _cached_provider_takes(self, key: str) -> list[Path]:
+        """Provider takes already fetched for this key, from the clip cache.
+
+        `meta_*.json` is written beside each normalised clip at fetch time,
+        so the cache knows how many takes it holds without asking anyone.
+        """
+        cdir = self._clip_cache_dir(key)
+        if not cdir.exists():
+            return []
+        return sorted(cdir.glob("meta_*.json"))
 
     def thumbnail(self, visual: Visual, dest: Path) -> Path:
         """Thumbnail for the approval contact sheet (clip first frame or a

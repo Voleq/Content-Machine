@@ -110,8 +110,15 @@ class Reach:
                 f"{scenes} data plate{'' if scenes == 1 else 's'}")
 
 
+# What the renderers actually call the list of plates they drew. The
+# docstring below described `kit_assets_used`, which no renderer has ever
+# written — so `rendered_reach` read a key that did not exist, and was
+# itself never called (J3). Both halves of a disconnected gauge.
+RENDERED_KEYS_FIELD = "plates_used"
+
+
 def rendered_reach(kit_keys, reg) -> Reach:
-    """The reach of a FINISHED render, off the manifest's `kit_assets_used`.
+    """The reach of a FINISHED render, off the manifest's `plates_used`.
 
     The same line in the same shape as the script's, so the two are readable
     against each other: the render is always the larger number, because it adds
@@ -125,6 +132,24 @@ def rendered_reach(kit_keys, reg) -> Reach:
         scenes=tuple(k for k in keys if _is_beat_family(k.rsplit("/", 1)[0])),
         total=len(reg),
     )
+
+
+def reach_from_manifest(manifest: dict, settings) -> Reach:
+    """`rendered_reach` for a manifest dict, or an empty Reach.
+
+    This is the caller the function never had. It reads the key the
+    renderers write, so the two cannot drift again without a test noticing.
+    """
+    from pipeline.plates import PlateError, load_plates
+
+    keys = manifest.get(RENDERED_KEYS_FIELD) or []
+    if not keys:
+        return Reach()
+    try:
+        reg = load_plates(settings.assets_dir)
+    except PlateError:
+        return Reach()
+    return rendered_reach(keys, reg)
 
 
 def script_reach(script, settings) -> Reach:
@@ -166,15 +191,52 @@ def script_reach(script, settings) -> Reach:
     )
 
 
+def _long_figure_beats(script) -> list[tuple[str, set[str]]]:
+    """A LONG's beats: its chapters (J4).
+
+    One entry per chapter, carrying the figures spoken inside it, so the
+    floor is "a drawing per chapter that talks about a number" rather than
+    an arbitrary constant.
+    """
+    chapters = getattr(script, "chapter_list", None) or []
+    if not chapters:
+        return []
+    narration = getattr(script, "narration", "") or ""
+    sentences = [s for s in narration.split(". ") if s.strip()]
+    if not sentences:
+        return []
+    per = max(len(sentences) // len(chapters), 1)
+    out: list[tuple[str, set[str]]] = []
+    for i, ch in enumerate(chapters):
+        chunk = " ".join(sentences[i * per:(i + 1) * per])
+        figures = _figures(chunk)
+        if figures:
+            out.append((getattr(ch, "title", "") or f"chapter {i + 1}", figures))
+    return out
+
+
 def _figure_beats(script) -> list[tuple[str, set[str]]]:
     """`(name, figures)` for every beat of this script carrying a figure.
 
-    The LONG has no fixed beat structure of this shape, so it reports none and
-    its reach line is a count without a floor.
+    A SHORT has a fixed beat structure — `numbers` rows — and that is what
+    the floor was built against.
+
+    **A LONG has one too, and it was going uncounted (J4).** The docstring
+    used to say the LONG "has no fixed beat structure of this shape", which
+    is true of `numbers` and not true of the script: its CHAPTERS are its
+    beats, the writer chose them on purpose, and each one is a place a
+    drawing belongs. So a forty-minute LONG naming two plates got a count
+    with no floor and no warning, which is a worse problem at forty minutes
+    than at sixty seconds — "every video looks the same" is exactly what the
+    kit exists to prevent.
+
+    Recorded as a decision rather than a patch, because the diagnosis flags
+    it as documented-intentional: the floor for a LONG is its chapter count,
+    which is the number of beats it actually has.
     """
     numbers = getattr(script, "numbers", None)
     if not numbers:
-        return []
+        return _long_figure_beats(script)
     beats: list[tuple[str, set[str]]] = []
     move = _figures(getattr(script, "move_summary", "") or "",
                     getattr(script, "hook_text", "") or "")

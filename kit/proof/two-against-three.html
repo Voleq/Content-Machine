@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>two frames against three — §1.1</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px 26px 60px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  p{max-width:84ch;color:#8d968f}
+  .bar{position:sticky;top:0;background:#14181c;padding:14px 0 12px;border-bottom:1px solid #262c33;margin-bottom:18px;z-index:5}
+  label{display:inline-flex;align-items:center;gap:8px;margin-right:26px}
+  input[type=range]{width:190px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:0 0 26px}
+  .cell{background:#1B1F24;border:1px solid #262c33}
+  .cap{display:flex;justify-content:space-between;padding:7px 10px;border-bottom:1px solid #262c33;color:#8d968f;letter-spacing:.05em;text-transform:uppercase;font-size:11px}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .art{display:block;width:100%}
+  .art svg{display:block;width:100%;height:auto}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:26px 0 8px}
+  .ink{color:#C7A86B}
+</style>
+</head>
+<body>
+<main>
+  <h1>Two frames against three</h1>
+  <p>The same plate, boiled both ways, playing side by side. §1.1 asks for this to be judged in
+  motion rather than asserted, so the decision is not “2 or 3” but “2 or 3 <em>at what rate</em>” —
+  hence the slider. Three plates, because they do not behave alike: a room moves
+  <span class="ink">22%</span> of its ink and a head <span class="ink">5.4%</span>, and one sample
+  cannot answer a question being asked of all ninety-six.</p>
+  <p>What to watch for: on the two-frame side the eye finds the alternation and locks onto it, and
+  from that moment the plate is vibrating between two known states rather than living. The lock
+  takes about a second at 2fps and arrives faster the slower you go.</p>
+  <div class="bar">
+    <label>rate <input id="fps" type="range" min="1" max="8" step="0.5" value="2"><b id="fpsv">2.0 fps</b></label>
+    <label><input id="run" type="checkbox" checked> playing</label>
+    <label><input id="sync" type="checkbox" checked> both sides on one clock</label>
+  </div>
+  <div id="out"></div>
+</main>
+<script>
+(function () {
+  const B = window.BUILD;
+  // A room, a host and a card: the three regimes. The host one is a real strip
+  // (the idle triad), so the three-frame side there is the shipped loop rather
+  // than a boil sequence assembled for this page.
+  const SUBJECTS = [
+    { key: "room/wide-16x9", label: "room · wide", note: "the loudest case — most linework on screen" },
+    { key: "host/close-up-idle", label: "host · close-up idle", note: "the quietest — and the one a viewer looks straight at" },
+    { key: (B.of("cards")[0] || {}).key, label: "card", note: "closest to what is on screen most of the time" },
+  ].filter((s) => s.key);
+
+  const host = document.getElementById("out");
+  const players = [];
+
+  SUBJECTS.forEach(function (s) {
+    const item = B.LIB.filter((i) => i.key === s.key)[0];
+    if (!item) return;
+    const three = B.framesOf(item);
+    // The two-frame comparison is the FIRST TWO of whatever this asset ships, so
+    // the left side is literally what delta-13 delivered rather than a fresh
+    // two-frame sequence invented for the demo.
+    const two = three.slice(0, 2);
+    const render = (fr) => fr.map((f) => B.draw(item, null, f.args).toSVG());
+
+    const sec = document.createElement("section");
+    sec.innerHTML = '<h2>' + s.label + ' — <span style="color:#8d968f;text-transform:none;letter-spacing:0">' + s.note + '</span></h2>' +
+      '<div class="row">' +
+      '<div class="cell"><div class="cap"><span>two frames</span><b>delta-13</b></div><div class="art" data-side="2"></div></div>' +
+      '<div class="cell"><div class="cap"><span>three frames</span><b>this drop</b></div><div class="art" data-side="3"></div></div>' +
+      '</div>';
+    host.appendChild(sec);
+    players.push({ el: sec.querySelector('[data-side="2"]'), svgs: render(two), i: 0 });
+    players.push({ el: sec.querySelector('[data-side="3"]'), svgs: render(three), i: 0 });
+  });
+
+  // EVERY FRAME IS IN THE DOM ONCE AND THE PLAYER TOGGLES VISIBILITY.
+  //
+  // Swapping innerHTML per frame re-parses up to 1.4MB of SVG on each tick, which
+  // at 8fps stutters — and a stutter is indistinguishable from the flicker the
+  // page exists to let you judge. The tool must not add the artefact it is
+  // measuring.
+  players.forEach(function (p) {
+    p.frames = p.svgs.map(function (svg, i) {
+      const d = document.createElement("div");
+      d.innerHTML = svg;
+      d.style.display = i ? "none" : "block";
+      p.el.appendChild(d);
+      return d;
+    });
+  });
+
+  const fpsEl = document.getElementById("fps"), fpsv = document.getElementById("fpsv");
+  const runEl = document.getElementById("run"), syncEl = document.getElementById("sync");
+  let last = 0;
+  function tick(t) {
+    requestAnimationFrame(tick);
+    if (!runEl.checked) return;
+    const fps = +fpsEl.value;
+    if (t - last < 1000 / fps) return;
+    last = t;
+    players.forEach(function (p, n) {
+      // Unsynchronised is the honest default for judging a cut — two plates in a
+      // real shot are not in step — but held in step by default here, because the
+      // question being asked is about the DIFFERENCE between the two sides and a
+      // phase offset makes that harder to see.
+      if (!syncEl.checked && (n % 2) && Math.random() < 0.25) return;
+      p.frames[p.i].style.display = "none";
+      p.i = (p.i + 1) % p.frames.length;
+      p.frames[p.i].style.display = "block";
+    });
+  }
+  requestAnimationFrame(tick);
+  fpsEl.oninput = () => { fpsv.textContent = (+fpsEl.value).toFixed(1) + " fps"; };
+})();
+</script>
+</body>
+</html>

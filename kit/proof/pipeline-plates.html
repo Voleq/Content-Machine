@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§3 — the plates the pipeline had data for</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px;max-width:1300px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:32px 0 8px}
+  p{max-width:86ch;color:#8d968f}
+  p.lead{color:#C9C2B4}
+  pre{background:#1B1F24;padding:12px 14px;border-radius:2px;overflow:auto;margin:8px 0;max-width:110ch}
+  code{color:#C7A86B}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:12px 0 4px}
+  .wide{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;margin:12px 0 4px}
+  .cell{border:1px solid #262c33;background:#0f1215;min-width:0}
+  .cap{color:#8d968f;padding:8px 10px;border-top:1px solid #262c33}
+  .cap b{color:#C9C2B4;font-weight:400}
+  .stage{position:relative;container-type:inline-size}
+  .stage svg{display:block;width:100%;height:auto}
+  .stage svg.ov{position:absolute;inset:0}
+  .fill{position:absolute;display:flex;align-items:flex-start;color:#1C222A;pointer-events:none}
+  .fill span{width:100%;text-wrap:pretty}
+  .fill.over{outline:2px dashed #D98A7A;outline-offset:1px}
+  .zone{position:absolute;border:2px dashed rgba(217,138,122,.75);background:rgba(217,138,122,.10);
+        display:flex;align-items:center;justify-content:center;color:#D98A7A;font:11px monospace;text-align:center}
+  #over{margin:22px 0 0;padding:12px 14px;background:#1B1F24;border:1px solid #262c33;color:#8d968f;white-space:pre-wrap}
+  #over b{color:#D98A7A;font-weight:400}
+</style>
+</head>
+<body>
+<main>
+  <h1>§3 — the plates the pipeline had data for</h1>
+
+  <p class="lead">Ten assets, each filled twice from unrelated numbers — and where the plate has count
+  variants, at both counts. Each of these exists because the code already pulls the data and had
+  nowhere to draw it.</p>
+
+  <p>Region fills below stand in for <code>engine/series.js</code>: they read geometry the plate
+  published (<code>slots</code>, <code>meta.axisY</code>, <code>meta.keepOut</code>) and re-derive
+  nothing, which is the property the plates were built for. Every string is checked against the
+  <em>derived</em> budget for the box it lands in; the report is at the foot.</p>
+
+  <div id="out">building…</div>
+  <div id="over"></div>
+</main>
+<script>
+(function () {
+  const PL = window.PLATES, H = window.HAND, B = window.BUILD;
+  const out = document.getElementById("out");
+  const OVER = [];
+  const ROLE_FONT = { value: "'Courier Prime'", barLabel: "'Courier Prime'", axis: "'Courier Prime'",
+    who: "'Courier Prime'", period: "'Archivo Narrow'", date: "'Archivo Narrow'", source: "'Courier Prime'",
+    kicker: "'Courier Prime'", caption: "'Courier Prime'", unit: "'Courier Prime'",
+    label: "'Archivo Narrow'", line: "'Archivo Narrow'", hand: "'Courier Prime'" };
+
+  function draw(key) {
+    const it = B.LIB.filter((i) => i.key === key)[0];
+    if (!it) throw new Error("not in LIB: " + key);
+    return B.draw(it, null, { boil: 1 });
+  }
+
+  function place(host, m, data, key) {
+    const roles = m.typeRoles || {};
+    Object.keys(data).forEach(function (k) {
+      const s = m.slots[k];
+      if (!s || s.region) return;
+      const r = roles[s.role] || {};
+      const str = String(data[k]), lines = str.split("\n");
+      let over = false, why = "";
+      if (s.maxChars != null) {
+        if (str.length > s.maxChars) { over = true; why = str.length + " chars in a " + s.maxChars + "-char box"; }
+      } else if (s.maxCharsPerLine != null) {
+        const ml = s.maxLines || 1;
+        if (lines.length > 1) {
+          const lg = Math.max.apply(null, lines.map((l) => l.length));
+          if (lg > s.maxCharsPerLine) { over = true; why = "an authored line of " + lg + " in a " + s.maxCharsPerLine + "-per-line box"; }
+          else if (lines.length > ml) { over = true; why = lines.length + " authored lines in a " + ml + "-line box"; }
+        } else if (str.length > s.maxCharsPerLine * ml) { over = true; why = str.length + " chars in a block holding " + (s.maxCharsPerLine * ml); }
+      }
+      if (over) OVER.push(key + " · " + k + ": " + why);
+      const d = document.createElement("div");
+      d.className = "fill" + (over ? " over" : "");
+      d.style.left = (s.x / m.canvas[0] * 100) + "%";
+      d.style.top = (s.y / m.canvas[1] * 100) + "%";
+      d.style.width = (s.w / m.canvas[0] * 100) + "%";
+      d.style.height = (s.h / m.canvas[1] * 100) + "%";
+      d.style.justifyContent = s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start";
+      const sp = document.createElement("span");
+      sp.textContent = str;
+      sp.style.font = (r.weight || 400) + " " + ((r.size || 28) / m.canvas[0] * 100) + "cqw " + (ROLE_FONT[s.role] || "'Archivo Narrow'");
+      sp.style.lineHeight = 1.16;
+      sp.style.letterSpacing = r.tracking || "0";
+      sp.style.textAlign = s.align === "right" ? "right" : s.align === "center" ? "center" : "left";
+      if (r.opacity != null) sp.style.opacity = r.opacity;
+      d.appendChild(sp);
+      host.appendChild(d);
+    });
+  }
+
+  const NS = "http://www.w3.org/2000/svg";
+  function layer(m) {
+    const g = document.createElementNS(NS, "svg");
+    g.setAttribute("viewBox", "0 0 " + m.canvas[0] + " " + m.canvas[1]);
+    g.setAttribute("class", "ov");
+    return g;
+  }
+  function rect(g, x, y, w, h, op) {
+    const r = document.createElementNS(NS, "rect");
+    r.setAttribute("x", x); r.setAttribute("y", y);
+    r.setAttribute("width", Math.max(0, w)); r.setAttribute("height", Math.max(0, h));
+    r.setAttribute("fill", "#1C222A"); r.setAttribute("fill-opacity", op == null ? 0.78 : op);
+    g.appendChild(r);
+  }
+
+  function cell(key, note) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    const P = draw(key), m = P.manifest();
+    const st = document.createElement("div");
+    st.className = "stage";
+    st.innerHTML = P.toSVG();
+    c.appendChild(st);
+    const cap = document.createElement("div");
+    cap.className = "cap";
+    cap.innerHTML = "<b>" + key + "</b><br>" + note;
+    c.appendChild(cap);
+    return { c: c, st: st, m: m, cap: cap, key: key };
+  }
+
+  out.innerHTML =
+    '<h2>3.1 · figures/short-interest — the same plate on a squeeze and on a nothing</h2>' +
+    '<p>Four quantities, and only one of them is a proportion: shares short against float gets the bar, ' +
+    'so the reader never divides. Days-to-cover is a duration and cost-to-borrow is a rate \u2014 they sit as ' +
+    'figures, because drawing them as bars would invite a comparison that means nothing. <b>The two ' +
+    'renders are the argument:</b> 37% of float short at 6.2 days to cover, and 1.5% at 0.4 days. The ' +
+    'plate says which is which by geometry alone and calls neither of them alarming.</p>' +
+    '<div class="pair" id="si"></div>' +
+    '<h2>3.2 · charts/insider-flow — six marks and twelve, mixed and one-directional</h2>' +
+    '<p>Above for a purchase, below for a sale: direction is the <b>data</b>, exactly as a waterfall step ' +
+    'can add or subtract. No green, no red, one ink at one weight \u2014 so the all-sells plate below is the ' +
+    'mixed one inverted, not a redder version of it. Both halves share one scale.</p>' +
+    '<div class="pair" id="if1"></div><div class="pair" id="if2"></div>' +
+    '<h2>3.3 · charts/macro-series — bands filled from the dates, not distributed</h2>' +
+    '<p>Four band regions are published and the renderer fills only the ones the series spans. Left: three ' +
+    'recessions across four decades. Right: a different series with four. The source line is not optional.</p>' +
+    '<div class="wide" id="ms"></div>' +
+    '<h2>3.4 · structure/end-card — the platform\u2019s furniture drawn in</h2>' +
+    '<p>The dashed boxes are <code>meta.keepOut</code>, drawn <em>by this page</em> to show where YouTube ' +
+    'puts its own elements. The plate draws nothing there \u2014 and the content band is derived from those ' +
+    'zones, so correcting one moves the type with it.</p>' +
+    '<div class="pair" id="ec"></div>' +
+    '<div id="tail"></div>';
+
+  // ---- 3.1 -----------------------------------------------------------------
+  [["figures/short-interest-16x9",
+    { float: 84.2, short: 31.4 },
+    { kicker: "SHORT INTEREST", unit: "shares, and days of volume",
+      "float-label": "free float 84.2m", "short-label": "31.4m short",
+      days: "6.2", "days-label": "days to cover\nat average volume",
+      borrow: "31%", "borrow-label": "cost to borrow\nannualised",
+      caption: "37% of the float, and six days to get out of it." },
+    "37% of float \u00b7 6.2 days \u00b7 31% to borrow. The bar does the arithmetic."],
+   ["figures/short-interest-9x16",
+    { float: 1200, short: 18 },
+    { kicker: "SHORT INTEREST", unit: "shares, and days of volume",
+      "float-label": "float 1.2bn", "short-label": "18m short",
+      days: "0.4", "days-label": "days to cover",
+      borrow: "0.8%", "borrow-label": "cost to borrow",
+      caption: "One and a half percent. There is no squeeze here." },
+    "1.5% of float \u00b7 0.4 days \u00b7 0.8%. SAME PLATE, and it is not drawn as good news either."]
+  ].forEach(function (d) {
+    const o = cell(d[0], d[3]);
+    const g = layer(o.m);
+    const s = o.m.slots.short;
+    rect(g, s.x, s.y, s.w * (d[1].short / d[1].float), s.h, 0.8);
+    o.st.appendChild(g);
+    place(o.st, o.m, d[2], d[0]);
+    document.getElementById("si").appendChild(o.c);
+  });
+
+  // ---- 3.2 -----------------------------------------------------------------
+  // value in $m, sign = direction. One scale across both halves, which is the
+  // plate's own contract — the peak of |value| sets it for the whole plate.
+  const FLOW = [
+    ["charts/insider-flow-6-16x9", [1.4, -0.6, 2.2, -0.35, 0.9, -1.1],
+      ["12 Mar","19 Mar","02 Apr","11 Apr","28 Apr","06 May"], ["CFO","CEO","Dir","Dir","CFO","COO"],
+      { kicker: "INSIDER TRADES", unit: "Form 4, $m, one quarter",
+        "scale-above": "$3m", "scale-below": "$3m",
+        caption: "Three officers buying, three selling. Nothing decided." },
+      "six marks, MIXED \u00b7 a normal quarter, where the individual trades are still the argument"],
+    ["charts/insider-flow-6-9x16", [-2.8, -1.9, -3.4, -0.8, -2.2, -4.1],
+      ["08 Jan","22 Jan","14 Feb","03 Mar","27 Mar","16 Apr"], ["CEO","CFO","CEO","Dir","COO","CEO"],
+      { kicker: "INSIDER TRADES", unit: "Form 4, $m",
+        "scale-above": "$5m", "scale-below": "$5m",
+        caption: "Six filings in four months. All one way." },
+      "six marks, ALL SELLS, portrait \u00b7 the who row still fits here at 16 characters"],
+    ["charts/insider-flow-12-16x9",
+      [-1.2, -0.9, -2.4, -0.6, -1.8, -3.1, -0.7, -2.2, -1.4, -0.5, -2.9, -1.6],
+      ["14 Jun","28 Jun","09 Jul","23 Jul","06 Aug","20 Aug","03 Sep","17 Sep","01 Oct","15 Oct","29 Oct","12 Nov"],
+      ["CEO","CFO","Dir","CEO","COO","CEO","Dir","CFO","CEO","Dir","CEO","CFO"],
+      { kicker: "INSIDER TRADES", unit: "Form 4, $m, five months",
+        "scale-above": "$4m", "scale-below": "$4m",
+        caption: "Twelve filings. Not one of them a purchase." },
+      "twelve marks \u00b7 the case the plate exists for, where the PATTERN is the argument"],
+    ["charts/insider-flow-12-9x16",
+      [0.8, -1.1, 1.6, 2.1, -0.4, 0.9, 1.3, -2.0, 0.6, 1.8, -0.7, 2.4],
+      ["14 Jun","28 Jun","09 Jul","23 Jul","06 Aug","20 Aug","03 Sep","17 Sep","01 Oct","15 Oct","29 Oct","12 Nov"],
+      null,
+      { kicker: "INSIDER TRADES", unit: "Form 4, $m",
+        "scale-above": "$3m", "scale-below": "$3m",
+        "who-note": "all four officers, plus two directors",
+        caption: "Buying through the whole decline." },
+      "twelve marks, portrait, MOSTLY BUYS \u00b7 no per-mark who row: the box measures under six characters, so the plate publishes one who-note line"]
+  ];
+  FLOW.forEach(function (d, idx) {
+    const o = cell(d[0], d[5]);
+    const g = layer(o.m);
+    const peak = Math.max.apply(null, d[1].map(Math.abs)) * 1.12;
+    d[1].forEach(function (v, i) {
+      const s = o.m.slots["mark-" + (i + 1)];
+      if (!s) return;
+      const half = (s.y + s.h) - o.m.axisY;
+      const hh = Math.abs(v) / peak * half;
+      if (v >= 0) rect(g, s.x, o.m.axisY - hh, s.w, hh, 0.8);
+      else rect(g, s.x, o.m.axisY, s.w, hh, 0.8);
+    });
+    o.st.appendChild(g);
+    const data = Object.assign({}, d[4]);
+    d[2].forEach(function (t, i) { data["date-" + (i + 1)] = t; });
+    if (d[3]) d[3].forEach(function (t, i) { data["who-" + (i + 1)] = t; });
+    place(o.st, o.m, data, d[0]);
+    document.getElementById(idx < 2 ? "if1" : "if2").appendChild(o.c);
+  });
+
+  // ---- 3.3 -----------------------------------------------------------------
+  [["charts/macro-series-16x9",
+    [0.28,0.34,0.31,0.52,0.44,0.38,0.61,0.49,0.42,0.36,0.33,0.47,0.58,0.41,0.35,0.30,0.39,0.72,0.55,0.44],
+    [[0.17,0.05],[0.45,0.04],[0.78,0.07]],
+    { kicker: "UNEMPLOYMENT", unit: "%, monthly, seasonally adjusted",
+      "head-1":"1950","head-2":"1958","head-3":"1966","head-4":"1974","head-5":"1982",
+      "head-6":"1990","head-7":"1998","head-8":"2006","head-9":"2014","head-10":"2022",
+      "y-1":"0","y-2":"4","y-3":"8","y-4":"12","y-5":"16",
+      source: "FRED: UNRATE, monthly, seasonally adjusted",
+      caption: "Every spike is a recession. The bands are the recessions." },
+    "three bands filled of four published \u00b7 the fourth is left empty rather than distributed"],
+   ["charts/macro-series-9x16",
+    [0.62,0.58,0.71,0.55,0.48,0.66,0.52,0.40,0.35,0.44,0.30,0.26,0.33,0.22,0.18,0.24,0.15,0.12,0.28,0.41],
+    [[0.12,0.05],[0.38,0.06],[0.62,0.045],[0.83,0.06]],
+    { kicker: "10-YEAR YIELD", unit: "%, end of month",
+      "head-1":"1962","head-2":"1969","head-3":"1976","head-4":"1983","head-5":"1990",
+      "head-6":"1997","head-7":"2004","head-8":"2011","head-9":"2018","head-10":"2025",
+      "y-1":"0","y-2":"4","y-3":"8","y-4":"12","y-5":"16",
+      source: "FRED: DGS10, monthly average",
+      caption: "Forty years of one direction, then eighteen months." },
+    "four bands, different series, portrait \u00b7 source budget 74 characters here"]
+  ].forEach(function (d) {
+    const o = cell(d[0], d[5]);
+    const g = layer(o.m);
+    const pa = o.m.slots["plot-area"];
+    // bands first, behind the series, at low value — the plate's own instruction
+    d[2].forEach(function (bd, i) {
+      const s = o.m.slots["band-" + (i + 1)];
+      rect(g, s.x + s.w * bd[0], s.y, s.w * bd[1], s.h, 0.13);
+    });
+    const pts = d[1].map(function (v, i) {
+      return (pa.x + (pa.w / (d[1].length - 1)) * i) + "," + (pa.y + pa.h - pa.h * 0.92 * v);
+    });
+    const pl = document.createElementNS(NS, "polyline");
+    pl.setAttribute("points", pts.join(" "));
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", "#1C222A");
+    pl.setAttribute("stroke-width", 5); pl.setAttribute("stroke-linejoin", "round");
+    g.appendChild(pl);
+    o.st.appendChild(g);
+    place(o.st, o.m, d[3], d[0]);
+    document.getElementById("ms").appendChild(o.c);
+  });
+
+  // ---- 3.4 -----------------------------------------------------------------
+  [["structure/end-card-16x9",
+    { kicker: "THAT IS THE CASE", line: "Cheap for a reason,\nand the reason is debt",
+      hand: "Every figure is sourced in the\ndescription. So is the ledger.",
+      caption: "Hertz, September 2026." },
+    "two video cards and the subscribe circle, landscape. Content band 793 units wide \u2014 derived from the zones, not authored beside them"],
+   ["structure/end-card-9x16",
+    { kicker: "THAT IS THE CASE", line: "The buyback was\nborrowed money",
+      hand: "Sources in the description.",
+      caption: "Two minutes. Full version linked." },
+    "portrait: the zones sit low, so the content band is ABOVE them rather than beside them"]
+  ].forEach(function (d) {
+    const o = cell(d[0], d[2]);
+    place(o.st, o.m, d[1], d[0]);
+    o.m.keepOut.forEach(function (z) {
+      const el = document.createElement("div");
+      el.className = "zone";
+      el.style.left = (z.x / o.m.canvas[0] * 100) + "%";
+      el.style.top = (z.y / o.m.canvas[1] * 100) + "%";
+      el.style.width = (z.w / o.m.canvas[0] * 100) + "%";
+      el.style.height = (z.h / o.m.canvas[1] * 100) + "%";
+      if (z.id === "subscribe") el.style.borderRadius = "50%";
+      el.textContent = z.id;
+      o.st.appendChild(el);
+    });
+    document.getElementById("ec").appendChild(o.c);
+  });
+
+  document.getElementById("tail").innerHTML =
+    '<h2>where each of these belongs</h2><pre>' +
+    "figures/short-interest   short-interest \u00b7 bull-vs-bear \u00b7 valuation        evidence, land\n" +
+    "                         SHORT: the-move, numbers\n" +
+    "                         replaces figures/big-number-l2 in short-interest's\n" +
+    "                         evidence beat, which is where it came from.\n\n" +
+    "charts/insider-flow-6    management \u00b7 capital-allocation \u00b7 filing-walk      evidence, on-the-desk\n" +
+    "charts/insider-flow-12   management \u00b7 capital-allocation \u00b7 how-we-got-here  evidence\n" +
+    "                         NOT for a shot that shares the frame with the host at\n" +
+    "                         twelve marks.\n\n" +
+    "charts/macro-series      one-framework \u00b7 how-the-money-is-made \u00b7 risk        evidence, open\n" +
+    "                         MACRO format: the-mechanism.\n\n" +
+    "structure/end-card       resigned-close                                    land\n" +
+    "                         long \u00b7 earnings \u00b7 macro \u00b7 short.\n\n" +
+    "Real chapter types and real shot ids throughout \u2014 see roles.fragment.json.\n" +
+    '</pre>' +
+    '<h2>what is NOT on this page</h2><pre>' +
+    "3.5 CHANNEL ART. Not built, and it needs a decision rather than a plate: a\n" +
+    "banner drawn from the host and room families is illustration, not plate work,\n" +
+    "and hand-written SVG at 2560x1440 as the first thing a viewer ever sees will\n" +
+    "read as a diagram. Three routes are in CHANGES.md; the geometry (2560x1440\n" +
+    "with a 1546x423 safe area, square profile shown as a circle) is ready either\n" +
+    "way.\n\n" +
+    "AND THE REAL CAVEAT ON EVERYTHING ABOVE: these are proof-scale renders in a\n" +
+    "browser. Nothing in \u00a73 has been seen at 1:1, and render-scale.html has no \u00a73\n" +
+    "section. For a data plate that gap is smaller than it was for the seated pose\n" +
+    "\u2014 the geometry is asserted and the budgets are derived \u2014 but the insider-flow\n" +
+    "marks at twelve in 9:16 are the thinnest thing here and want looking at.\n" +
+    '</pre>';
+
+  const el = document.getElementById("over");
+  el.innerHTML = OVER.length
+    ? "<b>" + OVER.length + " OVER-BUDGET FILL" + (OVER.length > 1 ? "S" : "") + "</b> \u2014 the compositor errors on these and the shot does not render:\n\n" + OVER.join("\n") +
+      "\n\nThe sample copy is what is wrong, not the plate: budgets are derived from the box by engine/budget.js."
+    : "Budgets: every fill on this page is inside the derived budget for its box \u2014 checked against slots[name].maxChars / maxCharsPerLine / maxLines, the per-box numbers budget.js writes rather than the role floor.";
+})();
+</script>
+</body>
+</html>

@@ -76,6 +76,57 @@ class SpendLedger:
         with self._lock:
             return int(self._load().get(month_key(), {}).get("pexels_calls", 0))
 
+    # ---------------------------------------------------------- reconciled
+    #
+    # NOTHING RECONCILES THIS LEDGER AGAINST THE PROVIDER (P7). Every figure
+    # in it is what Dennis BELIEVES it spent: chunks counted at the rate in
+    # config, against a cap enforced from the same number. A drift — a rate
+    # change, a retried chunk billed twice, a model switch — is invisible
+    # from inside, and the first symptom is a bill.
+    #
+    # Not automated: reading the ElevenLabs dashboard is a human act, and a
+    # scraper against a billing page is a worse idea than a date. What this
+    # does is the same trick as the provenance record — the failure mode is
+    # nobody looking, so the number that matters carries its own age.
+    RECONCILED_KEY = "reconciled_on"
+
+    def reconciled_on(self) -> str:
+        """ISO date the operator last checked this against the provider."""
+        with self._lock:
+            return str(self._load().get(self.RECONCILED_KEY) or "")
+
+    def mark_reconciled(self, today: "date | None" = None) -> str:
+        """Stamp today. Returns the date written."""
+        from datetime import date as _date
+
+        stamp = (today or _date.today()).isoformat()
+        with self._lock:
+            data = self._load()
+            data[self.RECONCILED_KEY] = stamp
+            self._save(data)
+        return stamp
+
+    def reconciled_line(self, today: "date | None" = None) -> str:
+        """One line for `/cost` saying how old the check is."""
+        from datetime import date as _date
+
+        stamp = self.reconciled_on()
+        now = today or _date.today()
+        if not stamp:
+            return ("Reconciled: NEVER — nothing has ever checked this "
+                    "against the provider's own number. `/cost reconciled` "
+                    "after you have.")
+        try:
+            when = _date.fromisoformat(stamp)
+        except ValueError:
+            return f"Reconciled: {stamp} (unreadable date)"
+        days = (now - when).days
+        if days <= 0:
+            return f"Reconciled: today ({stamp})"
+        ago = f"{days} day{'s' if days != 1 else ''} ago"
+        flag = "  ⚠️ stale" if days > 31 else ""
+        return f"Reconciled: {stamp} — {ago}{flag}"
+
     def llm_usd_this_month(self) -> float:
         with self._lock:
             return float(self._load().get(month_key(), {}).get("llm_usd", 0.0))
@@ -150,7 +201,8 @@ def estimate_runtime_minutes(words: int, wps: float) -> float:
     return round(words / wps / 60.0, 1)
 
 
-def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> "CostReport":
+def build_short_report(script, parse_warnings, settings, ledger, tts_engine,
+                       *, gate_report=None) -> "CostReport":
     from pipeline.gates import check_audio
     from pipeline.models import AnnotationTarget, CostReport  # avoid a cycle
     from pipeline.reach import script_reach
@@ -172,12 +224,20 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
             f"TTS (~${est:.2f}) would exceed the monthly cap "
             f"(${ledger.mtd_spend_usd():.2f}/${settings.monthly_spend_cap_usd:.2f})"
         )
-    # The SHORT lane has no gate battery — the LONG runs `run_gates` at intake
-    # and folds its findings in here, and the daily-volume format was the one
-    # with nothing between a synthesised cash register and an upload. The audio
-    # check is the same function the battery calls.
-    for f in check_audio(settings):
-        (blocking if f.severity == "block" else warnings).append(f.message)
+    # The SHORT lane runs the gate battery now (B3). `_intake_short` builds
+    # the report and folds the findings in here, exactly as the LONG does —
+    # the daily-volume format used to have nothing between a fabricated
+    # figure and an upload.
+    #
+    # `check_audio` is still called directly when no battery was handed in,
+    # so the report keeps working for callers that have no CompanyData to
+    # gate against (the sample renderer, and the tests that predate this).
+    if gate_report is not None:
+        for f in gate_report.findings:
+            (blocking if f.severity == "block" else warnings).append(f.render())
+    else:
+        for f in check_audio(settings):
+            (blocking if f.severity == "block" else warnings).append(f.message)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
@@ -193,6 +253,7 @@ def build_short_report(script, parse_warnings, settings, ledger, tts_engine) -> 
         annotation_note="\n".join(notes),
         meme_count=1 if script.meme else 0,
         meme_cap=settings.meme_max_per_long,
+        gif_cap=settings.gif_max_per_video,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_short),
         delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("short", script.word_count, settings.mock_wps_short),
@@ -223,6 +284,36 @@ _FILLER_MEANS = {
     "img": "no imagery resolved — this beat draws a blank card",
     "meme": "no meme resolved — this beat draws a blank card",
 }
+
+
+def gif_ceiling_warnings(visual_plan, settings) -> list[str]:
+    """One warning when a video leans on the GIF providers past its ceiling.
+
+    Same shape as the meme cap, for the same reason and a sharper one: memes
+    come from the OWNED library and were already capped at one or two, while
+    Giphy and Tenor content is user-uploaded, frequently copyrighted, and
+    fires exactly when a clip is specific enough that stock footage misses
+    (H3). It had no counter, no report line and no ceiling at all.
+
+    A warning rather than a block: the alternative to a GIF here is a filler
+    card, so refusing the render trades a legal question for a dead beat,
+    and the operator is the one who gets to make that trade.
+    """
+    from pipeline.models import _GIF_SOURCES
+
+    gifs = [v for v in visual_plan
+            if getattr(v, "source", "") in _GIF_SOURCES]
+    cap = settings.gif_max_per_video
+    if len(gifs) <= cap:
+        return []
+    keys = ", ".join(sorted({v.key for v in gifs})[:6])
+    return [
+        f"{len(gifs)} visuals came from Giphy/Tenor, over the cap of {cap} "
+        f"({keys}). That content is user-uploaded and frequently "
+        f"copyrighted, and this chain only fires when the owned library and "
+        f"Pexels both missed — so the fix is an owned clip or a palette key, "
+        f"not a bigger cap."
+    ]
 
 
 def unresolved_visual_warnings(visual_plan) -> list[str]:
@@ -261,6 +352,7 @@ def build_long_report(
         )
     warnings = list(parse_warnings) + list(validation_warnings)
     warnings += unresolved_visual_warnings(visual_plan)
+    warnings += gif_ceiling_warnings(visual_plan, settings)
     return CostReport(
         mock_subsystems=settings.active_mocks(),
         ticker=script.ticker,
@@ -277,6 +369,7 @@ def build_long_report(
         filing_overlays=filing_count,
         meme_count=script.meme_count(),
         meme_cap=settings.meme_max_per_long,
+        gif_cap=settings.gif_max_per_video,
         est_runtime_min=estimate_runtime_minutes(script.word_count, settings.mock_wps_long),
         delivery_directives=_count_directives(script),
         est_render_minutes=estimate_render_minutes("long", script.word_count, settings.mock_wps_long),

@@ -92,611 +92,32 @@ def _first_sentence_end(words: list[WordTimestamp], duration: float) -> float:
 
 
 # --------------------------------------------------------------------------
-# SHORT beat timeline (§4).
+# The SHORT beat timeline lived here, and nothing called any of it (D4).
 # --------------------------------------------------------------------------
-
-
-# Per-beat layout variants shipped by the design kit. "a" is the original
-# GET-GO layout; the kit adds b..e per beat. One is picked per short from the
-# script hash, so consecutive daily shorts do not repeat a layout — and the
-# same script always renders the same way.
-SHORT_BEAT_VARIANTS: dict[str, tuple[str, ...]] = {
-    "hook": ("a", "b", "c", "d", "e"),
-    "why": ("a", "b", "c", "d"),
-    "gutcheck": ("a", "b", "c", "d"),
-    "payoff": ("a", "b", "c", "d", "e"),
-}
-
-# A short is faster than long-form but must never machine-gun: the beats that
-# carry data have to survive long enough to be read.
-SHORT_MIN_READABLE_S = 4.5   # numbers sheet and the cheap-or-trap card
-HOST_BOOKEND_S = (3.0, 5.0)  # Dennis opens and closes on camera
-
-# --------------------------------------------------------------------------
-# SHORT pacing (§4 pace, enforced rather than hoped for)
 #
-# Two classes of beat, and the whole rhythm is the difference between them:
+# `build_short_timeline` positioned every SHORT cue off the spoken audio —
+# the fixed beats, the host bookends, and the tag grammar that let a short
+# "reach the library" — and `plan_short_pacing` graded the result against a
+# per-75s event band. Both were reachable only from each other, and from
+# their own tests.
 #
-# * DATA is something the viewer reads — a figure, a filing line, a term card,
-#   the numbers sheet. It gets 3 to 8 seconds and is never cut short; a later
-#   tag is deferred rather than allowed to truncate it.
-# * PUNCTUATION is something they register — a reaction, a transformation, a
-#   meme, a doodle. It runs 0.6 to 2 seconds, layered over the frame.
+# `render_short` is a fixed shot template: `load_format` reads
+# `templates/shots/<format>.json`, which fixes which plate each beat uses,
+# and `ShortResolver` binds text into it from the script's STRUCTURED fields
+# (hook_text, headlines, numbers, cheap_or_trap, conclusion). It never
+# consulted the script's inline tags, its `annotations` array, or any of
+# this.
 #
-# Two data beats back to back is the failure this exists to stop: two things
-# to read with nothing between them reads as a slideshow, and the second one
-# is not read at all.
-# --------------------------------------------------------------------------
-SHORT_DATA_HOLD_S = (3.0, 8.0)
-SHORT_PUNCT_HOLD_S = (0.6, 2.0)
-
-# Dennis comes back every four to five beats. Longer and the video stops being
-# a person talking; shorter and the evidence never gets a run.
-SHORT_HOST_EVERY = 4
-
-# Outside this band the cut is either frantic or a slideshow — a warning, not
-# a failure, because the script is the operator's call.
+# Two render engines for one format could not both be real, and the shot
+# template is the one the renderer, the committed samples and the suite are
+# built on. A dead engine is worse than no engine: it makes it genuinely
+# ambiguous which code is live, and it kept the SHORT prompt asking the
+# writer for `[IMG]`, `[MEME]`, `[CLIP]`, `[SHOW FILING]` and `[SCREENGRAB]`
+# work that was tokenised, validated, costed, listed on the contact sheet
+# and then discarded.
 #
-# The two layers are counted SEPARATELY because they have nothing to do with
-# each other. A data beat is READ: it holds 3-8 seconds and the density of
-# those is what readability actually depends on. Punctuation is REGISTERED —
-# a reaction, a transformation, a doodle riding over the frame for under two
-# seconds — and it is what gives short-form its pulse. Holding the two to one
-# combined budget meant every extra reaction competed with a figure the viewer
-# needed to read, so the punctuation layer stayed at about half the density
-# the format wants.
-SHORT_DATA_PER_75S = (4, 8)
-SHORT_PUNCT_PER_75S = (8, 14)
-SHORT_EVENTS_PER_75S = (22, 30)
-
-# Which tag kinds are read and which are registered.
-SHORT_DATA_TAGS = frozenset({
-    TagType.PLATE, TagType.SHOW_FILING, TagType.SHOW_ARTICLE,
-    TagType.SCREENGRAB, TagType.IMG, TagType.PRODUCT,
-})
-SHORT_PUNCT_TAGS = frozenset({
-    TagType.MEME, TagType.CLIP, TagType.BROLL,
-})
-
-# Punctuation that RIDES OVER the frame instead of claiming it.
-#
-# `class` is written by the tag loop, and these four cues are built outside it
-# — the inline [DOODLE]/[SCRIBBLE] overlays, and the `meme`/`broll` JSON
-# fields — so every one of them carried no class at all and the counter, which
-# reads `class`, scored them as neither data nor punctuation. The band above
-# names a doodle as punctuation in its own definition, and the warning it
-# raises tells the writer to add reactions: a writer who did exactly that
-# watched the number not move. The committed fixture added five doodles and
-# the count stayed at seven.
-#
-# They are COUNTED here and scheduled nowhere. Each one is anchored to the
-# word it fires on, which is the entire job — putting them through the pacing
-# pass would move them off it.
-_OVERLAY_PUNCT_KINDS = (CueKind.SCRIBBLE,
-                        CueKind.MEME, CueKind.CUTAWAY)
-
-# A clause boundary the trap read can be cut on. Sentences first; a long
-# sentence is split again at its comma, because "It only is if revenue stops
-# sliding, and it has not stopped sliding" is two claims and reads as two.
-_TRAP_SPLIT_RE = re.compile(r"[^.!?]+(?:[.!?]+|$)")
-_TRAP_LONG_WORDS = 9
-
-# What a clause is ABOUT: the figure it carries. Spoken scripts write numbers
-# as words ("eleven times earnings", "forty one percent"), so digits alone
-# would miss nearly every one.
-_FIGURE_WORDS = (
-    "zero one two three four five six seven eight nine ten eleven twelve "
-    "thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty "
-    "thirty forty fifty sixty seventy eighty ninety hundred thousand million "
-    "billion trillion percent"
-).split()
-_FIGURE_RE = re.compile(
-    r"\d[\d,.]*%?|\b(?:" + "|".join(_FIGURE_WORDS) + r")\b", re.IGNORECASE)
-
-
-def split_trap_lines(text: str) -> list[str]:
-    """The value-trap read, cut into the clauses it is actually made of."""
-    out: list[str] = []
-    for raw in _TRAP_SPLIT_RE.findall(text or ""):
-        s = raw.strip()
-        if not s:
-            continue
-        if len(s.split()) <= _TRAP_LONG_WORDS or "," not in s:
-            out.append(s)
-            continue
-        head, _, tail = s.partition(",")
-        out.append(head.strip() + ",")
-        out.append(tail.strip())
-    return out
-
-
-def _first_figure(line: str) -> str:
-    """The figure this clause is delivering, for anchoring — or ""."""
-    m = _FIGURE_RE.search(line or "")
-    return m.group(0) if m else ""
-
-
-_SHORT_TAG_TO_KIND = {
-    TagType.PLATE: CueKind.PLATE,
-    TagType.SHOW_FILING: CueKind.FILING,
-    TagType.SHOW_ARTICLE: CueKind.ARTICLE,
-    TagType.SCREENGRAB: CueKind.SCREENGRAB,
-    TagType.IMG: CueKind.IMG,
-    TagType.PRODUCT: CueKind.IMG,
-    TagType.MEME: CueKind.MEME,
-    TagType.CLIP: CueKind.CLIP,
-    TagType.BROLL: CueKind.CLIP,
-}
-
-# The SHORT half of the same contract as _LONG_NO_CUE_REASONS: tags a SHORT
-# may carry that build_short_timeline's evidence loop deliberately does not
-# turn into a cue. Both formats keep this table so "draws nothing" is always a
-# decision on the record, and the coverage test can read it instead of
-# restating it.
-_SHORT_NO_CUE_REASONS: dict[TagType, str] = {
-    **{t: "delivery direction — consumed by TTS, never drawn"
-       for t in DELIVERY_TAG_TYPES},
-    # Overlays ride on top of whatever is showing rather than claiming a beat,
-    # so they are collected by their own passes further down (steps 7-8) with
-    # their own holds — not by the evidence loop.
-    **{t: "overlay — cued by its own pass, not the evidence loop"
-       for t in OVERLAY_TAG_TYPES},
-    # The SHORT opens on the price chart and holds it from the stage open to
-    # the gut check — one of the longest single holds in the format — so the
-    # chart is a FIXED beat in the template rather than something a tag places.
-    # [CHART] in a short's audio_script is therefore redundant rather than
-    # unsupported, and saying so is more use than drawing a second chart.
-    TagType.CHART: ("the short's chart is a fixed beat held from the open, "
-                    "not a tag-placed cutaway"),
-}
-
-# The fixed beats that are themselves data — they count for adjacency.
-_FIXED_DATA_KINDS = (CueKind.NUMBERS, CueKind.CHEAP_OR_TRAP)
-
-# Every fixed beat that claims the frame, for the host-cadence count.
-_HOST_CADENCE_KINDS = (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
-                       CueKind.CHEAP_OR_TRAP)
-
-# A host return shorter than this is a flicker, not a beat.
-MIN_HOST_RETURN_S = 1.6
-
-
-def pick_beat_variant(beat: str, script_sha: str) -> str:
-    """Deterministically choose this short's layout for one beat."""
-    options = SHORT_BEAT_VARIANTS[beat]
-    digest = hashlib.sha256(f"{script_sha}|{beat}".encode()).hexdigest()
-    return options[int(digest[:8], 16) % len(options)]
-
-
-def build_short_timeline(
-    script: ShortScript,
-    words: list[WordTimestamp],
-    duration: float,
-    *,
-    numbers_frac: float = 0.52,
-    conclusion_lead_s: float = 5.0,
-    meme_hold_s: float = 1.4,
-    cutaway_hold_s: float = 2.0,
-    doodle_hold_s: float = 1.6,
-    max_hold_s: float = SHORT_DATA_HOLD_S[1],
-) -> list[Cue]:
-    """Every SHORT cue, positioned off the spoken audio. No number in the
-    renderer may override these."""
-    cues: list[Cue] = []
-    sha = script.content_sha()
-    variants = {b: pick_beat_variant(b, sha) for b in SHORT_BEAT_VARIANTS}
-
-    # ---- beat boundaries, scaled by the real duration, refined by anchors
-    hook_end = clamp(_first_sentence_end(words, duration), duration)
-
-    payoff_t = duration - conclusion_lead_s
-    payoff_fallback = True
-    conc_tokens = script.conclusion.split()
-    if len(conc_tokens) >= 3:
-        anchored = find_anchor_time(words, " ".join(conc_tokens[:3]))
-        if anchored is not None:
-            payoff_t = anchored
-            payoff_fallback = False
-    payoff_t = clamp(max(payoff_t, duration * 0.6), duration)
-
-    gut_t = duration * numbers_frac
-    for a in script.annotations:
-        if a.target is AnnotationTarget.NUMBERS:
-            anchored = find_anchor_time(words, a.anchor_word)
-            if anchored is not None:
-                gut_t = min(gut_t, anchored - 1.2)
-    gut_t = clamp(gut_t, duration)
-    gut_t = max(gut_t, hook_end + 1.5)
-    gut_t = min(gut_t, max(payoff_t - 1.5, hook_end + 1.5))
-
-    # ---- the CHEAP-OR-TRAP beat sits between the numbers and the payoff,
-    #      and is held long enough to read. It only earns its own slot when
-    #      there is room for it; otherwise it rides on the numbers sheet.
-    trap_t: float | None = None
-    if script.cheap_or_trap:
-        anchored = find_anchor_time(words, " ".join(script.cheap_or_trap.split()[:3]))
-        candidate = anchored if anchored is not None else payoff_t - SHORT_MIN_READABLE_S
-        window_open = gut_t + SHORT_MIN_READABLE_S
-        if payoff_t - window_open >= 1.0:
-            trap_t = clamp(min(max(candidate, window_open), payoff_t - 0.5), duration)
-
-    # ---- 0. host bookend: Dennis opens on camera before the hook card lands
-    host_open_end = clamp(min(max(hook_end, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1]),
-                          duration)
-    cues.append(Cue(t=0.0, kind=CueKind.HOST_OPEN,
-                    payload={"until": host_open_end, "text": script.hook_text,
-                             "variant": "open"}))
-
-    # ---- 1. cold open: hook card over the branded chart, from t=0
-    cues.append(Cue(t=0.0, kind=CueKind.HOOK,
-                    payload={"text": script.hook_text, "until": hook_end,
-                             "variant": variants["hook"]}))
-
-    # ---- beat-transition stingers (cuts between the fixed beats)
-    beats = [("why", hook_end), ("gut", gut_t)]
-    if trap_t is not None:
-        beats.append(("trap", trap_t))
-    beats.append(("payoff", payoff_t))
-    for name, t in beats:
-        cues.append(Cue(t=clamp(t, duration), kind=CueKind.TRANSITION,
-                        payload={"name": name}))
-
-    # ---- 2. why: driver headlines overlaid ON the chart
-    #
-    # Each card ends when the NEXT one claims the frame — the same rule the
-    # stage already runs on. They used to end at gut_t without exception, so
-    # the first card landed around 10s and was still there at 30s with the
-    # second stacked under it: two cards, neither replaced, both shrunk to
-    # roughly 9px-equivalent on a phone. Added and never removed.
-    n_head = len(script.headlines)
-    why_span = max(gut_t - hook_end, 0.5)
-    head_times = [
-        clamp(min(hook_end + why_span * i / n_head + 0.15, gut_t - 0.2), duration)
-        for i in range(n_head)
-    ]
-    for i, h in enumerate(script.headlines):
-        nxt = head_times[i + 1] if i + 1 < n_head else gut_t
-        cues.append(Cue(
-            t=head_times[i],
-            kind=CueKind.HEADLINE,
-            payload={"index": i, "text": h.text, "meaning": h.meaning,
-                     # ...and never past the ceiling either way. Two headlines
-                     # across a thirty-second why-span leaves each one sitting
-                     # for fifteen seconds even when it does replace the other;
-                     # a card that has been read lifts off rather than waiting.
-                     "until": min(nxt, head_times[i] + max_hold_s),
-                     "variant": variants["why"]},
-        ))
-
-    # ---- 3. gut check: the numbers sheet slides in, rows type on
-    cues.append(Cue(t=gut_t, kind=CueKind.NUMBERS,
-                    payload={"rows": len(script.numbers), "until": duration,
-                             "variant": variants["gutcheck"]}))
-    n_rows = len(script.numbers)
-    rows_start = gut_t + 0.35
-    # The sheet must finish typing before the beat that follows it, so the
-    # last row is readable rather than still animating when the frame cuts.
-    rows_deadline = trap_t if trap_t is not None else payoff_t
-    rows_end = max(rows_deadline - 0.5, rows_start + 0.5)
-    slot = (rows_end - rows_start) / n_rows
-    row_times: list[float] = []
-    for i, row in enumerate(script.numbers):
-        t = clamp(rows_start + i * slot, duration)
-        row_times.append(t)
-        cues.append(Cue(
-            t=t, kind=CueKind.NUMBER_ROW,
-            payload={"index": i, "label": row.label, "values": row.values,
-                     "type_seconds": round(min(0.9, slot * 0.5), 3)},
-        ))
-
-    # ---- annotations (hand-drawn scribbles) + zoom-punch on key numbers
-    for i, a in enumerate(script.annotations):
-        anchored = find_anchor_time(words, a.anchor_word)
-        fb = anchored is None
-        if a.target is AnnotationTarget.NUMBERS:
-            idx = a.row_index if a.row_index is not None else 0
-            floor = row_times[idx] + 0.25
-            t = anchored if anchored is not None else floor + 0.15
-            t = max(t, floor)  # never before its row has typed in
-        else:
-            t = anchored if anchored is not None else hook_end + why_span * 0.5
-            t = max(t, 0.3)
-        t = clamp(t, duration)
-        cues.append(Cue(
-            t=t, kind=CueKind.ANNOTATION, fallback=fb,
-            payload={"index": i, "target": a.target.value, "note": a.note,
-                     "row_index": a.row_index, "anchor_word": a.anchor_word},
-        ))
-        if a.target is AnnotationTarget.NUMBERS:
-            cues.append(Cue(
-                t=clamp(t + 0.05, duration), kind=CueKind.ZOOM, fallback=fb,
-                payload={"row_index": a.row_index if a.row_index is not None else 0},
-            ))
-
-    # ---- optional meme freeze-frame / ironic cutaway
-    if script.meme is not None:
-        anchored = find_anchor_time(words, script.meme.anchor_word) \
-            if script.meme.anchor_word else None
-        fb = anchored is None
-        t = anchored if anchored is not None else max(payoff_t - 2.4, gut_t + 0.5)
-        t = clamp(min(t, duration - meme_hold_s - 0.2), duration)
-        cues.append(Cue(t=t, kind=CueKind.MEME, fallback=fb,
-                        payload={"key": script.meme.key, "duration": meme_hold_s}))
-    if script.broll is not None:
-        anchored = find_anchor_time(words, script.broll.anchor_word) \
-            if script.broll.anchor_word else None
-        fb = anchored is None
-        t = anchored if anchored is not None else hook_end + why_span * 0.65
-        t = clamp(min(t, duration - cutaway_hold_s - 0.2), duration)
-        cues.append(Cue(t=t, kind=CueKind.CUTAWAY, fallback=fb,
-                        payload={"key": script.broll.key, "duration": cutaway_hold_s}))
-
-    # ---- inline [SCRIBBLE] overlays, word-anchored to their position in the
-    #      (clean) audio_script — composited on top, so they never disturb the
-    #      beat structure
-    for e in script.scribble_events():
-        t = clamp(char_offset_time(words, e.char_offset), duration)
-        cues.append(Cue(t=t, kind=CueKind.SCRIBBLE,
-                        payload={"value": e.payload, "hold": doodle_hold_s}))
-
-    # ---- 4. cheap or trap: the value-trap read, one clause at a time
-    #
-    # This used to be a single text panel carrying the whole paragraph, held
-    # from the moment it landed until the payoff — forty words of body copy
-    # unchanged for twenty seconds while the karaoke caption underneath read
-    # the same sentence out loud. A paragraph is not a visual.
-    #
-    # So it lands the way the numbers sheet already does: one clause per beat,
-    # each on the word it is about. Anchoring is tried on the clause's own
-    # figure first, because the figure is the thing the line exists to
-    # deliver; a clause with no figure, or one whose figure is not in the
-    # spoken words, falls back to its share of the span. Times are forced
-    # monotonic, so a bad anchor can reorder nothing.
-    if trap_t is not None:
-        trap_end = clamp(max(trap_t + SHORT_MIN_READABLE_S, payoff_t), duration)
-        cues.append(Cue(t=trap_t, kind=CueKind.CHEAP_OR_TRAP,
-                        payload={"text": script.cheap_or_trap,
-                                 "until": trap_end}))
-        lines = split_trap_lines(script.cheap_or_trap)
-        span = max(trap_end - trap_t, 0.6)
-        prev = trap_t
-        times: list[float] = []
-        for i, line in enumerate(lines):
-            fallback_t = trap_t + span * i / len(lines)
-            figure = _first_figure(line)
-            anchored = find_anchor_time(words, figure) if figure else None
-            # An anchor OUTSIDE this beat's own window is not an anchor for it
-            # — the same figure is usually said elsewhere in the script, and
-            # taking it collapsed every clause onto the end of the beat.
-            if anchored is None or not (trap_t <= anchored <= trap_end):
-                anchored = None
-            t = anchored if anchored is not None else fallback_t
-            # never before the beat opens, never before the previous clause,
-            # and never so late the last line cannot be read
-            t = min(max(t, prev), trap_end - 0.4)
-            prev = t + 0.3
-            times.append(clamp(t, duration))
-        for i, (line, t) in enumerate(zip(lines, times)):
-            # each clause holds until the next one replaces it, and no clause
-            # outstays the ceiling even if it is the last
-            nxt = times[i + 1] if i + 1 < len(times) else trap_end
-            cues.append(Cue(
-                t=t, kind=CueKind.TRAP_LINE,
-                payload={"index": i, "text": line, "of": len(lines),
-                         "until": min(nxt, trap_end, t + max_hold_s)},
-            ))
-
-    # ---- 5. payoff: the deadpan conclusion (noise or signal — no stamp)
-    cues.append(Cue(t=payoff_t, kind=CueKind.CONCLUSION, fallback=payoff_fallback,
-                    payload={"text": script.conclusion, "until": duration,
-                             "variant": variants["payoff"]}))
-
-    # ---- 6. host bookend: Dennis closes on camera over the last words
-    host_close_len = min(max(duration - payoff_t, HOST_BOOKEND_S[0]), HOST_BOOKEND_S[1])
-    host_close_t = clamp(duration - host_close_len, duration)
-    cues.append(Cue(t=host_close_t, kind=CueKind.HOST_CLOSE,
-                    payload={"until": duration, "text": script.conclusion,
-                             "variant": "close"}))
-
-    # ---- 7. the tag grammar: evidence the script asked for by name.
-    #      Anchored to the word it was written against, exactly like the LONG.
-    #      These are what turn a short from four fixed cards into something
-    #      that can reach the library.
-    for e in script.evidence_events():
-        kind = _SHORT_TAG_TO_KIND.get(e.type)
-        if kind is None:
-            continue
-        t = clamp(char_offset_time(words, e.char_offset), duration)
-        is_data = e.type in SHORT_DATA_TAGS
-        lo, hi = SHORT_DATA_HOLD_S if is_data else SHORT_PUNCT_HOLD_S
-        if e.hold:
-            # `[MEME: bagholder | hold=2.0]` — the writer named the length, so
-            # the class band collapses onto it and the pacing pass has nothing
-            # left to negotiate. Bare tags keep their band exactly.
-            lo = hi = e.hold
-        cues.append(Cue(
-            t=t, kind=kind,
-            payload={"value": e.payload, "tag": e.type.value,
-                     "style": e.style, "values": dict(e.values),
-                     "class": "data" if is_data else "punct",
-                     "hold": lo, "min_hold": lo, "max_hold": hi},
-        ))
-
-    cues.sort(key=lambda c: c.t)
-    return cues
-
-
-# --------------------------------------------------------------------------
-# SHORT pacing pass.
-# --------------------------------------------------------------------------
-def plan_short_pacing(
-    cues: list[Cue],
-    duration: float,
-    *,
-    host_every: int = SHORT_HOST_EVERY,
-) -> tuple[list[Cue], list[str]]:
-    """Apply the pacing contract to a short's evidence cues.
-
-    Returns the cues with `hold` resolved and any host returns inserted, plus
-    warnings the operator should read. The rules, in the order they are
-    applied:
-
-    1. **A data beat is never cut short.** Each one gets at least its minimum
-       hold; a beat that would truncate it is pushed out instead of shortening
-       it. If the push runs past the payoff, the beat is dropped and said so —
-       an unreadable beat is worse than a missing one.
-    2. **Punctuation stays punctuation.** Held between 0.6 and 2 seconds,
-       layered over whatever frame is up rather than replacing it.
-    3. **Never two data beats adjacent.** With nothing between them the second
-       one is not read. The later one moves after the punctuation that follows
-       it, or is dropped.
-    4. **Dennis every four to five beats.** A host return is inserted in the
-       gap after the fourth consecutive evidence beat.
-    5. The counts are checked against their per-75s bands and warned about,
-       never enforced — the script is the operator's call. Three bands, not
-       one: the total, and then the data and punctuation layers separately,
-       because a cut can sit inside the total while the layer that carries
-       the pulse runs at half the density the format wants.
-    """
-    warnings: list[str] = []
-    evidence = sorted(
-        (c for c in cues if c.payload.get("class") in ("data", "punct")),
-        key=lambda c: c.t)
-    # No early return on an empty evidence list. A script that tagged nothing
-    # at all is the WORST case for the density check, not an exempt one — it
-    # is four fixed cards and a face for a minute — and returning here meant
-    # the one contract that would have said so never ran.
-
-    payoff = next((c.t for c in cues if c.kind is CueKind.CONCLUSION), duration)
-    fixed_data = sorted(c.t for c in cues if c.kind in _FIXED_DATA_KINDS)
-
-    kept: list[Cue] = []
-    prev_end = 0.0
-    prev_was_data = False
-    for cue in evidence:
-        is_data = cue.payload.get("class") == "data"
-        lo = float(cue.payload.get("min_hold", 0.6))
-        hi = float(cue.payload.get("max_hold", 2.0))
-        t = max(cue.t, prev_end)
-
-        # Rule 3 — two data beats in a row need something between them.
-        #
-        # Only a crowded pair is a problem: two things to read with a real gap
-        # between them is a normal edit. The warning has to be true, because it
-        # is what the operator reads — saying "moved" when nothing moved is how
-        # a warning stops being worth reading.
-        if is_data and prev_was_data and t < prev_end + SHORT_PUNCT_HOLD_S[0]:
-            t = prev_end + SHORT_PUNCT_HOLD_S[0]
-            warnings.append(
-                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] "
-                f"landed straight on top of another data beat — pushed to "
-                f"{t:.1f}s so the first one can be read")
-
-        if is_data and t + lo > payoff:
-            warnings.append(
-                f"[{cue.payload.get('tag')}: {cue.payload.get('value')}] cannot "
-                f"hold {lo:.1f}s before the payoff at {payoff:.1f}s — dropped "
-                f"rather than flashed")
-            continue
-
-        # Rule 1 — the hold runs until the next beat wants the frame, inside
-        # the class's band.
-        nxt = next((c.t for c in evidence if c.t > cue.t), duration)
-        nxt = min(nxt, *(f for f in fixed_data if f > t), duration) \
-            if any(f > t for f in fixed_data) else min(nxt, duration)
-        hold = min(max(nxt - t, lo), hi)
-        cue.payload["hold"] = round(hold, 3)
-        cue.t = round(t, 3)
-        kept.append(cue)
-        prev_end = t + hold
-        prev_was_data = is_data
-
-    # Rule 4 — Dennis comes back every four to five beats.
-    #
-    # Counted over EVERY beat that claims the frame, not just the tagged ones.
-    # A short whose evidence is the fixed cards still spends forty seconds away
-    # from his face, and counting only tag beats meant a script with three of
-    # them never brought him back at all.
-    fixed_beats = [c for c in cues if c.kind in _HOST_CADENCE_KINDS]
-    beats = sorted(fixed_beats + kept, key=lambda c: c.t)
-    host_cues: list[Cue] = []
-    run = 0
-    for i, cue in enumerate(beats):
-        run += 1
-        if run < host_every:
-            continue
-        gap_start = cue.t + float(cue.payload.get("hold", 0.0) or 0.0)
-        gap_end = beats[i + 1].t if i + 1 < len(beats) else payoff
-        if gap_end - gap_start < MIN_HOST_RETURN_S or gap_start >= payoff:
-            continue
-        run = 0
-        host_cues.append(Cue(
-            t=round(gap_start, 3), kind=CueKind.HOST_BEAT,
-            payload={"until": round(min(gap_end, payoff), 3), "variant": "beat"}))
-    if not host_cues and payoff - (beats[0].t if beats else 0.0) > 12.0:
-        # Nothing found a gap. Rather than let a minute go by without him,
-        # take the longest gap there is.
-        spans = [(beats[i + 1].t - beats[i].t, i) for i in range(len(beats) - 1)]
-        if spans:
-            span, i = max(spans)
-            if span >= MIN_HOST_RETURN_S:
-                host_cues.append(Cue(
-                    t=round(beats[i].t + span * 0.35, 3), kind=CueKind.HOST_BEAT,
-                    payload={"until": round(beats[i + 1].t, 3), "variant": "beat"}))
-
-    others = [c for c in cues if c.payload.get("class") not in ("data", "punct")]
-    out = sorted(others + kept + host_cues, key=lambda c: c.t)
-
-    # The overlay layer: on screen, counted, never rescheduled. An inline
-    # [MEME: key] arrives through the tag loop and is already in `kept`, so a
-    # meme is counted once whichever way the writer asked for it.
-    overlays = [c for c in others if c.kind in _OVERLAY_PUNCT_KINDS]
-
-    n_events = len(kept) + len(overlays) + sum(
-        1 for c in others
-        if c.kind in (CueKind.HOOK, CueKind.HEADLINE, CueKind.NUMBERS,
-                      CueKind.CHEAP_OR_TRAP, CueKind.CONCLUSION,
-                      CueKind.HOST_OPEN, CueKind.HOST_CLOSE))
-    n_events += len(host_cues)
-    lo_n, hi_n = SHORT_EVENTS_PER_75S
-    scaled = (lo_n * duration / 75.0, hi_n * duration / 75.0)
-    if n_events < scaled[0]:
-        warnings.append(
-            f"{n_events} visual events in {duration:.0f}s — below the "
-            f"{scaled[0]:.0f}-{scaled[1]:.0f} band for this runtime; the cut "
-            f"will read as a slideshow")
-    elif n_events > scaled[1]:
-        warnings.append(
-            f"{n_events} visual events in {duration:.0f}s — above the "
-            f"{scaled[0]:.0f}-{scaled[1]:.0f} band; something will flash past")
-
-    # The two layers, separately. A thin punctuation layer is the specific
-    # failure that reads as "flat" while every data beat is perfectly legible,
-    # and a combined count cannot see it: a script can sit inside the total
-    # band with nothing but things to read.
-    n_data = sum(1 for c in kept if c.payload.get("class") == "data")
-    n_punct = sum(1 for c in kept
-                  if c.payload.get("class") == "punct") + len(overlays)
-    p_lo, p_hi = (v * duration / 75.0 for v in SHORT_PUNCT_PER_75S)
-    if n_punct < p_lo:
-        warnings.append(
-            f"{n_punct} punctuation beats in {duration:.0f}s — below the "
-            f"{p_lo:.0f}-{p_hi:.0f} band. Data beats hold 3-8s and are read; "
-            f"the reactions riding over them are what give the cut its pulse, "
-            f"and they cost nothing to add")
-    elif n_punct > p_hi:
-        warnings.append(
-            f"{n_punct} punctuation beats in {duration:.0f}s — above the "
-            f"{p_lo:.0f}-{p_hi:.0f} band; the layer stops punctuating and "
-            f"becomes the frame")
-    d_lo, d_hi = (v * duration / 75.0 for v in SHORT_DATA_PER_75S)
-    if n_data > d_hi:
-        warnings.append(
-            f"{n_data} data beats in {duration:.0f}s — above the "
-            f"{d_lo:.0f}-{d_hi:.0f} band. Each one has to hold 3-8s to be "
-            f"read, so they cannot all fit without something being cut short")
-    return out, warnings
-
+# Gone with it: `ShortScript.evidence_events()` (called only from inside it)
+# and the SHORT half of the prompt's visual vocabulary.
 
 # --------------------------------------------------------------------------
 # LONG tag timeline + jump-cut segment plan (§5, §7).
@@ -935,6 +356,47 @@ def _diversify_fillers(segments: list["Segment"]) -> None:
         counter += 1
 
 
+
+def quantise_to_frames(segments: list[Segment], fps: int,
+                       duration: float) -> list[Segment]:
+    """Snap every segment boundary onto the frame grid (D1).
+
+    Each segment was encoded with `-t {duration}` at `-r {fps}`, which lands
+    on a whole number of frames, and the clips were then joined as-is — so
+    every segment lost up to one frame and the losses ACCUMULATED. Forty
+    segments of 1.011s at 30fps become 30 frames each, 1.000s each, and the
+    picture ends 0.44s ahead of a voice that is still on the real clock. The
+    repo's own 22-minute sample plan has 142 segments.
+
+    Nothing caught it. The final length check compares the container's
+    duration against the audio, and the container's duration FOLLOWS the
+    audio track — so the deviation reads as zero and the last moments are a
+    frozen frame.
+
+    The fix is to decide the frame boundaries here, where the whole timeline
+    is visible, rather than letting each encode round independently. Every
+    boundary becomes the nearest frame index; the remainder is therefore
+    carried into the next segment instead of being dropped, and the segments
+    still tile [0, duration] exactly. Cut lengths move by at most half a
+    frame, which is below anything a viewer can see and is the point: the
+    error stays bounded instead of summing.
+    """
+    if fps <= 0 or not segments:
+        return segments
+    last_frame = round(duration * fps)
+    out: list[Segment] = []
+    prev_frame = round(segments[0].start * fps)
+    for i, seg in enumerate(segments):
+        end_frame = last_frame if i == len(segments) - 1 \
+            else round(seg.end * fps)
+        # Never let a rounding collapse a segment to nothing: a zero-length
+        # clip is an ffmpeg failure, not a shorter cut.
+        end_frame = max(end_frame, prev_frame + 1)
+        out.append(Segment(start=prev_frame / fps, end=end_frame / fps,
+                           kind=seg.kind, payload=seg.payload))
+        prev_frame = end_frame
+    return out
+
 def plan_long_segments(
     cues: list[Cue],
     duration: float,
@@ -943,6 +405,7 @@ def plan_long_segments(
     chapter_starts: list[float] | list[tuple[float, str]] | None = None,
     min_readable_s: float = MIN_READABLE_S,
     chapter_host_s: float = CHAPTER_HOST_S,
+    fps: int = 0,
 ) -> tuple[list[Segment], list[str]]:
     """Tile [0, duration] with host beats and the evidence he cuts away to.
 
@@ -955,6 +418,9 @@ def plan_long_segments(
 
     Returns (segments, warnings). Invariant: segments tile the full duration
     with no gaps or overlaps.
+
+    `fps`, when given, snaps every boundary onto the frame grid so the cuts
+    stay on the real clock through the encode — see `quantise_to_frames`.
     """
     holds = {**DEFAULT_HOLDS, **(holds or {})}
     warnings: list[str] = []
@@ -1070,10 +536,16 @@ def plan_long_segments(
                 f"— same visual type back-to-back"
             )
 
-    # tiling invariant — fail loudly in dev rather than desync audio/video
-    eps = 1e-6
+    if fps:
+        segments = quantise_to_frames(segments, fps, duration)
+
+    # tiling invariant — fail loudly in dev rather than desync audio/video.
+    # `eps` is half a frame once the plan is quantised: the last boundary is
+    # the nearest frame to `duration`, which is the closest a frame grid can
+    # come to it, and demanding exactness would be demanding the impossible.
+    eps = (0.5 / fps + 1e-6) if fps else 1e-6
     assert segments, "segment plan must not be empty"
     assert abs(segments[0].start) < eps and abs(segments[-1].end - duration) < eps
     for a, b in zip(segments, segments[1:]):
-        assert abs(a.end - b.start) < eps, "segments must tile without gaps"
+        assert abs(a.end - b.start) < 1e-6, "segments must tile without gaps"
     return segments, warnings

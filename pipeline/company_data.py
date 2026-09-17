@@ -2,9 +2,9 @@
 
 The operator has an Excel add-in (Capital IQ, with Refinitiv/LSEG mnemonics
 alongside), not API access, so the data contract is the shipped template — the
-PRIVATE data source. The add-in resolves the formulas in Excel — since P3.1b
-the bot can drive that itself; see `excel_refresh.py` — and the file this
-reads carries CACHED VALUES, so it opens with openpyxl data_only=True
+PRIVATE data source. The add-in resolves the formulas in Excel on the
+operator's own machine — the bot runs on Linux and never drives Excel — and
+the file this reads carries CACHED VALUES, so it opens with openpyxl data_only=True
 (values, never formula strings). Sheets are read strictly BY NAME, so the
 add-in's hidden helper sheets (`_CIQHiddenCacheSheet`, `_RICMap`, a GUID-named
 cache) are ignored:
@@ -53,6 +53,7 @@ from pipeline.models import (
     ALL_DATA_FIELDS,
     DATA_REQUIRED,
     HISTORY_FIELDS,
+    QUARTER_FIELDS,
     CompanyData,
     _STRING_FIELDS,
 )
@@ -121,6 +122,7 @@ EXPORT_NAMES = ("dennis_data.xlsx", "data.xlsx", "dennis_data.csv")
 # sheets read by name (anything else — Instructions, hidden helpers — ignored)
 SNAPSHOT_SHEET = "Snapshot"
 HISTORY_SHEET = "History"
+QUARTERS_SHEET = "Quarters"
 DASHBOARD_SHEET = "Dashboard"
 VALUATION_SHEET = "Valuation"
 PEERS_SHEET = "Peers"
@@ -578,10 +580,15 @@ def _read_snapshot(ws) -> dict[str, object]:
     return pairs
 
 
-def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
-    """Header row carries `field_key`, `Label`, the period labels, then
-    `CAGR …` and the mnemonic column. The period columns are everything
-    between `Label` and the CAGR/mnemonic tail — read dynamically."""
+def _read_periods(ws, allowed: list[str], what: str
+                  ) -> tuple[list[str], dict[str, list[float | None]]]:
+    """A `field_key | Label | <periods…> | <computed tail>` sheet.
+
+    Both History and Quarters have this shape, so both read through here
+    (O1). The period labels come off the header row and are never hardcoded:
+    a workbook carrying seven quarters, or FY-5, must not silently lose a
+    column to a constant in this file.
+    """
     rows = _rows(ws)
     hr = _header_row(rows, "field_key")
     if hr is None:
@@ -611,11 +618,27 @@ def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
         if not key or key == "field_key":
             continue
         history[key] = [_num(row[j] if j < len(row) else None) for j in period_cols]
-    unknown = [k for k in history if k not in HISTORY_FIELDS]
+    unknown = [k for k in history if k not in allowed]
     for k in unknown:
-        log.warning("history sheet has unknown field %r — ignored", k)
+        log.warning("%s sheet has unknown field %r — ignored", what, k)
         history.pop(k)
     return periods, history
+
+
+def _read_history(ws) -> tuple[list[str], dict[str, list[float | None]]]:
+    return _read_periods(ws, HISTORY_FIELDS, "history")
+
+
+def _read_quarters(ws) -> tuple[list[str], dict[str, list[float | None]]]:
+    """The last 6-8 quarters, oldest → newest.
+
+    A quarterly sheet is the only thing that makes an earnings video
+    checkable: `templates/shots/earnings.json` opens on `the-print` and
+    `vs-expected`, and with annual series alone the fact-check could not
+    verify a word of either — the writer supplied the print from its own
+    training knowledge and nothing objected (O0).
+    """
+    return _read_periods(ws, QUARTER_FIELDS, "quarters")
 
 
 def _read_dashboard(ws) -> dict[str, object]:
@@ -881,6 +904,73 @@ def _read_peer_percentiles(ws) -> list[dict]:
     return out
 
 
+def merge_free_news(news: list[dict], ticker: str, website: str,
+                    settings) -> list[dict]:
+    """Workbook rows first, the free sources filling the gap (M5).
+
+    `pipeline/sources.py` already has a cached, free, gracefully-degrading
+    feed layer that nothing pointed at news: `latest_8k` with EX-99.1
+    extraction and `ir_feed`/`parse_rss`. An 8-K IS the news for a thinly
+    covered ticker — it is the company announcing the thing the headline is
+    about, with a date and a URL, and often the only primary source there
+    is. Thinness hurt twice: the writer composed the "headlines that caused
+    the move" beat unaided, and `[SHOW ARTICLE]` had fewer candidates to
+    token-match against, so the tag failed to resolve and degraded to
+    nothing.
+
+    THE VENDOR BLOCK APPLIES. Parsers hard-reject a data-terminal brand in a
+    script because it would be spoken and captioned, and `_read_news` notes
+    that Source must be a news outlet — so anything merged here carries an
+    outlet name ("8-K filing", the IR site), never the terminal it arrived
+    through.
+
+    Never raises: every source in that layer degrades to "unavailable", and
+    a missing headline is a thinner prompt rather than a failed load.
+    """
+    out = list(news)
+    seen = {str(n.get("headline") or "").strip().lower() for n in out}
+
+    def add(headline: str, when: str, source: str, url: str) -> None:
+        head = (headline or "").strip()
+        if not head or head.lower() in seen:
+            return
+        seen.add(head.lower())
+        out.append({"date": (when or "").strip(), "headline": head,
+                    "source": source, "url": (url or "").strip()})
+
+    try:
+        from pipeline.sources import UNAVAILABLE, latest_8k
+
+        got = latest_8k(ticker, settings) or {}
+        if got.get("status") not in (None, UNAVAILABLE):
+            # The 8-K cover page says a thing happened; the exhibit says
+            # what. Its first sentence is the headline the company wrote.
+            text = str(got.get("exhibit_text") or "").strip()
+            headline = text.split(". ")[0].strip(" .") if text else ""
+            add(headline or f"{ticker.upper()} filed an 8-K",
+                str(got.get("filed") or ""), "8-K filing",
+                str(got.get("exhibit_url") or got.get("url") or ""))
+    except Exception as e:  # noqa: BLE001 - a free source is never fatal
+        log.warning("8-K news merge for %s failed (%s)", ticker, e)
+
+    if website:
+        for path in ("/rss", "/feed", "/press-releases/rss"):
+            try:
+                from pipeline.sources import UNAVAILABLE, ir_feed
+
+                feed = ir_feed(website.rstrip("/") + path, settings) or {}
+                if feed.get("status") in (None, UNAVAILABLE):
+                    continue
+                for item in (feed.get("items") or [])[:6]:
+                    add(str(item.get("title") or ""),
+                        str(item.get("published") or ""),
+                        "company IR", str(item.get("link") or ""))
+                break
+            except Exception as e:  # noqa: BLE001
+                log.warning("IR feed news merge for %s failed (%s)", ticker, e)
+    return out
+
+
 def load_company_data(workspace: Path) -> CompanyData:
     """Load + type-coerce the v3 export (all sheets, by name). Raises
     CompanyDataError if absent or unreadable; missing-field policy lives on
@@ -900,6 +990,8 @@ def load_company_data(workspace: Path) -> CompanyData:
     peers: list[dict] = []
     peer_percentiles: list[dict] = []
     news: list[dict] = []
+    quarter_labels: list[str] = []
+    quarters: dict[str, list[float | None]] = {}
     if src.suffix == ".xlsx":
         wb = load_workbook(src, data_only=True)
         names = set(wb.sheetnames)
@@ -909,6 +1001,13 @@ def load_company_data(workspace: Path) -> CompanyData:
             history_years, history = _read_history(wb[HISTORY_SHEET])
         else:
             log.warning("export has no History sheet — multi-year numbers unavailable")
+        if QUARTERS_SHEET in names:
+            quarter_labels, quarters = _read_quarters(wb[QUARTERS_SHEET])
+        else:
+            # A WARNING, NOT A BLOCK (O1). Plenty of tickers will not have
+            # one, and every workbook that exists today does not — the
+            # annual flow has to keep working exactly as it does.
+            log.warning("export has no Quarters sheet — QoQ/YoY unavailable")
         if DASHBOARD_SHEET in names:
             dashboard = _read_dashboard(wb[DASHBOARD_SHEET])
         if VALUATION_SHEET in names:
@@ -933,7 +1032,8 @@ def load_company_data(workspace: Path) -> CompanyData:
 
     values = {field: _coerce(field, pairs.get(field)) for field in ALL_DATA_FIELDS}
     return CompanyData(values=values, history_years=history_years,
-                       history=history, dashboard=dashboard,
+                       history=history, quarter_labels=quarter_labels,
+                       quarters=quarters, dashboard=dashboard,
                        valuation=valuation, peers=peers,
                        peer_percentiles=peer_percentiles, news=news,
                        source_file=str(src))

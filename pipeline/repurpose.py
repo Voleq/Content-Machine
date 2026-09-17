@@ -16,7 +16,8 @@ from typing import Sequence
 
 from config import Settings
 from pipeline.models import WordTimestamp
-from pipeline.render_common import ffprobe_duration, run_ffmpeg
+from pipeline.render_common import (encode_profile, ffprobe_duration,
+                                    run_ffmpeg)
 
 log = logging.getLogger(__name__)
 
@@ -75,8 +76,18 @@ def pick_best_window(
             return None, None       # nothing left that doesn't overlap
     best_start = max(sorted(candidates), key=score)
 
-    if words:  # snap to a word start (that still fits) so speech isn't clipped
-        valid = [w.start for w in words if w.start <= duration - window_s]
+    # SNAP TO A SPOKEN BOUNDARY (I2). `words` is None whenever the TTS cache
+    # has been swept — the retention timer deletes the `.m4a`/`.wav` — and
+    # this used to cut wherever the score landed, which is mid-word as often
+    # as not. The cue times are the fallback: they are positioned off the
+    # same master clock and a cue lands on a phrase boundary by
+    # construction, so they are a coarser version of the same information
+    # rather than a different kind of guess.
+    boundaries = [w.start for w in (words or [])]
+    if not boundaries:
+        boundaries = sorted({float(c["t"]) for c in cues if c.get("t") is not None})
+    if boundaries:
+        valid = [b for b in boundaries if b <= duration - window_s]
         if valid:
             best_start = min(valid, key=lambda s: abs(s - best_start))
     end = min(best_start + window_s, duration)
@@ -131,13 +142,27 @@ def repurpose_short_from_long(
 
     W, H = settings.short_resolution
     out_path = out_path or long_mp4.with_name("short_repurposed.mp4")
+    # ONE ENCODE, THROUGH THE PROJECT'S PROFILE (I1).
+    #
+    # A correction to the diagnosis first: this cannot stream-copy. The whole
+    # point of the cut is 16:9 -> 9:16, and a crop changes the geometry —
+    # there is no keyframe alignment that lets `-c:v copy` produce a
+    # differently-shaped picture. Cutting on a keyframe and re-encoding only
+    # the lead-in is a concat-of-two-sources trick that buys nothing here,
+    # because every frame needs re-encoding anyway.
+    #
+    # What was actually wasteful is that this hardcoded libx264 and the
+    # project's final preset while the render path resolves an encoder,
+    # including NVENC when the box has one — so the machine that had just
+    # spent hours on the GPU did three more clips on the CPU. It uses the
+    # same profile as a SHORT final now.
+    profile = encode_profile(settings, "short")
     run_ffmpeg([
         "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
         "-vf",
         f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H},setsar=1",
         "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
-        "-c:v", "libx264", "-preset", settings.final_preset,
-        "-crf", str(settings.short_crf), "-pix_fmt", "yuv420p",
+        *profile.video_args(),
         "-c:a", "aac", "-b:a", settings.audio_bitrate,
         "-movflags", "+faststart",
         str(out_path),
@@ -190,13 +215,27 @@ def _cut_window(long_mp4: Path, start: float, end: float, out_path: Path,
     """One 9:16 cut. Shared by the single- and multi-clip paths."""
     length = end - start
     W, H = settings.short_resolution
+    # ONE ENCODE, THROUGH THE PROJECT'S PROFILE (I1).
+    #
+    # A correction to the diagnosis first: this cannot stream-copy. The whole
+    # point of the cut is 16:9 -> 9:16, and a crop changes the geometry —
+    # there is no keyframe alignment that lets `-c:v copy` produce a
+    # differently-shaped picture. Cutting on a keyframe and re-encoding only
+    # the lead-in is a concat-of-two-sources trick that buys nothing here,
+    # because every frame needs re-encoding anyway.
+    #
+    # What was actually wasteful is that this hardcoded libx264 and the
+    # project's final preset while the render path resolves an encoder,
+    # including NVENC when the box has one — so the machine that had just
+    # spent hours on the GPU did three more clips on the CPU. It uses the
+    # same profile as a SHORT final now.
+    profile = encode_profile(settings, "short")
     run_ffmpeg([
         "-ss", f"{start:.3f}", "-t", f"{length:.3f}", "-i", str(long_mp4),
         "-vf",
         f"crop=trunc(ih*{W}/{H}/2)*2:ih,scale={W}:{H},setsar=1",
         "-af", f"afade=t=in:st=0:d=0.25,afade=t=out:st={max(length - 0.4, 0):.3f}:d=0.4",
-        "-c:v", "libx264", "-preset", settings.final_preset,
-        "-crf", str(settings.short_crf), "-pix_fmt", "yuv420p",
+        *profile.video_args(),
         "-c:a", "aac", "-b:a", settings.audio_bitrate,
         "-movflags", "+faststart",
         str(out_path),

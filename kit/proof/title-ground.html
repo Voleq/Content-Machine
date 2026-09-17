@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§1 — the title's own ground (decided: card)</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:22px;max-width:1180px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:26px 0 6px}
+  pre{background:#1B1F24;padding:12px 14px;border-radius:2px;overflow:auto;margin:8px 0}
+  p{max-width:82ch;color:#8d968f}
+  p.lead{color:#C9C2B4}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  nav{margin:10px 0 0}
+  nav a{color:#C9C2B4;border:1px solid #39414b;padding:5px 10px;text-decoration:none;margin-right:6px;display:inline-block}
+  nav a.on{background:#232830;border-color:#5b6672}
+  .plate{margin:14px 0 22px;border:1px solid #262c33;background:#0f1215;display:inline-block;max-width:100%}
+  .plate svg{display:block}
+  .cap{color:#8d968f;padding:6px 9px;border-top:1px solid #262c33}
+  .cap b{color:#C9C2B4;font-weight:400}
+  code{color:#C7A86B}
+</style>
+</head>
+<body>
+<main>
+  <h1>§1 — the title's own ground · decided: card</h1>
+
+  <p class="lead"><b>DECIDED: <code>card</code>.</b> <code>engine/build.js TITLE_GROUND = "card"</code>, on all
+  22 chapter openers. This page is now the record of what that was chosen over: three treatments and
+  the un-grounded control, on the two worst walls in the family and on a clean one, with the measured
+  contrast floor inside the published title box beside each. Every number below is unchanged — it is
+  the evidence the decision rests on.</p>
+
+  <p>The problem it fixes: chapter-opener titles were legible because the wall behind them happened to
+  be flat and pale. That is a property of the wall, borrowed — not a property of the title.</p>
+
+  <p><b>The rule nothing stated.</b> <code>mass()</code> suppresses every cast shadow whose base sits
+  above 36% of frame height, with the comment "so the title box stays on flat wall and the chapter
+  openers keep a clean ground for type". That is the only place the constraint exists, it is a side
+  condition on a shadow pass, and it stops nothing else: a prop, a tone, a toned wall or a dusk variant
+  all land behind the box without passing it.</p>
+
+  <p><b>And it was already broken — in the shipped library, with no new room art at all.</b>
+  The family audit at the foot of this page measures every plate that declares a title slot, in the
+  pre-card state: <b>16 of the 22 chapter openers had drawn ink under the title box.</b>
+  <code>room/whiteboard-wall-9x16</code> is the worst in the family at 35.02% of the box under
+  4.5:1, and <code>room/whiteboard-wall-16x9</code> the worst in 16:9 at 28.27% — on both, the
+  title box is over the desk, a monitor and a stack, 655 and 714 marks deep.
+  <code>room/printer-corner-16x9</code> runs the night window's fifteen blind slats behind the
+  title. Six plates are genuinely clean, and five of those six are portrait. So this is not a risk
+  that a dusk variant would introduce; it is a defect the borrowed rule was already failing to
+  prevent, which is the argument for answering §1 before §4 rather than after.</p>
+
+  <nav id="nav"></nav>
+  <div id="out">building…</div>
+</main>
+<script>
+(function () {
+  const PL = window.PLATES, H = window.HAND, B = window.BUILD;
+  const out = document.getElementById("out");
+
+  // The four grounds under test. null is the pre-card control: not what ships now.
+  const STATES = [
+    [null, "control — no ground (the library BEFORE the card; not what ships now)"],
+    ["card", "card — opaque taped card, its own rim and its own cast"],
+    ["scrim", "scrim — three feathered washes, no object and no edge"],
+    ["slab", "slab — ink block, title reversed out of it"],
+  ];
+
+  // THE WALLS, AND WHY THESE FIVE.
+  //
+  // The brief asks for the worst wall available, any toned wall if one exists in
+  // any form, and the current flat one. All three exist, and the worst is not the
+  // one this page first assumed: whiteboard-wall's title box sits over the desk,
+  // a monitor and a stack of paper. printer-corner is the PATTERN case, which is
+  // a different failure — fifteen blind slats at type scale. low-desk-height is
+  // the one plate whose wall is a five-band gradient, heaviest at the top, with
+  // the title in the heaviest band. desk-corner is the genuinely clean 16:9 case
+  // and the one a treatment must not ruin. The portrait row is the worst 9:16
+  // box, because the panel's padding is derived from the box and a 9:16 title box
+  // is a different shape.
+  const WALLS = [
+    ["room/whiteboard-wall-16x9", "WORST IN 16:9 — 28% of the title box is over the desk, a monitor and a stack"],
+    ["room/printer-corner-16x9", "PATTERNED — the night window's fifteen blind slats run behind the title"],
+    ["room/low-desk-height-16x9", "TONED — the only banded wall in the family, heaviest where the title sits"],
+    ["room/desk-corner-16x9", "CLEAN — flat pale wall. The easy case, and the one a treatment must not ruin"],
+    ["room/whiteboard-wall-9x16", "WORST IN THE FAMILY — 35%, and a re-authored box"],
+    // §4.2 — THE WALL THIS PAGE WAS AN ARGUMENT ABOUT. Time-of-day variants were
+    // held back because a toned wall behind the title box is precisely the
+    // borrowed legibility measured here. §1 chose `card`, the variants have now
+    // shipped as assets, and this row is the closure: the same worst angle at
+    // dusk with the tone actually on the wall. If the card holds here it holds
+    // anywhere the room family is going.
+    ["room/whiteboard-wall-dusk-16x9", "TONED AT DUSK — §4.2's variant on the worst angle. The case the card was taken for"],
+  ];
+
+  const sel = (function () {
+    const m = /[?&]w=(\d)/.exec(location.search);
+    const i = m ? +m[1] : 0;
+    return i >= 0 && i < WALLS.length ? i : 0;
+  })();  document.getElementById("nav").innerHTML = WALLS.map(function (wl, i) {
+    return '<a class="' + (i === sel ? "on" : "") + '" href="?w=' + i + '">' + wl[0] + "</a>";
+  }).join("");
+
+  // ---- drawing -------------------------------------------------------------
+  // Straight off the library entry, so the seed, the surface and the palette are
+  // the shipped ones and the only thing this page varies is the ground.
+  function drawWall(key, state, boil) {
+    const item = B.LIB.filter((i) => i.key === key)[0];
+    if (!item) throw new Error("not in LIB: " + key);
+    const it = Object.assign({}, item, { args: Object.assign({}, item.args, { titleGround: state }) });
+    return B.draw(it, null, { boil: boil == null ? 1 : boil });
+  }
+
+  // The crop is a viewBox, never an overflow: a CSS crop makes the browser
+  // rasterise the whole 1920x1080 plate to show a corner of it, and twelve room
+  // plates treated that way hung the review page in the last pack.
+  function crop(svg, box) {
+    return svg.replace(/^<svg[^>]*>/, '<svg xmlns="http://www.w3.org/2000/svg" width="' + box.w +
+      '" height="' + box.h + '" viewBox="' + box.x + " " + box.y + " " + box.w + " " + box.h + '">');
+  }
+
+  // AND THE MARKS OUTSIDE THE CROP ARE PRUNED, which is not cosmetic.
+  //
+  // A viewBox crop stops the browser rasterising the whole plate at display size,
+  // but all ~20,000 marks on a room are still parsed, clipped and composited.
+  // Four rooms in one document is what hung the last review page, and rasterising
+  // one to a canvas sixteen times over is that cost again.
+  //
+  // A mark that does not reach the crop cannot change a pixel inside it, so it is
+  // dropped. Two guards make that exact rather than nearly true: a plate carrying
+  // a clip box or a settle transform is refused outright (a room has neither),
+  // and any path with RELATIVE commands is kept whatever its apparent extent,
+  // because its numbers are offsets and its naive bbox is a lie — which is exactly
+  // what the paper grain is, one path of thousands of relative segments across
+  // the whole canvas.
+  function prune(P, svg, box, pad) {
+    if (P.clipBox || P.settleOffset) return svg;
+    const head = svg.match(/^<svg[^>]*>/)[0];
+    const body = svg.slice(head.length, svg.lastIndexOf("</svg>"));
+    const x0 = box.x - pad, y0 = box.y - pad, x1 = box.x + box.w + pad, y1 = box.y + box.h + pad;
+    const keep = [];
+    const re = /<[a-zA-Z]+\b[^>]*?\/>|<[^>]+>/g;
+    let m;
+    while ((m = re.exec(body))) {
+      const el = m[0];
+      if (el.slice(0, 5) !== "<path") { keep.push(el); continue; }
+      const d = (el.match(/ d="([^"]*)"/) || [, ""])[1];
+      if (!d) continue;
+      if (/[mlcsqtahv]/.test(d)) { keep.push(el); continue; }
+      const nums = d.match(/-?\d*\.?\d+/g);
+      if (!nums) continue;
+      let a0 = Infinity, b0 = Infinity, a1 = -Infinity, b1 = -Infinity;
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        const x = +nums[i], y = +nums[i + 1];
+        if (x < a0) a0 = x; if (x > a1) a1 = x;
+        if (y < b0) b0 = y; if (y > b1) b1 = y;
+      }
+      if (a1 >= x0 && a0 <= x1 && b1 >= y0 && b0 <= y1) keep.push(el);
+    }
+    return head + keep.join("") + "</svg>";
+  }
+  const view = (P, svg, box) => crop(prune(P, svg, box, 26), box);
+
+  // Rasteriser-free companion to fail%: how many drawn marks reach into the box.
+  // Relative-coordinate paths are excluded rather than kept here — the only one
+  // in the library is the paper grain, which is on every plate and is not what
+  // breaks a title.
+  function marksIn(svg, box) {
+    let n = 0, m;
+    const re = /<path\b[^>]*?\/>/g;
+    while ((m = re.exec(svg))) {
+      const d = (m[0].match(/ d="([^"]*)"/) || [, ""])[1];
+      if (!d || /[mlcsqtahv]/.test(d)) continue;
+      const nums = d.match(/-?\d*\.?\d+/g);
+      if (!nums) continue;
+      let a0 = Infinity, b0 = Infinity, a1 = -Infinity, b1 = -Infinity;
+      for (let i = 0; i + 1 < nums.length; i += 2) {
+        const x = +nums[i], y = +nums[i + 1];
+        if (x < a0) a0 = x; if (x > a1) a1 = x;
+        if (y < b0) b0 = y; if (y > b1) b1 = y;
+      }
+      if (a1 >= box.x && a0 <= box.x + box.w && b1 >= box.y && b0 <= box.y + box.h) n++;
+    }
+    return n;
+  }
+
+  // ---- measurement ---------------------------------------------------------
+  function lum(r, g, b) {
+    const f = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  }
+  const hexL = (hex) => lum(parseInt(hex.substr(1, 2), 16), parseInt(hex.substr(3, 2), 16), parseInt(hex.substr(5, 2), 16));
+  const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+  function raster(svgStr, w, h) {
+    return new Promise(function (res, rej) {
+      const url = URL.createObjectURL(new Blob([svgStr], { type: "image/svg+xml" }));
+      const img = new Image();
+      img.onload = function () {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        const cx = c.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(img, 0, 0);
+        URL.revokeObjectURL(url);
+        try { res(cx.getImageData(0, 0, w, h)); }
+        catch (e) { rej(new Error("the canvas came back tainted — serve this directory over http (python3 -m http.server) for the measured columns. The renders below need no server.")); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error("the rasteriser refused the SVG")); };
+      img.src = url;
+    });
+  }
+
+  // What a viewer reads the type against: the pixels inside the PUBLISHED title
+  // box, inset a little so this measures the ground and not the panel's own rim.
+  // The floor is the 1st percentile rather than the darkest pixel — one
+  // anti-aliased pixel off one drawn line is not what type is read against, and a
+  // single-pixel minimum fails every treatment including the opaque ones.
+  //
+  // fail% is the number that matters most and the one a mean hides: the share of
+  // the box that is too dark for the type to be read on. A letter does not sit on
+  // the average of the box, it sits somewhere in it — so 4% of the box failing is
+  // four letters in a hundred broken, not a plate that is 96% fine.
+  async function measure(P, svg, box, typeHex, light) {
+    const pad = 6;
+    const b = { x: Math.round(box.x + pad), y: Math.round(box.y + pad), w: Math.round(box.w - pad * 2), h: Math.round(box.h - pad * 2) };
+    const img = await raster(view(P, svg, b), b.w, b.h);
+    const d = img.data, n = b.w * b.h, L = new Float64Array(n);
+    const tl = hexL(typeHex);
+    let fail = 0;
+    for (let i = 0; i < n; i++) {
+      L[i] = lum(d[i * 4], d[i * 4 + 1], d[i * 4 + 2]);
+      if (ratio(tl, L[i]) < 4.5) fail++;
+    }
+    const s = L.slice().sort();
+    const at = (p) => s[Math.min(n - 1, Math.max(0, Math.round(p * (n - 1))))];
+    return {
+      floor: ratio(tl, light ? at(0.99) : at(0.01)),
+      mid: ratio(tl, at(0.5)),
+      fail: (fail / n) * 100,
+      range: (at(0.99) - at(0.01)) * 100,
+    };
+  }
+
+  // ---- run -----------------------------------------------------------------
+  (async function () {
+    const INK = PL.ROLES.structure.hex, PAPER = PL.SURFACES["night-card"].ground;
+    const t0 = performance.now();
+    const rows = {};          // key|state -> {m, err}
+    const shown = {};         // the selected wall's plates, kept for the renders
+    let panelBox = null, joined = false, canvas = null, unmeasured = null;
+
+    for (const wl of WALLS) {
+      for (const st of STATES) {
+        const state = st[0], key = wl[0], id = key + "|" + state;
+        out.textContent = "building " + key + " · " + (state || "control") + " …";
+        await new Promise((r) => setTimeout(r, 0));
+        const P = drawWall(key, state);
+        const m = P.manifest();
+        const tg = m.titleGround;
+        const svg = P.toSVG();
+        if (key === WALLS[sel][0]) {
+          shown[String(state)] = { P: P, m: m, svg: svg };
+          if (state === "card") { panelBox = tg.box; joined = tg.typeBlock.joinedCaption; canvas = m.canvas; }
+        }
+        // the measured box is the PUBLISHED title slot, identical in all four
+        // states — that identity is itself one of the assertions below
+        try {
+          rows[id] = { m: await measure(P, svg, m.slots.title,
+            tg && tg.typeColour === "ground" ? PAPER : INK, !!(tg && tg.typeColour === "ground")) };
+        } catch (e) { rows[id] = { err: e.message }; unmeasured = e.message; }
+      }
+    }
+
+    const fmt = (v) => (v == null ? "—" : v.toFixed(1));
+    const fmt2 = (v) => (v == null ? "—" : v.toFixed(2));
+    let tbl = "wall                        ground    floor     mid      fail%    tonal range\n" + "".padEnd(79, "-") + "\n";
+    WALLS.forEach(function (wl) {
+      STATES.forEach(function (st) {
+        const r = rows[wl[0] + "|" + st[0]];
+        const nm = wl[0].padEnd(28) + String(st[0] || "control").padEnd(10);
+        if (!r || r.err) { tbl += nm + "UNMEASURED\n"; return; }
+        tbl += nm + (fmt(r.m.floor) + ":1").padEnd(10) + (fmt(r.m.mid) + ":1").padEnd(9) +
+          (fmt2(r.m.fail) + "%").padEnd(9) + fmt(r.m.range) + " L\n";
+      });
+      tbl += "\n";
+    });
+
+    // Wall-independence is the whole claim: a ground that carries its own
+    // contrast reads the same floor on every wall, one that borrows reads a
+    // different floor on each.
+    let spread = "ground    " + WALLS.map((w, i) => ("#" + (i + 1)).padStart(9)).join(" ") + "    spread\n" + "".padEnd(68, "-") + "\n";
+    STATES.forEach(function (st) {
+      const fl = WALLS.map((wl) => (rows[wl[0] + "|" + st[0]].m || {}).floor);
+      if (fl.some((f) => f == null)) return;
+      spread += String(st[0] || "control").padEnd(10) + fl.map((f) => fmt(f).padStart(9)).join(" ") +
+        "    " + fmt(Math.max.apply(null, fl) - Math.min.apply(null, fl)) + "\n";
+    });
+    spread += "\n" + WALLS.map((w, i) => "#" + (i + 1) + "  " + w[0]).join("\n") + "\n\n" +
+      "A ground that carries its own contrast reads the SAME floor on every wall — a spread of\n" +
+      "zero. One that borrows reads a different floor on each, which is what the control row\n" +
+      "said about the library before the card. The scrim's spread is the honest cost of being\n" +
+      "the only treatment that does not cover the room art it sits on.";
+
+    // ---- the mechanism, asserted ------------------------------------------
+    const wall = WALLS[sel][0];
+    const asserts = [];
+    ["card", "scrim", "slab"].forEach(function (st) {
+      const a = shown[st].P, ma = shown[st].m, c = shown["null"].m.slots.title;
+      const t = ma.slots.title, tg = ma.titleGround;
+      const b2 = drawWall(wall, st, 2);
+      asserts.push([st,
+        t.x !== c.x || t.y !== c.y || t.w !== c.w || t.h !== c.h,
+        tg.box.x <= tg.typeBlock.x && tg.box.y <= tg.typeBlock.y &&
+          tg.box.x + tg.box.w >= tg.typeBlock.x + tg.typeBlock.w &&
+          tg.box.y + tg.box.h >= tg.typeBlock.y + tg.typeBlock.h,
+        a.top.join("") === b2.top.join("") && a.top.length > 0,
+        /<text[\s>]/.test(shown[st].svg)]);
+    });
+    const assertBad = asserts.filter((a) => a[1] || !a[2] || !a[3] || a[4]);
+    let asTbl = "ground    title slot moved   covers the type block   pinned across frames   &lt;text&gt;\n" + "".padEnd(87, "-") + "\n";
+    asserts.forEach(function (a) {
+      asTbl += a[0].padEnd(10) + (a[1] ? "MOVED" : "no").padEnd(19) + (a[2] ? "yes" : "NO").padEnd(24) +
+        (a[3] ? "yes" : "NO").padEnd(23) + (a[4] ? "EMITTED" : "none") + "\n";
+    });
+
+    // ---- the renders ------------------------------------------------------
+    const vbox = (function () {
+      const pad = 96;
+      const x = Math.max(0, panelBox.x - pad), y = Math.max(0, panelBox.y - pad);
+      return { x: Math.round(x), y: Math.round(y),
+        w: Math.round(Math.min(canvas[0] - x, panelBox.w + pad * 2)),
+        h: Math.round(Math.min(canvas[1] - y, panelBox.h + pad * 2)) };
+    })();
+
+    let html = "";
+    html += '<h2>Measured — the contrast floor inside the published title box</h2><pre>' + tbl +
+      "floor        the 1st-percentile luminance in the box as a contrast ratio against the\n" +
+      "             title's own ink (#1C222A — or the ground colour, where the slab reverses it).\n" +
+      "             Not the darkest pixel: one anti-aliased pixel off one drawn line is not what\n" +
+      "             type is read against, and a single-pixel minimum fails all four states.\n" +
+      "mid          the same ratio at the median pixel — the box on average. Note that it barely\n" +
+      "             moves between the control and the card: the mean is exactly the statistic\n" +
+      "             that cannot see this problem.\n" +
+      "fail%        the share of the box under 4.5:1 against the type. THE NUMBER THAT MATTERS.\n" +
+      "             A letter does not land on the average of the box — it lands somewhere in it.\n" +
+      "tonal range  p99 minus p1 of relative luminance, x100: how far the ground moves under the\n" +
+      "             letters.\n" +
+      "4.5:1 is the floor this page holds type to. A chapter title is headline-scale and 3:1\n" +
+      "would be defensible; on a channel about figures it is not worth the argument.\n" +
+      (unmeasured ? "\nUNMEASURED: " + unmeasured : "") + "</pre>";
+
+    html += '<h2>Wall-independence — the claim itself</h2><pre>' + spread + "</pre>";
+
+    html += '<h2>The mechanism, asserted — <span class="' + (assertBad.length ? 'fail">FAIL' : 'pass">PASS') + '</span></h2><pre>' +
+      asTbl + "\non " + wall + "\n\n" +
+      "title slot moved      the panel is drawn AROUND the published box, so nothing already\n" +
+      "                      composited against slots.title moves by a pixel.\n" +
+      "covers the type block the panel spans title AND caption where an angle sets a caption\n" +
+      "                      under the title (" + (joined ? "this plate joins them" : "this plate has a title only") + ").\n" +
+      "pinned                the ground's own marks are byte-identical at boil 1 and boil 2. A\n" +
+      "                      ground is a slot underlay, and an underlay breathing behind\n" +
+      "                      dead-still type is the relative motion §1.5 ruled out.\n" +
+      "&lt;text&gt;                still structurally impossible.</pre>";
+
+    html += "<h2>" + wall + " — " + WALLS[sel][1] + "</h2>";
+    html += "<p>At 1:1 canvas units, cropped by viewBox to the panel and 96 units of what it sits on. " +
+      "Delivered is 2x, so what reads here reads delivered. The dashed box is the published title slot: " +
+      "it is drawn by this page, not by the plate, and it is the box the compositor fills.</p>";
+
+    STATES.forEach(function (st) {
+      const s = shown[String(st[0])], m = s.m, r = rows[wall + "|" + st[0]];
+      const t = m.slots.title;
+      const guide = '<rect x="' + t.x + '" y="' + t.y + '" width="' + t.w + '" height="' + t.h +
+        '" fill="none" stroke="#F1F2EE" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="10 8"/>';
+      html += '<div class="plate">' + view(s.P, s.svg.replace("</svg>", guide + "</svg>"), vbox) +
+        '<div class="cap"><b>' + st[1] + '</b><br>' +
+        (r.m ? "floor " + fmt(r.m.floor) + ":1 · mid " + fmt(r.m.mid) + ":1 · tonal range " + fmt(r.m.range) + " L" : "unmeasured") +
+        (m.titleGround ? " · panel " + m.titleGround.box.w + "x" + m.titleGround.box.h +
+          " · type colour " + m.titleGround.typeColour : "") + '</div></div>';
+    });
+
+    html += "<h2>The price, now paid — what changed for every existing chapter opener</h2><pre>" +
+      "ALL THREE                 22 room plates gain a drawn panel behind the title. The chapter\n" +
+      "                          opener stops being 'a title on a wall' and becomes 'a title on\n" +
+      "                          something'. That is the change, and it is not reversible per\n" +
+      "                          episode: it is in the plate.\n" +
+      "                          slots.title keeps its box on every plate. Nothing already\n" +
+      "                          composited against it moves.\n" +
+      "                          Two new manifest fields — meta.titleGround and\n" +
+      "                          slots.title.ground/.groundBox/.colour.\n" +
+      "                          The baseline resets for room/ (22 assets, 66 frames). No other\n" +
+      "                          family moves.\n\n" +
+      "card                      A prop appears in the room that was not there before, and on\n" +
+      "                          three angles it covers room art someone drew: the printer-corner\n" +
+      "                          window, two of low-desk-height's wall bands, one of\n" +
+      "                          high-desk-down's sheets. On the flat walls it reads as a taped\n" +
+      "                          card and costs nothing.\n" +
+      "                          Contrast becomes wall-independent — the number is the same on\n" +
+      "                          every plate, which is the property §1 asked for.\n\n" +
+      "scrim                     Nothing appears; a region of wall goes quiet. Keeps the plate a\n" +
+      "                          room, and it is the only treatment that does not cover the room\n" +
+      "                          art it sits on. But it cannot guarantee the floor, because a\n" +
+      "                          fifth of what is behind it still reaches the type — see the\n" +
+      "                          spread table.\n\n" +
+      "slab                      The largest change. The title reverses to the ground colour, so\n" +
+      "                          every chapter opener in the channel's back catalogue looks\n" +
+      "                          different from every new one, and the renderer's chapter-opener\n" +
+      "                          template must read slots.title.colour instead of assuming\n" +
+      "                          structure. Robust on any ground, including a photograph.\n" +
+      "                          It is also the one treatment that puts the darkest thing in the\n" +
+      "                          frame behind the title — room/ doctrine is that the host is the\n" +
+      "                          highest-contrast object in any frame he is in, and a slab beside\n" +
+      "                          him competes with him for the eye.\n\n" +
+      "AND WHAT IT UNLOCKED      The 36% restraint in mass() exists to protect this box. Now the\n" +
+      "                          title carries its own ground, that line can be lifted and §4's\n" +
+      "                          time-of-day variants stop being blocked on it — which is why the\n" +
+      "                          brief puts §1 first. Lifting it is not in this drop.</pre>";
+
+    html += "<h2>Built in " + ((performance.now() - t0) / 1000).toFixed(1) + "s, one browser process, " +
+      (Object.keys(rows).length + 3) + " room draws</h2>";
+    out.innerHTML = html;
+
+    // ---- the borrowed ground, across the whole family ---------------------
+    // Appended after the page is usable, because it is 22 more room draws.
+    out.insertAdjacentHTML("beforeend",
+      '<h2>The borrowed ground — what it was costing, every room plate that declares a title slot</h2>' +
+      '<p>PRE-CARD state: no ground, the library as it stood before this decision. This is the audit the ' +
+      'last pack recorded as a standing risk without measuring — and the reason the risk turned out to be ' +
+      'a defect. With <code>card</code> on, every row below reads 11.9:1 and 0.00%.</p><pre id="fam">measuring…</pre>');
+    const fam = document.getElementById("fam");
+    const famKeys = B.LIB.filter((i) => i.dir === "room").map((i) => i.key);
+    let ft = "plate                             title box              floor     fail%    marks in box\n" + "".padEnd(92, "-") + "\n";
+    let dirty = 0, counted = 0;
+    for (const key of famKeys) {
+      await new Promise((r) => setTimeout(r, 0));
+      const P = drawWall(key, null);
+      const m = P.manifest();
+      if (!m.slots.title) { ft += key.padEnd(34) + "no title slot — not a chapter opener\n"; fam.textContent = ft; continue; }
+      const t = m.slots.title, svg = P.toSVG();
+      let r = null;
+      try { r = await measure(P, svg, t, INK, false); } catch (e) { /* unmeasured */ }
+      const mk = marksIn(svg, t);
+      counted++;
+      if (r && r.fail >= 0.5) dirty++;
+      ft += key.padEnd(34) + (t.x + "," + t.y + " " + t.w + "x" + t.h).padEnd(23) +
+        (r ? (fmt(r.floor) + ":1").padEnd(10) + (fmt2(r.fail) + "%").padEnd(9) : "UNMEASURED".padEnd(19)) +
+        mk + (r && r.fail >= 0.5 ? "   BORROWED" : "") + "\n";
+      fam.textContent = ft;
+    }
+    fam.textContent = ft + "\n" + dirty + " of " + counted + " chapter-opener plates had drawn ink under the title box,\n" +
+      "with no new room art at all. The rule the room family was obeying by accident was not\n" +
+      "being obeyed \u2014 which is what the card replaces with a ground of its own.\n\n" +
+      "marks in box   drawn paths whose extent reaches into the title slot, excluding the paper\n" +
+      "               grain (the one relative-coordinate path in the library, present on every\n" +
+      "               plate, and not what breaks a title).";
+  })().catch(function (e) {
+    out.innerHTML = '<pre class="fail">' + (e && e.stack ? e.stack : e) + "</pre>";
+  });
+})();
+</script>
+</body>
+</html>

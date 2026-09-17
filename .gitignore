@@ -19,6 +19,9 @@ htmlcov/
 workspace/
 cache/
 state/
+# `scripts/backup_state.py` writes here by default. The ledger, the thesis
+# book and the queue are operator data — archived, never committed.
+backups/
 *.env
 .env
 

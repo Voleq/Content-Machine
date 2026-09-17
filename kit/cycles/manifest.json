@@ -1,187 +1,59 @@
 {
  "family": "cycles",
- "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
- "coordinateOrigin": "top-left of canvas",
- "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
- "bakedText": false,
- "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
- "dataPolicy": "plate draws the plot furniture, the moment anchors and the ties; engine/series.js draws the path inside `path` from the data",
- "slotKinds": {
-  "region": "a graphic region for code to draw into (path), or a figure whose position only the data knows (trough)"
- },
- "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
- "budgetAuthority": "engine/budget.js, run by Plate.manifest() on every plate — not typed per family. audit/budgets.json lists every box the numbers came from.",
- "assets": {
+ "pack": "delta-14",
+ "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "exportScale": 2,
+ "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
+ "assetCount": 2,
+ "plates": {
   "cycles/cycle-frame-16x9": {
-   "author": "cycleFrame",
-   "seed": 88,
-   "surface": "night-card",
+   "key": "cycles/cycle-frame-16x9",
+   "dir": "cycles",
+   "aspect": "16x9",
    "canvas": [
     1920,
     1080
    ],
-   "exportScale": 2,
    "delivered": [
     3840,
     2160
    ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "cycle-frame-16x9.svg",
-     "png": "cycle-frame-16x9.png",
-     "boil": 0
-    }
-   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "cycle-frame-16x9.png",
-    "svg": "cycle-frame-16x9.svg"
+    "base": "cycle-frame-16x9.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "cycle-frame-16x9_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "9ec7d708"
+     },
+     {
+      "file": "cycle-frame-16x9_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "acb91278"
+     },
+     {
+      "file": "cycle-frame-16x9_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "259a107e"
+     }
+    ]
    },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 190,
-     "y": 88,
-     "w": 1540,
-     "h": 30,
-     "maxChars": 92
-    },
-    "caption": {
-     "align": "left",
-     "role": "caption",
-     "x": 190,
-     "y": 966,
-     "w": 1540,
-     "h": 30,
-     "maxChars": 98
-    },
-    "metric": {
-     "align": "left",
-     "role": "metric",
-     "x": 190,
-     "y": 186,
-     "w": 647,
-     "h": 79,
-     "maxChars": 24
-    },
-    "then-date": {
-     "align": "left",
-     "role": "moment",
-     "x": 190,
-     "y": 306,
-     "w": 647,
-     "h": 35,
-     "maxChars": 30
-    },
-    "then-value": {
-     "align": "left",
-     "role": "then",
-     "x": 190,
-     "y": 351,
-     "w": 647,
-     "h": 195,
-     "maxChars": 9
-    },
-    "now-date": {
-     "align": "left",
-     "role": "moment",
-     "x": 190,
-     "y": 600,
-     "w": 647,
-     "h": 35,
-     "maxChars": 30
-    },
-    "now-value": {
-     "align": "left",
-     "role": "now",
-     "x": 190,
-     "y": 645,
-     "w": 647,
-     "h": 195,
-     "maxChars": 6
-    },
-    "head-1": {
-     "align": "center",
-     "role": "period",
-     "x": 804,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "head-2": {
-     "align": "center",
-     "role": "period",
-     "x": 972,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "head-3": {
-     "align": "center",
-     "role": "period",
-     "x": 1141,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "head-4": {
-     "align": "center",
-     "role": "period",
-     "x": 1309,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "head-5": {
-     "align": "center",
-     "role": "period",
-     "x": 1477,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "head-6": {
-     "align": "center",
-     "role": "period",
-     "x": 1646,
-     "y": 820,
-     "w": 168,
-     "h": 30,
-     "maxChars": 10
-    },
-    "path": {
-     "role": "path",
-     "region": true,
-     "renderer": "series.cycleArc",
-     "note": "every period between the two moments. The plate draws nothing here — engine/series.js draws it from the data and returns the trough's coordinates",
-     "x": 888,
-     "y": 186,
-     "w": 842,
-     "h": 622
-    },
-    "trough": {
-     "align": "center",
-     "role": "trough",
-     "region": true,
-     "note": "the low point's own figure, called out inside the plot. Region because only the data knows where the minimum sits — box it just above the ring, at the x that series.cycleArc returns",
-     "x": 1191,
-     "y": 509,
-     "w": 236,
-     "h": 53
-    }
-   },
-   "aspect": "16x9",
-   "family": "cycles",
-   "type": "cycle-frame",
+   "slotCount": 15,
    "typeRoles": {
     "unit": {
      "font": "Courier Prime",
@@ -191,7 +63,7 @@
      "opacity": 0.72,
      "tracking": "0.04em",
      "maxChars": 92,
-     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), authored was 46"
+     "budget": "derived from the slot boxes that set this role; 92 is the floor (narrowest of 1), was 46"
     },
     "metric": {
      "font": "Archivo Narrow",
@@ -200,7 +72,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 24,
-     "budget": "derived from the slot boxes that set this role; 24 is the floor (narrowest of 1), authored was 30"
+     "budget": "derived from the slot boxes that set this role; 24 is the floor (narrowest of 1), was 30"
     },
     "moment": {
      "font": "Courier Prime",
@@ -210,7 +82,7 @@
      "opacity": 0.7,
      "tracking": "0.1em",
      "maxChars": 30,
-     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 2), authored was 14"
+     "budget": "derived from the slot boxes that set this role; 30 is the floor (narrowest of 2), was 14"
     },
     "period": {
      "font": "Courier Prime",
@@ -219,7 +91,7 @@
      "colour": "structure",
      "opacity": 0.66,
      "maxChars": 10,
-     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), was 6"
     },
     "then": {
      "font": "Courier Prime",
@@ -227,7 +99,7 @@
      "weight": 700,
      "colour": "otherParty",
      "maxChars": 9,
-     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 1), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 9 is the floor (narrowest of 1), was 6"
     },
     "now": {
      "font": "Courier Prime",
@@ -235,15 +107,14 @@
      "weight": 700,
      "colour": "structure",
      "maxChars": 6,
-     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), was 6"
     },
     "trough": {
      "font": "Courier Prime",
      "size": 46,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6,
-     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
+     "maxChars": 6
     },
     "caption": {
      "font": "Courier Prime",
@@ -252,181 +123,221 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 98,
-     "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 98 is the floor (narrowest of 1), was 60"
     }
    },
-   "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."
+   "slots": {
+    "unit": {
+     "x": 190,
+     "y": 88,
+     "w": 1540,
+     "h": 30,
+     "role": "unit",
+     "align": "left",
+     "maxChars": 92
+    },
+    "caption": {
+     "x": 190,
+     "y": 966,
+     "w": 1540,
+     "h": 30,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 98
+    },
+    "metric": {
+     "x": 190,
+     "y": 186,
+     "w": 647,
+     "h": 79,
+     "role": "metric",
+     "align": "left",
+     "maxChars": 24
+    },
+    "then-date": {
+     "x": 190,
+     "y": 306,
+     "w": 647,
+     "h": 35,
+     "role": "moment",
+     "align": "left",
+     "maxChars": 30
+    },
+    "then-value": {
+     "x": 190,
+     "y": 351,
+     "w": 647,
+     "h": 195,
+     "role": "then",
+     "align": "left",
+     "maxChars": 9
+    },
+    "now-date": {
+     "x": 190,
+     "y": 600,
+     "w": 647,
+     "h": 35,
+     "role": "moment",
+     "align": "left",
+     "maxChars": 30
+    },
+    "now-value": {
+     "x": 190,
+     "y": 645,
+     "w": 647,
+     "h": 195,
+     "role": "now",
+     "align": "left",
+     "maxChars": 6
+    },
+    "head-1": {
+     "x": 804,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "head-2": {
+     "x": 972,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "head-3": {
+     "x": 1141,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "head-4": {
+     "x": 1309,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "head-5": {
+     "x": 1477,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "head-6": {
+     "x": 1646,
+     "y": 820,
+     "w": 168,
+     "h": 30,
+     "role": "period",
+     "align": "center",
+     "maxChars": 10
+    },
+    "path": {
+     "x": 888,
+     "y": 186,
+     "w": 842,
+     "h": 622,
+     "role": "path",
+     "region": true,
+     "note": "every period between the two moments. The plate draws nothing here — engine/series.js draws it from the data and returns the trough's coordinates"
+    },
+    "trough": {
+     "x": 1191,
+     "y": 509,
+     "w": 236,
+     "h": 53,
+     "role": "trough",
+     "region": true,
+     "align": "center",
+     "note": "the low point's own figure, called out inside the plot. Region because only the data knows where the minimum sits — box it just above the ring, at the x that series.cycleArc returns"
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     3840,
+     2160
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "cycle-frame-16x9.svg",
+      "png": "cycle-frame-16x9.png"
+     }
+    ],
+    "files": {
+     "png": "cycle-frame-16x9.png",
+     "svg": "cycle-frame-16x9.svg"
+    },
+    "aspect": "16x9",
+    "family": "cycles",
+    "type": "cycle-frame",
+    "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."
+   },
+   "boilGate": "frame-only"
   },
   "cycles/cycle-frame-9x16": {
-   "author": "cycleFrame",
-   "seed": 88,
-   "surface": "night-card",
+   "key": "cycles/cycle-frame-9x16",
+   "dir": "cycles",
+   "aspect": "9x16",
    "canvas": [
     1080,
     1920
    ],
-   "exportScale": 2,
    "delivered": [
     2160,
     3840
    ],
-   "frameCount": 1,
-   "fps": null,
-   "playback": "static",
-   "frames": [
-    {
-     "tag": null,
-     "svg": "cycle-frame-9x16.svg",
-     "png": "cycle-frame-9x16.png",
-     "boil": 0
-    }
-   ],
+   "exportScale": 2,
+   "playback": "loop",
+   "fps": 2,
+   "frameCount": 3,
    "files": {
-    "png": "cycle-frame-9x16.png",
-    "svg": "cycle-frame-9x16.svg"
+    "base": "cycle-frame-9x16.png",
+    "baseIsFrame": true,
+    "frames": [
+     {
+      "file": "cycle-frame-9x16_f01.png",
+      "tag": "_f01",
+      "args": {
+       "boil": 1
+      },
+      "hash": "8583e4fe"
+     },
+     {
+      "file": "cycle-frame-9x16_f02.png",
+      "tag": "_f02",
+      "args": {
+       "boil": 2
+      },
+      "hash": "5d150970"
+     },
+     {
+      "file": "cycle-frame-9x16_f03.png",
+      "tag": "_f03",
+      "args": {
+       "boil": 5
+      },
+      "hash": "d4339bca"
+     }
+    ]
    },
-   "slots": {
-    "unit": {
-     "align": "left",
-     "role": "unit",
-     "x": 90,
-     "y": 186,
-     "w": 900,
-     "h": 30,
-     "maxChars": 54
-    },
-    "caption": {
-     "align": "left",
-     "role": "caption",
-     "x": 90,
-     "y": 1740,
-     "w": 900,
-     "h": 30,
-     "maxChars": 57
-    },
-    "metric": {
-     "align": "left",
-     "role": "metric",
-     "x": 90,
-     "y": 453,
-     "w": 900,
-     "h": 72,
-     "maxChars": 36
-    },
-    "then-date": {
-     "align": "left",
-     "role": "moment",
-     "x": 90,
-     "y": 603,
-     "w": 396,
-     "h": 32,
-     "maxChars": 20
-    },
-    "then-value": {
-     "align": "left",
-     "role": "then",
-     "x": 90,
-     "y": 653,
-     "w": 396,
-     "h": 172,
-     "maxChars": 6
-    },
-    "now-date": {
-     "align": "right",
-     "role": "moment",
-     "x": 594,
-     "y": 603,
-     "w": 396,
-     "h": 32,
-     "maxChars": 20
-    },
-    "now-value": {
-     "align": "right",
-     "role": "now",
-     "x": 594,
-     "y": 653,
-     "w": 396,
-     "h": 172,
-     "maxChars": 4
-    },
-    "head-1": {
-     "align": "center",
-     "role": "period",
-     "x": 0,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "head-2": {
-     "align": "center",
-     "role": "period",
-     "x": 180,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "head-3": {
-     "align": "center",
-     "role": "period",
-     "x": 360,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "head-4": {
-     "align": "center",
-     "role": "period",
-     "x": 540,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "head-5": {
-     "align": "center",
-     "role": "period",
-     "x": 720,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "head-6": {
-     "align": "center",
-     "role": "period",
-     "x": 900,
-     "y": 1475,
-     "w": 180,
-     "h": 28,
-     "maxChars": 12
-    },
-    "path": {
-     "role": "path",
-     "region": true,
-     "renderer": "series.cycleArc",
-     "note": "every period between the two moments. The plate draws nothing here — engine/series.js draws it from the data and returns the trough's coordinates",
-     "x": 90,
-     "y": 932,
-     "w": 900,
-     "h": 522
-    },
-    "trough": {
-     "align": "center",
-     "role": "trough",
-     "region": true,
-     "note": "the low point's own figure, called out inside the plot. Region because only the data knows where the minimum sits — box it just above the ring, at the x that series.cycleArc returns",
-     "x": 414,
-     "y": 1203,
-     "w": 252,
-     "h": 49
-    }
-   },
-   "aspect": "9x16",
-   "family": "cycles",
-   "type": "cycle-frame",
+   "slotCount": 15,
    "typeRoles": {
     "unit": {
      "font": "Courier Prime",
@@ -436,7 +347,7 @@
      "opacity": 0.72,
      "tracking": "0.04em",
      "maxChars": 54,
-     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), authored was 38"
+     "budget": "derived from the slot boxes that set this role; 54 is the floor (narrowest of 1), was 38"
     },
     "metric": {
      "font": "Archivo Narrow",
@@ -445,7 +356,7 @@
      "colour": "structure",
      "tracking": "-.02em",
      "maxChars": 36,
-     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), authored was 24"
+     "budget": "derived from the slot boxes that set this role; 36 is the floor (narrowest of 1), was 24"
     },
     "moment": {
      "font": "Courier Prime",
@@ -455,7 +366,7 @@
      "opacity": 0.7,
      "tracking": "0.1em",
      "maxChars": 20,
-     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 2), authored was 14"
+     "budget": "derived from the slot boxes that set this role; 20 is the floor (narrowest of 2), was 14"
     },
     "period": {
      "font": "Courier Prime",
@@ -464,7 +375,7 @@
      "colour": "structure",
      "opacity": 0.66,
      "maxChars": 12,
-     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), was 6"
     },
     "then": {
      "font": "Courier Prime",
@@ -472,7 +383,7 @@
      "weight": 700,
      "colour": "otherParty",
      "maxChars": 6,
-     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 6 is the floor (narrowest of 1), was 6"
     },
     "now": {
      "font": "Courier Prime",
@@ -480,15 +391,14 @@
      "weight": 700,
      "colour": "structure",
      "maxChars": 4,
-     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), authored was 6"
+     "budget": "derived from the slot boxes that set this role; 4 is the floor (narrowest of 1), was 6"
     },
     "trough": {
      "font": "Courier Prime",
      "size": 42,
      "weight": 700,
      "colour": "down",
-     "maxChars": 6,
-     "budget": "no slot on this plate sets this role — nothing to measure, authored number kept"
+     "maxChars": 6
     },
     "caption": {
      "font": "Courier Prime",
@@ -497,16 +407,173 @@
      "colour": "structure",
      "opacity": 0.72,
      "maxChars": 57,
-     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), authored was 60"
+     "budget": "derived from the slot boxes that set this role; 57 is the floor (narrowest of 1), was 60"
     }
    },
-   "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."
+   "slots": {
+    "unit": {
+     "x": 90,
+     "y": 186,
+     "w": 900,
+     "h": 30,
+     "role": "unit",
+     "align": "left",
+     "maxChars": 54
+    },
+    "caption": {
+     "x": 90,
+     "y": 1740,
+     "w": 900,
+     "h": 30,
+     "role": "caption",
+     "align": "left",
+     "maxChars": 57
+    },
+    "metric": {
+     "x": 90,
+     "y": 453,
+     "w": 900,
+     "h": 72,
+     "role": "metric",
+     "align": "left",
+     "maxChars": 36
+    },
+    "then-date": {
+     "x": 90,
+     "y": 603,
+     "w": 396,
+     "h": 32,
+     "role": "moment",
+     "align": "left",
+     "maxChars": 20
+    },
+    "then-value": {
+     "x": 90,
+     "y": 653,
+     "w": 396,
+     "h": 172,
+     "role": "then",
+     "align": "left",
+     "maxChars": 6
+    },
+    "now-date": {
+     "x": 594,
+     "y": 603,
+     "w": 396,
+     "h": 32,
+     "role": "moment",
+     "align": "right",
+     "maxChars": 20
+    },
+    "now-value": {
+     "x": 594,
+     "y": 653,
+     "w": 396,
+     "h": 172,
+     "role": "now",
+     "align": "right",
+     "maxChars": 4
+    },
+    "head-1": {
+     "x": 0,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "head-2": {
+     "x": 180,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "head-3": {
+     "x": 360,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "head-4": {
+     "x": 540,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "head-5": {
+     "x": 720,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "head-6": {
+     "x": 900,
+     "y": 1475,
+     "w": 180,
+     "h": 28,
+     "role": "period",
+     "align": "center",
+     "maxChars": 12
+    },
+    "path": {
+     "x": 90,
+     "y": 932,
+     "w": 900,
+     "h": 522,
+     "role": "path",
+     "region": true,
+     "note": "every period between the two moments. The plate draws nothing here — engine/series.js draws it from the data and returns the trough's coordinates"
+    },
+    "trough": {
+     "x": 414,
+     "y": 1203,
+     "w": 252,
+     "h": 49,
+     "role": "trough",
+     "region": true,
+     "align": "center",
+     "note": "the low point's own figure, called out inside the plot. Region because only the data knows where the minimum sits — box it just above the ring, at the x that series.cycleArc returns"
+    }
+   },
+   "meta": {
+    "exportScale": 2,
+    "delivered": [
+     2160,
+     3840
+    ],
+    "frameCount": 1,
+    "fps": 0,
+    "playback": "static",
+    "frames": [
+     {
+      "tag": "",
+      "svg": "cycle-frame-9x16.svg",
+      "png": "cycle-frame-9x16.png"
+     }
+    ],
+    "files": {
+     "png": "cycle-frame-9x16.png",
+     "svg": "cycle-frame-9x16.svg"
+    },
+    "aspect": "9x16",
+    "family": "cycles",
+    "type": "cycle-frame",
+    "pathNote": "the band is not decoration and not an arrow: it is the intervening periods. Draw it with series.cycleArc({ box: slots.path, values }) and label its returned minimum in `trough`."
+   },
+   "boilGate": "frame-only"
   }
- },
- "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
- "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
- "exportScale": 2,
- "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
- "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
- "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume."
+ }
 }

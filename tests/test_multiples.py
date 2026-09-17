@@ -61,11 +61,17 @@ def test_every_family_loads_to_one_normalised_frame_shape(reg):
 def test_an_unknown_manifest_header_key_does_not_break_ingest(reg):
     """Family headers are prose ABOUT the family and gain keys between packs.
 
-    09b added `maxCharsNote` to all fourteen and `budgetNote` to the strip. A
-    reader with a strict header schema rejects a delivery for documenting
-    itself, so nothing here reads the header at all — the assets are the
-    contract. This asserts the new keys are present AND that the kit still
-    loaded, which is the whole claim.
+    09b added `maxCharsNote` to all fourteen and `budgetNote` to the strip;
+    delta-14 replaced both with `_spec` and renamed the plate table
+    `assets` -> `plates`. A reader with a strict header schema rejects a
+    delivery for documenting itself, so nothing here reads the header at all
+    — the assets are the contract.
+
+    Which is why this asserts the CLAIM rather than the key names: the
+    header documents itself, the plate table is readable whatever it is
+    called, and the kit still loaded. Pinning `maxCharsNote` was the strict
+    schema this test exists to argue against, and it duly rejected delta-14
+    for renaming a prose key.
     """
     import json
     from pathlib import Path
@@ -74,8 +80,11 @@ def test_an_unknown_manifest_header_key_does_not_break_ingest(reg):
     for family in ("tables", "structure"):
         header = json.loads((kit / family / "manifest.json")
                             .read_text(encoding="utf-8"))
-        assert "maxCharsNote" in header, family
-        assert header.get("assets"), family
+        prose = [v for k, v in header.items()
+                 if isinstance(v, str) and len(v) > 80]
+        assert prose, f"{family}'s header documents nothing about itself"
+        table = header.get("plates") or header.get("assets")
+        assert table, f"{family} declares no plates under any known key"
     assert len(reg.assets) > 0
 
 

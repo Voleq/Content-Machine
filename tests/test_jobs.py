@@ -103,3 +103,49 @@ async def test_interrupted_marking_on_boot(settings):
     reloaded = q.store.load("zzz")
     assert reloaded.status is JobStatus.INTERRUPTED
     assert "restart" in reloaded.detail
+
+
+# --------------------------------------------------------------------------
+# F1 — a job that was QUEUED when the process stopped stayed QUEUED on disk
+# forever, and blocked that ticker because `submit()` refuses a second one.
+# --------------------------------------------------------------------------
+
+
+async def test_queued_jobs_survive_a_restart(settings):
+    from pipeline.jobs import JobStore, RenderJobQueue
+    from pipeline.models import JobKind, JobStatus
+
+    ran: list[str] = []
+
+    async def noop(_text):
+        pass
+
+    first = RenderJobQueue(settings, lambda job: ran.append(job.id) or "", noop)
+    first.start()
+    job = await first.submit(JobKind.RENDER_LONG, "EXMPL", "2026-09-12")
+    assert JobStore(settings).load(job.id).status is JobStatus.QUEUED
+
+    # The process stops. A new queue starts from an empty in-memory queue.
+    second = RenderJobQueue(settings, lambda j: ran.append(j.id) or "", noop)
+    assert second.requeue_persisted() == 1, \
+        "a job left QUEUED by a previous run has to be picked back up"
+
+
+async def test_a_lost_queued_job_no_longer_blocks_the_ticker(settings):
+    """The symptom the operator saw: /render refused until they found
+    /cancel."""
+    from pipeline.jobs import RenderJobQueue
+    from pipeline.models import JobKind
+
+    async def noop(_text):
+        pass
+
+    first = RenderJobQueue(settings, lambda job: "", noop)
+    first.start()
+    await first.submit(JobKind.RENDER_LONG, "EXMPL", "2026-09-12")
+
+    second = RenderJobQueue(settings, lambda job: "", noop)
+    second.start()
+    # Still refused while it is genuinely queued — but it is queued IN THIS
+    # PROCESS now, so it will actually run.
+    assert second._queue.qsize() == 1

@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>render scale — the unverified list</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#C9C2B4;font:12px/1.55 "Courier New",monospace}
+  main{padding:20px 24px 60px}
+  h1{font-size:14px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 8px}
+  h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8d968f;margin:26px 0 6px;border-top:1px solid #262c33;padding-top:14px}
+  p{max-width:88ch;color:#8d968f;margin:6px 0}
+  .strip{display:flex;gap:14px;overflow:auto;padding:10px 0}
+  .one{flex:0 0 auto;background:#1B1F24;border:1px solid #262c33}
+  .one .t{padding:6px 9px;border-bottom:1px solid #262c33;color:#8d968f;font-size:11px}
+  .one .a{position:relative;overflow:hidden}
+  .one svg{display:block}
+  .crop{overflow:hidden;position:relative}
+  .crop svg{position:absolute}
+  a{color:#C7A86B}
+  a:hover{color:#E0C68A}
+  b.k{color:#C9C2B4;font-weight:400}
+  .n{color:#C7A86B}
+  .pass{color:#8FBF7F}.fail{color:#D98A7A}.warn{color:#C7A86B}
+  em{color:#C9C2B4;font-style:normal}
+  code{color:#C7A86B}
+  /* 1:1 type fills. One canvas unit is ONE CSS px here, so the type is the size
+     the plate says it is — no cqw, no scaling, nothing derived. */
+  .f1{position:absolute;display:flex;align-items:flex-start;color:#1C222A;pointer-events:none}
+  /* no line-height here: it is set per fill from BUDGET.PITCH, the same number
+     budget.js caps maxLines against. A value in this rule would be a second
+     opinion about the compositor's leading. */
+  /* align-self keeps the span at CONTENT height. As a stretched flex item its
+     scrollHeight reports the box, not the type, which makes a vertical-fit
+     measurement measure the thing it is checking against. */
+  .f1 span{width:100%;white-space:pre-wrap;align-self:flex-start}
+  .f1.over{outline:2px dashed #D98A7A;outline-offset:1px}
+  .zone{position:absolute;border:2px dashed rgba(217,138,122,.75);background:rgba(217,138,122,.10);
+        display:flex;align-items:center;justify-content:center;color:#D98A7A;font:11px monospace;text-align:center}
+  .rep{margin:12px 0 0;padding:10px 12px;background:#1B1F24;border:1px solid #262c33;white-space:pre-wrap;max-width:110ch}
+  .rep b{color:#D98A7A;font-weight:400}
+  .rep b.ok{color:#8FBF7F}
+  table.m{border-collapse:collapse;margin:10px 0;font-size:11px}
+  table.m th,table.m td{border:1px solid #262c33;padding:4px 8px;text-align:right}
+  table.m th:first-child,table.m td:first-child{text-align:left}
+  table.m th{color:#8d968f;font-weight:400;text-transform:uppercase;letter-spacing:.05em}
+</style>
+</head>
+<body>
+<main>
+  <h1>Render scale — the unverified list</h1>
+  <p>Everything here is drawn at <b class="k">1:1 canvas units</b>, and the delivered asset is
+  <span class="n">2&times;</span> this. So what is legible here is comfortably legible delivered,
+  and anything that fails here fails delivered.</p>
+  <p>One section at a time &mdash; <a href="?s=1">1 gated plates</a> &middot;
+  <a href="?s=2">2 ambient props</a> &middot; <a href="?s=3">3 waterfall 5s</a> &middot;
+  <a href="?s=4">4 compare redraw</a> &middot; <a href="?s=5">5 blink schedule</a> &middot;
+  <a href="?s=6">6 carried forward</a> &middot; <a href="?s=7">7 drop two</a> &middot;
+  <a href="?s=all">all</a>.</p>
+  <p><b class="k">THE PASS ON EVERYTHING BUILT SINCE</b> &mdash; sections 1&ndash;7 above cover drops one and
+  two and have not moved. Fifty assets built after them had never been seen at this scale:
+  <a href="?s=8">8 the furniture</a> &middot; <a href="?s=9">9 the confession</a> &middot;
+  <a href="?s=10">10 the quarter</a> &middot; <a href="?s=11">11 the pipeline plates</a> &middot;
+  <a href="?s=12">12 the dusk rooms</a> &middot; <a href="?s=13">13 the filing reader</a> &middot;
+  <a href="?s=14">14 the seated pose, composited</a>.</p>
+  <p>Copy in sections 8&ndash;14 is the <em>worst realistic</em> string for every box, not the neatest:
+  longest plausible ticker, longest plausible label, the count variant with the least room. A proof
+  page filled with short tidy strings proves nothing. Every fill is checked against the budget
+  <code>budget.js</code> derived for the box it lands in, and each section reports what went over.
+  <b class="k">In 9:16, 1:1 IS phone scale</b> &mdash; a 1080-unit canvas delivered at 2&times; and shown
+  on an 1170px phone is 1.08 display px per canvas unit, so a portrait tile here is within 8% of
+  what a viewer holds.</p>
+  <div id="out"></div>
+</main>
+<script>
+(function () {
+  const B = window.BUILD, PL = window.PLATES, pal = PL.pal("night-card");
+  const out = document.getElementById("out");
+  // ONE SECTION AT A TIME, by ?s=N.
+  //
+  // Twenty-five full-size room and host SVGs in one document is more than a
+  // capture can carry — the first attempt to screenshot this page timed out, and
+  // a review artefact nobody can look at is not a review artefact.
+  //
+  // A section that is not wanted is still BUILT, into a detached node that is
+  // never appended. That keeps every code path below identical whether or not the
+  // section is on screen — no guards threaded through the drawing code, and no
+  // chance of a section behaving differently when viewed alone than when viewed
+  // with the others. The saving is layout and paint, which is where the cost is.
+  //
+  // ?s=all builds the lot, for scrolling by hand.
+  const q = new URLSearchParams(location.search).get("s") || "1";
+  let secN = 0;
+  function sec(h, p) {
+    secN++;
+    const s = document.createElement("section");
+    s.innerHTML = "<h2>" + h + "</h2><p>" + p + "</p>";
+    if (q === "all" || +q === secN) out.appendChild(s);
+    return s;
+  }
+  // Sections that are not on screen are not BUILT either — building a room plate
+  // is the expensive half. Guarded at the one place that knows: sec() returns null
+  // and every block checks it.
+  const skip = (s) => !s || !s.isConnected;
+  function strip(s) { const d = document.createElement("div"); d.className = "strip"; s.appendChild(d); return d; }
+  function draw(key, args) {
+    const it = B.LIB.filter((i) => i.key === key)[0];
+    return it ? B.draw(it, null, args || {}) : null;
+  }
+  // A CROP IS A VIEWBOX, NOT AN OVERFLOW.
+  //
+  // The first cut positioned a full 1920×1080 SVG inside a small clipping div.
+  // The browser still rasterises the whole plate — twelve of those hung the page
+  // hard enough that it could not be queried, let alone captured. Re-pointing the
+  // viewBox at the crop region means only the region is ever drawn, and the marks
+  // inside it are identical either way because the content coordinates are canvas
+  // units and nothing is being scaled.
+  function tile(host, title, svg, w, h, crop) {
+    const d = document.createElement("div");
+    d.className = "one";
+    d.innerHTML = '<div class="t">' + title + '</div><div class="a"></div>';
+    const a = d.querySelector(".a");
+    a.innerHTML = svg;
+    const s = a.querySelector("svg");
+    if (crop) {
+      s.setAttribute("viewBox", crop.x + " " + crop.y + " " + crop.w + " " + crop.h);
+      s.setAttribute("width", crop.w);
+      s.setAttribute("height", crop.h);
+    } else {
+      s.setAttribute("width", w);
+      s.setAttribute("height", h);
+    }
+    host.appendChild(d);
+    return d;
+  }
+
+  // ---- 2 · gated plates at render scale -------------------------------------
+  // The numbers sheets are the top of the ink range (~60%), so they are the case.
+  // Shown as a crop at 1:1 across two boil frames, stacked, so the rules can be
+  // compared directly rather than remembered.
+  {
+    const s = sec("2 \u00b7 gated plates \u2014 the numbers sheets, the top of the ink range",
+      "~60% of the ink on these moves, which sounds alarming and is not: a sheet's drawn ink is <em>all</em> row rules, and the amplitude is the same ~2 canvas units as everywhere else. Two frames of the same crop, at 1:1. The question is whether the rules read as breathing or as crawling.");
+    const st = strip(s);
+    [1, 2, 5].forEach(function (bo) {
+      const P = draw("tables/numbers-sheet-5r-16x9", { boil: bo });
+      tile(st, "numbers-sheet-5r-16x9 &nbsp;boil " + bo + " &nbsp;<span class='n'>crop 1:1</span>", P.toSVG(), 1920, 1080, { x: 150, y: 250, w: 620, h: 380 });
+    });
+    const st2 = strip(s);
+    [1, 2].forEach(function (bo) {
+      const P = draw("charts/bars-6y-16x9", { boil: bo });
+      tile(st2, "bars-6y-16x9 &nbsp;boil " + bo + " &nbsp;<span class='n'>axis + gridlines, 1:1</span>", P.toSVG(), 1920, 1080, { x: 120, y: 150, w: 700, h: 420 });
+    });
+  }
+
+  // ---- 3 · steam, every room angle ------------------------------------------
+  {
+    const s = sec("3 \u00b7 the ambient prop, every angle",
+      "One per plate, chosen from what the plate already drew. The descriptor under each tile is <code>meta.ambient</code> \u2014 what it is, what it is on, and where. A blank means the angle registered no mug and no monitor, which would be a real gap.");
+    const st = strip(s);
+    const angles = B.LIB.filter((i) => i.dir === "room" && /16x9$/.test(i.key));
+    angles.forEach(function (it) {
+      const P = B.draw(it, null, { boil: 1 });
+      const a = P.meta.ambient;
+      const label = a ? (a.prop + " on " + a.on + " @ " + a.x + "," + a.y) : "<span style='color:#D98A7A'>NONE</span>";
+      const cx = a ? Math.max(0, Math.min(1920 - 460, a.x - 230)) : 700;
+      const cy = a ? Math.max(0, Math.min(1080 - 340, a.y - 150)) : 400;
+      tile(st, it.key.replace("room/", "") + "<br>" + label, P.toSVG(), 1920, 1080, { x: cx, y: cy, w: 460, h: 340 });
+    });
+  }
+
+  // ---- 4 · waterfall 5s on a phone ------------------------------------------
+  {
+    const s = sec("4 \u00b7 figures/waterfall-5s-9x16 at phone scale",
+      "Five costs plus two ends on a 1080-wide canvas. Shown whole at 1:1 and then the label band cropped, because the labels are what a dense count breaks first.");
+    const st = strip(s);
+    const P = draw("figures/waterfall-5s-9x16", { boil: 1 });
+    tile(st, "whole plate, 1:1", P.toSVG(), 1080, 1920);
+    tile(st, "the label band, 1:1", P.toSVG(), 1080, 1920, { x: 0, y: 1180, w: 1080, h: 420 });
+    const m = P.manifest();
+    const cols = m.columns.map((c) => c.x + "\u2013" + (c.x + c.w)).join("  ");
+    s.insertAdjacentHTML("beforeend", "<p>columns: <span class='n'>" + cols + "</span> &nbsp; bar width <span class='n'>" + m.columns[0].w + "</span></p>");
+  }
+
+  // ---- 5 · compare-side-9x16, the redraw ------------------------------------
+  {
+    const s = sec("5 \u00b7 figures/compare-side-9x16, the redraw",
+      "Two columns at ~430 units each with the figure sized to the column, beside the stacked plate it used to be a copy of. They should now read as two different arguments.");
+    const st = strip(s);
+    ["figures/compare-side-9x16", "figures/compare-stacked-9x16"].forEach(function (k) {
+      tile(st, k.replace("figures/", "") + ", 1:1", draw(k, { boil: 1 }).toSVG(), 1080, 1920);
+    });
+  }
+
+  // ---- 6 · the blink, on its real schedule ----------------------------------
+  {
+    const s = sec("6 \u00b7 the blink, on the renderer's schedule",
+      "The idle strip at 4fps with the blink overlay cut in for ~100ms every 3\u20134 seconds \u2014 the schedule as specified, so it can be judged rather than imagined. The overlay is stacked at 0,0 over the idle frame at the same index. Watch the eyes; nothing else should move when it fires.");
+    const st = strip(s);
+    const pairs = [["host/close-up-idle", "host/close-up-blink"], ["host/medium-glance-left-idle", "host/medium-glance-left-blink"]];
+    pairs.forEach(function (pr) {
+      const idle = B.LIB.filter((i) => i.key === pr[0])[0], blink = B.LIB.filter((i) => i.key === pr[1])[0];
+      const iF = B.framesOf(idle).map((f) => B.draw(idle, null, f.args).toSVG());
+      const bF = B.framesOf(blink).map((f) => B.draw(blink, null, f.args).toSVG());
+      const w = idle.args.w, h = idle.args.h;
+      const d = document.createElement("div");
+      d.className = "one";
+      d.innerHTML = '<div class="t">' + pr[0].replace("host/", "") + ' + blink overlay &nbsp;<span class="n">4fps, blink every 3\u20134s</span></div>' +
+        '<div class="a" style="position:relative;width:' + (w / 2) + 'px;height:' + (h / 2) + 'px"></div>';
+      const a = d.querySelector(".a");
+      const layers = [];
+      iF.forEach(function (svg, n) {
+        const el = document.createElement("div");
+        el.style.cssText = "position:absolute;inset:0;display:" + (n ? "none" : "block");
+        el.innerHTML = svg;
+        const s2 = el.querySelector("svg"); s2.setAttribute("width", w / 2); s2.setAttribute("height", h / 2);
+        a.appendChild(el); layers.push(el);
+      });
+      const blinks = [];
+      bF.forEach(function (svg, n) {
+        const el = document.createElement("div");
+        el.style.cssText = "position:absolute;inset:0;display:none";
+        el.innerHTML = svg;
+        const s2 = el.querySelector("svg"); s2.setAttribute("width", w / 2); s2.setAttribute("height", h / 2);
+        a.appendChild(el); blinks.push(el);
+      });
+      st.appendChild(d);
+      let i = 0, blinking = false;
+      setInterval(function () {
+        layers[i].style.display = "none";
+        blinks[i].style.display = "none";
+        i = (i + 1) % layers.length;
+        layers[i].style.display = "block";
+        if (blinking) blinks[i].style.display = "block";
+      }, 250);
+      (function schedule() {
+        const wait = 3000 + Math.random() * 1000;
+        setTimeout(function () {
+          blinking = true; blinks[i].style.display = "block";
+          setTimeout(function () { blinking = false; blinks.forEach((b) => (b.style.display = "none")); schedule(); }, 110);
+        }, wait);
+      })();
+    });
+  }
+
+  // ---- 7 · corner-perspective and wall-of-calls -----------------------------
+  {
+    const s = sec("7 \u00b7 corner-perspective and wall-of-calls, carried forward",
+      "Unverified at render scale since delta-13. Geometry unchanged in this drop; both now carry an ambient prop, which is new. Whole plate at 1:1.");
+    const st = strip(s);
+    ["room/corner-perspective-16x9", "room/wall-of-calls-16x9"].forEach(function (k) {
+      const P = draw(k, { boil: 1 });
+      tile(st, k.replace("room/", "") + ", 1:1 &nbsp;<span class='n'>" + (P.meta.ambient ? P.meta.ambient.prop : "no prop") + "</span>", P.toSVG(), 1920, 1080);
+    });
+  }
+
+  // ---- 7 · drop two, every new plate -----------------------------------------
+  {
+    const s = sec("7 · drop two — the twelve new families",
+      "Every family added in drop two, at its HIGHEST count, both aspects, scaled to a third so the whole plate is visible at once. This is the first look any of them have had: they build clean and their geometry is asserted by pre-flight A, B, F, G and H2, but an assertion is not an eye. What to check here is COMPOSITION — whether label bands collide at the densest count, whether the portrait re-authors hold, whether anything reads as empty. Detail is sections 1\u20136.");
+    if (!skip(s)) {
+      const NEW = [
+        "charts/dilution-6y", "charts/maturities", "charts/guided-vs-actual-6y",
+        "peers/distribution", "figures/share-of-4", "figures/by-region-5",
+        "figures/ownership", "figures/scale-3", "paper/receipt-8",
+        "structure/said-happened-5", "structure/sensitivity", "charts/multiples-grid-6",
+      ];
+      ["16x9", "9x16"].forEach(function (asp) {
+        const st = strip(s);
+        const dim = asp === "16x9" ? [1920, 1080] : [1080, 1920];
+        NEW.forEach(function (b) {
+          const it = B.LIB.filter((i) => i.key === b + "-" + asp)[0];
+          if (!it) return;
+          const P = B.draw(it, null, { boil: 1 });
+          const m = P.manifest();
+          // Scaled to a third rather than cropped: at this point the question is
+          // composition — does the plate hold together — and a crop answers a
+          // different question. The detail pass is sections 1–6.
+          tile(st, b + "<br><span class='n'>" + Object.keys(m.slots).length + " slots · " + asp + "</span>",
+            P.toSVG(), Math.round(dim[0] / 3), Math.round(dim[1] / 3));
+        });
+      });
+    }
+  }
+  // ==========================================================================
+  // SECTIONS 8–12 · THE PASS ON EVERYTHING BUILT SINCE DROP TWO
+  //
+  // Sections 1–7 are drops one and two and are unchanged. Everything built
+  // after them — the furniture, the confession, the quarter, the five pipeline
+  // plates and the 24 dusk rooms — had never been seen at 1:1, and CHANGES.md
+  // said so in five UNVERIFIED blocks. This is that pass.
+  //
+  // Three rules the sections below hold to:
+  //
+  // 1. ONE CANVAS UNIT IS ONE CSS PIXEL. Type fills are absolute px off the
+  //    published slot box at the published role size — no cqw, no container
+  //    query, nothing derived. furniture.html rendered every lower third 2.33×
+  //    oversized by sizing type against the wrong container; at 1:1 there is no
+  //    container to get wrong.
+  // 2. WORST REALISTIC COPY, not the neatest. The longest plausible ticker, the
+  //    longest plausible label, the count variant with the least room. The kit
+  //    already learned the inverse of this the hard way: a budget reporter that
+  //    raised five false alarms out of seven trains people to ignore it, and a
+  //    proof page filled with tidy strings does the same thing from the other
+  //    side.
+  // 3. EVERY FILL IS BUDGET-CHECKED and each section reports what went over,
+  //    because an over-budget fill does not render at all — a verdict of
+  //    "legible" on a string the compositor would refuse is not a verdict.
+  //
+  // A crop is still a viewBox, per the note above. Judgement tiles are cropped
+  // to ≤960 units so they sit at true 1:1 in a normal viewport; whole-plate
+  // tiles are there for composition and scroll.
+  // ==========================================================================
+  const NS = "http://www.w3.org/2000/svg";
+  // The face comes off the ROLE, not off a lookup table in this page: budget.js
+  // derives every maxChars from the role's own `font` (Courier Prime is
+  // monospaced at 0.5996em; Archivo Narrow is a frequency-weighted mean per
+  // character class), so type set here in any other face would be measuring a
+  // different plate than the one the budget describes. Same for `transform` and
+  // `tracking` — both are in the advance.
+  function faceOf(r) {
+    return /courier/i.test(r.font || "") ? "'Courier Prime',monospace" : "'Archivo Narrow',sans-serif";
+  }
+  // The leading is the kit's own number, not this page's: budget.js publishes
+  // BUDGET.PITCH = 1.16 and caps every slot's maxLines against it, so a page that
+  // sets type at any other pitch is measuring a different plate than the budget
+  // describes. Same rule as the face.
+  const PITCH = (window.BUDGET && window.BUDGET.PITCH) || 1.16;
+  const OVER = [];
+  // Character budgets are only half of fit. A fill inside its maxChars can still
+  // be taller than its box, and nothing in the kit reports that — so every fill
+  // is registered here and measured against the published box height once the
+  // real faces have loaded.
+  const FILLS = [];
+  const SECTIONS = [];
+  // The budget question is per ROLE KIND, not per string: maxChars is a one-line
+  // box and the whole string must fit; maxCharsPerLine is a wrapping box, so an
+  // unbroken string is checked against the whole block and only AUTHORED lines
+  // are checked per line. Same arithmetic as new-plates.html after its reporter
+  // was corrected.
+  function budgetWhy(s, str) {
+    const lines = str.split("\n");
+    if (s.maxChars != null) {
+      if (str.length > s.maxChars) return str.length + " chars in a " + s.maxChars + "-char box";
+      return null;
+    }
+    if (s.maxCharsPerLine != null) {
+      const ml = s.maxLines || 1;
+      if (lines.length > 1) {
+        const lg = Math.max.apply(null, lines.map((l) => l.length));
+        if (lg > s.maxCharsPerLine) return "an authored line of " + lg + " in a " + s.maxCharsPerLine + "-per-line box";
+        if (lines.length > ml) return lines.length + " authored lines in a " + ml + "-line box";
+      } else if (str.length > s.maxCharsPerLine * ml) {
+        return str.length + " chars in a block holding " + (s.maxCharsPerLine * ml);
+      }
+    }
+    return null;
+  }
+  function fill1(host, m, data, ox, oy, key) {
+    const roles = m.typeRoles || {};
+    Object.keys(data).forEach(function (k) {
+      const s = m.slots[k];
+      if (!s || s.region) return;
+      const r = roles[s.role] || {};
+      const str = String(data[k]);
+      const why = budgetWhy(s, str);
+      if (why) OVER.push(key + " \u00b7 " + k + ": " + why);
+      const d = document.createElement("div");
+      d.className = "f1" + (why ? " over" : "");
+      d.style.cssText = "left:" + (s.x - ox) + "px;top:" + (s.y - oy) + "px;width:" + s.w + "px;height:" + s.h +
+        "px;justify-content:" + (s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start");
+      const sp = document.createElement("span");
+      sp.textContent = str;
+      // LONGHANDS, NOT THE `font` SHORTHAND. The shorthand resets every omitted
+      // longhand to its initial value, so it silently set line-height:normal
+      // (~1.35em for Archivo Narrow) over the pitch — which made every two-line
+      // fill render 16% too tall and overflow its published box while the report
+      // said everything was inside budget. Exactly the inverted form of the
+      // budget-reporter defect this kit already called out: a report that says
+      // "inside budget" about type that is visibly out of its box.
+      sp.style.fontWeight = r.weight || 400;
+      sp.style.fontSize = (r.size || 28) + "px";
+      sp.style.fontFamily = faceOf(r);
+      sp.style.lineHeight = String(PITCH);
+      sp.style.textAlign = s.align === "right" ? "right" : s.align === "center" ? "center" : "left";
+      if (r.transform) sp.style.textTransform = r.transform;
+      if (r.tracking) sp.style.letterSpacing = r.tracking;
+      if (r.opacity != null) sp.style.opacity = r.opacity;
+      d.appendChild(sp);
+      host.appendChild(d);
+      FILLS.push({ key: key, name: k, sp: sp, el: d, h: s.h, lines: s.maxLines || 1, size: r.size || 28 });
+    });
+  }
+  // A tile at 1:1, optionally viewBox-cropped, with a positioned stage to hang
+  // type fills and region fills on.
+  function plate1(strip, title, key, crop, args) {
+    const it = B.LIB.filter((i) => i.key === key)[0];
+    if (!it) throw new Error("not in LIB: " + key);
+    const P = B.draw(it, null, args || { boil: 1 });
+    const m = P.manifest();
+    const w = crop ? crop.w : m.canvas[0], h = crop ? crop.h : m.canvas[1];
+    const d = document.createElement("div");
+    d.className = "one";
+    d.innerHTML = '<div class="t">' + title + "</div>";
+    const a = document.createElement("div");
+    a.className = "a";
+    a.style.cssText = "position:relative;width:" + w + "px;height:" + h + "px";
+    a.innerHTML = P.toSVG();
+    const sv = a.querySelector("svg");
+    sv.setAttribute("viewBox", crop ? [crop.x, crop.y, crop.w, crop.h].join(" ") : "0 0 " + m.canvas[0] + " " + m.canvas[1]);
+    sv.setAttribute("width", w);
+    sv.setAttribute("height", h);
+    d.appendChild(a);
+    strip.appendChild(d);
+    return { P: P, m: m, stage: a, ox: crop ? crop.x : 0, oy: crop ? crop.y : 0, crop: crop };
+  }
+  function olay(o) {
+    const g = document.createElementNS(NS, "svg");
+    const c = o.crop;
+    g.setAttribute("viewBox", c ? [c.x, c.y, c.w, c.h].join(" ") : "0 0 " + o.m.canvas[0] + " " + o.m.canvas[1]);
+    g.setAttribute("width", c ? c.w : o.m.canvas[0]);
+    g.setAttribute("height", c ? c.h : o.m.canvas[1]);
+    g.style.cssText = "position:absolute;left:0;top:0";
+    o.stage.appendChild(g);
+    return g;
+  }
+  function rct(g, x, y, w, h, op) {
+    const r = document.createElementNS(NS, "rect");
+    r.setAttribute("x", x); r.setAttribute("y", y);
+    r.setAttribute("width", Math.max(0, w)); r.setAttribute("height", Math.max(0, h));
+    r.setAttribute("fill", "#1C222A"); r.setAttribute("fill-opacity", op == null ? 0.8 : op);
+    g.appendChild(r);
+  }
+  function poly(g, pts, wid) {
+    const pl = document.createElementNS(NS, "polyline");
+    pl.setAttribute("points", pts.join(" "));
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", "#1C222A");
+    pl.setAttribute("stroke-width", wid || 5); pl.setAttribute("stroke-linejoin", "round");
+    g.appendChild(pl);
+  }
+  function verdict(s, rows) {
+    let h = '<table class="m"><tr><th>asset</th><th>verdict</th><th>what the 1:1 pass shows</th></tr>';
+    rows.forEach(function (r) {
+      const cls = r[1] === "passes" ? "pass" : r[1] === "marginal" ? "warn" : "fail";
+      h += "<tr><td>" + r[0] + '</td><td style="text-align:left" class="' + cls + '">' + r[1] + '</td><td style="text-align:left">' + r[2] + "</td></tr>";
+    });
+    s.insertAdjacentHTML("beforeend", h + "</table>");
+  }
+  function report(s, from, ffrom) {
+    const mine = OVER.slice(from);
+    const d = document.createElement("div");
+    d.className = "rep";
+    d.innerHTML = mine.length
+      ? "<b>" + mine.length + " OVER-BUDGET FILL" + (mine.length > 1 ? "S" : "") + "</b> \u2014 dashed outline on the tile. " +
+        "The compositor errors on these and the shot does not render, so these are not \u201ctight\u201d, they are absent:\n\n" + mine.join("\n")
+      : "<b class='ok'>Every fill in this section is inside the derived budget for its box</b> \u2014 checked against slots[name].maxChars / maxCharsPerLine / maxLines, the per-box numbers budget.js writes rather than the role floor.";
+    s.appendChild(d);
+    const v = document.createElement("div");
+    v.className = "rep";
+    v.textContent = "measuring vertical fit\u2026";
+    s.appendChild(v);
+    SECTIONS.push({ div: v, from: ffrom == null ? 0 : ffrom, to: FILLS.length });
+  }
+  // Deferred because it needs the real faces: a fit measured against a fallback
+  // face is a measurement of the fallback.
+  function verticalPass() {
+    SECTIONS.forEach(function (sec2) {
+      const rows = [], notes = [];
+      for (let i = sec2.from; i < sec2.to; i++) {
+        const f = FILLS[i];
+        const got = f.sp.getBoundingClientRect().height;
+        const lines = Math.round(got / (f.size * PITCH));
+        if (got - f.h <= 0.5) continue;
+        // A LINE BOX IS NOT INK. One authored line whose line box overhangs the
+        // slot box still draws its glyphs inside it — cap height plus descender
+        // is about 0.93em, so 30u type puts ~28 units of ink in a 32-unit box
+        // and overhangs only by leading. Reporting that as a failure would be
+        // nine false alarms in this pass, which is the reporter defect this kit
+        // already called out once. It is a NOTE. What is a failure is a fill
+        // that renders more lines than its box holds, or whose point size alone
+        // exceeds the box.
+        if (lines <= f.lines && f.size <= f.h) {
+          notes.push(f.key + " \u00b7 " + f.name + ": " + f.size + "u type in a " + f.h +
+            "-unit box \u2014 one line box is " + got.toFixed(1) + ", so it overhangs by " +
+            (got - f.h).toFixed(1) + " in leading. The ink fits.");
+          continue;
+        }
+        f.el.classList.add("over");
+        rows.push(f.key + " \u00b7 " + f.name + ": renders " + got.toFixed(1) + " in a " + f.h +
+          "-unit box, over by " + (got - f.h).toFixed(1) +
+          (lines > f.lines ? " \u2014 " + lines + " rendered lines in a " + f.lines + "-line box, so it WRAPPED" : ""));
+      }
+      const head = rows.length
+        ? "<b>" + rows.length + " FILL" + (rows.length > 1 ? "S" : "") + " TALLER THAN ITS PUBLISHED BOX</b> \u2014 " +
+          "measured, not derived: rendered height at BUDGET.PITCH (" + PITCH + ") against slots[name].h.\n\n" + rows.join("\n")
+        : "<b class='ok'>Every fill in this section fits its box vertically</b> \u2014 rendered height at the " +
+          "kit's own line pitch (" + PITCH + "em) measured against the published slots[name].h, once the real faces " +
+          "had loaded. Character budgets are only half of fit; this is the other half.";
+      sec2.div.innerHTML = head + (notes.length
+        ? "\n\n<b class='k'>" + notes.length + " leading overhang" + (notes.length > 1 ? "s" : "") +
+          ", noted rather than failed</b> \u2014 the ink fits; the line box does not:\n" + notes.join("\n")
+        : "");
+    });
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { setTimeout(verticalPass, 60); });
+  else window.addEventListener("load", function () { setTimeout(verticalPass, 400); });
+
+  // ---- 8 · the furniture at 1:1 ---------------------------------------------
+  {
+    const s = sec("8 \u00b7 the furniture \u2014 overlays/lower-third over a room, a chart and a dense plate, with the caption beside it",
+      "\u201cLegible over anything\u201d is this asset's entire job, so it is rendered over the three grounds it actually has to survive, at 1:1, bottom-left at one panel-height of margin \u2014 the placement it was designed against. The <em>captions proposal from captions.html is on the same page at the same scale</em> because the two were designed as a set and deciding them separately produces two answers that do not match. Ticker is the longest plausible one ($GOOGL, six characters, exactly the derived budget); the tagline runs to its budget.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const LT16 = { ticker: "$GOOGL", tagline: "the buyback was borrowed, and it is still due" };
+      const LT9 = { ticker: "$BRK.B", tagline: "twelve filings in five months, and not one of them a buy" };
+      // Landscape: the panel is 820x208, placed at 4% left and one panel-height
+      // of bottom margin — 77,797 in a 1920x1080 frame. The crop is the corner
+      // it lands in, so the ground around it is at 1:1 too.
+      const CROP16 = { x: 0, y: 620, w: 1000, h: 460 }, AT16 = [77, 797];
+      const CROP9 = { x: 0, y: 1240, w: 1000, h: 680 }, AT9 = [43, 1399];
+      function furniture(strip, label, groundKey, crop, at, ltKey, data, prepare) {
+        const g = plate1(strip, label, groundKey, crop);
+        if (prepare) prepare(g);
+        const it = B.LIB.filter((i) => i.key === ltKey)[0];
+        const P = B.draw(it, null, { boil: 1 });
+        const m = P.manifest();
+        const holder = document.createElement("div");
+        holder.style.cssText = "position:absolute;left:" + (at[0] - crop.x) + "px;top:" + (at[1] - crop.y) +
+          "px;width:" + m.canvas[0] + "px;height:" + m.canvas[1] + "px";
+        holder.innerHTML = P.toSVG();
+        const sv = holder.querySelector("svg");
+        sv.setAttribute("width", m.canvas[0]); sv.setAttribute("height", m.canvas[1]);
+        fill1(holder, m, data, 0, 0, ltKey);
+        g.stage.appendChild(holder);
+        return g;
+      }
+      const st = strip(s);
+      furniture(st, "over a room \u2014 room/desk-front-16x9 &nbsp;<span class='n'>1:1</span>", "room/desk-front-16x9", CROP16, AT16, "overlays/lower-third-16x9", LT16);
+      furniture(st, "over a chart \u2014 charts/bars-8q-16x9 &nbsp;<span class='n'>1:1, the chart's own ink filled</span>", "charts/bars-8q-16x9", CROP16, AT16, "overlays/lower-third-16x9", LT16, function (g) {
+        const gl = olay(g);
+        [0.52, 0.58, 0.63, 0.97, 0.55, 0.61, 0.66, 1.0].forEach(function (v, i) {
+          const b = g.m.slots["bar-" + (i + 1)];
+          rct(gl, b.x, b.y + b.h * (1 - v), b.w, b.h * v, 0.8);
+        });
+        const heads = {};
+        ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26", "Q2'26"].forEach(function (t, i) { heads["head-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, heads, g.ox, g.oy, "charts/bars-8q-16x9");
+      });
+      const st2 = strip(s);
+      furniture(st2, "over a dense plate \u2014 tables/numbers-sheet-5r-16x9 &nbsp;<span class='n'>1:1, 41 boxes filled</span>", "tables/numbers-sheet-5r-16x9", CROP16, AT16, "overlays/lower-third-16x9", LT16, function (g) {
+        const d = { unit: "$m unless stated, as reported, eight quarters to Q2'26" };
+        ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25"].forEach(function (t, i) { d["head-" + (i + 1)] = t; });
+        ["revenue", "gross profit", "operating income", "free cash flow", "net debt / EBITDA"].forEach(function (t, r) {
+          d["label-" + (r + 1)] = t;
+          ["12,486", "13,204", "11,905", "12,733", "14,018", "12,946"].forEach(function (v, c) { d["cell-" + (r + 1) + "-" + (c + 1)] = v; });
+        });
+        fill1(g.stage, g.m, d, g.ox, g.oy, "tables/numbers-sheet-5r-16x9");
+      });
+      furniture(st2, "9:16 \u2014 over charts/bars-8q-9x16 &nbsp;<span class='n'>1:1 = phone scale</span>", "charts/bars-8q-9x16", CROP9, AT9, "overlays/lower-third-9x16", LT9, function (g) {
+        const heads = {};
+        ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26", "Q2'26"].forEach(function (t, i) { heads["head-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, heads, g.ox, g.oy, "charts/bars-8q-9x16");
+        const gl = olay(g);
+        [0.52, 0.58, 0.63, 0.97, 0.55, 0.61, 0.66, 1.0].forEach(function (v, i) {
+          const b = g.m.slots["bar-" + (i + 1)];
+          rct(gl, b.x, b.y + b.h * (1 - v), b.w, b.h * v, 0.8);
+        });
+      });
+
+      // The captions, at the same scale, on the same ground. Caption size is a
+      // share of the FRAME as it is in the real render — 1.95% of 1920 is 37
+      // canvas units, which is what captions.html specified. The two lines are
+      // the ones that make the difference stop being aesthetic: the longest line
+      // a script writes, and a line that is mostly numbers.
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>The captions, same page, same scale.</b> Option B as decided \u2014 the kit's materials " +
+        "without its hand: kit ink <code>#1C222A</code> on kit ground <code>#E6DDC9</code> at 93%, Courier Prime, " +
+        "no outline, no drawn edge, no wobble. 37 canvas units, 74px delivered, with the lower third in frame so " +
+        "the furniture reads as a set.</p>");
+      const st3 = strip(s);
+      [["the longest line a script writes", "they wrote down four hundred million of it in one quarter"],
+       ["the line that is mostly numbers", "$1.28bn of it, against $840m of EBITDA, at 9.4%"]].forEach(function (pr) {
+        const g = plate1(st3, pr[0] + " &nbsp;<span class='n'>caption 37u \u00b7 1:1</span>", "room/desk-front-16x9", { x: 260, y: 700, w: 1400, h: 380 });
+        const it = B.LIB.filter((i) => i.key === "overlays/lower-third-16x9")[0];
+        const P = B.draw(it, null, { boil: 1 }), m = P.manifest();
+        const holder = document.createElement("div");
+        holder.style.cssText = "position:absolute;left:" + (77 - 260) + "px;top:" + (797 - 700) + "px;width:820px;height:208px";
+        holder.innerHTML = P.toSVG();
+        const sv = holder.querySelector("svg"); sv.setAttribute("width", 820); sv.setAttribute("height", 208);
+        fill1(holder, m, LT16, 0, 0, "overlays/lower-third-16x9");
+        g.stage.appendChild(holder);
+        const cc = document.createElement("div");
+        cc.style.cssText = "position:absolute;left:0;right:0;top:" + (940 - 700) + "px;display:flex;justify-content:center";
+        cc.innerHTML = '<span style="font:400 37px/1.45 \'Courier Prime\',monospace;color:#1C222A;' +
+          'background:rgba(230,221,201,0.93);padding:12px 26px;text-align:center">' + pr[1] + "</span>";
+        g.stage.appendChild(cc);
+      });
+
+      verdict(s, [
+        ["overlays/lower-third-16x9", "passes", "78u ticker and 34u tagline on an opaque panel; the panel reads as an object over all three grounds and the type never touches drawn ink. On the dense plate the row rules run under the panel and stop at its rim, which is what the ground is for."],
+        ["overlays/lower-third-9x16", "passes", "at phone scale the type is the largest thing on the plate after the bars; the wider re-author and the type step up are both doing visible work."],
+        ["the ticker box", "marginal", "$GOOGL is exactly six characters, the derived budget. It fits and the box has nothing spare \u2014 a seventh character is an absent shot, not a tight one, and $BRK.B only fits portrait's eight. The measure is right for a ticker and wrong for anything else, which is what it was narrowed for."],
+        ["captions \u2014 option B at 37u", "passes", "legible over the room at 1:1 and over the panel's own rim; the numbers line is the case that settles it, and Courier Prime's 3/8 and 5/6 stay apart at this size. MarginV and the box inset are still unrun \u2014 libass, not this page."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+  // ---- 9 · the confession ---------------------------------------------------
+  {
+    const s = sec("9 \u00b7 the confession \u2014 both treatments, both aspects, filled to the budget",
+      "Four assets that were built, budgeted, fit-checked and wired, and which nobody had seen with words in. Both treatments are here because they are not mutually exclusive: a chapter can reach for either, and <em>ledger</em> is the recommendation. Bodies are filled to two authored lines at the derived per-line budget \u2014 68 characters landscape, 37 portrait \u2014 because a confession written short is the failure mode the plate cannot show.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const L16 = {
+        kicker: "I GOT THIS WRONG", "entry-no": "no. 14 \u00b7 12 Mar",
+        "said-label": "WHAT I SAID", said: "The buyback was management backing itself, and I said so\ntwice on the record, in March and again in May",
+        "happened-label": "WHAT HAPPENED", happened: "They borrowed 1.2bn at 9% to fund it, three weeks after\nthe quarter closed, and put it in a footnote",
+        "wrong-label": "WHAT I GOT WRONG", wrong: "I never checked where the cash came from, and the filing\nsaid plainly that it did not come from operations",
+        caption: "March 2024. The debt was in the same filing I had open while I recorded it.",
+      };
+      const L9 = {
+        kicker: "I GOT THIS WRONG", "entry-no": "no. 14",
+        "said-label": "WHAT I SAID", said: "The buyback was management\nbacking its own judgement",
+        "happened-label": "WHAT HAPPENED", happened: "They borrowed at 9% to fund\nit, three weeks later",
+        "wrong-label": "WHAT I GOT WRONG", wrong: "I never checked where the\ncash was coming from",
+        caption: "March 2024. It was in the same filing.",
+      };
+      const st = strip(s);
+      ["structure/confession-ledger-16x9", "structure/confession-statement-16x9"].forEach(function (k) {
+        const g = plate1(st, k.replace("structure/", "") + " &nbsp;<span class='n'>whole plate, 1:1</span>", k);
+        fill1(g.stage, g.m, L16, 0, 0, k);
+      });
+      const st2 = strip(s);
+      ["structure/confession-ledger-9x16", "structure/confession-statement-9x16"].forEach(function (k) {
+        const g = plate1(st2, k.replace("structure/", "") + " &nbsp;<span class='n'>1:1 = phone scale</span>", k);
+        fill1(g.stage, g.m, L9, 0, 0, k);
+      });
+      s.insertAdjacentHTML("beforeend",
+        "<p>And the block itself, cropped to 1:1 in a normal viewport \u2014 the three bodies are one type role at " +
+        "one size, which is \u00a72's tone decision expressed as geometry. What to look for is whether anything marks " +
+        "the third block as the bad one. Nothing should.</p>");
+      const st3 = strip(s);
+      [["structure/confession-ledger-16x9", { x: 170, y: 230, w: 940, h: 560 }],
+       ["structure/confession-statement-16x9", { x: 170, y: 230, w: 940, h: 560 }]].forEach(function (pr) {
+        const g = plate1(st3, pr[0].replace("structure/", "") + " &nbsp;<span class='n'>the three bodies, 1:1 crop</span>", pr[0], pr[1]);
+        fill1(g.stage, g.m, L16, g.ox, g.oy, pr[0]);
+      });
+      verdict(s, [
+        ["structure/confession-ledger-16x9", "passes \u2014 after a fix this page asked for", "the 58u body on a ruled sheet takes two full lines at 68 characters and reads cleanly. This page measured the clearance instead of computing it: two lines occupy 134.6 units and the box was 139 \u2014 <b class='k'>4.4 units</b> of descender clearance over the rule below, 8.8px delivered. <b class='k'>Fixed and approved:</b> the body box's descender allowance went 4 \u2192 12, so the box is 147 and the clearance is <b>12.4</b>. It cost 24 units out of the band across the three blocks; the plate still clears its caption and fills 0.82 of the band. Applied to the statement treatment too, deliberately \u2014 it has no rule to clear, but the two share one body geometry and that congruence is \u00a72's tone decision expressed as geometry."],
+        ["structure/confession-statement-16x9", "passes", "identical body geometry with the rail and its three spurs; the three blocks read as one statement in three parts. Nothing on it marks the third."],
+        ["structure/confession-ledger-9x16", "marginal", "the bodies hold at 37 characters a line and read at phone scale, and the same clearance fix lands here \u2014 12.2 units now against 4.2 before. The plate fills 0.65 of its band and the ruled sheet's lines carry the bottom third. It works because the body type did not shrink \u2014 the risk this treatment was warned about, a ledger entry drawn small and neat, is real, and the guard was already in: same size as the statement."],
+        ["structure/confession-statement-9x16", "marginal", "two lines at 34 characters is four or five words a line, so a real confession has to be written to the plate before it is recorded, not trimmed after. Legible, and tight in the sense that matters: the sentence has to be short, not the type."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+  // ---- 10 · the quarter -----------------------------------------------------
+  {
+    const s = sec("10 \u00b7 the quarter \u2014 and the 23-unit seasonality column is the question this section is built to answer",
+      "Ten assets, and one specific unverified claim: CHANGES flagged <code>charts/seasonality-6y-9x16</code>'s <em>23-unit column, 46px delivered</em> as measured but not judged at phone scale. The last row of this section is that column at 1:1 with the value ramp on it, beside the 35-unit column of <code>-4y</code> that shorts are routed to instead. Heads are <code>Q3'25</code>, five characters, as the plate's period format requires; the portrait figure box is filled with the figure a script would really write.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const HEADS = ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26", "Q2'26"];
+      const SERIES = [0.52, 0.58, 0.63, 0.97, 0.55, 0.61, 0.66, 1.0];
+      const st = strip(s);
+      [["charts/bars-8q-16x9", 1], ["charts/bars-8q-9x16", 1]].forEach(function (pr) {
+        const k = pr[0], land = /16x9/.test(k);
+        const g = plate1(st, k.replace("charts/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        const gl = olay(g);
+        SERIES.forEach(function (v, i) {
+          const b = g.m.slots["bar-" + (i + 1)];
+          rct(gl, b.x, b.y + b.h * (1 - v), b.w, b.h * v, 0.8);
+        });
+        const d = { unit: land ? "revenue, $m, eight quarters to Q2'26, as reported" : "revenue $m, to Q2'26" };
+        HEADS.forEach(function (t, i) { d["head-" + (i + 1)] = t; });
+        ["0", "4,000", "8,000", "12,000", "16,000"].forEach(function (t, i) { d["y-" + (i + 1)] = t; });
+        if (land) SERIES.forEach(function (v, i) { d["value-" + (i + 1)] = ["$8.1bn", "$9.0bn", "$9.8bn", "$15.1bn", "$8.6bn", "$9.5bn", "$10.3bn", "$15.6bn"][i]; });
+        else d["value-last"] = "$15.6bn";
+        fill1(g.stage, g.m, d, 0, 0, k);
+      });
+      const st2 = strip(s);
+      [["charts/line-8q-16x9", 1], ["charts/line-8q-9x16", 1]].forEach(function (pr) {
+        const k = pr[0], land = /16x9/.test(k);
+        const g = plate1(st2, k.replace("charts/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        const gl = olay(g);
+        const pts = SERIES.map(function (v, i) {
+          const p = g.m.slots["point-" + (i + 1)];
+          return (p.x + p.w / 2) + "," + (p.y + p.h * (1 - v));
+        });
+        poly(gl, pts, land ? 6 : 7);
+        const d = { unit: land ? "revenue, $m, eight quarters to Q2'26, as reported" : "revenue $m, to Q2'26" };
+        HEADS.forEach(function (t, i) { d["head-" + (i + 1)] = t; });
+        ["0", "4,000", "8,000", "12,000", "16,000"].forEach(function (t, i) { d["y-" + (i + 1)] = t; });
+        if (land) SERIES.forEach(function (v, i) { d["value-" + (i + 1)] = ["$8.1bn", "$9.0bn", "$9.8bn", "$15.1bn", "$8.6bn", "$9.5bn", "$10.3bn", "$15.6bn"][i]; });
+        else d["value-last"] = "$15.6bn";
+        fill1(g.stage, g.m, d, 0, 0, k);
+      });
+      const st3 = strip(s);
+      [["figures/qoq-yoy-16x9", { kicker: "REVENUE, Q2 2026", unit: "against the quarter, and the year", figure: "$15.64bn",
+          "qoq-label": "against the previous quarter, which was also a fourth quarter", qoq: "+51.4%",
+          "yoy-label": "against the same quarter a year ago", yoy: "+3.6%",
+          caption: "The quarter is up by half. The year is up by three and a half percent." }],
+       ["figures/qoq-yoy-9x16", { kicker: "REVENUE, Q2 2026", unit: "the quarter, the year", figure: "$15.64bn",
+          "qoq-label": "against the previous quarter", qoq: "+51.4%",
+          "yoy-label": "against the same quarter a year ago", yoy: "+3.6%",
+          caption: "Up by half on the quarter. Up 3.6% on the year." }]
+      ].forEach(function (pr) {
+        const k = pr[0], land = /16x9/.test(k);
+        const g = plate1(st3, k.replace("figures/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        fill1(g.stage, g.m, pr[1], 0, 0, k);
+      });
+      const YEARS6 = ["FY21", "FY22", "FY23", "FY24", "FY25", "FY26"];
+      const RAMP = [0.26, 0.37, 0.48, 0.59, 0.70, 0.82];
+      // Q4 is always this company's best quarter, which is the argument the
+      // plate exists to make. Values rise year on year inside each quarter.
+      const SEAS = [[0.40, 0.46, 0.52, 0.86], [0.43, 0.49, 0.55, 0.90], [0.45, 0.52, 0.58, 0.93],
+                    [0.48, 0.55, 0.61, 0.96], [0.50, 0.57, 0.64, 0.98], [0.53, 0.60, 0.67, 1.0]];
+      function seasonality(strip2, key, crop, years) {
+        const land = /16x9/.test(key);
+        const g = plate1(strip2, key.replace("charts/", "") + " &nbsp;<span class='n'>" +
+          (crop ? "1:1 crop \u00b7 column " + g0(key) + "u" : land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", key, crop);
+        const gl = olay(g);
+        for (let q = 1; q <= 4; q++) {
+          for (let y = 1; y <= years; y++) {
+            const b = g.m.slots["y" + y + "-q" + q];
+            if (!b) continue;
+            const v = SEAS[y - 1][q - 1];
+            rct(gl, b.x, b.y + b.h * (1 - v), b.w, b.h * v, RAMP[Math.round((y - 1) * (5 / Math.max(1, years - 1)))]);
+          }
+        }
+        const d = { unit: land ? "revenue, $m, by quarter, " + years + " years, oldest lightest" : "revenue $m, " + years + " years" };
+        ["Q1", "Q2", "Q3", "Q4"].forEach(function (t, i) { d["head-q" + (i + 1)] = t; });
+        ["0", "4,000", "8,000", "12,000", "16,000"].forEach(function (t, i) { d["y-" + (i + 1)] = t; });
+        for (let y = 1; y <= years; y++) d["series-" + y] = YEARS6[y - 1 + (6 - years)];
+        fill1(g.stage, g.m, d, g.ox, g.oy, key);
+        return g;
+      }
+      function g0(key) { const it = B.LIB.filter((i) => i.key === key)[0]; return B.draw(it, null, { boil: 1 }).manifest().columnWidth.units; }
+      const st4 = strip(s);
+      seasonality(st4, "charts/seasonality-4y-16x9", null, 4);
+      seasonality(st4, "charts/seasonality-6y-16x9", null, 6);
+      const st5 = strip(s);
+      seasonality(st5, "charts/seasonality-4y-9x16", null, 4);
+      seasonality(st5, "charts/seasonality-6y-9x16", null, 6);
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>The thinnest data mark in the library, at the scale a phone shows it.</b> Left: " +
+        "<code>seasonality-6y-9x16</code>, 24 columns, 23 units each on a 4-unit gap, with the published " +
+        "0.26\u21920.82 ramp on them. Right: <code>-4y</code>, 16 columns at 35 units, which is what " +
+        "<code>roles.fragment.json</code> routes shorts to. Same crop region, same scale, so the question is " +
+        "which of the two a viewer can count.</p>");
+      const st6 = strip(s);
+      seasonality(st6, "charts/seasonality-6y-9x16", { x: 130, y: 1020, w: 880, h: 600 }, 6);
+      seasonality(st6, "charts/seasonality-4y-9x16", { x: 130, y: 1020, w: 880, h: 600 }, 4);
+      const st7 = strip(s);
+      seasonality(st7, "charts/seasonality-6y-9x16", { x: 130, y: 300, w: 880, h: 420 }, 6);
+      verdict(s, [
+        ["charts/bars-8q-{16x9,9x16}", "passes", "eight 111u columns landscape and 59u portrait; Q3'24\u2192Q2'26 heads at five characters clear each other with room, and the landscape value row holds $15.1bn at nine characters. The portrait plate's single value-last callout is the right call \u2014 eight figures at 30u across 840 units would be the row that stops the shot."],
+        ["charts/line-8q-{16x9,9x16}", "passes", "the path reads as a shape at both aspects and the 12-character head boxes are the loosest in the quarter set."],
+        ["figures/qoq-yoy-16x9", "passes", "190u figure, 110u deltas, both cells congruent side by side. Neither delta reads as the headline, which is the plate's whole claim, and at 1:1 that is visibly geometry rather than intent. The landscape figure box derives 14 characters, the loosest on the plate."],
+        ["figures/qoq-yoy-9x16", "passes \u2014 after a fix this page asked for", "it FAILED here at 220u: the figure box derived SEVEN characters and <code>$15.64bn</code> is eight, so the plate rendered blank where the quarter goes \u2014 and two decimals in billions is what a real script writes. <b class='k'>Fixed and approved:</b> the portrait figure role is stepped to 190u, the box now derives <b>8</b>, and the fill above is that eight-character string rendering. The cost, stated plainly: the figure was 1.69\u00d7 the delta beside it and is now <b>1.46\u00d7</b> \u2014 still the dominant quantity, and nearer landscape's 1.73\u00d7 than before, but a real reduction in the weighting. 190u is the only step that buys the eighth character against a 936-unit box."],
+        ["charts/seasonality-4y-{16x9,9x16}", "passes", "67u and 35u columns, four values a group, and the ramp separates every year. This is the variant a short should use and the 1:1 pass agrees with the routing."],
+        ["charts/seasonality-6y-16x9", "passes", "45u columns, 90px delivered, six values a group with the newest at full subject ink; the year the script is about is the darkest thing on the plot, as designed."],
+        ["charts/seasonality-6y-9x16", "marginal", "23u columns on 4u gaps do render and the group structure reads \u2014 four quarters, six bars each, unmistakably. What does NOT survive is the ramp's bottom end: FY21 at 0.26 and FY22 at 0.37 on a 23px-wide mark are hard to put in order at phone distance, so the plate reads as four groups rising rather than as six dated years. That is the plate's own judgement (<code>meta.crowded</code>) confirmed rather than overturned: it is legible at desk distance, it is not countable on a phone, and <code>-4y</code> is the right route for a short. No fix proposed \u2014 a wider column means fewer years, which is what -4y already is."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+  // ---- 11 · the five pipeline plates ---------------------------------------
+  {
+    const s = sec("11 \u00b7 the five pipeline plates \u2014 ten assets, filled at their worst count",
+      "\u00a73's plates, each of which exists because the pipeline already pulls the data and had nowhere to draw it. The tight boxes here are known and named: twelve insider marks in 9:16, the eight-character date row, the 74-character source line, and the end card's content band derived from the platform's keep-out zones. Zones are drawn <em>by this page</em>, dashed, so what the platform covers is visible at 1:1.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const st = strip(s);
+      [["figures/short-interest-16x9", 0.373, { kicker: "SHORT INTEREST, AND WHAT IT IS AGAINST", unit: "shares against free float, and days",
+          "float-label": "free float 1,284.6m shares", "short-label": "479.2m shares short",
+          days: "6.2", "days-label": "days to cover\nat ninety-day average volume",
+          borrow: "31%", "borrow-label": "cost to borrow\nannualised, indicative",
+          caption: "Thirty-seven percent of the float, and six days to get out of it." }],
+       ["figures/short-interest-9x16", 0.373, { kicker: "SHORT INTEREST", unit: "against free float",
+          "float-label": "free float 1,284.6m", "short-label": "479.2m short",
+          days: "6.2", "days-label": "days to cover\nat average volume",
+          borrow: "31%", "borrow-label": "cost to borrow\nannualised",
+          caption: "37% of the float, and six days to get out." }]
+      ].forEach(function (pr) {
+        const k = pr[0], land = /16x9/.test(k);
+        const g = plate1(st, k.replace("figures/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        const gl = olay(g);
+        const sh = g.m.slots.short;
+        rct(gl, sh.x, sh.y, sh.w * pr[1], sh.h, 0.8);
+        fill1(g.stage, g.m, pr[2], 0, 0, k);
+      });
+      const FLOW = [
+        ["charts/insider-flow-12-16x9", [-1.2, -0.9, -2.4, -0.6, -1.8, -3.1, -0.7, -2.2, -1.4, -0.5, -2.9, -1.6],
+          ["12 Mar 2026", "26 Mar 2026", "09 Apr 2026", "23 Apr 2026", "07 May 2026", "21 May 2026",
+           "04 Jun 2026", "18 Jun 2026", "02 Jul 2026", "16 Jul 2026", "30 Jul 2026", "13 Aug 2026"],
+          ["CEO", "CFO", "Dir", "CEO", "COO", "CEO", "Dir", "CFO", "CEO", "Dir", "CEO", "CFO"],
+          { kicker: "INSIDER TRADES, FIVE MONTHS", unit: "Form 4, $m, sized by value",
+            "scale-above": "$4m", "scale-below": "$4m",
+            caption: "Twelve filings in five months. Not one of them a purchase." }],
+        ["charts/insider-flow-12-9x16", [0.8, -1.1, 1.6, 2.1, -0.4, 0.9, 1.3, -2.0, 0.6, 1.8, -0.7, 2.4],
+          ["12 Mar", "26 Mar", "09 Apr", "23 Apr", "07 May", "21 May", "04 Jun", "18 Jun", "02 Jul", "16 Jul", "30 Jul", "13 Aug"],
+          null,
+          { kicker: "INSIDER TRADES", unit: "Form 4, $m",
+            "scale-above": "$3m", "scale-below": "$3m",
+            "who-note": "all four officers and two directors, buying throughout",
+            caption: "Buying through the whole decline." }],
+        ["charts/insider-flow-6-9x16", [-2.8, -1.9, -3.4, -0.8, -2.2, -4.1],
+          ["08 Jan 2026", "22 Jan 2026", "14 Feb 2026", "03 Mar 2026", "27 Mar 2026", "16 Apr 2026"],
+          ["CEO", "CFO", "CEO", "Dir (chair)", "COO", "CEO"],
+          { kicker: "INSIDER TRADES", unit: "Form 4, $m",
+            "scale-above": "$5m", "scale-below": "$5m",
+            caption: "Six filings in four months. All of them one way." }]
+      ];
+      const st2 = strip(s);
+      FLOW.forEach(function (d) {
+        const k = d[0], land = /16x9/.test(k);
+        const g = plate1(st2, k.replace("charts/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        const gl = olay(g);
+        const peak = Math.max.apply(null, d[1].map(Math.abs)) * 1.12;
+        d[1].forEach(function (v, i) {
+          const sl = g.m.slots["mark-" + (i + 1)];
+          if (!sl) return;
+          const half = (sl.y + sl.h) - g.m.axisY;
+          const hh = Math.abs(v) / peak * half;
+          if (v >= 0) rct(gl, sl.x, g.m.axisY - hh, sl.w, hh, 0.8);
+          else rct(gl, sl.x, g.m.axisY, sl.w, hh, 0.8);
+        });
+        const data = Object.assign({}, d[4]);
+        d[2].forEach(function (t, i) { data["date-" + (i + 1)] = t; });
+        if (d[3]) d[3].forEach(function (t, i) { data["who-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, data, 0, 0, k);
+      });
+      const st3 = strip(s);
+      [["charts/macro-series-16x9",
+        [0.28,0.34,0.31,0.52,0.44,0.38,0.61,0.49,0.42,0.36,0.33,0.47,0.58,0.41,0.35,0.30,0.39,0.72,0.55,0.44],
+        [[0.17,0.05],[0.45,0.04],[0.78,0.07]],
+        { kicker: "UNEMPLOYMENT, SEVENTY YEARS", unit: "%, monthly, seasonally adjusted",
+          source: "FRED: UNRATE, monthly, seasonally adjusted, last revised 12 Sep 2026",
+          caption: "Every spike is a recession. The bands are the recessions." }],
+       ["charts/macro-series-9x16",
+        [0.62,0.58,0.71,0.55,0.48,0.66,0.52,0.40,0.35,0.44,0.30,0.26,0.33,0.22,0.18,0.24,0.15,0.12,0.28,0.41],
+        [[0.12,0.05],[0.38,0.06],[0.62,0.045],[0.83,0.06]],
+        { kicker: "10-YEAR YIELD", unit: "%, end of month",
+          source: "FRED: DGS10, monthly average, revised 12 Sep 2026",
+          caption: "Forty years of one direction, then eighteen months." }]
+      ].forEach(function (d) {
+        const k = d[0], land = /16x9/.test(k);
+        const g = plate1(st3, k.replace("charts/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        const gl = olay(g);
+        const pa = g.m.slots["plot-area"];
+        d[2].forEach(function (bd, i) {
+          const sl = g.m.slots["band-" + (i + 1)];
+          rct(gl, sl.x + sl.w * bd[0], sl.y, sl.w * bd[1], sl.h, 0.13);
+        });
+        poly(gl, d[1].map(function (v, i) {
+          return (pa.x + (pa.w / (d[1].length - 1)) * i) + "," + (pa.y + pa.h - pa.h * 0.92 * v);
+        }), land ? 5 : 6);
+        const data = Object.assign({}, d[3]);
+        const decades = land ? ["1950","1958","1966","1974","1982","1990","1998","2006","2014","2022"]
+                             : ["1962","1969","1976","1983","1990","1997","2004","2011","2018","2025"];
+        decades.forEach(function (t, i) { data["head-" + (i + 1)] = t; });
+        ["0","4","8","12","16"].forEach(function (t, i) { data["y-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, data, 0, 0, k);
+      });
+      const st4 = strip(s);
+      [["structure/end-card-16x9", { kicker: "THAT IS THE CASE", line: "Cheap for a reason,\nand the reason is debt",
+          hand: "Every figure is sourced in the\ndescription. So is the ledger." }],
+       ["structure/end-card-9x16", { kicker: "THAT IS THE CASE", line: "The buyback was\nborrowed money",
+          hand: "Sources in the description." }]
+      ].forEach(function (pr) {
+        const k = pr[0], land = /16x9/.test(k);
+        const g = plate1(st4, k.replace("structure/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", k);
+        fill1(g.stage, g.m, pr[1], 0, 0, k);
+        g.m.keepOut.forEach(function (z) {
+          const el = document.createElement("div");
+          el.className = "zone";
+          el.style.cssText = "left:" + z.x + "px;top:" + z.y + "px;width:" + z.w + "px;height:" + z.h + "px" +
+            (z.id === "subscribe" ? ";border-radius:50%" : "");
+          el.textContent = z.id;
+          g.stage.appendChild(el);
+        });
+      });
+      s.insertAdjacentHTML("beforeend",
+        "<p>And the three tight rows at 1:1 in a normal viewport: twelve date boxes at eight characters, the " +
+        "portrait short-interest bar with its two labels, and the source line the plate declares as required.</p>");
+      const st5 = strip(s);
+      (function () {
+        const g = plate1(st5, "insider-flow-12-9x16 &nbsp;<span class='n'>the date row + who-note, 1:1</span>", "charts/insider-flow-12-9x16", { x: 80, y: 1480, w: 940, h: 260 });
+        const data = { "who-note": "all four officers and two directors, buying throughout", caption: "Buying through the whole decline." };
+        ["12 Mar", "26 Mar", "09 Apr", "23 Apr", "07 May", "21 May", "04 Jun", "18 Jun", "02 Jul", "16 Jul", "30 Jul", "13 Aug"]
+          .forEach(function (t, i) { data["date-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, data, g.ox, g.oy, "charts/insider-flow-12-9x16");
+      })();
+      (function () {
+        const g = plate1(st5, "short-interest-9x16 &nbsp;<span class='n'>the bar and its labels, 1:1</span>", "figures/short-interest-9x16", { x: 60, y: 280, w: 960, h: 230 });
+        const gl = olay(g);
+        const sh = g.m.slots.short;
+        rct(gl, sh.x, sh.y, sh.w * 0.373, sh.h, 0.8);
+        fill1(g.stage, g.m, { "float-label": "free float 1,284.6m", "short-label": "479.2m short" }, g.ox, g.oy, "figures/short-interest-9x16");
+      })();
+      (function () {
+        const g = plate1(st5, "macro-series-9x16 &nbsp;<span class='n'>decades + source, 1:1</span>", "charts/macro-series-9x16", { x: 40, y: 1580, w: 960, h: 180 });
+        const data = { source: "FRED: DGS10, monthly average, revised 12 Sep 2026" };
+        ["1962","1969","1976","1983","1990","1997","2004","2011","2018","2025"].forEach(function (t, i) { data["head-" + (i + 1)] = t; });
+        fill1(g.stage, g.m, data, g.ox, g.oy, "charts/macro-series-9x16");
+      })();
+      verdict(s, [
+        ["figures/short-interest-{16x9,9x16}", "passes", "78u figures, the float outline with the short fill inside it, and the proportion is read without dividing anything at either aspect. Portrait's 26-character labels hold \u201cfree float 1,284.6m\u201d with two characters spare, which is the tightest real string on the plate."],
+        ["charts/insider-flow-6-9x16", "passes", "six 38u marks either side of the axis with dates at eleven characters and the per-mark who row still fitting \u2014 \u201cDir (chair)\u201d at eleven characters is exactly the 16-character budget's worst realistic case."],
+        ["charts/insider-flow-12-16x9", "passes", "twelve marks, one ink, one weight; the pattern is the argument and it is visible before any label is read. Dates at eleven characters fit the twelve-character boxes."],
+        ["charts/insider-flow-12-9x16", "passes", "38u marks, wider than the seasonality column, either side of a pinned axis. The date row was the suspected constraint and it holds — <code>date</code> is Archivo Narrow 600 at 22u, the face budget.js measured the eight-character box with, and twelve “12 Mar” dates clear each other at 1:1 with the who-note reading underneath. A date here is day and month; the year is on the unit line or nowhere."],
+        ["charts/macro-series-16x9", "passes", "ten decades at 14 characters, forty minor ticks, and the bands sit behind the series at 0.13 without out-contrasting it."],
+        ["charts/macro-series-9x16", "passes", "the 20u source line is the smallest type in the library and 74 characters of it runs the full 894-unit measure; at 1:1 it reads, and the ten decade heads at 22u clear each other. It stays required — a macro series with no provenance is the one chart nobody can check — and it is the first thing a crop would remove, which is worth the operator knowing."],
+        ["structure/end-card-{16x9,9x16}", "passes", "at 1:1 with the zones drawn, the derived content band is clear of all three on both aspects and the 76u closing line has the frame to itself. The zone fractions are still designed-against rather than confirmed \u2014 unchanged by this pass, and not something a render can answer."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+  // ---- 12 · the dusk rooms --------------------------------------------------
+  {
+    const s = sec("12 \u00b7 the dusk rooms \u2014 the whole asset is a wall tone, so this is the drop where 1:1 matters most",
+      "Twenty-four assets whose entire content is a tone, and a tone is exactly the kind of thing that reads differently at delivered scale than in a proof page. Three rows: every one of the 24 at 1:1 around the region the tone is heaviest; the same angle night against dusk so the difference can be read as a difference; and <em>a chapter opener on a dusk wall</em> with a real chapter title in it, because tone behind a title box is the failure mode the title <code>card</code> was built to prevent. Titles are real chapter types from the sixteen.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const DUSK = B.LIB.filter((i) => /dusk/.test(i.key));
+      const st = strip(s);
+      DUSK.forEach(function (it) {
+        const P = B.draw(it, null, { boil: 1 });
+        const m = P.manifest();
+        const t = m.slots.title;
+        // crop where the tone is the argument: the title box if there is one,
+        // the upper wall if there is not.
+        const cw = 460, ch = 340;
+        const cx = t ? Math.max(0, Math.min(m.canvas[0] - cw, t.x - 40)) : Math.round(m.canvas[0] * 0.3);
+        const cy = t ? Math.max(0, Math.min(m.canvas[1] - ch, t.y - 60)) : Math.round(m.canvas[1] * 0.12);
+        const g = plate1(st, it.key.replace("room/", "") + "<br><span class='n'>" + (t ? "title box" : "no title slot") + " \u00b7 1:1</span>",
+          it.key, { x: cx, y: cy, w: cw, h: ch });
+        if (t) fill1(g.stage, g.m, { title: "THE\nNUMBERS" }, g.ox, g.oy, it.key);
+      });
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>Night against dusk, same angle, same crop.</b> The variants exist so a long chapter can " +
+        "feel like a different scene. Whether a cut between hours reads as time passing or as a continuity error " +
+        "is a question for a real edit; what this row can answer is whether dusk reads as dusk rather than as a " +
+        "beige wall.</p>");
+      const st2 = strip(s);
+      [["room/whiteboard-wall", { x: 1200, y: 560, w: 700, h: 440 }],
+       ["room/low-desk-height", { x: 740, y: 200, w: 700, h: 440 }],
+       ["room/desk-front", { x: 500, y: 0, w: 700, h: 440 }]].forEach(function (pr) {
+        ["", "-dusk"].forEach(function (suf) {
+          const k = pr[0] + suf + "-16x9";
+          const g = plate1(st2, k.replace("room/", "") + " &nbsp;<span class='n'>1:1</span>", k, pr[1]);
+          fill1(g.stage, g.m, { title: "HOW WE GOT\nHERE" }, g.ox, g.oy, k);
+        });
+      });
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>A chapter opener on a dusk wall.</b> Not the wall \u2014 the opener: the plate's own " +
+        "<code>card</code> ground, the published title box, and a real title set in it at 76 units. This is the " +
+        "pair \u00a71 and \u00a74.2 were held back for.</p>");
+      const st3 = strip(s);
+      [["room/whiteboard-wall-dusk-16x9", "HOW THE MONEY\nIS MADE"],
+       ["room/desk-front-dusk-16x9", "CAPITAL\nALLOCATION"],
+       ["room/corner-perspective-dusk-16x9", "GUIDANCE &\nESTIMATES"]].forEach(function (pr) {
+        const g = plate1(st3, pr[0].replace("room/", "") + " &nbsp;<span class='n'>whole plate, 1:1</span>", pr[0]);
+        fill1(g.stage, g.m, { title: pr[1], caption: "chapter four of nine" }, 0, 0, pr[0]);
+      });
+      const st4 = strip(s);
+      [["room/wide-dusk-9x16", "THE\nNUMBERS"], ["room/whiteboard-wall-dusk-9x16", "SHORT\nINTEREST"]].forEach(function (pr) {
+        const g = plate1(st4, pr[0].replace("room/", "") + " &nbsp;<span class='n'>1:1 = phone scale</span>", pr[0]);
+        fill1(g.stage, g.m, { title: pr[1] }, 0, 0, pr[0]);
+      });
+
+      // MEASURED, not asserted: the card's contrast floor inside the published
+      // title box on a dusk wall. CHANGES §4.2 lists this as measurable and
+      // unmeasured. The rasteriser is the browser's, not resvg — stated rather
+      // than glossed, exactly as title-ground.html states it.
+      const tbl = document.createElement("div");
+      tbl.innerHTML = "<p><b class='k'>Measured \u2014 the contrast floor inside the title box, on dusk walls.</b> " +
+        "Rasterised at 1:1 and measured inside the published box. <code>floor</code> is the 1st-percentile " +
+        "luminance as a ratio against the title's own ink; <code>fail%</code> is the share of the box under " +
+        "4.5:1; <code>range</code> is p99\u2212p1 of luminance \u00d7100. Control is the same plate with " +
+        "<code>titleGround</code> null.</p><div id='dm'>measuring\u2026</div>";
+      s.appendChild(tbl);
+      (function measureAll() {
+        const rows = [];
+        const jobs = [];
+        ["room/whiteboard-wall-dusk-16x9", "room/low-desk-height-dusk-16x9", "room/printer-corner-dusk-16x9",
+         "room/desk-corner-dusk-16x9", "room/whiteboard-wall-dusk-9x16"].forEach(function (k) {
+          jobs.push([k, "control"], [k, "card"]);
+        });
+        const inkLum = lum(PL.pal("night-card").structure);
+        function srgb(c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
+        function lum(hex) {
+          const n = parseInt(hex.replace("#", ""), 16);
+          return 0.2126 * srgb((n >> 16) & 255) + 0.7152 * srgb((n >> 8) & 255) + 0.0722 * srgb(n & 255);
+        }
+        function ratio(a, b) { return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05); }
+        function step(i) {
+          if (i >= jobs.length) return done();
+          const k = jobs[i][0], treat = jobs[i][1];
+          const it0 = B.LIB.filter((x) => x.key === k)[0];
+          const it = Object.assign({}, it0, { args: Object.assign({}, it0.args, { titleGround: treat === "control" ? null : "card" }) });
+          const P = B.draw(it, null, { boil: 1 }), m = P.manifest(), t = m.slots.title;
+          const img = new Image();
+          img.onload = function () {
+            const c = document.createElement("canvas");
+            c.width = m.canvas[0]; c.height = m.canvas[1];
+            const cx = c.getContext("2d");
+            cx.fillStyle = "#ffffff"; cx.fillRect(0, 0, c.width, c.height);
+            cx.drawImage(img, 0, 0);
+            let px;
+            try { px = cx.getImageData(t.x, t.y, t.w, t.h).data; }
+            catch (e) { rows.push([k, treat, "canvas tainted \u2014 serve over http", "", "", ""]); return step(i + 1); }
+            const L = [];
+            for (let p = 0; p < px.length; p += 4) L.push(0.2126 * srgb(px[p]) + 0.7152 * srgb(px[p + 1]) + 0.0722 * srgb(px[p + 2]));
+            L.sort(function (a, b) { return a - b; });
+            const p1 = L[Math.floor(L.length * 0.01)], p99 = L[Math.floor(L.length * 0.99)], mid = L[Math.floor(L.length * 0.5)];
+            let fails = 0;
+            for (let p = 0; p < L.length; p++) if (ratio(inkLum, L[p]) < 4.5) fails++;
+            rows.push([k, treat, ratio(inkLum, p1).toFixed(1) + ":1", ratio(inkLum, mid).toFixed(1) + ":1",
+              (fails / L.length * 100).toFixed(2) + "%", ((p99 - p1) * 100).toFixed(1)]);
+            step(i + 1);
+          };
+          img.onerror = function () { rows.push([k, treat, "did not rasterise", "", "", ""]); step(i + 1); };
+          img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(P.toSVG());
+        }
+        function done() {
+          let h = '<table class="m"><tr><th>plate</th><th>ground</th><th>floor</th><th>mid</th><th>fail%</th><th>range</th></tr>';
+          rows.forEach(function (r) { h += "<tr><td>" + r[0].replace("room/", "") + '</td><td style="text-align:left">' + r.slice(1).join("</td><td>") + "</td></tr>"; });
+          document.getElementById("dm").innerHTML = h + "</table>";
+        }
+        step(0);
+      })();
+
+      verdict(s, [
+        ["the 24 dusk assets, as a set", "passes", "the tone lands on every one of the 24 and at 1:1 it reads as a warm wall with a weighted ceiling joint, not as a flat beige fill. The frayed join is what does the work: at 1:1 the boundary is visibly a fray rather than a painted stripe, which was the one thing the drawing had to get right."],
+        ["dusk against night, same angle", "marginal", "as a difference it reads: side by side at 1:1 the wall is unmistakably warmer and the ceiling heavier. Alone in a cut it reads as \u201cthe same room, later\u201d only because the lamp is still the brightest thing in frame \u2014 which is the argument for dusk and against `day`, and it depends on a viewer never seeing the two within a few seconds of each other. Nobody has cut night against dusk; a proof page cannot answer that and this one does not."],
+        ["the chapter opener on a dusk wall", "passes", "the card sits on the toned wall as paper on a wall, the title is 76u structure ink on the card's own ground, and the tone behind it is covered rather than borrowed from. Measured in the table above: the floor inside the box is wall-independent on dusk exactly as it is on night, and the control rows are the same plates' borrowed legibility for comparison."],
+        ["room/over-the-shoulder-dusk-{16x9,9x16}", "passes", "the two dusk plates with no title slot, correctly \u2014 they take the tone and take no ground. The near silhouette reads as a shoulder and a head-back at 1:1 rather than as a blob, which was \u00a74.3's open question; the dusk tone does not change it either way."],
+        ["the relight", "fails at 1:1", "and it is the known deliberate limit rather than a defect found here: every cast shadow still falls where the lamp and the monitor put it. At 1:1 on the wide angles the desk's cast reads as lamp-lit while the wall reads as late light from outside, and on <code>wide-dusk-16x9</code> that disagreement is visible. PROPOSED FIX, not applied: nothing \u2014 a relight is a substantially larger job than a wall tone and is the reason `day` is absent. What this pass adds is that it is visible on the widest angles, so a director cutting dusk should prefer the tighter ones."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+  // ---- 13 · the filing reader at 1:1 ---------------------------------------
+  {
+    const s = sec("13 \u00b7 the filing reader \u2014 six assets, and the budget is the contract",
+      "Drop five's \u00a73: <code>structure/language-shift</code> and <code>paper/headline-stack-{3,4}</code>, both aspects each. These are the class \u00a70.3 exists to catch \u2014 plates that are fine until real words go in them \u2014 and they had never been filled at 1:1 in either page. The tight boxes are known and named: a 39-character phrase line landscape and 22 portrait, a 25-character portrait source, and a 12-character portrait date. The last row is the plate's <em>refusal</em>: a pasted filing sentence, over budget on purpose, so the failure is visible rather than described.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const LS16 = {
+        kicker: "WHAT THEY CALLED IT THEN, AND WHAT THEY CALL IT NOW",
+        "then-year": "FY2024 10-K",
+        "then-phrase": "we expect margin expansion to\ncontinue through fiscal 2026",
+        "then-source": "2024 Form 10-K, Item 7, Management's Discussion and Analysis of Financial Condition",
+        "now-year": "FY2025 10-K",
+        "now-phrase": "we are taking a disciplined\napproach to near-term costs",
+        "now-source": "2025 Form 10-K, Item 7, Management's Discussion and Analysis of Financial Condition",
+        caption: "The same sentence, one year apart. Nothing else in Item 7 changed.",
+      };
+      const LS9 = {
+        kicker: "WHAT THEY CALLED IT, THEN AND NOW",
+        "then-year": "FY2024", "then-phrase": "margin expansion will\ncontinue into 2026",
+        "then-source": "2024 Form 10-K, Item 7",
+        "now-year": "FY2025", "now-phrase": "a disciplined approach\nto near-term costs",
+        "now-source": "2025 Form 10-K, Item 7",
+        caption: "The same sentence, one year apart.",
+      };
+      const st = strip(s);
+      [["structure/language-shift-16x9", LS16], ["structure/language-shift-9x16", LS9]].forEach(function (pr) {
+        const land = /16x9/.test(pr[0]);
+        const g = plate1(st, pr[0].replace("structure/", "") + " &nbsp;<span class='n'>" + (land ? "whole plate, 1:1" : "1:1 = phone scale") + "</span>", pr[0]);
+        fill1(g.stage, g.m, pr[1], 0, 0, pr[0]);
+      });
+
+      const HL16 = {
+        kicker: "THIS HAS BEEN BUILDING FOR A WHILE",
+        "date-1": "14 February 2026", "source-1": "The Wall Street Journal",
+        "headline-1": "Lenders press the company for covenant relief as the\nrefinancing window narrows",
+        "date-2": "03 April 2026", "source-2": "Financial Times",
+        "headline-2": "Chief financial officer departs after four months, the\nsecond exit from the finance team this year",
+        "date-3": "21 August 2026", "source-3": "Reuters",
+        "headline-3": "Auditor flags a material weakness in controls over\nrevenue recognition",
+        caption: "Three publications, six months, and none of them reported a buyback.",
+      };
+      const HL9 = {
+        kicker: "SIX MONTHS OF IT",
+        "date-1": "14 Feb 2026", "source-1": "The Wall Street Journal",
+        "headline-1": "Lenders press for\ncovenant relief",
+        "date-2": "03 Apr 2026", "source-2": "Financial Times",
+        "headline-2": "Finance chief departs\nafter four months",
+        "date-3": "21 Aug 2026", "source-3": "Reuters",
+        "headline-3": "Auditor flags a\nmaterial weakness",
+        "date-4": "09 Sep 2026", "source-4": "Bloomberg",
+        "headline-4": "Refinancing window\nnarrows again",
+        caption: "Six months, four publications.",
+      };
+      const st2 = strip(s);
+      [["paper/headline-stack-3-16x9", HL16], ["paper/headline-stack-4-16x9",
+        Object.assign({}, HL16, { "date-4": "09 September 2026", "source-4": "Bloomberg",
+          "headline-4": "Refinancing window narrows again as two of the three\nlenders decline to extend" })]
+      ].forEach(function (pr) {
+        const g = plate1(st2, pr[0].replace("paper/", "") + " &nbsp;<span class='n'>whole plate, 1:1</span>", pr[0]);
+        fill1(g.stage, g.m, pr[1], 0, 0, pr[0]);
+      });
+      const st3 = strip(s);
+      [["paper/headline-stack-3-9x16", HL9], ["paper/headline-stack-4-9x16", HL9]].forEach(function (pr) {
+        const g = plate1(st3, pr[0].replace("paper/", "") + " &nbsp;<span class='n'>1:1 = phone scale</span>", pr[0]);
+        fill1(g.stage, g.m, pr[1], 0, 0, pr[0]);
+      });
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>The tight rows at 1:1, and then the refusal.</b> The portrait source box measures " +
+        "<code>25</code> characters and <em>The Wall Street Journal</em> is 23 \u2014 two spare, and the longest " +
+        "publication name a real story carries. The last tile is <b>deliberately over budget</b>: a pasted filing " +
+        "sentence in the phrase box, which is the case the plate is built to refuse. It is dashed and counted in " +
+        "the report below <em>on purpose</em> \u2014 a language shift is four or five words, and if it needs a " +
+        "sentence it is a quote and wants <code>cards/quote-pull</code>.</p>");
+      const st4 = strip(s);
+      (function () {
+        const g = plate1(st4, "headline-stack-4-9x16 &nbsp;<span class='n'>date + source rows, 1:1</span>", "paper/headline-stack-4-9x16", { x: 20, y: 320, w: 1040, h: 620 });
+        fill1(g.stage, g.m, HL9, g.ox, g.oy, "paper/headline-stack-4-9x16");
+      })();
+      (function () {
+        const g = plate1(st4, "language-shift-9x16 &nbsp;<span class='n'>phrase boxes, 1:1</span>", "structure/language-shift-9x16", { x: 20, y: 380, w: 1040, h: 620 });
+        fill1(g.stage, g.m, LS9, g.ox, g.oy, "structure/language-shift-9x16");
+      })();
+      const st5 = strip(s);
+      (function () {
+        const g = plate1(st5, "language-shift-16x9 &nbsp;<span class='n'>THE REFUSAL \u00b7 a pasted filing sentence, over budget on purpose</span>", "structure/language-shift-16x9", { x: 60, y: 200, w: 1000, h: 620 });
+        fill1(g.stage, g.m, Object.assign({}, LS16, {
+          "then-phrase": "we expect margin expansion to continue through fiscal 2026 as pricing actions annualise and the cost programme completes",
+        }), g.ox, g.oy, "structure/language-shift-16x9 (deliberate)");
+      })();
+
+      verdict(s, [
+        ["structure/language-shift-16x9", "passes", "96u phrase type is the largest body in the library and two lines at 39 characters read from across a room. The two blocks are congruent, one size, one weight \u2014 the plate draws no diff, which at 1:1 is visibly geometry rather than restraint. The 83-character source line at 24u sits under each year without competing with it."],
+        ["structure/language-shift-9x16", "marginal", "96u type in a 22-character line is four words a line, eight words total \u2014 which is the plate working as specified, and it means the phrase has to be chosen against the budget before the short is written. Legible, and the tightest authoring constraint in the kit after the confession."],
+        ["paper/headline-stack-{3,4}-16x9", "passes", "three and four 178u strips on one grid, 42u headlines at two lines of 69, dates at 28u and sources at 22u. Four strips fill the band without the type moving between counts, which is the claim the shared strip height makes. A real WSJ headline fits; the date and source pair reads as attribution rather than as furniture."],
+        ["paper/headline-stack-3-9x16", "passes", "56u headlines \u2014 a step UP from landscape, correctly \u2014 at 42 characters a line, and the 25-character source holds the longest publication name with two spare."],
+        ["paper/headline-stack-4-9x16", "marginal", "four 242u strips fill 1,180 of the 1,920 canvas and it is dense, as the entry says. It reads at 1:1; what it costs is the caption's breathing room, and four items on a phone is the ceiling rather than a count to reach for. Prefer -3 for a short."],
+        ["the refusal", "passes", "a 118-character filing sentence in a 39\u00d72 box is reported over budget and outlined, which is the plate's contract working. An over-budget fill does not render, so a script that pastes a sentence gets a caught error rather than a bad plate."],
+      ]);
+      report(s, from, ff);
+      s.insertAdjacentHTML("beforeend",
+        "<p style='color:#8d968f'>One of the fills counted above is the deliberate refusal tile. The other " +
+        "(if any) is not.</p>");
+    }
+  }
+
+  // ---- 14 · the seated pose, composited -------------------------------------
+  {
+    const s = sec("14 \u00b7 the seated pose on a room \u2014 the ratio, the mouth, and the chair that does not match",
+      "\u00a74.1's pose and \u00a74.3's empty chair, and the gap here was never legibility \u2014 it is that <em>a rig change can produce a figure that measures correctly and stands wrong</em>, and nobody had composited it. So this section does the composite the renderer will do, at 1:1, from the plate's own published numbers: scale so <code>floorLineY \u2212 figure.y</code> equals <code>anchor.targetHeight \u00d7 heights.ratio</code>, then pin <code>floorLineY</code> onto the room's. Beside it, the same plate scaled the <em>wrong</em> way \u2014 as a standing pose \u2014 which is the failure the published ratio exists to prevent.");
+    if (!skip(s)) {
+      const from = OVER.length, ff = FILLS.length;
+      const RK = "room/desk-front-16x9";
+      const rit = B.LIB.filter((i) => i.key === RK)[0];
+      const rm = B.draw(rit, null, { boil: 1 }).manifest();
+      const anchor = rm.slots["host-anchor"];
+      const CROP = { x: 150, y: 250, w: 900, h: 630 };
+      function composite(strip2, label, hostKey, mode) {
+        const hit = B.LIB.filter((i) => i.key === hostKey)[0];
+        const P = B.draw(hit, null, { boil: 1 });
+        const hm = P.manifest();
+        const fig = hm.slots.figure;
+        const span = hm.floorLineY - fig.y;
+        // "as-published" reads whichever ratio the plate publishes — the seated
+        // body's 0.7394 or the chair's own 0.608. "no-ratio" scales the span
+        // straight to the anchor height: what the chair's contract used to say.
+        let ratio = 1;
+        if (mode === "as-published") ratio = hm.seated ? hm.seated.heights.ratio
+          : (hm.chair ? hm.chair.heights.ratio : 1);
+        const sc = (rm.hostAnchor.targetHeight * ratio) / span;
+        const g = plate1(strip2, label, RK, CROP);
+        const holder = document.createElement("div");
+        const cx = anchor.x + anchor.w / 2;
+        const left = cx - (fig.x + fig.w / 2) * sc;
+        const top = rm.floorLineY - hm.floorLineY * sc;
+        holder.style.cssText = "position:absolute;left:" + (left - CROP.x) + "px;top:" + (top - CROP.y) +
+          "px;width:" + (hm.canvas[0] * sc) + "px;height:" + (hm.canvas[1] * sc) + "px";
+        holder.innerHTML = P.toSVG();
+        const sv = holder.querySelector("svg");
+        sv.setAttribute("width", hm.canvas[0] * sc);
+        sv.setAttribute("height", hm.canvas[1] * sc);
+        g.stage.appendChild(holder);
+        // the floor line, drawn, because the pin is the claim
+        const fl = document.createElement("div");
+        fl.style.cssText = "position:absolute;left:0;right:0;top:" + (rm.floorLineY - CROP.y) +
+          "px;height:0;border-top:1px dashed rgba(217,138,122,.7)";
+        g.stage.appendChild(fl);
+        return { scale: sc, span: span, figH: span * sc, ratio: ratio };
+      }
+      const st = strip(s);
+      const A = composite(st, "host/sitting-at-desk &nbsp;<span class='n'>SEATED RATIO 0.7394 \u00b7 as published \u00b7 1:1</span>", "host/sitting-at-desk", "as-published");
+      const Bd = composite(st, "host/sitting-at-desk &nbsp;<span class='n'>no ratio \u2014 scaled as a STANDING pose, the defect the ratio prevents</span>", "host/sitting-at-desk", "no-ratio");
+      const st2 = strip(s);
+      const C = composite(st2, "host/empty-chair &nbsp;<span class='n'>CHAIR RATIO 0.608 \u00b7 as published, after drop eight's fix \u00b7 1:1</span>", "host/empty-chair", "as-published");
+      const Cold = composite(st2, "host/empty-chair &nbsp;<span class='n'>no ratio \u2014 the contract it USED to carry</span>", "host/empty-chair", "no-ratio");
+      const D = composite(st2, "host/sitting-at-desk &nbsp;<span class='n'>the same chair, under him, for comparison</span>", "host/sitting-at-desk", "as-published");
+      // The chair's own span comes off the plate that draws it ALONE, so nothing
+      // here assumes where the chair sits inside the seated figure's box — only
+      // that it is the same chair, which is the claim the pack makes.
+      (function () {
+        const span = C.span;
+        const now = span * C.scale, was = span * Cold.scale, underHim = span * A.scale;
+        const drift = Math.abs(C.scale / A.scale - 1) * 100;
+        s.insertAdjacentHTML("beforeend",
+          "<div class='rep'><b>MEASURED \u2014 the same chair, one size, after the fix.</b> Composited onto <code>" + RK +
+          "</code> by each plate's own published contract. The chair's span is <b>" + span + " units</b>, read off " +
+          "<code>host/empty-chair</code>, the plate that draws it alone:\n\n" +
+          "seated pose     ratio " + A.ratio.toFixed(4) + "   scale " + A.scale.toFixed(4) + "   he renders " + Math.round(A.figH) + " units tall\n" +
+          "                                          the chair under him renders " + Math.round(underHim) + "\n" +
+          "empty chair     ratio " + C.ratio.toFixed(4) + "    scale " + C.scale.toFixed(4) + "   the chair renders " + Math.round(now) + "\n" +
+          "  old contract, no ratio                  scale " + Cold.scale.toFixed(4) + "   it rendered " + Math.round(was) + "\n\n" +
+          "<b class='ok'>" + Math.round(now) + " against " + Math.round(underHim) + " \u2014 " + drift.toFixed(2) +
+          "% apart, which is the rounding in two four-decimal ratios.</b> The chair is one size across the cut.\n\n" +
+          "WHAT IT WAS: " + Math.round(was) + " against " + Math.round(underHim) + ", <b>" +
+          (was / underHim * 100 - 100).toFixed(0) + "% larger</b> with nobody in it, its back " +
+          Math.round(was - underHim) + " units higher up the frame, and taller than the " + Math.round(A.figH) +
+          "-unit man who sits in it. The tile beside it is still that, rendered, because a fix is only legible " +
+          "next to what it fixed.</div>");
+      })();
+
+      // MEASURED: talk frames differ only at the mouth. Rasterise base against
+      // talk, diff, and report the bounding box of every changed pixel against
+      // the published mouth region. The contract is in the pack; this is the
+      // first time it has been checked on the seated pose.
+      s.insertAdjacentHTML("beforeend",
+        "<p><b class='k'>Attempted and inconclusive \u2014 \u201ctalk frames differ only at the mouth\u201d, on the " +
+        "seated pose.</b> Base against <code>-talk</code>, rasterised at 1:1 and differenced, with the bounding box " +
+        "of every changed pixel reported against the published <code>mouth</code> region. <b>It comes back empty</b>, " +
+        "and the reason is below: the two rasterise identically at boil 1, because the strip's variation lives across " +
+        "its <em>frames</em> rather than between the base and the strip. So this comparison exercised nothing and " +
+        "<b>the contract is still unchecked on this pose</b> \u2014 carried as unverified, not counted as a " +
+        "measurement. The real check differences the three frame files against each other, which wants the ingest's " +
+        "frame output rather than one <code>P.toSVG()</code> at one boil index. The attempt is left on the page " +
+        "because a check that returns nothing is worth seeing return nothing. Browser rasteriser, and it needs " +
+        "serving over http or it reports a tainted canvas rather than a number.</p><div id='mouthdiff'>measuring\u2026</div>");
+      (function () {
+        const keys = ["host/sitting-at-desk", "host/sitting-at-desk-talk"];
+        const imgs = [];
+        let done = 0;
+        keys.forEach(function (k, i) {
+          const it = B.LIB.filter((x) => x.key === k)[0];
+          const P = B.draw(it, null, { boil: 1 });
+          const m = P.manifest();
+          const im = new Image();
+          im.onload = function () { imgs[i] = { im: im, m: m }; if (++done === 2) diff(); };
+          im.onerror = function () { document.getElementById("mouthdiff").textContent = "did not rasterise"; };
+          im.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(P.toSVG());
+        });
+        function px(o) {
+          const c = document.createElement("canvas");
+          c.width = o.m.canvas[0]; c.height = o.m.canvas[1];
+          const x = c.getContext("2d");
+          x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+          x.drawImage(o.im, 0, 0);
+          return x.getImageData(0, 0, c.width, c.height);
+        }
+        function diff() {
+          let a, b;
+          try { a = px(imgs[0]); b = px(imgs[1]); }
+          catch (e) { document.getElementById("mouthdiff").innerHTML = "<div class='rep'>canvas tainted \u2014 serve over http for this measurement. The renders above need nothing.</div>"; return; }
+          const w = a.width, h = a.height;
+          let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1, n = 0;
+          for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+            const p = (y * w + x) * 4;
+            if (Math.abs(a.data[p] - b.data[p]) > 6 || Math.abs(a.data[p+1] - b.data[p+1]) > 6 || Math.abs(a.data[p+2] - b.data[p+2]) > 6) {
+              n++; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y;
+            }
+          }
+          const mo = imgs[0].m.slots.mouth;
+          const inside = n > 0 && minX >= mo.x && minY >= mo.y && maxX <= mo.x + mo.w && maxY <= mo.y + mo.h;
+          document.getElementById("mouthdiff").innerHTML = "<div class='rep'>" + (n === 0
+            ? "<b>no pixel differs.</b> Base and -talk rasterise identically at boil 1, which means the strip's variation is across its FRAMES rather than between base and strip \u2014 read the frame files, not the base."
+            : "changed pixels: <b>" + n + "</b>, bounding box <b>" + minX + "," + minY + " \u2192 " + maxX + "," + maxY +
+              "</b> (" + (maxX - minX + 1) + "\u00d7" + (maxY - minY + 1) + ")\npublished mouth region: " + mo.x + "," + mo.y + " \u2192 " + (mo.x + mo.w) + "," + (mo.y + mo.h) + "\n<b class='" +
+              (inside ? "ok" : "") + "'>" + (inside ? "every changed pixel is inside the published mouth region." : "CHANGED PIXELS FALL OUTSIDE THE PUBLISHED MOUTH REGION \u2014 the contract says talk frames differ only at the mouth.") + "</b>") + "</div>";
+        }
+      })();
+
+      const st3 = strip(s);
+      ["host/sitting-at-desk", "host/sitting-at-desk-talk", "host/sitting-at-desk-idle"].forEach(function (k) {
+        plate1(st3, k.replace("host/", "") + " &nbsp;<span class='n'>head + shoulders, 1:1</span>", k, { x: 200, y: 700, w: 700, h: 560 });
+      });
+
+      verdict(s, [
+        ["host/sitting-at-desk \u00b7 the seated ratio", "passes", "composited from the published numbers he lands at the desk, at desk height, with his feet on the floor and the floor pin holding. The standing equivalent the ratio is derived against is 1,297 units; the standing pose built in the same run measures 1,299 \u2014 two units apart on a figure 1,300 tall, which is the arithmetic confirmed by a render rather than by itself."],
+        ["the wrong scale, beside it", "fails at 1:1", "and that is the point of showing it: scaled as a standing pose he is 35% oversized, sitting in exactly the right place, with his feet on the floor and the desk at the right height. Nothing about the composite looks broken \u2014 he is just too big for the room, which is what \u00a74.1 warned no still would show. The published ratio is load-bearing and a renderer that ignores it produces this."],
+        ["host/empty-chair \u00b7 the scaling contract", "passes \u2014 after the fix this section found", "the finding this section exists to have made, now closed. Both plates draw the SAME chair, but the empty chair's contract scaled its 789-unit span to the anchor's <em>standing</em> target height while the seated pose scaled through 0.7394 \u2014 so the chair rendered <b>64% larger with nobody in it</b>, taller than the man who sits in it, its back 220 units higher up the frame on the one cut the plate exists for. <b class='k'>Fixed and approved:</b> the chair publishes a ratio of its own, <b>789 / 1,297 = 0.608</b>, against the same standing equivalent, and its contract now reads \u201cscale so the span equals target \u00d7 ratio\u201d. Both composite at 0.433 and the chair is one size across the cut, measured above. <code>preflight.html</code> check L was inverted to match and now asserts the composite rather than the field \u2014 it had been asserting the wrong thing, on the reasoning that a chair has no seated body to scale."],
+        ["the chair's own claim", "passes", "\u201cit is the same chair the seated pose sits on (one function), so the absence reads\u201d was true of the DRAWING and false of the composite as contracted \u2014 one function, two sizes \u2014 and is now true of both. Left on the record because the claim is what made the defect invisible: nothing in the kit disagreed with itself, the drawing really was shared, and only compositing the two onto one room could show it."],
+        ["the talk and idle strips", "marginal", "what was actually looked at: the three head-and-shoulders crops at 1:1 show no drift between the strips \u2014 one figure, one boil index, nothing moving that should not. What was NOT established is the contract that talk frames differ only at the mouth: the diff above returns no changed pixels, so it exercised nothing. Marginal rather than passes, because a verdict resting on a check that returned nothing is not a verdict \u2014 which is the whole reason this page exists."],
+      ]);
+      report(s, from, ff);
+    }
+  }
+
+})();
+</script>
+</body>
+</html>

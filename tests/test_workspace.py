@@ -71,3 +71,27 @@ def test_audited_tickers_cooldown(settings):
     Workspace(settings, "STALE", old).create()
     tickers = audited_tickers_since(settings, days=30)
     assert "FRESH" in tickers and "STALE" not in tickers
+
+
+def test_the_cooldown_scan_stops_at_the_first_date_in_the_window(settings):
+    """J5: it walked every date directory of every ticker on every screen,
+    which grows without bound alongside the thesis book — a year of daily
+    videos is 365 directories per ticker, and this runs per candidate."""
+    import datetime as dt
+
+    from pipeline.workspace import audited_tickers_since
+
+    root = settings.workspace_dir
+    today = dt.date.today()
+    for i in range(40):
+        (root / "OLDCO" / (today - dt.timedelta(days=300 + i)).isoformat()
+         ).mkdir(parents=True, exist_ok=True)
+    (root / "NEWCO" / (today - dt.timedelta(days=1)).isoformat()
+     ).mkdir(parents=True, exist_ok=True)
+    # Not a date, and not a ticker: the delivery tree lives here too.
+    (root / "_delivered" / "NEWCO").mkdir(parents=True, exist_ok=True)
+    (root / "OLDCO" / "notes").mkdir(parents=True, exist_ok=True)
+
+    out = audited_tickers_since(settings, 7)
+
+    assert out == {"NEWCO"}

@@ -436,7 +436,10 @@ def test_the_proof_command_works_for_both_formats(settings, monkeypatch,
     shutil.copy(Path(__file__).resolve().parents[1] / "fixtures" /
                 "company_data" / "dennis_data.xlsx", ws.path / "dennis_data.xlsx")
     core.intake_script(91, long_valid_text)
-    # the same workspace carries both lanes, so one ticker exercises both
+    # The same workspace holds both formats, so one ticker exercises both —
+    # but intake routes by the DECLARED lane now (C1), so the lane is
+    # switched rather than the paste being sniffed.
+    core.start_lane(91, "short", "EXMPL")
     core.intake_script(91, short_valid_json)
 
     kind, text, _ = core.render_request("EXMPL", "long", proof=True)

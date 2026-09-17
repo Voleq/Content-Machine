@@ -25,14 +25,14 @@ machine does 100% of voice, asset fetching, composition and rendering.
 no hardcoded scene timings anywhere in the render code.
 
 ```
-/short TICKER  (or /long TICKER) → the bot refreshes the numbers in Excel
-itself → run the pre-filled master prompt in Claude/GPT → paste the output
-back → validation + cost report → tweak in chat if needed → Approve ✅ →
-/render TICKER → shareable link
+/short TICKER  (or /long TICKER) → refresh the data template outside the
+bot and upload it as dennis_data.xlsx → run the pre-filled master prompt in
+Claude/GPT → paste the output back → validation + cost report → tweak in
+chat if needed → Approve ✅ → /render TICKER → shareable link
 ```
 
-(Off the Windows render box, or with no data add-in loaded, step two is the
-manual upload it always was — `dennis_data.xlsx` into the chat.)
+(The upload is the only data route. The bot runs on Linux and does not drive
+Excel; the refresh happens on the operator's own machine.)
 
 ---
 
@@ -59,7 +59,15 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 | The data vendor is never named on screen — scripts are hard-rejected if they try | parsers' vendor block; filing overlays carry a generic "FROM THE 10-K" chip |
 | `[SCREENGRAB]` tags **block** the render until the operator's capture exists | `validate_long_script` + `assets/custom/` |
 | Every figure that reaches the SCREEN is re-read against the data, not just the spoken ones | `pipeline/gates.py` `onscreen_fact_check` |
+| A stated quarterly figure is checked against the `Quarters` sheet, and a sentence that names a quarter is checked against THAT column | `pipeline/gates.py` `fact_check`, `_quarter_indices`; the earnings format was structurally unverifiable without it |
+| A quarterly move is never reported as one number: QoQ and YoY-same-quarter are always shown as a labelled pair, a rate moves in points, and a loss is shown as two values rather than a percentage of a negative base | `CompanyData.quarter_moves`, `quarters_prompt_block` |
+| A price chart drawn from the synthetic floor rather than the live feed **blocks** a final render | `pipeline/gates.py` `check_prices`; `PriceSeries.degraded` survives the cache and rides on the manifest |
+| Every finished render carries a provenance record — where the prices came from, what the visuals were, which filings, which voice at what cost, which LLM provider, and which gates actually ran — on the manifest and in the delivery message, unasked | `pipeline/provenance.py`; written by both renderers, read back off the manifest by `_finish` so the two cannot drift |
+| The angle prompt is built with the filings already read, not blind to them; a brief built from a section that overflowed the model's context says so in its own first line | `pipeline/filing_brief.py` `context_held`; `scripts/check_llm_context.py` proves `num_ctx` is in force |
+| Two filings downloaded into one workspace never collide | `pipeline/filings.py` `filing_path` — keyed on the accession, which is also the per-accession cache |
 | 1–2 memes max per LONG (information-first) | `validate_long_script` meme cap |
+| GIF-provider visuals are counted, reported and capped per video | `CostReport.visual_counts`, `gif_ceiling_warnings`, `GIF_MAX_PER_VIDEO` |
+| Every file under `assets/` is loadable by some code path, or reported | `tests/test_asset_reach.py`; the same idea as `reachable_plates`, for non-kit art |
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
 | Uploads are private or scheduled — never public from a machine | `pipeline/youtube.py` `build_body` |
@@ -70,19 +78,24 @@ manual upload it always was — `dennis_data.xlsx` into the chat.)
 
 ## What the bot checks before you approve
 
-Six gates run unprompted between the script landing and any spend. Silence
-means proceed; every finding carries a line reference. They are notes and
-blocks, never rewrites — the writer decides.
+Twelve gates run unprompted between the script landing and any spend,
+**on both lanes**. Silence means proceed; every finding carries a line
+reference. They are notes and blocks, never rewrites — the writer decides.
+
+A SHORT used to run none of them — only the cost report and the audio
+check — on the higher-volume format, so an invented figure, a named data
+vendor or stale data went straight to the Approve button.
 
 | Gate | What it reads | Blocks? |
 |---|---|---|
-| **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData` | warns |
+| **fact-check** | every number the narration says out loud, spelled-out numerals included, re-read against the loaded `CompanyData`. No magnitude floor (the unit scale is derived from the series, and spoken shorthand is followed by powers of a thousand); percentages checked against the rate series or the growth it implies; a claim that names a period is checked against THAT column; period-over-period changes count as claims. A number attached to its own subject by a preposition is not read as a claim about a metric named elsewhere | **blocks** |
 | **on-screen fact-check** | every figure in a `[PLATE]`'s cells, against the same export, with the plate's own `unit=` applied — the numbers a viewer can pause on | warns |
 | **voice linter** | what `assets/voice_bible.md` forbids: hype adjectives, exclamation marks, anything that reads as a call, a construction used twice in one script, and ~20 seconds of explanation with no turn in it. A data vendor named on screen is the one **block** — it would be spoken and captioned | mostly warns |
 | **direction linter** | the delivery vocabulary and its ceilings, read off `pipeline/direction.py`: one direction a sentence, never two adjacent, per-script caps on the tags that stop working when repeated, and no shouted word. A tag the bible refuses is named as refused, and the **block** is the lowercase spelling the ElevenLabs docs use — `[laughs]` is not a tag to the bracket grammar at all, so it would be read out and captioned | mostly warns |
 | **confession ledger** | whether a confession repeats one already used, read off the ledger `standing.py` keeps. Nothing here asks for one — roughly one video in three earns it | warns |
-| **data freshness** | the workbook's own as-of date, not its mtime | blocks when stale |
+| **data freshness** | the workbook's own as-of date, not its mtime. A date it cannot READ blocks too — an unreadable date is not evidence of freshness. Reads ISO, US and day-first slashes, `3-Sep-2026`, `Sep 3, 2026` and a raw Excel serial | blocks when stale or unreadable (`DATA_STALE_BLOCKS=false` to make it advisory) |
 | **audio** | placeholder oscillators reaching a FINAL render outside `MOCK_MODE` | blocks |
+| **prices** | whether the price chart in this video was drawn from the live feed or from the seeded synthetic floor — nothing on screen distinguishes them | blocks a FINAL outside `MOCK_MODE`, warns on a draft or proof |
 | **type budgets** | every figure and line a `[PLATE]` writes, against the `maxChars` the kit derived for THAT box — the role's narrowest box is the floor behind it. Checked here because it is a property of the script: the same failure at render time costs a forty-minute build to learn a label is six characters too long | blocks |
 | **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
 | **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
@@ -102,14 +115,15 @@ config.py                typed settings (pydantic-settings) — every cap/knob,
 main.py                  bot entrypoint
 pipeline/
   models.py              data contracts: ShortScript (strict JSON), LongScript
-                         + the Dennis tag grammar, CompanyData (six periods),
+                         + the Dennis tag grammar, CompanyData (six annual
+                         periods + eight quarters),
                          CostReport, JobRecord, Candidate
   parser_short.py        tolerant JSON extraction + the SHORT's inline tags
   parser_long.py         offset-aware tag tokenizer + the chapter trailer
   tagging.py             the shared tag tokenizer, for both formats
 
   plates.py              THE PLATE REGISTRY — the read side of the design kit.
-                         143 plates keyed family/name, each with its canvas,
+                         270 plates keyed family/name, each with its canvas,
                          exportScale, frames, playback, slot geometry and type
                          roles; the palette's eight colour roles; the host and
                          room ROLES; the sixteen chapter types and what each
@@ -166,11 +180,19 @@ pipeline/
   form.py                what the writer is asked for, DERIVED from the shot
                          templates and the kit's own character budgets
   llm.py                 LLM routing — local first, hosted as the fallback
+  provenance.py          what was real in one render: prices, visuals, filings,
+                         voice, LLM provider, and which gates actually ran —
+                         on the manifest and on the delivery message
 
   prices.py              Yahoo price history behind an interface (cached)
-  company_data.py        two-sheet Excel export reader + filing screenshots
-  excel_refresh.py       drives Excel over COM to refresh the data itself
-  filings.py             10-K auto-screenshot pipeline
+  company_data.py        Excel export reader (Snapshot · History · Quarters ·
+                         Dashboard · Valuation · Peers · News) + filing
+                         screenshots
+  filings.py             10-K/10-Q resolution (the ordered reading list,
+                         incl. the Q4 case) + the auto-screenshot pipeline
+  filing_brief.py        THE PRE-ANGLE BRIEF — reads the filings BEFORE the
+                         angle is chosen: risk shift, language, segments, and
+                         what contradicts the workbook
   article_lookup.py      the real article behind a headline the script wrote
   broll.py               the content engine: [CLIP], [IMG]/[PRODUCT], [MEME],
                          [SCREENGRAB] — cached, attributed
@@ -203,11 +225,11 @@ kit/                     THE DESIGN DELIVERY, as shipped: engine/ (the
                          fonts/, INGEST.md. The PNGs under assets/plates/ are
                          built from this and are not edited by hand
 assets/
-  plates/                the materialised kit: 143 plates in fourteen families
+  plates/                the materialised kit: 270 plates in fourteen families
                          plus plates-registry.json, written by the ingest
   voice_bible.md         the voice, and what the linter checks against
   fonts, brand, channel, backgrounds, overlays, sfx, broll_library,
-  meme_library, custom/ ([SCREENGRAB] drops), hook_bank.json
+  meme_library, custom/ ([SCREENGRAB] drops)
 templates/
   shots/                 one file per FORMAT: short, earnings, macro, long
   chapters/              one file per chapter TYPE — all sixteen
@@ -225,7 +247,7 @@ scripts/
   kit_engine.js          the node entry point the ingest drives
   render_samples.py      render the committed samples from fixtures
   gen_assets.py          procedural placeholders for everything not drawn
-  gen_fixtures.py, fetch_sfx.py, contact_sheet.py, audit_placement.py
+  gen_fixtures.py, fetch_sfx.py, contact_sheet.py
 workspace|cache|state/   runtime (gitignored)
 ```
 
@@ -362,8 +384,8 @@ having one.
 path is FFmpeg filtergraphs, headless Chromium and a systemd service, and all
 three are first-class on Linux and awkward-to-broken on native Windows. The one
 feature that ever needed native Windows — Excel COM automation — has been
-replaced by the external refresh plus upload, so there is nothing left on that
-side of the line.
+deleted outright in favour of the external refresh plus upload, so there is
+nothing left on that side of the line.
 
 From a clean Windows 11 machine, in order:
 
@@ -546,16 +568,13 @@ starting point, but they are **unmaintained** and nothing tests them.
    choice. Trending lane → SHORT; beaten-down value lane → LONG, and picking
    a trending name for a LONG gets a warning, not a refusal — the screener is
    a suggestion engine. The screener's move context is baked into the SHORT
-   prompt automatically. (`/new` still works for one release, preparing both
-   prompts as before.)
-2. The numbers arrive on their own: `/new` copies
-   `templates/dennis_data_template.xlsx`, sets the ticker in `Snapshot!C3`,
-   fires the add-in's refresh, waits for it to genuinely finish, and files a
-   dated copy in the workspace. `/refresh TICKER` re-pulls; a second argument
-   pins a **RIC override** for good (`/refresh PLTR PLTR.O`) for the cases the
-   template's own exchange lookup can't get right. Anywhere without Excel and
-   a loaded add-in the bot says so and takes the manual upload instead — that
-   path is unchanged. Optionally upload raw screenshot PNGs for
+   prompt automatically, from a live quote rather than yesterday's close.
+2. The numbers arrive by upload, which is the only data route: the bot sends
+   `templates/dennis_data_template.xlsx`, you refresh it outside the bot and
+   upload the result as `dennis_data.xlsx`. A successful upload **withdraws
+   any approval** on that workspace — the approval pins the script's hash,
+   which does not change when the data underneath it does, so new numbers
+   have to be re-read and re-approved. Optionally upload raw screenshot PNGs for
    `[SHOW FILING: file.png]` moments — they get a generic "FROM THE 10-K"
    label on screen.
 3. The bot replies with the lane's **pre-filled master prompt** — run it in
@@ -648,12 +667,10 @@ this section failing.
 
 | command | what it does |
 |---|---|
-| `/short TICKER` | Opens a SHORT (9:16, 60–75s). Refreshes the numbers itself where Excel is available, then hands back `prompt_short.md`. |
-| `/long TICKER` | Opens a LONG (16:9 deep dive). Two steps: Step 1 returns ranked angles, you reply with a number, Step 2 is the writing prompt. |
-| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Refuses (and points at `/long`) when no thesis is on file. |
-| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. |
-| `/new TICKER` | Deprecated alias, kept for one release. Prepares both prompts because it cannot know the lane. |
-| `/refresh TICKER [RIC]` | Re-pulls the numbers in Excel. A second argument pins a vendor-symbol override for good (`/refresh PLTR PLTR.O`). |
+| `/short TICKER` | Opens a SHORT (9:16, 60–75s), pulls a live quote for the move context, and asks for the refreshed workbook. `prompt_short.md` follows the upload. |
+| `/long TICKER` | Opens a LONG (16:9 deep dive) **and starts reading the filings immediately** — the latest 10-K, the prior year's and the quarterly pair, in parallel with you refreshing the workbook. Two steps: Step 1 returns ranked angles (with that filing brief in front of the model, cross-checked against your numbers once the workbook lands), you reply with a number, Step 2 is the writing prompt. |
+| `/update TICKER` | Revisits a name already covered — what I said, what happened, was I right, what now. One step, no angle to pick. Gets the same filing brief, additionally **graded against what the last video claimed** — which is what this format is. Refuses (and points at `/long`) when no thesis is on file. |
+| `/headline TICKER <text or URL>` | A SHORT about one specific headline. `/headline macro <text>` for an index/macro take. Mode is detected (company / earnings / macro) and can be forced with a leading `a:`, `b:` or `c:`. The mode sets the lane and picks the shot template, so an earnings script renders through the earnings beat order rather than the plain short's. |
 | `/prompts` | Re-sends the active workspace's pre-filled prompt. |
 
 ### Reviewing and editing the script
@@ -663,7 +680,7 @@ this section failing.
 | `/script` | The stored script, numbered, so `/edit N` and it agree. |
 | `/edit N <text>` | Replaces line N. `N-M` for a range; no text deletes the line. |
 | `/replace old => new` | Fixes a figure or a phrase by its own words. `all:` prefix replaces every occurrence. |
-| `/undo` | Steps back one revision. |
+| `/undo` | Steps back one revision. A revert that fails validation costs nothing — the revision it took is put back. |
 
 An edit that does not parse never lands. Every edit that does re-runs the
 gates, re-prices, and drops the approval — nothing renders from a version
@@ -675,17 +692,38 @@ nobody read.
 |---|---|
 | `/render TICKER` | Renders the approved script for that ticker's lane. |
 | `/render_long TICKER` | Forces the LONG, for a ticker that has both. |
-| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". |
+| `/render_short TICKER` | Forces the SHORT, for a ticker that has both. |
+| `/proof TICKER [short\|long]` | Full-resolution look test: live visuals, free local voice, `$0`. The pass that answers "what will this look like?". Writes `short_proof.mp4` / `long_proof.mp4` — never over a paid final. |
 | `/draft TICKER` | LONG only, half resolution, free voice. Answers "does the timing work?". |
 | `/repurpose TICKER` | Cuts the best two or three ~58s windows of a finished LONG into free vertical SHORTs. |
-| `/status` | The job queue. |
+| `/status` | The job queue, with the by-product links the delivery produced — thumbnail, `.srt`, upload package, credits. Jobs left QUEUED by a restart are picked back up rather than blocking their ticker. |
 | `/cancel TICKER` | Cancels queued and running jobs plus any pending approval. |
+
+**Every render writes to a temp file and `os.replace`s into position**, after
+its length has been checked, so a failed re-render cannot destroy the good
+final that was already there. **Segment boundaries are quantised to whole
+frames at plan time** with the remainder carried forward, so the picture no
+longer creeps ahead of the voice across a long cut.
+
+**The lane decides the format, and it is declared rather than inferred.**
+`/short` or `/long` sets it once; `current_format()` returns it. It used to be
+read off which script files existed, with LONG winning unconditionally, so one
+stray paste made `/render`, `/proof`, `/script`, `/edit`, `/undo`, `/upload`
+and `/batch` all target the wrong script for the rest of the day. A script file
+that disagrees with the lane is reported, not followed.
+
+**A pasted script routes by the lane too**, never by whether it starts with a
+brace. A paste that looks cut off — a JSON body that never closes, or a message
+sitting exactly on Telegram's 4,096-character split point — is refused with
+"send it as a .txt file" rather than saved as half a script, and the master
+prompts now ask the model to hand the script back as a downloadable `.txt` with
+only the human-facing summary in the chat body.
 
 ### Publishing
 
 | command | what it does |
 |---|---|
-| `/upload TICKER [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. |
+| `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
 
@@ -698,7 +736,7 @@ nobody read.
 | `/idea TICKER <why>` | Adds one by hand. |
 | `/unidea TICKER` | Drops one. |
 | `/thesis [TICKER]` | What we said about a name, re-checked against today's numbers. No ticker lists every thesis on file with its status. |
-| `/watch [TICKER \| drop TICKER]` | Intraday watch. Published names join automatically. |
+| `/watch [TICKER \| drop TICKER]` | Intraday watch, in `SCREEN_TIMEZONE` rather than the machine clock. Published names join automatically. `/watch drop` on its own prints usage instead of watching a stock called DROP. |
 | `/earnings TICKER YYYY-MM-DD [bmo\|amc]` | Records a print date so the bot flags it both sides. |
 
 ### Housekeeping
@@ -706,7 +744,8 @@ nobody read.
 | command | what it does |
 |---|---|
 | `/batch [TICKER [fmt] \| run \| clear]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
-| `/cost` | Month-to-date spend against the cap. |
+| `/cost` | Month-to-date spend against the cap, and **how long ago anyone checked it against the provider**. Every figure is what Dennis believes it spent — chunks counted at the configured rate, against a cap enforced from that same number — so a drift is invisible from inside and the first symptom is a bill. |
+| `/cost reconciled` | Stamp today, after you have compared month-to-date against the ElevenLabs dashboard. It records a date and verifies nothing; it is worth exactly as much as the check you did. Past a month the line in `/cost` marks itself stale. |
 | `/kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. The gap list is the input to the next batch of art. |
 | `/help`, `/start` | The command list, in chat. |
 
@@ -723,21 +762,33 @@ nobody read.
 
 ### The data contract (private, no API)
 
-`templates/dennis_data_template.xlsx` has two fixed sheets read strictly
-by **field name** (never cell positions):
+`templates/dennis_data_template.xlsx` is read sheet by sheet, strictly by
+**name** and by **field key** — never by cell position, and never with a
+hardcoded period count:
 
-- `Latest` — `field | value | group` rows; the operator's live copy holds
-  Excel add-in formulas in the value column.
-- `History` — row 1 = year labels (oldest → newest), one row per
-  direction metric (revenue, margins, net income, FCF, share count,
-  debt, cash). This is what makes the SHORT's multi-year gut check and
-  the LONG's `[CHART: metric]` possible.
+- `Snapshot` — `field_key | Label | value | mnemonic` rows; the operator's
+  live copy holds add-in formulas in the value column.
+- `History` — `field_key | Label | <period columns> | CAGR | mnemonic`.
+  The period labels (`FY-4 … FY-0, LTM`) come off the header row. This is
+  what makes the SHORT's multi-year gut check and the LONG's
+  `[CHART: metric]` possible.
+- `Quarters` — the same shape, the last 8 reported quarters. Both
+  comparisons are derived and printed **as a labelled pair**: QoQ against
+  the previous quarter and YoY against the same quarter a year earlier. One
+  of them alone is misleading in a flattering direction — a retailer's Q4
+  beats its Q3 every single year — so the prompt never shows a single
+  quarterly figure called "growth".
+- `Dashboard`, `Valuation`, `Peers`, `News` — the one-glance summary, the
+  bear/base/bull + WACC/reverse-DCF block, the auto peer table with its
+  percentile self-score, and dated headlines.
 
 Missing identity/size/margins/cash fields **block** the run; other gaps
-warn; a missing History sheet warns. CSV (`field,value`) is accepted for
-the snapshot only. Nothing in scripts, tags, overlays or captions may
-name the data vendor — the parsers reject it, and on screen the data is
-"from the 10-K".
+warn. A missing `History`, `Quarters` or `News` sheet warns and the rest of
+the flow is unchanged — most workbooks in the wild have no `Quarters` sheet
+yet, and the writer is told so in as many words rather than handed a blank
+where a table should be. CSV (`field,value`) is accepted for the snapshot
+only. Nothing in scripts, tags, overlays or captions may name the data
+vendor — the parsers reject it, and on screen the data is "from the 10-K".
 
 #### Getting the numbers in (the primary route)
 
@@ -764,7 +815,7 @@ named in terms of what to go and fix:
 | `#CIQINACTIVE` / `Not Signed In` / `#NAME?` in a **required** field | the field, the marker in the cell, and to sign the terminal in — **refused** |
 | the same in an optional field | a warning; treated as missing |
 | A different company's workbook | both tickers, and the command to open a workspace for the other one — **refused** |
-| Older than `DATA_MAX_AGE_DAYS` | its age and its as-of date; a warning, not a refusal |
+| Older than `DATA_MAX_AGE_DAYS` | its age and its as-of date — **refused** by default (`DATA_STALE_BLOCKS=false` makes it a warning) |
 
 An unresolved marker is **not** the same as an empty cell, and conflating
 them is how a video ends up titled `#CIQINACTIVE`: a text field accepts the
@@ -780,57 +831,6 @@ the operator can see in the file they exported. Not the file's mtime —
 re-saving or copying a workbook resets that without changing a single
 number, which is exactly the case the gate exists to catch.
 
-#### The parked COM path
-
-`pipeline/excel_refresh.py` drives Excel over COM. It is **parked**: it
-needs native Windows, `excel_available()` reports it as unavailable on
-Linux, and nothing on the supported path calls it. It is kept so a future
-native-Windows deployment stays possible. What follows describes it as it
-was written.
-
-Two input cells, and they mean different things. **`Snapshot!C3`** takes the
-plain ticker and every `CIQ(...)` formula reads it. **`Snapshot!B3` derives**
-the Refinitiv RIC from C3, looking the suffix up from the exchange via the
-hidden `_RICMap` table — it is a formula and writing to it would silently
-detach every green cell from the ticker. **`Snapshot!E2`** forces a RIC for
-the cases the lookup can't know (a dual listing, a share class); leave it
-empty and the template does the work, which is right more often than a guess.
-`/refresh PLTR PLTR.O` pins E2 for that ticker permanently.
-
-The step that matters is the wait: the add-in resolves **asynchronously**, so
-the refresh call returns instantly while cells still read `#N/A` or
-`Requesting Data...`. Reading at that moment produces a workbook full of
-blanks that looks like a successful refresh — a video built on nothing. So the
-refresh only counts as done when every field worth waiting for has resolved
-*and* the sheet has stopped changing for `EXCEL_SETTLE_POLLS` consecutive
-reads.
-
-"Worth waiting for" is two tiers, because the template grades its own fields
-in the `Priority` column and grades twelve as Required where `DATA_REQUIRED`
-names six. The poll waits for all twelve — a stronger completion signal, so it
-cannot stop while the valuation block is still filling in — but only the six
-are hard: a thinly-covered small-cap missing `ev_ebitda` gets a warning and a
-usable workbook, not a failed refresh.
-
-Consequences, by design:
-
-- A timeout, or a `DATA_REQUIRED` field still unresolved, is a **hard failure**
-  with the fields and the symbol named. Nothing is written to
-  `dennis_data.xlsx`; a workbook already in the workspace is left exactly as
-  it was.
-- Excel or the add-in missing is **reported**, not crashed on, and the manual
-  upload takes over.
-- The scratch copy is deleted and Excel is quit — and killed by PID if a
-  modal dialog swallowed the quit — on every path, including failure.
-- A workspace it populated carries `data_refresh.json`. The freshness gate
-  still reads that, but only as a fallback for a workbook whose sheet carries
-  no as-of date of its own; the sheet is the authority.
-
-The add-in's refresh macro is named differently in every vintage, so
-`EXCEL_REFRESH_MACROS` is a list of candidates tried in order, falling back to
-a full recalculation — most add-in formulas are volatile, so that works too,
-just less directly. Set the var once you know which macro your box has.
-
 ---
 
 ## Configuration reference (env / .env)
@@ -842,8 +842,6 @@ just less directly. Set the var once you know which macro your box has.
 | `TELEGRAM_BOT_TOKEN` | — | from @BotFather (free; required even in mock) |
 | `OPERATOR_CHAT_IDS` | — | allow-list; empty denies all. `["123456789"]`, `123456789` and `123,456` all parse |
 | `BRAND_HANDLE` | `@dennisreads` | signed on the SHORT's closing card |
-| `SHORT_OPEN_STYLE` | `bug` | where the signature card goes in a SHORT: `bug` (a corner mark, so the video opens cold on the hook), `tail` (no open at all — `e_close` still runs), `full` (the original full-frame bumper). Tunable against retention data rather than by editing code |
-| `SHORT_OPEN_BUG_S` | 1.6 | how long the corner bug holds |
 | `CHAPTER_CUE_SFX` | `keyboard_clack` | the sound a LONG's chapter opener fires, 0.15s ahead of the picture so it announces the opener rather than reacting to it. A key from the sfx taxonomy; blank turns the cue off. It is a signpost, not atmosphere — `keyboard_clack` reads as one because it is diegetic (he is typing the chapter title), where a `ding` reads as a notification. `paper_rustle` and `ding` are the alternatives worth auditioning; the choice can only be made by listening, which is why it is a setting |
 | `ELEVEN_VOICE_ID_SHORT/LONG` | — | **placeholder** — the Dennis voice is a one-line change (shortlist in `config.py`) |
 | `SHORT_MAX_CHARS` / `LONG_MAX_CHARS` | 800 / 22000 | TTS budgets, rejected pre-spend |
@@ -854,10 +852,6 @@ just less directly. Set the var once you know which macro your box has.
 | `GIPHY_API_KEY` / `TENOR_API_KEY` | — | optional [MEME] fallbacks (library first) |
 | `DELIVERY_BACKEND` | gdrive | gdrive · s3 · telegram · local |
 | `GDRIVE_CREDENTIALS` / `GDRIVE_ROOT_FOLDER_ID` | — | Drive delivery |
-| `EXCEL_REFRESH_ENABLED` | true | let the bot refresh its own numbers (Windows + add-in) |
-| `EXCEL_SYMBOL_SUFFIX` | — | `.O` builds `PLTR.O`; per-ticker pins beat it |
-| `EXCEL_REFRESH_MACROS` | — | add-in refresh macro candidates; blank = try known ones |
-| `EXCEL_REFRESH_TIMEOUT_S` | 240 | a timeout is a hard failure, never accepted as data |
 | `LOCAL_TTS_ENABLED` / `LOCAL_TTS_MODEL` | true / — | free draft voice (Piper .onnx); drafts fall back to mock, never to paid |
 | `RETENTION_DAYS` | 14 | cleanup horizon (caches never pruned). **`cache/tts` holds audio that was paid for and must never be deleted** — see *Never delete `cache/tts`* below |
 | `SCREEN_TOP_N` / `COOLDOWN_DAYS` | 8 / 30 | screener caps |
@@ -884,7 +878,11 @@ env var, case-insensitive).
   remains available as an optional extra (`pip install -e '.[moviepy]'`).
 - **The branded chart is rendered by the pipeline** from the same Yahoo
   feed the screener uses (cached, TTL'd, synthetic deterministic floor if
-  the feed dies) — never a TradingView screenshot. Two styles: the clean
+  the feed dies) — never a TradingView screenshot. The floor is a plain
+  seeded walk with no invented spike on the final bar, it is flagged
+  `degraded` all the way through the cache and onto the render manifest,
+  and it **blocks** a final render outside `MOCK_MODE`: a fabricated chart
+  on a channel whose premise is real numbers is not a warning-level event. Two styles: the clean
   branded card and a crude hand-drawn "marker" napkin chart on black;
   a SHORT picks via `chart_style`, a LONG via `[CHART: metric style=marker]`.
 - **The director names the plate.** `[PLATE: numbers-sheet-4r-16x9 | unit=$M
@@ -937,9 +935,6 @@ env var, case-insensitive).
   word timestamps — words punch in as they are spoken. LONG captions are
   authored narrow (≤ ~22 chars/line) so the 9:16 repurpose crop keeps
   them intact.
-- **Hook bank**: `assets/hook_bank.json` openers are sampled per render
-  (seeded by the script sha — idempotent re-renders, fresh openers across
-  videos).
 - **Owned meme library first**: `assets/meme_library/meme_index.json`
   maps 16 descriptively-named memes to tags + a one-line "use when";
   `[MEME: key]` matches by stem or tag. Giphy/Tenor/imgflip are only
@@ -1005,6 +1000,91 @@ env var, case-insensitive).
 - **yfinance/yahooquery/StockTwits are unofficial** — every call is
   wrapped, cached, rate-limited and allowed to fail into a labelled,
   degraded lane. The screener can never block or spend.
+
+## Preflight — before the first live video
+
+Run in order. Steps 1 and 3 are the two hard blockers: without them nothing
+renders at all, and both are build products the code correctly refuses to
+proceed without. Steps 3 onward spend real money or need a human to read a
+page, so nothing below is automated.
+
+```bash
+python scripts/check_preflight.py          # the half a machine can answer
+python scripts/check_preflight.py --live   # also the production-only settings
+```
+
+| # | step | why |
+|---|---|---|
+| 1 | `npm install`, then `python scripts/ingest_kit.py kit` | `assets/plates/` is a gitignored ~400MB build product. Without it `Registry` raises, `kit doctor` blocks, and **nothing renders on either lane**. 270 plates, 924 frames. **The build is memory-bound**: if it is OOM-killed part way, use `--batched` (one process per family) — see `kit/INGEST.md`. The cause is retention, not any one plate, so a bigger machine and `--batched` fix the same thing. |
+| 2 | `/kit doctor` | Immediately after the ingest, while the host/room change is fresh — a stale plate found three fixes later looks like a regression in something else. |
+| 3 | `export FREESOUND_API_KEY=…`, then `scripts/fetch_sfx.py` | `assets/sfx/` ships fifteen ffmpeg oscillators and no `SOURCES.json`, so `check_audio` blocks **every** final render. The gate is per file: room tone alone leaves fourteen. |
+| 4 | `python scripts/check_sfx.py` | Must report zero placeholders. Anything listed still blocks. |
+| 5 | `SEC_USER_AGENT="Your Name your@email"` | The SEC 403s generic agents. Nothing blocks — you just quietly lose the filing brief, the 8-K source and `[SHOW FILING]`. The bot warns at startup when `MOCK_MODE` is off. |
+| 6 | `python scripts/check_freshness.py TICKER DATE` | Against the **real** workbook. `DATA_STALE_BLOCKS` defaults on and an unreadable date blocks too; your sheet's as-of format is whatever Capital IQ wrote under your locale. |
+| 7 | `python scripts/check_llm_context.py` | Needs a live Ollama. Proves the marker survives a 24k-character prompt, so filing briefs are not silently built from half a section. |
+| 8 | `MOCK_MODE=true`, full flow on one ticker, both lanes | The whole loop with nothing at stake. |
+| 9 | `MOCK_MODE=true MOCK_TTS=true`, live prices and screener | The only way to exercise B1 against a real feed **including a real failure**: confirm the provenance line reads `SYNTHETIC` and that a final blocks. |
+| 10 | `/proof` on a real script | The last free look at what the video will be. |
+| 11 | One SHORT final | One TTS chunk, so reconciling `/cost` against the ElevenLabs dashboard is unambiguous. Then `/cost reconciled`. |
+| 12 | One LONG final | Nine chunks. Re-reconcile. **If 11 matched and 12 does not, the bug is in the chunk loop** and one comparison found it. |
+| 13 | Kill the bot mid-TTS on a throwaway LONG, then re-render | A1's resume is a claim about money. Verify it rather than trust it. |
+| 14 | Upload one video, leave it private, check YouTube Studio | E7 is new code against a live API, and `captions().insert` fails on a missing scope. Confirm the thumbnail and captions actually arrived. |
+| 15 | Run the digest manually once | F3's day-numbering fix (PTB counts `0-6` as Sunday-Saturday) looks right and is the one item that could not be verified offline. Do this before trusting the cron. |
+
+Two settings that are decisions rather than defaults:
+
+- **`DELIVERY_BACKEND` defaults to `local`**, which writes a file path and no
+  link. Correct for testing, silently useless in production — the operator
+  gets a path on a machine they are not sitting at.
+- **`PUBLISH_HOUR=17` with `PUBLISH_TIMEZONE=Europe/Bucharest`** is 10:00 US
+  Eastern. For a US-markets channel that may be exactly right or exactly
+  wrong; either way it should be chosen, not inherited.
+
+And two notes on the suite. Both of these **fail until the step that clears
+them is done**, and in both cases that is the gate rather than a broken test
+— a green suite there would be the suite lying about a production blocker:
+
+- `test_every_shipped_sound_has_provenance` (marker `audio_provenance`)
+  fails until **step 3**, the Freesound fetch.
+- `test_the_engine_and_the_delivery_agree_on_every_type_role` (marker
+  `kit_ingest`) fails until **step 1**, the ingest, whenever `assets/plates/`
+  is an older pack than the one in `kit/`. While it is, the render path
+  draws the old library and the curation, the prompts and the reachability
+  report all describe the new one — and nothing about a finished video would
+  look wrong, because every plate it drew exists. It is just the wrong kit.
+  `scripts/check_preflight.py` reports the same mismatch on its design-kit
+  row.
+
+```bash
+pytest -m "not audio_provenance and not kit_ingest"   # a clean run first
+```
+
+Deselecting either changes nothing about the blocker; only the step does.
+
+## Operations
+
+### Back up `state/` before anything risky
+
+```bash
+python scripts/backup_state.py            # -> backups/state-<stamp>.tar.gz
+python scripts/backup_state.py --list     # what is already archived
+python scripts/backup_state.py --out /mnt/nas
+```
+
+`state/` is the only place several things exist, and none of it is
+reconstructible:
+
+| file | what is lost with it |
+|---|---|
+| `spend.json` | the spend ledger — **the only record of what has been spent**, and therefore the only thing enforcing `MONTHLY_SPEND_CAP`. It resets to zero silently. |
+| `thesis.json`, `confessions.json`, `idea_queue.json` | what `/update` grades against and what the voice gate reads. Every ticker becomes a first-time take. |
+| `published.json` | what has already gone to YouTube, so `/upload` does not send it twice. |
+| `jobs/` | the queue, including anything QUEUED that a restart would otherwise re-enqueue. |
+| `last_digest.json`, `alerts.json`, `earnings_calendar.json` | the scheduler's memory of what it has already sent. |
+
+Deliberately **not** a scheduled job. A cron that silently stops is a backup
+you think you have; this is one command that is easy to run before a change
+you might want to undo.
 
 ## Legal / safety
 
@@ -1131,6 +1211,3 @@ network calls:
 - **The bot stops answering overnight** — Windows slept or shut down, which
   takes WSL with it. Expected. Reopen Ubuntu and the service comes back;
   anything queued with `/batch` is still queued.
-- **Excel refresh never happens** — the add-in path only exists on a Windows
-  box with Excel and the add-in loaded, and it is the parked route. The manual
-  upload of `dennis_data.xlsx` is the primary one and always works.

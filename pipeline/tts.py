@@ -26,7 +26,7 @@ from pathlib import Path
 import httpx
 
 from config import Settings
-from pipeline.cost import BudgetExceededError, SpendLedger
+from pipeline.cost import BudgetExceededError, SpendLedger, estimate_tts_usd
 from pipeline.direction import (V3_MODELS, emission, performs_audio_tags,
                                 setting_overrides)
 from pipeline.models import TTSResult, WordTimestamp
@@ -488,13 +488,15 @@ class TTSEngine:
             # trusting the two branches above to have stayed correct.
             if free_only:
                 self.guard_free_only(tier)
-            # code-level spend gate (the operator Approve is the human gate)
-            est = self.ledger.guard_tts_spend(len(text))
-            chunk_files, chunk_words = self._generate_real(
+            # Code-level spend gate (the operator Approve is the human gate).
+            # This is the whole-generation cap check — would this job, in
+            # total, blow the month? The RECORDING happens per chunk inside
+            # `_generate_real`, because a nine-chunk LONG that dies on chunk
+            # five has already been billed for five (A1).
+            self.ledger.guard_tts_spend(len(text))
+            chunk_files, chunk_words, cost_usd = self._generate_real(
                 chunks, voice_id, model_id, vsettings, cdir
             )
-            self.ledger.record_tts(est)
-            cost_usd = est
 
         # stitch chunks: offset each chunk's word times by the exact summed
         # durations of prior chunks, and char offsets by prior chunk lengths
@@ -519,6 +521,11 @@ class TTSEngine:
         for f in chunk_files:
             if f != audio_path:
                 f.unlink(missing_ok=True)
+                # The per-chunk sidecar exists so a FAILED run can resume
+                # (A1). Once the stitch is done its job is over, and leaving
+                # it would let a later run resume against chunks whose text
+                # no longer matches.
+                f.with_suffix(".words.json").unlink(missing_ok=True)
 
         # Alignment offsets mirror the REQUEST, which carries break tags the
         # clean script does not. The timeline resolves every visual cue
@@ -609,6 +616,17 @@ class TTSEngine:
         return files, words
 
     # ------------------------------------------------------------------ real
+    @staticmethod
+    def _chunk_paths(cdir: Path, i: int) -> tuple[Path, Path]:
+        """Audio and its word-timing sidecar for chunk `i`.
+
+        The sidecar is what makes a resume possible: an mp3 on its own says
+        a request was PAID for, not that its alignment survived, and a
+        resumed run has to stitch with real word times or the picture drifts
+        off the voice for the whole back half.
+        """
+        return cdir / f"chunk_{i:03d}.mp3", cdir / f"chunk_{i:03d}.words.json"
+
     def _generate_real(
         self,
         chunks: list[str],
@@ -616,14 +634,50 @@ class TTSEngine:
         model_id: str,
         vsettings: dict,
         cdir: Path,
-    ) -> tuple[list[Path], list[list[WordTimestamp]]]:
+    ) -> tuple[list[Path], list[list[WordTimestamp]], float]:
+        """Generate every chunk, metering and resuming per chunk.
+
+        Two properties this has to hold, and the old shape held neither:
+
+        1. **Spend is recorded as it happens.** ElevenLabs bills the chunk
+           it answered, not the loop that was going to follow it. Recording
+           once after the loop meant a timeout on chunk five reported $0
+           spent for five paid generations — and the monthly cap is the only
+           hard stop in the system, so under-metering it is the expensive
+           direction.
+        2. **A retry does not re-pay.** Every chunk that already has both
+           its audio and its alignment on disk is reused, so the retry picks
+           up where the failure was rather than at zero.
+
+        Returns `(files, words, cost_usd)` where `cost_usd` is the ACTUAL
+        cost of what this call generated — a fully resumed run costs $0 and
+        says so.
+        """
         if not self.settings.elevenlabs_api_key:
             raise TTSError("ELEVENLABS_API_KEY is not set and MOCK_MODE is off.")
         client = self._client or httpx.Client(timeout=120)
         files: list[Path] = []
         words: list[list[WordTimestamp]] = []
+        cost_usd = 0.0
         try:
             for i, chunk in enumerate(chunks):
+                f, wf = self._chunk_paths(cdir, i)
+                if f.exists() and f.stat().st_size > 0 and wf.exists():
+                    try:
+                        cached = [WordTimestamp(**w) for w in
+                                  json.loads(wf.read_text(encoding="utf-8"))]
+                    except (json.JSONDecodeError, TypeError, ValueError) as e:
+                        # A half-written sidecar is not evidence of anything;
+                        # re-request rather than stitch against garbage.
+                        log.warning("chunk %d sidecar unreadable (%s) — "
+                                    "regenerating", i, e)
+                    else:
+                        log.info("TTS chunk %d/%d already generated — resuming, "
+                                 "not re-paying", i + 1, len(chunks))
+                        files.append(f)
+                        words.append(cached)
+                        continue
+
                 url = (
                     f"{self.settings.eleven_base_url}/v1/text-to-speech/"
                     f"{voice_id}/with-timestamps"
@@ -643,11 +697,19 @@ class TTSEngine:
                         f"ElevenLabs error {resp.status_code}: {resp.text[:300]}"
                     )
                 payload = resp.json()
-                f = cdir / f"chunk_{i:03d}.mp3"
                 f.write_bytes(base64.b64decode(payload["audio_base64"]))
+                cwords = words_from_alignment(chunk, payload["alignment"])
+                wf.write_text(json.dumps([w.model_dump() for w in cwords]),
+                              encoding="utf-8")
+                # Recorded HERE, against this chunk's own character count,
+                # before anything downstream can raise. The cap is metered on
+                # what was actually billed.
+                spent = estimate_tts_usd(len(chunk), self.settings)
+                self.ledger.record_tts(spent)
+                cost_usd += spent
                 files.append(f)
-                words.append(words_from_alignment(chunk, payload["alignment"]))
+                words.append(cwords)
         finally:
             if self._client is None:
                 client.close()
-        return files, words
+        return files, words, cost_usd

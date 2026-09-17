@@ -370,3 +370,55 @@ def test_the_alert_log_can_be_cleared(settings):
     assert log_.clear() == 1
     assert log_.should_send(Alert(ticker="EXMPL", kind="move", headline="h"),
                             MARKET_HOURS)
+
+
+# --------------------------------------------------------------------------
+# F4 — the alert window is a MARKET clock. It was compared against the
+# machine's naive local time while the startup log claimed screen_timezone.
+# --------------------------------------------------------------------------
+
+
+def test_the_alert_window_follows_new_york_not_the_machine(settings):
+    """On a Bucharest box the default 9-17 window covered 06:00-14:00 New
+    York and missed most of the US session."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    from pipeline.alerts import in_quiet_hours
+
+    ny = ZoneInfo("America/New_York")
+    bucharest = ZoneInfo("Europe/Bucharest")
+
+    # 15:30 in New York is the last half hour of the session, and 22:30 in
+    # Bucharest — well outside a naive 9-17 window.
+    market_hours = dt.datetime(2026, 9, 10, 15, 30, tzinfo=ny)
+    assert not in_quiet_hours(settings, market_hours), \
+        "the last half hour of the US session is not quiet hours"
+    assert market_hours.astimezone(bucharest).hour == 22
+
+    # And 09:00 in Bucharest is 02:00 in New York: quiet.
+    pre_dawn = dt.datetime(2026, 9, 10, 9, 0, tzinfo=bucharest)
+    assert in_quiet_hours(settings, pre_dawn)
+
+
+def test_the_weekend_check_follows_the_market_too(settings):
+    """It is Sunday where the market is, whatever the machine's calendar
+    says — and the two disagree for seven hours of every day."""
+    import datetime as dt
+    from zoneinfo import ZoneInfo
+
+    from pipeline.alerts import in_quiet_hours
+
+    ny = ZoneInfo("America/New_York")
+    bucharest = ZoneInfo("Europe/Bucharest")
+    # The hour window is opened wide so the WEEKDAY is the only thing left
+    # deciding — otherwise it answers first and hides which calendar was read.
+    wide = settings.model_copy(update={"alert_start_hour": 1,
+                                       "alert_end_hour": 23})
+
+    sunday_evening = dt.datetime(2026, 9, 13, 19, 0, tzinfo=ny)
+    local = sunday_evening.astimezone(bucharest)
+    assert local.weekday() == 0 and local.hour == 2, "the machine says Monday"
+
+    assert in_quiet_hours(wide, sunday_evening), \
+        "it is Sunday in New York — no alerts, whatever the box thinks"

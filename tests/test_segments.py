@@ -461,3 +461,139 @@ def test_a_segmented_render_resumes_after_a_wipe(settings, workspace,
     assert second["segment_cache_hits"] == len(second["segments"]), \
         "every completed beat survived"
     assert mp4.exists()
+
+
+# --------------------------------------------------------------------------
+# D1 — the picture used to creep ahead of the voice, cumulatively, across the
+# whole video. These assert on FRAMES IN AN ENCODED FILE, not on the ffmpeg
+# argument list: the existing segment tests check the arguments, which is
+# exactly why a 0.44-second drift sailed through them.
+# --------------------------------------------------------------------------
+
+
+def _frame_count(path: Path) -> int:
+    import subprocess
+
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+         "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", str(path)],
+        capture_output=True, text=True, check=True)
+    return int(out.stdout.strip().split(",")[0])
+
+
+def _encode_beats(tmp_path, settings, lengths, fps):
+    """Encode one clip per length and return the frame counts."""
+    from dataclasses import replace
+
+    set_render_politeness(settings)
+    profile = encode_profile(settings, "long", draft=True)
+    cache = tmp_path / f"cache{fps}{len(lengths)}{lengths[0]:.6f}"
+    specs = []
+    for i, length in enumerate(lengths):
+        colour = ("red", "green", "blue")[i % 3]
+        specs.append(replace(
+            _spec(tmp_path, index=i, duration=length, colour=colour),
+            fps=fps,
+            # The source runs LONGER than the segment, so what limits the
+            # output is the segment's own length — which is the situation in
+            # a real render, where a still loops and a clip is trimmed.
+            inputs=(("-f", "lavfi", "-t", f"{length + 0.5:.6f}",
+                     "-i", f"color=c={colour}:s=64x64:r={fps}"),)))
+    run = encode_segments(specs, cache, profile, total_threads=4)
+    return [_frame_count(c) for c in run.clips()]
+
+
+def test_a_segment_is_exactly_the_frames_the_plan_gave_it(tmp_path, settings):
+    """Including the lengths whose four-decimal form rounds the WRONG WAY.
+
+    29/30 prints as 0.9667, which is longer than 29 frames, so a `-t` cut
+    emitted 30 — a frame the plan never asked for, on top of the frames it
+    was already losing.
+    """
+    fps = 30
+    wanted = [7, 14, 29, 31, 43]
+    got = _encode_beats(tmp_path, settings, [n / fps for n in wanted], fps)
+    assert got == wanted
+
+
+def test_the_cut_does_not_drift_ahead_of_the_clock_across_a_sequence(
+        tmp_path, settings):
+    """The real defect, measured in encoded frames.
+
+    Each segment was encoded with `-t` at `-r fps`, which lands on a whole
+    number of frames, and the clips were joined as-is — so every segment
+    lost up to a frame and the losses ACCUMULATED. Captions, scribbles and
+    audio stayed on the real clock, so the picture crept ahead of the voice
+    and the last moments were a frozen frame. Ten beats of 1.011s at 30fps
+    lose a tenth of a second; the repo's own 22-minute sample plan has 142
+    segments.
+
+    The final length check never caught it: the container's duration follows
+    the audio track, so the deviation reads as zero.
+    """
+    import math
+
+    from pipeline.timeline import Segment, quantise_to_frames
+
+    fps, beat, n = 30, 1.011, 10
+    duration = beat * n
+    on_the_clock = round(duration * fps)
+
+    raw = [Segment(start=i * beat, end=(i + 1) * beat, kind="img")
+           for i in range(n)]
+
+    # The old rule: one independent rounding per segment, nothing carried
+    # forward. Asserted as arithmetic so the test says what it is protecting
+    # against, rather than only that today's numbers agree.
+    dropped = sum(math.floor(s.length * fps) for s in raw)
+    assert dropped == 300 and dropped < on_the_clock, (
+        f"{on_the_clock - dropped} frames "
+        f"({(on_the_clock - dropped) / fps:.3f}s) went missing under the old "
+        f"per-segment rounding")
+
+    planned = quantise_to_frames(raw, fps, duration)
+    frames = sum(_encode_beats(
+        tmp_path, settings, [s.length for s in planned], fps))
+    assert frames == on_the_clock, (
+        f"the cut is {frames} frames where the clock says {on_the_clock} — "
+        f"the picture has drifted {(on_the_clock - frames) / fps:.3f}s ahead "
+        f"of the voice")
+
+
+def test_the_long_planner_hands_the_encoder_whole_frames(settings):
+    """The wiring: `render_long` passes its fps, so the plan is already on
+    the frame grid before any segment is encoded."""
+    from pipeline.timeline import Cue, plan_long_segments
+
+    fps, duration = 30, 47.37
+    cues = [Cue(t=t, kind="img", payload={"value": f"a{t}"})
+            for t in (3.011, 9.733, 18.4, 27.25, 33.9, 41.1)]
+    planned, _ = plan_long_segments(cues, duration, fps=fps)
+
+    assert planned, "the plan must not be empty"
+    for seg in planned:
+        assert abs(seg.length * fps - round(seg.length * fps)) < 1e-6, \
+            f"{seg.kind} at {seg.start:.4f} is {seg.length * fps:.4f} frames"
+
+
+def test_the_quantised_plan_still_tiles_the_whole_duration():
+    """Snapping must move boundaries, never lose or overlap time."""
+    from pipeline.timeline import Segment, quantise_to_frames
+
+    fps, duration = 30, 12.345
+    raw, t = [], 0.0
+    for beat in (1.011, 0.733, 2.4, 0.25, 1.9, 3.1, 2.951):
+        raw.append(Segment(start=t, end=min(t + beat, duration), kind="host"))
+        t += beat
+    raw[-1] = Segment(start=raw[-1].start, end=duration, kind="host")
+
+    out = quantise_to_frames(raw, fps, duration)
+
+    assert out[0].start == 0.0
+    assert abs(out[-1].end - duration) <= 0.5 / fps
+    for a, b in zip(out, out[1:]):
+        assert a.end == b.start, "no gaps and no overlaps"
+    for seg in out:
+        assert seg.length > 0, "a segment must never round away to nothing"
+        assert abs(seg.length * fps - round(seg.length * fps)) < 1e-6, \
+            "every segment is a whole number of frames"

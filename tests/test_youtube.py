@@ -55,12 +55,27 @@ class FakeClient:
         self.boom = boom
         self.body: dict | None = None
         self.comments: list[str] = []
+        self.thumbnails: list[Path] = []
+        self.captions: list[Path] = []
+        self.sessions: list = []
 
-    def upload(self, path: Path, body: dict) -> str:
+    def upload(self, path: Path, body: dict, session=None) -> str:
         if self.boom == "upload":
             raise RuntimeError("quota exceeded")
         self.body = body
+        self.sessions.append(session)
         return self.video_id
+
+    def set_thumbnail(self, video_id: str, image: Path) -> None:
+        if self.boom == "thumbnail":
+            raise RuntimeError("thumbnails are disabled")
+        self.thumbnails.append(image)
+
+    def set_captions(self, video_id: str, srt: Path, *, language="en",
+                     name="") -> None:
+        if self.boom == "captions":
+            raise RuntimeError("captions are disabled")
+        self.captions.append(srt)
 
     def comment(self, video_id: str, text: str) -> None:
         if self.boom == "comment":
@@ -96,16 +111,96 @@ def test_an_upload_is_private_by_default(settings, package, video):
 
 def test_a_scheduled_upload_is_still_private_with_a_publish_time(settings,
                                                                 package, video):
-    """That is how the API expresses a schedule: private + publishAt."""
+    """That is how the API expresses a schedule: private + publishAt.
+
+    18:00 is the operator's wall clock, read in `PUBLISH_TIMEZONE` (E6). It
+    used to be read as UTC, so the operator typed their own evening and got
+    someone else's.
+    """
     client = FakeClient()
     when = "2026-08-07 18:00"
     record = upload_video(video, package, settings, publish_at=when,
                           client=client, now=NOW)
     status = client.body["status"]
     assert status["privacyStatus"] == "private"
-    assert status["publishAt"].startswith("2026-08-07T18:00")
-    assert status["publishAt"].endswith("Z")
+    # Europe/Bucharest is UTC+3 in August.
+    assert status["publishAt"] == "2026-08-07T15:00:00Z"
     assert record.privacy == "scheduled"
+
+
+def test_a_bare_date_publishes_at_the_configured_hour_not_midnight_utc(
+        settings, package, video):
+    """E6: the docstring has promised "the configured hour" since this was
+    written, and neither the hour nor the zone existed. A bare date parsed
+    to midnight UTC, so `/upload TICKER 2026-09-20` published at 2am in
+    Bucharest."""
+    client = FakeClient()
+    upload_video(video, package, settings, publish_at="2026-09-20",
+                 client=client, now=NOW)
+
+    # 17:00 Europe/Bucharest in September is 14:00Z.
+    assert client.body["status"]["publishAt"] == "2026-09-20T14:00:00Z"
+
+
+def test_the_thumbnail_and_the_captions_go_up_with_the_video(
+        settings, package, video, tmp_path):
+    """E7: both are generated on every finished render, handed to `deliver`,
+    and the YouTube path referenced neither — so videos went up with an
+    auto-generated thumbnail and no captions."""
+    thumb = tmp_path / "thumbnail.png"
+    thumb.write_bytes(b"png")
+    srt = tmp_path / "EXMPL.srt"
+    srt.write_text("1\n00:00:00,000 --> 00:00:01,000\nhello\n", encoding="utf-8")
+
+    client = FakeClient()
+    upload_video(video, package, settings, client=client, now=NOW,
+                 thumbnail=thumb, captions=srt)
+
+    assert client.thumbnails == [thumb]
+    assert client.captions == [srt]
+
+
+def test_a_failed_thumbnail_does_not_fail_the_upload(settings, package, video,
+                                                     tmp_path):
+    """The video is already live; a by-product is not worth reporting it as
+    a failure."""
+    thumb = tmp_path / "thumbnail.png"
+    thumb.write_bytes(b"png")
+    client = FakeClient(boom="thumbnail")
+
+    record = upload_video(video, package, settings, client=client, now=NOW,
+                          thumbnail=thumb)
+
+    assert record.video_id == "vid123"
+
+
+def test_the_upload_carries_a_resumable_session(settings, package, video):
+    """E8: a single attempt with no persisted session URI meant a drop at
+    90% started over — and because `VideoLog` is written only on success, a
+    retry could create a SECOND private video with no record of the first."""
+    from pipeline.youtube import UploadSession
+
+    client = FakeClient()
+    upload_video(video, package, settings, client=client, now=NOW)
+
+    assert client.sessions and isinstance(client.sessions[0], UploadSession)
+
+
+def test_a_resumable_session_survives_a_restart(settings, video, tmp_path):
+    from pipeline.youtube import UploadSession
+
+    a = UploadSession(settings)
+    a.save(video, "https://upload.example/session/abc")
+
+    assert UploadSession(settings).load(video) == \
+        "https://upload.example/session/abc"
+
+    # A RE-RENDERED video is a different upload even at the same path —
+    # resuming into the old session would push new bytes at an old offset.
+    video.write_bytes(b"a different, longer render than before")
+    assert UploadSession(settings).load(video) == ""
+
+    a.clear(video)
 
 
 def test_public_is_never_requested(settings, package, video):

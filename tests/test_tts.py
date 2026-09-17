@@ -250,3 +250,127 @@ def test_re_rendering_the_same_approved_script_costs_nothing(
     third = render_pass(tuned)
     assert third.cached and len(calls) == 1, \
         "a mix setting re-billed the voice — nothing spoken changed"
+
+
+# --------------------------------------------------------------------------
+# A1 — a part-failed generation is billed by ElevenLabs whether or not the
+# loop finished, so the ledger has to know about it and the retry must not
+# pay for it twice. Both assertions are on what the LEDGER SAYS and on how
+# many requests actually left, not on the arguments of a call.
+# --------------------------------------------------------------------------
+
+
+def _live(settings, **extra):
+    return settings.model_copy(update={
+        "mock_mode": False,
+        "elevenlabs_api_key": "test-key",
+        "eleven_voice_id_long": "voiceL",
+        "eleven_voice_id_short": "voiceL",
+        "tts_chunk_chars": 60,
+        **extra,
+    })
+
+
+def _multi_chunk_text() -> str:
+    """Long enough to split into several chunks at tts_chunk_chars=60."""
+    return ("The market pays sixty times sales. " * 12).strip()
+
+
+def _handler_failing_at(audio_b64, alignment, fail_index: int, calls: list):
+    def handler(request: httpx.Request) -> httpx.Response:
+        i = len(calls)
+        calls.append(request)
+        if i == fail_index:
+            return httpx.Response(429, text="slow down")
+        return httpx.Response(200, json={"audio_base64": audio_b64,
+                                         "alignment": alignment})
+    return handler
+
+
+def test_a_generation_that_dies_midway_still_meters_what_was_billed(
+        settings, alignment_sample, tmp_path):
+    """Chunks 0..N-1 were generated and billed. $0 spent is a lie."""
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    live = _live(settings)
+    text = _multi_chunk_text()
+    assert len(chunk_text(text, live.tts_chunk_chars)) >= 4, "need several chunks"
+
+    calls: list = []
+    engine = TTSEngine(live, ledger=SpendLedger(live), client=httpx.Client(
+        transport=httpx.MockTransport(
+            _handler_failing_at(audio_b64, alignment_sample["alignment"], 2, calls))))
+
+    with pytest.raises(Exception):
+        engine.synthesize(text, "long")
+
+    assert len(calls) == 3, "two succeeded, the third is the failure"
+    assert engine.ledger.mtd_spend_usd() > 0, \
+        "two paid chunks came back — the cap must know about them"
+
+
+def test_a_retry_resumes_instead_of_re_paying_for_finished_chunks(
+        settings, alignment_sample, tmp_path):
+    """`unchanged content => zero calls` has to survive a partial failure."""
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    alignment = alignment_sample["alignment"]
+    live = _live(settings)
+    text = _multi_chunk_text()
+    n_chunks = len(chunk_text(text, live.tts_chunk_chars))
+
+    calls: list = []
+    ledger = SpendLedger(live)
+    engine = TTSEngine(live, ledger=ledger, client=httpx.Client(
+        transport=httpx.MockTransport(
+            _handler_failing_at(audio_b64, alignment, 2, calls))))
+    with pytest.raises(Exception):
+        engine.synthesize(text, "long")
+    spent_first = ledger.mtd_spend_usd()
+
+    # Same settings, same cache dir, a transport that now answers everything.
+    def ok(request):
+        calls.append(request)
+        return httpx.Response(200, json={"audio_base64": audio_b64,
+                                         "alignment": alignment})
+
+    engine2 = TTSEngine(live, ledger=ledger,
+                        client=httpx.Client(transport=httpx.MockTransport(ok)))
+    result = engine2.synthesize(text, "long")
+
+    requests_on_retry = len(calls) - 3
+    assert requests_on_retry == n_chunks - 2, (
+        f"the retry re-requested {requests_on_retry} of {n_chunks} chunks; "
+        f"the two already on disk should have been reused")
+    assert result.audio_path.exists()
+    assert ledger.mtd_spend_usd() > spent_first, "the rest of the job cost money"
+    # and the reported cost is only the chunks actually generated this time
+    assert result.cost_usd == pytest.approx(
+        ledger.mtd_spend_usd() - spent_first)
+
+
+def test_a_fully_resumed_generation_costs_nothing_more(
+        settings, alignment_sample, tmp_path):
+    audio_b64 = _tiny_mp3_b64(tmp_path)
+    alignment = alignment_sample["alignment"]
+    live = _live(settings)
+    text = _multi_chunk_text()
+    calls: list = []
+
+    def ok(request):
+        calls.append(request)
+        return httpx.Response(200, json={"audio_base64": audio_b64,
+                                         "alignment": alignment})
+
+    ledger = SpendLedger(live)
+    engine = TTSEngine(live, ledger=ledger,
+                       client=httpx.Client(transport=httpx.MockTransport(ok)))
+    first = engine.synthesize(text, "long")
+    assert first.cost_usd > 0
+    after_first = ledger.mtd_spend_usd()
+
+    # The stitched result is cached, so the second call is free at the top
+    # level — the property the README's "unchanged content => zero calls"
+    # row is about, and it must survive the per-chunk bookkeeping.
+    n = len(calls)
+    second = engine.synthesize(text, "long")
+    assert second.cached and len(calls) == n
+    assert ledger.mtd_spend_usd() == pytest.approx(after_first)

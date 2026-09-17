@@ -62,6 +62,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import Callable
@@ -250,6 +251,124 @@ def _chapter_cues(stingers: list[dict], settings: Settings) -> list[AudioTrack]:
     ]
 
 
+# A plate file's identity, for cache filenames that have to notice new art.
+# Content-hashed rather than mtime'd: the kit is rebuilt by running an engine,
+# so every ingest rewrites every file and an mtime would invalidate the whole
+# cache on a build that changed nothing.
+_PLATE_FINGERPRINTS: dict[tuple[str, int, float], str] = {}
+
+
+def _plate_fingerprint(path: Path) -> str:
+    """Eight hex characters of the plate file's content hash."""
+    st = path.stat()
+    ck = (str(path), st.st_size, st.st_mtime)
+    got = _PLATE_FINGERPRINTS.get(ck)
+    if got is None:
+        import hashlib
+
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for block in iter(lambda: fh.read(1 << 20), b""):
+                h.update(block)
+        got = _PLATE_FINGERPRINTS[ck] = h.hexdigest()[:8]
+    return got
+
+
+def _provenance(script, settings, workspace: Path, duration: float,
+                seg_meta: list[dict], tts, *, draft: bool, proof: bool):
+    """The render's provenance record (N3)."""
+    from pipeline import provenance as prov
+    from pipeline.filings import load_manifest
+
+    prices = None
+    if _reaches_a_price_chart_safe(script):
+        from pipeline.prices import get_price_history
+
+        ticker = (getattr(script, "ticker", "") or "").strip()
+        if ticker:
+            prices = get_price_history(ticker, settings)
+
+    shots = load_manifest(workspace) or []
+    filings = {"shots": len(shots)} if shots else {}
+    refs = sorted({str(s.get("accession") or "") for s in shots
+                   if s.get("accession")})
+    if refs:
+        filings["refs"] = [f"10-K {r}" for r in refs]
+    brief = _filing_brief_provenance(workspace)
+    if brief:
+        filings["brief"] = brief
+
+    fmt = "long-draft" if draft else "long-proof" if proof else "long"
+    return prov.build(
+        ticker=getattr(script, "ticker", ""), fmt=fmt,
+        workdate=workspace.name, duration_s=duration,
+        render={"engine": "segments"},
+        prices=prices, visual_sources=_visual_source_counts(seg_meta),
+        filings=filings, tts=tts, settings=settings)
+
+
+def _reaches_a_price_chart_safe(script) -> bool:
+    from pipeline.gates import _reaches_a_price_chart
+
+    return _reaches_a_price_chart(script)
+
+
+def _filing_brief_provenance(workspace: Path) -> dict:
+    """What the pre-angle filing brief recorded about itself, if any.
+
+    Written by the brief pass; absent before it has run. `context_held` is
+    K2's question: a brief built from half a section reads exactly like one
+    built from all of it.
+    """
+    import json as _json
+
+    f = workspace / "filing_brief.json"
+    try:
+        data = _json.loads(f.read_text(encoding="utf-8"))
+    except (FileNotFoundError, _json.JSONDecodeError, OSError):
+        return {}
+    return {k: data[k] for k in ("sections", "context_held", "accessions")
+            if k in data}
+
+
+def _rendered_kit_reach(plate_keys: list[str], settings) -> str:
+    """The reach line for a finished render, or "" when the kit is absent."""
+    from pipeline.reach import reach_from_manifest
+
+    reach = reach_from_manifest({"plates_used": plate_keys}, settings)
+    return reach.line() if reach.keys else ""
+
+
+def _visual_source_counts(seg_meta: list[dict]) -> dict[str, int]:
+    """`{source: n}` over the segments that carried a fetched visual."""
+    counts: dict[str, int] = {}
+    for m in seg_meta:
+        src = str(m.get("source") or "")
+        if src:
+            counts[src] = counts.get(src, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _price_provenance(script, settings) -> dict:
+    """`{source, degraded}` for a LONG that draws a price chart, else `{}`.
+
+    Reads the same cached series the chart was drawn from, so it reports on
+    the data that is actually in the video rather than on a fresh fetch that
+    might disagree with it.
+    """
+    from pipeline.gates import _reaches_a_price_chart
+
+    if not _reaches_a_price_chart(script):
+        return {}
+    ticker = (getattr(script, "ticker", "") or "").strip()
+    if not ticker:
+        return {}
+    from pipeline.prices import get_price_history
+
+    series = get_price_history(ticker, settings)
+    return {"source": series.source, "degraded": bool(series.degraded)}
+
+
 def render_long(
     script: LongScript,
     tts: TTSResult,
@@ -295,11 +414,16 @@ def render_long(
     chapters = _chapter_plan(script, duration, chapter_warnings.append)
     for w in chapter_warnings:
         log.warning("chapters: %s", w)
+    # The frame rate is decided BEFORE the plan, because the plan is what
+    # snaps the cuts onto the frame grid (D1). Letting each encode round its
+    # own `-t` independently is what put the picture ahead of the voice.
+    fps = settings.preview_fps if preview else settings.fps
     segments, seg_warnings = plan_long_segments(
         cues, duration,
         chapter_starts=[(t, ti) for t, ti, _ in chapters],
         min_readable_s=settings.long_min_readable_s,
         chapter_host_s=settings.long_chapter_host_s,
+        fps=fps,
     )
     for w in seg_warnings:
         log.warning("segment plan: %s", w)
@@ -316,7 +440,6 @@ def render_long(
              else settings.proof_scale if proof else 1.0)
     W = int(FW * scale) // 2 * 2
     H = int(FH * scale) // 2 * 2
-    fps = settings.preview_fps if preview else settings.fps
 
     rdir = workspace / ("render_long_preview" if preview
                         else "render_long_draft" if draft
@@ -368,7 +491,12 @@ def render_long(
         plates_used.add(plate.key)
         key = (plate.key, "")
         if key not in room_cache:
-            dest = rdir / f"room_{plate.name}.png"
+            # The cache filename carries a hash of the SOURCE PLATE (D3).
+            # Keyed on the plate NAME alone, a workspace kept its pre-ingest
+            # art forever: rebuild the kit with new room drawings, re-render,
+            # and the file was already there so the old one was reused. The
+            # ingest looked like it had done nothing.
+            dest = rdir / f"room_{plate.name}_{_plate_fingerprint(plate.path)}.png"
             if not dest.exists():
                 Image.open(plate.path).convert("RGB").resize(
                     (W, H), Image.LANCZOS).save(dest)
@@ -1430,20 +1558,38 @@ def render_long(
     out_path = workspace / ("long_draft.mp4" if draft
                             else "long_proof.mp4" if proof
                             else "long_final.mp4")
-    composite_video(spec, profile, settings.audio_bitrate, out_path)
+    # Render beside the target, validate, then `os.replace` into position
+    # (D2). `composite_video` used to write straight over the existing file
+    # and the sanity check ran afterwards, so a failure at any point past
+    # that line left the operator with nothing — not the new render and not
+    # the good one they already had. A forty-minute build is a bad thing to
+    # lose twice. `segments._encode_one` already worked this way.
+    part = out_path.with_suffix(".part.mp4")
+    part.unlink(missing_ok=True)
+    composite_video(spec, profile, settings.audio_bitrate, part)
 
-    rendered = ffprobe_duration(out_path)
+    rendered = ffprobe_duration(part)
     if abs(rendered - duration) > 0.7:
+        part.unlink(missing_ok=True)
         raise RenderError(
             f"rendered duration {rendered:.2f}s deviates from the audio master "
             f"clock {duration:.2f}s"
         )
+    os.replace(part, out_path)
+    # `composite_video` writes its filtergraph beside its OUTPUT, so the
+    # sidecar followed the temp name. Move it with the file it describes —
+    # the manifest points at it, and the tests read it to check what was
+    # actually drawn.
+    part_filter = part.with_suffix(".filter.txt")
+    if part_filter.exists():
+        os.replace(part_filter, out_path.with_suffix(".filter.txt"))
 
     manifest_path = workspace / ("render_long_draft_manifest.json" if draft
                                  else "render_long_proof_manifest.json" if proof
                                  else "render_long_manifest.json")
     attributions = sorted({m["attribution"] for m in seg_meta
                            if m.get("attribution")})
+    price_provenance = _price_provenance(script, settings)
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "draft": draft,
@@ -1454,6 +1600,19 @@ def render_long(
         # a final would have used, the voice is not.
         "audio_tier": getattr(tts, "tier", ""),
         "draft_audio": bool(getattr(tts, "draft", False)),
+        # Where the numbers on any price chart came from, and whether they
+        # are real (B1). Absent when the script draws no price chart.
+        **({"prices": price_provenance} if price_provenance else {}),
+        # THE WHOLE RECORD (N3): what in this video was real. Machine-
+        # readable here, and the same thing in words on the delivery
+        # message, so the two surfaces cannot drift.
+        # WHICH ENGINE DREW IT (P4). `LONG_RENDER_ENGINE` switches between
+        # this and the shot-template path, and "which branch did that run
+        # take" should be answerable from the artefact.
+        "engine": "segments",
+        "provenance": _provenance(
+            script, settings, workspace, duration, seg_meta, tts,
+            draft=draft, proof=proof).to_json(),
         "duration": duration,
         "resolution": [W, H],
         "cues": [c.model_dump() for c in cues],
@@ -1496,6 +1655,10 @@ def render_long(
         # never used" — which is the gap list the next design batch is drawn
         # from, and it is worth nothing if nobody writes the numerator down.
         "plates_used": sorted(plates_used),
+        # The render's own reach line, in the same shape as the script's, so
+        # "how much of the kit did this actually use" is answerable from the
+        # artefact (J3). `rendered_reach` existed for this and had no caller.
+        "kit_reach": _rendered_kit_reach(sorted(plates_used), settings),
         "stingers": stinger_meta,
         "transitions": transition_meta,
         # The motion that reached the cut. Zero here means the long is back to
@@ -1517,6 +1680,12 @@ def render_long(
         "shots_with_blink": sum(1 for m in host_motion if m.get("has_blink")),
         "shots_with_idle": sum(1 for m in host_motion if m.get("has_idle")),
         "attributions": attributions,
+        # Where every visual came from, counted (H3). `Visual.source` was
+        # already exactly the right vocabulary — local | library | cache |
+        # pexels | wikimedia | company_site | giphy | tenor | imgflip | mock
+        # | generated | filler — and nothing counted it, so a video leaning
+        # on user-uploaded GIF content left no trace anywhere.
+        "visual_sources": _visual_source_counts(seg_meta),
         "filter_script": str(out_path.with_suffix(".filter.txt")),
         "output": str(out_path),
     }, indent=2), encoding="utf-8")

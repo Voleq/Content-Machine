@@ -1,0 +1,1039 @@
+{
+  "_note": "PROPOSED FRAGMENT for the renderer's kit — NOT a replacement for the renderer's own kit/roles.json, which holds hostRoles, hostPoses, roomRoles, chapterTypes, purposes and wardrobe and is what makes room/talk resolve to one of three desk angles by seed. This file is deliberately named roles.fragment.json so a copy operation cannot overwrite that one. Merge the entries below into the renderer's vocabulary by hand.\n\nVOCABULARY: every chapter_types, shot_ids, formats and beats value in this file was read off templates/ and resolves against the real vocabulary recorded in _vocabulary below. The stale-vocabulary warning that stood here is answered — 44 of the 60 entries named invented chapter types or invented shot templates and have been mapped; the mapping table is in CHANGES.md §VOCABULARY. Nothing was deleted to make the count clean and no new chapter type was invented to make an entry fit.",
+  "_vocabulary": {
+    "read_from": "templates/chapters/*.json (one file per chapter type) and templates/shots/{short,earnings,macro,long}.json. This block is the list the entries below were checked against; it is a record, not a source — templates/ is the source.",
+    "chapter_types": [
+      "bull-vs-bear",
+      "capital-allocation",
+      "cold-open",
+      "filing-walk",
+      "guidance-estimates",
+      "how-the-money-is-made",
+      "how-we-got-here",
+      "management",
+      "moat",
+      "one-framework",
+      "resigned-close",
+      "risk",
+      "sector-comps",
+      "short-interest",
+      "the-numbers",
+      "valuation"
+    ],
+    "chapter_types_are_complete": "sixteen, and there are no others. A plate that wants a seventeenth is a proposal for CHANGES.md, not a value in this file.",
+    "shot_ids": "PER CHAPTER, NOT GLOBAL. Each chapter file is a small shot list with structural ids: open, evidence, land, plus on-the-desk in filing-walk. shot_ids below names which structural position in a chapter's list the plate is for. There is no full-plate / push-in-on-plate / plate-with-host-medium / two-shot vocabulary anywhere in the codebase; the nine names this file used to carry were invented wholesale and are gone.",
+    "how_host_framing_is_now_said": "the constraint those invented names were really carrying — whether a plate survives sharing the frame with the host — is a property of the plate, so it is stated in the plate's own note as prose ('not for a shot that shares the frame with the host'). It was never a template name.",
+    "formats": [
+      "short",
+      "earnings",
+      "macro",
+      "long"
+    ],
+    "beats": {
+      "short": [
+        "hook",
+        "the-move",
+        "the-news",
+        "the-turn",
+        "numbers",
+        "the-sheet",
+        "the-comment",
+        "cheap-or-trap",
+        "payoff",
+        "close"
+      ],
+      "earnings": [
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-sheet",
+        "guidance",
+        "the-turn",
+        "so-what",
+        "close"
+      ],
+      "macro": [
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-statement",
+        "the-mechanism",
+        "who-it-hits",
+        "so-what",
+        "close"
+      ],
+      "long": "NO BEATS OF ITS OWN. templates/shots/long.json holds none — the director picks chapter types and each expands to its own shot list. A long-form plate is placed by chapter_types + shot_ids; formats: [\"long\"] on an entry means only 'this plate is for long-form', and carries no beat."
+    },
+    "short_beats_are_not_chapter_types": "the nine short-the-* values this file used to carry were SHORT beats wearing chapter-type clothing. They now sit under formats: [\"short\"] + beats: [...]. A portrait plate usually keeps a chapter_types value as well, for a long-form 9:16 cut.",
+    "any": "a plate that genuinely belongs everywhere says so with \"any\": true (and \"any_shot\": true for shot position) rather than with a \"*\" or an \"any LONG chapter\" string. A wildcard string does not resolve against sixteen names and the gate cannot check it. Two entries carry it: host/sitting-at-desk and host/close-up-blink.",
+    "moat": "UNREFERENCED. Of the sixteen, moat is the one chapter type no plate in the kit reaches — see CHANGES.md §VOCABULARY. It is a gap in the LIBRARY, not in this file, and it is not fixed by adding moat to a plate that is not about a moat.",
+    "field_shapes": "LIST FIELDS HOLD NAMES, NOT SENTENCES. chapter_types, shot_ids, formats and beats are lists of vocabulary names — lowercase, hyphenated, no spaces — and anything iterating them expects that. An explanation belongs in note. Two entries (overlays/lower-third, both aspects) carried a sentence in beats; it was correct prose in the wrong field, and anything walking beats got a paragraph where a beat name belongs. Both are moved to note and their beats field is now ABSENT rather than empty, because the plate genuinely has no beat: it is persistent furniture composited over whatever the format is showing. An empty list would read as 'no beats found', which is a different claim."
+  },
+  "_furniture": {
+    "section": "§1 — the persistent furniture. overlays/lower-third-{16x9,9x16}, plus the caption decision (not a plate; see CHANGES.md §1.2).",
+    "lower_third": "NOT a chapter plate and not in any chapter's shot list. It is furniture the renderer composites over whatever is on screen, so it belongs to the FORMAT rather than to a chapter — present for the whole of long and earnings, and at the director's discretion in short. It replaces render_long.py:1450 simple_text().",
+    "captions": "DECIDED: deliberately a different register — the kit's materials without its hand. force_style in CHANGES.md §1.2. Not a plate, so no chapter mapping."
+  },
+  "overlays/lower-third-16x9": {
+    "formats": [
+      "long",
+      "earnings",
+      "macro"
+    ],
+    "note": "§1.1. Its own size, not a frame: the compositor places it, bottom-left at about one panel-height of margin, which is what it was designed against. Two slots — ticker (6 characters measured) and tagline (49) — replacing one PIL-formatted string. Persistent furniture, not a beat — which is why this entry carries no beats field at all: it is composited over whatever the format is showing, for as long as the director leaves it up. It reaches its formats directly.",
+    "no_boil": "one frame, and every mark is pinned. On screen longer than any other asset in the product; a re-wobble three times a second for forty minutes is a crawl, not craft.",
+    "carries_own_ground": "opaque panel, own rim, own cast. It composites over rooms, charts and filing screenshots — there is no wall to borrow legibility from. Same finding as §1's title card, applied where it is unarguable."
+  },
+  "overlays/lower-third-9x16": {
+    "formats": [
+      "short"
+    ],
+    "note": "re-authored, not scaled: proportionally wider and a type step up, because it is read on a phone at arm's length. Ticker budget 8 characters against 6 in landscape. Persistent furniture, not a beat, so no beats field — and on a short it is the director's call whether the plate carries one at all."
+  },
+  "_confession": {
+    "section": "§2 — the confession. structure/confession-{statement,ledger}, both aspects each. Roughly one video in three carries one; the pipeline tracks them in a ledger and on screen it has been reaching for whatever generic plate the chapter had.",
+    "both_ship": "unlike §1's title ground these are not mutually exclusive — a chapter can reach for either. RECOMMENDATION: ledger. Reasoning in CHANGES.md §2.",
+    "not_said_happened": "structure/said-happened is a COMPANY's claim against the outcome and is built to read as an indictment. Pointing it at the host would make the plate an indictment of him, which is the opposite of what a confession is for."
+  },
+  "_pipelineData": {
+    "section": "§3 — five plates the pipeline already has data for. Ten assets built: figures/short-interest, charts/insider-flow-{6,12}, charts/macro-series, structure/end-card, both aspects each. 3.5 (channel art) is NOT built — see CHANGES.md, it needs a decision rather than a plate.",
+    "vocabulary": "these entries use the REAL sixteen chapter types, the real per-chapter shot ids (open / evidence / land / on-the-desk) and the real format beats. The older entries in this file do not — see the stale-vocabulary warning in _note."
+  },
+  "_timeOfDayShipped": {
+    "section": "§4.2 — time of day, shipped as ASSETS rather than as a mode. 24 new keys: room/<angle>-dusk-{16x9,9x16} for all twelve angles.",
+    "how_to_use": "the director picks an hour per EPISODE by picking keys — exactly as roomRoles already resolves `talk` to one of three desk angles by seed. Add the -dusk keys to a role's list to let an episode draw from them, or swap the role's list wholesale for a dusk episode. Do NOT mix hours inside one video: two hours on one wall in one video is two rooms.",
+    "identical_geometry": "verified, not asserted: every -dusk plate has byte-identical slot boxes, floorLineY and hostAnchor to its night twin. Only the wall tone differs. So a shot template that works on room/desk-front-16x9 works on room/desk-front-dusk-16x9 with no changes at all.",
+    "unblocked_by": "§1. A toned wall behind the chapter-opener title box was exactly the borrowed legibility §1 measured; the title now carries its own `card`, so the risk is gone. proof/title-ground.html measures the card on a dusk wall as the closure.",
+    "day_not_shipped": "DELIBERATELY. The set is lit by one warm desk lamp and one cold monitor and every cast shadow derives from those two. At dusk that is still true — the light outside is failing and the lamp is still the source. In daylight it is false: the lamp would not be the brightest thing in the room and every shadow would point the wrong way. Shipping `day` means a relight, which is a much bigger job than a wall tone. engine/plates.js room() still accepts \"day\"; no asset uses it."
+  },
+  "figures/short-interest-16x9": {
+    "chapter_types": [
+      "short-interest",
+      "bull-vs-bear",
+      "valuation"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "§3.1. REPLACES figures/big-number-l2 in short-interest's evidence beat. Four quantities that mean nothing individually — the one proportion among them (shares short against float) is drawn as a proportion, so the reader does not divide anything.",
+    "renderer_contract": "do NOT fill the `float` region: its outline is already drawn and it is the reference. Fill `short` from the left to (sharesShort / float) of the width. `days` and `borrow` are figures, not bars — they are a duration and a rate, and drawing them as bars invites a comparison that means nothing.",
+    "refuses": "nothing is pre-coloured and nothing is marked. A 30%-of-float short position is a squeeze setup or a nothing depending on who holds it and why; the script decides. No alarm colour, no threshold line.",
+    "pairs_with": [
+      "charts/insider-flow-6",
+      "figures/ownership",
+      "annotations/scrawl-oval-tight"
+    ]
+  },
+  "figures/short-interest-9x16": {
+    "chapter_types": [
+      "short-interest"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-move",
+      "numbers"
+    ],
+    "note": "SHORTS use the `short` format's the-move or numbers beat. Same four slots; value budget 8 characters."
+  },
+  "charts/insider-flow-6-16x9": {
+    "chapter_types": [
+      "management",
+      "capital-allocation",
+      "filing-walk",
+      "bull-vs-bear"
+    ],
+    "shot_ids": [
+      "evidence",
+      "on-the-desk"
+    ],
+    "note": "§3.2. Six Form 4 trades on a time axis, sized by value — a normal quarter's filings, where the individual trades are still the argument. figures/ownership is the static picture; this is the flow.",
+    "renderer_contract": "fill each mark-N region FROM axisY: upward for a purchase, downward for a sale. Direction is the data, exactly as a waterfall step can add or subtract. BOTH HALVES SHARE ONE SCALE — scaling them independently makes a $200k purchase look like a $4m sale, which is a verdict reached by arithmetic and the hardest kind to notice.",
+    "refuses": "no green, no red, no arrow. One ink, one weight, both ways, so a plate of all sells looks like a plate of all buys inverted.",
+    "counts": "6 and 12, authored not elastic — an elastic plate re-derives its pitch at render time and the pitch has to stay still between cuts.",
+    "pairs_with": [
+      "figures/ownership",
+      "structure/language-shift",
+      "figures/short-interest"
+    ]
+  },
+  "charts/insider-flow-6-9x16": {
+    "chapter_types": [
+      "management"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-news",
+      "the-turn"
+    ],
+    "note": "six marks in portrait. The per-mark who row still fits here (16 characters)."
+  },
+  "charts/insider-flow-12-16x9": {
+    "chapter_types": [
+      "management",
+      "capital-allocation",
+      "how-we-got-here"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "twelve marks — the case the plate exists for, where the PATTERN is the argument rather than any single trade. Not for a shot that shares the frame with the host.",
+    "caution": "per-mark who row is 12 characters here, which holds 'CFO' and not a name. The role is almost always the point anyway."
+  },
+  "charts/insider-flow-12-9x16": {
+    "chapter_types": [
+      "management"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-news"
+    ],
+    "note": "twelve marks on a phone.",
+    "caution": "NO per-mark who row in this aspect: the box measures under six characters and an over-budget fill does not render, so the plate publishes one `who-note` line instead — e.g. 'all four officers'. Measured by budget.js, not chosen."
+  },
+  "charts/macro-series-16x9": {
+    "chapter_types": [
+      "one-framework",
+      "how-the-money-is-made",
+      "risk",
+      "how-we-got-here"
+    ],
+    "shot_ids": [
+      "evidence",
+      "open"
+    ],
+    "formats": [
+      "macro"
+    ],
+    "beats": [
+      "the-mechanism"
+    ],
+    "note": "§3.3. A decades-long FRED series with recession bands. Same name as charts/line-6y, different plate: ten labelled decades, forty minor ticks, band regions, and a source line.",
+    "renderer_contract": "FOUR band regions are published and none is filled. A recession's extent is data — when it began, when it ended — so fill only the bands the series actually spans and leave the rest empty; do not distribute four bands across the plot because four exist. Fill at LOW value behind the series: a band that out-contrasts the line has become the subject.",
+    "required": "the `source` slot is not optional. A macro series with no provenance is the one chart on a real-numbers channel that nobody can check.",
+    "counts": "no count variants — the periods are not the company's, so the six-period convention does not apply."
+  },
+  "charts/macro-series-9x16": {
+    "chapter_types": [
+      "one-framework",
+      "risk"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "macro",
+      "short"
+    ],
+    "beats": [
+      "the-mechanism",
+      "the-statement"
+    ],
+    "note": "ten decades in portrait is dense. Source budget 74 characters."
+  },
+  "structure/end-card-16x9": {
+    "chapter_types": [
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "land"
+    ],
+    "formats": [
+      "long",
+      "earnings",
+      "macro"
+    ],
+    "note": "§3.4. The closing frame built AROUND YouTube's end-screen elements. structure/closing is a chapter plate and knows nothing about the platform; this one's layout is dictated from outside the kit, which is why it is a separate plate.",
+    "keep_out": "three zones published in meta.keepOut as fractions of the frame: two video cards and a circular subscribe. Measured: 0 slot overlaps and 0 authored marks reaching a zone on both aspects. The paper surface does extend under them, correctly — the platform draws opaque elements on top of a ground.",
+    "renderer_contract": "the `hand` slot is what the viewer does next in the host's own register — e.g. 'the ledger is in the description'. NOT 'like and subscribe': the platform is already drawing a subscribe button in the same frame, and saying it twice is worse than not saying it.",
+    "caution": "UNVERIFIED — the zone fractions are DESIGNED-AGAINST, not confirmed against YouTube's current published spec. They are in the manifest so that when someone checks them the plate is corrected in one place and the content band moves with them.",
+    "duration": "the platform draws its elements over the final twenty seconds. Held for less than that, the zones are empty for no reason."
+  },
+  "structure/end-card-9x16": {
+    "chapter_types": [
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "land"
+    ],
+    "formats": [
+      "short"
+    ],
+    "note": "zones sit lower in portrait and the content band is above them rather than beside them.",
+    "caution": "UNVERIFIED zone fractions, as above — and shorts' end-screen behaviour differs from long-form, which I could not check at all."
+  },
+  "structure/confession-ledger-16x9": {
+    "chapter_types": [
+      "resigned-close",
+      "how-we-got-here",
+      "bull-vs-bear",
+      "management",
+      "valuation"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "§2, RECOMMENDED TREATMENT. A numbered, dated entry on a ruled sheet. The credibility is in the existence of the record rather than in this admission — 'no. 14, and I write them all down'. Any chapter may reach for it; resigned-close is its home.",
+    "renderer_contract": "entry-no takes the ledger count the pipeline already holds, e.g. 'no. 14'. It is the treatment's whole argument, so a composite that leaves it empty should fall back to the statement treatment rather than render a ledger entry with no number.",
+    "refuses": "no cross, no strike-through, no red, no rule through the old claim. All three bodies are ONE type role at ONE size — the plate cannot mark which is the bad one. If the script wants the old claim struck, that is annotations/strike-out, and worth arguing about first.",
+    "counts": "three blocks, fixed: what I said / what happened / what I got wrong. Not a count variant — the shape IS the three steps."
+  },
+  "structure/confession-ledger-9x16": {
+    "chapter_types": [
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "land"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-turn"
+    ],
+    "note": "SHORTS use the 'short' format's the-turn beat. Body budget 37 characters a line at two lines, so the three statements have to be written short before the script is recorded, not trimmed after."
+  },
+  "structure/confession-statement-16x9": {
+    "chapter_types": [
+      "resigned-close",
+      "how-we-got-here",
+      "bull-vs-bear",
+      "management"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "§2, the alternative. Three blocks as one continuous statement, one left edge, one type size, one rail with a spur into each block. The credibility is in the equal weight: nothing marks the third block as the bad one. Use it when the confession is the first one about this company and there is no count worth showing.",
+    "counts": "three blocks, fixed."
+  },
+  "structure/confession-statement-9x16": {
+    "chapter_types": [
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "land"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-turn"
+    ],
+    "note": "as above, 34 characters a line."
+  },
+  "_titleGround": {
+    "applies_to": "every room/* key that declares a title slot — 22 plates, the whole chapter-opener set. NO NEW KEYS: §1 is a variant axis on existing plates, not a family, so gates.reachable_plates does not gain a row and nothing here needs a chapter type of its own.",
+    "switch": "engine/build.js TITLE_GROUND — \"card\" (SHIPPED, since drop nine), or null | \"scrim\" | \"slab\". This note said null was shipped for three drops after the value changed; `decided` below said card the whole time, so the file disagreed with itself and the stale half read as evidence that the treatment was still off. One value for the whole library: a chapter opener whose ground changes between chapters is two channels.",
+    "renderer_contract": "the chapter-opener shot template must read slots.title.colour and set the title in THAT palette role rather than assuming structure. Only the slab treatment moves it (to ground), but a template that assumes structure is the thing that breaks silently the day the slab is picked — the same class of failure as the borrowed legibility itself.",
+    "unchanged": "slots.title keeps its box on every plate, so every existing chapter-opener composite lands where it always did. meta.titleGround publishes the panel box, whether it is opaque, and which slots it covers.",
+    "decided": "CARD. engine/build.js TITLE_GROUND = \"card\" — an opaque taped card with its own rim and cast, on all 22 chapter openers. Chosen because it is the only treatment that makes contrast wall-independent (11.9:1 on every wall, spread 0.0) WITHOUT moving the type colour, so slots.title.colour stays `structure` and the chapter-opener shot template needs no change. The six room plates with no title slot take no ground. proof/title-ground.html holds the comparison it was chosen from.",
+    "_staleNote": "CORRECTED IN DROP TWELVE. This entry said the shipped value was null while `decided` said card. Both were in the same object. The lesson is the one the baselines already carry: a stale note someone trusts is worse than an absent one, and it applies to prose in a data file as much as to a number."
+  },
+  "_quarters": {
+    "section": "§2 — the quarter. Ten assets: charts/bars-8q, charts/line-8q, figures/qoq-yoy, charts/seasonality-{4,6}y, both aspects each. Every chart in the kit was annual; the pipeline now reads a Quarters sheet carrying six to eight quarters, and this is where they land.",
+    "pipeline": "the Quarters sheet feeds all three. bars-8q/line-8q take the series as loaded; qoq-yoy needs THREE readings out of it (the quarter, the previous quarter, the same quarter a year ago) and computes two deltas from them; seasonality needs the sheet reshaped to four quarters by N years, which is a pivot rather than a slice.",
+    "gate": "all ten reach a chapter type below, so none is reported unreachable."
+  },
+  "charts/bars-8q-16x9": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "formats": [
+      "earnings",
+      "long"
+    ],
+    "beats": [
+      "the-print",
+      "the-sheet"
+    ],
+    "note": "eight quarters as columns. Cut it against charts/bars-6y in the same chapter — same margins, same tick convention, so the grid does not move when the period changes.",
+    "counts": "8 quarters, fixed. Eight is two whole years, which is the shortest span a seasonal pattern is visible in; six would show Q4 once and invite exactly the comparison figures/qoq-yoy exists to stop.",
+    "period_format": "Q3'25 — five characters. NOT 'Q3 2025': the head boxes are budgeted at this column count and a seven-character label is an over-budget fill, which does not render at all.",
+    "caution": "never caption a Q3-to-Q4 rise on this plate as growth. Eight quarters is two years, so Q4 appears twice — the comparison belongs to figures/qoq-yoy. See meta.seasonalityWarning.",
+    "pairs_with": [
+      "figures/qoq-yoy",
+      "charts/seasonality-4y",
+      "tables/numbers-sheet-4r"
+    ]
+  },
+  "charts/bars-8q-9x16": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers",
+      "the-sheet"
+    ],
+    "note": "SHORTS. No per-column value row on this aspect — the box measures five characters at eight columns and an over-budget fill does not render, so the plate publishes one value-last callout. The other seven quarters are a shape, and the voice-over has them."
+  },
+  "charts/line-8q-16x9": {
+    "chapter_types": [
+      "the-numbers",
+      "how-we-got-here"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "earnings",
+      "long"
+    ],
+    "beats": [
+      "the-print"
+    ],
+    "note": "the same eight quarters as a path. Use it when the shape between quarters is the point rather than the size of each one; bars-8q when a single quarter is going to be named.",
+    "pairs_with": [
+      "charts/line-6y",
+      "figures/qoq-yoy"
+    ]
+  },
+  "charts/line-8q-9x16": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers"
+    ],
+    "note": "value-last only, same measurement as bars-8q-9x16."
+  },
+  "figures/qoq-yoy-16x9": {
+    "chapter_types": [
+      "the-numbers",
+      "guidance-estimates"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "formats": [
+      "earnings"
+    ],
+    "beats": [
+      "vs-expected",
+      "the-turn"
+    ],
+    "note": "THE EDITORIAL INSTRUMENT, not a chart. Both readings of one quarter, equal weight, side by side. Put it immediately after a quarterly chart and immediately after any management claim about growth — it is the plate that answers 'is it moving?' with 'against what?'.",
+    "renderer_contract": "fill BOTH deltas or neither. A composite that fills qoq and leaves yoy empty is the single-figure resolution this plate was built to prevent, arriving by omission; the shot audit should error on it rather than render half the pair.",
+    "refuses": "there is no slot for a blended growth figure. A script that wants one growth number wants figures/big-number — and should be asked why.",
+    "pairs_with": [
+      "charts/bars-8q",
+      "charts/seasonality-4y",
+      "annotations/scrawl-oval-tight"
+    ]
+  },
+  "figures/qoq-yoy-9x16": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers",
+      "the-turn"
+    ],
+    "note": "the cells STACK in this aspect rather than sitting side by side, and that is a re-author rather than a rotation: two half-width cells on a phone would cost the deltas two type steps, which costs the pair its weight against the figure above. Congruent stacked boxes keep both.",
+    "renderer_contract": "same as 16x9 — both deltas or neither."
+  },
+  "charts/seasonality-4y-16x9": {
+    "chapter_types": [
+      "the-numbers",
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "earnings"
+    ],
+    "beats": [
+      "the-print"
+    ],
+    "note": "four quarters across, four years deep. The plate that makes seasonality self-evident, so the script stops asserting it and starts pointing at it. Cut it BEFORE any quarter-on-quarter claim in the chapter.",
+    "counts": "4 or 6 years. The quarters are always four, so the count varies on years only.",
+    "series": "one hue, value ramped — oldest lightest, newest at full subject ink. Not four series colours. The ramp also means the year the script is about is the darkest thing on the plot.",
+    "pairs_with": [
+      "figures/qoq-yoy",
+      "charts/bars-8q"
+    ]
+  },
+  "charts/seasonality-4y-9x16": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers",
+      "the-turn"
+    ],
+    "note": "SHORTS: prefer this over -6y. Sixteen columns in a 9:16 plot is a 35-unit column; twenty-four is 23, which is the thinnest data mark in the kit."
+  },
+  "charts/seasonality-6y-16x9": {
+    "chapter_types": [
+      "the-numbers",
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "six years. Not for a shot that shares the frame with the host — twenty-four columns will not survive it. Same call as waterfall-5s."
+  },
+  "charts/seasonality-6y-9x16": {
+    "chapter_types": [
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers"
+    ],
+    "note": "shipped for completeness and for a long-form 9:16 cut.",
+    "caution": "meta.crowded — a 23-unit column, 46px delivered. Legible at desk distance and the thinnest mark in the library; prefer seasonality-4y-9x16 for a SHORT. UNVERIFIED at phone scale."
+  },
+  "_filingReader": {
+    "section": "§3 — what the filing reader found. Six assets: structure/language-shift and paper/headline-stack-{3,4}, both aspects each.",
+    "pipeline": "the reader's output is a set of CHANGES — a risk factor that appeared, management language that shifted, a segment that moved. language-shift takes one of those as a pair of short phrases with their years; headline-stack takes the news the writer now receives, three or four items with a date and a source each."
+  },
+  "structure/language-shift-16x9": {
+    "chapter_types": [
+      "guidance-estimates",
+      "management",
+      "filing-walk",
+      "risk"
+    ],
+    "shot_ids": [
+      "evidence",
+      "on-the-desk"
+    ],
+    "note": "the same thing, described two ways, a year apart. Put it where the filing reader's language diff is being read out — and after the original claim has been said aloud, not before.",
+    "renderer_contract": "the phrase boxes hold TWO LINES at ~30 characters in 16:9 and ~21 in 9:16, measured. A pasted filing sentence is over budget and does not render, which is deliberate: a language shift is four or five words. If it needs a sentence it is a quote and wants cards/quote-pull.",
+    "emphasis": "the plate draws NO diff. Strike the old phrase with annotations/strike-out and mark the new one with annotations/underline-tight, applied by the compositor when the script asks — the plate must not decide which half is the bad one.",
+    "pairs_with": [
+      "structure/said-happened-3",
+      "cards/quote-pull",
+      "paper/headline-stack-3"
+    ]
+  },
+  "structure/language-shift-9x16": {
+    "chapter_types": [
+      "management"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-comment",
+      "the-turn"
+    ],
+    "note": "21 characters a line in this aspect. A two-word shift reads; a five-word one is tight. Check the phrase against the budget before writing the short."
+  },
+  "paper/headline-stack-3-16x9": {
+    "chapter_types": [
+      "how-we-got-here",
+      "cold-open",
+      "risk"
+    ],
+    "shot_ids": [
+      "open",
+      "evidence"
+    ],
+    "note": "three headlines, dated, oldest at the top. The picture of 'this has been building for a while' — which paper/headline-band cannot say, because one clipping is one story.",
+    "counts": "3 or 4. Both share one strip height and one headline budget, so a script can swap them without the type moving. Five would be a list, and a list is a different argument.",
+    "renderer_contract": "date-N and source-N are both required. A headline without a publication is a claim with no author.",
+    "pairs_with": [
+      "paper/headline-band-t1",
+      "structure/said-happened-3"
+    ]
+  },
+  "paper/headline-stack-3-9x16": {
+    "chapter_types": [
+      "how-we-got-here"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "hook",
+      "the-news"
+    ],
+    "note": "SHORTS. 42 characters a line at two lines — a real headline fits, a subhead does not."
+  },
+  "paper/headline-stack-4-16x9": {
+    "chapter_types": [
+      "how-we-got-here",
+      "risk"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "four is the ceiling. Not for a shot that shares the frame with the host: four strips plus a host taking a third of the frame leaves the headlines at a size nobody reads."
+  },
+  "paper/headline-stack-4-9x16": {
+    "chapter_types": [
+      "how-we-got-here"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-news"
+    ],
+    "note": "four on a phone. Measured to fit; dense."
+  },
+  "room/over-the-shoulder-16x9": {
+    "chapter_types": [
+      "filing-walk",
+      "the-numbers",
+      "guidance-estimates"
+    ],
+    "shot_ids": [
+      "evidence",
+      "on-the-desk"
+    ],
+    "note": "§4.3. The shot you get standing behind him: his shoulder and the back of his head crop the near corner, and the subject is the screen he is looking at. Use it the moment the script reads something OFF the screen — the viewer is behind him looking at the same thing, which is a different relationship to the material than watching him talk about it.",
+    "hostAnchor": "NONE, and not an omission: he is already in this plate. Compositing a host cut-out onto it puts two of him in one frame. It is the only room plate with a figure drawn into it.",
+    "screen": "the one room plate that publishes a `screen` region. Fill it with what he is reading — a chart plate, a filing page, a terminal — at LOW value: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
+    "not_a_chapter_opener": "NO title slot. A chapter opener needs a quiet flat ground and this frame is a shoulder, a lit screen and a desk. §1's family audit is the argument.",
+    "pairs_with": [
+      "charts/line-8q",
+      "paper/headline-stack-3",
+      "frames/capture-frame"
+    ],
+    "caution": "UNVERIFIED at 1:1 — the near silhouette has not been reviewed. See CHANGES §UNVERIFIED §4."
+  },
+  "room/over-the-shoulder-9x16": {
+    "chapter_types": [
+      "filing-walk"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "the-sheet",
+      "the-news"
+    ],
+    "note": "same angle in 9:16. The monitor takes proportionally more of the frame here, which suits a short: the screen is the whole point.",
+    "caution": "UNVERIFIED at 1:1, as above."
+  },
+  "_timeOfDay": {
+    "section": "§4.2 — time of day as a variant axis, not new angles. engine/build.js TIME_OF_DAY takes \"dusk\" or \"day\"; it ships null.",
+    "gate": "a non-night variant publishes meta.timeOfDay.titleGroundRequired, and that requirement is now MET — TITLE_GROUND is \"card\", so a toned plate is safe in a chapter-opener template. The gate stays in the manifest because it is the pair that matters: a toned wall with no title ground is the original defect. Pre-flight check L fails on that combination.",
+    "scope": "episode-level, like the wardrobe. One hour per video: two hours on one wall in one video is two rooms.",
+    "coverage": "the 18 set plates take the tone in both aspects. The four wall-of-calls plates do not — board plates, no set to light."
+  },
+  "_hostSeated": {
+    "section": "§4.1/§4.3 — sitting down, and the empty chair. Four new host assets: host/sitting-at-desk with its talk and idle strips, and host/empty-chair.",
+    "hostPoses_fragment": "add \"sitting-at-desk\" to the seated role and to any role a LONG chapter opener uses. It is the cheapest way to make a long chapter feel like a different scene — every LONG is currently him standing for forty minutes."
+  },
+  "host/sitting-at-desk": {
+    "any": true,
+    "shot_ids": [
+      "open",
+      "evidence",
+      "land"
+    ],
+    "formats": [
+      "long",
+      "earnings",
+      "macro"
+    ],
+    "note": "seated, leaning into his own desk. Use it to change the scene mid-video: a forty-minute chapter with one standing pose reads as one take.",
+    "renderer_contract": "SCALE DIFFERENTLY. This plate is 0.739 of a standing figure's height, published in meta.seated.heights — scale so (floorLineY - figure.y) equals anchor.targetHeight x that ratio, NOT the target height. Scaled like a standing pose he comes out 36% oversized, sitting in exactly the right place, and no still would show it.",
+    "chair": "the chair is drawn ON the host plate, because a seated cut-out over a set with no chair is a man hovering at desk height. It is the same chair every room gets.",
+    "strips": [
+      "base (loop 2fps)",
+      "-talk (loop 8fps, three visemes at one boil index)",
+      "-idle (loop 4fps)"
+    ],
+    "caution": "UNVERIFIED — no render of this pose has been reviewed at 1:1. See CHANGES §UNVERIFIED §4."
+  },
+  "host/empty-chair": {
+    "chapter_types": [
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "land"
+    ],
+    "note": "his chair with nobody in it — the cut-away at the end of a chapter, or under a line delivered over an empty set. It is the SAME chair the seated pose sits on (one function), so the absence reads.",
+    "renderer_contract": "scales like a figure: (floorLineY - figure.y) to the anchor height directly. The seated ratio does NOT apply — there is no seated body to scale.",
+    "caution": "UNVERIFIED at 1:1, as above."
+  },
+  "figures/waterfall-3s-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "three costs. The default for a script that names revenue, one big cost and what is left.",
+    "counts": "3 steps. See -4s and -5s.",
+    "pairs_with": [
+      "tables/cash-flow",
+      "structure/unit-ladder"
+    ]
+  },
+  "figures/waterfall-4s-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "the middle case, and the most plausible one: revenue, COGS, opex, tax, what is left."
+  },
+  "figures/waterfall-5s-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "five costs. Not for a shot that shares the frame with the host: at five columns plus two ends the bars are too narrow to survive it."
+  },
+  "figures/waterfall-3s-9x16": {
+    "chapter_types": [
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers",
+      "the-sheet"
+    ],
+    "note": "SHORTS. Three is the count a seventy-five-second cut can read."
+  },
+  "figures/waterfall-4s-9x16": {
+    "chapter_types": [
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers"
+    ],
+    "note": "four is the ceiling for a short and it is a re-author, not a crop."
+  },
+  "figures/waterfall-5s-9x16": {
+    "chapter_types": [
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers"
+    ],
+    "note": "shipped for completeness and for a long-form 9:16 cut. Five columns on a phone is dense; prefer -3s.",
+    "caution": "UNVERIFIED at phone scale — see CHANGES §UNVERIFIED."
+  },
+  "structure/implied-16x9": {
+    "chapter_types": [
+      "valuation",
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "the price as a demand. The channel's most characteristic argument and it had no plate. Put it AFTER the multiple has been said aloud — it answers a number the viewer is already holding.",
+    "pairs_with": [
+      "tables/multiples-strip",
+      "structure/multiple-bridge",
+      "charts/line-6y"
+    ]
+  },
+  "structure/implied-9x16": {
+    "chapter_types": [
+      "valuation"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "cheap-or-trap",
+      "payoff"
+    ],
+    "note": "the axis runs horizontally here and the statement carries the plate. A vertical axis on a phone leaves the band a few pixels wide, so this is a re-author rather than a rotation."
+  },
+  "charts/dilution-6y-16x9": {
+    "chapter_types": [
+      "capital-allocation",
+      "management",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "shares outstanding, six periods. Put it wherever stock comp is named — it is the plate that shows the viewer what that costs them.",
+    "pairs_with": [
+      "figures/waterfall-4s",
+      "tables/cash-flow"
+    ]
+  },
+  "charts/dilution-6y-9x16": {
+    "chapter_types": [
+      "capital-allocation"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "numbers"
+    ]
+  },
+  "charts/maturities-16x9": {
+    "chapter_types": [
+      "risk",
+      "capital-allocation"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "when the debt comes due. A zero column is DATA — see meta.zeroNote; a year with nothing due is the good news and the gap must stay visible.",
+    "pairs_with": [
+      "tables/cash-flow",
+      "structure/implied"
+    ]
+  },
+  "charts/maturities-9x16": {
+    "chapter_types": [
+      "risk"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short"
+    ],
+    "beats": [
+      "cheap-or-trap"
+    ]
+  },
+  "charts/guided-vs-actual-6y-16x9": {
+    "chapter_types": [
+      "guidance-estimates",
+      "management",
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "the forecast against what happened. The channel's 'they said, then look' beat as a picture. Needs both series on ONE scale — see meta.scaleNote.",
+    "pairs_with": [
+      "structure/said-happened",
+      "structure/implied"
+    ]
+  },
+  "charts/guided-vs-actual-6y-9x16": {
+    "chapter_types": [
+      "guidance-estimates"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "formats": [
+      "short",
+      "earnings"
+    ],
+    "beats": [
+      "the-comment",
+      "vs-expected"
+    ]
+  },
+  "_dropTwo": "Below: the twelve families added in drop two. Chapter types and shot templates named per §0's last paragraph, so gates.reachable_plates does not report them as homeless. Portrait keys inherit their landscape entry's chapter types unless stated — what changes on a phone is the shot template, not the argument.",
+  "peers/distribution-16x9": {
+    "chapter_types": [
+      "sector-comps",
+      "valuation"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "the peer spread with the subject marked in it. Use INSTEAD of peers/peer-strip when the claim is cheap-or-expensive: the strip gives a list, which is not a judgement.",
+    "pairs_with": [
+      "tables/multiples-strip",
+      "structure/implied"
+    ]
+  },
+  "figures/share-of-4-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "one quantity as a share of another. Ships at 2, 3 and 4 segments. Use instead of figures/big-fraction when the point is watching it take more than half rather than reading the number."
+  },
+  "figures/by-region-5-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "risk",
+      "one-framework"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "revenue by geography, 3 to 5 segments. A labelled bar, not a map — the argument is the proportion."
+  },
+  "figures/ownership-16x9": {
+    "chapter_types": [
+      "management",
+      "short-interest"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "insider, institutional, the rest. Three segments, fixed."
+  },
+  "figures/scale-3-16x9": {
+    "chapter_types": [
+      "risk",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "a big figure beside human-sized comparisons on ONE scale. Ships at 2 and 3 references. See meta.scaleNote — normalising each column to its own height destroys the argument and looks tidier, which is how it gets done by accident."
+  },
+  "paper/receipt-8-16x9": {
+    "chapter_types": [
+      "how-the-money-is-made",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "costs as a till roll. 4, 6 or 8 lines. highlight-index picks the line that is the point — a weight change, never a colour."
+  },
+  "structure/said-happened-5-16x9": {
+    "chapter_types": [
+      "guidance-estimates",
+      "management",
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "two rails, 3 to 5 events. Use where structure/timeline cannot go: a contradiction needs two tracks. diverge-N only where they actually contradict.",
+    "pairs_with": [
+      "charts/guided-vs-actual-6y"
+    ]
+  },
+  "structure/sensitivity-16x9": {
+    "chapter_types": [
+      "valuation"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "3×3 outcomes, one cell markable via mark-row / mark-col. Fixed dimensions so one chapter's grid can be compared with another's."
+  },
+  "charts/multiples-grid-6-16x9": {
+    "chapter_types": [
+      "sector-comps",
+      "the-numbers"
+    ],
+    "shot_ids": [
+      "evidence"
+    ],
+    "note": "4 or 6 tiles, PER-TILE scales. The 'everything at once, and only one of them is moving' beat. Not for a shot that shares the frame with the host: the tiles are already small."
+  },
+  "_dropTwoPortrait": "9:16 variants exist for every key above and inherit its chapter_types. What changes on a phone is the format, not the argument: the portrait key carries formats: [\"short\"] and the beat its plate serves. The constraint the invented template names were carrying — whether the plate can sit behind the host — is a property of the plate and is stated in its own note; sensitivity, multiples-grid and receipt-8 cannot.",
+  "host/close-up-blink": {
+    "any": true,
+    "any_shot": true,
+    "overlay_of": "host/close-up-idle",
+    "playback": "overlay",
+    "note": "NOT a pose and not something a template selects. The renderer composites it over the idle strip at 0,0 — frame _fNN over idle _fNN — for about 100ms every 3-4 seconds. Never over a talk strip: talk frames differ only at the mouth, and an eye closing between two talk frames is a difference that is not the mouth.",
+    "variants_shipped": [
+      "host/close-up-blink",
+      "host/close-up-glance-left-blink",
+      "host/close-up-glance-right-blink",
+      "host/medium-blink",
+      "host/medium-glance-left-blink",
+      "host/medium-glance-right-blink",
+      "host/medium-robe-blink"
+    ],
+    "not_shipped": "the six hostFigure poses. Those are full-body 9:16 plates where the head is a few dozen pixels across and a blink is one pixel changing. Deliberate, not an omission."
+  }
+}

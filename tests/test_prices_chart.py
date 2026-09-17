@@ -194,3 +194,94 @@ def test_a_rendered_chart_is_the_plate_plus_a_path(reg, settings):
     crop = (area.x + 20, area.y + 20, area.x + area.w - 20, area.y + area.h - 20)
     assert list(img.convert("RGB").crop(crop).getdata()) != \
         list(bare.crop(crop).getdata())
+
+
+# --------------------------------------------------------------------------
+# B1 — a fabricated price series must be visible somewhere. It was set by
+# `YahooPriceSource` on failure, dropped by `to_json`, and read by nothing.
+# --------------------------------------------------------------------------
+
+
+def test_degraded_survives_the_cache_round_trip(settings):
+    """The flag used to die on the first thing that happens to the series."""
+    from pipeline.prices import PriceSeries
+
+    s = PriceSeries(ticker="EXMPL", dates=["2026-01-01", "2026-01-02"],
+                    closes=[10.0, 11.0], source="synthetic", degraded=True)
+    back = PriceSeries.from_json(s.to_json())
+
+    assert back.degraded is True
+    assert back.source == "synthetic"
+
+
+def test_a_failed_feed_reaches_the_caller_flagged(settings, tmp_path):
+    """Through `get_price_history`, which is the only way anything reads it."""
+    from pipeline.prices import get_price_history
+
+    class DeadFeed:
+        def history(self, ticker, days):
+            raise RuntimeError("yahoo is down")
+
+    live = settings.model_copy(update={"mock_prices": False,
+                                       "cache_dir": tmp_path / "c"})
+    series = get_price_history("EXMPL", live, source=DeadFeed())
+    assert series.degraded is True
+
+    # and again off the cache, which is where it used to be lost
+    again = get_price_history("EXMPL", live, source=DeadFeed())
+    assert again.degraded is True, "the cache must not launder a fake series"
+
+
+def test_the_synthetic_floor_no_longer_fakes_an_event_move(settings):
+    """A floor that lets a render finish is fine. One engineered to look
+    like a real trending stock is the opposite of a floor."""
+    from pipeline.prices import synthetic_series
+
+    # Across many tickers, no final bar should be an 8-30% jump — that was
+    # the deliberate "event move" and it is exactly what a viewer reads as
+    # news. Asserting on the SERIES, not on whether a branch was taken.
+    worst = 0.0
+    for i in range(60):
+        s = synthetic_series(f"TST{i}", 120)
+        move = abs(s.closes[-1] - s.closes[-2]) / s.closes[-2]
+        worst = max(worst, move)
+    assert worst < 0.08, f"a final bar still moves {worst:.1%} — that is an invented spike"
+
+
+def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
+        settings, short_valid_json, tmp_path):
+    """B1/N4: informational everywhere else, a blocker here."""
+    import json as _json
+
+    from pipeline.gates import check_prices
+    from pipeline.parser_short import parse_short_script
+    from pipeline.prices import PriceSeries
+
+    script, _ = parse_short_script(short_valid_json, settings=settings)
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "cache_dir": tmp_path / "c"})
+    cdir = live.cache_dir / "prices"
+    cdir.mkdir(parents=True, exist_ok=True)
+    fake = PriceSeries(ticker=script.ticker,
+                       dates=["2026-01-01", "2026-01-02"],
+                       closes=[10.0, 11.0], source="synthetic", degraded=True)
+    (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
+        fake.to_json(), encoding="utf-8")
+
+    blocking = [f for f in check_prices(script, live, final=True)
+                if f.severity == "block"]
+    assert blocking, "a fabricated chart must not reach a final render"
+    assert "SYNTHETIC PRICE DATA" in blocking[0].message
+
+    # A proof is for looking at, so it warns rather than stopping.
+    proof = check_prices(script, live, final=False)
+    assert proof and proof[0].severity == "warn"
+
+    # And a real series says nothing at all.
+    good = PriceSeries(ticker=script.ticker,
+                       dates=["2026-01-01", "2026-01-02"],
+                       closes=[10.0, 11.0], source="yahoo")
+    (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
+        good.to_json(), encoding="utf-8")
+    assert check_prices(script, live, final=True) == []

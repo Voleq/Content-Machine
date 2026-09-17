@@ -21,6 +21,9 @@ Ticker: {{ticker}}
 Company data (as of {{as_of_date}}; private research — NEVER name any data vendor; on screen everything is "from the 10-K"):
 {{company_data}}
 
+The last eight QUARTERS. Two comparisons on every row and you must read them together: **QoQ** is against the previous quarter, **YoY** is against the same quarter a year earlier. A seasonal business beats its own previous quarter every single year — a retailer's Q4 always tops its Q3 — so QoQ alone is a flattering number, not a finding. The sentence worth writing is the gap between the two: "up forty percent from last quarter, which sounds impressive until you notice it is up forty percent every December." Never present one of them as "growth":
+{{quarters}}
+
 VALUATION DATA — the reverse-DCF gut-check for the MANDATORY valuation chapter. Cite these exact figures. It is a perpetuity sanity check ("priced for X, has delivered Y"), NOT a fair value:
 {{valuation_data}}
 
@@ -288,7 +291,7 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - Alternate the KIND of evidence across a chapter (real photo → chart → filing → structure plate → table), and never reuse the same meme.
 - [SCRIBBLE] rides OVER whatever is on screen — including over the host. It punctuates a flat aside; it is never the reason to cut.
 - Use ONLY names from the catalogues above. Every visual tag is validated before render. Irony lands on the exact word: "a [CLIP: clown] visionary CEO".
-- **Foreign media is COMPOSITED INSIDE A DRAWN FRAME** — a photograph, a clip or a filing screenshot lands inside frames/media-frame or frames/capture-frame, with its caption and source in their slots. Full-frame raw media destroys the drawn surface the rest of the video is built on; the treatments rotate so consecutive ones differ.
+- **Foreign media is COMPOSITED INSIDE A DRAWN FRAME** — a photograph, a clip or a filing screenshot lands inside `frames/media-frame-t1`, `frames/media-frame-t2` or `frames/media-frame-t3`, or in `frames/capture-frame`, with its caption and source in their slots. Full-frame raw media destroys the drawn surface the rest of the video is built on; the three `-t` treatments are what makes consecutive media beats differ, so rotate them.
 
 ## RULES
 - Multi-year first: growth rates, margin direction, share count, debt — the history table is the spine of the numbers chapter.
@@ -308,6 +311,19 @@ This is a TALKING HOST show. Dennis presents to camera, cuts away to the evidenc
 - Close resigned, not conclusive — on "you don't have to swing at every pitch". A pass is a considered position, not indecision.
 
 ## OUTPUT
+
+### HOW TO HAND IT BACK — AS A FILE, NOT A PASTE
+
+Write the deliverable to a **downloadable `.txt` file** and give the operator
+that file. Put only the human-facing prose sections in the chat body.
+
+This is not a preference. Telegram splits any message over 4,096 characters
+into separate messages, and the bot receives each one as its own paste — so a
+long deliverable arrives as fragments, and the bot now REFUSES a paste that
+looks cut off rather than saving half a script over a whole one. A file
+arrives in one piece.
+
+Put the HOOK OPTIONS menu in the chat and the narration, the `=== CHAPTERS ===` trailer and any `=== CONFESSION ===` trailer in the `.txt` file.
 First the `=== HOOK OPTIONS ===` block, then the narration as plain text with inline tags — no JSON, no section headers, no stage directions other than the bracket tags. Begin the script at the chosen hook.
 
 After the narration, append a `=== CHAPTERS ===` trailer — one line per chapter,

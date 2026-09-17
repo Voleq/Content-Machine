@@ -14,11 +14,17 @@ content the operator did not see (§2.3, §8.3).
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timezone
+import re
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 from config import Settings
 from pipeline.models import LongScript, ShortScript
+
+
+# A `YYYY-MM-DD` workspace directory. Compared as a string before it
+# is parsed, which is why the format is pinned here.
+_DATE_DIR_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 def today_str() -> str:
@@ -102,17 +108,38 @@ class Workspace:
         return bool(self._lane_data().get("update"))
 
     def current_format(self) -> str | None:
-        """Which format this workspace is working in.
+        """Which format this workspace is working in: the declared lane.
 
-        A pasted script is the strongest signal, then the declared lane. LONG
-        wins a tie between two scripts: a workspace holding both is one where a
-        SHORT was cut from the LONG, and the LONG is the thing being edited.
+        It used to be inferred from which files existed on disk, LONG
+        unconditionally winning — which is backwards, and is why one stray
+        paste poisoned a ticker for the day (C3). Approve the real SHORT and
+        the bot told you to type `/render`, which then reported that the LONG
+        was not approved; tap Approve on a junk LONG report and it rendered
+        16:9 with the paid voice reading JSON fragments.
+
+        The lane is declared once, by `/short` or `/long`, and never
+        inferred. A script file that disagrees with it is a bug to refuse
+        (see `format_conflict`), not a signal to follow.
+
+        `None` only for a workspace with no lane at all — an old folder, or
+        one created before the lane existed.
         """
-        if (self.path / "script_long.json").exists():
-            return "long"
-        if (self.path / "script_short.json").exists():
-            return "short"
         return self.lane() or None
+
+    def format_conflict(self) -> str | None:
+        """A script on file for a format this workspace is not in, if any.
+
+        Returns the offending format's name. The caller decides what to say;
+        what matters here is that the disagreement is VISIBLE rather than
+        silently resolved in favour of whichever file happens to exist.
+        """
+        lane = self.lane()
+        if not lane:
+            return None
+        other = "short" if lane == "long" else "long"
+        if (self.path / f"script_{other}.json").exists():
+            return other
+        return None
 
     # ------------------------------------------------------- revisions (P3.1c)
     # In-chat editing needs an undo. Every save stacks the previous raw here
@@ -147,6 +174,19 @@ class Workspace:
         text = last.read_text(encoding="utf-8")
         last.unlink()
         return text
+
+    def push_revision_text(self, fmt: str, text: str) -> None:
+        """Put a popped revision back (G1).
+
+        `/undo` pops, then asks the caller to save, then pops again to drop
+        what the save pushed. When the save is REFUSED nothing was pushed, so
+        the undo has to put back what it took or a rejected revert silently
+        costs a revision.
+        """
+        d = self._revision_dir(fmt)
+        d.mkdir(parents=True, exist_ok=True)
+        n = len(list(d.glob("*.txt")))
+        (d / f"{n:03d}.txt").write_text(text, encoding="utf-8")
 
     def load_short(self) -> ShortScript | None:
         f = self.path / "script_short.json"
@@ -281,21 +321,35 @@ class ActiveContext:
 
 
 def audited_tickers_since(settings: Settings, days: int) -> set[str]:
-    """Tickers with a workspace newer than `days` — the screener cooldown."""
+    """Tickers with a workspace newer than `days` — the screener cooldown.
+
+    Reads the DATE DIRECTORY NAMES and stops at the first one inside the
+    window (J5). It used to walk every date directory of every ticker on
+    every screen, which is fine at today's volume and grows without bound
+    alongside the thesis book: a year of daily videos is 365 directories per
+    ticker, and the screener runs this on every candidate.
+
+    Two cheap changes rather than an index, because an index is a second
+    thing to keep true: the ticker directories are sorted so the newest
+    dates come first and the scan stops as soon as one qualifies, and the
+    cutoff is compared as a DATE STRING, so the parse only happens for the
+    handful of names that could matter.
+    """
     out: set[str] = set()
     root = settings.workspace_dir
     if not root.is_dir():
         return out
-    cutoff = datetime.now(timezone.utc).timestamp() - days * 86400
+    cutoff = (datetime.now(timezone.utc)
+              - timedelta(days=days)).date().isoformat()
     for tdir in root.iterdir():
-        if not tdir.is_dir():
+        if not tdir.is_dir() or tdir.name.startswith("_"):
             continue
-        for ddir in tdir.iterdir():
-            try:
-                d = datetime.fromisoformat(ddir.name).replace(tzinfo=timezone.utc)
-                if d.timestamp() >= cutoff:
-                    out.add(tdir.name)
-                    break
-            except ValueError:
-                continue
+        # Newest first: the answer is almost always the first name.
+        for name in sorted((d.name for d in tdir.iterdir() if d.is_dir()),
+                           reverse=True):
+            if name < cutoff:
+                break          # every remaining name is older still
+            if _DATE_DIR_RE.match(name):
+                out.add(tdir.name)
+                break
     return out
