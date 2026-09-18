@@ -591,10 +591,7 @@ def fetch_and_summarize(url: str, settings: Settings, ledger=None) -> str:
     summary = _llm_chat(text[:settings.filings_llm_max_chars], settings,
                         system=_SUMMARY_SYSTEM) or ""
     if summary and ledger is not None:
-        try:
-            ledger.record_llm(settings.filings_llm_usd_per_call)
-        except Exception:
-            pass
+        _record_llm_spend(ledger, settings)
     return summary.strip()
 
 
@@ -619,6 +616,27 @@ def _parse_quote_json(raw: str) -> list[FlaggedQuote]:
     return out
 
 
+def _record_llm_spend(ledger, settings: Settings) -> None:
+    """Record a filing LLM call that has already been billed.
+
+    IT RAISES, AND THAT IS THE POINT. Both call sites used to wrap this in
+    `except Exception: pass`. By the time it runs the provider has already
+    charged for the call, so a swallowed failure means the money moved and the
+    record did not: `/cost` under-reports and the monthly cap — the only hard
+    stop on spend in this system — meters low and keeps authorising calls.
+
+    The same bug was fixed in `tts.py`, which is why that one now records each
+    chunk's spend against its own character count with no try/except at all.
+
+    The trade is deliberate. Raising costs the summary or the quotes this call
+    produced, which can be fetched again. Swallowing costs the accuracy of the
+    ledger, which cannot be reconstructed — nothing else knows the call
+    happened. And a ledger that will not write is not a hiccup to step over:
+    it is the cost substrate being broken while spending continues.
+    """
+    ledger.record_llm(settings.filings_llm_usd_per_call)
+
+
 def flag_quotes(sections: list[dict], angle: str, settings: Settings,
                 ledger=None) -> list[FlaggedQuote]:
     """2–4 verbatim smoking-gun quotes for the angle. MOCK/offline or the
@@ -631,10 +649,7 @@ def flag_quotes(sections: list[dict], angle: str, settings: Settings,
     raw = _llm_chat(prompt, settings)
     quotes = _parse_quote_json(raw or "")
     if quotes and ledger is not None:
-        try:
-            ledger.record_llm(settings.filings_llm_usd_per_call)
-        except Exception:
-            pass
+        _record_llm_spend(ledger, settings)
     return quotes
 
 

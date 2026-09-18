@@ -767,3 +767,111 @@ def test_the_preflight_notices_an_installed_kit_from_a_different_pack(tmp_path):
         assert "never ingested" in got.stdout
         assert "ingest_kit.py" in got.stdout
         assert got.returncode == 1
+
+
+# --------------------------------------------------------------------------
+# The boil, on the delivered artwork.
+# --------------------------------------------------------------------------
+
+# The families whose plates carry numbers a viewer reads a value off.
+_DATA_FAMILIES = frozenset({
+    "tables", "charts", "figures", "structure", "peers", "cycles",
+})
+
+
+def _frames_differ(a, b, box=None) -> bool:
+    """Whether two frames differ anywhere in `box` (the whole frame if None).
+
+    NOT `ImageChops.difference(...).getbbox()`, WHICH IS WRONG HERE AND SAYS SO
+    QUIETLY. `getbbox()` on an RGBA image returns the box of non-transparent
+    pixels, and a difference image between two frames with identical alpha is
+    transparent everywhere — so it answers None for a pair whose colour
+    channels differ in a million pixels. Written that way this check reported
+    every room and every data plate as frozen. `getextrema()` reads all four
+    channels and cannot be fooled the same way.
+    """
+    from PIL import ImageChops
+
+    x, y = (a.crop(box), b.crop(box)) if box else (a, b)
+    return any(hi > 0 for _, hi in ImageChops.difference(x, y).getextrema())
+
+
+def test_a_data_plate_breathes_and_its_axes_do_not():
+    """`engine/build.js` §1.5, asserted against the PNGs the ingest wrote.
+
+    THE RULE IS PER-MARK, NOT PER-PLATE, and that is what makes it testable at
+    all. Every data plate used to be `playback: static` on the argument that a
+    number moving three times a second cannot be read. The kit retracted the
+    blanket form and kept the argument: the boil is turned on for a data
+    plate's FURNITURE — paper edge, corner wear, rule lines, hatch — while
+    `HAND.setBoil`'s gate keeps axis lines, series lines and underlays emitting
+    the identical path they emitted at boil 0, bit for bit.
+
+    So the check is not "does this plate declare static". That is a flag, and
+    reading it told us nothing about whether a number moved. It is: the plate
+    moves between frames, and inside its `axis` boxes nothing does.
+
+    `axis` is the role asserted because it is one of the three §1.5 names and
+    it is the one the PLATE actually draws. A `figure` box is empty on a data
+    plate — there is no baked text anywhere in the kit, every figure is a slot
+    the renderer fills — so pixels inside one are whatever furniture passes
+    through, and `bar`, `series` and `highlight-band` are regions the plate
+    draws furniture into. Asserting on those would be asserting that furniture
+    holds still, which is the opposite of the rule.
+    """
+    from PIL import Image
+
+    from config import Settings
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        registry = load_plates(Settings(_env_file=None).assets_dir)
+    except PlateError as exc:
+        pytest.skip(f"no design kit on this checkout: {exc}")
+
+    checked = 0
+    breathing = 0
+    moved: list[str] = []
+    for key in sorted(registry.assets):
+        plate = registry.get(key)
+        if plate.family not in _DATA_FAMILIES:
+            continue
+        boxes = [s for s in plate.slots.values()
+                 if s.role == "axis" and s.w > 0 and s.h > 0]
+        if not boxes:
+            continue
+        paths = plate.frame_paths()
+        if len(paths) < 2:
+            continue
+        frames = [Image.open(q).convert("RGBA") for q in paths]
+        if any(_frames_differ(frames[0], f) for f in frames[1:]):
+            breathing += 1
+        for slot in boxes:
+            x, y, w, h = slot.scaled()
+            box = (max(x, 0), max(y, 0),
+                   min(x + w, frames[0].width), min(y + h, frames[0].height))
+            if box[2] <= box[0] or box[3] <= box[1]:
+                continue
+            checked += 1
+            # EVERY FRAME AGAINST THE FIRST, not just the second. The boil
+            # indices are 1, 2 and 5 — a pair that happens to rasterise the
+            # same says nothing about the third.
+            if any(_frames_differ(frames[0], f, box) for f in frames[1:]):
+                moved.append(f"{key}:{slot.name}")
+
+    assert checked, "no data plate declares an axis slot — has the kit changed shape?"
+    assert not moved, (
+        f"{len(moved)} axis box(es) move between frames. An axis IS a "
+        f"measurement reference: move it and the data appears to move even "
+        f"though the series is pinned (build.js §1.5).\n  "
+        + "\n  ".join(moved[:12]))
+    # AND THE OTHER HALF, or this passes on a kit where the boil stopped
+    # landing anywhere. Pinned axes on a library that does not move at all is
+    # exactly the check that passes because it never looked. Asserted across
+    # the set rather than per plate: whether a given plate has any furniture
+    # inside HAND.breathe() is a drawing decision, and several ship three
+    # identical frames today.
+    assert breathing, (
+        "no data plate with an axis differs between any two of its frames — "
+        "the frame is not breathing anywhere, so the pinned-axis check above "
+        "proved nothing")

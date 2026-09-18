@@ -277,7 +277,7 @@ python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 npm ci                                      # the kit's rasteriser (build-time only)
 .venv/bin/python scripts/gen_assets.py      # placeholder sfx + room tone
-.venv/bin/python scripts/ingest_kit.py kit  # the 143 drawn plates -> assets/plates
+.venv/bin/python scripts/ingest_kit.py kit  # the 270 drawn plates -> assets/plates
 .venv/bin/python -m pytest tests/           # offline, zero network calls
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```

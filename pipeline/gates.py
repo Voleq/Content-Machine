@@ -320,8 +320,32 @@ _METRIC_WORDS = {
 _TOLERANCE = 0.02
 
 
+class SeriesUnreadable(Exception):
+    """The export holds this metric and it could not be read.
+
+    NOT THE SAME AS ABSENCE, and keeping them apart is the whole point. An
+    empty series means "the sheet does not carry this metric", and every
+    caller correctly skips it — `_METRIC_WORDS` is deliberately longer than
+    any one export, so most metrics are absent on most sheets and reporting
+    that would be pure noise.
+
+    A metric that IS there and blows up reading has to arrive differently.
+    `_series_for` used to catch every exception and return the empty list, so
+    a type error, a changed export shape or an unexpected None in a history
+    row turned the last line of defence against a fabricated figure into a
+    no-op — for that metric, with nothing logged, leaving a gate that passed
+    because it never looked. Same defect the GateReport docstring names above:
+    a gate that ran and found nothing and a gate that never ran cannot be
+    allowed to contribute the same zero.
+    """
+
+
 def _series_for(data, field_name: str) -> list[float]:
-    """Every value the data holds for a metric — dashboard and history."""
+    """Every value the data holds for a metric — dashboard and history.
+
+    Raises :class:`SeriesUnreadable` when a value the export does carry cannot
+    be read. Returns `[]` only for a metric the sheet genuinely does not have.
+    """
     values: list[float] = []
     if data is None:
         return values
@@ -331,8 +355,20 @@ def _series_for(data, field_name: str) -> list[float]:
         try:
             values.extend(float(v) for v in (getter(field_name) or [])
                           if isinstance(v, (int, float)))
-        except Exception:  # noqa: BLE001
-            pass
+        except (TypeError, ValueError) as exc:
+            # The shapes a malformed row actually produces: a row that is not
+            # iterable, or a value that claims to be a number and will not
+            # convert. Both mean this metric is unverifiable, which is a
+            # finding rather than a shrug.
+            raise SeriesUnreadable(
+                f"{field_name}: history row is malformed ({exc})") from exc
+        except Exception as exc:  # noqa: BLE001
+            # Anything else is the export having changed shape underneath us.
+            # Logged as well as raised, because the traceback is the only thing
+            # that says which accessor broke.
+            log.exception("fact-check: history_row(%r) failed", field_name)
+            raise SeriesUnreadable(
+                f"{field_name}: reading the history row failed ({exc})") from exc
     else:  # a plain mapping (tests, fixtures)
         series = (data.get("history") or {}).get(field_name) \
             if hasattr(data, "get") else None
@@ -357,6 +393,31 @@ def _series_for(data, field_name: str) -> list[float]:
         if isinstance(latest, (int, float)):
             values.append(float(latest))
     return values
+
+
+def _known_series(data) -> tuple[dict[str, list[float]], list[Finding]]:
+    """Every checkable metric's values, plus a finding per metric that broke.
+
+    THE SECOND HALF IS THE POINT. A metric that cannot be read is dropped from
+    the returned map exactly as an absent one is — because there is nothing to
+    check it against either way — but it leaves a BLOCKING finding behind, so
+    the difference reaches the operator instead of evaporating. Without that,
+    every sentence naming only the broken metric is skipped in silence and the
+    fact-check reports clean on a script it never examined.
+    """
+    known: dict[str, list[float]] = {}
+    findings: list[Finding] = []
+    for metric in _METRIC_WORDS:
+        try:
+            known[metric] = _series_for(data, metric)
+        except SeriesUnreadable as exc:
+            findings.append(Finding(
+                gate="fact-check", severity="block",
+                message=(f"{exc} — every figure spoken or shown for this "
+                         f"metric went unchecked, so this script is NOT "
+                         f"fact-checked against it"),
+            ))
+    return known, findings
 
 
 def _history_for(data, field_name: str) -> list[float]:
@@ -762,9 +823,8 @@ def fact_check(narration: str, data, *,
     if data is None:
         return findings
 
-    known: dict[str, list[float]] = {
-        m: _series_for(data, m) for m in _METRIC_WORDS
-    }
+    known, unreadable = _known_series(data)
+    findings.extend(unreadable)
     labels = _history_labels(data)
     qlabels = _quarter_labels(data)
     for lineno, line in enumerate(narration.splitlines(), 1):
@@ -1369,7 +1429,8 @@ def onscreen_fact_check(script, data) -> list[Finding]:
     findings: list[Finding] = []
     if data is None:
         return findings
-    known = {m: _series_for(data, m) for m in _METRIC_WORDS}
+    known, unreadable = _known_series(data)
+    findings.extend(unreadable)
 
     for event in getattr(script, "events", None) or []:
         values = dict(getattr(event, "values", None) or {})

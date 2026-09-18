@@ -27,14 +27,23 @@ Three things follow from the v2 kit that did not hold under the old one:
   the anchor's HEIGHT is his target height, and his own floor line sits on the
   anchor's bottom edge. `host.place_on_room` is that contract, in one place.
 
-* **Data plates used to not boil, and in delta-14 they do.** The 143-plate
-  kit had 47 `playback: static` plates — tables, charts, figures, structure
-  — on the argument that a number moving three times a second cannot be
-  read, which is the whole job of a number. delta-14 ships 260 `loop`, 7
-  `overlay` and 3 `static`, and the three are furniture: `overlays/row-band`
-  and the two lower thirds. That is a design decision from the pack, not
-  drift in this file, and it changes what a data beat looks like on screen.
-  Worth a pair of eyes on the first render of a numbers sheet.
+* **Data plates used to not boil, and now they do — but not the numbers.**
+  Every data plate was once `playback: static`, on the argument that a number
+  moving three times a second cannot be read, which is the whole job of a
+  number. The kit ships 270 plates: 260 `loop`, 7 `overlay` and 3 `static`,
+  and the three are furniture — `overlays/row-band` and the two lower thirds.
+
+  THE ARGUMENT WAS NOT ABANDONED, IT WAS MADE PER-MARK. `engine/build.js`
+  §1.5 turns the boil on for a data plate's FURNITURE — paper edge, corner
+  wear, rule lines, hatch — while axes, series lines, figures and cells emit
+  the identical path they emitted at boil 0, bit for bit. The frame breathes;
+  nothing a viewer reads a value off moves. A frozen table in a boiling room
+  read as a screenshot pasted over a cartoon, and that is what changed.
+
+  A design decision from the pack, not drift in this file. The previous
+  version of this paragraph carried the retraction with the old kit's
+  arithmetic still attached — "the 143-plate kit had 47 static" — which is
+  the halfway state that reads as authoritative.
 """
 
 from __future__ import annotations
