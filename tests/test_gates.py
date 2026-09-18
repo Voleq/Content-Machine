@@ -440,12 +440,20 @@ def test_the_kit_doctor_runs_without_a_script(settings):
     operator goes looking for, and it needs no script."""
     from pipeline.gates import kit_doctor_text
 
+    from pipeline.plates import load_plates
+
     report = kit_doctor_text(settings)
     assert "KIT DOCTOR" in report
-    assert "143 plates" in report
+    # THE COUNT COMES OFF THE REGISTRY, not out of this file. It read
+    # "143 plates" against a kit that ships 270 — a number typed here when the
+    # kit was smaller, which then asserted the size of a kit nobody has
+    # shipped for several drops. A kit is swapped in as a whole and its size
+    # is a property of the delivery, so the only honest thing to compare the
+    # report against is the registry the report was generated from.
+    assert f"{len(load_plates(settings.assets_dir))} plates" in report
     assert "Never reached in a recent render" in report
     # It groups by family, because "eighteen room angles unused" is actionable
-    # and a list of 143 keys is not.
+    # and a list of every key is not.
     assert "room:" in report or "none" in report
 
 
