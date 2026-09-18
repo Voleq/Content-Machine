@@ -102,12 +102,24 @@ def test_every_role_can_supply_a_shot(reg):
 def test_a_pose_that_does_not_talk_is_never_offered_for_a_speaking_beat(reg):
     """head-in-hands and walking-out-of-frame ship talk frames for continuity
     of the file set, and declare talks:false because using them looks like a
-    mistake. The declaration is honoured, not the file list."""
+    mistake. The declaration is honoured, not the file list.
+
+    WHICH IS THE POINT, AND IT DOES NOT NEED THE FILE TO BE THERE. This used
+    to also require `{key}-talk` on disk, which was never the rule — it was an
+    incidental property of the only two silent poses the kit had at the time.
+    `host/empty-chair` declares talks:false and ships no talk strip, which is
+    more correct than either of them: an empty chair has no talking version to
+    be continuous with. Requiring the file turned a pose that is right for a
+    better reason into a failure.
+
+    So the assertion is the declaration, both ways round: a silent pose is
+    never offered a talk strip, whether the file exists or not.
+    """
     silent = [k for k, v in reg.host_poses.items() if not v.get("talks", True)]
     assert silent, "the kit declares no non-talking poses"
     for key in silent:
-        assert reg.host_strip(key, "talk") is None
-        assert f"{key}-talk" in reg.assets, "the strip exists on disk"
+        assert reg.host_strip(key, "talk") is None, (
+            f"{key} declares talks:false and was offered a talk strip")
 
 
 def test_a_capped_pose_is_not_reached_twice(reg):

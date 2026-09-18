@@ -1,11 +1,27 @@
 {
  "family": "paper",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 16,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
+ "coveragePolicy": "Two boil metrics, and an asset must pass BOTH. AUDIT.amplitude() gives displacement per moved point (spec ~2 canvas units, band 0.4-2.0). AUDIT.coverage() gives the fraction of PIXELS that change between frames (pack band 1-6%, frozen below 0.5%). They fail independently: a one-rule plate can post a perfect amplitude and still read as a still with one element twitching, which is what happened to headline-band-t1 and hook-card-t3.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 176,
+ "frameTotal": 80,
  "plates": {
   "paper/headline-band-t1-16x9": {
    "key": "paper/headline-band-t1-16x9",
@@ -37,7 +53,7 @@
         9
        ]
       },
-      "hash": "61aae246"
+      "hash": "280d81a8"
      },
      {
       "file": "headline-band-t1-16x9_f02.png",
@@ -49,7 +65,7 @@
         -3
        ]
       },
-      "hash": "0770c266"
+      "hash": "9cecb3b7"
      },
      {
       "file": "headline-band-t1-16x9_f03.png",
@@ -57,7 +73,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "dd8676b6"
+      "hash": "594489d9"
      },
      {
       "file": "headline-band-t1-16x9_f04.png",
@@ -65,7 +81,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "8121853e"
+      "hash": "696ef08f"
      },
      {
       "file": "headline-band-t1-16x9_f05.png",
@@ -73,7 +89,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "831e8aca"
+      "hash": "2ed9ab10"
      }
     ]
    },
@@ -113,37 +129,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 323,
      "w": 1620,
      "h": 44,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 385,
      "w": 1620,
      "h": 250,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 150,
      "y": 683,
      "w": 1296,
      "h": 92,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 95,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -170,7 +185,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 1
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-band-t1-9x16": {
    "key": "paper/headline-band-t1-9x16",
@@ -202,7 +219,7 @@
         9
        ]
       },
-      "hash": "ca368374"
+      "hash": "1ce4d751"
      },
      {
       "file": "headline-band-t1-9x16_f02.png",
@@ -214,7 +231,7 @@
         -3
        ]
       },
-      "hash": "a7f8b34d"
+      "hash": "ac67a3c1"
      },
      {
       "file": "headline-band-t1-9x16_f03.png",
@@ -222,7 +239,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7c0cf9a4"
+      "hash": "661a6ae3"
      },
      {
       "file": "headline-band-t1-9x16_f04.png",
@@ -230,7 +247,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e1949a56"
+      "hash": "5fd18be5"
      },
      {
       "file": "headline-band-t1-9x16_f05.png",
@@ -238,7 +255,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "56b12810"
+      "hash": "688c3667"
      }
     ]
    },
@@ -278,37 +295,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 681,
      "w": 920,
      "h": 50,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 40
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 80,
      "y": 755,
      "w": 920,
      "h": 330,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 27,
      "maxLines": 3
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 80,
      "y": 1133,
      "w": 736,
      "h": 110,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 57,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -335,7 +351,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 1
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-band-t2-16x9": {
    "key": "paper/headline-band-t2-16x9",
@@ -367,7 +385,7 @@
         9
        ]
       },
-      "hash": "1696c12e"
+      "hash": "2221d275"
      },
      {
       "file": "headline-band-t2-16x9_f02.png",
@@ -379,7 +397,7 @@
         -3
        ]
       },
-      "hash": "084052f0"
+      "hash": "3ebf08f4"
      },
      {
       "file": "headline-band-t2-16x9_f03.png",
@@ -387,7 +405,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "2b646dc6"
+      "hash": "44bc5910"
      },
      {
       "file": "headline-band-t2-16x9_f04.png",
@@ -395,7 +413,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9656613e"
+      "hash": "8528e42a"
      },
      {
       "file": "headline-band-t2-16x9_f05.png",
@@ -403,7 +421,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "50bfa258"
+      "hash": "ef2be3a7"
      }
     ]
    },
@@ -443,37 +461,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 315,
      "w": 1620,
      "h": 44,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 377,
      "w": 1620,
      "h": 250,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 150,
      "y": 657,
      "w": 1393,
      "h": 92,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 102,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -500,7 +517,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 2
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-band-t2-9x16": {
    "key": "paper/headline-band-t2-9x16",
@@ -532,7 +551,7 @@
         9
        ]
       },
-      "hash": "50873c98"
+      "hash": "70fc953c"
      },
      {
       "file": "headline-band-t2-9x16_f02.png",
@@ -544,7 +563,7 @@
         -3
        ]
       },
-      "hash": "962a5f47"
+      "hash": "d3489edd"
      },
      {
       "file": "headline-band-t2-9x16_f03.png",
@@ -552,7 +571,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "a7ee5e2a"
+      "hash": "ed021c1c"
      },
      {
       "file": "headline-band-t2-9x16_f04.png",
@@ -560,7 +579,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9a87e13a"
+      "hash": "298d87da"
      },
      {
       "file": "headline-band-t2-9x16_f05.png",
@@ -568,7 +587,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7c0bc8c8"
+      "hash": "9f954a7c"
      }
     ]
    },
@@ -608,37 +627,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 663,
      "w": 920,
      "h": 50,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 40
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 80,
      "y": 739,
      "w": 920,
      "h": 330,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 27,
      "maxLines": 3
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 80,
      "y": 1105,
      "w": 791,
      "h": 110,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 62,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -665,7 +683,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 2
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-band-t3-16x9": {
    "key": "paper/headline-band-t3-16x9",
@@ -697,7 +717,7 @@
         9
        ]
       },
-      "hash": "7b93b656"
+      "hash": "0db18c8a"
      },
      {
       "file": "headline-band-t3-16x9_f02.png",
@@ -709,7 +729,7 @@
         -3
        ]
       },
-      "hash": "1c91fd80"
+      "hash": "fde84a89"
      },
      {
       "file": "headline-band-t3-16x9_f03.png",
@@ -717,7 +737,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "a70ea7c0"
+      "hash": "a3b5dc79"
      },
      {
       "file": "headline-band-t3-16x9_f04.png",
@@ -725,7 +745,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "4e7f7f90"
+      "hash": "e271b6ef"
      },
      {
       "file": "headline-band-t3-16x9_f05.png",
@@ -733,7 +753,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "ff046028"
+      "hash": "9c56dda5"
      }
     ]
    },
@@ -773,37 +793,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 345,
      "w": 1620,
      "h": 44,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 405,
      "w": 1620,
      "h": 250,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 150,
      "y": 681,
      "w": 1458,
      "h": 84,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 107,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -846,7 +865,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 3
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-band-t3-9x16": {
    "key": "paper/headline-band-t3-9x16",
@@ -878,7 +899,7 @@
         9
        ]
       },
-      "hash": "78779cae"
+      "hash": "44092212"
      },
      {
       "file": "headline-band-t3-9x16_f02.png",
@@ -890,7 +911,7 @@
         -3
        ]
       },
-      "hash": "44a6138e"
+      "hash": "5ff1c7e7"
      },
      {
       "file": "headline-band-t3-9x16_f03.png",
@@ -898,7 +919,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7c1287f6"
+      "hash": "9a8def70"
      },
      {
       "file": "headline-band-t3-9x16_f04.png",
@@ -906,7 +927,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9841f470"
+      "hash": "938ce411"
      },
      {
       "file": "headline-band-t3-9x16_f05.png",
@@ -914,7 +935,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6c2f04b8"
+      "hash": "0ffc9cf9"
      }
     ]
    },
@@ -954,37 +975,36 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 703,
      "w": 920,
      "h": 50,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 40
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 80,
      "y": 777,
      "w": 920,
      "h": 330,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 27,
      "maxLines": 3
     },
     "sub": {
+     "align": "left",
+     "role": "sub",
      "x": 80,
      "y": 1139,
      "w": 828,
      "h": 100,
-     "role": "sub",
-     "align": "left",
      "maxCharsPerLine": 64,
      "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1027,7 +1047,9 @@
     "family": "paper",
     "type": "headline-band",
     "treatment": 3
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-4-16x9": {
    "key": "paper/receipt-4-16x9",
@@ -1059,7 +1081,7 @@
         9
        ]
       },
-      "hash": "78caaa40"
+      "hash": "b81a8f10"
      },
      {
       "file": "receipt-4-16x9_f02.png",
@@ -1071,7 +1093,7 @@
         -3
        ]
       },
-      "hash": "9e4fd870"
+      "hash": "4c2b40ba"
      },
      {
       "file": "receipt-4-16x9_f03.png",
@@ -1079,7 +1101,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "89324ea8"
+      "hash": "1a7e875f"
      },
      {
       "file": "receipt-4-16x9_f04.png",
@@ -1087,7 +1109,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "62998b20"
+      "hash": "71b242b7"
      },
      {
       "file": "receipt-4-16x9_f05.png",
@@ -1095,7 +1117,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "5f07bd40"
+      "hash": "5d0dba8f"
      }
     ]
    },
@@ -1164,134 +1186,133 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 67,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 729,
      "y": 125,
      "w": 463,
      "h": 39,
-     "role": "head",
-     "align": "center",
      "maxChars": 20
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 729,
      "y": 171,
      "w": 463,
      "h": 31,
-     "role": "amount",
-     "align": "center",
      "maxChars": 28
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 202,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 202,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 245,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 245,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 288,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 288,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 331,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 331,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 729,
      "y": 398,
      "w": 463,
      "h": 44,
-     "role": "total",
-     "align": "right",
      "maxChars": 20
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 729,
      "y": 442,
      "w": 463,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 35
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 712,
      "y": 374,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1326,7 +1347,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-4-9x16": {
    "key": "paper/receipt-4-9x16",
@@ -1358,7 +1381,7 @@
         9
        ]
       },
-      "hash": "cc2bc9c6"
+      "hash": "77861e33"
      },
      {
       "file": "receipt-4-9x16_f02.png",
@@ -1370,7 +1393,7 @@
         -3
        ]
       },
-      "hash": "43c3d450"
+      "hash": "087b6124"
      },
      {
       "file": "receipt-4-9x16_f03.png",
@@ -1378,7 +1401,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "025eb2ac"
+      "hash": "d55713d9"
      },
      {
       "file": "receipt-4-9x16_f04.png",
@@ -1386,7 +1409,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e56d8548"
+      "hash": "10feb448"
      },
      {
       "file": "receipt-4-9x16_f05.png",
@@ -1394,7 +1417,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7ff157a4"
+      "hash": "7acd4e16"
      }
     ]
    },
@@ -1463,134 +1486,133 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 235,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 235,
      "y": 337,
      "w": 610,
      "h": 35,
-     "role": "head",
-     "align": "center",
      "maxChars": 29
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 235,
      "y": 384,
      "w": 610,
      "h": 29,
-     "role": "amount",
-     "align": "center",
      "maxChars": 40
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 472,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 472,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 547,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 547,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 622,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 622,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 697,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 697,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 235,
      "y": 814,
      "w": 610,
      "h": 39,
-     "role": "total",
-     "align": "right",
      "maxChars": 29
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 235,
      "y": 853,
      "w": 610,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 46
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 205,
      "y": 772,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1625,7 +1647,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-6-16x9": {
    "key": "paper/receipt-6-16x9",
@@ -1657,7 +1681,7 @@
         9
        ]
       },
-      "hash": "ea8d18be"
+      "hash": "3749bc28"
      },
      {
       "file": "receipt-6-16x9_f02.png",
@@ -1669,7 +1693,7 @@
         -3
        ]
       },
-      "hash": "22a1e169"
+      "hash": "dd1cbb85"
      },
      {
       "file": "receipt-6-16x9_f03.png",
@@ -1677,7 +1701,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "382f7d6e"
+      "hash": "cc2cbe34"
      },
      {
       "file": "receipt-6-16x9_f04.png",
@@ -1685,7 +1709,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "11fbf4d8"
+      "hash": "4937f6ca"
      },
      {
       "file": "receipt-6-16x9_f05.png",
@@ -1693,7 +1717,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "aa9d7698"
+      "hash": "8cc0b05e"
      }
     ]
    },
@@ -1762,170 +1786,169 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 67,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 729,
      "y": 125,
      "w": 463,
      "h": 39,
-     "role": "head",
-     "align": "center",
      "maxChars": 20
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 729,
      "y": 171,
      "w": 463,
      "h": 31,
-     "role": "amount",
-     "align": "center",
      "maxChars": 28
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 202,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 202,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 245,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 245,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 288,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 288,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 331,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 331,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-5": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 374,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-5": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 374,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-6": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 417,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-6": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 417,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 729,
      "y": 484,
      "w": 463,
      "h": 44,
-     "role": "total",
-     "align": "right",
      "maxChars": 20
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 729,
      "y": 528,
      "w": 463,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 35
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 712,
      "y": 460,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1960,7 +1983,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-6-9x16": {
    "key": "paper/receipt-6-9x16",
@@ -1992,7 +2017,7 @@
         9
        ]
       },
-      "hash": "d3eeacae"
+      "hash": "45a007bc"
      },
      {
       "file": "receipt-6-9x16_f02.png",
@@ -2004,7 +2029,7 @@
         -3
        ]
       },
-      "hash": "17fb6abb"
+      "hash": "ef5d7860"
      },
      {
       "file": "receipt-6-9x16_f03.png",
@@ -2012,7 +2037,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "e8034290"
+      "hash": "9ae19c1e"
      },
      {
       "file": "receipt-6-9x16_f04.png",
@@ -2020,7 +2045,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "34ab7fb0"
+      "hash": "05582f34"
      },
      {
       "file": "receipt-6-9x16_f05.png",
@@ -2028,7 +2053,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "d6d8e292"
+      "hash": "0af8fc28"
      }
     ]
    },
@@ -2097,170 +2122,169 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 235,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 235,
      "y": 337,
      "w": 610,
      "h": 35,
-     "role": "head",
-     "align": "center",
      "maxChars": 29
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 235,
      "y": 384,
      "w": 610,
      "h": 29,
-     "role": "amount",
-     "align": "center",
      "maxChars": 40
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 472,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 472,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 547,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 547,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 622,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 622,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 697,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 697,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-5": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 772,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-5": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 772,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-6": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 847,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-6": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 847,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 235,
      "y": 964,
      "w": 610,
      "h": 39,
-     "role": "total",
-     "align": "right",
      "maxChars": 29
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 235,
      "y": 1003,
      "w": 610,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 46
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 205,
      "y": 922,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2295,7 +2319,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-8-16x9": {
    "key": "paper/receipt-8-16x9",
@@ -2327,7 +2353,7 @@
         9
        ]
       },
-      "hash": "0f48c7fa"
+      "hash": "b59d4d83"
      },
      {
       "file": "receipt-8-16x9_f02.png",
@@ -2339,7 +2365,7 @@
         -3
        ]
       },
-      "hash": "5d410506"
+      "hash": "d3c268ff"
      },
      {
       "file": "receipt-8-16x9_f03.png",
@@ -2347,7 +2373,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "ae618558"
+      "hash": "a20e9848"
      },
      {
       "file": "receipt-8-16x9_f04.png",
@@ -2355,7 +2381,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b00efc46"
+      "hash": "821483ba"
      },
      {
       "file": "receipt-8-16x9_f05.png",
@@ -2363,7 +2389,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "dae76782"
+      "hash": "3b7bf1d1"
      }
     ]
    },
@@ -2432,206 +2458,205 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 67,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 729,
      "y": 125,
      "w": 463,
      "h": 39,
-     "role": "head",
-     "align": "center",
      "maxChars": 20
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 729,
      "y": 171,
      "w": 463,
      "h": 31,
-     "role": "amount",
-     "align": "center",
      "maxChars": 28
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 202,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 202,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 245,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 245,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 288,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 288,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 331,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 331,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-5": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 374,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-5": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 374,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-6": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 417,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-6": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 417,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-7": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 460,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-7": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 460,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "label-8": {
+     "align": "left",
+     "role": "item",
      "x": 729,
      "y": 503,
      "w": 281,
      "h": 39,
-     "role": "item",
-     "align": "left",
      "maxChars": 17
     },
     "line-8": {
+     "align": "right",
+     "role": "amount",
      "x": 1010,
      "y": 503,
      "w": 182,
      "h": 39,
-     "role": "amount",
-     "align": "right",
      "maxChars": 11
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 729,
      "y": 570,
      "w": 463,
      "h": 44,
-     "role": "total",
-     "align": "right",
      "maxChars": 20
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 729,
      "y": 614,
      "w": 463,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 35
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 712,
      "y": 546,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2666,7 +2691,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/receipt-8-9x16": {
    "key": "paper/receipt-8-9x16",
@@ -2698,7 +2725,7 @@
         9
        ]
       },
-      "hash": "4b30cbf8"
+      "hash": "bd43a77b"
      },
      {
       "file": "receipt-8-9x16_f02.png",
@@ -2710,7 +2737,7 @@
         -3
        ]
       },
-      "hash": "c3b75170"
+      "hash": "0bbc9413"
      },
      {
       "file": "receipt-8-9x16_f03.png",
@@ -2718,7 +2745,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7a726fe0"
+      "hash": "4a8a314b"
      },
      {
       "file": "receipt-8-9x16_f04.png",
@@ -2726,7 +2753,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ca858e9a"
+      "hash": "7ad92c03"
      },
      {
       "file": "receipt-8-9x16_f05.png",
@@ -2734,7 +2761,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "2b7d9c6c"
+      "hash": "c3cece8a"
      }
     ]
    },
@@ -2803,206 +2830,205 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 235,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "head": {
+     "align": "center",
+     "role": "head",
      "x": 235,
      "y": 337,
      "w": 610,
      "h": 35,
-     "role": "head",
-     "align": "center",
      "maxChars": 29
     },
     "takings": {
+     "align": "center",
+     "role": "amount",
      "x": 235,
      "y": 384,
      "w": 610,
      "h": 29,
-     "role": "amount",
-     "align": "center",
      "maxChars": 40
     },
     "label-1": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 472,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-1": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 472,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-2": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 547,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-2": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 547,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-3": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 622,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-3": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 622,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-4": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 697,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-4": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 697,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-5": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 772,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-5": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 772,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-6": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 847,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-6": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 847,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-7": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 922,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-7": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 922,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "label-8": {
+     "align": "left",
+     "role": "item",
      "x": 235,
      "y": 997,
      "w": 372,
      "h": 71,
-     "role": "item",
-     "align": "left",
      "maxChars": 24
     },
     "line-8": {
+     "align": "right",
+     "role": "amount",
      "x": 607,
      "y": 997,
      "w": 238,
      "h": 71,
-     "role": "amount",
-     "align": "right",
      "maxChars": 15
     },
     "left": {
+     "align": "right",
+     "role": "total",
      "x": 235,
      "y": 1114,
      "w": 610,
      "h": 39,
-     "role": "total",
-     "align": "right",
      "maxChars": 29
     },
     "footnote": {
+     "align": "center",
+     "role": "foot",
      "x": 235,
      "y": 1153,
      "w": 610,
      "h": 26,
-     "role": "foot",
-     "align": "center",
      "maxChars": 46
     },
     "highlight-index": {
+     "role": "control",
+     "region": true,
+     "note": "not drawn. See meta.highlight.",
      "x": 205,
      "y": 1072,
      "w": 0,
-     "h": 0,
-     "role": "control",
-     "region": true,
-     "note": "not drawn. See meta.highlight."
+     "h": 0
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3037,7 +3063,9 @@
       "itemBold"
      ]
     }
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-stack-3-16x9": {
    "key": "paper/headline-stack-3-16x9",
@@ -3069,7 +3097,7 @@
         9
        ]
       },
-      "hash": "67bd99e8"
+      "hash": "a84952b3"
      },
      {
       "file": "headline-stack-3-16x9_f02.png",
@@ -3081,7 +3109,7 @@
         -3
        ]
       },
-      "hash": "604d99a2"
+      "hash": "f831c61e"
      },
      {
       "file": "headline-stack-3-16x9_f03.png",
@@ -3089,7 +3117,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7d45bff0"
+      "hash": "0c3591f3"
      },
      {
       "file": "headline-stack-3-16x9_f04.png",
@@ -3097,7 +3125,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "c75acae6"
+      "hash": "5b18c1fc"
      },
      {
       "file": "headline-stack-3-16x9_f05.png",
@@ -3105,7 +3133,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "3668f030"
+      "hash": "f7f5b300"
      }
     ]
    },
@@ -3163,110 +3191,109 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 160,
      "y": 88,
      "w": 1600,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 75
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 192,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-1": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 192,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-1": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 231,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 390,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-2": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 390,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-2": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 429,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 588,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-3": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 588,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-3": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 627,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 160,
      "y": 990,
      "w": 1600,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 102
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3331,7 +3358,9 @@
     "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
     "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
     "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-stack-3-9x16": {
    "key": "paper/headline-stack-3-9x16",
@@ -3363,7 +3392,7 @@
         9
        ]
       },
-      "hash": "fc49100e"
+      "hash": "3da044e7"
      },
      {
       "file": "headline-stack-3-9x16_f02.png",
@@ -3375,7 +3404,7 @@
         -3
        ]
       },
-      "hash": "b1fb3a31"
+      "hash": "6ccdd92a"
      },
      {
       "file": "headline-stack-3-9x16_f03.png",
@@ -3383,7 +3412,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "d27d83de"
+      "hash": "9242f233"
      },
      {
       "file": "headline-stack-3-9x16_f04.png",
@@ -3391,7 +3420,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "fdafd6f0"
+      "hash": "d7c24114"
      },
      {
       "file": "headline-stack-3-9x16_f05.png",
@@ -3399,7 +3428,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "80b38bb8"
+      "hash": "fcbb40c3"
      }
     ]
    },
@@ -3457,110 +3486,109 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 76,
      "y": 196,
      "w": 928,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 379,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-1": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 379,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-1": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 421,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 657,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-2": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 657,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-2": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 699,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 935,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-3": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 935,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-3": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 977,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 76,
      "y": 1730,
      "w": 928,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3625,7 +3653,9 @@
     "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
     "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
     "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-stack-4-16x9": {
    "key": "paper/headline-stack-4-16x9",
@@ -3657,7 +3687,7 @@
         9
        ]
       },
-      "hash": "1cdbf386"
+      "hash": "8b36767e"
      },
      {
       "file": "headline-stack-4-16x9_f02.png",
@@ -3669,7 +3699,7 @@
         -3
        ]
       },
-      "hash": "d608213e"
+      "hash": "a100917f"
      },
      {
       "file": "headline-stack-4-16x9_f03.png",
@@ -3677,7 +3707,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "3c8bc32e"
+      "hash": "210ada4a"
      },
      {
       "file": "headline-stack-4-16x9_f04.png",
@@ -3685,7 +3715,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "1082bdb2"
+      "hash": "d49c8dde"
      },
      {
       "file": "headline-stack-4-16x9_f05.png",
@@ -3693,7 +3723,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "26a918b2"
+      "hash": "04cd2e40"
      }
     ]
    },
@@ -3751,138 +3781,137 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 160,
      "y": 88,
      "w": 1600,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 75
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 192,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-1": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 192,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-1": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 231,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 390,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-2": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 390,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-2": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 429,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 588,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-3": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 588,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-3": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 627,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 160,
      "y": 786,
      "w": 352,
      "h": 32,
-     "role": "date",
-     "align": "left",
      "maxChars": 19
     },
     "source-4": {
+     "align": "right",
+     "role": "source",
      "x": 1216,
      "y": 786,
      "w": 544,
      "h": 32,
-     "role": "source",
-     "align": "right",
      "maxChars": 41
     },
     "headline-4": {
+     "align": "left",
+     "role": "headline",
      "x": 160,
      "y": 825,
      "w": 1152,
      "h": 101,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 69,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 160,
      "y": 990,
      "w": 1600,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 102
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3954,7 +3983,9 @@
     "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
     "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
     "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   },
   "paper/headline-stack-4-9x16": {
    "key": "paper/headline-stack-4-9x16",
@@ -3986,7 +4017,7 @@
         9
        ]
       },
-      "hash": "f7df9bb0"
+      "hash": "96c8fddb"
      },
      {
       "file": "headline-stack-4-9x16_f02.png",
@@ -3998,7 +4029,7 @@
         -3
        ]
       },
-      "hash": "a01061ec"
+      "hash": "37f32630"
      },
      {
       "file": "headline-stack-4-9x16_f03.png",
@@ -4006,7 +4037,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "2bbce990"
+      "hash": "0b2077f5"
      },
      {
       "file": "headline-stack-4-9x16_f04.png",
@@ -4014,7 +4045,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0d4b4690"
+      "hash": "589f0f53"
      },
      {
       "file": "headline-stack-4-9x16_f05.png",
@@ -4022,7 +4053,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "9613f51a"
+      "hash": "67135e84"
      }
     ]
    },
@@ -4080,138 +4111,137 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 76,
      "y": 196,
      "w": 928,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 379,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-1": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 379,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-1": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 421,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 657,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-2": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 657,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-2": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 699,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 935,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-3": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 935,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-3": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 977,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 76,
      "y": 1213,
      "w": 204,
      "h": 30,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "source-4": {
+     "align": "right",
+     "role": "source",
      "x": 688,
      "y": 1213,
      "w": 316,
      "h": 30,
-     "role": "source",
-     "align": "right",
      "maxChars": 25
     },
     "headline-4": {
+     "align": "left",
+     "role": "headline",
      "x": 76,
      "y": 1255,
      "w": 928,
      "h": 134,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 76,
      "y": 1730,
      "w": 928,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4283,7 +4313,9 @@
     "seriesNote": "every item is one type role at one size, and no strip is emphasised. The headline the script is about gets an annotation over it from the compositor — a stack with one item pre-lifted has chosen the story for the voice.",
     "sourceContract": "date-N and source-N are separate slots and both are required: a headline without a publication is a claim with no author, on a channel whose premise is real numbers. The source box is budgeted for 30 characters, which holds a masthead, not a URL.",
     "headlineBudgetNote": "the headline box is CAPACITY, not a target. At ~48 characters a line it will hold a long one — but a headline that runs to both full lines on every strip is a script that wants paper/headline-band and one story, not a stack whose argument is how many there have been."
-   }
+   },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle."
   }
  }
 }

@@ -177,7 +177,8 @@ def _fit(text: str, settings: Settings, font_name: str, size: int,
     return load_font(settings, font_name, size)
 
 
-def _room(settings: Settings, orient: str, size: tuple[int, int]):
+def _room(settings: Settings, orient: str, size: tuple[int, int],
+          episode: str = ""):
     """The room this cover is shot in, and the plate it came from.
 
     Returns `(image, plate)` so the caller can place the host on the room's own
@@ -196,7 +197,12 @@ def _room(settings: Settings, orient: str, size: tuple[int, int]):
         # `room_for` raises when nothing fills a role, so this tries the next
         # one rather than letting the first miss take the whole list with it.
         try:
-            plate = reg.room_for(role_name, aspect, seed=orient)
+            # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the
+            # video's hour. `episode` is the ticker, the same value
+            # `render_long` hands `room_for`, so a dusk episode gets a dusk
+            # cover rather than a night one advertising it.
+            plate = reg.room_for(role_name, aspect, seed=orient,
+                                 episode=episode)
         except Exception as exc:  # noqa: BLE001
             log.debug("thumbnail: no %s room (%s)", role_name, exc)
             continue
@@ -229,7 +235,7 @@ def _compose(settings: Settings, *, ticker: str, metric: str, kicker: str,
     from pipeline.host import place_on_room, stands_on
 
     W, H = size
-    room_img, room_plate = _room(settings, orient, size)
+    room_img, room_plate = _room(settings, orient, size, episode=ticker)
     img = room_img.convert("RGBA")
     d = ImageDraw.Draw(img)
     ink = role(settings, "structure")

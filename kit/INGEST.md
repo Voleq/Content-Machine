@@ -74,10 +74,23 @@ the build product the render path reads; nothing else reads the kit.
   pixels are canvas × 2. Getting this wrong puts every figure at half its
   intended position, silently.
 - **`frames` is a list of objects**, not filenames: `{tag, svg, png, boil}`.
-- **The base PNG is byte-identical to frame `f01`** on all 69 strips, so a loop
-  can be entered from the still without a pop.
-- **Data plates are `playback: "static"`.** Tables, charts, figures, structure,
-  peers and cycles never boil — 44 assets. The other 69 are two-frame loops.
+- **The base PNG is byte-identical to frame `f01`** on all 267 plates that carry
+  more than one frame, so a loop can be entered from the still without a pop.
+  `files.baseIsFrame` says so per plate; the ingest checks the bytes.
+- **A data plate's FRAME breathes and its FIGURES do not.** This line used to
+  read *"Data plates are `playback: "static"` — tables, charts, figures,
+  structure, peers and cycles never boil, 44 assets"*, and that rule was
+  retracted in the engine without this file following. All 122 data-family
+  plates are `playback: "loop"`. The boil is turned on for their FURNITURE —
+  paper edge, corner wear, rule lines, hatch — and `HAND.setBoil`'s gate keeps
+  axes, series lines, figures and cells emitting the identical path they
+  emitted at boil 0, bit for bit. A number still never moves; the paper it is
+  printed on does. `engine/build.js` §1.5 is the statement of it.
+- **270 plates: 260 `loop`, 7 `overlay`, 3 `static`.** The 7 are the host's
+  blink strips, composited over the matching idle frame rather than played. The
+  3 are `overlays/row-band` and the two lower thirds — furniture that sits under
+  type held still, where movement would be relative movement, and in the lower
+  third's case a wobble at the edge of vision for forty minutes.
 - **Twelve annotation slots sit OUTSIDE their own canvas** — `bracket-rows/area`
   is at x = −880. That is deliberate: annotations are overlays composited onto
   something else and their caption lands beside the mark, not inside it. A

@@ -2,14 +2,32 @@
 
 Two jobs that have to agree with each other, so they live together.
 
-**Playback.** 96 of the 143 plates are two-frame loops; the other 47 are data
-plates that deliberately never boil, because a figure that moves is a figure
-being re-read. The registry says which is which, at what rate and over how many
+**Playback.** 260 of the 270 plates loop, over three frames or five; 7 are the
+host's blink strips, which are composited rather than played; 3 are static.
+
+THE OLD BLANKET RULE IS GONE AND THIS PARAGRAPH USED TO CARRY IT — "96 of the
+143 plates are two-frame loops; the other 47 are data plates that deliberately
+never boil". Every number in that sentence was from a kit two deliveries back,
+and the rule it stated had been retracted in the engine. `engine/build.js` §1.5
+is headed A DATA PLATE'S FRAME BREATHES AND ITS FIGURES DO NOT: the boil is
+turned on for a data plate's FURNITURE — paper edge, corner wear, rule lines,
+hatch — while axes, series lines, figures and cells emit the identical path they
+emitted at boil 0, bit for bit. A frozen table in a boiling room read as a
+screenshot pasted over a cartoon; a wobbling number is still unreadable. Both
+are true, which is why the gate is per-mark rather than per-plate.
+
+So the three static plates are not data plates. They are `overlays/row-band`
+and the two lower thirds — furniture that sits UNDER type held still, where any
+movement would be relative movement, and in the lower third's case a wobble at
+the edge of vision for forty minutes.
+
+The registry says which is which, at what rate and over how many
 frames, and :func:`frame_indices` turns that into one source-frame index per
 output frame. There is no per-family branch anywhere in this module: the next
-delivery adds artwork, not code.
+delivery adds artwork, not code. The counts above are a snapshot of the kit in
+the tree; `load_plates` is the live answer.
 
-**Slots.** 1,444 declared boxes across the library, and every word on screen
+**Slots.** 3,033 declared boxes across the library, and every word on screen
 comes out of one — the plates carry no baked text at all. Filling one honours
 the plate's own ``typeRoles``: font, size, weight, colour ROLE, tracking, case
 and ``maxChars``.
@@ -60,7 +78,9 @@ _STATIC = {
 _FALLBACK = "CourierPrime-Regular.ttf"
 
 # When a plate declares no size for a role, the box decides — but that is the
-# exception, not the mechanism. 103 of 143 plates carry a typeRoles table.
+# exception, not the mechanism. 219 of 270 plates carry a typeRoles table; the
+# 51 without are the host cut-outs, whose slots are places to put him rather
+# than boxes to set words in.
 _MIN_PT = 8
 _FIT_STEPS = 48
 
@@ -155,11 +175,21 @@ def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
     that only knows about roles stay inside every box rather than silently go
     loose: too wide a budget waves through copy that collides with the rule
     beside it, which is the direction that breaks a render.
+
+    `colour` IS THE SAME SHAPE AND IS READ THE SAME WAY. Every room title slot
+    publishes its own palette role beside its `ground`, because the colour the
+    type is set in is a property of what it sits ON rather than of the role: a
+    title on a `card` is `structure` ink on the card's own paper, and the same
+    title on a `slab` is `ground` knocked out of a filled block. Nothing read
+    this field, and nothing needed to while `TITLE_GROUND` stayed `"card"` and
+    the answer happened to equal the assumption. Reading it is what stops the
+    day the treatment changes from being the day titles go invisible.
     """
     spec = dict(type_role(plate, slot, value))
     for key, own in (("maxChars", slot.max_chars),
                      ("maxCharsPerLine", slot.max_chars_per_line),
-                     ("maxLines", slot.max_lines)):
+                     ("maxLines", slot.max_lines),
+                     ("colour", slot.colour)):
         if own:
             spec[key] = own
     return spec
@@ -292,6 +322,36 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     bw, bh = slot.w * scale, slot.h * scale
     if bw <= 0 or bh <= 0:
         return warnings
+
+    # THE TYPE MUST LAND INSIDE ITS OWN GROUND, asserted rather than drawn.
+    #
+    # A title slot publishes the box its card occupies. The card is already in
+    # the plate art — this code never paints it — so `groundBox` is good for
+    # exactly one thing: catching a box that overhangs the ground it was given.
+    # A title that runs off its card is set on the wall again, which is the
+    # condition the card was introduced to end, and it is invisible in a
+    # registry that only checks slots against the canvas.
+    #
+    # Only when the slot is in its declared place: an `origin` moves the box
+    # somewhere the ground does not follow, and the kit's box is what carries
+    # the relationship.
+    if slot.ground_box and origin is None:
+        gb = slot.ground_box
+        try:
+            gx, gy = int(gb["x"]), int(gb["y"])
+            gw, gh = int(gb["w"]), int(gb["h"])
+        except (KeyError, TypeError, ValueError):
+            gx = gy = gw = gh = 0
+        if gw > 0 and gh > 0 and not (
+                slot.x >= gx and slot.y >= gy
+                and slot.x + slot.w <= gx + gw
+                and slot.y + slot.h <= gy + gh):
+            warnings.append(
+                f"{plate.key} {slot.name}: the box "
+                f"({slot.x},{slot.y},{slot.w},{slot.h}) overhangs its "
+                f"{slot.ground or 'ground'} ({gx},{gy},{gw},{gh}) — the type "
+                f"lands partly on the wall, which is what the ground exists "
+                f"to prevent")
 
     draw = ImageDraw.Draw(img)
     family = tr.get("font", "Courier Prime")

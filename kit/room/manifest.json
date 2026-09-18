@@ -1,11 +1,31 @@
 {
  "family": "room",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 52,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "hostAnchorContract": "the host-anchor region's HEIGHT is the host's target height, and the quantity it scales is (host.floorLineY - host.slots.figure.y) — not the raw figure box, which runs past the floor line to carry the shoes. Then sit host.floorLineY on the region's bottom edge. Width is advisory: the figure box includes arms meant to pass it. See meta.hostAnchor on every plate.",
+ "tone": "The ground stays the ground: the surface colour is visible everywhere in frame and nothing goes over the top of it globally. Light is VALUE FALLOFF — surfaces near a source carry less hatch and show more bare ground, surfaces away from one carry more, and the falloff follows the shapes of objects rather than sitting behind them in a rectangle. No tint, no wash, no colour layer. The ink line is the darkest thing in frame; only contact shadows go darker, and they are small and tight (the size of the object's footprint, never a halo). Hatch is SELECTIVE: furniture that needs weight carries a neutral ink hatch (max 0.19), paper and the wall and the floor are left as ground — texture is only depth when some things have it and some do not.",
+ "hostContrast": "Dennis is the highest-contrast object in any frame he is in. The room is built to give way to him: nothing in the set is allowed to reach his value. The test is the composite — if your eye does not go to him first, the room is too loud.",
+ "titleGround": "§1. The chapter-opener title borrows its legibility from the wall behind it: a flat pale plane that no angle happens to put a prop, a tone or a shadow on. mass() encodes that accidentally — it suppresses every cast shadow whose base sits above 36% of frame height so the title box keeps a clean ground — and nothing else in the family states the rule at all. titleGround gives the title its own drawn ground instead: \"card\" (opaque taped card, contrast guaranteed and identical on every wall), \"scrim\" (three feathered washes, the room still reads through, contrast improved but not guaranteed) or \"slab\" (ink block, title reversed out, the most robust and the largest change). The panel is drawn AROUND the published title box, so slots.title does not move on any plate; it spans title and caption together where an angle sets a caption under the title. It is PINNED — a ground is a slot underlay and an underlay breathing behind still type is relative motion. When a ground is on, the plate publishes meta.titleGround (box, opacity, slots covered) and slots.title.colour, and the chapter-opener shot template must read that colour rather than assume structure. Currently null in engine/build.js: the treatment is an open decision, see proof/title-ground.html.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "shadow": "Darks read as SHADOW, not as objects: each is densest where it meets what casts it, fades away from it, ends in a ragged edge rather than a drawn outline, and lets the ground show through. A shadow is the surface in shade, not a new object on top of it — drawn as a uniform fill with a line round it, the under-desk mass and the foreground crop became the biggest darks in frame and pulled the eye off the host.",
+ "lineWeight": "Weight varies with distance across roughly a 5x spread. The multiplier was widened twice in earlier revisions with no visible effect, because the INPUT barely varied: depth came from height in frame and almost every prop sits in the same y-band. Depth is now a steep curve over the whole canvas, and props whose y contradicts their plane (wall-mounted binders, the cropped foreground) state their plane explicitly.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 194,
+ "frameTotal": 156,
  "plates": {
   "room/wide-16x9": {
    "key": "room/wide-16x9",
@@ -33,7 +53,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f4f052c8"
+      "hash": "fc330276"
      },
      {
       "file": "wide-16x9_f02.png",
@@ -41,7 +61,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "dc7460fe"
+      "hash": "7872cdb4"
      },
      {
       "file": "wide-16x9_f03.png",
@@ -49,7 +69,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "cf968858"
+      "hash": "0e052110"
      }
     ]
    },
@@ -86,29 +106,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 672,
      "y": 70,
      "w": 576,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 640,
+      "y": 43,
+      "w": 639,
+      "h": 305
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
-     "maxLines": 2,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -222,7 +255,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f1f44758"
+      "hash": "28058e06"
      },
      {
       "file": "wide-9x16_f02.png",
@@ -230,7 +263,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "a9dd7178"
+      "hash": "a2b7adcd"
      },
      {
       "file": "wide-9x16_f03.png",
@@ -238,7 +271,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "1b368b70"
+      "hash": "ff77511b"
      }
     ]
    },
@@ -275,29 +308,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 378,
      "y": 70,
      "w": 324,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 352,
+      "y": 37,
+      "w": 376,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
-     "maxLines": 3,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -411,7 +457,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "d38ace10"
+      "hash": "54e061a8"
      },
      {
       "file": "wide-tight-16x9_f02.png",
@@ -419,7 +465,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "bdf22870"
+      "hash": "280291bd"
      },
      {
       "file": "wide-tight-16x9_f03.png",
@@ -427,7 +473,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "e5388da0"
+      "hash": "2067d0de"
      }
     ]
    },
@@ -464,29 +510,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 672,
      "y": 70,
      "w": 576,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 640,
+      "y": 43,
+      "w": 639,
+      "h": 305
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
-     "maxLines": 2,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -600,7 +659,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f0313772"
+      "hash": "f08b7960"
      },
      {
       "file": "wide-tight-9x16_f02.png",
@@ -608,7 +667,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "797bcfaa"
+      "hash": "c0ee68b0"
      },
      {
       "file": "wide-tight-9x16_f03.png",
@@ -616,7 +675,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "2c73cac0"
+      "hash": "52dbf4b7"
      }
     ]
    },
@@ -653,29 +712,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 378,
      "y": 70,
      "w": 324,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 352,
+      "y": 37,
+      "w": 376,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
-     "maxLines": 3,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -789,7 +861,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "e128ff88"
+      "hash": "066cb17c"
      },
      {
       "file": "desk-front-16x9_f02.png",
@@ -797,7 +869,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "72737740"
+      "hash": "0913706b"
      },
      {
       "file": "desk-front-16x9_f03.png",
@@ -805,7 +877,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "a18633d0"
+      "hash": "4a9ba417"
      }
     ]
    },
@@ -842,28 +914,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 576,
      "y": 56,
      "w": 576,
      "h": 210,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 544,
+      "y": 33,
+      "w": 639,
+      "h": 256
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 355,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -977,7 +1062,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "5adcb099"
+      "hash": "de6becfd"
      },
      {
       "file": "desk-front-9x16_f02.png",
@@ -985,7 +1070,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "24b3a548"
+      "hash": "81bcd7bb"
      },
      {
       "file": "desk-front-9x16_f03.png",
@@ -993,7 +1078,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "eceb15a0"
+      "hash": "4ab64d5f"
      }
     ]
    },
@@ -1030,28 +1115,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 324,
      "y": 56,
      "w": 324,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 298,
+      "y": 27,
+      "w": 376,
+      "h": 317
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 200,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1165,7 +1263,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f158ae88"
+      "hash": "eb15f699"
      },
      {
       "file": "desk-corner-16x9_f02.png",
@@ -1173,7 +1271,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "1cdcbcb2"
+      "hash": "3dbfdee6"
      },
      {
       "file": "desk-corner-16x9_f03.png",
@@ -1181,7 +1279,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "dcca4126"
+      "hash": "0c3fc39d"
      }
     ]
    },
@@ -1219,38 +1317,52 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 960,
      "y": 120,
      "w": 806,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 916,
+      "y": 80,
+      "w": 895,
+      "h": 444
+     },
      "colour": "structure",
      "maxCharsPerLine": 26,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 960,
      "y": 420,
      "w": 806,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 916,
+      "y": 80,
+      "w": 895,
+      "h": 444
+     },
      "colour": "structure",
      "maxChars": 51
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1360,7 +1472,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "68480850"
+      "hash": "7bca4482"
      },
      {
       "file": "desk-corner-9x16_f02.png",
@@ -1368,7 +1480,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "384a98fb"
+      "hash": "ad4939da"
      },
      {
       "file": "desk-corner-9x16_f03.png",
@@ -1376,7 +1488,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "2f9f4b3e"
+      "hash": "0da0298b"
      }
     ]
    },
@@ -1414,38 +1526,52 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 540,
      "y": 120,
      "w": 454,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 514,
+      "y": 73,
+      "w": 506,
+      "h": 517
+     },
      "colour": "structure",
      "maxCharsPerLine": 18,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 540,
      "y": 480,
      "w": 454,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 514,
+      "y": 73,
+      "w": 506,
+      "h": 517
+     },
      "colour": "structure",
      "maxChars": 29
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1555,7 +1681,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "cb1b8ce8"
+      "hash": "a440c954"
      },
      {
       "file": "from-behind-the-monitor-16x9_f02.png",
@@ -1563,7 +1689,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "84766320"
+      "hash": "c6313ea4"
      },
      {
       "file": "from-behind-the-monitor-16x9_f03.png",
@@ -1571,7 +1697,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "569a8b18"
+      "hash": "2dc5fe00"
      }
     ]
    },
@@ -1608,28 +1734,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 154,
      "y": 100,
      "w": 960,
      "h": 280,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 101,
+      "y": 69,
+      "w": 1066,
+      "h": 342
+     },
      "colour": "structure",
      "maxCharsPerLine": 32,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1738,7 +1871,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "ad7c7b20"
+      "hash": "42051109"
      },
      {
       "file": "from-behind-the-monitor-9x16_f02.png",
@@ -1746,7 +1879,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "290d55e0"
+      "hash": "a4ce90f4"
      },
      {
       "file": "from-behind-the-monitor-9x16_f03.png",
@@ -1754,7 +1887,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "d6924048"
+      "hash": "63f5c1c4"
      }
     ]
    },
@@ -1791,28 +1924,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 100,
      "w": 540,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 56,
+      "y": 65,
+      "w": 599,
+      "h": 390
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1921,7 +2061,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "1f47d260"
+      "hash": "085bc43d"
      },
      {
       "file": "whiteboard-wall-16x9_f02.png",
@@ -1929,7 +2069,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "8ff7ddb6"
+      "hash": "a3c7f875"
      },
      {
       "file": "whiteboard-wall-16x9_f03.png",
@@ -1937,7 +2077,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "20f3f998"
+      "hash": "151f1912"
      }
     ]
    },
@@ -1974,28 +2114,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 1267,
      "y": 626,
      "w": 538,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 1237,
+      "y": 593,
+      "w": 597,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 17,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 221,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2109,7 +2262,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "3da03994"
+      "hash": "0ebe428b"
      },
      {
       "file": "whiteboard-wall-9x16_f02.png",
@@ -2117,7 +2270,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "a662d580"
+      "hash": "49bb4cf9"
      },
      {
       "file": "whiteboard-wall-9x16_f03.png",
@@ -2125,7 +2278,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7fe112c8"
+      "hash": "c0476109"
      }
     ]
    },
@@ -2162,28 +2315,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 998,
      "w": 540,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 56,
+      "y": 965,
+      "w": 599,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 124,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2297,7 +2463,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "5ed1f1a8"
+      "hash": "b74f23c8"
      },
      {
       "file": "printer-corner-16x9_f02.png",
@@ -2305,7 +2471,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "47d1a37a"
+      "hash": "3ca9e882"
      },
      {
       "file": "printer-corner-16x9_f03.png",
@@ -2313,7 +2479,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "d9aa7950"
+      "hash": "b6f50d2a"
      }
     ]
    },
@@ -2350,28 +2516,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 1037,
      "y": 120,
      "w": 730,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 997,
+      "y": 87,
+      "w": 810,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 24,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2480,7 +2653,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "a96c0d8c"
+      "hash": "b27bd9c4"
      },
      {
       "file": "printer-corner-9x16_f02.png",
@@ -2488,7 +2661,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "f0ea75aa"
+      "hash": "3e5f67cd"
      },
      {
       "file": "printer-corner-9x16_f03.png",
@@ -2496,7 +2669,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "c7277ba8"
+      "hash": "0cc0d2b0"
      }
     ]
    },
@@ -2533,28 +2706,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 120,
      "w": 648,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 50,
+      "y": 85,
+      "w": 719,
+      "h": 390
+     },
      "colour": "structure",
      "maxCharsPerLine": 26,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2663,7 +2843,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "e593f0d0"
+      "hash": "7f29e3f9"
      },
      {
       "file": "doorway-16x9_f02.png",
@@ -2671,7 +2851,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "6472d1a8"
+      "hash": "344308e5"
      },
      {
       "file": "doorway-16x9_f03.png",
@@ -2679,7 +2859,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6ff679f8"
+      "hash": "3d95f62a"
      }
     ]
    },
@@ -2716,28 +2896,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 230,
      "y": 540,
      "w": 691,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 192,
+      "y": 511,
+      "w": 767,
+      "h": 317
+     },
      "colour": "structure",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 1190,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2846,7 +3033,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f3a15be2"
+      "hash": "30ff346d"
      },
      {
       "file": "doorway-9x16_f02.png",
@@ -2854,7 +3041,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2ac78628"
+      "hash": "7f71b4a8"
      },
      {
       "file": "doorway-9x16_f03.png",
@@ -2862,7 +3049,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "c21bf1d2"
+      "hash": "3e69cf61"
      }
     ]
    },
@@ -2899,28 +3086,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 76,
      "y": 960,
      "w": 540,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 46,
+      "y": 927,
+      "w": 599,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 670,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3029,7 +3223,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "599a3472"
+      "hash": "dcccb310"
      },
      {
       "file": "corner-perspective-16x9_f02.png",
@@ -3037,7 +3231,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "d9c42426"
+      "hash": "913af445"
      },
      {
       "file": "corner-perspective-16x9_f03.png",
@@ -3045,7 +3239,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "9e88e1da"
+      "hash": "eeea570b"
      }
     ]
    },
@@ -3083,38 +3277,58 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 67,
      "y": 518,
      "w": 461,
      "h": 210,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 41,
+      "y": 487,
+      "w": 513,
+      "h": 342
+     },
      "colour": "structure",
      "maxCharsPerLine": 15,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 67,
      "y": 734,
      "w": 422,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 41,
+      "y": 487,
+      "w": 513,
+      "h": 342
+     },
      "colour": "structure",
      "maxChars": 27
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, at forearm height",
+      "x": 1034,
+      "y": 497
+     },
      "x": 96,
      "y": 237,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3229,7 +3443,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "c7f116a5"
+      "hash": "55355eb7"
      },
      {
       "file": "corner-perspective-9x16_f02.png",
@@ -3237,7 +3451,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "18c95f20"
+      "hash": "44a2ce4a"
      },
      {
       "file": "corner-perspective-9x16_f03.png",
@@ -3245,7 +3459,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7c00c3e0"
+      "hash": "3d3ac3da"
      }
     ]
    },
@@ -3283,38 +3497,58 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 54,
      "y": 806,
      "w": 432,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 28,
+      "y": 761,
+      "w": 484,
+      "h": 500
+     },
      "colour": "structure",
      "maxCharsPerLine": 17,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 54,
      "y": 1152,
      "w": 378,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 28,
+      "y": 761,
+      "w": 484,
+      "h": 500
+     },
      "colour": "structure",
      "maxChars": 24
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, at forearm height",
+      "x": 156,
+      "y": 732
+     },
      "x": 54,
      "y": 269,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3429,7 +3663,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b2ea1c88"
+      "hash": "c1107ba8"
      },
      {
       "file": "low-desk-height-16x9_f02.png",
@@ -3437,7 +3671,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "abf6f9c4"
+      "hash": "9c2d04cd"
      },
      {
       "file": "low-desk-height-16x9_f03.png",
@@ -3445,7 +3679,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "42d64b20"
+      "hash": "54cdad3b"
      }
     ]
    },
@@ -3482,28 +3716,43 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 806,
      "y": 270,
      "w": 614,
      "h": 200,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 772,
+      "y": 248,
+      "w": 682,
+      "h": 244
+     },
      "colour": "structure",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 806,
+      "y": 678
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=1361 on a canvas 1080 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
      "x": 518,
      "y": 216,
      "w": 499,
-     "h": 1145,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 1145
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3617,7 +3866,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "72e5b488"
+      "hash": "d2c3712a"
      },
      {
       "file": "low-desk-height-9x16_f02.png",
@@ -3625,7 +3874,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "d2fa9c88"
+      "hash": "3789f506"
      },
      {
       "file": "low-desk-height-9x16_f03.png",
@@ -3633,7 +3882,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "418d7fa0"
+      "hash": "a465bd52"
      }
     ]
    },
@@ -3670,28 +3919,43 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 65,
      "y": 557,
      "w": 540,
      "h": 240,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 35,
+      "y": 531,
+      "w": 599,
+      "h": 293
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 454,
+      "y": 1122
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=2419 on a canvas 1920 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
      "x": 292,
      "y": 384,
      "w": 281,
-     "h": 2035,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 2035
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3805,7 +4069,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "97883c50"
+      "hash": "7b47952d"
      },
      {
       "file": "high-desk-down-16x9_f02.png",
@@ -3813,7 +4077,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "112d7fd8"
+      "hash": "1eefd067"
      },
      {
       "file": "high-desk-down-16x9_f03.png",
@@ -3821,7 +4085,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "99da47be"
+      "hash": "d268c7d4"
      }
     ]
    },
@@ -3859,29 +4123,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 115,
      "y": 97,
      "w": 576,
      "h": 220,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 83,
+      "y": 67,
+      "w": 639,
+      "h": 328
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 115,
      "y": 302,
      "w": 499,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 83,
+      "y": 67,
+      "w": 639,
+      "h": 328
+     },
      "colour": "structure",
      "maxChars": 32
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3983,7 +4260,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "114797f2"
+      "hash": "7f5c9b06"
      },
      {
       "file": "high-desk-down-9x16_f02.png",
@@ -3991,7 +4268,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "21ed77f8"
+      "hash": "1abefe1c"
      },
      {
       "file": "high-desk-down-9x16_f03.png",
@@ -3999,7 +4276,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "eb965cf0"
+      "hash": "183d588a"
      }
     ]
    },
@@ -4037,29 +4314,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 65,
      "y": 134,
      "w": 475,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 39,
+      "y": 99,
+      "w": 527,
+      "h": 383
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 65,
      "y": 384,
      "w": 432,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 39,
+      "y": 99,
+      "w": 527,
+      "h": 383
+     },
      "colour": "structure",
      "maxChars": 27
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4161,7 +4451,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "946159c0"
+      "hash": "cf5d5657"
      },
      {
       "file": "over-the-shoulder-16x9_f02.png",
@@ -4169,7 +4459,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0777aaf8"
+      "hash": "5cfca6aa"
      },
      {
       "file": "over-the-shoulder-16x9_f03.png",
@@ -4177,7 +4467,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "d5ac72f0"
+      "hash": "742d576b"
      }
     ]
    },
@@ -4213,17 +4503,16 @@
    },
    "slots": {
     "screen": {
+     "role": "screen",
+     "region": true,
+     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
      "x": 1046,
      "y": 304,
      "w": 258,
-     "h": 150,
-     "role": "screen",
-     "region": true,
-     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner."
+     "h": 150
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -4308,7 +4597,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "980ae978"
+      "hash": "94ae3abc"
      },
      {
       "file": "over-the-shoulder-9x16_f02.png",
@@ -4316,7 +4605,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0a185b68"
+      "hash": "66c4f239"
      },
      {
       "file": "over-the-shoulder-9x16_f03.png",
@@ -4324,7 +4613,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "99bf5c6e"
+      "hash": "2d81207b"
      }
     ]
    },
@@ -4360,17 +4649,16 @@
    },
    "slots": {
     "screen": {
+     "role": "screen",
+     "region": true,
+     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
      "x": 589,
      "y": 551,
      "w": 258,
-     "h": 150,
-     "role": "screen",
-     "region": true,
-     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner."
+     "h": 150
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4455,7 +4743,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6aea68f8"
+      "hash": "18ef3a79"
      },
      {
       "file": "wide-dusk-16x9_f02.png",
@@ -4463,7 +4751,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "bdf3d180"
+      "hash": "43c40a34"
      },
      {
       "file": "wide-dusk-16x9_f03.png",
@@ -4471,7 +4759,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "42538fd8"
+      "hash": "6e6968a9"
      }
     ]
    },
@@ -4508,29 +4796,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 672,
      "y": 70,
      "w": 576,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 640,
+      "y": 43,
+      "w": 639,
+      "h": 305
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
-     "maxLines": 2,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -4652,7 +4953,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "eef9a778"
+      "hash": "144df025"
      },
      {
       "file": "wide-dusk-9x16_f02.png",
@@ -4660,7 +4961,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ff1ce6d6"
+      "hash": "a8682ab8"
      },
      {
       "file": "wide-dusk-9x16_f03.png",
@@ -4668,7 +4969,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "12d34f79"
+      "hash": "8e352f83"
      }
     ]
    },
@@ -4705,29 +5006,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 378,
      "y": 70,
      "w": 324,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 352,
+      "y": 37,
+      "w": 376,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
-     "maxLines": 3,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4849,7 +5163,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "24e0d628"
+      "hash": "28e6cacf"
      },
      {
       "file": "wide-tight-dusk-16x9_f02.png",
@@ -4857,7 +5171,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9b2280d2"
+      "hash": "ede5de3d"
      },
      {
       "file": "wide-tight-dusk-16x9_f03.png",
@@ -4865,7 +5179,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "8dd20f0a"
+      "hash": "f25f1121"
      }
     ]
    },
@@ -4902,29 +5216,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 672,
      "y": 70,
      "w": 576,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 640,
+      "y": 43,
+      "w": 639,
+      "h": 305
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
-     "maxLines": 2,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 451,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -5046,7 +5373,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "ae1780de"
+      "hash": "4db7129d"
      },
      {
       "file": "wide-tight-dusk-9x16_f02.png",
@@ -5054,7 +5381,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "dd522e99"
+      "hash": "7e927acb"
      },
      {
       "file": "wide-tight-dusk-9x16_f03.png",
@@ -5062,7 +5389,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "22fdf708"
+      "hash": "3f3c19cf"
      }
     ]
    },
@@ -5099,29 +5426,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
+     "note": "chapter opener writes here; nothing else changes",
      "x": 378,
      "y": 70,
      "w": 324,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 352,
+      "y": 37,
+      "w": 376,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
-     "maxLines": 3,
-     "note": "chapter opener writes here; nothing else changes"
+     "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 254,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -5243,7 +5583,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "809ef88a"
+      "hash": "7ff0d915"
      },
      {
       "file": "desk-front-dusk-16x9_f02.png",
@@ -5251,7 +5591,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "61d79628"
+      "hash": "d3e361eb"
      },
      {
       "file": "desk-front-dusk-16x9_f03.png",
@@ -5259,7 +5599,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "32282a04"
+      "hash": "9b2cb8f6"
      }
     ]
    },
@@ -5296,28 +5636,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 576,
      "y": 56,
      "w": 576,
      "h": 210,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 544,
+      "y": 33,
+      "w": 639,
+      "h": 256
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 355,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -5439,7 +5792,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "457976e0"
+      "hash": "2ef84f36"
      },
      {
       "file": "desk-front-dusk-9x16_f02.png",
@@ -5447,7 +5800,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2247f17e"
+      "hash": "516afdda"
      },
      {
       "file": "desk-front-dusk-9x16_f03.png",
@@ -5455,7 +5808,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "41add100"
+      "hash": "6e3caad7"
      }
     ]
    },
@@ -5492,28 +5845,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 324,
      "y": 56,
      "w": 324,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 298,
+      "y": 27,
+      "w": 376,
+      "h": 317
+     },
      "colour": "structure",
      "maxCharsPerLine": 13,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 200,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -5635,7 +6001,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "5af28760"
+      "hash": "636baa4e"
      },
      {
       "file": "desk-corner-dusk-16x9_f02.png",
@@ -5643,7 +6009,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "076a9748"
+      "hash": "8a6eb866"
      },
      {
       "file": "desk-corner-dusk-16x9_f03.png",
@@ -5651,7 +6017,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "b19466e0"
+      "hash": "bc1d8308"
      }
     ]
    },
@@ -5689,38 +6055,52 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 960,
      "y": 120,
      "w": 806,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 916,
+      "y": 80,
+      "w": 895,
+      "h": 444
+     },
      "colour": "structure",
      "maxCharsPerLine": 26,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 960,
      "y": 420,
      "w": 806,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 916,
+      "y": 80,
+      "w": 895,
+      "h": 444
+     },
      "colour": "structure",
      "maxChars": 51
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -5838,7 +6218,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "0bcd2628"
+      "hash": "8a4796c7"
      },
      {
       "file": "desk-corner-dusk-9x16_f02.png",
@@ -5846,7 +6226,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9395e566"
+      "hash": "b6cd5f7b"
      },
      {
       "file": "desk-corner-dusk-9x16_f03.png",
@@ -5854,7 +6234,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "dd412c68"
+      "hash": "170a6503"
      }
     ]
    },
@@ -5892,38 +6272,52 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 540,
      "y": 120,
      "w": 454,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 514,
+      "y": 73,
+      "w": 506,
+      "h": 517
+     },
      "colour": "structure",
      "maxCharsPerLine": 18,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 540,
      "y": 480,
      "w": 454,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 514,
+      "y": 73,
+      "w": 506,
+      "h": 517
+     },
      "colour": "structure",
      "maxChars": 29
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -6041,7 +6435,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f464ef88"
+      "hash": "432c96b5"
      },
      {
       "file": "from-behind-the-monitor-dusk-16x9_f02.png",
@@ -6049,7 +6443,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "8d72b9d0"
+      "hash": "a025ff24"
      },
      {
       "file": "from-behind-the-monitor-dusk-16x9_f03.png",
@@ -6057,7 +6451,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "3f999d90"
+      "hash": "581d609d"
      }
     ]
    },
@@ -6094,28 +6488,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 154,
      "y": 100,
      "w": 960,
      "h": 280,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 101,
+      "y": 69,
+      "w": 1066,
+      "h": 342
+     },
      "colour": "structure",
      "maxCharsPerLine": 32,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -6232,7 +6633,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f0d8074c"
+      "hash": "6c26aed0"
      },
      {
       "file": "from-behind-the-monitor-dusk-9x16_f02.png",
@@ -6240,7 +6641,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "f1537b68"
+      "hash": "d229b7a7"
      },
      {
       "file": "from-behind-the-monitor-dusk-9x16_f03.png",
@@ -6248,7 +6649,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "4b89cec0"
+      "hash": "fc66ec1c"
      }
     ]
    },
@@ -6285,28 +6686,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 100,
      "w": 540,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 56,
+      "y": 65,
+      "w": 599,
+      "h": 390
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -6423,7 +6831,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "32c779c4"
+      "hash": "d3f50cae"
      },
      {
       "file": "whiteboard-wall-dusk-16x9_f02.png",
@@ -6431,7 +6839,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0f6ce557"
+      "hash": "30c515f5"
      },
      {
       "file": "whiteboard-wall-dusk-16x9_f03.png",
@@ -6439,7 +6847,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "c71a2a12"
+      "hash": "f0eb03a1"
      }
     ]
    },
@@ -6476,28 +6884,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 1267,
      "y": 626,
      "w": 538,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 1237,
+      "y": 593,
+      "w": 597,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 17,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 221,
+      "y": 562
+     },
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -6619,7 +7040,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9aa8d520"
+      "hash": "790e08a0"
      },
      {
       "file": "whiteboard-wall-dusk-9x16_f02.png",
@@ -6627,7 +7048,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "31fafda8"
+      "hash": "874b9806"
      },
      {
       "file": "whiteboard-wall-dusk-9x16_f03.png",
@@ -6635,7 +7056,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6c7a1804"
+      "hash": "f4775b01"
      }
     ]
    },
@@ -6672,28 +7093,41 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 998,
      "w": 540,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 56,
+      "y": 965,
+      "w": 599,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, left end",
+      "x": 124,
+      "y": 809
+     },
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -6815,7 +7249,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "743a0710"
+      "hash": "5fa967d1"
      },
      {
       "file": "printer-corner-dusk-16x9_f02.png",
@@ -6823,7 +7257,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "eb6e4b79"
+      "hash": "642d8202"
      },
      {
       "file": "printer-corner-dusk-16x9_f03.png",
@@ -6831,7 +7265,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "3c0809d8"
+      "hash": "68a28103"
      }
     ]
    },
@@ -6868,28 +7302,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 1037,
      "y": 120,
      "w": 730,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 997,
+      "y": 87,
+      "w": 810,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 24,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 269,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -7006,7 +7447,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "8498d2fe"
+      "hash": "775913f3"
      },
      {
       "file": "printer-corner-dusk-9x16_f02.png",
@@ -7014,7 +7455,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e6edce88"
+      "hash": "d87a6d94"
      },
      {
       "file": "printer-corner-dusk-9x16_f03.png",
@@ -7022,7 +7463,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "cbc97770"
+      "hash": "a8d8f818"
      }
     ]
    },
@@ -7059,28 +7500,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 86,
      "y": 120,
      "w": 648,
      "h": 320,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 50,
+      "y": 85,
+      "w": 719,
+      "h": 390
+     },
      "colour": "structure",
      "maxCharsPerLine": 26,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 151,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -7197,7 +7645,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "5e2be038"
+      "hash": "c769268c"
      },
      {
       "file": "doorway-dusk-16x9_f02.png",
@@ -7205,7 +7653,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "67947969"
+      "hash": "8fb4b665"
      },
      {
       "file": "doorway-dusk-16x9_f03.png",
@@ -7213,7 +7661,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "9e3b8a10"
+      "hash": "703e8acf"
      }
     ]
    },
@@ -7250,28 +7698,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 230,
      "y": 540,
      "w": 691,
      "h": 260,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 192,
+      "y": 511,
+      "w": 767,
+      "h": 317
+     },
      "colour": "structure",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 1190,
      "y": 302,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -7388,7 +7843,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b3925342"
+      "hash": "8c016a8a"
      },
      {
       "file": "doorway-dusk-9x16_f02.png",
@@ -7396,7 +7851,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "17e62ba8"
+      "hash": "7a741075"
      },
      {
       "file": "doorway-dusk-9x16_f03.png",
@@ -7404,7 +7859,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7c9a35ec"
+      "hash": "e8f552e9"
      }
     ]
    },
@@ -7441,28 +7896,35 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 76,
      "y": 960,
      "w": 540,
      "h": 300,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 46,
+      "y": 927,
+      "w": 599,
+      "h": 366
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
      "x": 670,
      "y": 346,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -7579,7 +8041,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "87cbbb50"
+      "hash": "375e064c"
      },
      {
       "file": "corner-perspective-dusk-16x9_f02.png",
@@ -7587,7 +8049,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9f188c24"
+      "hash": "dedab917"
      },
      {
       "file": "corner-perspective-dusk-16x9_f03.png",
@@ -7595,7 +8057,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "2b45ca96"
+      "hash": "baa13f60"
      }
     ]
    },
@@ -7633,38 +8095,58 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 67,
      "y": 518,
      "w": 461,
      "h": 210,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 41,
+      "y": 487,
+      "w": 513,
+      "h": 342
+     },
      "colour": "structure",
      "maxCharsPerLine": 15,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 67,
      "y": 734,
      "w": 422,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 41,
+      "y": 487,
+      "w": 513,
+      "h": 342
+     },
      "colour": "structure",
      "maxChars": 27
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, at forearm height",
+      "x": 1034,
+      "y": 497
+     },
      "x": 96,
      "y": 237,
      "w": 653,
-     "h": 562,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 562
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -7787,7 +8269,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "48981c58"
+      "hash": "cb1705d4"
      },
      {
       "file": "corner-perspective-dusk-9x16_f02.png",
@@ -7795,7 +8277,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "07d942c0"
+      "hash": "2a5037c1"
      },
      {
       "file": "corner-perspective-dusk-9x16_f03.png",
@@ -7803,7 +8285,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "8536c618"
+      "hash": "fef66062"
      }
     ]
    },
@@ -7841,38 +8323,58 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 54,
      "y": 806,
      "w": 432,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 28,
+      "y": 761,
+      "w": 484,
+      "h": 500
+     },
      "colour": "structure",
      "maxCharsPerLine": 17,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 54,
      "y": 1152,
      "w": 378,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 28,
+      "y": 761,
+      "w": 484,
+      "h": 500
+     },
      "colour": "structure",
      "maxChars": 24
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, at forearm height",
+      "x": 156,
+      "y": 732
+     },
      "x": 54,
      "y": 269,
      "w": 367,
-     "h": 998,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 998
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -7995,7 +8497,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "ec7bc52a"
+      "hash": "979899e8"
      },
      {
       "file": "low-desk-height-dusk-16x9_f02.png",
@@ -8003,7 +8505,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "a666cc02"
+      "hash": "783aaa8b"
      },
      {
       "file": "low-desk-height-dusk-16x9_f03.png",
@@ -8011,7 +8513,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "a684acb4"
+      "hash": "ba12d8f2"
      }
     ]
    },
@@ -8048,28 +8550,43 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 806,
      "y": 270,
      "w": 614,
      "h": 200,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 772,
+      "y": 248,
+      "w": 682,
+      "h": 244
+     },
      "colour": "structure",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 806,
+      "y": 678
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=1361 on a canvas 1080 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
      "x": 518,
      "y": 216,
      "w": 499,
-     "h": 1145,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 1145
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -8191,7 +8708,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9c56f2b0"
+      "hash": "d7ad98cf"
      },
      {
       "file": "low-desk-height-dusk-9x16_f02.png",
@@ -8199,7 +8716,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "a2e95478"
+      "hash": "56134018"
      },
      {
       "file": "low-desk-height-dusk-9x16_f03.png",
@@ -8207,7 +8724,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "807289e8"
+      "hash": "8c0d6768"
      }
     ]
    },
@@ -8244,28 +8761,43 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 65,
      "y": 557,
      "w": 540,
      "h": 240,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 35,
+      "y": 531,
+      "w": 599,
+      "h": 293
+     },
      "colour": "structure",
      "maxCharsPerLine": 22,
      "maxLines": 3
     },
     "host-anchor": {
+     "role": "host-anchor",
+     "region": true,
+     "scales": "host",
+     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it",
+     "contact": {
+      "pose": "leaning-on-desk",
+      "surface": "desk top, far edge",
+      "x": 454,
+      "y": 1122
+     },
+     "cropped": "below",
+     "cropNote": "SAME ARITHMETIC, DIFFERENT PIN — no special case in the renderer. The camera is at desk height, so this region runs off the bottom of the canvas exactly as the floor does: scale by (floorLineY - figure.y) as always and pin floorLineY to the region's bottom edge, which lands at y=2419 on a canvas 1920 tall. His legs finish below the frame, which is what a low angle does to a standing man.",
      "x": 292,
      "y": 384,
      "w": 281,
-     "h": 2035,
-     "role": "host-anchor",
-     "region": true,
-     "note": "composite a host cut-out here. This region's HEIGHT is the host's target height: scale the host plate so (host.floorLineY - host.slots.figure.y) equals this height, then sit the host's floorLineY on this region's bottom edge (which is this plate's floorLineY). Width is advisory — how much lateral room he has — and is never used to scale him, because the figure box includes arms that are meant to pass it"
+     "h": 2035
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -8387,7 +8919,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "150a06a6"
+      "hash": "4253293f"
      },
      {
       "file": "high-desk-down-dusk-16x9_f02.png",
@@ -8395,7 +8927,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ec8e1f94"
+      "hash": "b5c93aba"
      },
      {
       "file": "high-desk-down-dusk-16x9_f03.png",
@@ -8403,7 +8935,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "f7412138"
+      "hash": "338876ed"
      }
     ]
    },
@@ -8441,29 +8973,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 115,
      "y": 97,
      "w": 576,
      "h": 220,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 83,
+      "y": 67,
+      "w": 639,
+      "h": 328
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 115,
      "y": 302,
      "w": 499,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 83,
+      "y": 67,
+      "w": 639,
+      "h": 328
+     },
      "colour": "structure",
      "maxChars": 32
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -8573,7 +9118,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "0f48a4b2"
+      "hash": "54d212e6"
      },
      {
       "file": "high-desk-down-dusk-9x16_f02.png",
@@ -8581,7 +9126,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "37394248"
+      "hash": "5d815318"
      },
      {
       "file": "high-desk-down-dusk-9x16_f03.png",
@@ -8589,7 +9134,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6cb7aaa0"
+      "hash": "51e4ead4"
      }
     ]
    },
@@ -8627,29 +9172,42 @@
    },
    "slots": {
     "title": {
+     "align": "left",
+     "role": "title",
      "x": 65,
      "y": 134,
      "w": 475,
      "h": 250,
-     "role": "title",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 39,
+      "y": 99,
+      "w": 527,
+      "h": 383
+     },
      "colour": "structure",
      "maxCharsPerLine": 19,
      "maxLines": 3
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 65,
      "y": 384,
      "w": 432,
      "h": 64,
-     "role": "caption",
-     "align": "left",
+     "ground": "card",
+     "groundBox": {
+      "x": 39,
+      "y": 99,
+      "w": 527,
+      "h": 383
+     },
      "colour": "structure",
      "maxChars": 27
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -8759,7 +9317,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "5ce5f50b"
+      "hash": "e8262eea"
      },
      {
       "file": "over-the-shoulder-dusk-16x9_f02.png",
@@ -8767,7 +9325,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "d9282910"
+      "hash": "edcb6c2a"
      },
      {
       "file": "over-the-shoulder-dusk-16x9_f03.png",
@@ -8775,7 +9333,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "5ca4dd58"
+      "hash": "371af6c0"
      }
     ]
    },
@@ -8811,17 +9369,16 @@
    },
    "slots": {
     "screen": {
+     "role": "screen",
+     "region": true,
+     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
      "x": 1046,
      "y": 304,
      "w": 258,
-     "h": 150,
-     "role": "screen",
-     "region": true,
-     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner."
+     "h": 150
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -8914,7 +9471,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "4f40b588"
+      "hash": "f1fbb8ad"
      },
      {
       "file": "over-the-shoulder-dusk-9x16_f02.png",
@@ -8922,7 +9479,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2d7747b8"
+      "hash": "39491b2c"
      },
      {
       "file": "over-the-shoulder-dusk-9x16_f03.png",
@@ -8930,7 +9487,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "381fefbe"
+      "hash": "932610d3"
      }
     ]
    },
@@ -8966,17 +9523,16 @@
    },
    "slots": {
     "screen": {
+     "role": "screen",
+     "region": true,
+     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
      "x": 589,
      "y": 551,
      "w": 258,
-     "h": 150,
-     "role": "screen",
-     "region": true,
-     "note": "the monitor's own panel, front-on. The one region on any room plate a compositor may fill with content — a chart, a filing page, a terminal. Fill it at LOW VALUE: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner."
+     "h": 150
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -9069,7 +9625,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "4cce4bfe"
+      "hash": "b9a8598d"
      },
      {
       "file": "wall-of-calls-16x9_f02.png",
@@ -9077,7 +9633,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9ee1b7c8"
+      "hash": "0c61ac36"
      },
      {
       "file": "wall-of-calls-16x9_f03.png",
@@ -9085,7 +9641,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "cfe2701c"
+      "hash": "e9feabc5"
      }
     ]
    },
@@ -9130,206 +9686,205 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 100,
      "w": 1620,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "ticker-1": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 231,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 246,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-1": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 231,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 339,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 354,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-2": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 339,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 446,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 461,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-3": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 446,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 553,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 568,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-4": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 553,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-5": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 660,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-5": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 675,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-5": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 660,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-6": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 767,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-6": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 782,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-6": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 767,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-7": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 874,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-7": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 889,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-7": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 874,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -9437,7 +9992,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b2b47c70"
+      "hash": "2a715846"
      },
      {
       "file": "wall-of-calls-9x16_f02.png",
@@ -9445,7 +10000,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "d275a910"
+      "hash": "2313adea"
      },
      {
       "file": "wall-of-calls-9x16_f03.png",
@@ -9453,7 +10008,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "88e1e046"
+      "hash": "4edd3fa2"
      }
     ]
    },
@@ -9498,206 +10053,205 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 200,
      "w": 920,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "ticker-1": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 359,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 387,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-1": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 359,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 557,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 584,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-2": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 557,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 754,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 781,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-3": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 754,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 951,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 978,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-4": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 951,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-5": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1148,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-5": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1176,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-5": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1148,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-6": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1345,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-6": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1373,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-6": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1345,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-7": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1542,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-7": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1570,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-7": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1542,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -9805,7 +10359,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "bf1882b8"
+      "hash": "56682d81"
      },
      {
       "file": "wall-of-calls-pinned-16x9_f02.png",
@@ -9813,7 +10367,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "bc1e5518"
+      "hash": "426fcbd5"
      },
      {
       "file": "wall-of-calls-pinned-16x9_f03.png",
@@ -9821,7 +10375,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "a0a84df8"
+      "hash": "51afe3dc"
      }
     ]
    },
@@ -9866,233 +10420,232 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 100,
      "w": 1620,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "ticker-1": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 231,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 246,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-1": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 231,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 339,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 354,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-2": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 339,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 446,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 461,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-3": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 446,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 553,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 568,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-4": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 553,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-5": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 660,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-5": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 675,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-5": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 660,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-6": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 767,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-6": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 782,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-6": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 767,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "ticker-7": {
+     "align": "left",
+     "role": "ticker",
      "x": 160,
      "y": 874,
      "w": 356,
      "h": 64,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 14
     },
     "date-7": {
+     "align": "left",
+     "role": "date",
      "x": 571,
      "y": 889,
      "w": 356,
      "h": 54,
-     "role": "date",
-     "align": "left",
      "maxChars": 21
     },
     "outcome-7": {
+     "align": "right",
+     "role": "outcome",
      "x": 1057,
      "y": 874,
      "w": 680,
      "h": 64,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 48
     },
     "new-ticker": {
+     "align": "left",
+     "role": "ticker",
      "x": 433,
      "y": 740,
      "w": 369,
      "h": 62,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 15
     },
     "new-date": {
+     "align": "left",
+     "role": "date",
      "x": 828,
      "y": 750,
      "w": 295,
      "h": 52,
-     "role": "date",
-     "align": "left",
      "maxChars": 17
     },
     "new-outcome": {
+     "align": "right",
+     "role": "outcome",
      "x": 1123,
      "y": 740,
      "w": 468,
      "h": 62,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 33
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -10222,7 +10775,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f02ee207"
+      "hash": "c67c2fdb"
      },
      {
       "file": "wall-of-calls-pinned-9x16_f02.png",
@@ -10230,7 +10783,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "7138a238"
+      "hash": "b7649762"
      },
      {
       "file": "wall-of-calls-pinned-9x16_f03.png",
@@ -10238,7 +10791,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "e3d0f472"
+      "hash": "34a61709"
      }
     ]
    },
@@ -10283,233 +10836,232 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 200,
      "w": 920,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "ticker-1": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 359,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-1": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 387,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-1": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 359,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 557,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-2": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 584,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-2": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 557,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 754,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-3": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 781,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-3": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 754,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 951,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-4": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 978,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-4": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 951,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-5": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1148,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-5": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1176,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-5": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1148,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-6": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1345,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-6": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1373,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-6": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1345,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "ticker-7": {
+     "align": "left",
+     "role": "ticker",
      "x": 90,
      "y": 1542,
      "w": 202,
      "h": 118,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 9
     },
     "date-7": {
+     "align": "left",
+     "role": "date",
      "x": 319,
      "y": 1570,
      "w": 202,
      "h": 99,
-     "role": "date",
-     "align": "left",
      "maxChars": 12
     },
     "outcome-7": {
+     "align": "right",
+     "role": "outcome",
      "x": 595,
      "y": 1542,
      "w": 386,
      "h": 118,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 31
     },
     "new-ticker": {
+     "align": "left",
+     "role": "ticker",
      "x": 251,
      "y": 1296,
      "w": 210,
      "h": 113,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 10
     },
     "new-date": {
+     "align": "left",
+     "role": "date",
      "x": 465,
      "y": 1314,
      "w": 168,
      "h": 95,
-     "role": "date",
-     "align": "left",
      "maxChars": 10
     },
     "new-outcome": {
+     "align": "right",
+     "role": "outcome",
      "x": 633,
      "y": 1296,
      "w": 266,
      "h": 113,
-     "role": "outcome",
-     "align": "right",
      "maxChars": 21
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840

@@ -1035,5 +1035,59 @@
       "host/medium-robe-blink"
     ],
     "not_shipped": "the six hostFigure poses. Those are full-body 9:16 plates where the head is a few dozen pixels across and a blink is one pixel changing. Deliberate, not an omission."
+  },
+  "structure/said-happened-3-16x9": {
+    "chapter_types": [
+      "guidance-estimates",
+      "management",
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "Three pairs. Same argument and same homes as -5, which was already mapped: what they said against what happened. DROP THIRTEEN — the count variants were never given entries of their own, so a director asking for three pairs had no reachable plate while five pairs did."
+  },
+  "structure/said-happened-4-16x9": {
+    "chapter_types": [
+      "guidance-estimates",
+      "management",
+      "resigned-close"
+    ],
+    "shot_ids": [
+      "evidence",
+      "land"
+    ],
+    "note": "Four pairs. As -3 and -5."
+  },
+  "structure/whiteboard-3-16x9": {
+    "chapter_types": [
+      "one-framework",
+      "moat",
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "open",
+      "evidence"
+    ],
+    "note": "Three panels on a board. one-framework is the primary home and it is nearly literal: the chapter IS a framework drawn out, and this is the only surface in the kit for drawing one. MOAT is the secondary, and it closes a gap from the other side — moat was the one chapter type of the sixteen that no plate reached, and a moat argument is a structural claim that needs a board rather than a chart. That is a PROPOSAL for the moat half, not an assumption: it is defensible because the plate is panels-and-arrows with no data commitment, and it should be rejected if a director reads moat as a comparison rather than an explanation."
+  },
+  "structure/whiteboard-4-16x9": {
+    "chapter_types": [
+      "one-framework",
+      "moat",
+      "how-the-money-is-made"
+    ],
+    "shot_ids": [
+      "open",
+      "evidence"
+    ],
+    "note": "Four panels. As -3. Prefer -3 where a panel has to carry more than a phrase."
+  },
+  "_reachability": {
+    "finding": "DROP THIRTEEN. The reachability check reported six stems unreachable. Two of them — structure/said-happened-5 and structure/sensitivity — were already mapped here and always have been. The check compares BARE STEMS against a fragment that is keyed by ASPECT: 57 of 60 keys carry a -16x9 or -9x16 suffix, and only three (the host poses) are bare. So a stem lookup misses every aspect-qualified entry.",
+    "consequence": "It reports reachable plates as unreachable, which is the safer direction and still wrong — it puts two plates on a to-fix list that needed nothing, and it means the check cannot distinguish a real gap from a keying mismatch. The four genuine gaps in the same report (said-happened-3, said-happened-4, whiteboard-3, whiteboard-4) are now mapped above.",
+    "proposed_fix": "The check should resolve a stem as reachable if ANY aspect-qualified key under it resolves, or the fragment should be re-keyed to stems with a per-aspect override. NOT APPLIED — the check lives on the pipeline side, and which way it goes is a decision about whether a mapping is allowed to differ per aspect. It currently can and does: several portrait keys carry different beats from their landscape twin, so collapsing to stems would lose that.",
+    "unverified": "I have not seen the reachability check's source. This is inferred from its output against this file's keys, and it is the most likely explanation rather than a confirmed one."
   }
 }

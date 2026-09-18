@@ -269,13 +269,34 @@ def test_the_long_rotates_its_room_angles():
     pipeline that never cuts to them has changed nothing. `high-desk-down` is
     the one with no floor in shot: it fills the `surface` role alone, and the
     filing walk is the beat that wants it.
+
+    ASSERTED ON THE ANGLE, NOT THE KEY, because the hour is a separate axis.
+    `room/corner-perspective-16x9` and `room/corner-perspective-dusk-16x9` are
+    the same lens on the same furniture, and this test is about the lens.
+    Matching the night key made it pass or fail on which hour the fixture's
+    ticker happened to draw, which is not what it is for.
     """
     _fmt, result = _long_cut()
     rooms = {l.entry_key for l in result.layers
              if l.kind == "plate" and l.concept == "room"}
     assert len(rooms) >= 8, sorted(rooms)
+
+    def _angle(key: str) -> str:
+        return (key.removeprefix("room/").removesuffix("-16x9")
+                .removesuffix("-9x16").removesuffix("-dusk"))
+
+    # ONE HOUR PER VIDEO, checked here because this is the only test holding a
+    # whole cut's worth of rooms at once. Two hours on one wall in one video is
+    # two rooms. `wall-of-calls` is excluded: it is drawn by `wallOfCalls`
+    # rather than `room`, ships no hour variant, and is a content plate that
+    # happens to be a room rather than an angle on the set.
+    hours = {"dusk" if "-dusk-" in k else "night"
+             for k in rooms if not k.startswith("room/wall-of-calls")}
+    assert len(hours) <= 1, f"one video, two hours: {sorted(rooms)}"
+
+    angles = {_angle(k) for k in rooms}
     for angle in ("corner-perspective", "low-desk-height", "high-desk-down"):
-        assert f"room/{angle}-16x9" in rooms, \
+        assert angle in angles, \
             f"{angle} is in the kit and never cut to: {sorted(rooms)}"
 
 

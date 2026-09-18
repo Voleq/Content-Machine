@@ -1,11 +1,29 @@
 {
  "family": "peers",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 4,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "plate draws the ledger and reserves the bar column; every ticker, move and multiple is a slot, and engine/series.js draws the bars from the data",
+ "slotKinds": {
+  "region": "a graphic region for code to draw into, not a text box (bars)"
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 74,
+ "frameTotal": 12,
  "plates": {
   "peers/peer-strip-16x9": {
    "key": "peers/peer-strip-16x9",
@@ -33,7 +51,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "141479e0"
+      "hash": "a25c8007"
      },
      {
       "file": "peer-strip-16x9_f02.png",
@@ -41,7 +59,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9af1e420"
+      "hash": "fec7dc60"
      },
      {
       "file": "peer-strip-16x9_f03.png",
@@ -49,7 +67,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "27b48e4a"
+      "hash": "84dec04b"
      }
     ]
    },
@@ -126,223 +144,229 @@
    },
    "slots": {
     "unit": {
+     "align": "left",
+     "role": "unit",
      "x": 190,
      "y": 88,
      "w": 1540,
      "h": 30,
-     "role": "unit",
-     "align": "left",
      "maxChars": 92
     },
     "head-move": {
+     "align": "right",
+     "role": "period",
      "x": 991,
      "y": 185,
      "w": 394,
      "h": 30,
-     "role": "period",
-     "align": "right",
      "maxChars": 28
     },
     "head-fwd": {
+     "align": "right",
+     "role": "period",
      "x": 1405,
      "y": 185,
      "w": 325,
      "h": 30,
-     "role": "period",
-     "align": "right",
      "maxChars": 23
     },
     "bars": {
+     "role": "bars",
+     "region": true,
+     "renderer": "series.rowBars",
+     "rows": 5,
+     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data",
      "x": 621,
      "y": 241,
      "w": 360,
-     "h": 665,
-     "role": "bars",
-     "region": true,
-     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data"
+     "h": 665
     },
     "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 159,
      "y": 243,
      "w": 1601,
-     "h": 129,
-     "role": "highlight-band"
+     "h": 129
     },
     "ticker-1": {
+     "align": "left",
+     "role": "tickerSubject",
      "x": 190,
      "y": 265,
      "w": 396,
      "h": 85,
-     "role": "tickerSubject",
-     "align": "left",
      "maxChars": 11
     },
     "move-1": {
+     "align": "right",
+     "role": "move",
      "x": 991,
      "y": 258,
      "w": 394,
      "h": 98,
-     "role": "move",
-     "align": "right",
      "maxChars": 10
     },
     "fwd-1": {
+     "align": "right",
+     "role": "fwd",
      "x": 1405,
      "y": 265,
      "w": 325,
      "h": 85,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 11
     },
     "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 159,
      "y": 376,
      "w": 1601,
-     "h": 129,
-     "role": "highlight-band"
+     "h": 129
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 190,
      "y": 398,
      "w": 396,
      "h": 85,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 13
     },
     "move-2": {
+     "align": "right",
+     "role": "move",
      "x": 991,
      "y": 391,
      "w": 394,
      "h": 98,
-     "role": "move",
-     "align": "right",
      "maxChars": 10
     },
     "fwd-2": {
+     "align": "right",
+     "role": "fwd",
      "x": 1405,
      "y": 398,
      "w": 325,
      "h": 85,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 11
     },
     "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 159,
      "y": 509,
      "w": 1601,
-     "h": 129,
-     "role": "highlight-band"
+     "h": 129
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 190,
      "y": 531,
      "w": 396,
      "h": 85,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 13
     },
     "move-3": {
+     "align": "right",
+     "role": "move",
      "x": 991,
      "y": 524,
      "w": 394,
      "h": 98,
-     "role": "move",
-     "align": "right",
      "maxChars": 10
     },
     "fwd-3": {
+     "align": "right",
+     "role": "fwd",
      "x": 1405,
      "y": 531,
      "w": 325,
      "h": 85,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 11
     },
     "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 159,
      "y": 642,
      "w": 1601,
-     "h": 129,
-     "role": "highlight-band"
+     "h": 129
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 190,
      "y": 664,
      "w": 396,
      "h": 85,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 13
     },
     "move-4": {
+     "align": "right",
+     "role": "move",
      "x": 991,
      "y": 657,
      "w": 394,
      "h": 98,
-     "role": "move",
-     "align": "right",
      "maxChars": 10
     },
     "fwd-4": {
+     "align": "right",
+     "role": "fwd",
      "x": 1405,
      "y": 664,
      "w": 325,
      "h": 85,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 11
     },
     "band-5": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 159,
      "y": 775,
      "w": 1601,
-     "h": 129,
-     "role": "highlight-band"
+     "h": 129
     },
     "ticker-5": {
+     "align": "left",
+     "role": "ticker",
      "x": 190,
      "y": 797,
      "w": 396,
      "h": 85,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 13
     },
     "move-5": {
+     "align": "right",
+     "role": "move",
      "x": 991,
      "y": 790,
      "w": 394,
      "h": 98,
-     "role": "move",
-     "align": "right",
      "maxChars": 10
     },
     "fwd-5": {
+     "align": "right",
+     "role": "fwd",
      "x": 1405,
      "y": 797,
      "w": 325,
      "h": 85,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 11
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 190,
      "y": 966,
      "w": 1540,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 98
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -396,7 +420,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "975170ec"
+      "hash": "d35bc54e"
      },
      {
       "file": "peer-strip-9x16_f02.png",
@@ -404,7 +428,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "77d3ffe9"
+      "hash": "570fd982"
      },
      {
       "file": "peer-strip-9x16_f03.png",
@@ -412,7 +436,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7a3c7c90"
+      "hash": "cd4239f2"
      }
     ]
    },
@@ -489,189 +513,194 @@
    },
    "slots": {
     "unit": {
+     "align": "left",
+     "role": "unit",
      "x": 84,
      "y": 186,
      "w": 912,
      "h": 30,
-     "role": "unit",
-     "align": "left",
      "maxChars": 54
     },
     "head-move": {
+     "align": "right",
+     "role": "period",
      "x": 558,
      "y": 698,
      "w": 209,
      "h": 28,
-     "role": "period",
-     "align": "right",
      "maxChars": 16
     },
     "head-fwd": {
+     "align": "right",
+     "role": "period",
      "x": 803,
      "y": 698,
      "w": 193,
      "h": 28,
-     "role": "period",
-     "align": "right",
      "maxChars": 15
     },
     "bars": {
+     "role": "bars",
+     "region": true,
+     "renderer": "series.rowBars",
+     "rows": 4,
+     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data",
      "x": 357,
      "y": 771,
      "w": 183,
-     "h": 524,
-     "role": "bars",
-     "region": true,
-     "note": "one horizontal bar per row, on a scale shared across the rows, from a zero rule the renderer places. engine/series.js draws it from the data"
+     "h": 524
     },
     "band-1": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 30,
      "y": 773,
      "w": 1020,
-     "h": 127,
-     "role": "highlight-band"
+     "h": 127
     },
     "ticker-1": {
+     "align": "left",
+     "role": "tickerSubject",
      "x": 84,
      "y": 795,
      "w": 210,
      "h": 84,
-     "role": "tickerSubject",
-     "align": "left",
      "maxChars": 6
     },
     "move-1": {
+     "align": "right",
+     "role": "move",
      "x": 558,
      "y": 788,
      "w": 209,
      "h": 97,
-     "role": "move",
-     "align": "right",
      "maxChars": 6
     },
     "fwd-1": {
+     "align": "right",
+     "role": "fwd",
      "x": 803,
      "y": 795,
      "w": 193,
      "h": 84,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 7
     },
     "band-2": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 30,
      "y": 904,
      "w": 1020,
-     "h": 127,
-     "role": "highlight-band"
+     "h": 127
     },
     "ticker-2": {
+     "align": "left",
+     "role": "ticker",
      "x": 84,
      "y": 926,
      "w": 210,
      "h": 84,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 7
     },
     "move-2": {
+     "align": "right",
+     "role": "move",
      "x": 558,
      "y": 919,
      "w": 209,
      "h": 97,
-     "role": "move",
-     "align": "right",
      "maxChars": 6
     },
     "fwd-2": {
+     "align": "right",
+     "role": "fwd",
      "x": 803,
      "y": 926,
      "w": 193,
      "h": 84,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 7
     },
     "band-3": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 30,
      "y": 1035,
      "w": 1020,
-     "h": 127,
-     "role": "highlight-band"
+     "h": 127
     },
     "ticker-3": {
+     "align": "left",
+     "role": "ticker",
      "x": 84,
      "y": 1057,
      "w": 210,
      "h": 84,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 7
     },
     "move-3": {
+     "align": "right",
+     "role": "move",
      "x": 558,
      "y": 1050,
      "w": 209,
      "h": 97,
-     "role": "move",
-     "align": "right",
      "maxChars": 6
     },
     "fwd-3": {
+     "align": "right",
+     "role": "fwd",
      "x": 803,
      "y": 1057,
      "w": 193,
      "h": 84,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 7
     },
     "band-4": {
+     "role": "highlight-band",
+     "overlay": "overlays/row-band",
      "x": 30,
      "y": 1166,
      "w": 1020,
-     "h": 127,
-     "role": "highlight-band"
+     "h": 127
     },
     "ticker-4": {
+     "align": "left",
+     "role": "ticker",
      "x": 84,
      "y": 1188,
      "w": 210,
      "h": 84,
-     "role": "ticker",
-     "align": "left",
      "maxChars": 7
     },
     "move-4": {
+     "align": "right",
+     "role": "move",
      "x": 558,
      "y": 1181,
      "w": 209,
      "h": 97,
-     "role": "move",
-     "align": "right",
      "maxChars": 6
     },
     "fwd-4": {
+     "align": "right",
+     "role": "fwd",
      "x": 803,
      "y": 1188,
      "w": 193,
      "h": 84,
-     "role": "fwd",
-     "align": "right",
      "maxChars": 7
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 84,
      "y": 1740,
      "w": 912,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 58
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -725,7 +754,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7bdf1068"
+      "hash": "021626df"
      },
      {
       "file": "distribution-16x9_f02.png",
@@ -733,7 +762,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "7bdf1068"
+      "hash": "021626df"
      },
      {
       "file": "distribution-16x9_f03.png",
@@ -741,7 +770,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7bdf1068"
+      "hash": "021626df"
      }
     ]
    },
@@ -798,135 +827,150 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 170,
      "y": 92,
      "w": 1106,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 52
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1308,
      "y": 92,
      "w": 442,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxChars": 26
     },
     "bucket-1": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 195,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-2": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 421,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-3": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 646,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-4": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 872,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-5": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 1098,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-6": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 1323,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "bucket-7": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 799,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 1549,
      "y": 324,
      "w": 176,
-     "h": 475,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 475
     },
     "marker": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.axisMark",
+     "axis": "horizontal",
+     "note": "the SUBJECT's position on the same axis as the buckets, 0 at axis-low and 1 at axis-high. This is the whole plate: a spread without the subject in it is a statistic, and the subject without the spread is a number. A position outside 0-1 means the subject is off the peer range — clamp to the end and MARK it, never drop it.",
      "x": 170,
      "y": 290,
      "w": 1580,
-     "h": 509,
-     "role": "marker",
-     "region": true,
-     "note": "the SUBJECT's position on the same axis as the buckets, 0 at axis-low and 1 at axis-high. This is the whole plate: a spread without the subject in it is a statistic, and the subject without the spread is a number. A position outside 0-1 means the subject is off the peer range — clamp to the end and MARK it, never drop it."
+     "h": 509
     },
     "marker-label": {
+     "align": "left",
+     "role": "marker",
      "x": 170,
      "y": 211,
      "w": 790,
      "h": 79,
-     "role": "marker",
-     "align": "left",
      "maxCharsPerLine": 56,
      "maxLines": 2
     },
     "axis-low": {
+     "align": "left",
+     "role": "axis",
      "x": 170,
      "y": 826,
      "w": 632,
      "h": 30,
-     "role": "axis",
-     "align": "left",
      "maxChars": 40
     },
     "axis-high": {
+     "align": "right",
+     "role": "axis",
      "x": 1118,
      "y": 826,
      "w": 632,
      "h": 30,
-     "role": "axis",
-     "align": "right",
      "maxChars": 40
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 170,
      "y": 950,
      "w": 1580,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 101
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -979,7 +1023,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "8d79d9a6"
+      "hash": "c25c9b5e"
      },
      {
       "file": "distribution-9x16_f02.png",
@@ -987,7 +1031,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "8d79d9a6"
+      "hash": "c25c9b5e"
      },
      {
       "file": "distribution-9x16_f03.png",
@@ -995,7 +1039,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "8d79d9a6"
+      "hash": "c25c9b5e"
      }
     ]
    },
@@ -1052,135 +1096,150 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 200,
      "w": 644,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 30
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 742,
      "y": 200,
      "w": 258,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxChars": 15
     },
     "bucket-1": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 94,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-2": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 226,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-3": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 357,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-4": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 489,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-5": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 620,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-6": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 752,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "bucket-7": {
+     "role": "bucket",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1267,
+     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter.",
      "x": 883,
      "y": 653,
      "w": 103,
-     "h": 614,
-     "role": "bucket",
-     "region": true,
-     "note": "a count of peers in this band. Seven buckets, fixed — a histogram whose bucket count moves is not comparable with the one in the previous chapter."
+     "h": 614
     },
     "marker": {
+     "role": "marker",
+     "region": true,
+     "renderer": "series.axisMark",
+     "axis": "horizontal",
+     "note": "the SUBJECT's position on the same axis as the buckets, 0 at axis-low and 1 at axis-high. This is the whole plate: a spread without the subject in it is a statistic, and the subject without the spread is a number. A position outside 0-1 means the subject is off the peer range — clamp to the end and MARK it, never drop it.",
      "x": 80,
      "y": 593,
      "w": 920,
-     "h": 674,
-     "role": "marker",
-     "region": true,
-     "note": "the SUBJECT's position on the same axis as the buckets, 0 at axis-low and 1 at axis-high. This is the whole plate: a spread without the subject in it is a statistic, and the subject without the spread is a number. A position outside 0-1 means the subject is off the peer range — clamp to the end and MARK it, never drop it."
+     "h": 674
     },
     "marker-label": {
+     "align": "left",
+     "role": "marker",
      "x": 80,
      "y": 523,
      "w": 460,
      "h": 70,
-     "role": "marker",
-     "align": "left",
      "maxCharsPerLine": 37,
      "maxLines": 2
     },
     "axis-low": {
+     "align": "left",
+     "role": "axis",
      "x": 80,
      "y": 1315,
      "w": 368,
      "h": 28,
-     "role": "axis",
-     "align": "left",
      "maxChars": 25
     },
     "axis-high": {
+     "align": "right",
+     "role": "axis",
      "x": 632,
      "y": 1315,
      "w": 368,
      "h": 28,
-     "role": "axis",
-     "align": "right",
      "maxChars": 25
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 80,
      "y": 1720,
      "w": 920,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840

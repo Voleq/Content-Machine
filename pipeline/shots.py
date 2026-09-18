@@ -624,11 +624,19 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
             # THE SLACK GOES TO THE FRAMES THAT ARE STILL MOVING. A bare-
             # ground shot is motionless once its type has drawn on, so
             # extending it is the one thing the ceiling exists to prevent.
-            # But "has a plate" was too coarse a test for alive: 44 of the
-            # In the 143-plate kit 47 were `playback: static` by design — a figure that
-            # moves is a figure being re-read — so an even share put a data
-            # plate on screen for 15.4 seconds in a twelve-minute cut while
-            # the room beside it, with a man talking in it, took the same.
+            # But "has a plate" was too coarse a test for alive, and the
+            # reason it was has since been retracted: back when the kit froze
+            # every data plate, an even share put a motionless numbers sheet on
+            # screen for 15.4 seconds in a twelve-minute cut while the room
+            # beside it, with a man talking in it, took the same.
+            #
+            # DATA PLATES MOVE NOW and the ordering below still holds. The kit
+            # ships 3 static plates of 270 — `overlays/row-band` and the two
+            # lower thirds — and a data plate's FRAME breathes while its
+            # figures stay pinned (engine/build.js §1.5). So a numbers sheet is
+            # no longer the dead frame this guarded against. It is still the
+            # frame with the least happening in it, which is why the order
+            # below is unchanged.
             #
             # A shot with a HOST is the most alive frame in the format: he
             # talks, he blinks, the room boils behind him. He takes the

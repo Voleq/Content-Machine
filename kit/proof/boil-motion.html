@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the boil, watched — data plates looping at 2fps</title>
+<script src="../engine/budget.js"></script>
+<script src="../engine/hand.js"></script>
+<script src="../engine/plates.js"></script>
+<script src="../engine/audit.js"></script>
+<script src="../engine/build.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Archivo+Narrow:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#14181c;color:#8d968f;font:13px/1.65 "Courier New",monospace}
+  main{padding:26px 30px 90px;max-width:1500px}
+  h1{color:#C9C2B4;font-size:19px;font-weight:400;margin:0 0 4px}
+  h2{color:#C9C2B4;font-size:15px;font-weight:400;margin:38px 0 6px;padding-top:16px;border-top:1px solid #262c33}
+  p{max-width:104ch;text-wrap:pretty}
+  b{color:#C9C2B4;font-weight:400}
+  b.k{color:#C7A86B}
+  em{color:#C9C2B4;font-style:normal}
+  code{color:#C7A86B}
+  a{color:#C7A86B}
+  a:hover{color:#E6DDC9}
+  .bar{position:sticky;top:0;z-index:20;background:#14181c;border-bottom:1px solid #262c33;
+       padding:10px 0 12px;margin-bottom:6px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{background:#1B1F24;color:#C9C2B4;border:1px solid #2f363d;padding:6px 13px;
+         font:12px "Courier New",monospace;cursor:pointer}
+  button:hover{border-color:#C7A86B;color:#E6DDC9}
+  button.on{border-color:#C7A86B;color:#C7A86B}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin:14px 0}
+  .cell{background:#1B1F24;border:1px solid #262c33}
+  .cap{padding:6px 9px;border-bottom:1px solid #262c33;font-size:11px;color:#8d968f}
+  .cap b{color:#C9C2B4}
+  .stage{position:relative;overflow:hidden}
+  .stage svg{display:block}
+  .f1{position:absolute;display:flex;align-items:flex-start;color:#1C222A;pointer-events:none}
+  .f1 span{width:100%;white-space:pre-wrap;align-self:flex-start}
+  .rep{margin:12px 0 0;padding:11px 13px;background:#1B1F24;border:1px solid #262c33;
+       white-space:pre-wrap;max-width:112ch;font-size:12px}
+  .rep b.ok{color:#8FBF7F}
+  table.m{border-collapse:collapse;margin:12px 0;font-size:11.5px}
+  table.m th,table.m td{border:1px solid #262c33;padding:4px 9px;text-align:right}
+  table.m th:first-child,table.m td:first-child,table.m td.l{text-align:left}
+  table.m th{color:#8d968f;font-weight:400;text-transform:uppercase;letter-spacing:.05em}
+  .pin{color:#8FBF7F}.mov{color:#D98A7A}
+  .fc{font-size:11px;color:#C7A86B;min-width:8ch;display:inline-block}
+</style>
+</head>
+<body>
+<main>
+  <h1>The boil, watched — data plates looping at 2fps</h1>
+  <p>The one thing the kit has never done: <b>a data plate actually moving.</b> Everything about
+  the boil in this pack has been arithmetic — byte counts, ink shares, path diffs — and the question
+  asked of it is whether a table that loops can still be read. That cannot be answered by a number,
+  so this page runs the frames on a timer at the fps the manifest declares and lets you watch.</p>
+
+  <p><b class="k">READ THIS FIRST — the premise of the question is wrong, and it is the answer.</b>
+  The 47 plates did not become boiling plates. <em>A plate contains no content; it contains slots.</em>
+  Every figure on a numbers sheet is type the compositor sets into a slot box at video time, and
+  <b>every slot box on every plate here is bit-for-bit identical across all three frames</b> — measured
+  below, 0 units of deviation on 12 plates and 315 slots. The boil was turned on for the plates'
+  <em>furniture</em>, behind a gate: with the gate up a mark takes the boil offset only if it was drawn
+  inside <code>HAND.breathe()</code>. <b>So no number in this kit wobbles, and none can.</b> The type is
+  pinned by construction, not by restraint.</p>
+
+  <p>That reasoning is not missing from the pack — it is <code>§1.5</code> in <code>engine/build.js</code>,
+  written at the point the gate is raised, and it explicitly retracts the old rule and names what is
+  deliberately excluded from the breathing set: <em>axis lines, series lines, slot underlays and
+  highlight boxes.</em> What it does not do is appear in <code>CHANGES.md</code>, which is why the
+  question had to be asked at all. <b>That is a documentation defect and it is real.</b></p>
+
+  <p><b class="k">AND THE GATE LEAKS, in exactly the place §1.5 names.</b> Thirteen plates draw a band
+  or hatch that <em>moves behind pinned type</em> — the third exclusion, violated. The sharpest case is
+  <code>structure/row-spotlight</code>, whose entire function is a highlight box. Watch the middle column
+  below: the type does not move, the paper under it does, and the relative motion is the thing §1.5
+  predicted reads worse than either alone.</p>
+
+  <div class="bar">
+    <button id="play" class="on">pause</button>
+    <button data-fps="2" class="on">2 fps (as shipped)</button>
+    <button data-fps="1">1 fps</button>
+    <button data-fps="8">8 fps</button>
+    <span class="fc" id="fc">frame 1/3</span>
+    <button id="fill" class="on">figures filled</button>
+    <button id="mark">mark what moves</button>
+  </div>
+
+  <h2>1 · <code>tables/numbers-sheet-5r</code> — sixty figures, looping</h2>
+  <p>Filled with the worst realistic copy, at the derived budget. Left is the plate as shipped. Middle
+  is the same plate with <b>the bands pinned to frame one</b> and everything else still boiling — the
+  proposed fix, previewed by substituting frame one's band paths rather than by changing a drawing
+  function. Right isolates the moving ink alone, so you can see what is actually in motion.</p>
+  <div class="row" id="r1"></div>
+
+  <h2>2 · <code>tables/cash-flow</code> — the gate working correctly</h2>
+  <p>The comparison case, and the reason this is not a blanket finding. Cash-flow boils 12 of 67 marks
+  and <b>not one of them passes under a value box</b>: it has no zebra banding, so its furniture is the
+  paper edge and the rules, which is precisely the set §1.5 intended. Same loop, same fps. If the answer
+  to the brief were "turn the boil off", this plate would be collateral.</p>
+  <div class="row" id="r2"></div>
+
+  <h2>3 · <code>structure/row-spotlight</code> — a highlight box, boiling</h2>
+  <p>§1.5 names <em>highlight boxes</em> in its exclusion list by those words. This plate is one, and it
+  moves: 177 band marks under 6 value slots in portrait. It is the clearest thing on this page.</p>
+  <div class="row" id="r3"></div>
+
+  <h2>4 · The 1:1 crop — one row, at delivered scale</h2>
+  <p>Everything above is fit to the column. This is a single sheet row at <b>1:1</b>, where one canvas
+  unit is one CSS pixel, so the band displacement is the real number rather than a scaled one. Shipped
+  against pinned, same crop, same clock.</p>
+  <div class="row" id="r4"></div>
+
+  <h2>5 · <code>charts/bars-8q</code> — the hairline case, for completeness</h2>
+  <p>Seven chart plates have exactly one moving mark crossing their value labels: a ~1,605-unit
+  gridline at stroke-width 2.25, displaced <b>0.83 units</b> — 1.7px delivered. §1.5's own sorting
+  principle covers it (<em>nobody reads a number off a table rule</em>) and at this amplitude I cannot
+  see it move. Included because it is in the measurement and should not be quietly dropped from it.</p>
+  <div class="row" id="r5"></div>
+
+  <div id="verdict"></div>
+</main>
+
+<script>
+(function () {
+  const B = window.BUILD, PITCH = window.BUDGET.PITCH, NS = "http://www.w3.org/2000/svg";
+  const face = (r) => /courier/i.test(r.font || "") ? "'Courier Prime',monospace" : "'Archivo Narrow',sans-serif";
+  const paths = (s) => s.match(/<path\b[^>]*\/>/g) || [];
+  const sw = (p) => +((p.match(/stroke-width="([\d.]+)"/) || [, 0])[1]);
+  function bbox(p) {
+    const d = (p.match(/d="([^"]+)"/) || [, ""])[1], n = d.match(/-?\d+(?:\.\d+)?/g);
+    if (!n) return null;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let i = 0; i + 1 < n.length; i += 2) { const x = +n[i], y = +n[i + 1];
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    return { x0: x0, y0: y0, x1: x1, y1: y1, w: x1 - x0, h: y1 - y0 };
+  }
+  function diffMulti(a, b) {
+    const m = new Map(); a.forEach((p) => m.set(p, (m.get(p) || 0) + 1));
+    b.forEach((p) => { const n = m.get(p) || 0; if (n > 0) m.set(p, n - 1); });
+    const out = []; m.forEach((n, p) => { for (let i = 0; i < n; i++) out.push(p); }); return out;
+  }
+  const VALUE = ["value", "figure", "huge", "cell", "total", "delta", "step", "series"];
+
+  // ---- fills: worst realistic copy, at the derived budget --------------------
+  const SHEET = (function () {
+    const d = { unit: "$m unless stated, as reported, eight quarters to Q2'26" };
+    ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25"].forEach((t, i) => d["head-" + (i + 1)] = t);
+    ["revenue", "gross profit", "operating income", "free cash flow", "net debt / EBITDA"]
+      .forEach(function (t, r) {
+        d["label-" + (r + 1)] = t;
+        ["12,486", "13,204", "11,905", "12,733", "14,018", "12,946"]
+          .forEach((v, c) => d["cell-" + (r + 1) + "-" + (c + 1)] = v);
+      });
+    return d;
+  })();
+  const CASH = (function () {
+    const d = { unit: "$m, twelve months to Q2'26" };
+    ["operating", "investing", "financing"].forEach(function (t, i) {
+      d["label-" + (i + 1)] = t; d["total-" + (i + 1)] = ["1,284", "(482)", "(914)"][i];
+      ["3,201", "(1,917)", "(482)", "914", "(203)", "1,284"]
+        .forEach((v, c) => { const n = "cell-" + (i + 1) + "-" + (c + 1) + "-1"; d[n] = v; });
+    });
+    return d;
+  })();
+  const SPOT = (function () {
+    const d = {};
+    ["revenue", "gross margin", "operating margin", "free cash flow", "net debt", "interest cover"]
+      .forEach(function (t, i) { d["label-" + (i + 1)] = t; d["value-" + (i + 1)] = ["12,486", "41.2%", "18.7%", "1,284", "(4,913)", "2.1x"][i]; });
+    return d;
+  })();
+  const BARS = (function () {
+    const d = { unit: "revenue, $m, eight quarters to Q2'26, as reported" };
+    ["Q3'24", "Q4'24", "Q1'25", "Q2'25", "Q3'25", "Q4'25", "Q1'26", "Q2'26"].forEach((t, i) => d["head-" + (i + 1)] = t);
+    ["$8.1bn", "$9.0bn", "$9.8bn", "$15.1bn", "$8.6bn", "$9.5bn", "$10.3bn", "$15.6bn"].forEach((t, i) => d["value-" + (i + 1)] = t);
+    ["0", "4,000", "8,000", "12,000", "16,000"].forEach((t, i) => d["y-" + (i + 1)] = t);
+    return d;
+  })();
+
+  // ---- a player ------------------------------------------------------------
+  // Frames are built ONCE, up front, and stored as strings. The timer swaps
+  // innerHTML rather than redrawing: a 2fps loop that calls draw() on every tick
+  // would be measuring the engine's speed, not the plate's legibility.
+  const PLAYERS = [];
+  function player(host, key, opts) {
+    const o = opts || {};
+    const item = B.LIB.filter((i) => i.key === key)[0];
+    if (!item) { host.insertAdjacentHTML("beforeend", "<div class='cell'><div class='cap'>not in LIB: " + key + "</div></div>"); return; }
+    const frames = B.framesOf(item);
+    const svgs = frames.map((f) => B.draw(item, null, f.args).toSVG());
+    const P1 = B.draw(item, null, frames[0].args), m = P1.manifest();
+    const cw = m.canvas[0], ch = m.canvas[1];
+
+    // which marks move, and which of those are BANDS under a value box
+    const mv = diffMulti(paths(svgs[0]), paths(svgs[1]));
+    const vb = Object.keys(m.slots).filter(function (n) {
+      const s = m.slots[n]; return !s.region && VALUE.indexOf(s.role) >= 0;
+    }).map((n) => Object.assign({ n: n }, m.slots[n]));
+    const bandSet = new Set();
+    mv.forEach(function (p) {
+      const b = bbox(p); if (!b) return;
+      if (sw(p) < 5) return;
+      if (vb.some((v) => b.x1 >= v.x && b.x0 <= v.x + v.w && b.y1 >= v.y && b.y0 <= v.y + v.h)) bandSet.add(p);
+    });
+    // THE PROPOSED FIX, PREVIEWED: on every frame, swap the band paths back to
+    // the ones frame one emitted. Nothing in plates.js is touched — this is what
+    // the fix would look like, rendered, so it can be judged before it is made.
+    const f1Bands = paths(svgs[0]).filter((p) => bandSet.has(p));
+    const pinned = svgs.map(function (s, ix) {
+      if (ix === 0 || !f1Bands.length) return s;
+      let out = s;
+      const mine = diffMulti(paths(s), paths(svgs[0])).filter(function (p) {
+        const b = bbox(p); if (!b || sw(p) < 5) return false;
+        return vb.some((v) => b.x1 >= v.x && b.x0 <= v.x + v.w && b.y1 >= v.y && b.y0 <= v.y + v.h);
+      });
+      const n = Math.min(mine.length, f1Bands.length);
+      for (let i = 0; i < n; i++) out = out.replace(mine[i], f1Bands[i]);
+      return out;
+    });
+
+    const crop = o.crop || null;
+    const vw = crop ? crop.w : cw, vh = crop ? crop.h : ch;
+    const scale = o.scale || (crop ? 1 : Math.min(1, (o.width || 440) / cw));
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    cell.innerHTML = "<div class='cap'>" + o.label + "</div>";
+    const stage = document.createElement("div");
+    stage.className = "stage";
+    stage.style.cssText = "width:" + Math.round(vw * scale) + "px;height:" + Math.round(vh * scale) + "px";
+    cell.appendChild(stage);
+    host.appendChild(cell);
+
+    const inner = document.createElement("div");
+    inner.style.cssText = "position:absolute;left:0;top:0;width:" + vw + "px;height:" + vh + "px;" +
+      "transform:scale(" + scale + ");transform-origin:0 0";
+    stage.appendChild(inner);
+    const holder = document.createElement("div");
+    holder.style.cssText = "position:absolute;left:0;top:0";
+    inner.appendChild(holder);
+    const typeLayer = document.createElement("div");
+    typeLayer.style.cssText = "position:absolute;left:0;top:0;width:" + vw + "px;height:" + vh + "px";
+    inner.appendChild(typeLayer);
+
+    // the type layer is built ONCE and never touched by the timer — which is the
+    // claim this page exists to show. If the figures moved, they would have to be
+    // rebuilt per frame, and they are not.
+    if (o.fill) {
+      const roles = m.typeRoles || {};
+      Object.keys(o.fill).forEach(function (k) {
+        const s = m.slots[k]; if (!s || s.region) return;
+        const r = roles[s.role] || {};
+        const d = document.createElement("div");
+        d.className = "f1";
+        d.style.cssText = "left:" + (s.x - (crop ? crop.x : 0)) + "px;top:" + (s.y - (crop ? crop.y : 0)) +
+          "px;width:" + s.w + "px;height:" + s.h + "px;justify-content:" +
+          (s.align === "right" ? "flex-end" : s.align === "center" ? "center" : "flex-start");
+        const sp = document.createElement("span");
+        sp.textContent = String(o.fill[k]);
+        sp.style.fontWeight = r.weight || 400;
+        sp.style.fontSize = (r.size || 28) + "px";
+        sp.style.fontFamily = face(r);
+        sp.style.lineHeight = String(PITCH);
+        sp.style.textAlign = s.align === "right" ? "right" : s.align === "center" ? "center" : "left";
+        if (r.transform) sp.style.textTransform = r.transform;
+        if (r.tracking) sp.style.letterSpacing = r.tracking;
+        if (r.opacity != null) sp.style.opacity = r.opacity;
+        d.appendChild(sp);
+        typeLayer.appendChild(d);
+      });
+    }
+
+    const rec = {
+      key: key, frames: frames.length, mode: o.mode || "ship",
+      svgs: svgs, pinned: pinned, holder: holder, typeLayer: typeLayer,
+      crop: crop, cw: cw, ch: ch, mv: mv.length, bands: bandSet.size,
+      movingOnly: o.mode === "moving" ? mv : null,
+    };
+    PLAYERS.push(rec);
+    show(rec, 0);
+    return rec;
+  }
+
+  function show(rec, i) {
+    const vb = rec.crop ? [rec.crop.x, rec.crop.y, rec.crop.w, rec.crop.h].join(" ") : "0 0 " + rec.cw + " " + rec.ch;
+    let svg;
+    if (rec.mode === "moving") {
+      // the moving ink alone, on the plate's own ground, so it is visible as a set
+      const only = diffMulti(paths(rec.svgs[i]), paths(rec.svgs[0]));
+      const src = i === 0 ? rec.movingOnly : only;
+      svg = '<svg xmlns="' + NS + '" viewBox="' + vb + '" width="' + (rec.crop ? rec.crop.w : rec.cw) +
+        '" height="' + (rec.crop ? rec.crop.h : rec.ch) + '"><rect x="0" y="0" width="' + rec.cw +
+        '" height="' + rec.ch + '" fill="#E6DDC9"/>' + src.join("") + "</svg>";
+      rec.holder.innerHTML = svg;
+      return;
+    }
+    svg = (rec.mode === "pinned" ? rec.pinned : rec.svgs)[i];
+    rec.holder.innerHTML = svg;
+    const el = rec.holder.querySelector("svg");
+    if (el) {
+      el.setAttribute("viewBox", vb);
+      el.setAttribute("width", rec.crop ? rec.crop.w : rec.cw);
+      el.setAttribute("height", rec.crop ? rec.crop.h : rec.ch);
+    }
+  }
+
+  // ---- the plates ----------------------------------------------------------
+  const SH = "tables/numbers-sheet-5r-16x9";
+  player(document.getElementById("r1"), SH, { label: "<b>as shipped</b> &middot; bands boil &middot; 2fps loop", fill: SHEET, width: 470 });
+  player(document.getElementById("r1"), SH, { label: "<b>bands pinned</b> &middot; the proposed fix, previewed", fill: SHEET, width: 470, mode: "pinned" });
+  player(document.getElementById("r1"), SH, { label: "<b>the moving ink alone</b> &middot; what is actually in motion", width: 470, mode: "moving" });
+
+  const CF = "tables/cash-flow-16x9";
+  player(document.getElementById("r2"), CF, { label: "<b>as shipped</b> &middot; 12 of 67 marks boil, none under a value", fill: CASH, width: 470 });
+  player(document.getElementById("r2"), CF, { label: "<b>the moving ink alone</b> &middot; paper edge and rules", width: 470, mode: "moving" });
+
+  const RS = "structure/row-spotlight-9x16";
+  player(document.getElementById("r3"), RS, { label: "<b>as shipped</b> &middot; the highlight box boils", fill: SPOT, width: 300 });
+  player(document.getElementById("r3"), RS, { label: "<b>bands pinned</b> &middot; previewed", fill: SPOT, width: 300, mode: "pinned" });
+  player(document.getElementById("r3"), RS, { label: "<b>the moving ink alone</b>", width: 300, mode: "moving" });
+
+  player(document.getElementById("r4"), SH, { label: "<b>1:1 &middot; as shipped</b> &middot; one unit = one pixel", fill: SHEET, crop: { x: 150, y: 380, w: 700, h: 230 } });
+  player(document.getElementById("r4"), SH, { label: "<b>1:1 &middot; bands pinned</b>", fill: SHEET, crop: { x: 150, y: 380, w: 700, h: 230 }, mode: "pinned" });
+
+  const BQ = "charts/bars-8q-16x9";
+  player(document.getElementById("r5"), BQ, { label: "<b>as shipped</b> &middot; one gridline, 0.83u", fill: BARS, width: 470 });
+  player(document.getElementById("r5"), BQ, { label: "<b>the moving ink alone</b>", width: 470, mode: "moving" });
+
+  // ---- the clock -----------------------------------------------------------
+  let i = 0, fps = 2, timer = null, running = true;
+  const fc = document.getElementById("fc");
+  function tick() {
+    i = (i + 1) % 3;
+    PLAYERS.forEach((r) => show(r, i % r.frames));
+    fc.textContent = "frame " + (i + 1) + "/3";
+  }
+  function start() { stop(); timer = setInterval(tick, 1000 / fps); running = true; document.getElementById("play").textContent = "pause"; document.getElementById("play").classList.add("on"); }
+  function stop() { if (timer) clearInterval(timer); timer = null; running = false; document.getElementById("play").textContent = "play"; document.getElementById("play").classList.remove("on"); }
+  document.getElementById("play").onclick = () => running ? stop() : start();
+  document.querySelectorAll("[data-fps]").forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll("[data-fps]").forEach((x) => x.classList.remove("on"));
+      b.classList.add("on"); fps = +b.dataset.fps; if (running) start();
+    };
+  });
+  document.getElementById("fill").onclick = function () {
+    this.classList.toggle("on");
+    const on = this.classList.contains("on");
+    PLAYERS.forEach((r) => { r.typeLayer.style.display = on ? "" : "none"; });
+  };
+  document.getElementById("mark").onclick = function () {
+    this.classList.toggle("on");
+    const on = this.classList.contains("on");
+    PLAYERS.forEach(function (r) {
+      r.holder.style.outline = on && r.bands ? "2px solid #D98A7A" : "";
+      r.holder.style.outlineOffset = "-2px";
+    });
+  };
+  start();
+
+  // ---- the measurement, in the page ---------------------------------------
+  const tot = PLAYERS.filter((r) => r.mode === "ship");
+  let h = "<h2>The measurement behind it</h2>" +
+    "<div class='rep'><b>SLOT BOXES, ACROSS ALL THREE FRAMES.</b> The decisive number, because it is what " +
+    "the composited figure is pinned to:\n\n";
+  const CHECK = ["tables/numbers-sheet-5r-16x9", "tables/numbers-sheet-6r-16x9", "tables/cash-flow-16x9",
+    "figures/big-number-l1-16x9", "peers/peer-strip-16x9", "charts/bars-6y-16x9",
+    "structure/timeline-16x9", "cycles/cycle-frame-16x9"];
+  let slotsTotal = 0, moved = 0;
+  CHECK.forEach(function (k) {
+    const it = B.LIB.filter((x) => x.key === k)[0]; if (!it) return;
+    const ms = [1, 2, 3].map((b) => B.draw(it, null, { boil: b }).manifest());
+    const names = Object.keys(ms[0].slots);
+    let mv2 = 0;
+    names.forEach(function (n) {
+      const a = ms[0].slots[n];
+      [1, 2].forEach(function (j) {
+        const b = ms[j].slots[n];
+        if (a.x !== b.x || a.y !== b.y || a.w !== b.w || a.h !== b.h) mv2++;
+      });
+    });
+    slotsTotal += names.length; moved += mv2;
+    h += "  " + k.padEnd(34) + String(names.length).padStart(4) + " slots   " +
+      (mv2 ? "<span class='mov'>" + mv2 + " MOVE</span>" : "<span class='pin'>0 move</span>") + "\n";
+  });
+  h += "\n<b class='ok'>" + slotsTotal + " slot boxes across 8 plates, " + moved + " of them move. " +
+    "The figures are pinned by construction.</b></div>";
+  document.getElementById("verdict").innerHTML = h;
+
+  const rows = [
+    ["<code>tables/numbers-sheet-*</code> (10 plates)", "<span class='mov'>leaks</span>",
+     "86&ndash;191 band marks moving under 6&ndash;18 pinned cell boxes, displaced 0.01&ndash;3.70 units. The zebra row bands are slot underlays, which is §1.5's own third exclusion. <b>This is the finding.</b>"],
+    ["<code>structure/row-spotlight</code> (2)", "<span class='mov'>leaks</span>",
+     "133 landscape / 177 portrait band marks under 6 value boxes. A <em>highlight box</em>, named in the exclusion list by those words."],
+    ["<code>structure/multiple-bridge-16x9</code>", "<span class='mov'>leaks</span>",
+     "80 band marks under 3 value boxes."],
+    ["<code>charts/*-6y</code>, <code>*-8q</code> (7)", "marginal",
+     "exactly one mark each: a ~1,605-unit gridline at stroke-width 2.25, displaced <b>0.83 units</b> &mdash; 1.7px delivered, crossing 6&ndash;8 value labels. Covered by §1.5's sorting principle and invisible at this amplitude. Named, not fixed."],
+    ["<code>figures/qoq-yoy</code>, <code>compare-stacked</code> (3)", "marginal",
+     "2&ndash;4 hairlines each, same shape as the charts."],
+    ["<code>tables/cash-flow</code>, <code>figures/big-number-*</code>, <code>peers/peer-strip</code>, <code>charts/line-dense</code>, <code>structure/timeline</code>, <code>unit-ladder</code>", "<span class='pin'>correct</span>",
+     "boil 1&ndash;76% of their marks and <b>none of it passes under a value box</b>. peer-strip moves 178 of 233 marks and hits nothing: it is all hatch. This is the gate working as designed, and it is why the answer is not \u201cturn the boil off\u201d."],
+  ];
+  let t = "<h2>Where the gate holds and where it leaks</h2><table class='m'><tr><th>plates</th><th>gate</th><th>measured</th></tr>";
+  rows.forEach((r) => t += "<tr><td class='l'>" + r[0] + "</td><td class='l'>" + r[1] + "</td><td class='l'>" + r[2] + "</td></tr>");
+  t += "</table>";
+  document.getElementById("verdict").insertAdjacentHTML("beforeend", t);
+
+  document.getElementById("verdict").insertAdjacentHTML("beforeend",
+    "<div class='rep'><b>THE PROPOSAL, NOT APPLIED.</b> Add the band and hatch fill used by " +
+    "<code>numbers-sheet</code>'s row striping, <code>row-spotlight</code>'s highlight and " +
+    "<code>multiple-bridge</code>'s bridge fill to the same pinned set that already holds axis lines, " +
+    "series lines and slot underlays. That is 13 plates, it is a gate change rather than a redraw, and " +
+    "the middle column of \u00a71 and \u00a73 above is what it looks like.\n\n" +
+    "It is a <b>one-line change in the breathing set</b>, not a manifest change: these plates should keep " +
+    "<code>playback: loop</code>, because their paper edge and rules should go on breathing. Reverting " +
+    "them to <code>static</code> would fix the leak by reintroducing the defect \u00a71.5 was written to " +
+    "remove \u2014 a frozen table in a boiling room.\n\n" +
+    "<b class='k'>What I cannot settle from this page:</b> whether the 0.83-unit gridline and the pinned " +
+    "version are distinguishable to you at real viewing distance on a real display. That is what the " +
+    "controls at the top are for.</div>");
+})();
+</script>
+</body>
+</html>

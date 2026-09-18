@@ -204,6 +204,90 @@
       "room/wall-of-calls"
     ]
   },
+  "roomHours": {
+    "_note": [
+      "WHICH HOUR THE SET IS AT. An hour name to the suffix its keys carry, and",
+      "the whole of what makes the 24 dusk plates reachable.",
+      "",
+      "SHIPPED AS ASSETS, NOT AS A MODE. `room/desk-front-dusk-16x9` sits beside",
+      "`room/desk-front-16x9` on all twelve angles in both aspects. Every one has",
+      "byte-identical slot boxes, `floorLineY` and `hostAnchor` to its night twin",
+      "— verified by design across all 24, not asserted — and only the wall tone",
+      "differs. So an hour is a SUFFIX ON A STEM the roles above already name,",
+      "and a shot template that works at night works at dusk with no changes.",
+      "",
+      "ONE HOUR PER EPISODE, AND NEVER TWO. The hour is drawn from the video's",
+      "own identity, once, the way `roomRoles` resolves `talk` to one of three",
+      "desk angles by seed — but at EPISODE granularity, never per shot. Two",
+      "hours on one wall in one video is two rooms, so the pick must not see a",
+      "shot index. `Registry.hour_for` is the only thing that chooses, and it",
+      "takes the episode and nothing else.",
+      "",
+      "`hours` IS WHAT THE KIT DRAWS. `episodes` IS HOW OFTEN EACH IS USED, and",
+      "they are two fields because they are two different judgements. An hour",
+      "can be drawn and held back; leaving the mix implicit in which keys exist",
+      "would make \"the kit ships dusk\" and \"half the channel is at dusk\" the",
+      "same statement, and only one of them is a decision anybody made.",
+      "",
+      "`episodes` IS THE DIAL, and it is a list rather than a weighting so it",
+      "reads as what it is: the hours an episode may be drawn at, picked from",
+      "uniformly. Rarer dusk is repetition — [\"night\", \"night\", \"night\",",
+      "\"dusk\"] is one episode in four. Both hours is [\"night\", \"dusk\"].",
+      "",
+      "IT SHIPS [\"night\"], DELIBERATELY, AND NOT BECAUSE DUSK IS UNFINISHED.",
+      "The 24 plates are drawn, verified and reachable the moment this list",
+      "names dusk. Three things hold it back, and the third is the one that",
+      "decides:",
+      "",
+      "  1. CHANGES.md §12: nobody has cut night against dusk in motion. The",
+      "     side-by-side reads; the cut has never been watched.",
+      "  2. The relight fails at 1:1 on the WIDEST angles — the desk's cast",
+      "     reads as lamp-lit while the wall reads as late light from outside.",
+      "     §12's own advice is that a director cutting dusk prefers the",
+      "     tighter angles.",
+      "  3. AND THE HOUR CANNOT BE MADE TO PREFER THEM. `hour_for` takes the",
+      "     episode; `roomRoles` picks the angle by seed; the two are",
+      "     independent by construction, which is what keeps one video at one",
+      "     hour. So there is no way to say \"dusk, but only on the tighter",
+      "     angles\". At [\"night\", \"dusk\"] half the channel goes to an hour",
+      "     nobody has watched, and some of those episodes land on exactly the",
+      "     angles where 2 is worst.",
+      "",
+      "The route back is to force one dusk episode, watch it end to end, and",
+      "then move to [\"night\", \"night\", \"night\", \"dusk\"] once it has survived",
+      "a real cut. It is one line, and it reverts nothing.",
+      "",
+      "EXPECTED WHILE THIS SAYS [\"night\"]: gates.reachable_plates reports the",
+      "24 dusk plates as unreachable, taking the count from 20 to 44. That is",
+      "the report working rather than a regression — an hour no episode is",
+      "drawn at is artwork with no route to the screen, and saying so is the",
+      "honest answer. It reverses the moment this list names dusk again.",
+      "",
+      "NIGHT IS FIRST AND THAT IS LOAD-BEARING: it is the empty suffix, so it is",
+      "also what an episode with no identity to draw from gets. The set the kit",
+      "was built at stays the default.",
+      "",
+      "AN ANGLE WITH NO PLATE AT AN HOUR KEEPS ITS OWN KEY. Derived per stem",
+      "rather than declared in a list here, so a kit that adds `-dusk` to an",
+      "angle that lacks one gets it the day it ships and no list falls behind —",
+      "which is the whole lesson of the slot fields the manifests used to drop.",
+      "Today that is `room/wall-of-calls`, and it is correct rather than a gap:",
+      "the receipts wall is drawn by `wallOfCalls`, not by `room`, and is a",
+      "content plate that happens to be a room rather than an angle on the set.",
+      "It has no hour because it is not the wall the light is failing on.",
+      "",
+      "`day` IS DELIBERATELY ABSENT. The set is lit by one warm desk lamp and one",
+      "cold monitor and every cast shadow derives from those two. At dusk that is",
+      "still true. In daylight it is false, and shipping it means a relight."
+    ],
+    "hours": {
+      "night": "",
+      "dusk": "-dusk"
+    },
+    "episodes": [
+      "night"
+    ]
+  },
   "chapterTypes": {
     "_note": [
       "The sixteen generic types, fixed. The director returns one of these plus a",
@@ -269,6 +353,8 @@
         "figures/waterfall-4s",
         "figures/waterfall-5s",
         "paper/receipt-8-16x9",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/flow",
         "structure/unit-ladder",
         "tables/"
@@ -292,6 +378,8 @@
         "charts/macro-series",
         "figures/big-fraction",
         "figures/by-region-5-16x9",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/both-true",
         "structure/unit-ladder"
       ]
@@ -300,6 +388,8 @@
       "purpose": "what stops someone else doing this",
       "plates": [
         "cards/criteria",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/both-true",
         "figures/compare-side",
         "figures/compare-stacked",
@@ -329,6 +419,8 @@
         "structure/confession-ledger-16x9",
         "structure/confession-statement-16x9",
         "structure/language-shift",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9",
         "structure/timeline"
       ]
@@ -356,6 +448,8 @@
         "figures/compare-stacked",
         "figures/qoq-yoy-16x9",
         "structure/language-shift-16x9",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9",
         "tables/"
       ]
@@ -436,6 +530,8 @@
         "structure/confession-statement",
         "structure/end-card",
         "structure/implied-16x9",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9"
       ]
     }

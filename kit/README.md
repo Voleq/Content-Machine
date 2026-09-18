@@ -31,6 +31,12 @@ proof/
                            clean one, with the measured contrast floor in the
                            title box, and the whole-family audit of what is
                            behind that box today
+  boil-motion.html         THE BOIL, WATCHED — data plates looping at 2fps, the first
+                           time anything in this kit has been seen moving. Start here
+                           for the boil question: no number wobbles (315 slot boxes,
+                           0 units of deviation), but 13 plates move a band UNDER
+                           pinned type. Shipped / fix-previewed / moving-ink columns
+
   render-scale.html        the review pass at 1:1. ?s=1…?s=14, one at a time.
                            8–14 are drop eight's pass over everything built
                            since drop two — furniture, confession, the quarter,
@@ -53,8 +59,20 @@ scripts/build_batch.mjs
                   will not survive; the real fix is BUILD.stream() in the engine.
                   --list for per-family counts, --family to regenerate one.
                   WRITTEN BUT NEVER EXECUTED — see CHANGES, drop twelve.
+scripts/manifest_core.js
+                  WHAT A MANIFEST IS, as code. Slots are emitted VERBATIM from
+                  Plate.manifest() — no field whitelist, so a plate author who
+                  adds a slot field gets it in the manifest by construction.
+                  Loaded by the emitter and by any page that wants to diff a
+                  manifest against the engine in front of it.
+scripts/emit_manifests.mjs
+                  THE EMITTER. `node scripts/emit_manifests.mjs` rewrites all
+                  fourteen in place; --family for one; --check emits into memory
+                  and diffs against the tree, exit 1 if any manifest no longer
+                  matches the engine beside it. Run --check before shipping a
+                  pack: it is the invariant delta-14 broke and nothing enforced.
 
-manifests/<family>/manifest.json
+<family>/manifest.json
                   §0 · THE FOURTEEN PER-FAMILY MANIFESTS. Generated from the
                   engine, never hand-edited. 270 plates, 924 frame files, 3,033
                   slots. Each entry carries canvas, delivered (canvas x 2),
@@ -63,6 +81,10 @@ manifests/<family>/manifest.json
                   type roles and the plate's own meta. This is what
                   scripts/ingest_kit.py and the renderer read; a plate contains
                   no content, only slots.
+                  BESIDE THE FAMILY'S PLATES AND NOWHERE ELSE. delta-14 put its
+                  copies under manifests/<family>/, which the ingest's glob does
+                  not match — placed there the pack reads as zero assets and the
+                  reconcile compares against nothing. That directory is deleted.
 
 §3.5 CHANNEL ART IS CANCELLED (drop twelve) — dropped, not deferred. proof/channel-art.html
 is deleted and the two candidate routes are withdrawn. Nothing in the kit depended on it:

@@ -111,6 +111,20 @@ class Slot:
     role: str = ""
     align: str = "left"
     region: bool = False          # a reserved area, not a text box
+    # A CONTROL CHANNEL, NOT A BOX. Ten slots carry an integer that names which
+    # row, column or line the script is arguing about — `structure/sensitivity`
+    # rings that cell in `attention`, `paper/receipt-*` highlights that line —
+    # and the engine gives them w = h = 0 on purpose, because an index has no
+    # extent. Never compute a fill area, a scale or a text budget from one.
+    #
+    # THE KIT SAYS SO IN ITS OWN WORDS and this reads them: `control: true`
+    # where the plate declares the flag, and the `control` role, which all ten
+    # carry and which is the only signal the six receipt plates give. Those
+    # flags are three of the twenty-nine slot fields delta-14's whitelist
+    # dropped, so until the manifests were re-emitted verbatim there was
+    # nothing here to read — which is why a deliberate zero was indistinguishable
+    # from a broken one.
+    control: bool = False
     overlay: str = ""             # the plate composited into it (band-N)
     renderer: str = ""            # a data region series.py fills
     contact: dict = field(default_factory=dict)   # where he touches the furniture
@@ -130,6 +144,26 @@ class Slot:
     max_chars: int = 0
     max_chars_per_line: int = 0
     max_lines: int = 0
+    # THE PALETTE ROLE FOR THIS BOX, not for this role — the same two-level
+    # shape as `max_chars` above, and read the same way.
+    #
+    # IT WORKS TODAY AND THAT IS THE TRAP. `TITLE_GROUND` is `"card"`, under
+    # `card` every room title resolves to `structure`, and the chapter-opener
+    # path assumed `structure`. So the assumption and the kit agree, silently,
+    # and nothing reads the field. The day a title is set on the `slab`
+    # treatment the colour moves to `ground` and a path that assumed
+    # `structure` sets dark ink on dark ink and says nothing — the same class
+    # of failure as the borrowed wall legibility the title card was built to
+    # fix. Empty means the slot declares none and the role's colour stands.
+    colour: str = ""
+    # WHAT THE TYPE SITS ON: `card`, `slab` or none. Informational here — the
+    # ground is drawn into the plate art, not by this code.
+    ground: str = ""
+    # The box that ground occupies, in canvas units. INFORMATIONAL, and the use
+    # is to assert the type lands inside its own ground rather than to draw
+    # anything: a title that overhangs its card is back to being set on the
+    # wall, which is the whole thing the card exists to prevent.
+    ground_box: dict = field(default_factory=dict)
 
     def scaled(self) -> tuple[int, int, int, int]:
         """The box in delivered pixels."""
@@ -174,6 +208,7 @@ class Slot:
             role=role,
             align=str(raw.get("align", "left")),
             region=bool(raw.get("region", False)),
+            control=bool(raw.get("control", False)) or role == "control",
             overlay=str(raw.get("overlay", "")),
             renderer=str(raw.get("renderer", "")),
             contact=raw.get("contact") if isinstance(raw.get("contact"), dict) else {},
@@ -183,6 +218,10 @@ class Slot:
             max_chars=int(raw.get("maxChars") or 0),
             max_chars_per_line=int(raw.get("maxCharsPerLine") or 0),
             max_lines=int(raw.get("maxLines") or 0),
+            colour=str(raw.get("colour") or ""),
+            ground=str(raw.get("ground") or ""),
+            ground_box=(raw.get("groundBox")
+                        if isinstance(raw.get("groundBox"), dict) else {}),
         )
 
 
@@ -250,7 +289,14 @@ class Plate:
     solve: str = ""
     anchor: str = ""
     ink_weight: float = 0.0
+    # HOW MANY COLUMNS THE PLATE WAS AUTHORED FOR — always a count here, even
+    # on the plates whose engine field is a list. See `_build` for why the one
+    # word carries two meanings and how the count is recovered from each.
     columns: int = 0
+    # The per-column geometry, `{x, w, role}` in canvas units, on the plates
+    # that declare it and empty on the plates that do not. Present so the
+    # count above can stay a count without throwing the measurements away.
+    column_boxes: tuple = ()
     # HOW MANY ROWS THE PLATE WAS AUTHORED FOR, off the manifest.
     #
     # `tables/multiples-strip` ships 6 rows in 16:9 and 3 in 9:16 — the
@@ -376,6 +422,20 @@ class Registry:
         self.host_poses: dict[str, dict] = raw.get("hostPoses") or {}
         self.room_roles: dict[str, tuple[str, ...]] = {
             k: tuple(v) for k, v in (raw.get("roomRoles") or {}).items()}
+        # THE HOURS THE SET IS DRAWN AT: an hour name to the suffix its keys
+        # carry. `night` is the empty suffix.
+        _hours = raw.get("roomHours") or {}
+        self.room_hours: dict[str, str] = {
+            str(k): str(v) for k, v in (_hours.get("hours") or {}).items()
+            if not str(k).startswith("_")}
+        # WHICH OF THEM AN EPISODE MAY BE DRAWN AT, picked from uniformly. A
+        # separate field from the one above because "the kit draws dusk" and
+        # "half the channel is at dusk" are two different decisions, and only
+        # collapsing them makes the second one nobody's. An hour the kit draws
+        # and this list omits is unreachable, and `reachable_plates` says so.
+        self.hour_rotation: tuple[str, ...] = tuple(
+            str(h) for h in (_hours.get("episodes") or ())
+            if str(h) in self.room_hours) or tuple(self.room_hours)[:1]
         # Which keys are the same shot in other clothes. `figure` is settled at
         # ingest (the outfit is baked into the pose art); `medium` is a pair of
         # keys, so the choice is the pipeline's and has to be made once per
@@ -434,6 +494,28 @@ class Registry:
                 stem = stem[: -len(suffix)]
         purpose = purposes.get(key) or purposes.get(stem, "")
 
+        # `columns` ARRIVES IN TWO SHAPES, because two different plate authors
+        # spell two different things with one word and the registry flattens
+        # `meta` onto the entry, so they land on the same key.
+        #
+        #   charts/*, tables/*   `columns: 6`          — a COUNT
+        #   figures/waterfall-*  `meta.columns: [...]` — COLUMN GEOMETRY,
+        #   figures/scale-*                              {x, w, role} per column
+        #
+        # `int()` on the second raises, which is what refused the whole pack
+        # the first time an ingest got as far as verifying it. The count of a
+        # geometry list is its length, and that is not a guess: every waterfall
+        # plate also declares `columns` on its own `bridge` slot, and the two
+        # agree on all six. The scale plates carry one entry per figure column
+        # and no second opinion to disagree with.
+        #
+        # The geometry is KEPT rather than reduced away. `series.waterfall` is
+        # handed x and width per column so it never re-derives where a column
+        # is, and a reader who only got the count back would have to.
+        raw_columns = e.get("columns")
+        column_boxes = tuple(raw_columns) if isinstance(raw_columns, list) else ()
+        columns = len(column_boxes) if column_boxes else int(raw_columns or 0)
+
         return Plate(
             key=key, family=family, name=name,
             canvas=canvas, delivered=delivered, export_scale=scale,
@@ -458,7 +540,8 @@ class Registry:
             solve=str(e.get("solve", "")),
             anchor=str(e.get("anchor", "")),
             ink_weight=float(e.get("inkWeight") or 0.0),
-            columns=int(e.get("columns") or 0),
+            columns=columns,
+            column_boxes=column_boxes,
             rows=int(e.get("rows") or 0),
             framing=str(e.get("framing") or ""),
             glance=str(e.get("glance") or ""),
@@ -631,7 +714,43 @@ class Registry:
         v = self.host_poses.get(pose_key, {}).get("limit")
         return int(v) if v is not None else None
 
-    def room_for(self, role: str, aspect: str, seed: str = "") -> Plate:
+    def hour_for(self, episode: str) -> str:
+        """Which hour the set is at for this EPISODE. One per video, never two.
+
+        THE ARGUMENT IS THE EPISODE AND NOTHING ELSE, and that is the whole
+        guarantee. Every other seed in the room path carries a shot index or a
+        title so that consecutive rooms differ — feed one of those in here and
+        the hour changes mid-video, which is the one thing the kit says not to
+        do: two hours on one wall in one video is two rooms, not one room later.
+
+        An episode with no identity gets the first hour in the rotation, which
+        is `night` — the set the kit was built at, and the empty suffix.
+        """
+        hours = list(self.hour_rotation)
+        if not hours:
+            return ""
+        if not episode:
+            return hours[0]
+        return random.Random(f"hour|{episode}").choice(hours)
+
+    def at_hour(self, stem: str, hour: str) -> str:
+        """A room stem at `hour` — ``room/desk-front`` -> ``room/desk-front-dusk``.
+
+        Falls back to the stem itself when the angle has no plate at that hour,
+        DERIVED rather than read off a list of exceptions, so an angle that
+        gains a variant is covered the day it ships. `room/wall-of-calls` is
+        the only stem that takes the fallback today, and correctly: the
+        receipts wall is a content plate that happens to be a room rather than
+        an angle on the set, so it has no hour to be at.
+        """
+        suffix = self.room_hours.get(hour, "")
+        if not suffix:
+            return stem
+        at = f"{stem}{suffix}"
+        return at if any(self.aspect_key(at, a) for a in ("16x9", "9x16")) else stem
+
+    def room_for(self, role: str, aspect: str, seed: str = "",
+                 episode: str = "") -> Plate:
         """One of the angles that fill a room ROLE. Raises if none do.
 
         THIS USED TO RETURN NONE AND THE CALLER DREW FLAT GROUND. `render_long`
@@ -639,9 +758,15 @@ class Registry:
         no such role, so every two-shot in the format was composed on a plain
         colour with no room in it at all — for weeks, silently, because a
         renderer that never fails for want of a backdrop never mentioned it.
+
+        `episode` picks the HOUR and `seed` picks the angle within it. They are
+        two arguments rather than one because they are chosen at two different
+        granularities: the angle rotates shot to shot, the hour does not move
+        for the whole video. Passing no episode keeps the night set.
         """
+        hour = self.hour_for(episode)
         options = [k for stem in self.room_roles.get(role, ())
-                   if (k := self.aspect_key(stem, aspect))]
+                   if (k := self.aspect_key(self.at_hour(stem, hour), aspect))]
         if not options:
             known = ", ".join(sorted(self.room_roles)) or "(none)"
             raise PlateError(

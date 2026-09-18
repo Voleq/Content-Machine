@@ -29,14 +29,17 @@ from pipeline.render_short import render_short
 from pipeline.tts import TTSEngine
 
 # A short is a dozen shots, so it reaches roughly a dozen plates — it cannot
-# and should not reach a large fraction of a 140-plate kit. These are floors
+# and should not reach a large fraction of a 270-plate kit. These are floors
 # on the format doing its job, not on a writer naming things.
 #
-# ANIMATED IS A LOWER FLOOR THAN IT WAS, ON PURPOSE. The old delivery re-baked
-# every still plate as a three-frame boil, so everything on screen moved. 44 of
-# the 143 v2 plates are `playback: static` — tables, charts, figures,
-# structure — because a figure that moves is a figure being re-read. What moves
-# in a vertical cut is the room, the host and the cards.
+# ANIMATED IS A LOW FLOOR ON PURPOSE, but no longer for the reason written
+# here before. That read "44 of the 143 v2 plates are `playback: static` —
+# tables, charts, figures, structure — because a figure that moves is a figure
+# being re-read", and the kit retracted that rule: 3 plates of 270 are static
+# and all 122 data-family plates loop. A data plate's FRAME breathes while its
+# axes and series stay pinned (engine/build.js §1.5), which is tested against
+# the delivered artwork in test_kit_ingest.py rather than inferred from a
+# playback flag here. The floor stays low because a short is a dozen shots.
 MIN_PLATES = 8
 MIN_CONCEPTS = 5
 MIN_ANIMATED = 2
@@ -89,8 +92,21 @@ def test_every_plate_reached_is_in_the_one_library(fixture_render):
 def test_the_fixture_plays_a_frame_sequence(fixture_render):
     """A composition where nothing plays is a held photograph.
 
-    The room boils, the host's strips run, the cards and the paper loop. The
-    data plates do not, and that is the rule rather than an omission.
+    The room boils, the host's strips run, the cards and the paper loop.
+
+    IT NO LONGER ALSO DEMANDS A STILL PLATE. It used to close with
+    `assert still, "every plate on screen boils — the data plates must not"`,
+    which was the retracted blanket rule: data plates were `playback: static`
+    when that was written and they loop now. Only 3 plates in the kit are
+    static — `overlays/row-band` and the two lower thirds — and the lower
+    thirds are unreachable, so the assertion had come to mean "this render
+    happened to use a row band", which is not a rule about anything.
+
+    What the old line was reaching for is real and is tested where it can be
+    tested: `test_a_data_plate_breathes_and_its_axes_do_not` in
+    test_kit_ingest.py reads the delivered frames and asserts the pixels
+    inside every `axis` box are identical while the plate around them moves.
+    That is the contract; a playback flag was only ever a proxy for it.
     """
     from config import Settings
     from pipeline.plates import load_plates
@@ -101,8 +117,6 @@ def test_the_fixture_plays_a_frame_sequence(fixture_render):
     animated = [p for p in used if p is not None and p.animated]
     assert len(animated) >= MIN_ANIMATED, (
         f"only {len(animated)} animated plates: {[p.key for p in animated]}")
-    still = [p for p in used if p is not None and not p.animated]
-    assert still, "every plate on screen boils — the data plates must not"
 
 
 def test_the_fixture_reaches_distinct_concepts_not_one_plate_repeated(

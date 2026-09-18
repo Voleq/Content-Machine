@@ -70,19 +70,47 @@ def _period_heads(plate) -> list[str]:
             if n.startswith("head-") and n.split("-", 1)[1].isdigit()]
 
 
-def test_every_time_series_plate_is_authored_six_wide(reg):
-    """The plates themselves, not just the code that fills them."""
-    for key in reg.family("charts"):
-        if "dense" in key:
-            continue          # line-dense is four heads over many observations
-        heads = _period_heads(reg.assets[key])
-        assert len(heads) == 6, f"{key} has {len(heads)} period heads"
+def test_every_period_grid_has_a_head_per_column(reg):
+    """The plates themselves, not just the code that fills them.
 
-    for key in reg.family("tables"):
-        heads = _period_heads(reg.assets[key])
-        if not heads:
-            continue          # cash-flow is a statement, not a period grid
-        assert len(heads) == 6, f"{key} has {len(heads)} period heads"
+    AGAINST THE PLATE'S OWN `columns`, NOT AGAINST SIX. Six was true of every
+    period grid the kit had when this was written, and then the quarter plates
+    landed: `charts/bars-8q` and `line-8q` are eight quarters and declare eight
+    columns, so a flat `== 6` failed plates that are exactly right. Worse, it
+    failed on the first one it reached and so never said that `macro-series`
+    (ten axis labels) and every zero-head chart were in the same state — a
+    check that stops at the first of many wrong answers reports one bug and
+    hides the rest.
+
+    `columns` is what the plate was authored for, and heads agreeing with it is
+    the same rule `plate_tags.per_period` reads to decide whether a figure
+    belongs under a head. A plate declaring no columns is not a period grid and
+    is not this test's business: `macro-series` is a series with axis labels,
+    `multiples-strip` is a strip, `cash-flow` is a statement.
+
+    Collected rather than asserted one at a time, for the reason above.
+    """
+    problems: list[str] = []
+    for key in list(reg.family("charts")) + list(reg.family("tables")):
+        plate = reg.assets[key]
+        heads = _period_heads(plate)
+        if not plate.columns or not heads:
+            continue
+        # `line-dense` is four heads over many observations, on purpose: the
+        # heads are axis labels spanning the series rather than one per
+        # observation, and `plate_tags` relies on the two DISagreeing to know
+        # a dense chart when it sees one.
+        if "dense" in key:
+            assert len(heads) < plate.columns, (
+                f"{key} is dense and its heads now match its columns, which is "
+                f"the signal plate_tags reads to tell a dense chart apart")
+            continue
+        if len(heads) != plate.columns:
+            problems.append(
+                f"{key}: {len(heads)} period heads against "
+                f"{plate.columns} declared columns")
+    assert not problems, "period grids whose heads and columns disagree:\n  " + \
+        "\n  ".join(problems)
 
     for key in reg.family("structure"):
         heads = _period_heads(reg.assets[key])

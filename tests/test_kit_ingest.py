@@ -91,15 +91,19 @@ def test_both_generations_of_the_manifest_table_are_read(tmp_path, table):
     assert got == {"charts/x-16x9": entry}
 
 
+# Slot fields that mean "words are set in this box": a slot carrying one has a
+# type budget, so its plate must declare the role that budget was derived from.
+_BUDGET_FIELDS = ("maxChars", "maxCharsPerLine", "maxLines")
+
+
 def test_every_shipped_asset_carries_what_reconcile_compares():
-    """`_reconcile` checks canvas, exportScale, playback, frameCount, slots
-    and the typeRoles floors. A manifest missing one of those does not fail
-    — it compares None against a real value for every plate, or agrees with
-    itself about nothing. The schema changed in this drop, so this is the
-    check that it changed compatibly."""
+    """`_reconcile` checks canvas, exportScale, playback, frameCount and slots
+    by EQUALITY. A manifest missing one of those does not fail — it compares
+    None against a real value for every plate, or agrees with itself about
+    nothing. The schema changed in this drop, so this is the check that it
+    changed compatibly."""
     shipped = ingest._shipped_manifests(KIT)
-    required = ("canvas", "exportScale", "playback", "frameCount", "slots",
-                "typeRoles")
+    required = ("canvas", "exportScale", "playback", "frameCount", "slots")
     missing: dict[str, list[str]] = {}
     for key, entry in shipped.items():
         absent = [f for f in required if f not in entry]
@@ -108,6 +112,47 @@ def test_every_shipped_asset_carries_what_reconcile_compares():
     assert not missing, (
         f"{len(missing)} plate(s) lack fields `_reconcile` compares: "
         f"{dict(list(missing.items())[:5])}")
+
+
+def test_a_plate_that_sets_type_declares_the_roles_it_sets_it_in():
+    """`typeRoles` is required of a plate that sets type, and of no other.
+
+    IT IS NOT IN THE LIST ABOVE, and the difference is in how `_reconcile`
+    reads it. The five fields there are compared with `!=`, so a key absent
+    from BOTH sides compares None to None and the check passes having tested
+    nothing. `typeRoles` goes through `_role_diffs`, which takes the UNION of
+    the role names on each side and diffs each one — so a plate that gains a
+    role in the engine and lacks it in the delivery is caught by the union,
+    whether or not either side carries the key at all. Requiring the key of
+    every plate would not make that comparison stronger; it would only demand
+    an empty dict from 51 plates that set no type.
+
+    Those 51 are the host cut-outs. Their slots are `mouth`, `head` and
+    `figure` — a lip-sync region, a head box and a body, which are places to
+    put HIM rather than boxes to set words in. `Slot.sets_type` reads exactly
+    this: a slot takes type when its plate declares a `typeRoles` entry for
+    its role, so a cut-out with no entry takes no words, correctly.
+
+    What would be a real hole is a plate whose slots carry a type BUDGET —
+    `maxChars` and friends, derived by `budget.js` from the face a role is set
+    in — with no `typeRoles` saying what that face is. That is a plate with
+    words on it and nothing declaring how they are set, and it is what this
+    asserts against.
+    """
+    shipped = ingest._shipped_manifests(KIT)
+    holes: dict[str, list[str]] = {}
+    for key, entry in shipped.items():
+        if "typeRoles" in entry:
+            continue
+        budgeted = sorted(
+            name for name, slot in (entry.get("slots") or {}).items()
+            if isinstance(slot, dict)
+            and any(f in slot for f in _BUDGET_FIELDS))
+        if budgeted:
+            holes[key] = budgeted
+    assert not holes, (
+        f"{len(holes)} plate(s) budget type into a slot and declare no "
+        f"`typeRoles` to set it in: {dict(list(holes.items())[:5])}")
 
 
 def test_the_delivery_declares_the_pack_it_came_from():
@@ -722,3 +767,111 @@ def test_the_preflight_notices_an_installed_kit_from_a_different_pack(tmp_path):
         assert "never ingested" in got.stdout
         assert "ingest_kit.py" in got.stdout
         assert got.returncode == 1
+
+
+# --------------------------------------------------------------------------
+# The boil, on the delivered artwork.
+# --------------------------------------------------------------------------
+
+# The families whose plates carry numbers a viewer reads a value off.
+_DATA_FAMILIES = frozenset({
+    "tables", "charts", "figures", "structure", "peers", "cycles",
+})
+
+
+def _frames_differ(a, b, box=None) -> bool:
+    """Whether two frames differ anywhere in `box` (the whole frame if None).
+
+    NOT `ImageChops.difference(...).getbbox()`, WHICH IS WRONG HERE AND SAYS SO
+    QUIETLY. `getbbox()` on an RGBA image returns the box of non-transparent
+    pixels, and a difference image between two frames with identical alpha is
+    transparent everywhere — so it answers None for a pair whose colour
+    channels differ in a million pixels. Written that way this check reported
+    every room and every data plate as frozen. `getextrema()` reads all four
+    channels and cannot be fooled the same way.
+    """
+    from PIL import ImageChops
+
+    x, y = (a.crop(box), b.crop(box)) if box else (a, b)
+    return any(hi > 0 for _, hi in ImageChops.difference(x, y).getextrema())
+
+
+def test_a_data_plate_breathes_and_its_axes_do_not():
+    """`engine/build.js` §1.5, asserted against the PNGs the ingest wrote.
+
+    THE RULE IS PER-MARK, NOT PER-PLATE, and that is what makes it testable at
+    all. Every data plate used to be `playback: static` on the argument that a
+    number moving three times a second cannot be read. The kit retracted the
+    blanket form and kept the argument: the boil is turned on for a data
+    plate's FURNITURE — paper edge, corner wear, rule lines, hatch — while
+    `HAND.setBoil`'s gate keeps axis lines, series lines and underlays emitting
+    the identical path they emitted at boil 0, bit for bit.
+
+    So the check is not "does this plate declare static". That is a flag, and
+    reading it told us nothing about whether a number moved. It is: the plate
+    moves between frames, and inside its `axis` boxes nothing does.
+
+    `axis` is the role asserted because it is one of the three §1.5 names and
+    it is the one the PLATE actually draws. A `figure` box is empty on a data
+    plate — there is no baked text anywhere in the kit, every figure is a slot
+    the renderer fills — so pixels inside one are whatever furniture passes
+    through, and `bar`, `series` and `highlight-band` are regions the plate
+    draws furniture into. Asserting on those would be asserting that furniture
+    holds still, which is the opposite of the rule.
+    """
+    from PIL import Image
+
+    from config import Settings
+    from pipeline.plates import PlateError, load_plates
+
+    try:
+        registry = load_plates(Settings(_env_file=None).assets_dir)
+    except PlateError as exc:
+        pytest.skip(f"no design kit on this checkout: {exc}")
+
+    checked = 0
+    breathing = 0
+    moved: list[str] = []
+    for key in sorted(registry.assets):
+        plate = registry.get(key)
+        if plate.family not in _DATA_FAMILIES:
+            continue
+        boxes = [s for s in plate.slots.values()
+                 if s.role == "axis" and s.w > 0 and s.h > 0]
+        if not boxes:
+            continue
+        paths = plate.frame_paths()
+        if len(paths) < 2:
+            continue
+        frames = [Image.open(q).convert("RGBA") for q in paths]
+        if any(_frames_differ(frames[0], f) for f in frames[1:]):
+            breathing += 1
+        for slot in boxes:
+            x, y, w, h = slot.scaled()
+            box = (max(x, 0), max(y, 0),
+                   min(x + w, frames[0].width), min(y + h, frames[0].height))
+            if box[2] <= box[0] or box[3] <= box[1]:
+                continue
+            checked += 1
+            # EVERY FRAME AGAINST THE FIRST, not just the second. The boil
+            # indices are 1, 2 and 5 — a pair that happens to rasterise the
+            # same says nothing about the third.
+            if any(_frames_differ(frames[0], f, box) for f in frames[1:]):
+                moved.append(f"{key}:{slot.name}")
+
+    assert checked, "no data plate declares an axis slot — has the kit changed shape?"
+    assert not moved, (
+        f"{len(moved)} axis box(es) move between frames. An axis IS a "
+        f"measurement reference: move it and the data appears to move even "
+        f"though the series is pinned (build.js §1.5).\n  "
+        + "\n  ".join(moved[:12]))
+    # AND THE OTHER HALF, or this passes on a kit where the boil stopped
+    # landing anywhere. Pinned axes on a library that does not move at all is
+    # exactly the check that passes because it never looked. Asserted across
+    # the set rather than per plate: whether a given plate has any furniture
+    # inside HAND.breathe() is a drawing decision, and several ship three
+    # identical frames today.
+    assert breathing, (
+        "no data plate with an axis differs between any two of its frames — "
+        "the frame is not breathing anywhere, so the pinned-axis check above "
+        "proved nothing")

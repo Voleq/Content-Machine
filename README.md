@@ -277,7 +277,7 @@ python3.11 -m venv .venv
 .venv/bin/pip install -e '.[dev]'
 npm ci                                      # the kit's rasteriser (build-time only)
 .venv/bin/python scripts/gen_assets.py      # placeholder sfx + room tone
-.venv/bin/python scripts/ingest_kit.py kit  # the 143 drawn plates -> assets/plates
+.venv/bin/python scripts/ingest_kit.py kit  # the 270 drawn plates -> assets/plates
 .venv/bin/python -m pytest tests/           # offline, zero network calls
 .venv/bin/python scripts/render_samples.py  # sample MP4s from fixtures
 ```
@@ -1100,6 +1100,40 @@ gritted teeth rather than a stamp.
 
 ```bash
 .venv/bin/python -m pytest tests/    # ~1050 tests, fully offline
+```
+
+### Before merging a kit change
+
+**Run the ingest. Every time, on anything that touches `kit/`.**
+
+```bash
+node kit/scripts/emit_manifests.mjs --check   # manifests still match the engine
+python scripts/ingest_kit.py kit              # build the artwork and verify it
+```
+
+Two commands, and the second is the one that matters: it runs the engine,
+writes every frame, and reconciles what the engine draws against the manifests
+the delivery shipped. Nothing else in the suite does — the tests read
+`assets/plates/`, which is a build product, so a kit whose engine and manifests
+disagree passes every test right up until somebody tries to render.
+
+That is not hypothetical. An engine from one drop was merged with manifests
+from another, and 146 plates failed to reconcile the first time an ingest was
+run against it. The disagreement was in slot METADATA rather than geometry —
+zero differences in x, y, w or h — so nothing looked wrong until both lanes
+stopped rendering. One command before the merge would have caught it.
+
+`--check` is the cheap half and needs only node: it emits the manifests into
+memory from the engine in the tree and diffs them against the ones on disk. A
+clean `--check` means the two came from the same drop.
+
+**If the ingest is killed with exit `-9`, that is the OOM killer, not a bug.**
+270 plates at `exportScale: 2` in one process is memory-bound; on a 16 GB
+container node reaches about 14 GB before the kernel takes it. Use the
+supported fallback, which is one process per family:
+
+```bash
+python scripts/ingest_kit.py kit --batched
 ```
 
 **The suite needs the kit built and the LFS media fetched.** Both are the

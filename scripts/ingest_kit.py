@@ -292,6 +292,13 @@ def _install(built: dict, delivery: Path, staged: Path, dest: Path,
     registry["hostPoses"] = roles.get("hostPoses", {})
     registry["roomRoles"] = {k: v for k, v in roles.get("roomRoles", {}).items()
                              if not k.startswith("_")}
+    # THE HOUR THE SET IS AT, one per episode. `hours` maps an hour name to
+    # the suffix its keys carry — `dusk` to `-dusk` — so the 24 dusk plates
+    # are reachable by the same stems `roomRoles` already names; `episodes`
+    # is which of them an episode may be drawn at. Without this the variants
+    # are drawn, installed, and addressable by nothing.
+    registry["roomHours"] = {k: v for k, v in roles.get("roomHours", {}).items()
+                             if not k.startswith("_")}
     registry["chapterTypes"] = roles.get("chapterTypes", {})
     registry["purposes"] = {k: v for k, v in roles.get("purposes", {}).items()
                             if not k.startswith("_")}
@@ -362,6 +369,19 @@ def _verify(repo: Path) -> int:
         # lands beside the mark, not inside it. A renderer that clips would
         # silently drop every annotation caption.
         for name, s in a.slots.items():
+            # A CONTROL SLOT HAS NO AREA BY DESIGN and is not a defect. Ten of
+            # them carry an integer naming a row, a column or a receipt line
+            # for the renderer to ring — an index, which has no extent, so the
+            # engine writes w = h = 0 and says `control` on the slot.
+            #
+            # This check could not tell that from a broken box until the
+            # manifests were re-emitted verbatim: `control`, `drawn` and
+            # `dimensionless` were three of the twenty-nine slot fields the
+            # delta-14 whitelist dropped. A zero-area slot that does NOT
+            # declare itself a control channel is still a real failure — that
+            # is a box nothing can be drawn into, and it stays fatal.
+            if s.control:
+                continue
             if s.w <= 0 or s.h <= 0:
                 problems.append(f"{key}: slot {name!r} has no area")
 
