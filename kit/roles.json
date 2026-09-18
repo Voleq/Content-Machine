@@ -223,6 +223,19 @@
       "shot index. `Registry.hour_for` is the only thing that chooses, and it",
       "takes the episode and nothing else.",
       "",
+      "`hours` IS WHAT THE KIT DRAWS. `episodes` IS HOW OFTEN EACH IS USED, and",
+      "they are two fields because they are two different judgements. An hour",
+      "can be drawn and held back; leaving the mix implicit in which keys exist",
+      "would make \"the kit ships dusk\" and \"half the channel is at dusk\" the",
+      "same statement, and only one of them is a decision anybody made.",
+      "",
+      "`episodes` IS THE DIAL, and it is a list rather than a weighting so it",
+      "reads as what it is: the hours an episode may be drawn at, picked from",
+      "uniformly. Night-only is [\"night\"] and puts the channel back where it",
+      "was — at the cost of the 24 dusk plates going unreachable again, which",
+      "gates.reachable_plates will say out loud. Rarer dusk is repetition:",
+      "[\"night\", \"night\", \"night\", \"dusk\"] is one episode in four.",
+      "",
       "NIGHT IS FIRST AND THAT IS LOAD-BEARING: it is the empty suffix, so it is",
       "also what an episode with no identity to draw from gets. The set the kit",
       "was built at stays the default.",
@@ -240,8 +253,14 @@
       "cold monitor and every cast shadow derives from those two. At dusk that is",
       "still true. In daylight it is false, and shipping it means a relight."
     ],
-    "night": "",
-    "dusk": "-dusk"
+    "hours": {
+      "night": "",
+      "dusk": "-dusk"
+    },
+    "episodes": [
+      "night",
+      "dusk"
+    ]
   },
   "chapterTypes": {
     "_note": [

@@ -1907,12 +1907,16 @@ def reachable_plates(reg) -> dict[str, set[str]]:
             role = name.split("/", 1)[1]
             if role in reg.room_roles:
                 for stem in reg.room_roles[role]:
-                    # EVERY HOUR THE ANGLE IS DRAWN AT, not just the night one.
-                    # An episode picks its hour from its own identity, so every
-                    # variant of an angle a role names is reachable — and the
-                    # 24 dusk plates were flagged as dead art until this asked
-                    # the same question `room_for` answers.
-                    for hour in (reg.room_hours or {"": ""}):
+                    # EVERY HOUR AN EPISODE MAY BE DRAWN AT, not just the
+                    # night one. An episode picks its hour from its own
+                    # identity, so every variant of an angle a role names is
+                    # reachable — and the 24 dusk plates were flagged as dead
+                    # art until this asked the same question `room_for`
+                    # answers. The ROTATION rather than every hour the kit
+                    # draws: an hour no episode is ever drawn at is artwork
+                    # with no route to the screen, which is this report's job
+                    # to say rather than to hide.
+                    for hour in (reg.hour_rotation or ("",)):
                         at = reg.at_hour(stem, hour)
                         for a in ("16x9", "9x16"):
                             key = reg.aspect_key(at, a)

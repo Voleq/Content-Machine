@@ -423,11 +423,19 @@ class Registry:
         self.room_roles: dict[str, tuple[str, ...]] = {
             k: tuple(v) for k, v in (raw.get("roomRoles") or {}).items()}
         # THE HOURS THE SET IS DRAWN AT: an hour name to the suffix its keys
-        # carry. `night` is the empty suffix and is first, so it is what an
-        # episode with nothing to draw from gets. See `hour_for`.
+        # carry. `night` is the empty suffix.
+        _hours = raw.get("roomHours") or {}
         self.room_hours: dict[str, str] = {
-            str(k): str(v) for k, v in (raw.get("roomHours") or {}).items()
+            str(k): str(v) for k, v in (_hours.get("hours") or {}).items()
             if not str(k).startswith("_")}
+        # WHICH OF THEM AN EPISODE MAY BE DRAWN AT, picked from uniformly. A
+        # separate field from the one above because "the kit draws dusk" and
+        # "half the channel is at dusk" are two different decisions, and only
+        # collapsing them makes the second one nobody's. An hour the kit draws
+        # and this list omits is unreachable, and `reachable_plates` says so.
+        self.hour_rotation: tuple[str, ...] = tuple(
+            str(h) for h in (_hours.get("episodes") or ())
+            if str(h) in self.room_hours) or tuple(self.room_hours)[:1]
         # Which keys are the same shot in other clothes. `figure` is settled at
         # ingest (the outfit is baked into the pose art); `medium` is a pair of
         # keys, so the choice is the pipeline's and has to be made once per
@@ -715,10 +723,10 @@ class Registry:
         the hour changes mid-video, which is the one thing the kit says not to
         do: two hours on one wall in one video is two rooms, not one room later.
 
-        An episode with no identity gets the first hour declared, which is
-        `night` — the set the kit was built at, and the empty suffix.
+        An episode with no identity gets the first hour in the rotation, which
+        is `night` — the set the kit was built at, and the empty suffix.
         """
-        hours = list(self.room_hours)
+        hours = list(self.hour_rotation)
         if not hours:
             return ""
         if not episode:

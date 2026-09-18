@@ -292,10 +292,11 @@ def _install(built: dict, delivery: Path, staged: Path, dest: Path,
     registry["hostPoses"] = roles.get("hostPoses", {})
     registry["roomRoles"] = {k: v for k, v in roles.get("roomRoles", {}).items()
                              if not k.startswith("_")}
-    # THE HOUR THE SET IS AT, one per episode. An hour name to the suffix its
-    # keys carry — `dusk` to `-dusk` — so the 24 dusk plates are reachable by
-    # the same stems `roomRoles` already names. Without this the variants are
-    # drawn, installed, and addressable by nothing.
+    # THE HOUR THE SET IS AT, one per episode. `hours` maps an hour name to
+    # the suffix its keys carry — `dusk` to `-dusk` — so the 24 dusk plates
+    # are reachable by the same stems `roomRoles` already names; `episodes`
+    # is which of them an episode may be drawn at. Without this the variants
+    # are drawn, installed, and addressable by nothing.
     registry["roomHours"] = {k: v for k, v in roles.get("roomHours", {}).items()
                              if not k.startswith("_")}
     registry["chapterTypes"] = roles.get("chapterTypes", {})
