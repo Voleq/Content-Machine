@@ -1,4 +1,239 @@
+# Dennis v2 — delta pack 15
+
+## Drop fourteen — the fourteen manifests re-emitted from the engine in main
+
+**270 plates, 3,033 slots, 924 frames. No plate changed, no geometry moved, nothing
+redrawn.** Fourteen files rewritten, one directory deleted, two scripts added.
+
+### §1 · What the ingest was actually refusing
+
+PR #25 fails on a pristine clone with *"slots disagrees with the shipped manifest"* — and
+the geometry is innocent. **Zero differences in x, y, w or h. Not one, on any plate.** What
+differs is fields the engine publishes that the shipped copy does not carry.
+
+The cause is one line in `engine/hand.js`:
+
+```js
+P.slots[key] = Object.assign({}, extra || {}, { x, y, w, h })
+```
+
+A slot carries **whatever its author passed**. delta-14's writer was a throwaway script
+that copied a whitelist — `x, y, w, h, role, align, maxChars, region, note` — and dropped
+every other field silently. So the manifests were not wrong about the plates; they were an
+incomplete transcript of them, and the ingest compares the whole slot object.
+
+**The reported diff was a partial one.** The failure names eighteen fields; the full
+reconcile against delta-14 finds **twenty-nine, on 146 plates** — the eighteen plus
+`ground` (56 slots), `groundBox` (56), `scales` (40), `contact` (24), `count` (14),
+`steps` (6), `columns` (6), `fit` (6), `cropped` (4), `cropNote` (4), `extentOf` (2). Worth
+knowing before the next pack is checked against a list of eighteen.
+
+Measured, emitted against shipped: **0 geometry diffs, 0 plates added or removed, 0
+slot-count changes, 0 fields lost.** The change is purely additive metadata, which is what
+"an engine from one drop paired with manifests from another" should look like when the
+engine is the one telling the truth.
+
+### §2 · The fix is code that ships, not a script someone had lying around
+
+`scripts/manifest_core.js` is now what a manifest IS. Slots are emitted **verbatim** from
+`Plate.manifest()` — no whitelist, nothing to fall behind. A plate author who adds a slot
+field gets it in the manifest by construction, and this defect cannot recur by omission.
+
+`scripts/emit_manifests.mjs` is the route: all fourteen in place, `--family` for one, and
+**`--check`**, which emits into memory and diffs against the tree. A clean `--check` means
+the manifests in the tree came from the engine in the tree — the invariant the whole pack
+depends on and the one nothing was enforcing. It is one command and it is the check that
+would have caught this.
+
+The header is also complete for the first time. `engine/build.js` FAMILY_NOTES has always
+been the declared source — *"so RENDER.manifestFor emits a complete file, header and
+assets from one source"* — and delta-14 typed its own headers into the writer and never
+emitted the declared ones at all. They are in now: `engine`, `coordinateOrigin`, `units`,
+`bakedText`, `reproduce`, `dataPolicy`, `slotKinds`, `surface`, `motion`, `scaleAuthority`,
+`frameShape`, `baseFileRule`, `boilPolicy`, `maxCharsNote`, per family.
+
+### §3 · Location, and the directory that is now deleted
+
+`kit/<family>/manifest.json`, beside the family's plates, which is where the ingest's glob
+looks. delta-14 shipped under `kit/manifests/<family>/`, which that glob does not match:
+the ingest finds no manifest beside any family, reads the pack as zero assets, and
+reconciles against nothing. **That directory is deleted rather than left in place** — two
+copies of a manifest is the condition that produced this bug, and the stale one is not
+worth keeping for reference when it can be regenerated in one command.
+
+### §4 · THE HASH CHANGED, AND THIS IS THE ONE THING TO READ BEFORE MERGING
+
+**No hash function ships anywhere in `engine/`.** The one delta-14 used cannot be recovered
+or re-run — its values are not reproducible from the engine you are holding, which is the
+same class of defect as the slots and went unnoticed because nothing recomputes them.
+
+So the emitter declares one: **FNV-1a 32-bit over the emitted SVG string**, written into
+every header as `hashAlgo`, recomputable with `MANIFEST_EMIT.hash(svg)`. **Every frame's
+hash therefore changes from delta-14** — 924 values. Nothing in the kit reads them as an
+identity; they are a fingerprint for *did this byte-sequence move*. A hash nobody can
+recompute was worth less than a hash that changes once.
+
+**If `ingest_kit.py` compares frame hashes against its own rendering, it will now disagree
+with every frame until it adopts `hashAlgo` — check that before merging.** It is the only
+field in these files whose value is not derived from something already in the tree.
+
+### §5 · What was NOT verified, stated plainly
+
+**`scripts/ingest_kit.py` has not been run against this pack.** That script is not in the
+kit — it lives on the pipeline side — and the reconcile above is a field-by-field diff of
+emitted-against-shipped run in the engine's own runtime, not the ingest's verdict. It
+establishes that the fourteen files agree with the engine in main and that nothing but
+added metadata and the hashes moved. It does not establish that the ingest accepts them.
+
+**The one command still to run, on a clean clone, before this ships:**
+
+```
+node kit/scripts/emit_manifests.mjs --check    # expect: all manifests match the engine
+python scripts/ingest_kit.py kit               # expect: 270 plates, 3,033 slots
+```
+
+---
+
 # Dennis v2 — delta pack 14
+
+## Drop thirteen — the boil answered, the overlay contract, the six stems
+
+**270 assets, 924 frames, 0 errors, 0 text nodes. No plate changed.** One new proof page,
+one contract written into the engine, four fragment entries added.
+
+### §1 · Every data plate boils. Was that the intention?
+
+**Yes, deliberately — and the premise of the question is wrong in a way that is the
+answer.** Answer (1), with one real defect found inside it.
+
+**No number in this kit wobbles, and none can.** A plate contains no content; it contains
+slots, and every figure on a numbers sheet is type the compositor sets into a slot box at
+video time. **Measured: 315 slot boxes across 12 plates, 0 units of deviation across all
+three frames.** The type is pinned by construction, not by restraint — if the figures
+moved, the proof page's type layer would have to be rebuilt per frame, and it is built once
+and never touched by the clock.
+
+The 47 plates did not become boiling plates. The boil was turned on for their **furniture**,
+behind a gate: with the gate up a mark takes the boil offset only if it was drawn inside
+`HAND.breathe()`. That reasoning is not missing from the pack — it is **§1.5 in
+`engine/build.js`**, at the point the gate is raised, and it retracts the old rule
+explicitly and names what stays pinned: *axis lines, series lines, slot underlays and
+highlight boxes.*
+
+**So the documentation defect is real and it is worse than reported.** `compose.py`'s
+paragraph states the old rule as settled fact — and so did `build.js` itself, **2,848
+characters above its own retraction, in the same file.** That comment read *"A data plate
+does NOT boil"* until this drop. A reader who stops at the first statement gets the old
+rule twice, from two files, one of which contains the correction. Both are now corrected;
+`compose.py` is the pipeline's and is yours.
+
+#### The defect inside the answer: the gate leaks in exactly the place §1.5 names
+
+**Thirteen plates move a band or hatch behind pinned type** — the third exclusion,
+violated:
+
+| plates | measured |
+|---|---|
+| `tables/numbers-sheet-*` (10) | 86–191 band marks moving under 6–18 pinned cell boxes, displaced **0.01–3.70 units**. Zebra row striping is a slot underlay. |
+| `structure/row-spotlight` (2) | 133 landscape / 177 portrait band marks under 6 value boxes. A **highlight box**, named in the exclusion list by those words. |
+| `structure/multiple-bridge-16x9` | 80 band marks under 3 value boxes. |
+
+And the tell the brief spotted was right, but inverted. `overlays/row-band` is frozen
+*because the figures behind it are held still* — and that reasoning is sound. What happened
+is that the protection was applied to the **overlay** version of a row band and missed on
+the ten plates that draw their **own**. The problem `row-band` is protected from has not
+gone away; `row-band` is the only place it was fixed.
+
+**Where the gate holds**, and why the answer is not "turn the boil off": `cash-flow`,
+`big-number`, `peer-strip`, `line-dense`, `timeline`, `unit-ladder` boil 1–76% of their
+marks and **none of it passes under a value box**. `peer-strip` moves 178 of 233 marks and
+hits nothing — it is all hatch. Seven chart plates have exactly one hairline crossing their
+value labels, displaced **0.83 units** (1.7px delivered); covered by §1.5's own sorting
+principle and named rather than fixed.
+
+**PROPOSED, NOT APPLIED:** add the band and hatch fill used by those 13 plates to the same
+pinned set that already holds axis lines, series lines and underlays. It is a **gate
+change, not a redraw, and not a manifest change** — these plates should keep
+`playback: loop`, because their paper edge and rules should go on breathing. Reverting them
+to `static` would fix the leak by reintroducing the defect §1.5 was written to remove.
+
+#### The render is the deliverable: `proof/boil-motion.html`
+
+The frames on a timer at the fps the manifest declares, so the boil can be **watched** for
+the first time. `numbers-sheet-5r` and `cash-flow` as asked, plus `row-spotlight` and
+`bars-8q`. Three columns each: as shipped, **the proposed fix previewed** by substituting
+frame one's band paths (123 of 227 paths on the sheet — nothing in `plates.js` touched),
+and the moving ink isolated. Controls for 1/2/8 fps, figures on and off, and a 1:1 crop row
+where one canvas unit is one CSS pixel. Frames are built once and the timer swaps them; a
+loop that called `draw()` per tick would be measuring the engine, not the plate.
+
+### §2 · The overlay contract, in the manifest
+
+Eight clauses on all seven `-blink` strips, and **every one is derived from the
+registration rather than chosen**, which is why they are rules and not preferences.
+
+- **Which idle frame:** index-matched, blink `_fNN` over idle `_fNN` — derived, not
+  conventional. The two strips are authored from **byte-identical args at every index**
+  (bob 0/3/2, boil 3/4/6). Verified on all seven pairs.
+- **Why not over a talk frame:** talk is all three frames at **one** boil index; blink
+  carries idle's 3/4/6. A blink over a talk frame puts a lid drawn at boil 4 over a socket
+  drawn at boil 1 and the linework will not meet. Registration forbids it. A blink while
+  speaking is a **new strip** at the talk index, not a reuse of this one.
+- **Cadence:** ~100ms, uniform on [3.0s, 4.5s], resampled after each blink. Seeded from the
+  asset's own `seed` advanced by **blink count since the video started** — never by shot
+  index, never reset at a cut. Reseeding per shot is the implementation that produces the
+  lockstep defect: every cut restarts the clock, so he blinks at the same offset after each
+  cut and it reads as a tic.
+- **At a cut:** a blink in progress is **abandoned**, not carried across — the registration
+  does not hold across poses. Lids open on the new shot, cadence clock continues. And no
+  blink starts within 150ms of a shot end: one clipped to 40ms reads as a dropped frame.
+
+### §3 · The six unreachable stems — four gaps and a checker mismatch
+
+**Two of the six were already mapped.** `structure/said-happened-5` and
+`structure/sensitivity` have had entries all along, as `-16x9` keys. The check compares
+**bare stems** against a fragment keyed by **aspect** — 57 of 60 keys carry a suffix, only
+the three host poses are bare — so a stem lookup misses every aspect-qualified entry. It
+reports reachable plates as unreachable, which is the safe direction and still wrong: it
+cannot distinguish a real gap from a keying mismatch. Recorded in `_reachability` with a
+proposed fix, **not applied** — the check is the pipeline's, and whether mappings may differ
+per aspect is a decision, not a bug. They currently do: several portrait keys carry
+different beats from their landscape twin, so collapsing to stems would lose that.
+
+**Four were genuine gaps**, now mapped:
+
+| stem | now says | why |
+|---|---|---|
+| `said-happened-3`, `-4` | `guidance-estimates` `management` `resigned-close` · evidence, land | Same argument and same homes as `-5`, which was mapped. The count variants never got entries, so a director asking for three pairs had no reachable plate while five pairs did. |
+| `whiteboard-3`, `-4` | `one-framework` `moat` `how-the-money-is-made` · open, evidence | `one-framework` is nearly literal — the chapter *is* a framework drawn out, and this is the only surface in the kit for drawing one. |
+
+**And `moat` is now reached, which closes the older gap from the other side.** It was the
+one chapter type of the sixteen that no plate served, and I had proposed building something
+for it. A whiteboard is the answer: a moat argument is a structural claim that needs a board
+rather than a chart, and this plate is panels-and-arrows with no data commitment. **That
+half is a proposal, not an assumption** — reject it if a director reads `moat` as a
+comparison rather than an explanation. **All sixteen chapter types are now referenced**; 64
+keys, every name resolving.
+
+### UNVERIFIED — drop thirteen
+
+1. **`boil-motion.html` is a browser at its own frame rate, not the render path.** The
+   frames are the kit's and the fps is the manifest's; the compositing is CSS. Whether 2fps
+   through resvg and the encoder looks the same is the cut's answer.
+2. **Whether the 0.83-unit hairline is visible to a person** is what the page's controls are
+   for, and I cannot settle it from here. Same for whether the pinned preview is
+   distinguishable from shipped at real viewing distance.
+3. **The 13-plate band finding is measured; the fix is previewed, not built.** The preview
+   substitutes paths in the emitted SVG. A real gate change may catch marks the substitution
+   misses, or miss marks it catches.
+4. **The reachability explanation is inferred.** I have not seen the check's source — it is
+   the most likely reading of its output against this file's keys, not a confirmed one.
+5. **The blink contract has no consumer yet.** Every clause is derived and checked against
+   the strips, and none has been played. The cadence numbers in particular (3.0–4.5s, 150ms
+   guard) are judgement expressed as a range, not measurements.
+6. **`compose.py` still states the old boil rule.** It is the pipeline's file. The two in
+   the kit are corrected.
+
 
 ## Drop twelve — §0's manifests, the build cost, and two cleanups
 

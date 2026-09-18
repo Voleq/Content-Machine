@@ -337,7 +337,14 @@ def build_byproducts(workspace: Path, settings: Settings, *,
         made: list[str] = []
         # Every room angle in this role, in both aspects — that is the real
         # supply, and the honest number to report.
-        stems = reg.room_roles.get(room_role, ())
+        #
+        # AT THE EPISODE'S OWN HOUR, because a by-product is a still from the
+        # video rather than a picture of the same set on another night. The
+        # hour comes off the ticker, the same value `render_long` gives
+        # `room_for`, so the stills match the frames they are cut from.
+        hour = reg.hour_for(ticker or "")
+        stems = tuple(reg.at_hour(s, hour)
+                      for s in reg.room_roles.get(room_role, ()))
         found = [k for stem in stems for a in ("16x9", "9x16")
                  if (k := reg.aspect_key(stem, a))]
         result.shortfall[label] = {"wanted": len(found), "found": len(found),

@@ -91,15 +91,19 @@ def test_both_generations_of_the_manifest_table_are_read(tmp_path, table):
     assert got == {"charts/x-16x9": entry}
 
 
+# Slot fields that mean "words are set in this box": a slot carrying one has a
+# type budget, so its plate must declare the role that budget was derived from.
+_BUDGET_FIELDS = ("maxChars", "maxCharsPerLine", "maxLines")
+
+
 def test_every_shipped_asset_carries_what_reconcile_compares():
-    """`_reconcile` checks canvas, exportScale, playback, frameCount, slots
-    and the typeRoles floors. A manifest missing one of those does not fail
-    — it compares None against a real value for every plate, or agrees with
-    itself about nothing. The schema changed in this drop, so this is the
-    check that it changed compatibly."""
+    """`_reconcile` checks canvas, exportScale, playback, frameCount and slots
+    by EQUALITY. A manifest missing one of those does not fail — it compares
+    None against a real value for every plate, or agrees with itself about
+    nothing. The schema changed in this drop, so this is the check that it
+    changed compatibly."""
     shipped = ingest._shipped_manifests(KIT)
-    required = ("canvas", "exportScale", "playback", "frameCount", "slots",
-                "typeRoles")
+    required = ("canvas", "exportScale", "playback", "frameCount", "slots")
     missing: dict[str, list[str]] = {}
     for key, entry in shipped.items():
         absent = [f for f in required if f not in entry]
@@ -108,6 +112,47 @@ def test_every_shipped_asset_carries_what_reconcile_compares():
     assert not missing, (
         f"{len(missing)} plate(s) lack fields `_reconcile` compares: "
         f"{dict(list(missing.items())[:5])}")
+
+
+def test_a_plate_that_sets_type_declares_the_roles_it_sets_it_in():
+    """`typeRoles` is required of a plate that sets type, and of no other.
+
+    IT IS NOT IN THE LIST ABOVE, and the difference is in how `_reconcile`
+    reads it. The five fields there are compared with `!=`, so a key absent
+    from BOTH sides compares None to None and the check passes having tested
+    nothing. `typeRoles` goes through `_role_diffs`, which takes the UNION of
+    the role names on each side and diffs each one — so a plate that gains a
+    role in the engine and lacks it in the delivery is caught by the union,
+    whether or not either side carries the key at all. Requiring the key of
+    every plate would not make that comparison stronger; it would only demand
+    an empty dict from 51 plates that set no type.
+
+    Those 51 are the host cut-outs. Their slots are `mouth`, `head` and
+    `figure` — a lip-sync region, a head box and a body, which are places to
+    put HIM rather than boxes to set words in. `Slot.sets_type` reads exactly
+    this: a slot takes type when its plate declares a `typeRoles` entry for
+    its role, so a cut-out with no entry takes no words, correctly.
+
+    What would be a real hole is a plate whose slots carry a type BUDGET —
+    `maxChars` and friends, derived by `budget.js` from the face a role is set
+    in — with no `typeRoles` saying what that face is. That is a plate with
+    words on it and nothing declaring how they are set, and it is what this
+    asserts against.
+    """
+    shipped = ingest._shipped_manifests(KIT)
+    holes: dict[str, list[str]] = {}
+    for key, entry in shipped.items():
+        if "typeRoles" in entry:
+            continue
+        budgeted = sorted(
+            name for name, slot in (entry.get("slots") or {}).items()
+            if isinstance(slot, dict)
+            and any(f in slot for f in _BUDGET_FIELDS))
+        if budgeted:
+            holes[key] = budgeted
+    assert not holes, (
+        f"{len(holes)} plate(s) budget type into a slot and declare no "
+        f"`typeRoles` to set it in: {dict(list(holes.items())[:5])}")
 
 
 def test_the_delivery_declares_the_pack_it_came_from():

@@ -45,10 +45,15 @@ _NOT_SHIPPED = {
 # Assets a human uses by hand rather than a code path. Each one needs a
 # reason, and the reason is the point: "nothing loads it" has to be a
 # DECISION on the record, not the state that `assets/brand/` was in.
-_BY_HAND = {
-    "channel": ("YouTube channel art — banner and avatar, uploaded by hand "
-                "in YouTube Studio. No render path should touch these."),
-}
+#
+# EMPTY, AND THAT IS THE CURRENT STATE RATHER THAN A DISUSED MECHANISM.
+# `assets/channel/` — a banner, an avatar and their SVGs — was the only entry.
+# It was exempted while "needs a decision rather than a delete" was true; the
+# operator has since decided, and channel art is made in Canva and uploaded in
+# YouTube Studio. Art this repo does not make is art this repo should not ship,
+# so the files are gone and the exemption with them. Add the next one here with
+# its reason.
+_BY_HAND: dict[str, str] = {}
 
 
 def _source_text() -> str:

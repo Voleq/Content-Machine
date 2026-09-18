@@ -1907,10 +1907,17 @@ def reachable_plates(reg) -> dict[str, set[str]]:
             role = name.split("/", 1)[1]
             if role in reg.room_roles:
                 for stem in reg.room_roles[role]:
-                    for a in ("16x9", "9x16"):
-                        key = reg.aspect_key(stem, a)
-                        if key:
-                            by_template.add(key)
+                    # EVERY HOUR THE ANGLE IS DRAWN AT, not just the night one.
+                    # An episode picks its hour from its own identity, so every
+                    # variant of an angle a role names is reachable — and the
+                    # 24 dusk plates were flagged as dead art until this asked
+                    # the same question `room_for` answers.
+                    for hour in (reg.room_hours or {"": ""}):
+                        at = reg.at_hour(stem, hour)
+                        for a in ("16x9", "9x16"):
+                            key = reg.aspect_key(at, a)
+                            if key:
+                                by_template.add(key)
                 return
         got = resolve_plate(reg, name, aspect)
         if got is not None:

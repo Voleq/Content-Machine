@@ -1,16 +1,35 @@
 {
  "family": "annotations",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 10,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "alpha cut-outs, no ground: the mark is composited onto whatever it wraps",
+ "slotKinds": {
+  "region": "what the mark wraps or points at (area) — solved onto the target, never written into",
+  "caption": "the mark's own words (note), set in the caption role declared on every mark in this family"
+ },
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "boilPolicy": "Boil amplitude is declared per asset in engine/build.js BOIL_AMP, default 2.0 canvas units. Solve scale multiplies it: an asset stretched onto a target boils at amp x solve in the frame, which is the same property the inkWeight check already enforces for line weight. Do not compare a plate-side boil figure with a frame-side one.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 20,
+ "frameTotal": 30,
  "plates": {
   "annotations/scrawl-oval-wide": {
    "key": "annotations/scrawl-oval-wide",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     1200,
     230
@@ -33,7 +52,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "959a0b1c"
+      "hash": "51771df9"
      },
      {
       "file": "scrawl-oval-wide_f02.png",
@@ -41,7 +60,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "df78c9d8"
+      "hash": "4d074fad"
      },
      {
       "file": "scrawl-oval-wide_f03.png",
@@ -49,7 +68,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6d147671"
+      "hash": "5c5d7831"
      }
     ]
    },
@@ -69,28 +88,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type",
      "x": 263,
      "y": 73,
      "w": 674,
-     "h": 84,
-     "role": "wraps",
-     "region": true,
-     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type"
+     "h": 84
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 61,
      "y": 241,
      "w": 1077,
      "h": 72,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 58,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2400,
      460
@@ -124,7 +142,6 @@
   "annotations/scrawl-oval-tight": {
    "key": "annotations/scrawl-oval-tight",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     340,
     150
@@ -147,7 +164,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "a74c0871"
+      "hash": "5f6d3383"
      },
      {
       "file": "scrawl-oval-tight_f02.png",
@@ -155,7 +172,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ca871ff1"
+      "hash": "2ae89875"
      },
      {
       "file": "scrawl-oval-tight_f03.png",
@@ -163,7 +180,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "33c41850"
+      "hash": "a4c978ee"
      }
     ]
    },
@@ -183,28 +200,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type",
      "x": 76,
      "y": 44,
      "w": 188,
-     "h": 63,
-     "role": "wraps",
-     "region": true,
-     "note": "the thing being circled — the mark solves this slot onto it, and the box is measured against the drawn ink so the lap always lands clear of the type"
+     "h": 63
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 12,
      "y": 162,
      "w": 316,
      "h": 70,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 17,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      680,
      300
@@ -238,7 +254,6 @@
   "annotations/underline-swipe": {
    "key": "annotations/underline-swipe",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     1000,
     140
@@ -261,7 +276,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "c4504c06"
+      "hash": "fcdf3f10"
      },
      {
       "file": "underline-swipe_f02.png",
@@ -269,7 +284,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "5dcaad20"
+      "hash": "9b440165"
      },
      {
       "file": "underline-swipe_f03.png",
@@ -277,7 +292,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "23d83b76"
+      "hash": "d9532264"
      }
     ]
    },
@@ -297,28 +312,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the line of type sitting above the swipe — the floor is the topmost ink, so descenders clear the stroke",
      "x": 0,
      "y": 0,
      "w": 1000,
-     "h": 44,
-     "role": "wraps",
-     "region": true,
-     "note": "the line of type sitting above the swipe — the floor is the topmost ink, so descenders clear the stroke"
+     "h": 44
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 12,
      "y": 128,
      "w": 986,
      "h": 55,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 70,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2000,
      280
@@ -352,7 +366,6 @@
   "annotations/underline-tight": {
    "key": "annotations/underline-tight",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     300,
     90
@@ -375,7 +388,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6b10a37a"
+      "hash": "84655cc3"
      },
      {
       "file": "underline-tight_f02.png",
@@ -383,7 +396,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "17ddaaca"
+      "hash": "dae0e5d5"
      },
      {
       "file": "underline-tight_f03.png",
@@ -391,7 +404,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7653084e"
+      "hash": "2aca0ef9"
      }
     ]
    },
@@ -411,28 +424,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the figure sitting above the swipe — for a cell or a single word",
      "x": 0,
      "y": 0,
      "w": 300,
-     "h": 23,
-     "role": "wraps",
-     "region": true,
-     "note": "the figure sitting above the swipe — for a cell or a single word"
+     "h": 23
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 0,
      "y": 93,
      "w": 300,
      "h": 82,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 14,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      600,
      180
@@ -466,7 +478,6 @@
   "annotations/strike-out": {
    "key": "annotations/strike-out",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     320,
     90
@@ -489,7 +500,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6f98d810"
+      "hash": "c3a960f5"
      },
      {
       "file": "strike-out_f02.png",
@@ -497,7 +508,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ca109ae6"
+      "hash": "1eb57c68"
      },
      {
       "file": "strike-out_f03.png",
@@ -505,7 +516,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "4574c52e"
+      "hash": "3fb91c54"
      }
     ]
    },
@@ -525,28 +536,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "what is being struck out — the ink crosses it by definition, so this is the whole canvas",
      "x": 0,
      "y": 0,
      "w": 320,
-     "h": 90,
-     "role": "wraps",
-     "region": true,
-     "note": "what is being struck out — the ink crosses it by definition, so this is the whole canvas"
+     "h": 90
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 0,
      "y": 90,
      "w": 320,
      "h": 82,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 15,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      640,
      180
@@ -580,7 +590,6 @@
   "annotations/box-scrawl": {
    "key": "annotations/box-scrawl",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     1000,
     320
@@ -603,7 +612,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "44c681e1"
+      "hash": "6b40639e"
      },
      {
       "file": "box-scrawl_f02.png",
@@ -611,7 +620,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2295070a"
+      "hash": "aacfb874"
      },
      {
       "file": "box-scrawl_f03.png",
@@ -619,7 +628,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "8990345e"
+      "hash": "858fe2b7"
      }
     ]
    },
@@ -639,28 +648,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the cell or block being boxed, inside the drawn sides",
      "x": 83,
      "y": 47,
      "w": 833,
-     "h": 225,
-     "role": "wraps",
-     "region": true,
-     "note": "the cell or block being boxed, inside the drawn sides"
+     "h": 225
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 0,
      "y": 337,
      "w": 995,
      "h": 55,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 70,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2000,
      640
@@ -694,7 +702,6 @@
   "annotations/bracket-rows": {
    "key": "annotations/bracket-rows",
    "dir": "annotations",
-   "aspect": "9x16",
    "canvas": [
     220,
     700
@@ -717,7 +724,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "26ebfbb8"
+      "hash": "bac1dda7"
      },
      {
       "file": "bracket-rows_f02.png",
@@ -725,7 +732,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "588ca9ee"
+      "hash": "c48dcc1c"
      },
      {
       "file": "bracket-rows_f03.png",
@@ -733,7 +740,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0fc96368"
+      "hash": "1c26132d"
      }
     ]
    },
@@ -753,28 +760,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the rows being grouped — they run off to the left and end where the bracket's arms begin",
      "x": -880,
      "y": 0,
      "w": 918,
-     "h": 700,
-     "role": "wraps",
-     "region": true,
-     "note": "the rows being grouped — they run off to the left and end where the bracket's arms begin"
+     "h": 700
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "what the group is — sits outside the plate, to the right",
      "x": 224,
      "y": 252,
      "w": 418,
      "h": 196,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 23,
-     "maxLines": 2,
-     "note": "what the group is — sits outside the plate, to the right"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      440,
      1400
@@ -808,7 +814,6 @@
   "annotations/arrow-elbow": {
    "key": "annotations/arrow-elbow",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     760,
     520
@@ -831,7 +836,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "90f54100"
+      "hash": "7b0ce438"
      },
      {
       "file": "arrow-elbow_f02.png",
@@ -839,7 +844,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "c4098910"
+      "hash": "df45217a"
      },
      {
       "file": "arrow-elbow_f03.png",
@@ -847,7 +852,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "e9875f50"
+      "hash": "55f7c02e"
      }
     ]
    },
@@ -867,28 +872,27 @@
    },
    "slots": {
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the scrawled words, at the arrow's tail",
      "x": 15,
      "y": -94,
      "w": 380,
      "h": 94,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 22,
-     "maxLines": 2,
-     "note": "the scrawled words, at the arrow's tail"
+     "maxLines": 2
     },
     "area": {
+     "role": "points-at",
+     "region": true,
+     "note": "what the arrow lands on — a short gap past the tip, so the head arrives at it and never crosses it",
      "x": 680,
      "y": 473,
      "w": 380,
-     "h": 125,
-     "role": "points-at",
-     "region": true,
-     "note": "what the arrow lands on — a short gap past the tip, so the head arrives at it and never crosses it"
+     "h": 125
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      1520,
      1040
@@ -922,7 +926,6 @@
   "annotations/caret-note": {
    "key": "annotations/caret-note",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     620,
     300
@@ -945,7 +948,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "132372de"
+      "hash": "9872e53b"
      },
      {
       "file": "caret-note_f02.png",
@@ -953,7 +956,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "86b46929"
+      "hash": "8654809f"
      },
      {
       "file": "caret-note_f03.png",
@@ -961,7 +964,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "06a0c480"
+      "hash": "0bdd6bbd"
      }
     ]
    },
@@ -981,28 +984,27 @@
    },
    "slots": {
     "note": {
+     "align": "center",
+     "role": "caption",
+     "note": "the words above the caret",
      "x": 37,
      "y": 18,
      "w": 546,
      "h": 120,
-     "role": "caption",
-     "align": "center",
      "maxCharsPerLine": 34,
-     "maxLines": 2,
-     "note": "the words above the caret"
+     "maxLines": 2
     },
     "area": {
+     "role": "points-at",
+     "region": true,
+     "note": "the gap in the type the caret points up into — it starts below the apex, so the caret never sits on the glyphs",
      "x": 236,
      "y": 253,
      "w": 149,
-     "h": 60,
-     "role": "points-at",
-     "region": true,
-     "note": "the gap in the type the caret points up into — it starts below the apex, so the caret never sits on the glyphs"
+     "h": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      1240,
      600
@@ -1036,7 +1038,6 @@
   "annotations/tick-marks": {
    "key": "annotations/tick-marks",
    "dir": "annotations",
-   "aspect": "16x9",
    "canvas": [
     720,
     220
@@ -1059,7 +1060,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9fe62e39"
+      "hash": "2352c5d6"
      },
      {
       "file": "tick-marks_f02.png",
@@ -1067,7 +1068,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ac8e1da8"
+      "hash": "9d9d83e8"
      },
      {
       "file": "tick-marks_f03.png",
@@ -1075,7 +1076,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "68d00870"
+      "hash": "a33c7605"
      }
     ]
    },
@@ -1095,28 +1096,27 @@
    },
    "slots": {
     "area": {
+     "role": "wraps",
+     "region": true,
+     "note": "the three things being ticked, evenly spaced — the ticks land on them, so this is the whole canvas",
      "x": 0,
      "y": 0,
      "w": 720,
-     "h": 220,
-     "role": "wraps",
-     "region": true,
-     "note": "the three things being ticked, evenly spaced — the ticks land on them, so this is the whole canvas"
+     "h": 220
     },
     "note": {
+     "align": "left",
+     "role": "caption",
+     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge",
      "x": 91,
      "y": 181,
      "w": 566,
      "h": 62,
-     "role": "caption",
-     "align": "left",
      "maxCharsPerLine": 35,
-     "maxLines": 2,
-     "note": "the mark's words, set clear of the ink — below it where the canvas has room, otherwise just outside the edge"
+     "maxLines": 2
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      1440,
      440

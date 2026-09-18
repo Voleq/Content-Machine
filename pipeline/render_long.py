@@ -478,7 +478,13 @@ def render_long(
     chapter_labels = [ch.title for ch in script.chapter_list]
 
     def _room_plate(role_name: str = "talk", seed: str = ""):
-        return reg.room_for(role_name, aspect, seed=seed or script.ticker)
+        # THE TICKER IS THE EPISODE, and it is passed separately from the seed
+        # on purpose. Every caller below mixes a variant or a chapter title
+        # into `seed` so consecutive rooms differ — which is right for the
+        # ANGLE and wrong for the HOUR. `episode` is the ticker alone, so the
+        # set stays at one hour for the whole video while the angle rotates.
+        return reg.room_for(role_name, aspect, seed=seed or script.ticker,
+                            episode=script.ticker)
 
     def _room_still(variant: int, role_name: str = "talk") -> Path:
         """The room, as a still. The bottom layer when nothing else is on.

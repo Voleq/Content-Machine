@@ -1,11 +1,25 @@
 {
  "family": "frames",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 8,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 28,
+ "frameTotal": 24,
  "plates": {
   "frames/media-frame-t1-16x9": {
    "key": "frames/media-frame-t1-16x9",
@@ -33,7 +47,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f88ea0b4"
+      "hash": "804820ed"
      },
      {
       "file": "media-frame-t1-16x9_f02.png",
@@ -41,7 +55,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "dcacc5de"
+      "hash": "6bc165b7"
      },
      {
       "file": "media-frame-t1-16x9_f03.png",
@@ -49,7 +63,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0ce58d48"
+      "hash": "8cce6031"
      }
     ]
    },
@@ -75,35 +89,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 648
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 307,
      "y": 848,
      "w": 1306,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxChars": 95
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 307,
      "y": 932,
      "w": 1306,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 83
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -184,7 +198,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "92211f08"
+      "hash": "67ba5600"
      },
      {
       "file": "media-frame-t1-9x16_f02.png",
@@ -192,7 +206,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b3bc2728"
+      "hash": "d7387744"
      },
      {
       "file": "media-frame-t1-9x16_f03.png",
@@ -200,7 +214,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "3bfeb6d8"
+      "hash": "2ddf5b1e"
      }
     ]
    },
@@ -226,35 +240,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 97,
      "y": 499,
      "w": 886,
-     "h": 845,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 845
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 97,
      "y": 1414,
      "w": 886,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 64
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 97,
      "y": 1518,
      "w": 886,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 56
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -335,7 +349,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7b9ae4a0"
+      "hash": "0eca6dc1"
      },
      {
       "file": "media-frame-t2-16x9_f02.png",
@@ -343,7 +357,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e8e88dfe"
+      "hash": "f9baf4ff"
      },
      {
       "file": "media-frame-t2-16x9_f03.png",
@@ -351,7 +365,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0209730a"
+      "hash": "93a77e7a"
      }
     ]
    },
@@ -377,35 +391,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 648
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 307,
      "y": 928,
      "w": 1306,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxChars": 95
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 307,
      "y": 1012,
      "w": 1306,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 83
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -465,7 +479,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "744f66a8"
+      "hash": "cf7e040f"
      },
      {
       "file": "media-frame-t2-9x16_f02.png",
@@ -473,7 +487,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "16765554"
+      "hash": "f31e89d5"
      },
      {
       "file": "media-frame-t2-9x16_f03.png",
@@ -481,7 +495,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "37d9788c"
+      "hash": "d47a5e05"
      }
     ]
    },
@@ -507,35 +521,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 97,
      "y": 499,
      "w": 886,
-     "h": 845,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 845
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 97,
      "y": 1494,
      "w": 886,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 64
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 97,
      "y": 1598,
      "w": 886,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 56
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -595,7 +609,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "802cdffa"
+      "hash": "e6a1656e"
      },
      {
       "file": "media-frame-t3-16x9_f02.png",
@@ -603,7 +617,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e3fb6f28"
+      "hash": "6fce56f9"
      },
      {
       "file": "media-frame-t3-16x9_f03.png",
@@ -611,7 +625,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "f2600d76"
+      "hash": "6909043b"
      }
     ]
    },
@@ -637,35 +651,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 648
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 307,
      "y": 848,
      "w": 1306,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxChars": 95
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 307,
      "y": 932,
      "w": 1306,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 83
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -725,7 +739,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "13558830"
+      "hash": "c15b2da4"
      },
      {
       "file": "media-frame-t3-9x16_f02.png",
@@ -733,7 +747,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "3279a8a8"
+      "hash": "4cf67fcd"
      },
      {
       "file": "media-frame-t3-9x16_f03.png",
@@ -741,7 +755,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "67fec9b0"
+      "hash": "389e873f"
      }
     ]
    },
@@ -767,35 +781,35 @@
    },
    "slots": {
     "media": {
+     "role": "media",
+     "region": true,
+     "fit": "cover",
+     "note": "stock footage or a photograph plays inside here",
      "x": 97,
      "y": 499,
      "w": 886,
-     "h": 845,
-     "role": "media",
-     "region": true,
-     "note": "stock footage or a photograph plays inside here"
+     "h": 845
     },
     "caption": {
+     "align": "left",
+     "role": "label",
      "x": 97,
      "y": 1414,
      "w": 886,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 64
     },
     "source": {
+     "align": "left",
+     "role": "caption",
      "x": 97,
      "y": 1518,
      "w": 886,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 56
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -855,7 +869,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "73422458"
+      "hash": "8ad5abff"
      },
      {
       "file": "capture-frame-16x9_f02.png",
@@ -863,7 +877,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "351a4f5c"
+      "hash": "3759f72c"
      },
      {
       "file": "capture-frame-16x9_f03.png",
@@ -871,7 +885,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "24f0567c"
+      "hash": "d6fbb600"
      }
     ]
    },
@@ -916,54 +930,54 @@
    },
    "slots": {
     "source": {
+     "align": "left",
+     "role": "source",
      "x": 435,
      "y": 206,
      "w": 1050,
      "h": 52,
-     "role": "source",
-     "align": "left",
      "maxChars": 67
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 435,
      "y": 280,
      "w": 1050,
      "h": 140,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 48,
      "maxLines": 2
     },
     "body": {
+     "align": "left",
+     "role": "body",
      "x": 435,
      "y": 470,
      "w": 1050,
      "h": 190,
-     "role": "body",
-     "align": "left",
      "maxCharsPerLine": 87,
      "maxLines": 3
     },
     "mark": {
+     "role": "highlight-band",
+     "region": true,
+     "overlay": "overlays/row-band",
      "x": 421,
      "y": 462,
      "w": 1078,
-     "h": 70,
-     "role": "highlight-band",
-     "region": true
+     "h": 70
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 365,
      "y": 990,
      "w": 1190,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 76
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1022,7 +1036,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "1f531d20"
+      "hash": "f3d9fd41"
      },
      {
       "file": "capture-frame-9x16_f02.png",
@@ -1030,7 +1044,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "f9d92460"
+      "hash": "f4a04b4e"
      },
      {
       "file": "capture-frame-9x16_f03.png",
@@ -1038,7 +1052,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "31f304d0"
+      "hash": "3d872684"
      }
     ]
    },
@@ -1083,54 +1097,54 @@
    },
    "slots": {
     "source": {
+     "align": "left",
+     "role": "source",
      "x": 122,
      "y": 448,
      "w": 837,
      "h": 52,
-     "role": "source",
-     "align": "left",
      "maxChars": 53
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 122,
      "y": 516,
      "w": 837,
      "h": 180,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 43,
      "maxLines": 2
     },
     "body": {
+     "align": "left",
+     "role": "body",
      "x": 122,
      "y": 750,
      "w": 837,
      "h": 260,
-     "role": "body",
-     "align": "left",
      "maxCharsPerLine": 75,
      "maxLines": 3
     },
     "mark": {
+     "role": "highlight-band",
+     "region": true,
+     "overlay": "overlays/row-band",
      "x": 108,
      "y": 742,
      "w": 865,
-     "h": 84,
-     "role": "highlight-band",
-     "region": true
+     "h": 84
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 76,
      "y": 1634,
      "w": 929,
      "h": 56,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840

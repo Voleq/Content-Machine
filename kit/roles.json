@@ -204,6 +204,45 @@
       "room/wall-of-calls"
     ]
   },
+  "roomHours": {
+    "_note": [
+      "WHICH HOUR THE SET IS AT. An hour name to the suffix its keys carry, and",
+      "the whole of what makes the 24 dusk plates reachable.",
+      "",
+      "SHIPPED AS ASSETS, NOT AS A MODE. `room/desk-front-dusk-16x9` sits beside",
+      "`room/desk-front-16x9` on all twelve angles in both aspects. Every one has",
+      "byte-identical slot boxes, `floorLineY` and `hostAnchor` to its night twin",
+      "— verified by design across all 24, not asserted — and only the wall tone",
+      "differs. So an hour is a SUFFIX ON A STEM the roles above already name,",
+      "and a shot template that works at night works at dusk with no changes.",
+      "",
+      "ONE HOUR PER EPISODE, AND NEVER TWO. The hour is drawn from the video's",
+      "own identity, once, the way `roomRoles` resolves `talk` to one of three",
+      "desk angles by seed — but at EPISODE granularity, never per shot. Two",
+      "hours on one wall in one video is two rooms, so the pick must not see a",
+      "shot index. `Registry.hour_for` is the only thing that chooses, and it",
+      "takes the episode and nothing else.",
+      "",
+      "NIGHT IS FIRST AND THAT IS LOAD-BEARING: it is the empty suffix, so it is",
+      "also what an episode with no identity to draw from gets. The set the kit",
+      "was built at stays the default.",
+      "",
+      "AN ANGLE WITH NO PLATE AT AN HOUR KEEPS ITS OWN KEY. Derived per stem",
+      "rather than declared in a list here, so a kit that adds `-dusk` to an",
+      "angle that lacks one gets it the day it ships and no list falls behind —",
+      "which is the whole lesson of the slot fields the manifests used to drop.",
+      "Today that is `room/wall-of-calls`, and it is correct rather than a gap:",
+      "the receipts wall is drawn by `wallOfCalls`, not by `room`, and is a",
+      "content plate that happens to be a room rather than an angle on the set.",
+      "It has no hour because it is not the wall the light is failing on.",
+      "",
+      "`day` IS DELIBERATELY ABSENT. The set is lit by one warm desk lamp and one",
+      "cold monitor and every cast shadow derives from those two. At dusk that is",
+      "still true. In daylight it is false, and shipping it means a relight."
+    ],
+    "night": "",
+    "dusk": "-dusk"
+  },
   "chapterTypes": {
     "_note": [
       "The sixteen generic types, fixed. The director returns one of these plus a",
@@ -269,6 +308,8 @@
         "figures/waterfall-4s",
         "figures/waterfall-5s",
         "paper/receipt-8-16x9",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/flow",
         "structure/unit-ladder",
         "tables/"
@@ -292,6 +333,8 @@
         "charts/macro-series",
         "figures/big-fraction",
         "figures/by-region-5-16x9",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/both-true",
         "structure/unit-ladder"
       ]
@@ -300,6 +343,8 @@
       "purpose": "what stops someone else doing this",
       "plates": [
         "cards/criteria",
+        "structure/whiteboard-3-16x9",
+        "structure/whiteboard-4-16x9",
         "structure/both-true",
         "figures/compare-side",
         "figures/compare-stacked",
@@ -329,6 +374,8 @@
         "structure/confession-ledger-16x9",
         "structure/confession-statement-16x9",
         "structure/language-shift",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9",
         "structure/timeline"
       ]
@@ -356,6 +403,8 @@
         "figures/compare-stacked",
         "figures/qoq-yoy-16x9",
         "structure/language-shift-16x9",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9",
         "tables/"
       ]
@@ -436,6 +485,8 @@
         "structure/confession-statement",
         "structure/end-card",
         "structure/implied-16x9",
+        "structure/said-happened-3-16x9",
+        "structure/said-happened-4-16x9",
         "structure/said-happened-5-16x9"
       ]
     }

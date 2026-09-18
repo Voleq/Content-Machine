@@ -131,7 +131,22 @@
   // playback "overlay" rather than "loop": a player that loops this would blink
   // him continuously. It is the one strip in the kit that is not played by
   // advancing through it.
-  const BLINK_STRIP = { suffix: "-blink", playback: "overlay", fps: null, overlayOf: "-idle", frames: [
+  // DROP THIRTEEN — THE OVERLAY CONTRACT, because "most of a contract" is what a
+  // renderer cannot act on. Every clause below is DERIVED from the registration
+  // rather than chosen, which is why it can be stated as a rule instead of a
+  // preference. Verified against all seven strips.
+  const BLINK_CONTRACT = {
+      "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+      "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+      "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+      "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+      "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+      "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+      "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+      "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+  };
+  const BLINK_STRIP = { suffix: "-blink", playback: "overlay", fps: null, overlayOf: "-idle",
+    contract: BLINK_CONTRACT, frames: [
     { tag: "_f01", args: { mouthOpen: false, bob: 0, boil: 3 } },
     { tag: "_f02", args: { mouthOpen: false, bob: 3, boil: 4 } },
     { tag: "_f03", args: { mouthOpen: false, bob: 2, boil: 6 } },
@@ -141,7 +156,13 @@
   // line movement — the room and the annotations were specified that way and both
   // shipped frozen. The mechanism is the same one the host frames already use:
   // hand.js takes a seed offset, so frame 2 is the identical drawing re-wobbled.
-  // A data plate does NOT boil: a figure that moves is a figure being re-read.
+  // A data plate's FIGURES do not boil: a figure that moves is a figure being
+  // re-read. The plate itself does — see section 1.5 immediately below, which is
+  // where the gate is raised and where the old blanket rule is retracted. This
+  // comment read "A data plate does NOT boil" until drop thirteen, 2,848
+  // characters above the paragraph that overturns it, in the same file. Same
+  // defect as pipeline/compose.py's paragraph, found by the same question: a
+  // reader who stops at the first statement gets the old rule as settled fact.
   const DATA_FAMILIES = ["tables", "figures", "charts", "peers", "structure", "cycles"];
 
   // AND ONE OVERLAY, FOR THE SAME REASON THE DATA FAMILIES DO NOT BOIL.
@@ -981,7 +1002,9 @@
       return head.concat(loop).map((f, i) => ({ tag: "_f0" + (i + 1), args: f.args }));
     },
     playbackOf: function (item) {
-      if (item.strip) return { playback: item.strip.playback, fps: item.strip.fps || null, frameCount: item.strip.frames.length, overlayOf: item.strip.overlayOf || undefined };
+      if (item.strip) return { playback: item.strip.playback, fps: item.strip.fps || null,
+        frameCount: item.strip.frames.length, overlayOf: item.strip.overlayOf || undefined,
+        overlayContract: item.strip.contract || undefined };
       if (!boils(item.dir, item.key)) return { playback: "static", fps: null, frameCount: 1 };
       const s = settles(item.dir, item.key);
       const r = { playback: "loop", fps: 2, frameCount: s ? 5 : 3 };

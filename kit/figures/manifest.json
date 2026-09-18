@@ -1,11 +1,25 @@
 {
  "family": "figures",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 38,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 385,
+ "frameTotal": 190,
  "plates": {
   "figures/big-number-l1-16x9": {
    "key": "figures/big-number-l1-16x9",
@@ -37,7 +51,7 @@
         9
        ]
       },
-      "hash": "015f93ce"
+      "hash": "55e05331"
      },
      {
       "file": "big-number-l1-16x9_f02.png",
@@ -49,7 +63,7 @@
         -3
        ]
       },
-      "hash": "af830268"
+      "hash": "9e8e0b98"
      },
      {
       "file": "big-number-l1-16x9_f03.png",
@@ -57,7 +71,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6d128bd0"
+      "hash": "e1fa9ffc"
      },
      {
       "file": "big-number-l1-16x9_f04.png",
@@ -65,7 +79,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "5487b5b8"
+      "hash": "54466466"
      },
      {
       "file": "big-number-l1-16x9_f05.png",
@@ -73,7 +87,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "91afba50"
+      "hash": "477568b9"
      }
     ]
    },
@@ -144,44 +158,43 @@
    },
    "slots": {
     "kicker": {
+     "align": "center",
+     "role": "kicker",
      "x": 220,
      "y": 202,
      "w": 1480,
      "h": 32,
-     "role": "kicker",
-     "align": "center",
      "maxChars": 69
     },
     "value": {
+     "align": "center",
+     "role": "huge",
      "x": 220,
      "y": 254,
      "w": 1480,
      "h": 406,
-     "role": "huge",
-     "align": "center",
      "maxChars": 7
     },
     "label": {
+     "align": "center",
+     "role": "label",
      "x": 220,
      "y": 690,
      "w": 1480,
      "h": 79,
-     "role": "label",
-     "align": "center",
      "maxChars": 107
     },
     "caption": {
+     "align": "center",
+     "role": "caption",
      "x": 220,
      "y": 793,
      "w": 1480,
      "h": 30,
-     "role": "caption",
-     "align": "center",
      "maxChars": 94
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -210,6 +223,8 @@
     "hugeDerivation": "size = numberColumn / (maxChars x 0.5996), capped at the layout-1 size. Layout 1: column 1480 units, target 7 characters, size 350u. Never authored — layout 2 shipped at layout 1's 350u against a 900-unit column and could not draw a five-character number.",
     "layout": 1
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/big-number-l1-9x16": {
@@ -242,7 +257,7 @@
         9
        ]
       },
-      "hash": "8c8895d2"
+      "hash": "17e86e7f"
      },
      {
       "file": "big-number-l1-9x16_f02.png",
@@ -254,7 +269,7 @@
         -3
        ]
       },
-      "hash": "c976cb98"
+      "hash": "5cc2dc6b"
      },
      {
       "file": "big-number-l1-9x16_f03.png",
@@ -262,7 +277,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "c490544e"
+      "hash": "073bc164"
      },
      {
       "file": "big-number-l1-9x16_f04.png",
@@ -270,7 +285,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "68172b68"
+      "hash": "a8b54e11"
      },
      {
       "file": "big-number-l1-9x16_f05.png",
@@ -278,7 +293,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "b4129b66"
+      "hash": "81e65b26"
      }
     ]
    },
@@ -349,44 +364,43 @@
    },
    "slots": {
     "kicker": {
+     "align": "center",
+     "role": "kicker",
      "x": 90,
      "y": 597,
      "w": 900,
      "h": 32,
-     "role": "kicker",
-     "align": "center",
      "maxChars": 42
     },
     "value": {
+     "align": "center",
+     "role": "huge",
      "x": 90,
      "y": 665,
      "w": 900,
      "h": 290,
-     "role": "huge",
-     "align": "center",
      "maxChars": 6
     },
     "label": {
+     "align": "center",
+     "role": "label",
      "x": 90,
      "y": 1009,
      "w": 900,
      "h": 79,
-     "role": "label",
-     "align": "center",
      "maxChars": 65
     },
     "caption": {
+     "align": "center",
+     "role": "caption",
      "x": 90,
      "y": 1130,
      "w": 900,
      "h": 30,
-     "role": "caption",
-     "align": "center",
      "maxChars": 57
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -415,6 +429,8 @@
     "hugeDerivation": "size = numberColumn / (maxChars x 0.5996), capped at the layout-1 size. Layout 1: column 900 units, target 6 characters, size 250u. Never authored — layout 2 shipped at layout 1's 350u against a 900-unit column and could not draw a five-character number.",
     "layout": 1
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/big-number-l2-16x9": {
@@ -447,7 +463,7 @@
         9
        ]
       },
-      "hash": "eb3637c2"
+      "hash": "6a732e1b"
      },
      {
       "file": "big-number-l2-16x9_f02.png",
@@ -459,7 +475,7 @@
         -3
        ]
       },
-      "hash": "3a32f7d6"
+      "hash": "0f8404ac"
      },
      {
       "file": "big-number-l2-16x9_f03.png",
@@ -467,7 +483,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "0de4a9ac"
+      "hash": "34c90e01"
      },
      {
       "file": "big-number-l2-16x9_f04.png",
@@ -475,7 +491,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e304a4ca"
+      "hash": "16f64fb0"
      },
      {
       "file": "big-number-l2-16x9_f05.png",
@@ -483,7 +499,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "574fb550"
+      "hash": "05855bd0"
      }
     ]
    },
@@ -555,54 +571,53 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 150,
      "w": 900,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 42
     },
     "value": {
+     "align": "left",
+     "role": "huge",
      "x": 150,
      "y": 280,
      "w": 900,
      "h": 340,
-     "role": "huge",
-     "align": "left",
      "maxChars": 7
     },
     "label": {
+     "align": "left",
+     "role": "label",
      "x": 1140,
      "y": 290,
      "w": 630,
      "h": 120,
-     "role": "label",
-     "align": "left",
      "maxChars": 45
     },
     "detail": {
+     "align": "left",
+     "role": "detail",
      "x": 1140,
      "y": 430,
      "w": 630,
      "h": 190,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 52,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 940,
      "w": 1620,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -631,6 +646,8 @@
     "hugeDerivation": "size = numberColumn / (maxChars x 0.5996), capped at the layout-1 size. Layout 2: column 900 units, target 7 characters, size 214u. Never authored — layout 2 shipped at layout 1's 350u against a 900-unit column and could not draw a five-character number.",
     "layout": 2
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/big-number-l2-9x16": {
@@ -663,7 +680,7 @@
         9
        ]
       },
-      "hash": "bea01114"
+      "hash": "1bb2ddbd"
      },
      {
       "file": "big-number-l2-9x16_f02.png",
@@ -675,7 +692,7 @@
         -3
        ]
       },
-      "hash": "42843090"
+      "hash": "252f036a"
      },
      {
       "file": "big-number-l2-9x16_f03.png",
@@ -683,7 +700,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7db25948"
+      "hash": "8691b135"
      },
      {
       "file": "big-number-l2-9x16_f04.png",
@@ -691,7 +708,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "130e41ea"
+      "hash": "b228312b"
      },
      {
       "file": "big-number-l2-9x16_f05.png",
@@ -699,7 +716,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "f1e864d0"
+      "hash": "d6bb9977"
      }
     ]
    },
@@ -771,54 +788,53 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 300,
      "w": 920,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "value": {
+     "align": "left",
+     "role": "huge",
      "x": 80,
      "y": 420,
      "w": 920,
      "h": 280,
-     "role": "huge",
-     "align": "left",
      "maxChars": 6
     },
     "label": {
+     "align": "left",
+     "role": "label",
      "x": 80,
      "y": 750,
      "w": 920,
      "h": 120,
-     "role": "label",
-     "align": "left",
      "maxChars": 67
     },
     "detail": {
+     "align": "left",
+     "role": "detail",
      "x": 80,
      "y": 890,
      "w": 920,
      "h": 200,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 76,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 80,
      "y": 1730,
      "w": 920,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -847,6 +863,8 @@
     "hugeDerivation": "size = numberColumn / (maxChars x 0.5996), capped at the layout-1 size. Layout 2: column 920 units, target 6 characters, size 250u. Never authored — layout 2 shipped at layout 1's 350u against a 900-unit column and could not draw a five-character number.",
     "layout": 2
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/big-fraction-16x9": {
@@ -879,7 +897,7 @@
         9
        ]
       },
-      "hash": "c1f56908"
+      "hash": "3b460de7"
      },
      {
       "file": "big-fraction-16x9_f02.png",
@@ -891,7 +909,7 @@
         -3
        ]
       },
-      "hash": "b9ee1388"
+      "hash": "be080d1d"
      },
      {
       "file": "big-fraction-16x9_f03.png",
@@ -899,7 +917,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "a69ea1e8"
+      "hash": "9c17eb3c"
      },
      {
       "file": "big-fraction-16x9_f04.png",
@@ -907,7 +925,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "f8bad5a8"
+      "hash": "f52c913a"
      },
      {
       "file": "big-fraction-16x9_f05.png",
@@ -915,7 +933,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "a0b76ab0"
+      "hash": "b0b6fe1d"
      }
     ]
    },
@@ -987,71 +1005,70 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 260,
      "y": 120,
      "w": 1400,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 65
     },
     "numerator": {
+     "align": "left",
+     "role": "huge",
      "x": 260,
      "y": 310,
      "w": 868,
      "h": 200,
-     "role": "huge",
-     "align": "left",
      "maxChars": 7
     },
     "numerator-label": {
+     "align": "left",
+     "role": "label",
      "x": 1184,
      "y": 340,
      "w": 476,
      "h": 140,
-     "role": "label",
-     "align": "left",
      "maxChars": 34
     },
     "denominator": {
+     "align": "left",
+     "role": "huge",
      "x": 260,
      "y": 580,
      "w": 868,
      "h": 200,
-     "role": "huge",
-     "align": "left",
      "maxChars": 7
     },
     "denominator-label": {
+     "align": "left",
+     "role": "label",
      "x": 1184,
      "y": 610,
      "w": 476,
      "h": 140,
-     "role": "label",
-     "align": "left",
      "maxChars": 34
     },
     "result": {
+     "align": "left",
+     "role": "figure",
      "x": 360,
      "y": 820,
      "w": 700,
      "h": 110,
-     "role": "figure",
-     "align": "left",
      "maxChars": 13
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 260,
      "y": 950,
      "w": 1400,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 89
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1078,6 +1095,8 @@
     "family": "structure",
     "type": "big-fraction"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/big-fraction-9x16": {
@@ -1110,7 +1129,7 @@
         9
        ]
       },
-      "hash": "e210ecd6"
+      "hash": "9cf8e770"
      },
      {
       "file": "big-fraction-9x16_f02.png",
@@ -1122,7 +1141,7 @@
         -3
        ]
       },
-      "hash": "1bb08942"
+      "hash": "899e2243"
      },
      {
       "file": "big-fraction-9x16_f03.png",
@@ -1130,7 +1149,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "d0ae4528"
+      "hash": "c3b0204b"
      },
      {
       "file": "big-fraction-9x16_f04.png",
@@ -1138,7 +1157,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "51f345aa"
+      "hash": "e81c0a2e"
      },
      {
       "file": "big-fraction-9x16_f05.png",
@@ -1146,7 +1165,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7cf027e0"
+      "hash": "ba3fdef3"
      }
     ]
    },
@@ -1218,71 +1237,70 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 90,
      "y": 260,
      "w": 900,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 42
     },
     "numerator": {
+     "align": "left",
+     "role": "huge",
      "x": 90,
      "y": 633,
      "w": 558,
      "h": 180,
-     "role": "huge",
-     "align": "left",
      "maxChars": 6
     },
     "numerator-label": {
+     "align": "left",
+     "role": "label",
      "x": 684,
      "y": 663,
      "w": 306,
      "h": 130,
-     "role": "label",
-     "align": "left",
      "maxChars": 22
     },
     "denominator": {
+     "align": "left",
+     "role": "huge",
      "x": 90,
      "y": 933,
      "w": 558,
      "h": 180,
-     "role": "huge",
-     "align": "left",
      "maxChars": 6
     },
     "denominator-label": {
+     "align": "left",
+     "role": "label",
      "x": 684,
      "y": 967,
      "w": 306,
      "h": 130,
-     "role": "label",
-     "align": "left",
      "maxChars": 22
     },
     "result": {
+     "align": "left",
+     "role": "figure",
      "x": 190,
      "y": 1143,
      "w": 450,
      "h": 130,
-     "role": "figure",
-     "align": "left",
      "maxChars": 9
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 90,
      "y": 1740,
      "w": 900,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 57
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1309,6 +1327,8 @@
     "family": "structure",
     "type": "big-fraction"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/compare-side-16x9": {
@@ -1341,7 +1361,7 @@
         9
        ]
       },
-      "hash": "99e93f7e"
+      "hash": "99610280"
      },
      {
       "file": "compare-side-16x9_f02.png",
@@ -1353,7 +1373,7 @@
         -3
        ]
       },
-      "hash": "9344ea56"
+      "hash": "72c21493"
      },
      {
       "file": "compare-side-16x9_f03.png",
@@ -1361,7 +1381,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "56815540"
+      "hash": "9885ef97"
      },
      {
       "file": "compare-side-16x9_f04.png",
@@ -1369,7 +1389,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "419a5a91"
+      "hash": "514c6247"
      },
      {
       "file": "compare-side-16x9_f05.png",
@@ -1377,7 +1397,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "da14292e"
+      "hash": "903b5c42"
      }
     ]
    },
@@ -1449,82 +1469,81 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 110,
      "w": 1620,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "label-1": {
+     "align": "left",
+     "role": "label",
      "x": 150,
      "y": 300,
      "w": 730,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 53
     },
     "value-1": {
+     "align": "left",
+     "role": "huge",
      "x": 150,
      "y": 410,
      "w": 730,
      "h": 220,
-     "role": "huge",
-     "align": "left",
      "maxChars": 7
     },
     "detail-1": {
+     "align": "left",
+     "role": "detail",
      "x": 150,
      "y": 660,
      "w": 730,
      "h": 150,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 61,
      "maxLines": 2
     },
     "label-2": {
+     "align": "left",
+     "role": "label",
      "x": 1040,
      "y": 300,
      "w": 730,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 53
     },
     "value-2": {
+     "align": "left",
+     "role": "huge",
      "x": 1040,
      "y": 410,
      "w": 730,
      "h": 220,
-     "role": "huge",
-     "align": "left",
      "maxChars": 7
     },
     "detail-2": {
+     "align": "left",
+     "role": "detail",
      "x": 1040,
      "y": 660,
      "w": 730,
      "h": 150,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 61,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -1552,6 +1571,8 @@
     "type": "compare-side",
     "mode": "side"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/compare-side-9x16": {
@@ -1584,7 +1605,7 @@
         9
        ]
       },
-      "hash": "e06b4588"
+      "hash": "2c8536a1"
      },
      {
       "file": "compare-side-9x16_f02.png",
@@ -1596,7 +1617,7 @@
         -3
        ]
       },
-      "hash": "dae3eff0"
+      "hash": "54c8fefa"
      },
      {
       "file": "compare-side-9x16_f03.png",
@@ -1604,7 +1625,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b45434b8"
+      "hash": "6d40d8d5"
      },
      {
       "file": "compare-side-9x16_f04.png",
@@ -1612,7 +1633,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e4c41b98"
+      "hash": "2929e8ef"
      },
      {
       "file": "compare-side-9x16_f05.png",
@@ -1620,7 +1641,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "f34209a8"
+      "hash": "80b3d39e"
      }
     ]
    },
@@ -1694,95 +1715,94 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 250,
      "w": 920,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "label-1": {
+     "align": "left",
+     "role": "label",
      "x": 80,
      "y": 576,
      "w": 440,
      "h": 96,
-     "role": "label",
-     "align": "left",
      "maxChars": 32,
      "maxCharsPerLine": 32,
      "maxLines": 2
     },
     "value-1": {
+     "align": "left",
+     "role": "huge",
      "x": 80,
      "y": 694,
      "w": 440,
      "h": 142,
-     "role": "huge",
-     "align": "left",
      "maxChars": 6
     },
     "detail-1": {
+     "align": "left",
+     "role": "detail",
      "x": 80,
      "y": 850,
      "w": 440,
      "h": 210,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 36,
      "maxLines": 2
     },
     "label-2": {
+     "align": "left",
+     "role": "label",
      "x": 560,
      "y": 576,
      "w": 440,
      "h": 96,
-     "role": "label",
-     "align": "left",
      "maxChars": 32,
      "maxCharsPerLine": 32,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "huge",
      "x": 560,
      "y": 694,
      "w": 440,
      "h": 142,
-     "role": "huge",
-     "align": "left",
      "maxChars": 6
     },
     "detail-2": {
+     "align": "left",
+     "role": "detail",
      "x": 560,
      "y": 850,
      "w": 440,
      "h": 210,
-     "role": "detail",
-     "align": "left",
      "maxCharsPerLine": 36,
      "maxLines": 2
     },
     "delta": {
+     "align": "left",
+     "role": "figure",
      "x": 80,
      "y": 1196,
      "w": 920,
      "h": 110,
-     "role": "figure",
-     "align": "left",
      "maxChars": 20
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 80,
      "y": 1740,
      "w": 920,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1810,6 +1830,8 @@
     "type": "compare-side",
     "mode": "side"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/compare-stacked-16x9": {
@@ -1842,7 +1864,7 @@
         9
        ]
       },
-      "hash": "6e122fbe"
+      "hash": "fb102b8a"
      },
      {
       "file": "compare-stacked-16x9_f02.png",
@@ -1854,7 +1876,7 @@
         -3
        ]
       },
-      "hash": "cc3b1ea9"
+      "hash": "34ca1a49"
      },
      {
       "file": "compare-stacked-16x9_f03.png",
@@ -1862,7 +1884,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6f5d5560"
+      "hash": "d3841691"
      },
      {
       "file": "compare-stacked-16x9_f04.png",
@@ -1870,7 +1892,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "fd3cf298"
+      "hash": "cf264e41"
      },
      {
       "file": "compare-stacked-16x9_f05.png",
@@ -1878,7 +1900,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "5590d1de"
+      "hash": "74beb073"
      }
     ]
    },
@@ -1950,71 +1972,70 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 110,
      "w": 1620,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "label-1": {
+     "align": "left",
+     "role": "label",
      "x": 150,
      "y": 210,
      "w": 1620,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxChars": 118
     },
     "value-1": {
+     "align": "left",
+     "role": "huge",
      "x": 150,
      "y": 292,
      "w": 1620,
      "h": 210,
-     "role": "huge",
-     "align": "left",
      "maxChars": 16
     },
     "label-2": {
+     "align": "left",
+     "role": "label",
      "x": 270,
      "y": 530,
      "w": 1500,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxChars": 109
     },
     "value-2": {
+     "align": "left",
+     "role": "huge",
      "x": 270,
      "y": 612,
      "w": 1500,
      "h": 210,
-     "role": "huge",
-     "align": "left",
      "maxChars": 15
     },
     "delta": {
+     "align": "left",
+     "role": "figure",
      "x": 150,
      "y": 830,
      "w": 1620,
      "h": 92,
-     "role": "figure",
-     "align": "left",
      "maxChars": 32
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2042,6 +2063,8 @@
     "type": "compare-stacked",
     "mode": "stacked"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/compare-stacked-9x16": {
@@ -2074,7 +2097,7 @@
         9
        ]
       },
-      "hash": "3e9df64e"
+      "hash": "6b712775"
      },
      {
       "file": "compare-stacked-9x16_f02.png",
@@ -2086,7 +2109,7 @@
         -3
        ]
       },
-      "hash": "46f303f8"
+      "hash": "d46eb6f8"
      },
      {
       "file": "compare-stacked-9x16_f03.png",
@@ -2094,7 +2117,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "676eea28"
+      "hash": "2a599d02"
      },
      {
       "file": "compare-stacked-9x16_f04.png",
@@ -2102,7 +2125,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "89c96358"
+      "hash": "91c1bdbd"
      },
      {
       "file": "compare-stacked-9x16_f05.png",
@@ -2110,7 +2133,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "1dacec10"
+      "hash": "ecb4b808"
      }
     ]
    },
@@ -2182,71 +2205,70 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 250,
      "w": 920,
      "h": 54,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 43
     },
     "label-1": {
+     "align": "left",
+     "role": "label",
      "x": 80,
      "y": 380,
      "w": 920,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 67
     },
     "value-1": {
+     "align": "left",
+     "role": "huge",
      "x": 80,
      "y": 488,
      "w": 920,
      "h": 250,
-     "role": "huge",
-     "align": "left",
      "maxChars": 9
     },
     "label-2": {
+     "align": "left",
+     "role": "label",
      "x": 140,
      "y": 860,
      "w": 860,
      "h": 90,
-     "role": "label",
-     "align": "left",
      "maxChars": 62
     },
     "value-2": {
+     "align": "left",
+     "role": "huge",
      "x": 140,
      "y": 968,
      "w": 860,
      "h": 250,
-     "role": "huge",
-     "align": "left",
      "maxChars": 9
     },
     "delta": {
+     "align": "left",
+     "role": "figure",
      "x": 80,
      "y": 1350,
      "w": 920,
      "h": 110,
-     "role": "figure",
-     "align": "left",
      "maxChars": 20
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 80,
      "y": 1740,
      "w": 920,
      "h": 64,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2274,6 +2296,8 @@
     "type": "compare-stacked",
     "mode": "stacked"
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-3s-16x9": {
@@ -2306,7 +2330,7 @@
         9
        ]
       },
-      "hash": "9b925a60"
+      "hash": "1e692217"
      },
      {
       "file": "waterfall-3s-16x9_f02.png",
@@ -2318,7 +2342,7 @@
         -3
        ]
       },
-      "hash": "631988ce"
+      "hash": "20342d5c"
      },
      {
       "file": "waterfall-3s-16x9_f03.png",
@@ -2326,7 +2350,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "f9fdb908"
+      "hash": "27b08994"
      },
      {
       "file": "waterfall-3s-16x9_f04.png",
@@ -2334,7 +2358,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2f1aea76"
+      "hash": "35c8f36a"
      },
      {
       "file": "waterfall-3s-16x9_f05.png",
@@ -2342,7 +2366,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "24c30dce"
+      "hash": "a276ced8"
      }
     ]
    },
@@ -2417,140 +2441,142 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 88,
      "w": 1134,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 53
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1316,
      "y": 88,
      "w": 454,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 37,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 3,
+     "columns": 5,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 150,
      "y": 315,
      "w": 1620,
-     "h": 486,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 486
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 150,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "left",
      "maxChars": 16
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 1025,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "right",
      "maxChars": 16
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 127,
      "y": 818,
      "w": 370,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 1423,
      "y": 818,
      "w": 370,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 474,
      "y": 806,
      "w": 324,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 12
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 474,
      "y": 857,
      "w": 324,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 28,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 798,
      "y": 806,
      "w": 324,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 12
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 798,
      "y": 857,
      "w": 324,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 28,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 1122,
      "y": 806,
      "w": 324,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 12
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 1122,
      "y": 857,
      "w": 324,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 28,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -2605,6 +2631,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-3s-9x16": {
@@ -2637,7 +2665,7 @@
         9
        ]
       },
-      "hash": "2831f8e6"
+      "hash": "5de33442"
      },
      {
       "file": "waterfall-3s-9x16_f02.png",
@@ -2649,7 +2677,7 @@
         -3
        ]
       },
-      "hash": "d743455a"
+      "hash": "fb2c81a6"
      },
      {
       "file": "waterfall-3s-9x16_f03.png",
@@ -2657,7 +2685,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "fc780dd0"
+      "hash": "119b5a81"
      },
      {
       "file": "waterfall-3s-9x16_f04.png",
@@ -2665,7 +2693,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "11459c99"
+      "hash": "e10b28d4"
      },
      {
       "file": "waterfall-3s-9x16_f05.png",
@@ -2673,7 +2701,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0615d7f2"
+      "hash": "77bb375f"
      }
     ]
    },
@@ -2748,140 +2776,142 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 196,
      "w": 655,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 30
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 746,
      "y": 196,
      "w": 262,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 21,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 3,
+     "columns": 5,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 72,
      "y": 434,
      "w": 936,
-     "h": 1106,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 1106
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 72,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "left",
      "maxChars": 11
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 577,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "right",
      "maxChars": 11
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 59,
      "y": 1570,
      "w": 214,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 15,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 808,
      "y": 1570,
      "w": 214,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 15,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 259,
      "y": 1549,
      "w": 188,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 259,
      "y": 1593,
      "w": 188,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 17,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 447,
      "y": 1549,
      "w": 188,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 447,
      "y": 1593,
      "w": 188,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 17,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 634,
      "y": 1549,
      "w": 188,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 634,
      "y": 1593,
      "w": 188,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 17,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2936,6 +2966,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-4s-16x9": {
@@ -2968,7 +3000,7 @@
         9
        ]
       },
-      "hash": "ab881ed0"
+      "hash": "f36c473a"
      },
      {
       "file": "waterfall-4s-16x9_f02.png",
@@ -2980,7 +3012,7 @@
         -3
        ]
       },
-      "hash": "5cc9675e"
+      "hash": "4dbdd4c0"
      },
      {
       "file": "waterfall-4s-16x9_f03.png",
@@ -2988,7 +3020,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "3d656b68"
+      "hash": "09c5124e"
      },
      {
       "file": "waterfall-4s-16x9_f04.png",
@@ -2996,7 +3028,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "c034365f"
+      "hash": "93fbee1b"
      },
      {
       "file": "waterfall-4s-16x9_f05.png",
@@ -3004,7 +3036,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "e05aac60"
+      "hash": "c7f5cea3"
      }
     ]
    },
@@ -3079,159 +3111,161 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 88,
      "w": 1134,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 53
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1316,
      "y": 88,
      "w": 454,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 37,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 4,
+     "columns": 6,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 150,
      "y": 315,
      "w": 1620,
-     "h": 486,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 486
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 150,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "left",
      "maxChars": 16
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 1025,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "right",
      "maxChars": 16
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 131,
      "y": 818,
      "w": 308,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 21,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 1481,
      "y": 818,
      "w": 308,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 21,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 420,
      "y": 806,
      "w": 270,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 10
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 420,
      "y": 857,
      "w": 270,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 690,
      "y": 806,
      "w": 270,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 10
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 690,
      "y": 857,
      "w": 270,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 960,
      "y": 806,
      "w": 270,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 10
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 960,
      "y": 857,
      "w": 270,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "step-4": {
+     "align": "center",
+     "role": "step",
      "x": 1230,
      "y": 806,
      "w": 270,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 10
     },
     "label-4": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 1230,
      "y": 857,
      "w": 270,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -3291,6 +3325,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-4s-9x16": {
@@ -3323,7 +3359,7 @@
         9
        ]
       },
-      "hash": "2a3ee108"
+      "hash": "88d9c72d"
      },
      {
       "file": "waterfall-4s-9x16_f02.png",
@@ -3335,7 +3371,7 @@
         -3
        ]
       },
-      "hash": "54010592"
+      "hash": "7a8ed420"
      },
      {
       "file": "waterfall-4s-9x16_f03.png",
@@ -3343,7 +3379,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "4c4b7460"
+      "hash": "fee3c6de"
      },
      {
       "file": "waterfall-4s-9x16_f04.png",
@@ -3351,7 +3387,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "80234fd0"
+      "hash": "d5593bae"
      },
      {
       "file": "waterfall-4s-9x16_f05.png",
@@ -3359,7 +3395,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "e7d89eba"
+      "hash": "015be558"
      }
     ]
    },
@@ -3434,159 +3470,161 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 196,
      "w": 655,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 30
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 746,
      "y": 196,
      "w": 262,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 21,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 4,
+     "columns": 6,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 72,
      "y": 434,
      "w": 936,
-     "h": 1106,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 1106
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 72,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "left",
      "maxChars": 11
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 577,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "right",
      "maxChars": 11
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 62,
      "y": 1570,
      "w": 177,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 13,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 842,
      "y": 1570,
      "w": 177,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 13,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 229,
      "y": 1549,
      "w": 156,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 6
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 229,
      "y": 1593,
      "w": 156,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 385,
      "y": 1549,
      "w": 156,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 6
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 385,
      "y": 1593,
      "w": 156,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 541,
      "y": 1549,
      "w": 156,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 6
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 541,
      "y": 1593,
      "w": 156,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "step-4": {
+     "align": "center",
+     "role": "step",
      "x": 697,
      "y": 1549,
      "w": 156,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 6
     },
     "label-4": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 697,
      "y": 1593,
      "w": 156,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -3646,6 +3684,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-5s-16x9": {
@@ -3678,7 +3718,7 @@
         9
        ]
       },
-      "hash": "23342f80"
+      "hash": "844f07ff"
      },
      {
       "file": "waterfall-5s-16x9_f02.png",
@@ -3690,7 +3730,7 @@
         -3
        ]
       },
-      "hash": "43404b4a"
+      "hash": "0ec8f3e0"
      },
      {
       "file": "waterfall-5s-16x9_f03.png",
@@ -3698,7 +3738,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "1be564de"
+      "hash": "25fba17a"
      },
      {
       "file": "waterfall-5s-16x9_f04.png",
@@ -3706,7 +3746,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "ce07c196"
+      "hash": "0f10d2f5"
      },
      {
       "file": "waterfall-5s-16x9_f05.png",
@@ -3714,7 +3754,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "90099aaa"
+      "hash": "804095b0"
      }
     ]
    },
@@ -3789,178 +3829,180 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 88,
      "w": 1134,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 53
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1316,
      "y": 88,
      "w": 454,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 37,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 5,
+     "columns": 7,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 150,
      "y": 315,
      "w": 1620,
-     "h": 486,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 486
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 150,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "left",
      "maxChars": 16
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 1025,
      "y": 210,
      "w": 745,
      "h": 88,
-     "role": "end",
-     "align": "right",
      "maxChars": 16
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 134,
      "y": 818,
      "w": 264,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 1523,
      "y": 818,
      "w": 264,
      "h": 82,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 382,
      "y": 806,
      "w": 231,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 382,
      "y": 857,
      "w": 231,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 613,
      "y": 806,
      "w": 231,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 613,
      "y": 857,
      "w": 231,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 844,
      "y": 806,
      "w": 231,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 844,
      "y": 857,
      "w": 231,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "step-4": {
+     "align": "center",
+     "role": "step",
      "x": 1076,
      "y": 806,
      "w": 231,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-4": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 1076,
      "y": 857,
      "w": 231,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "step-5": {
+     "align": "center",
+     "role": "step",
      "x": 1307,
      "y": 806,
      "w": 231,
      "h": 51,
-     "role": "step",
-     "align": "center",
      "maxChars": 8
     },
     "label-5": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 1307,
      "y": 857,
      "w": 231,
      "h": 77,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 20,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -4025,6 +4067,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/waterfall-5s-9x16": {
@@ -4057,7 +4101,7 @@
         9
        ]
       },
-      "hash": "0a50f208"
+      "hash": "8f6979ce"
      },
      {
       "file": "waterfall-5s-9x16_f02.png",
@@ -4069,7 +4113,7 @@
         -3
        ]
       },
-      "hash": "a96e5756"
+      "hash": "5d697da3"
      },
      {
       "file": "waterfall-5s-9x16_f03.png",
@@ -4077,7 +4121,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9b027f90"
+      "hash": "73ee7b14"
      },
      {
       "file": "waterfall-5s-9x16_f04.png",
@@ -4085,7 +4129,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "5c569648"
+      "hash": "722e0e0e"
      },
      {
       "file": "waterfall-5s-9x16_f05.png",
@@ -4093,7 +4137,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "00b7d3ea"
+      "hash": "470480b8"
      }
     ]
    },
@@ -4168,178 +4212,180 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 196,
      "w": 655,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 30
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 746,
      "y": 196,
      "w": 262,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 21,
      "maxLines": 1
     },
     "bridge": {
+     "role": "bridge",
+     "region": true,
+     "renderer": "series.waterfall",
+     "steps": 5,
+     "columns": 7,
+     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate.",
      "x": 72,
      "y": 434,
      "w": 936,
-     "h": 1106,
-     "role": "bridge",
-     "region": true,
-     "note": "the bars, and ONLY the bars. Column geometry is in meta.columns — x and width per column, already measured — so the renderer places heights on a shared scale and never re-derives where a column is. Step sign comes from the value: negative knocks down from the running total, positive builds up from it. The plate draws no direction and no colour, so an upward step needs no second plate."
+     "h": 1106
     },
     "total": {
+     "align": "left",
+     "role": "end",
      "x": 72,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "left",
      "maxChars": 11
     },
     "remainder": {
+     "align": "right",
+     "role": "end",
      "x": 577,
      "y": 330,
      "w": 431,
      "h": 74,
-     "role": "end",
-     "align": "right",
      "maxChars": 11
     },
     "total-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 62,
      "y": 1570,
      "w": 152,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 11,
      "maxLines": 2
     },
     "remainder-label": {
+     "align": "center",
+     "role": "endLabel",
      "x": 865,
      "y": 1570,
      "w": 152,
      "h": 90,
-     "role": "endLabel",
-     "align": "center",
      "maxCharsPerLine": 11,
      "maxLines": 2
     },
     "step-1": {
+     "align": "center",
+     "role": "step",
      "x": 206,
      "y": 1549,
      "w": 134,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 5
     },
     "label-1": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 206,
      "y": 1593,
      "w": 134,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 12,
      "maxLines": 2
     },
     "step-2": {
+     "align": "center",
+     "role": "step",
      "x": 340,
      "y": 1549,
      "w": 134,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 5
     },
     "label-2": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 340,
      "y": 1593,
      "w": 134,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 12,
      "maxLines": 2
     },
     "step-3": {
+     "align": "center",
+     "role": "step",
      "x": 474,
      "y": 1549,
      "w": 134,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 5
     },
     "label-3": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 474,
      "y": 1593,
      "w": 134,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 12,
      "maxLines": 2
     },
     "step-4": {
+     "align": "center",
+     "role": "step",
      "x": 607,
      "y": 1549,
      "w": 134,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 5
     },
     "label-4": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 607,
      "y": 1593,
      "w": 134,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 12,
      "maxLines": 2
     },
     "step-5": {
+     "align": "center",
+     "role": "step",
      "x": 741,
      "y": 1549,
      "w": 134,
      "h": 44,
-     "role": "step",
-     "align": "center",
      "maxChars": 5
     },
     "label-5": {
+     "align": "center",
+     "role": "stepLabel",
      "x": 741,
      "y": 1593,
      "w": 134,
      "h": 81,
-     "role": "stepLabel",
-     "align": "center",
      "maxCharsPerLine": 12,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4404,6 +4450,8 @@
      }
     ]
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-2-16x9": {
@@ -4436,7 +4484,7 @@
         9
        ]
       },
-      "hash": "451369e0"
+      "hash": "ec387015"
      },
      {
       "file": "share-of-2-16x9_f02.png",
@@ -4448,7 +4496,7 @@
         -3
        ]
       },
-      "hash": "4a5b906e"
+      "hash": "da98d7e5"
      },
      {
       "file": "share-of-2-16x9_f03.png",
@@ -4456,7 +4504,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "afd38d58"
+      "hash": "8248d49a"
      },
      {
       "file": "share-of-2-16x9_f04.png",
@@ -4464,7 +4512,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "afd38d58"
+      "hash": "8248d49a"
      },
      {
       "file": "share-of-2-16x9_f05.png",
@@ -4472,7 +4520,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "afd38d58"
+      "hash": "8248d49a"
      }
     ]
    },
@@ -4528,83 +4576,84 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 2,
+     "note": "ONE region, divided into 2 by the renderer from 2 values that sum to the whole. Not 2 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 2 by the renderer from 2 values that sum to the whole. Not 2 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 793,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 28
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 793,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 64,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 960,
      "y": 632,
      "w": 793,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 28
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 960,
      "y": 685,
      "w": 793,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 64,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -4634,6 +4683,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-2-9x16": {
@@ -4666,7 +4717,7 @@
         9
        ]
       },
-      "hash": "c2363eb7"
+      "hash": "6e57104f"
      },
      {
       "file": "share-of-2-9x16_f02.png",
@@ -4678,7 +4729,7 @@
         -3
        ]
       },
-      "hash": "571f7fe0"
+      "hash": "a01b1b37"
      },
      {
       "file": "share-of-2-9x16_f03.png",
@@ -4686,7 +4737,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "7091a068"
+      "hash": "f8623470"
      },
      {
       "file": "share-of-2-9x16_f04.png",
@@ -4694,7 +4745,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "7091a068"
+      "hash": "f8623470"
      },
      {
       "file": "share-of-2-9x16_f05.png",
@@ -4702,7 +4753,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "7091a068"
+      "hash": "f8623470"
      }
     ]
    },
@@ -4758,83 +4809,84 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 2,
+     "note": "ONE region, divided into 2 by the renderer from 2 values that sum to the whole. Not 2 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 2 by the renderer from 2 values that sum to the whole. Not 2 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 438,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 438,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 39,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 540,
      "y": 980,
      "w": 438,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 540,
      "y": 1026,
      "w": 438,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 39,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -4864,6 +4916,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-3-16x9": {
@@ -4896,7 +4950,7 @@
         9
        ]
       },
-      "hash": "1d38f0f8"
+      "hash": "fec64244"
      },
      {
       "file": "share-of-3-16x9_f02.png",
@@ -4908,7 +4962,7 @@
         -3
        ]
       },
-      "hash": "c33d021a"
+      "hash": "d048e394"
      },
      {
       "file": "share-of-3-16x9_f03.png",
@@ -4916,7 +4970,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "07e33520"
+      "hash": "b835dbbd"
      },
      {
       "file": "share-of-3-16x9_f04.png",
@@ -4924,7 +4978,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "07e33520"
+      "hash": "b835dbbd"
      },
      {
       "file": "share-of-3-16x9_f05.png",
@@ -4932,7 +4986,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "07e33520"
+      "hash": "b835dbbd"
      }
     ]
    },
@@ -4988,102 +5042,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 690,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 690,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 1230,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1230,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -5113,6 +5168,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-3-9x16": {
@@ -5145,7 +5202,7 @@
         9
        ]
       },
-      "hash": "9992d2a8"
+      "hash": "150fe37f"
      },
      {
       "file": "share-of-3-9x16_f02.png",
@@ -5157,7 +5214,7 @@
         -3
        ]
       },
-      "hash": "66e999b0"
+      "hash": "a9ed1847"
      },
      {
       "file": "share-of-3-9x16_f03.png",
@@ -5165,7 +5222,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "2d96d6a2"
+      "hash": "d5b710b6"
      },
      {
       "file": "share-of-3-9x16_f04.png",
@@ -5173,7 +5230,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "2d96d6a2"
+      "hash": "d5b710b6"
      },
      {
       "file": "share-of-3-9x16_f05.png",
@@ -5181,7 +5238,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "2d96d6a2"
+      "hash": "d5b710b6"
      }
     ]
    },
@@ -5237,102 +5294,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 384,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 384,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 696,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 696,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -5362,6 +5420,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-4-16x9": {
@@ -5394,7 +5454,7 @@
         9
        ]
       },
-      "hash": "b78181b0"
+      "hash": "3985764c"
      },
      {
       "file": "share-of-4-16x9_f02.png",
@@ -5406,7 +5466,7 @@
         -3
        ]
       },
-      "hash": "447f58d4"
+      "hash": "c63b631c"
      },
      {
       "file": "share-of-4-16x9_f03.png",
@@ -5414,7 +5474,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9e364118"
+      "hash": "459dc3ff"
      },
      {
       "file": "share-of-4-16x9_f04.png",
@@ -5422,7 +5482,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9e364118"
+      "hash": "459dc3ff"
      },
      {
       "file": "share-of-4-16x9_f05.png",
@@ -5430,7 +5490,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "9e364118"
+      "hash": "459dc3ff"
      }
     ]
    },
@@ -5486,121 +5546,122 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 4,
+     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 555,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 555,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 960,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 960,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 1365,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1365,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -5630,6 +5691,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/share-of-4-9x16": {
@@ -5662,7 +5725,7 @@
         9
        ]
       },
-      "hash": "7005fe38"
+      "hash": "1f6110a7"
      },
      {
       "file": "share-of-4-9x16_f02.png",
@@ -5674,7 +5737,7 @@
         -3
        ]
       },
-      "hash": "6a041f8c"
+      "hash": "5f7d57ff"
      },
      {
       "file": "share-of-4-9x16_f03.png",
@@ -5682,7 +5745,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "84f6c798"
+      "hash": "4b8d0f3e"
      },
      {
       "file": "share-of-4-9x16_f04.png",
@@ -5690,7 +5753,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "84f6c798"
+      "hash": "4b8d0f3e"
      },
      {
       "file": "share-of-4-9x16_f05.png",
@@ -5698,7 +5761,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "84f6c798"
+      "hash": "4b8d0f3e"
      }
     ]
    },
@@ -5754,121 +5817,122 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 4,
+     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 306,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 306,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 540,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 540,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 774,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 774,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -5898,6 +5962,8 @@
     "kind": "share-of",
     "argument": "one quantity as a share of another. 'Stock comp was fifty-eight percent of revenue' had no visual home — figures/big-fraction sets it as TYPE, which is not the same as watching it take more than half."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-3-16x9": {
@@ -5930,7 +5996,7 @@
         9
        ]
       },
-      "hash": "d242e5e8"
+      "hash": "0f204eb4"
      },
      {
       "file": "by-region-3-16x9_f02.png",
@@ -5942,7 +6008,7 @@
         -3
        ]
       },
-      "hash": "a530ccbe"
+      "hash": "75e65ee4"
      },
      {
       "file": "by-region-3-16x9_f03.png",
@@ -5950,7 +6016,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "1d3e19b8"
+      "hash": "8b73ba63"
      },
      {
       "file": "by-region-3-16x9_f04.png",
@@ -5958,7 +6024,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "1d3e19b8"
+      "hash": "8b73ba63"
      },
      {
       "file": "by-region-3-16x9_f05.png",
@@ -5966,7 +6032,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "1d3e19b8"
+      "hash": "8b73ba63"
      }
     ]
    },
@@ -6022,102 +6088,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 690,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 690,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 1230,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1230,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -6148,6 +6215,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-3-9x16": {
@@ -6180,7 +6249,7 @@
         9
        ]
       },
-      "hash": "7ce9d6aa"
+      "hash": "7a2a39ac"
      },
      {
       "file": "by-region-3-9x16_f02.png",
@@ -6192,7 +6261,7 @@
         -3
        ]
       },
-      "hash": "10078f0c"
+      "hash": "2005f584"
      },
      {
       "file": "by-region-3-9x16_f03.png",
@@ -6200,7 +6269,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "0e58469a"
+      "hash": "e19d9eb9"
      },
      {
       "file": "by-region-3-9x16_f04.png",
@@ -6208,7 +6277,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0e58469a"
+      "hash": "e19d9eb9"
      },
      {
       "file": "by-region-3-9x16_f05.png",
@@ -6216,7 +6285,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0e58469a"
+      "hash": "e19d9eb9"
      }
     ]
    },
@@ -6272,102 +6341,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 384,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 384,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 696,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 696,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -6398,6 +6468,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-4-16x9": {
@@ -6430,7 +6502,7 @@
         9
        ]
       },
-      "hash": "3d130e32"
+      "hash": "4f9ccf0f"
      },
      {
       "file": "by-region-4-16x9_f02.png",
@@ -6442,7 +6514,7 @@
         -3
        ]
       },
-      "hash": "1cdb3f86"
+      "hash": "8fdaf33f"
      },
      {
       "file": "by-region-4-16x9_f03.png",
@@ -6450,7 +6522,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "30bd6648"
+      "hash": "4c2e6fc8"
      },
      {
       "file": "by-region-4-16x9_f04.png",
@@ -6458,7 +6530,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "30bd6648"
+      "hash": "4c2e6fc8"
      },
      {
       "file": "by-region-4-16x9_f05.png",
@@ -6466,7 +6538,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "30bd6648"
+      "hash": "4c2e6fc8"
      }
     ]
    },
@@ -6522,121 +6594,122 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 4,
+     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 555,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 555,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 960,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 960,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 1365,
      "y": 632,
      "w": 388,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 14
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1365,
      "y": 685,
      "w": 388,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 31,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -6667,6 +6740,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-4-9x16": {
@@ -6699,7 +6774,7 @@
         9
        ]
       },
-      "hash": "5a5ad2ea"
+      "hash": "e28e4f86"
      },
      {
       "file": "by-region-4-9x16_f02.png",
@@ -6711,7 +6786,7 @@
         -3
        ]
       },
-      "hash": "b991e3b0"
+      "hash": "d548b7de"
      },
      {
       "file": "by-region-4-9x16_f03.png",
@@ -6719,7 +6794,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "be2f1694"
+      "hash": "18507da7"
      },
      {
       "file": "by-region-4-9x16_f04.png",
@@ -6727,7 +6802,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "be2f1694"
+      "hash": "18507da7"
      },
      {
       "file": "by-region-4-9x16_f05.png",
@@ -6735,7 +6810,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "be2f1694"
+      "hash": "18507da7"
      }
     ]
    },
@@ -6791,121 +6866,122 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 4,
+     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 4 by the renderer from 4 values that sum to the whole. Not 4 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 306,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 306,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 540,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 540,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 774,
      "y": 980,
      "w": 204,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 8
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 774,
      "y": 1026,
      "w": 204,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 18,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -6936,6 +7012,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-5-16x9": {
@@ -6968,7 +7046,7 @@
         9
        ]
       },
-      "hash": "32215250"
+      "hash": "1d038a60"
      },
      {
       "file": "by-region-5-16x9_f02.png",
@@ -6980,7 +7058,7 @@
         -3
        ]
       },
-      "hash": "42372cb7"
+      "hash": "d2fe0f70"
      },
      {
       "file": "by-region-5-16x9_f03.png",
@@ -6988,7 +7066,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b1ba5300"
+      "hash": "b6c531c1"
      },
      {
       "file": "by-region-5-16x9_f04.png",
@@ -6996,7 +7074,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b1ba5300"
+      "hash": "b6c531c1"
      },
      {
       "file": "by-region-5-16x9_f05.png",
@@ -7004,7 +7082,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "b1ba5300"
+      "hash": "b6c531c1"
      }
     ]
    },
@@ -7060,140 +7138,141 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 5,
+     "note": "ONE region, divided into 5 by the renderer from 5 values that sum to the whole. Not 5 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 5 by the renderer from 5 values that sum to the whole. Not 5 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 307,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 307,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 474,
      "y": 632,
      "w": 307,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 474,
      "y": 685,
      "w": 307,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 798,
      "y": 632,
      "w": 307,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 798,
      "y": 685,
      "w": 307,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 1122,
      "y": 632,
      "w": 307,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1122,
      "y": 685,
      "w": 307,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-5": {
+     "align": "left",
+     "role": "segValue",
      "x": 1446,
      "y": 632,
      "w": 307,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-5": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1446,
      "y": 685,
      "w": 307,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -7224,6 +7303,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/by-region-5-9x16": {
@@ -7256,7 +7337,7 @@
         9
        ]
       },
-      "hash": "638ebe0e"
+      "hash": "bf62f035"
      },
      {
       "file": "by-region-5-9x16_f02.png",
@@ -7268,7 +7349,7 @@
         -3
        ]
       },
-      "hash": "96b80280"
+      "hash": "51ea789d"
      },
      {
       "file": "by-region-5-9x16_f03.png",
@@ -7276,7 +7357,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "9f7d26f8"
+      "hash": "b938fd76"
      },
      {
       "file": "by-region-5-9x16_f04.png",
@@ -7284,7 +7365,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "9f7d26f8"
+      "hash": "b938fd76"
      },
      {
       "file": "by-region-5-9x16_f05.png",
@@ -7292,7 +7373,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "9f7d26f8"
+      "hash": "b938fd76"
      }
     ]
    },
@@ -7348,140 +7429,141 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 5,
+     "note": "ONE region, divided into 5 by the renderer from 5 values that sum to the whole. Not 5 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 5 by the renderer from 5 values that sum to the whole. Not 5 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 157,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 6
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 157,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 259,
      "y": 980,
      "w": 157,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 6
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 259,
      "y": 1026,
      "w": 157,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 446,
      "y": 980,
      "w": 157,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 6
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 446,
      "y": 1026,
      "w": 157,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "value-4": {
+     "align": "left",
+     "role": "segValue",
      "x": 634,
      "y": 980,
      "w": 157,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 6
     },
     "label-4": {
+     "align": "left",
+     "role": "segLabel",
      "x": 634,
      "y": 1026,
      "w": 157,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "value-5": {
+     "align": "left",
+     "role": "segValue",
      "x": 821,
      "y": 980,
      "w": 157,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 6
     },
     "label-5": {
+     "align": "left",
+     "role": "segLabel",
      "x": 821,
      "y": 1026,
      "w": 157,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 14,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -7512,6 +7594,8 @@
     "argument": "where the revenue actually comes from. Matters enormously for macro and tariff stories.",
     "notAMap": "a labelled proportional bar, deliberately. The argument is the proportion; a map is a different and much larger problem, and it would give a large empty country the same weight as its revenue."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/ownership-16x9": {
@@ -7544,7 +7628,7 @@
         9
        ]
       },
-      "hash": "37267446"
+      "hash": "c2cbaf3e"
      },
      {
       "file": "ownership-16x9_f02.png",
@@ -7556,7 +7640,7 @@
         -3
        ]
       },
-      "hash": "0acdf4ec"
+      "hash": "ce83342e"
      },
      {
       "file": "ownership-16x9_f03.png",
@@ -7564,7 +7648,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "41b06622"
+      "hash": "111626ad"
      },
      {
       "file": "ownership-16x9_f04.png",
@@ -7572,7 +7656,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "41b06622"
+      "hash": "111626ad"
      },
      {
       "file": "ownership-16x9_f05.png",
@@ -7580,7 +7664,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "41b06622"
+      "hash": "111626ad"
      }
     ]
    },
@@ -7636,102 +7720,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 150,
      "y": 156,
      "w": 1296,
      "h": 135,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 55,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 150,
      "y": 475,
      "w": 1620,
-     "h": 140,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 140
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 150,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 150,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 690,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 690,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 1230,
      "y": 632,
      "w": 523,
      "h": 53,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 18
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 1230,
      "y": 685,
      "w": 523,
      "h": 70,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 42,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -7762,6 +7847,8 @@
     "argument": "insider, institutional, and everyone else. Both figures are already in the workbook and 'management owns nought point four percent of this' had nowhere to land.",
     "fixedCount": "three, and not a variant. A fourth slice is a different argument."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/ownership-9x16": {
@@ -7794,7 +7881,7 @@
         9
        ]
       },
-      "hash": "872f9a41"
+      "hash": "9db634e0"
      },
      {
       "file": "ownership-9x16_f02.png",
@@ -7806,7 +7893,7 @@
         -3
        ]
       },
-      "hash": "45e774f6"
+      "hash": "51e5b368"
      },
      {
       "file": "ownership-9x16_f03.png",
@@ -7814,7 +7901,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "4c2bfc38"
+      "hash": "1a5bb9af"
      },
      {
       "file": "ownership-9x16_f04.png",
@@ -7822,7 +7909,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "4c2bfc38"
+      "hash": "1a5bb9af"
      },
      {
       "file": "ownership-9x16_f05.png",
@@ -7830,7 +7917,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "4c2bfc38"
+      "hash": "1a5bb9af"
      }
     ]
    },
@@ -7886,102 +7973,103 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "headline": {
+     "align": "left",
+     "role": "headline",
      "x": 72,
      "y": 272,
      "w": 936,
      "h": 116,
-     "role": "headline",
-     "align": "left",
      "maxCharsPerLine": 46,
      "maxLines": 2
     },
     "segments": {
+     "role": "segments",
+     "region": true,
+     "renderer": "series.divide",
+     "count": 3,
+     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data.",
      "x": 72,
      "y": 806,
      "w": 936,
-     "h": 144,
-     "role": "segments",
-     "region": true,
-     "note": "ONE region, divided into 3 by the renderer from 3 values that sum to the whole. Not 3 boxes: separate boxes can be filled with a set that does not sum to the bar, and a part-of-a-whole that does not add up is the one thing this plate must never show. The outline and the ends are drawn and pinned — the division is data."
+     "h": 144
     },
     "value-1": {
+     "align": "left",
+     "role": "segValue",
      "x": 72,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-1": {
+     "align": "left",
+     "role": "segLabel",
      "x": 72,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-2": {
+     "align": "left",
+     "role": "segValue",
      "x": 384,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-2": {
+     "align": "left",
+     "role": "segLabel",
      "x": 384,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "value-3": {
+     "align": "left",
+     "role": "segValue",
      "x": 696,
      "y": 980,
      "w": 282,
      "h": 46,
-     "role": "segValue",
-     "align": "left",
      "maxChars": 11
     },
     "label-3": {
+     "align": "left",
+     "role": "segLabel",
      "x": 696,
      "y": 1026,
      "w": 282,
      "h": 63,
-     "role": "segLabel",
-     "align": "left",
      "maxCharsPerLine": 25,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -8012,6 +8100,8 @@
     "argument": "insider, institutional, and everyone else. Both figures are already in the workbook and 'management owns nought point four percent of this' had nowhere to land.",
     "fixedCount": "three, and not a variant. A fourth slice is a different argument."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/scale-2-16x9": {
@@ -8044,7 +8134,7 @@
         9
        ]
       },
-      "hash": "d32cf3e2"
+      "hash": "dd612bfb"
      },
      {
       "file": "scale-2-16x9_f02.png",
@@ -8056,7 +8146,7 @@
         -3
        ]
       },
-      "hash": "90dfb4c0"
+      "hash": "9db51b0b"
      },
      {
       "file": "scale-2-16x9_f03.png",
@@ -8064,7 +8154,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "6d2557c8"
+      "hash": "b684b9bc"
      },
      {
       "file": "scale-2-16x9_f04.png",
@@ -8072,7 +8162,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "6d2557c8"
+      "hash": "b684b9bc"
      },
      {
       "file": "scale-2-16x9_f05.png",
@@ -8080,7 +8170,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "6d2557c8"
+      "hash": "b684b9bc"
      }
     ]
    },
@@ -8128,83 +8218,88 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "anchor": {
+     "role": "anchor",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate.",
      "x": 226,
      "y": 238,
      "w": 389,
-     "h": 604,
-     "role": "anchor",
-     "region": true,
-     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate."
+     "h": 604
     },
     "anchor-label": {
+     "align": "left",
+     "role": "anchorLabel",
      "x": 172,
      "y": 859,
      "w": 497,
      "h": 79,
-     "role": "anchorLabel",
-     "align": "left",
      "maxCharsPerLine": 35,
      "maxLines": 2
     },
     "ref-1": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 766,
      "y": 238,
      "w": 389,
-     "h": 604,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 604
     },
     "ref-label-1": {
+     "align": "left",
+     "role": "refLabel",
      "x": 712,
      "y": 859,
      "w": 497,
      "h": 65,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 43,
      "maxLines": 2
     },
     "ref-2": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 1306,
      "y": 238,
      "w": 389,
-     "h": 604,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 604
     },
     "ref-label-2": {
+     "align": "left",
+     "role": "refLabel",
      "x": 1252,
      "y": 859,
      "w": 497,
      "h": 65,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 43,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -8250,6 +8345,8 @@
     ],
     "scaleNote": "ONE scale across every column, and the renderer must not normalise each to its own height. The whole argument is that the reference is small next to the anchor — rescaling them to fill the plot destroys it and would look tidier, which is how it would get done by accident."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/scale-2-9x16": {
@@ -8282,7 +8379,7 @@
         9
        ]
       },
-      "hash": "9c96562a"
+      "hash": "4b9a313b"
      },
      {
       "file": "scale-2-9x16_f02.png",
@@ -8294,7 +8391,7 @@
         -3
        ]
       },
-      "hash": "ce33862a"
+      "hash": "7a39c513"
      },
      {
       "file": "scale-2-9x16_f03.png",
@@ -8302,7 +8399,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b91a667a"
+      "hash": "d38a491a"
      },
      {
       "file": "scale-2-9x16_f04.png",
@@ -8310,7 +8407,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b91a667a"
+      "hash": "d38a491a"
      },
      {
       "file": "scale-2-9x16_f05.png",
@@ -8318,7 +8415,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "b91a667a"
+      "hash": "d38a491a"
      }
     ]
    },
@@ -8366,83 +8463,88 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "anchor": {
+     "role": "anchor",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate.",
      "x": 116,
      "y": 538,
      "w": 225,
-     "h": 806,
-     "role": "anchor",
-     "region": true,
-     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate."
+     "h": 806
     },
     "anchor-label": {
+     "align": "left",
+     "role": "anchorLabel",
      "x": 85,
      "y": 1374,
      "w": 287,
      "h": 70,
-     "role": "anchorLabel",
-     "align": "left",
      "maxCharsPerLine": 23,
      "maxLines": 2
     },
     "ref-1": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 428,
      "y": 538,
      "w": 225,
-     "h": 806,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 806
     },
     "ref-label-1": {
+     "align": "left",
+     "role": "refLabel",
      "x": 397,
      "y": 1374,
      "w": 287,
      "h": 60,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 27,
      "maxLines": 1
     },
     "ref-2": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 740,
      "y": 538,
      "w": 225,
-     "h": 806,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 806
     },
     "ref-label-2": {
+     "align": "left",
+     "role": "refLabel",
      "x": 709,
      "y": 1374,
      "w": 287,
      "h": 60,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 27,
      "maxLines": 1
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -8488,6 +8590,8 @@
     ],
     "scaleNote": "ONE scale across every column, and the renderer must not normalise each to its own height. The whole argument is that the reference is small next to the anchor — rescaling them to fill the plot destroys it and would look tidier, which is how it would get done by accident."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/scale-3-16x9": {
@@ -8520,7 +8624,7 @@
         9
        ]
       },
-      "hash": "97759290"
+      "hash": "36fcba7f"
      },
      {
       "file": "scale-3-16x9_f02.png",
@@ -8532,7 +8636,7 @@
         -3
        ]
       },
-      "hash": "a95767a0"
+      "hash": "24901daf"
      },
      {
       "file": "scale-3-16x9_f03.png",
@@ -8540,7 +8644,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "0cff21c0"
+      "hash": "546e7aec"
      },
      {
       "file": "scale-3-16x9_f04.png",
@@ -8548,7 +8652,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "0cff21c0"
+      "hash": "546e7aec"
      },
      {
       "file": "scale-3-16x9_f05.png",
@@ -8556,7 +8660,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "0cff21c0"
+      "hash": "546e7aec"
      }
     ]
    },
@@ -8604,102 +8708,109 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 92,
      "w": 1620,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 76
     },
     "anchor": {
+     "role": "anchor",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate.",
      "x": 207,
      "y": 238,
      "w": 292,
-     "h": 604,
-     "role": "anchor",
-     "region": true,
-     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate."
+     "h": 604
     },
     "anchor-label": {
+     "align": "left",
+     "role": "anchorLabel",
      "x": 166,
      "y": 859,
      "w": 373,
      "h": 79,
-     "role": "anchorLabel",
-     "align": "left",
      "maxCharsPerLine": 26,
      "maxLines": 2
     },
     "ref-1": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 612,
      "y": 238,
      "w": 292,
-     "h": 604,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 604
     },
     "ref-label-1": {
+     "align": "left",
+     "role": "refLabel",
      "x": 571,
      "y": 859,
      "w": 373,
      "h": 65,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 32,
      "maxLines": 2
     },
     "ref-2": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 1017,
      "y": 238,
      "w": 292,
-     "h": 604,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 604
     },
     "ref-label-2": {
+     "align": "left",
+     "role": "refLabel",
      "x": 976,
      "y": 859,
      "w": 373,
      "h": 65,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 32,
      "maxLines": 2
     },
     "ref-3": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 842,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 1422,
      "y": 238,
      "w": 292,
-     "h": 604,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 604
     },
     "ref-label-3": {
+     "align": "left",
+     "role": "refLabel",
      "x": 1381,
      "y": 859,
      "w": 373,
      "h": 65,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 32,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -8750,6 +8861,8 @@
     ],
     "scaleNote": "ONE scale across every column, and the renderer must not normalise each to its own height. The whole argument is that the reference is small next to the anchor — rescaling them to fill the plot destroys it and would look tidier, which is how it would get done by accident."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/scale-3-9x16": {
@@ -8782,7 +8895,7 @@
         9
        ]
       },
-      "hash": "de7028e6"
+      "hash": "e72a4197"
      },
      {
       "file": "scale-3-9x16_f02.png",
@@ -8794,7 +8907,7 @@
         -3
        ]
       },
-      "hash": "105fdf68"
+      "hash": "b1a6bd2f"
      },
      {
       "file": "scale-3-9x16_f03.png",
@@ -8802,7 +8915,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "b601985c"
+      "hash": "3b59fe2a"
      },
      {
       "file": "scale-3-9x16_f04.png",
@@ -8810,7 +8923,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b601985c"
+      "hash": "3b59fe2a"
      },
      {
       "file": "scale-3-9x16_f05.png",
@@ -8818,7 +8931,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "b601985c"
+      "hash": "3b59fe2a"
      }
     ]
    },
@@ -8866,102 +8979,109 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 200,
      "w": 936,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 44
     },
     "anchor": {
+     "role": "anchor",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate.",
      "x": 105,
      "y": 538,
      "w": 168,
-     "h": 806,
-     "role": "anchor",
-     "region": true,
-     "note": "the big figure, as a HEIGHT. It sets the scale and everything beside it is measured against the same one — that shared scale is the entire point of the plate."
+     "h": 806
     },
     "anchor-label": {
+     "align": "left",
+     "role": "anchorLabel",
      "x": 82,
      "y": 1374,
      "w": 215,
      "h": 70,
-     "role": "anchorLabel",
-     "align": "left",
      "maxCharsPerLine": 17,
      "maxLines": 2
     },
     "ref-1": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 339,
      "y": 538,
      "w": 168,
-     "h": 806,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 806
     },
     "ref-label-1": {
+     "align": "left",
+     "role": "refLabel",
      "x": 316,
      "y": 1374,
      "w": 215,
      "h": 60,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 20,
      "maxLines": 1
     },
     "ref-2": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 573,
      "y": 538,
      "w": 168,
-     "h": 806,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 806
     },
     "ref-label-2": {
+     "align": "left",
+     "role": "refLabel",
      "x": 550,
      "y": 1374,
      "w": 215,
      "h": 60,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 20,
      "maxLines": 1
     },
     "ref-3": {
+     "role": "ref",
+     "region": true,
+     "growth": "up-from-baseline",
+     "baselineY": 1344,
+     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing.",
      "x": 807,
      "y": 538,
      "w": 168,
-     "h": 806,
-     "role": "ref",
-     "region": true,
-     "note": "a human-sized comparison, on the anchor's scale. If it is drawn to its own scale the plate says nothing."
+     "h": 806
     },
     "ref-label-3": {
+     "align": "left",
+     "role": "refLabel",
      "x": 784,
      "y": 1374,
      "w": 215,
      "h": 60,
-     "role": "refLabel",
-     "align": "left",
      "maxCharsPerLine": 20,
      "maxLines": 1
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -9012,6 +9132,8 @@
     ],
     "scaleNote": "ONE scale across every column, and the renderer must not normalise each to its own height. The whole argument is that the reference is small next to the anchor — rescaling them to fill the plot destroys it and would look tidier, which is how it would get done by accident."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/qoq-yoy-16x9": {
@@ -9044,7 +9166,7 @@
         9
        ]
       },
-      "hash": "35c05236"
+      "hash": "c75824f7"
      },
      {
       "file": "qoq-yoy-16x9_f02.png",
@@ -9056,7 +9178,7 @@
         -3
        ]
       },
-      "hash": "c833797c"
+      "hash": "50d70df6"
      },
      {
       "file": "qoq-yoy-16x9_f03.png",
@@ -9064,7 +9186,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "900d9fae"
+      "hash": "503286f1"
      },
      {
       "file": "qoq-yoy-16x9_f04.png",
@@ -9072,7 +9194,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "674e5916"
+      "hash": "621f6559"
      },
      {
       "file": "qoq-yoy-16x9_f05.png",
@@ -9080,7 +9202,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "be83abd0"
+      "hash": "07297ba0"
      }
     ]
    },
@@ -9146,83 +9268,82 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 150,
      "y": 88,
      "w": 1069,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 50
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1252,
      "y": 88,
      "w": 518,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 43,
      "maxLines": 1
     },
     "figure": {
+     "align": "left",
+     "role": "figure",
      "x": 150,
      "y": 154,
      "w": 1620,
      "h": 220,
-     "role": "figure",
-     "align": "left",
      "maxChars": 14
     },
     "qoq-label": {
+     "align": "center",
+     "role": "deltaLabel",
      "x": 170,
      "y": 455,
      "w": 750,
      "h": 79,
-     "role": "deltaLabel",
-     "align": "center",
      "maxCharsPerLine": 50,
      "maxLines": 2
     },
     "qoq": {
+     "align": "center",
+     "role": "delta",
      "x": 170,
      "y": 548,
      "w": 750,
      "h": 128,
-     "role": "delta",
-     "align": "center",
      "maxChars": 11
     },
     "yoy-label": {
+     "align": "center",
+     "role": "deltaLabel",
      "x": 1001,
      "y": 455,
      "w": 750,
      "h": 79,
-     "role": "deltaLabel",
-     "align": "center",
      "maxCharsPerLine": 50,
      "maxLines": 2
     },
     "yoy": {
+     "align": "center",
+     "role": "delta",
      "x": 1001,
      "y": 548,
      "w": 750,
      "h": 128,
-     "role": "delta",
-     "align": "center",
      "maxChars": 11
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 150,
      "y": 950,
      "w": 1620,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 103
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -9274,6 +9395,8 @@
     "signAgnostic": "Neither delta carries direction. No colour, no arrow, no order preference, and the two cells are identical, so a fall and a rise are drawn the same. Sign comes from the value the compositor fills; the script decides what is bad. Same call as figures/waterfall.",
     "labelContract": "the -label slots carry the BASIS, not a verdict: 'vs Q2 2025' and 'vs Q3 2024', or 'quarter on quarter' and 'year on year'. Two lines each, budgeted. A label reading 'growth' on one cell and 'seasonal' on the other breaks the pair as surely as a colour would."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/qoq-yoy-9x16": {
@@ -9306,7 +9429,7 @@
         9
        ]
       },
-      "hash": "991419c0"
+      "hash": "ae6e5b97"
      },
      {
       "file": "qoq-yoy-9x16_f02.png",
@@ -9318,7 +9441,7 @@
         -3
        ]
       },
-      "hash": "828efd80"
+      "hash": "8d4a991f"
      },
      {
       "file": "qoq-yoy-9x16_f03.png",
@@ -9326,7 +9449,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "d4061c60"
+      "hash": "111f2783"
      },
      {
       "file": "qoq-yoy-9x16_f04.png",
@@ -9334,7 +9457,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "35b358f8"
+      "hash": "a9ef11df"
      },
      {
       "file": "qoq-yoy-9x16_f05.png",
@@ -9342,7 +9465,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "80aea158"
+      "hash": "4ba722d6"
      }
     ]
    },
@@ -9408,83 +9531,82 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 72,
      "y": 196,
      "w": 618,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 29
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 708,
      "y": 196,
      "w": 300,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 25,
      "maxLines": 1
     },
     "figure": {
+     "align": "left",
+     "role": "figure",
      "x": 72,
      "y": 288,
      "w": 936,
      "h": 220,
-     "role": "figure",
-     "align": "left",
      "maxChars": 8
     },
     "qoq-label": {
+     "align": "center",
+     "role": "deltaLabel",
      "x": 108,
      "y": 652,
      "w": 864,
      "h": 84,
-     "role": "deltaLabel",
-     "align": "center",
      "maxCharsPerLine": 54,
      "maxLines": 2
     },
     "qoq": {
+     "align": "center",
+     "role": "delta",
      "x": 108,
      "y": 760,
      "w": 864,
      "h": 151,
-     "role": "delta",
-     "align": "center",
      "maxChars": 11
     },
     "yoy-label": {
+     "align": "center",
+     "role": "deltaLabel",
      "x": 108,
      "y": 1043,
      "w": 864,
      "h": 84,
-     "role": "deltaLabel",
-     "align": "center",
      "maxCharsPerLine": 54,
      "maxLines": 2
     },
     "yoy": {
+     "align": "center",
+     "role": "delta",
      "x": 108,
      "y": 1151,
      "w": 864,
      "h": 151,
-     "role": "delta",
-     "align": "center",
      "maxChars": 11
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 72,
      "y": 1720,
      "w": 936,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 60
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -9536,6 +9658,8 @@
     "signAgnostic": "Neither delta carries direction. No colour, no arrow, no order preference, and the two cells are identical, so a fall and a rise are drawn the same. Sign comes from the value the compositor fills; the script decides what is bad. Same call as figures/waterfall.",
     "labelContract": "the -label slots carry the BASIS, not a verdict: 'vs Q2 2025' and 'vs Q3 2024', or 'quarter on quarter' and 'year on year'. Two lines each, budgeted. A label reading 'growth' on one cell and 'seasonal' on the other breaks the pair as surely as a colour would."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/short-interest-16x9": {
@@ -9568,7 +9692,7 @@
         9
        ]
       },
-      "hash": "594be7fe"
+      "hash": "66cc2023"
      },
      {
       "file": "short-interest-16x9_f02.png",
@@ -9580,7 +9704,7 @@
         -3
        ]
       },
-      "hash": "ff70063e"
+      "hash": "98f9027b"
      },
      {
       "file": "short-interest-16x9_f03.png",
@@ -9588,7 +9712,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "67417bc0"
+      "hash": "4b21f309"
      },
      {
       "file": "short-interest-16x9_f04.png",
@@ -9596,7 +9720,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "e23f878f"
+      "hash": "1b864259"
      },
      {
       "file": "short-interest-16x9_f05.png",
@@ -9604,7 +9728,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "241e34fa"
+      "hash": "a414d4ec"
      }
     ]
    },
@@ -9671,114 +9795,116 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 170,
      "y": 86,
      "w": 1024,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 48
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 1226,
      "y": 86,
      "w": 544,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 45,
      "maxLines": 1
     },
     "float": {
-     "x": 170,
-     "y": 159,
-     "w": 1600,
-     "h": 78,
      "role": "whole",
      "region": true,
-     "note": "THE FLOAT IS THE WHOLE BAR. Do not fill this region — its outline is already drawn and it is the reference everything else is read against. It is published as a region only so the compositor knows the extent that `short` is a share of."
-    },
-    "short": {
+     "container": true,
+     "note": "THE FLOAT IS THE WHOLE BAR. Do not fill this region — its outline is already drawn and it is the reference everything else is read against. It is published as a region only so the compositor knows the extent that `short` is a share of.",
      "x": 170,
      "y": 159,
      "w": 1600,
-     "h": 78,
+     "h": 78
+    },
+    "short": {
      "role": "bar",
      "region": true,
-     "note": "shares short, drawn as a share of the float region from the left edge. THE POINT OF THE PLATE: the reader does not divide anything. Fill to (sharesShort / float) of the width."
+     "growth": "right-from-left",
+     "extentOf": "float",
+     "note": "shares short, drawn as a share of the float region from the left edge. THE POINT OF THE PLATE: the reader does not divide anything. Fill to (sharesShort / float) of the width.",
+     "x": 170,
+     "y": 159,
+     "w": 1600,
+     "h": 78
     },
     "float-label": {
+     "align": "left",
+     "role": "barLabel",
+     "note": "what the bar is, e.g. 'free float 84.2m'",
      "x": 170,
      "y": 247,
      "w": 768,
      "h": 35,
-     "role": "barLabel",
-     "align": "left",
-     "maxChars": 42,
-     "note": "what the bar is, e.g. 'free float 84.2m'"
+     "maxChars": 42
     },
     "short-label": {
+     "align": "right",
+     "role": "barLabel",
+     "note": "the filled part, e.g. '31.4m short'. Right-aligned so it reads off the end of the bar rather than competing with the float label.",
      "x": 1002,
      "y": 247,
      "w": 768,
      "h": 35,
-     "role": "barLabel",
-     "align": "right",
-     "maxChars": 42,
-     "note": "the filled part, e.g. '31.4m short'. Right-aligned so it reads off the end of the bar rather than competing with the float label."
+     "maxChars": 42
     },
     "days": {
+     "align": "left",
+     "role": "value",
+     "note": "days to cover — a DURATION, not a share of anything. At one day's average volume.",
      "x": 170,
      "y": 316,
      "w": 780,
      "h": 102,
-     "role": "value",
-     "align": "left",
-     "maxChars": 14,
-     "note": "days to cover — a DURATION, not a share of anything. At one day's average volume."
+     "maxChars": 14
     },
     "days-label": {
+     "align": "left",
+     "role": "label",
      "x": 170,
      "y": 425,
      "w": 780,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxCharsPerLine": 59,
      "maxLines": 2
     },
     "borrow": {
+     "align": "left",
+     "role": "value",
+     "note": "cost to borrow — a RATE. Annualised, as the script quotes it.",
      "x": 990,
      "y": 316,
      "w": 780,
      "h": 102,
-     "role": "value",
-     "align": "left",
-     "maxChars": 14,
-     "note": "cost to borrow — a RATE. Annualised, as the script quotes it."
+     "maxChars": 14
     },
     "borrow-label": {
+     "align": "left",
+     "role": "label",
      "x": 990,
      "y": 425,
      "w": 780,
      "h": 70,
-     "role": "label",
-     "align": "left",
      "maxCharsPerLine": 59,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 170,
      "y": 962,
      "w": 1600,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 102
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      3840,
      2160
@@ -9815,6 +9941,8 @@
     "valueRole": "all four values are ONE type role at ONE size. A plate that sets days-to-cover larger than cost-to-borrow has decided which of the four the story is, which is the script's job.",
     "stillByDesign": "the bar outline is the float, which is a measurement reference, so it is pinned. Only the dividing rule breathes."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   },
   "figures/short-interest-9x16": {
@@ -9847,7 +9975,7 @@
         9
        ]
       },
-      "hash": "9e71db88"
+      "hash": "255c9b13"
      },
      {
       "file": "short-interest-9x16_f02.png",
@@ -9859,7 +9987,7 @@
         -3
        ]
       },
-      "hash": "ca73b8d4"
+      "hash": "d7fa7358"
      },
      {
       "file": "short-interest-9x16_f03.png",
@@ -9867,7 +9995,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "8d604838"
+      "hash": "dc362ca2"
      },
      {
       "file": "short-interest-9x16_f04.png",
@@ -9875,7 +10003,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "39f0a2c0"
+      "hash": "520bb5b9"
      },
      {
       "file": "short-interest-9x16_f05.png",
@@ -9883,7 +10011,7 @@
       "args": {
        "boil": 5
       },
-      "hash": "1e4f5024"
+      "hash": "2cf052ca"
      }
     ]
    },
@@ -9950,114 +10078,116 @@
    },
    "slots": {
     "kicker": {
+     "align": "left",
+     "role": "kicker",
      "x": 80,
      "y": 192,
      "w": 591,
      "h": 32,
-     "role": "kicker",
-     "align": "left",
      "maxChars": 27
     },
     "unit": {
+     "align": "right",
+     "role": "unit",
      "x": 690,
      "y": 192,
      "w": 314,
      "h": 32,
-     "role": "unit",
-     "align": "right",
      "maxCharsPerLine": 26,
      "maxLines": 1
     },
     "float": {
-     "x": 80,
-     "y": 314,
-     "w": 924,
-     "h": 120,
      "role": "whole",
      "region": true,
-     "note": "THE FLOAT IS THE WHOLE BAR. Do not fill this region — its outline is already drawn and it is the reference everything else is read against. It is published as a region only so the compositor knows the extent that `short` is a share of."
-    },
-    "short": {
+     "container": true,
+     "note": "THE FLOAT IS THE WHOLE BAR. Do not fill this region — its outline is already drawn and it is the reference everything else is read against. It is published as a region only so the compositor knows the extent that `short` is a share of.",
      "x": 80,
      "y": 314,
      "w": 924,
-     "h": 120,
+     "h": 120
+    },
+    "short": {
      "role": "bar",
      "region": true,
-     "note": "shares short, drawn as a share of the float region from the left edge. THE POINT OF THE PLATE: the reader does not divide anything. Fill to (sharesShort / float) of the width."
+     "growth": "right-from-left",
+     "extentOf": "float",
+     "note": "shares short, drawn as a share of the float region from the left edge. THE POINT OF THE PLATE: the reader does not divide anything. Fill to (sharesShort / float) of the width.",
+     "x": 80,
+     "y": 314,
+     "w": 924,
+     "h": 120
     },
     "float-label": {
+     "align": "left",
+     "role": "barLabel",
+     "note": "what the bar is, e.g. 'free float 84.2m'",
      "x": 80,
      "y": 452,
      "w": 444,
      "h": 32,
-     "role": "barLabel",
-     "align": "left",
-     "maxChars": 26,
-     "note": "what the bar is, e.g. 'free float 84.2m'"
+     "maxChars": 26
     },
     "short-label": {
+     "align": "right",
+     "role": "barLabel",
+     "note": "the filled part, e.g. '31.4m short'. Right-aligned so it reads off the end of the bar rather than competing with the float label.",
      "x": 560,
      "y": 452,
      "w": 444,
      "h": 32,
-     "role": "barLabel",
-     "align": "right",
-     "maxChars": 26,
-     "note": "the filled part, e.g. '31.4m short'. Right-aligned so it reads off the end of the bar rather than competing with the float label."
+     "maxChars": 26
     },
     "days": {
+     "align": "left",
+     "role": "value",
+     "note": "days to cover — a DURATION, not a share of anything. At one day's average volume.",
      "x": 80,
      "y": 562,
      "w": 432,
      "h": 90,
-     "role": "value",
-     "align": "left",
-     "maxChars": 9,
-     "note": "days to cover — a DURATION, not a share of anything. At one day's average volume."
+     "maxChars": 9
     },
     "days-label": {
+     "align": "left",
+     "role": "label",
      "x": 80,
      "y": 664,
      "w": 432,
      "h": 65,
-     "role": "label",
-     "align": "left",
      "maxCharsPerLine": 35,
      "maxLines": 2
     },
     "borrow": {
+     "align": "left",
+     "role": "value",
+     "note": "cost to borrow — a RATE. Annualised, as the script quotes it.",
      "x": 572,
      "y": 562,
      "w": 432,
      "h": 90,
-     "role": "value",
-     "align": "left",
-     "maxChars": 9,
-     "note": "cost to borrow — a RATE. Annualised, as the script quotes it."
+     "maxChars": 9
     },
     "borrow-label": {
+     "align": "left",
+     "role": "label",
      "x": 572,
      "y": 664,
      "w": 432,
      "h": 65,
-     "role": "label",
-     "align": "left",
      "maxCharsPerLine": 35,
      "maxLines": 2
     },
     "caption": {
+     "align": "left",
+     "role": "caption",
      "x": 80,
      "y": 1734,
      "w": 924,
      "h": 30,
-     "role": "caption",
-     "align": "left",
      "maxChars": 59
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -10094,6 +10224,8 @@
     "valueRole": "all four values are ONE type role at ONE size. A plate that sets days-to-cover larger than cost-to-borrow has decided which of the four the story is, which is the script's job.",
     "stillByDesign": "the bar outline is the float, which is a measurement reference, so it is pinned. Only the dividing rule breathes."
    },
+   "loopStart": 2,
+   "settleNote": "frames 0..1 play ONCE on arrival, then the layer loops frames 2..4 forever. A picker that does `i % frameCount` on the whole strip will re-settle the plate every cycle.",
    "boilGate": "frame-only"
   }
  }

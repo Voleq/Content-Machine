@@ -180,8 +180,15 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
     why the kit added three camera positions. The step is the shot's index, so
     consecutive rooms in one video differ, and the seed is the video's, so two
     videos do not open on the same angle.
+
+    THE HOUR COMES OFF THE SEED AND THE ANGLE OFF THE STEP, which is not an
+    arbitrary split. The seed is the video's and the step is the shot's, so
+    reading the hour from the seed alone is what makes it hold still for the
+    whole video while the angle keeps rotating under it. Deriving it from
+    anything carrying `step` would cut dusk against night inside one video.
     """
-    options = [k for k in reg.room_roles.get(role, ())]
+    hour = reg.hour_for(seed)
+    options = [reg.at_hour(k, hour) for k in reg.room_roles.get(role, ())]
     resolved: list[Plate] = []
     for stem in options:
         key = reg.aspect_key(stem, aspect) or (stem if stem in reg else None)

@@ -155,11 +155,21 @@ def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
     that only knows about roles stay inside every box rather than silently go
     loose: too wide a budget waves through copy that collides with the rule
     beside it, which is the direction that breaks a render.
+
+    `colour` IS THE SAME SHAPE AND IS READ THE SAME WAY. Every room title slot
+    publishes its own palette role beside its `ground`, because the colour the
+    type is set in is a property of what it sits ON rather than of the role: a
+    title on a `card` is `structure` ink on the card's own paper, and the same
+    title on a `slab` is `ground` knocked out of a filled block. Nothing read
+    this field, and nothing needed to while `TITLE_GROUND` stayed `"card"` and
+    the answer happened to equal the assumption. Reading it is what stops the
+    day the treatment changes from being the day titles go invisible.
     """
     spec = dict(type_role(plate, slot, value))
     for key, own in (("maxChars", slot.max_chars),
                      ("maxCharsPerLine", slot.max_chars_per_line),
-                     ("maxLines", slot.max_lines)):
+                     ("maxLines", slot.max_lines),
+                     ("colour", slot.colour)):
         if own:
             spec[key] = own
     return spec
@@ -292,6 +302,36 @@ def fill_slot(img, plate: Plate, slot: Slot, value: str, settings: Settings,
     bw, bh = slot.w * scale, slot.h * scale
     if bw <= 0 or bh <= 0:
         return warnings
+
+    # THE TYPE MUST LAND INSIDE ITS OWN GROUND, asserted rather than drawn.
+    #
+    # A title slot publishes the box its card occupies. The card is already in
+    # the plate art — this code never paints it — so `groundBox` is good for
+    # exactly one thing: catching a box that overhangs the ground it was given.
+    # A title that runs off its card is set on the wall again, which is the
+    # condition the card was introduced to end, and it is invisible in a
+    # registry that only checks slots against the canvas.
+    #
+    # Only when the slot is in its declared place: an `origin` moves the box
+    # somewhere the ground does not follow, and the kit's box is what carries
+    # the relationship.
+    if slot.ground_box and origin is None:
+        gb = slot.ground_box
+        try:
+            gx, gy = int(gb["x"]), int(gb["y"])
+            gw, gh = int(gb["w"]), int(gb["h"])
+        except (KeyError, TypeError, ValueError):
+            gx = gy = gw = gh = 0
+        if gw > 0 and gh > 0 and not (
+                slot.x >= gx and slot.y >= gy
+                and slot.x + slot.w <= gx + gw
+                and slot.y + slot.h <= gy + gh):
+            warnings.append(
+                f"{plate.key} {slot.name}: the box "
+                f"({slot.x},{slot.y},{slot.w},{slot.h}) overhangs its "
+                f"{slot.ground or 'ground'} ({gx},{gy},{gw},{gh}) — the type "
+                f"lands partly on the wall, which is what the ground exists "
+                f"to prevent")
 
     draw = ImageDraw.Draw(img)
     family = tr.get("font", "Courier Prime")

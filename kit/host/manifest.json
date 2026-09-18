@@ -1,11 +1,52 @@
 {
  "family": "host",
- "pack": "delta-14",
- "generated": "engine/build.js + engine/plates.js, drop twelve. Deterministic — regenerate from the engine you are holding rather than trusting this copy.",
- "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one.",
+ "pack": "delta-15",
+ "generated": "engine/build.js + engine/plates.js via scripts/manifest_core.js. Deterministic — regenerate from the engine you are holding rather than trusting this copy: node scripts/emit_manifests.mjs",
+ "_spec": "PER-FAMILY PLATE MANIFEST. One file per family, generated from the engine — never hand-edited. Everything here is READ by scripts/ingest_kit.py and by the renderer; nothing here is authored. A plate contains no content, it contains SLOTS: the renderer fills them at video time. canvas is in canvas units; delivered is canvas x exportScale and is the pixel size of the PNG on disk. maxChars / maxCharsPerLine / maxLines are DERIVED by budget.js from each role's own font metrics and are enforced, not advisory — the compositor errors on an over-budget fill and the shot does not render, so a string past the budget is an ABSENT plate, not a tight one. SLOT FIELDS ARE EMITTED VERBATIM from Plate.manifest(): every field a plate author attaches to a slot appears here, because the emitter copies the slot object rather than a whitelist of fields it knows about. delta-14's copies dropped eighteen such fields across 64 plates and the ingest refused the pack.",
  "exportScale": 2,
+ "hashAlgo": "fnv1a-32 over the emitted SVG string (UTF-16 code units), lowercase hex, zero-padded to 8. Recompute with MANIFEST_EMIT.hash(svg). NOT the function delta-14 used — that one ships nowhere in engine/ and its values cannot be reproduced, so they were replaced with values that can be.",
  "frameNaming": "_f01.._fNN, zero-padded to two digits, appended to the plate name before the extension. The BASE file carries no tag and is emitted from frame one's own args, so it is byte-identical to _f01 by construction — files.baseIsFrame is true on every entry and is derived here rather than asserted by hand. An ingest that writes the base and the frames writes frame one twice, deliberately: a renderer that wants a still takes the base without knowing the frame count.",
  "assetCount": 50,
+ "engine": "engine/hand.js + engine/plates.js, declared in engine/build.js (manifest emitted by the drawing call)",
+ "coordinateOrigin": "top-left of canvas",
+ "units": "canvas units — multiply by exportScale for delivered pixels. exportScale is 2 for the WHOLE library: one scale, every family, so a shot can mix a room, a card and an annotation without a resample step.",
+ "bakedText": false,
+ "reproduce": "PLATES.<author>({ key, w, h, pal, seed, … }) — see engine/build.js for the exact call and seed of every asset in this family",
+ "dataPolicy": "alpha cut-out figure, placed on a room host-anchor by height with the floor line pinned",
+ "anchorContract": "a room's host-anchor region gives the target HEIGHT: scale this plate so (floorLineY - slots.figure.y) equals that height, then sit floorLineY on the region's bottom edge. Never scale to the anchor's width.",
+ "tone": "The cut-out is NOT lit to match the room. He is the highest-contrast object in any frame he is in — his material hatch and the neutral ink pass on each part's turned side sit above the room's heaviest furniture, and his contact pool is small and tight. An earlier revision tinted him from the room's two sources and that is exactly what put him at the same value as the desk behind him.",
+ "surface": "Bound per asset in engine/build.js (NOTE_SURFACES), not chosen by the caller. A surface goes UNDER the drawing: the legal pad's blue rules and red margin are furniture of the page, and on a room plate they draw straight through the desk, the props and the host. So the default is the plain night card, and the pad is reserved for assets that ARE notes, where the ruling is the point of the object.",
+ "wardrobe": {
+  "outfits": [
+   "shirt",
+   "cardigan",
+   "rolled",
+   "jumper",
+   "gilet"
+  ],
+  "shipped": "shirt",
+  "render": "BUILD.drawWith(item, outfit)",
+  "rule": "every frame of one episode uses the SAME outfit; all five keep a mid-to-dark torso and the darkest cloth at the trousers, varying hue and detail rather than value"
+ },
+ "head": "The head carries the heaviest outline on the plate, with a jaw shadow and a turned plane on the skull. With the shirt and trousers fixed but the head still cream on a cream wall, the eye landed on his chest instead of his face.",
+ "motion": "Two frames, loop at 2fps, ~2 canvas units of movement per point. The boil is HAND.setBoil — the same drawing re-wobbled, with plate layout and paper grain deliberately held still. The base file IS frame one (identical bytes), so entering or leaving the loop is silent.",
+ "scaleAuthority": "engine/audit.js EXPORT_SCALE = 2. Not a per-family choice and not a caller argument: Plate.manifest() ignores any exportScale passed to it, because that argument is how a per-family scale gets in — a caller hands one plate its own scale, the manifest faithfully records it, and a shot mixing a room with a card needs a resample step mid-composite. 2 is the floor for the two things this library is asked to do: a 16:9 room filling a 9:16 frame, and a push-in on a card. 1 has headroom for neither.",
+ "frameShape": "frames[] entries are OBJECTS, not filenames — {tag, svg, png, boil, …} — and this is deliberate. A bare filename cannot say what a frame IS, so a player had to parse meaning out of a string suffix. Read frames[i].png, never a constructed name.",
+ "baseFileRule": "files.png / files.svg are the SAME BYTES as frames[0] (files.baseIsFrame names which). A base file that is its own render pops on the first frame of the loop. Verify with AUDIT — do not assume.",
+ "character": {
+  "revision": "08 — side-glance and the robe (visual system closed)",
+  "reads": "deadpan, tired, self-aware. Never the target of the joke — the one telling it.",
+  "expression": "resting face is neutral to tired: flat mouth with one corner dropped, level brow, half-lidded eyes. No smile in any pose or framing.",
+  "fatigue": "under-eye pouch and crease, hollow under the cheekbone, uneven stubble. Deliberately faint — shading heavy enough to read as bruising makes him look beaten, which is over the line.",
+  "dress": "washed-out tee, collar stretched out of shape. Never a shirt and tie. Hair flattened on the slept-on side, glasses slightly crooked and smudged on one lens.",
+  "posture": "asymmetric and slumped AT THE RIG, not at the outline. Revision 06 dipped the torso polygon while the skeleton stayed vertical and mirrored, so nothing read. The armature now carries a curved spine, a weight-bearing leg with the loaded hip raised, shoulders counter-tilting to the hips at the JOINTS, and per-pose asymmetric arms. See meta.rig on any pose plate.",
+  "authoredIn": "engine/plates.js — hostFace(), shared by hostFigure and hostHead so the full figure and the close-up cannot disagree about who he is.",
+  "eyeline": "The six full-figure poses and the two straight-to-camera framings look down the lens. The glance keys look off to camera-left or camera-right: match meta.glance to the side the graphic is on. A glance cut against a graphic on the opposite side is worse than him facing camera.",
+  "wardrobe": "One outfit per episode. 'tee' is the default and covers every pose; 'robe' exists at medium only, for the episodes shot at the worst hour. Both read at the size he occupies in frame; the retired shirt/cardigan/rolled/jumper/gilet still resolve for anything already cut against them."
+ },
+ "maxCharsNote": "maxChars is a HARD LIMIT, not editorial guidance. The compositor's audit raises an ERROR on any fill longer than the budget for the box it lands in, and an over-budget shot does not render — so a number authored beside the point size instead of measured off the box is a defect in both directions: too loose and it waves through copy that collides with the rule beside it, too tight and it stops a short that would have fitted. Every budget in this file is now DERIVED — box width divided by the per-character advance of the real face, read from the font's own hmtx table. Courier Prime is monospaced at 0.5996em (regular and bold identical), so its numbers are exact. Archivo Narrow is proportional, so its advance is a frequency-weighted mean over the character class the role actually sets — 0.383em mixed-case, 0.479em uppercase-transformed, 0.439em figures — instanced on the wght axis for 500/600/700 (a 700 runs 3.9% wider than a 400) and carrying a 4% allowance, which makes it a fair average rather than a promise about one wide string. BUDGETS LIVE ON THE SLOT: slots[name].maxChars is the number for THAT box and is what the audit reads, because one role is set in boxes of different widths on the same plate and a single number per role cannot be right in both. The role-level maxChars is the FLOOR — the narrowest slot on this plate that sets the role — so a reader that only knows about roles stays inside every box. maxLines is capped by box height at the compositor's 1.16em line pitch, and maxCharsPerLine is the same width derivation; line breaking itself is by measured width, never by character count. A role declared in typeRoles that no slot on the plate sets keeps its authored number and is listed in audit/budgets.json.",
+ "slotTotal": 176,
+ "frameTotal": 150,
  "plates": {
   "host/leaning-on-desk": {
    "key": "host/leaning-on-desk",
@@ -35,7 +76,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "5a2b42e4"
+      "hash": "303e5051"
      },
      {
       "file": "leaning-on-desk_f02.png",
@@ -45,7 +86,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "22a32060"
+      "hash": "95f636e5"
      },
      {
       "file": "leaning-on-desk_f03.png",
@@ -55,42 +96,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "f6f12a93"
+      "hash": "3cad2364"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 586,
      "y": 587,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 521,
      "y": 447,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 429,
      "w": 614,
-     "h": 1312,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1312
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -167,7 +206,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "5a2b42e4"
+      "hash": "303e5051"
      },
      {
       "file": "leaning-on-desk-talk_f02.png",
@@ -177,7 +216,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "ac650050"
+      "hash": "09346d7c"
      },
      {
       "file": "leaning-on-desk-talk_f03.png",
@@ -187,42 +226,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "b3428130"
+      "hash": "88bf1b5e"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 586,
      "y": 587,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 521,
      "y": 447,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 429,
      "w": 614,
-     "h": 1312,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1312
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -299,7 +336,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "94653c98"
+      "hash": "741f1480"
      },
      {
       "file": "leaning-on-desk-idle_f02.png",
@@ -309,7 +346,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "879afcfa"
+      "hash": "a5d6bbf4"
      },
      {
       "file": "leaning-on-desk-idle_f03.png",
@@ -319,42 +356,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "70b1df2e"
+      "hash": "9abe62c9"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 586,
      "y": 587,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 521,
      "y": 447,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 429,
      "w": 614,
-     "h": 1312,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1312
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -431,7 +466,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "37b36a60"
+      "hash": "650b9f83"
      },
      {
       "file": "hands-in-pockets_f02.png",
@@ -441,7 +476,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "a1e322be"
+      "hash": "6c1efcad"
      },
      {
       "file": "hands-in-pockets_f03.png",
@@ -451,42 +486,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "0dec4852"
+      "hash": "bc85eac8"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 554,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 488,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -563,7 +596,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "37b36a60"
+      "hash": "650b9f83"
      },
      {
       "file": "hands-in-pockets-talk_f02.png",
@@ -573,7 +606,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "0077a058"
+      "hash": "dffa643d"
      },
      {
       "file": "hands-in-pockets-talk_f03.png",
@@ -583,42 +616,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "9265bbf0"
+      "hash": "060f00f6"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 554,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 488,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -695,7 +726,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "67689128"
+      "hash": "d6587771"
      },
      {
       "file": "hands-in-pockets-idle_f02.png",
@@ -705,7 +736,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "a897fde6"
+      "hash": "e1d6f38b"
      },
      {
       "file": "hands-in-pockets-idle_f03.png",
@@ -715,42 +746,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "c39a6530"
+      "hash": "1d63f129"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 554,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 488,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -827,7 +856,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "cde954b6"
+      "hash": "87a0bed4"
      },
      {
       "file": "holding-a-page_f02.png",
@@ -837,7 +866,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "eb490b53"
+      "hash": "0a9e9255"
      },
      {
       "file": "holding-a-page_f03.png",
@@ -847,42 +876,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "16c34f40"
+      "hash": "7fc3dde4"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 558,
      "y": 585,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 493,
      "y": 444,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 427,
      "w": 614,
-     "h": 1315,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1315
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -968,7 +995,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "cde954b6"
+      "hash": "87a0bed4"
      },
      {
       "file": "holding-a-page-talk_f02.png",
@@ -978,7 +1005,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "d9e37560"
+      "hash": "6f222cda"
      },
      {
       "file": "holding-a-page-talk_f03.png",
@@ -988,42 +1015,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "5d13ff1c"
+      "hash": "470079d8"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 558,
      "y": 585,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 493,
      "y": 444,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 427,
      "w": 614,
-     "h": 1315,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1315
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1109,7 +1134,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "0dc9c1a4"
+      "hash": "0558d787"
      },
      {
       "file": "holding-a-page-idle_f02.png",
@@ -1119,7 +1144,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "7208c4d2"
+      "hash": "35125187"
      },
      {
       "file": "holding-a-page-idle_f03.png",
@@ -1129,42 +1154,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "5d6c96f0"
+      "hash": "ffd9dae1"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 558,
      "y": 585,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 493,
      "y": 444,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 427,
      "w": 614,
-     "h": 1315,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1315
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1250,7 +1273,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "c858e968"
+      "hash": "72842a1f"
      },
      {
       "file": "pointing-down-at-desk_f02.png",
@@ -1260,7 +1283,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "593cd3ea"
+      "hash": "a98af65a"
      },
      {
       "file": "pointing-down-at-desk_f03.png",
@@ -1270,42 +1293,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "b1fb1968"
+      "hash": "054c4c7c"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 602,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 537,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1382,7 +1403,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "c858e968"
+      "hash": "72842a1f"
      },
      {
       "file": "pointing-down-at-desk-talk_f02.png",
@@ -1392,7 +1413,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "c7827afe"
+      "hash": "258c67e7"
      },
      {
       "file": "pointing-down-at-desk-talk_f03.png",
@@ -1402,42 +1423,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "c29bb448"
+      "hash": "50dd6d90"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 602,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 537,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1514,7 +1533,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "4eec3f78"
+      "hash": "56dd54f8"
      },
      {
       "file": "pointing-down-at-desk-idle_f02.png",
@@ -1524,7 +1543,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "145199a0"
+      "hash": "476257f2"
      },
      {
       "file": "pointing-down-at-desk-idle_f03.png",
@@ -1534,42 +1553,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "73c35438"
+      "hash": "54ab1564"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 602,
      "y": 586,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 537,
      "y": 446,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 428,
      "w": 614,
-     "h": 1313,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1313
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1646,7 +1663,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "34260d9a"
+      "hash": "fa52a5d6"
      },
      {
       "file": "head-in-hands_f02.png",
@@ -1656,7 +1673,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "cf2c72d8"
+      "hash": "cd2dc447"
      },
      {
       "file": "head-in-hands_f03.png",
@@ -1666,42 +1683,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "a97d9968"
+      "hash": "7ddf0e9c"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 636,
      "y": 597,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 571,
      "y": 457,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 440,
      "w": 614,
-     "h": 1302,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1302
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1778,7 +1793,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "34260d9a"
+      "hash": "fa52a5d6"
      },
      {
       "file": "head-in-hands-talk_f02.png",
@@ -1788,7 +1803,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "1848aad8"
+      "hash": "147a7ebd"
      },
      {
       "file": "head-in-hands-talk_f03.png",
@@ -1798,42 +1813,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "12287396"
+      "hash": "13be7629"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 636,
      "y": 597,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 571,
      "y": 457,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 440,
      "w": 614,
-     "h": 1302,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1302
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -1910,7 +1923,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "7a915d4e"
+      "hash": "42e61f88"
      },
      {
       "file": "head-in-hands-idle_f02.png",
@@ -1920,7 +1933,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "d4571c86"
+      "hash": "3a949c9c"
      },
      {
       "file": "head-in-hands-idle_f03.png",
@@ -1930,42 +1943,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "fcb3cff0"
+      "hash": "cd543919"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 636,
      "y": 597,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 571,
      "y": 457,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 440,
      "w": 614,
-     "h": 1302,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1302
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2042,7 +2053,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "fd832c86"
+      "hash": "3bb0b50e"
      },
      {
       "file": "walking-out-of-frame_f02.png",
@@ -2052,7 +2063,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "8329b20e"
+      "hash": "86c093d6"
      },
      {
       "file": "walking-out-of-frame_f03.png",
@@ -2062,42 +2073,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "2d66a062"
+      "hash": "7ec8ae2e"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 631,
      "y": 583,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 566,
      "y": 443,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
      "y": 425,
      "w": 614,
-     "h": 1316,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1316
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2174,7 +2183,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "fd832c86"
+      "hash": "3bb0b50e"
      },
      {
       "file": "walking-out-of-frame-talk_f02.png",
@@ -2184,7 +2193,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "74f68fa6"
+      "hash": "375babf3"
      },
      {
       "file": "walking-out-of-frame-talk_f03.png",
@@ -2194,42 +2203,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "58690160"
+      "hash": "eb8f950f"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 631,
      "y": 583,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 566,
      "y": 443,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
      "y": 425,
      "w": 614,
-     "h": 1316,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1316
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2306,7 +2313,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "06626e48"
+      "hash": "d53d3fc1"
      },
      {
       "file": "walking-out-of-frame-idle_f02.png",
@@ -2316,7 +2323,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "a3cbfc69"
+      "hash": "a6f82884"
      },
      {
       "file": "walking-out-of-frame-idle_f03.png",
@@ -2326,42 +2333,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "75c7b260"
+      "hash": "003eb3e7"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 631,
      "y": 583,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 566,
      "y": 443,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 298,
      "y": 425,
      "w": 614,
-     "h": 1316,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 1316
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2438,7 +2443,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "600d77ec"
+      "hash": "dae95f3b"
      },
      {
       "file": "sitting-at-desk_f02.png",
@@ -2448,7 +2453,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "16cb8746"
+      "hash": "e5bbd52e"
      },
      {
       "file": "sitting-at-desk_f03.png",
@@ -2458,42 +2463,40 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "561eb680"
+      "hash": "ebec14d3"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 552,
      "y": 927,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 487,
      "y": 787,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 769,
      "w": 614,
-     "h": 972,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 972
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2582,7 +2585,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "600d77ec"
+      "hash": "dae95f3b"
      },
      {
       "file": "sitting-at-desk-talk_f02.png",
@@ -2592,7 +2595,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "956dfede"
+      "hash": "63b32c95"
      },
      {
       "file": "sitting-at-desk-talk_f03.png",
@@ -2602,42 +2605,40 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "05cb1050"
+      "hash": "0eea99e1"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 552,
      "y": 927,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 487,
      "y": 787,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 769,
      "w": 614,
-     "h": 972,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 972
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2726,7 +2727,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "c84a53f1"
+      "hash": "754ff6f2"
      },
      {
       "file": "sitting-at-desk-idle_f02.png",
@@ -2736,7 +2737,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "9341c460"
+      "hash": "72de7edd"
      },
      {
       "file": "sitting-at-desk-idle_f03.png",
@@ -2746,42 +2747,40 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "be7458ba"
+      "hash": "14680f74"
      }
     ]
    },
    "slotCount": 3,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "talk frames differ here only",
      "x": 552,
      "y": 927,
      "w": 46,
-     "h": 30,
-     "role": "mouth",
-     "region": true,
-     "note": "talk frames differ here only"
+     "h": 30
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 487,
      "y": 787,
      "w": 176,
-     "h": 194,
-     "role": "head",
-     "region": true
+     "h": 194
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes",
      "x": 233,
      "y": 769,
      "w": 614,
-     "h": 972,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY. A room's host-anchor height scales (floorLineY - this box's y), not the box height — the box runs past the floor line to carry the shoes"
+     "h": 972
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
@@ -2845,7 +2844,7 @@
   "host/close-up": {
    "key": "host/close-up",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -2870,7 +2869,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "463d007e"
+      "hash": "bf23af21"
      },
      {
       "file": "close-up_f02.png",
@@ -2880,7 +2879,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "7d2a810a"
+      "hash": "741367ad"
      },
      {
       "file": "close-up_f03.png",
@@ -2890,51 +2889,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "4799b5d9"
+      "hash": "1d8ae4b6"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -2988,7 +2985,7 @@
   "host/close-up-talk": {
    "key": "host/close-up-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -3013,7 +3010,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "463d007e"
+      "hash": "bf23af21"
      },
      {
       "file": "close-up-talk_f02.png",
@@ -3023,7 +3020,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "3602634e"
+      "hash": "a5bfe229"
      },
      {
       "file": "close-up-talk_f03.png",
@@ -3033,51 +3030,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "4a7a4d16"
+      "hash": "0273926c"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -3131,7 +3126,7 @@
   "host/close-up-idle": {
    "key": "host/close-up-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -3156,7 +3151,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "dc25ff96"
+      "hash": "42c64dcd"
      },
      {
       "file": "close-up-idle_f02.png",
@@ -3166,7 +3161,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "84655cb0"
+      "hash": "79f7ed3f"
      },
      {
       "file": "close-up-idle_f03.png",
@@ -3176,51 +3171,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "db9fd6f0"
+      "hash": "784d9822"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -3274,7 +3267,7 @@
   "host/medium": {
    "key": "host/medium",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -3299,7 +3292,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "a48ff550"
+      "hash": "39af3c1c"
      },
      {
       "file": "medium_f02.png",
@@ -3309,7 +3302,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "05465d92"
+      "hash": "5772283b"
      },
      {
       "file": "medium_f03.png",
@@ -3319,51 +3312,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "6a050c18"
+      "hash": "64f20e30"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -3417,7 +3408,7 @@
   "host/medium-talk": {
    "key": "host/medium-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -3442,7 +3433,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "a48ff550"
+      "hash": "39af3c1c"
      },
      {
       "file": "medium-talk_f02.png",
@@ -3452,7 +3443,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "9a1fce98"
+      "hash": "da5e84e2"
      },
      {
       "file": "medium-talk_f03.png",
@@ -3462,51 +3453,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "1b5336d0"
+      "hash": "0b52a007"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -3560,7 +3549,7 @@
   "host/medium-idle": {
    "key": "host/medium-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -3585,7 +3574,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "86bdac52"
+      "hash": "3828a5eb"
      },
      {
       "file": "medium-idle_f02.png",
@@ -3595,7 +3584,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "dc2d0cc2"
+      "hash": "aba2f12d"
      },
      {
       "file": "medium-idle_f03.png",
@@ -3605,51 +3594,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "2365efe0"
+      "hash": "a8855195"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -3703,7 +3690,7 @@
   "host/close-up-glance-left": {
    "key": "host/close-up-glance-left",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -3728,7 +3715,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "1bf2e3b8"
+      "hash": "2f9fbb8a"
      },
      {
       "file": "close-up-glance-left_f02.png",
@@ -3738,7 +3725,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "ef6f9856"
+      "hash": "265fdcb1"
      },
      {
       "file": "close-up-glance-left_f03.png",
@@ -3748,51 +3735,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "73b4bb8e"
+      "hash": "26d1e620"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -3846,7 +3831,7 @@
   "host/close-up-glance-left-talk": {
    "key": "host/close-up-glance-left-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -3871,7 +3856,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "1bf2e3b8"
+      "hash": "2f9fbb8a"
      },
      {
       "file": "close-up-glance-left-talk_f02.png",
@@ -3881,7 +3866,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "7099a35e"
+      "hash": "51bc0963"
      },
      {
       "file": "close-up-glance-left-talk_f03.png",
@@ -3891,51 +3876,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "e4e1e250"
+      "hash": "52944dcc"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -3989,7 +3972,7 @@
   "host/close-up-glance-left-idle": {
    "key": "host/close-up-glance-left-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -4014,7 +3997,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "2c035090"
+      "hash": "3cc1eda4"
      },
      {
       "file": "close-up-glance-left-idle_f02.png",
@@ -4024,7 +4007,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "6806ced5"
+      "hash": "04b426b8"
      },
      {
       "file": "close-up-glance-left-idle_f03.png",
@@ -4034,51 +4017,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "3a141136"
+      "hash": "404fb1e7"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -4132,7 +4113,7 @@
   "host/close-up-glance-right": {
    "key": "host/close-up-glance-right",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -4157,7 +4138,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "66404378"
+      "hash": "8ae256f9"
      },
      {
       "file": "close-up-glance-right_f02.png",
@@ -4167,7 +4148,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "36d43118"
+      "hash": "e9ffbd9b"
      },
      {
       "file": "close-up-glance-right_f03.png",
@@ -4177,51 +4158,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "48adb12a"
+      "hash": "f2888b59"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -4275,7 +4254,7 @@
   "host/close-up-glance-right-talk": {
    "key": "host/close-up-glance-right-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -4300,7 +4279,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "66404378"
+      "hash": "8ae256f9"
      },
      {
       "file": "close-up-glance-right-talk_f02.png",
@@ -4310,7 +4289,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "3c1b1cf6"
+      "hash": "9c196c48"
      },
      {
       "file": "close-up-glance-right-talk_f03.png",
@@ -4320,51 +4299,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "16c08f50"
+      "hash": "917d34b9"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -4418,7 +4395,7 @@
   "host/close-up-glance-right-idle": {
    "key": "host/close-up-glance-right-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -4443,7 +4420,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "6cb1b038"
+      "hash": "9f2418cb"
      },
      {
       "file": "close-up-glance-right-idle_f02.png",
@@ -4453,7 +4430,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "c6dedcbc"
+      "hash": "8ac3a503"
      },
      {
       "file": "close-up-glance-right-idle_f03.png",
@@ -4463,51 +4440,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "c34555a0"
+      "hash": "b1e687f5"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -4561,7 +4536,7 @@
   "host/medium-glance-left": {
    "key": "host/medium-glance-left",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -4586,7 +4561,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "ee9caa04"
+      "hash": "0d781f0c"
      },
      {
       "file": "medium-glance-left_f02.png",
@@ -4596,7 +4571,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "cc49d6ca"
+      "hash": "e0d4b2bd"
      },
      {
       "file": "medium-glance-left_f03.png",
@@ -4606,51 +4581,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "e78b41d8"
+      "hash": "2ab89d78"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -4704,7 +4677,7 @@
   "host/medium-glance-left-talk": {
    "key": "host/medium-glance-left-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -4729,7 +4702,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "ee9caa04"
+      "hash": "0d781f0c"
      },
      {
       "file": "medium-glance-left-talk_f02.png",
@@ -4739,7 +4712,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "24038178"
+      "hash": "95fed609"
      },
      {
       "file": "medium-glance-left-talk_f03.png",
@@ -4749,51 +4722,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "f71441b2"
+      "hash": "fbc21c9a"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -4847,7 +4818,7 @@
   "host/medium-glance-left-idle": {
    "key": "host/medium-glance-left-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -4872,7 +4843,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "67779d42"
+      "hash": "21282025"
      },
      {
       "file": "medium-glance-left-idle_f02.png",
@@ -4882,7 +4853,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "b8bf4278"
+      "hash": "3579519b"
      },
      {
       "file": "medium-glance-left-idle_f03.png",
@@ -4892,51 +4863,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "531e8d88"
+      "hash": "9d539763"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -4990,7 +4959,7 @@
   "host/medium-glance-right": {
    "key": "host/medium-glance-right",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5015,7 +4984,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "f46d8fb8"
+      "hash": "74c3556b"
      },
      {
       "file": "medium-glance-right_f02.png",
@@ -5025,7 +4994,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "ffc656e0"
+      "hash": "d83f6f44"
      },
      {
       "file": "medium-glance-right_f03.png",
@@ -5035,51 +5004,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "268c1c3a"
+      "hash": "67d88079"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5133,7 +5100,7 @@
   "host/medium-glance-right-talk": {
    "key": "host/medium-glance-right-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5158,7 +5125,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "f46d8fb8"
+      "hash": "74c3556b"
      },
      {
       "file": "medium-glance-right-talk_f02.png",
@@ -5168,7 +5135,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "2574d178"
+      "hash": "6672ded3"
      },
      {
       "file": "medium-glance-right-talk_f03.png",
@@ -5178,51 +5145,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "6b197b30"
+      "hash": "fa755fc0"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5276,7 +5241,7 @@
   "host/medium-glance-right-idle": {
    "key": "host/medium-glance-right-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5301,7 +5266,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "0ffd47ba"
+      "hash": "04c9c934"
      },
      {
       "file": "medium-glance-right-idle_f02.png",
@@ -5311,7 +5276,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "b3259d72"
+      "hash": "dbc0aa72"
      },
      {
       "file": "medium-glance-right-idle_f03.png",
@@ -5321,51 +5286,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "9d256cba"
+      "hash": "b62cffbd"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5419,7 +5382,7 @@
   "host/medium-robe": {
    "key": "host/medium-robe",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5444,7 +5407,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "4839b280"
+      "hash": "e590681f"
      },
      {
       "file": "medium-robe_f02.png",
@@ -5454,7 +5417,7 @@
        "bob": 0,
        "boil": 2
       },
-      "hash": "8bc3a5a8"
+      "hash": "d3444d5f"
      },
      {
       "file": "medium-robe_f03.png",
@@ -5464,51 +5427,49 @@
        "bob": 0,
        "boil": 5
       },
-      "hash": "4ad0cf3a"
+      "hash": "4ade0fe3"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5562,7 +5523,7 @@
   "host/medium-robe-talk": {
    "key": "host/medium-robe-talk",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5587,7 +5548,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "4839b280"
+      "hash": "e590681f"
      },
      {
       "file": "medium-robe-talk_f02.png",
@@ -5597,7 +5558,7 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "f81e9bc0"
+      "hash": "255d0891"
      },
      {
       "file": "medium-robe-talk_f03.png",
@@ -5607,51 +5568,49 @@
        "bob": 0,
        "boil": 1
       },
-      "hash": "80e4beb8"
+      "hash": "26ceacac"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5705,7 +5664,7 @@
   "host/medium-robe-idle": {
    "key": "host/medium-robe-idle",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -5730,7 +5689,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "8ac8b15e"
+      "hash": "1ea62c5d"
      },
      {
       "file": "medium-robe-idle_f02.png",
@@ -5740,7 +5699,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "7dd487b8"
+      "hash": "08e6df1e"
      },
      {
       "file": "medium-robe-idle_f03.png",
@@ -5750,51 +5709,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "a4a9d9ce"
+      "hash": "86b68a54"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -5848,7 +5805,7 @@
   "host/close-up-blink": {
    "key": "host/close-up-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -5873,7 +5830,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "76f9fef2"
+      "hash": "1055ac5e"
      },
      {
       "file": "close-up-blink_f02.png",
@@ -5883,7 +5840,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "5b4a6ea6"
+      "hash": "70041324"
      },
      {
       "file": "close-up-blink_f03.png",
@@ -5893,51 +5850,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "8c1064d2"
+      "hash": "e5e3ba19"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -5999,12 +5954,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/close-up-glance-left-blink": {
    "key": "host/close-up-glance-left-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -6029,7 +5994,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "faef3311"
+      "hash": "4511a7aa"
      },
      {
       "file": "close-up-glance-left-blink_f02.png",
@@ -6039,7 +6004,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "d735213c"
+      "hash": "17c8d3f9"
      },
      {
       "file": "close-up-glance-left-blink_f03.png",
@@ -6049,51 +6014,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "5f42a2f2"
+      "hash": "68de9353"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -6155,12 +6118,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/close-up-glance-right-blink": {
    "key": "host/close-up-glance-right-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "1x1",
    "canvas": [
     1080,
     1080
@@ -6185,7 +6158,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "0c726518"
+      "hash": "759dce1d"
      },
      {
       "file": "close-up-glance-right-blink_f02.png",
@@ -6195,7 +6168,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "b7a13680"
+      "hash": "93118e9d"
      },
      {
       "file": "close-up-glance-right-blink_f03.png",
@@ -6205,51 +6178,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "d7aa4530"
+      "hash": "7c33d795"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 436,
      "y": 429,
      "w": 208,
-     "h": 109,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 109
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 358,
      "y": 257,
      "w": 364,
-     "h": 156,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 156
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 306,
      "y": 34,
      "w": 469,
-     "h": 547,
-     "role": "head",
-     "region": true
+     "h": 547
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 13,
      "w": 1080,
-     "h": 1067,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1067
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2160
@@ -6311,12 +6282,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/medium-blink": {
    "key": "host/medium-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -6341,7 +6322,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "86509bb0"
+      "hash": "47319f9f"
      },
      {
       "file": "medium-blink_f02.png",
@@ -6351,7 +6332,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "c54c07b6"
+      "hash": "3ffb759c"
      },
      {
       "file": "medium-blink_f03.png",
@@ -6361,51 +6342,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "c70937fa"
+      "hash": "233b7ac9"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -6467,12 +6446,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/medium-glance-left-blink": {
    "key": "host/medium-glance-left-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -6497,7 +6486,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "24dea5c0"
+      "hash": "72edee80"
      },
      {
       "file": "medium-glance-left-blink_f02.png",
@@ -6507,7 +6496,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "03d9b8c2"
+      "hash": "2110c5ab"
      },
      {
       "file": "medium-glance-left-blink_f03.png",
@@ -6517,51 +6506,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "9eca4598"
+      "hash": "0dfd4340"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -6623,12 +6610,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/medium-glance-right-blink": {
    "key": "host/medium-glance-right-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -6653,7 +6650,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "b8d35290"
+      "hash": "32c21cd3"
      },
      {
       "file": "medium-glance-right-blink_f02.png",
@@ -6663,7 +6660,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "b77554a6"
+      "hash": "16b619e3"
      },
      {
       "file": "medium-glance-right-blink_f03.png",
@@ -6673,51 +6670,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "70a152a0"
+      "hash": "efd8a452"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -6779,12 +6774,22 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/medium-robe-blink": {
    "key": "host/medium-robe-blink",
    "dir": "host",
-   "aspect": "9x16",
+   "aspect": "3x4",
    "canvas": [
     1080,
     1440
@@ -6809,7 +6814,7 @@
        "bob": 0,
        "boil": 3
       },
-      "hash": "05e1c34b"
+      "hash": "f92e45d3"
      },
      {
       "file": "medium-robe-blink_f02.png",
@@ -6819,7 +6824,7 @@
        "bob": 3,
        "boil": 4
       },
-      "hash": "41afa3c0"
+      "hash": "866a7c01"
      },
      {
       "file": "medium-robe-blink_f03.png",
@@ -6829,51 +6834,49 @@
        "bob": 2,
        "boil": 6
       },
-      "hash": "8b0f1eec"
+      "hash": "b7822a84"
      }
     ]
    },
    "slotCount": 4,
-   "typeRoles": {},
    "slots": {
     "mouth": {
+     "role": "mouth",
+     "region": true,
+     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C.",
      "x": 449,
      "y": 404,
      "w": 182,
-     "h": 96,
-     "role": "mouth",
-     "region": true,
-     "note": "the region that DIFFERS between talk frames — the aperture and the fold that moves with it — not the lips alone. Verified by pre-flight check C."
+     "h": 96
     },
     "eyes": {
+     "role": "eyes",
+     "region": true,
+     "note": "the eye line is fit.eyeLineY; this box is the pair",
      "x": 381,
      "y": 254,
      "w": 319,
-     "h": 137,
-     "role": "eyes",
-     "region": true,
-     "note": "the eye line is fit.eyeLineY; this box is the pair"
+     "h": 137
     },
     "head": {
+     "role": "head",
+     "region": true,
      "x": 335,
      "y": 58,
      "w": 410,
-     "h": 478,
-     "role": "head",
-     "region": true
+     "h": 478
     },
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit",
      "x": 0,
      "y": 40,
      "w": 1080,
-     "h": 1400,
-     "role": "figure",
-     "region": true,
-     "note": "visible extent only. There is no floorLineY on this plate and this box is NOT a scaling authority — see meta.fit"
+     "h": 1400
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      2880
@@ -6935,7 +6938,17 @@
     "notOnTalk": true,
     "hand": "hand-2"
    },
-   "overlayOf": "-idle"
+   "overlayOf": "-idle",
+   "overlayContract": {
+    "mode": "Composite the blink frame OVER the matching idle frame at 0,0, same canvas, same scale. It is not played by advancing through it: a player that loops this blinks him continuously, which is why playback is \"overlay\" and fps is null.",
+    "which_idle_frame": "INDEX-MATCHED, and derived rather than conventional: blink _fNN composites over idle _fNN. The two strips are authored from byte-identical args at every index (bob 0/3/2, boil 3/4/6), so the lid meets the socket it was drawn for. Checked on all seven pairs. A renderer holding idle frame 2 must use blink _f02 — not the nearest, not the first.",
+    "why_not_over_talk": "A BLINK MAY NOT LAND ON A TALK FRAME, and this is registration, not taste. The talk strip is all three frames at ONE boil index (the section 7 rule); the blink strip carries idle's indices, 3/4/6. Compositing blink _f02 over a talk frame puts a lid drawn at boil 4 over a socket drawn at boil 1, and the linework will not meet. If the host must blink while speaking, that is a new strip authored at the talk index, not a reuse of this one.",
+    "cadence": "~100ms in, every 3-4s, JITTERED. Uniform on [3.0s, 4.5s], resampled after each blink.",
+    "cadence_seed": "seed = the asset's own seed field, advanced by BLINK COUNT SINCE THE VIDEO STARTED — never by shot index and never reset at a cut. Reseeding per shot is the one implementation that produces the defect worth avoiding: every cut restarts the clock, so he blinks at the same offset after each cut and it reads as a tic rather than as a person. The seed is per-asset so two poses in one video do not share a phase.",
+    "at_a_cut": "A BLINK IN PROGRESS IS ABANDONED, not finished across the cut. It is ~100ms; carrying it into the next shot means compositing a lid over a frame from a different pose, and the registration above does not hold across poses. The new shot starts with lids open and the cadence clock CONTINUES from where it was, so the next blink does not arrive early.",
+    "minimum_hold": "Do not start a blink within 150ms of the end of a shot. A blink clipped to 40ms by an incoming cut reads as a dropped frame, which is worse than not blinking.",
+    "frame_count_is_registration": "Three frames because idle is three. The count is registration, NOT rate: the strip says nothing about how often, and a renderer must not infer a duration from it."
+   }
   },
   "host/empty-chair": {
    "key": "host/empty-chair",
@@ -6963,7 +6976,7 @@
       "args": {
        "boil": 1
       },
-      "hash": "2b960f58"
+      "hash": "ab52c5f1"
      },
      {
       "file": "empty-chair_f02.png",
@@ -6971,7 +6984,7 @@
       "args": {
        "boil": 2
       },
-      "hash": "b672e5c6"
+      "hash": "c2561085"
      },
      {
       "file": "empty-chair_f03.png",
@@ -6979,25 +6992,23 @@
       "args": {
        "boil": 5
       },
-      "hash": "8bb9a7ae"
+      "hash": "06bcdabc"
      }
     ]
    },
    "slotCount": 1,
-   "typeRoles": {},
    "slots": {
     "figure": {
+     "role": "figure",
+     "region": true,
+     "note": "cut-out bounds; stand on floorLineY, same as a host figure. Scale so (floorLineY - figure.y) equals anchor.targetHeight x chair.heights.ratio — NOT the target height directly. The anchor height is a STANDING figure's; a chair scaled to it is a chair taller than the man who sits in it.",
      "x": 258,
      "y": 939,
      "w": 563,
-     "h": 826,
-     "role": "figure",
-     "region": true,
-     "note": "cut-out bounds; stand on floorLineY, same as a host figure. Scale so (floorLineY - figure.y) equals anchor.targetHeight x chair.heights.ratio — NOT the target height directly. The anchor height is a STANDING figure's; a chair scaled to it is a chair taller than the man who sits in it."
+     "h": 826
     }
    },
    "meta": {
-    "exportScale": 2,
     "delivered": [
      2160,
      3840
