@@ -89,7 +89,11 @@ def deliver(
     else:
         result = _local_deliver(artifact, ticker, workdate, settings, extra_files)
 
-    result.note = note
+    # APPENDED, not assigned. No backend sets a note today, so this was
+    # harmless — and it is the kind of harmless that stops being true the
+    # first time one wants to say "the 2 GB file went to Drive instead",
+    # because the credits would silently eat it.
+    result.note = "\n\n".join(x for x in (result.note, note) if x)
     return result
 
 

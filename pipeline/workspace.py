@@ -339,8 +339,13 @@ def audited_tickers_since(settings: Settings, days: int) -> set[str]:
     root = settings.workspace_dir
     if not root.is_dir():
         return out
-    cutoff = (datetime.now(timezone.utc)
-              - timedelta(days=days)).date().isoformat()
+    # LOCAL, because the names being compared are local. Every directory
+    # here is named by `today_str()`, which is `date.today()` — the
+    # operator's own day — and the cutoff was built from `utcnow()`. West of
+    # UTC the two disagree for most of the day, so the cooldown ran a day
+    # long or a day short depending on the hour, and the string comparison
+    # below hid it by never parsing either side.
+    cutoff = (date.today() - timedelta(days=days)).isoformat()
     for tdir in root.iterdir():
         if not tdir.is_dir() or tdir.name.startswith("_"):
             continue

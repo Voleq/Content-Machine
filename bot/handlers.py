@@ -41,6 +41,7 @@ from pipeline.delivery import deliver
 from pipeline.filing_brief import FilingReader
 from pipeline.gates import run_gates
 from pipeline.jobs import JobCancelled, JobRecord, RenderJobQueue
+from pipeline.llm import llm_scope
 from pipeline.models import JobKind, TagType
 from pipeline.parser_long import LongScriptError, parse_long_script, validate_long_script
 from pipeline.parser_short import ScriptParseError, parse_short_script
@@ -265,6 +266,17 @@ class BotCore:
             log.warning("free-news merge for %s failed: %s", ws.ticker, e)
         return data
 
+    @staticmethod
+    def _llm_scope(ws: Workspace) -> str:
+        """The key this workspace's LLM calls are tallied against.
+
+        One video, one scope. The provenance record asks "what did the LLM
+        do in THIS video", and a workspace is exactly that — the same
+        `ticker/workdate` the brief, the angle and the render all share, so
+        a call made at intake is still findable at render time hours later.
+        """
+        return f"{ws.ticker}/{ws.workdate}"
+
     # -------------------------------------------------- /short · /long (1d)
     # The format is declared up front rather than inferred from which of two
     # prompts the operator happened to run. Each command prepares only its own
@@ -464,7 +476,11 @@ class BotCore:
         # routed by its shape rather than by what the operator had asked for.
         ws.set_lane("short")
         ws.clear_awaiting_angle()  # a headline short is never in the LONG angle flow
-        display_headline, summary = self._enrich_headline(headline)
+        # `_enrich_headline` summarises a linked article with the LLM, which
+        # is a call this video made — tally it here rather than against
+        # whatever scope happened to be open.
+        with llm_scope(self._llm_scope(ws)):
+            display_headline, summary = self._enrich_headline(headline)
         # Free primary sources (P3.4): the 8-K's EX-99.1 for an earnings
         # print, the FRED series for a macro one. Best-effort — an
         # unavailable source leaves the operator's own headline as the
@@ -713,6 +729,15 @@ class BotCore:
         ws = self._active_ws(chat_id)
         if ws is None:
             return Reply("No active workspace — /short TICKER or /long TICKER first.")
+        # Every LLM call this paste provokes — the angle flagger under
+        # `_auto_filings`, the skeptic inside `run_gates` — is tallied
+        # against THIS video, so the provenance record written hours later at
+        # render time reports this video's calls rather than the bot's.
+        with llm_scope(self._llm_scope(ws)):
+            return self._intake(ws, text, from_file=from_file)
+
+    def _intake(self, ws: Workspace, text: str, *,
+                from_file: bool = False) -> Reply:
         # LONG two-step: a plain-text reply while awaiting the angle pick is
         # the operator's angle choice, not a script — hand back Step 2.
         if ws.awaiting_angle() and text.strip() and not self.looks_like_script(text):
@@ -948,9 +973,13 @@ class BotCore:
         from pipeline.filing_brief import build_brief, save_brief
 
         def _run():
-            brief = build_brief(ws.ticker, ws.path, self.settings)
-            save_brief(ws.path, brief, self.settings)
-            return brief
+            # On the reader's OWN thread, so the scope the caller opened is
+            # not visible here — this thread opens its own, or the brief's
+            # calls land in whatever workspace the operator is pasting into.
+            with llm_scope(self._llm_scope(ws)):
+                brief = build_brief(ws.ticker, ws.path, self.settings)
+                save_brief(ws.path, brief, self.settings)
+                return brief
 
         try:
             fut = self.filing_reader.submit(f"{ws.ticker} {ws.workdate}", _run)
@@ -1054,7 +1083,13 @@ class BotCore:
 
         data = self._company_data(ws)
         if data is None:
-            return Reply("⛔ No data export on file — upload dennis_data.xlsx first.")
+            # `header` says what just happened — a crop was dropped, an angle
+            # was locked — and this branch used to throw it away, so a veto
+            # on a workspace with no workbook reported a missing upload for
+            # an action that had already taken effect.
+            return Reply(
+                (f"{header}\n" if header else "")
+                + "⛔ No data export on file — upload dennis_data.xlsx first.")
         prompt = fill_prompt("long_write", ws.ticker, data, ws.path, self.settings,
                              chosen_angle=ws.chosen_angle())
         f = ws.path / "prompt_long_write.md"
@@ -1235,6 +1270,26 @@ class BotCore:
             return Reply("⛔ No script on file — paste it first.")
         if script.content_sha()[:8] != sha8:
             return Reply("⛔ The script changed since this report — paste/review again.")
+        # THE HASH IS NOT THE WHOLE QUESTION (G8). It pins the content, which
+        # is right, and nothing else — so a button drawn on an approvable
+        # report stayed approvable after the world underneath it changed.
+        # The findings that can turn blocking without a keystroke are the
+        # ones that matter: freshness crossing `data_max_age_days` as the day
+        # rolls over, a `[SCREENGRAB]` file deleted out of `assets/custom/`,
+        # the audio gate flipping. `/render` then reads `is_approved()` and
+        # spends.
+        #
+        # `skeptic=False` because that pass is the only one here that costs a
+        # network call, and it is advisory by construction — every finding it
+        # returns is a warning, so it can never be what refuses this.
+        blocked = self._approval_blockers(ws, script, fmt)
+        if blocked:
+            return Reply(
+                "⛔ Not approved — this passed when the report was written and "
+                "does not now:\n"
+                + "\n".join(f"  • {b}" for b in blocked[:6])
+                + "\n\nPaste the script again for a fresh report."
+            )
         report_file = ws.path / f"report_{fmt}.txt"
         ws.approve(fmt, script.content_sha(),
                    report_file.read_text(encoding="utf-8") if report_file.exists() else "")
@@ -1244,6 +1299,27 @@ class BotCore:
             f"{cmd} {ticker} to render — this is the point where money is spent."
             + ("\nTip: /draft first for a cheap timing check." if fmt == "long" else "")
         )
+
+    def _approval_blockers(self, ws: Workspace, script, fmt: str) -> list[str]:
+        """Blocking findings as of NOW, for the Approve tap to refuse on.
+
+        Never raises: a battery that cannot run is not evidence that the
+        script is bad, and refusing an approval because the kit is missing
+        would be a worse failure than the one this guards.
+        """
+        try:
+            data = self._company_data(ws)
+            with llm_scope(self._llm_scope(ws)):
+                gates = run_gates(
+                    script, self.settings, data=data,
+                    as_of=str((data.get("as_of_date") if data else "") or ""),
+                    workspace=ws.path, skeptic=False)
+        except Exception:  # noqa: BLE001
+            log.exception("could not re-check the gates for %s %s — "
+                          "letting the approval through on the report",
+                          ws.ticker, fmt)
+            return []
+        return [f.render() for f in gates.findings if f.severity == "block"]
 
     def cancel_approval(self, fmt: str, ticker: str, workdate: str) -> Reply:
         ws = Workspace(self.settings, ticker, workdate)
@@ -1408,6 +1484,14 @@ class BotCore:
         """Blocking pipeline for one job; runs in the queue's worker thread.
         Every stage rechecks cancellation; every stage is cache-resumable."""
         ws = Workspace(self.settings, job.ticker, job.workdate)
+        # The worker thread sees none of the scope intake opened, so it
+        # reopens this video's — that is how the provenance record written
+        # below reads back the calls the brief and the gates made hours ago,
+        # and only those.
+        with llm_scope(self._llm_scope(ws)):
+            return self._execute_job(job, ws)
+
+    def _execute_job(self, job: JobRecord, ws: Workspace) -> str:
         store = self.queue.store if self.queue else None
 
         def checkpoint(detail: str) -> None:
@@ -1543,10 +1627,24 @@ class BotCore:
                 raise RuntimeError("no finished LONG render to repurpose")
             script = ws.load_long()
             words = None
-            if script and self.tts.is_cached(script.narration, "long",
-                                             events=script.events):
-                words = self.tts.synthesize(script.narration, "long",
-                                            events=script.events).words  # cache hit
+            if script:
+                # `cached_only` rather than the bare `is_cached` probe this
+                # used to trust. A repurpose is advertised as $0 and has no
+                # approval gate, so the promise has to be structural the way
+                # `/proof`'s is: the cache answers or this raises, and no
+                # voice is generated at any tier. Word timings are a nicety
+                # here — without them the cut falls back to the manifest's
+                # own beat boundaries — so a miss is a log line, not a
+                # failed job.
+                from pipeline.tts import CacheMissForbidden
+
+                try:
+                    words = self.tts.synthesize(
+                        script.narration, "long", events=script.events,
+                        cached_only=True).words
+                except CacheMissForbidden as e:
+                    log.info("repurpose %s: no cached narration (%s) — "
+                             "cutting on the manifest's beats", job.ticker, e)
             checkpoint("repurpose")
             # A forty-minute cut has more than one good minute in it (P3.3).
             clips = repurpose_clips_from_long(
@@ -2018,7 +2116,7 @@ class BotCore:
             record = upload_video(
                 video, package, self.settings, publish_at=when,
                 workdate=ws.workdate,
-                chapters=self._chapter_pairs(ws, fmt),
+                chapters=self._chapter_pairs(ws, fmt, video),
                 duration_s=self._render_duration(ws, fmt, video),
                 # Both are written by every finished render and were handed
                 # to `deliver` and to nobody else (E7).
@@ -2107,11 +2205,15 @@ class BotCore:
             script, self.settings, ticker=ws.ticker,
             runtime_min=self._render_duration(ws, fmt, video) / 60.0)
 
-    def _chapter_pairs(self, ws: Workspace, fmt: str) -> list:
+    def _chapter_pairs(self, ws: Workspace, fmt: str, video=None) -> list:
         from pipeline.publish import normalise_chapters
 
         script = ws.load_long() if fmt == "long" else None
-        return normalise_chapters(getattr(script, "chapters", "") or "")
+        # The rendered duration, so a chapter the cut left behind the end of
+        # the video is dropped rather than shipped — YouTube renders no
+        # chapter list at all when one is out of range.
+        return normalise_chapters(getattr(script, "chapters", "") or "",
+                                  self._render_duration(ws, fmt, video))
 
     def _byproduct(self, ws: Workspace, kind: str) -> Path | None:
         """A by-product the render already wrote, if it is still there.
@@ -2747,7 +2849,12 @@ def build_application(settings: Settings, core: BotCore):
         op = parts[0]
         chat_id = update.effective_chat.id
         if op == "a" and len(parts) == 5:
-            reply = core.approve(parts[1], parts[2], parts[3], parts[4])
+            # Approve re-runs the gate battery now, which reads the workbook
+            # and the screengrabs off disk — seconds, not milliseconds — so
+            # it goes off the loop like the pastes above (F2).
+            await _send(update, Reply("⏳ re-checking before approval…"))
+            reply = await asyncio.to_thread(
+                core.approve, parts[1], parts[2], parts[3], parts[4])
         elif op == "x" and len(parts) == 4:
             reply = core.cancel_approval(parts[1], parts[2], parts[3])
         elif op == "w" and len(parts) == 3:

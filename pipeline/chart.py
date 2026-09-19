@@ -34,6 +34,7 @@ import logging
 import math
 import random
 from dataclasses import dataclass
+from pathlib import Path
 
 from PIL import Image, ImageDraw
 

@@ -476,12 +476,6 @@ def render_long(
     # it is simply the room.
     room_cache: dict[tuple[str, str], Path] = {}
 
-    # Chapters are a TYPE and a TITLE. The title is the only thing that reaches
-    # the screen, and it comes from what the director wrote — not from a
-    # hardcoded list, which is how every video carried the same six section
-    # names regardless of what its sections actually were.
-    chapter_labels = [ch.title for ch in script.chapter_list]
-
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed
         # on purpose. Every caller below mixes a variant or a chapter title

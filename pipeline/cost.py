@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -44,10 +45,17 @@ def estimate_tts_usd(chars: int, settings: Settings) -> float:
 class SpendLedger:
     """Month-keyed spend/usage counters persisted to state/spend.json."""
 
+    # ONE LOCK FOR EVERY LEDGER IN THE PROCESS. It used to be per-instance,
+    # which protects nothing that matters: `BotCore` builds a ledger and
+    # hands it to `TTSEngine` and `ContentManager`, and any script that
+    # builds its own gets a second lock guarding the same file. A
+    # read-modify-write on one file needs one lock.
+    _LOCK = threading.RLock()
+
     def __init__(self, settings: Settings):
         self.settings = settings
         self.path: Path = settings.state_dir / "spend.json"
-        self._lock = threading.Lock()
+        self._lock = SpendLedger._LOCK
 
     # ------------------------------------------------------------- internals
     def _load(self) -> dict:
@@ -66,6 +74,55 @@ class SpendLedger:
 
     def _month(self, data: dict) -> dict:
         return data.setdefault(month_key(), {"tts_usd": 0.0, "pexels_calls": 0})
+
+    # ----------------------------------------------------------- reservations
+    #
+    # The cap used to be check-then-act: `guard_tts_spend` read the
+    # month-to-date, released the lock, and the generation it authorised
+    # recorded its spend minutes later. Two jobs could both read $40 of a $50
+    # cap and both proceed, and the ledger is the only hard stop in the
+    # system. The queue is one worker today, so nothing concurrent reached
+    # it — which is exactly the kind of thing that stops being true quietly.
+    #
+    # So a guard RESERVES what it is about to spend, under the same lock that
+    # writes, and the reservation counts against the cap until the generation
+    # that owns it finishes and releases it. `record_tts` is unchanged: real
+    # spend still lands per chunk, as it is billed.
+    #
+    # A reservation whose process died would otherwise eat cap headroom until
+    # the month rolled over, so each one carries the time it was taken and
+    # anything older than `_RESERVATION_TTL_S` is swept on the next read. No
+    # paid generation runs for an hour; one that appears to have been is a
+    # crash, not a job.
+    _RESERVATION_TTL_S = 3600.0
+
+    def _live_reservations(self, data: dict) -> list[dict]:
+        """This month's reservations, with the abandoned ones dropped."""
+        month = self._month(data)
+        now = datetime.now(timezone.utc).timestamp()
+        live = [r for r in month.get("reservations", [])
+                if isinstance(r, dict)
+                and now - float(r.get("at", 0) or 0) < self._RESERVATION_TTL_S]
+        if len(live) != len(month.get("reservations", [])):
+            month["reservations"] = live
+        return live
+
+    def reserved_usd(self) -> float:
+        """What is spoken for but not yet billed."""
+        with self._lock:
+            return round(sum(float(r.get("usd", 0.0) or 0.0)
+                             for r in self._live_reservations(self._load())), 4)
+
+    def release_reservation(self, token: str) -> None:
+        """Give back what a finished (or failed) generation did not spend."""
+        if not token:
+            return
+        with self._lock:
+            data = self._load()
+            month = self._month(data)
+            live = self._live_reservations(data)
+            month["reservations"] = [r for r in live if r.get("token") != token]
+            self._save(data)
 
     # ------------------------------------------------------------------ read
     def mtd_spend_usd(self) -> float:
@@ -132,22 +189,57 @@ class SpendLedger:
             return float(self._load().get(month_key(), {}).get("llm_usd", 0.0))
 
     def would_exceed(self, additional_usd: float) -> bool:
-        return self.mtd_spend_usd() + additional_usd > self.settings.monthly_spend_cap_usd
+        """Would this spend breach the cap, counting what is already claimed?
+
+        Reservations count. A job that has been authorised and is mid-
+        generation has not been billed yet, and treating its money as
+        available is how two jobs pass one cap.
+        """
+        with self._lock:
+            committed = self.mtd_spend_usd() + self.reserved_usd()
+        return committed + additional_usd > self.settings.monthly_spend_cap_usd
 
     # ----------------------------------------------------------------- gates
     def guard_tts_spend(self, chars: int) -> float:
         """Raise if the estimated TTS cost would blow the monthly cap.
 
-        Returns the estimate so callers can record it after success.
+        Returns the estimate so callers can record it after success. Prefer
+        `reserve_tts_spend`, which holds the headroom it just checked;
+        this stays for callers that only want the question answered.
+        """
+        est, token = self.reserve_tts_spend(chars)
+        self.release_reservation(token)
+        return est
+
+    def reserve_tts_spend(self, chars: int) -> tuple[float, str]:
+        """Check the cap and CLAIM the headroom. Returns `(estimate, token)`.
+
+        The claim and the check happen under one lock, so the answer cannot
+        go stale between them. The caller releases the token when the
+        generation is over, whether it spent or raised.
         """
         est = estimate_tts_usd(chars, self.settings)
-        if self.would_exceed(est):
-            raise SpendCapExceededError(
-                f"TTS for {chars} chars (~${est:.2f}) would exceed the monthly "
-                f"cap: ${self.mtd_spend_usd():.2f} spent of "
-                f"${self.settings.monthly_spend_cap_usd:.2f}."
-            )
-        return est
+        with self._lock:
+            data = self._load()
+            month = self._month(data)
+            live = self._live_reservations(data)
+            claimed = sum(float(r.get("usd", 0.0) or 0.0) for r in live)
+            spent = float(month.get("tts_usd", 0.0) or 0.0)
+            cap = self.settings.monthly_spend_cap_usd
+            if spent + claimed + est > cap:
+                raise SpendCapExceededError(
+                    f"TTS for {chars} chars (~${est:.2f}) would exceed the "
+                    f"monthly cap: ${spent:.2f} spent"
+                    + (f" and ${claimed:.2f} claimed by a job already running"
+                       if claimed else "")
+                    + f", of ${cap:.2f}."
+                )
+            token = uuid.uuid4().hex[:12]
+            month["reservations"] = live + [
+                {"token": token, "usd": est,
+                 "at": datetime.now(timezone.utc).timestamp()}]
+            self._save(data)
+        return est, token
 
     def check_pexels_budget(self) -> None:
         if self.pexels_calls_this_month() >= self.settings.pexels_monthly_call_cap:

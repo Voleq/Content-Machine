@@ -420,3 +420,84 @@ def test_the_command_routes_reconciled_and_refuses_anything_else(settings):
         out = core.cost_reply(typo).text
         assert out.startswith("usage:"), f"{typo} was not refused: {out}"
         assert "Month-to-date" not in out
+
+
+# --------------------------------------------------------------------------
+# Reservations.
+#
+# The cap is the only hard stop in this system, and it used to be
+# check-then-act: `guard_tts_spend` read the month-to-date, let the lock go,
+# and the generation it authorised recorded its spend minutes later. Nothing
+# concurrent reaches it today — one queue worker — which is exactly why these
+# tests exist: the defect is invisible until the day it is not.
+# --------------------------------------------------------------------------
+
+
+def test_a_reservation_counts_against_the_cap_before_it_is_spent(settings):
+    """The second job must not be authorised against the first job's money."""
+    settings = settings.model_copy(update={"monthly_spend_cap_usd": 1.0})
+    ledger = SpendLedger(settings)
+    chars = int(0.6 / settings.tts_usd_per_1k_chars * 1000)
+
+    est, token = ledger.reserve_tts_spend(chars)
+    assert est == pytest.approx(0.6, abs=0.01)
+    assert ledger.reserved_usd() == pytest.approx(est, abs=1e-4)
+    assert ledger.mtd_spend_usd() == 0.0, "a reservation is not a charge"
+
+    with pytest.raises(SpendCapExceededError) as e:
+        ledger.reserve_tts_spend(chars)
+    assert "already running" in str(e.value)
+
+    ledger.release_reservation(token)
+    assert ledger.reserved_usd() == 0.0
+    ledger.reserve_tts_spend(chars)  # the headroom came back
+
+
+def test_a_released_reservation_leaves_the_real_spend_alone(settings):
+    """Release gives back the CLAIM. What was billed is already recorded."""
+    ledger = SpendLedger(settings)
+    _est, token = ledger.reserve_tts_spend(1000)
+    ledger.record_tts(0.25)
+    spent = ledger.mtd_spend_usd()
+    ledger.release_reservation(token)
+    assert ledger.mtd_spend_usd() == spent
+    assert ledger.reserved_usd() == 0.0
+
+
+def test_an_abandoned_reservation_does_not_eat_the_cap_forever(settings):
+    """A process killed mid-generation leaves its claim behind. Without a
+    sweep that claim holds cap headroom until the month rolls over."""
+    import json
+    from datetime import datetime, timezone
+
+    settings = settings.model_copy(update={"monthly_spend_cap_usd": 1.0})
+    ledger = SpendLedger(settings)
+    ledger.reserve_tts_spend(int(0.9 / settings.tts_usd_per_1k_chars * 1000))
+    assert ledger.reserved_usd() > 0.5
+
+    data = json.loads(ledger.path.read_text(encoding="utf-8"))
+    stale = datetime.now(timezone.utc).timestamp() - SpendLedger._RESERVATION_TTL_S - 1
+    for r in data[month_key()]["reservations"]:
+        r["at"] = stale
+    ledger.path.write_text(json.dumps(data), encoding="utf-8")
+
+    assert ledger.reserved_usd() == 0.0
+    ledger.reserve_tts_spend(1000)  # and the cap is usable again
+
+
+def test_the_guard_still_answers_the_question_without_holding_the_money(settings):
+    """`guard_tts_spend` keeps its old contract for callers that only ask."""
+    ledger = SpendLedger(settings)
+    est = ledger.guard_tts_spend(1000)
+    assert est == pytest.approx(estimate_tts_usd(1000, settings))
+    assert ledger.reserved_usd() == 0.0, "asking is not claiming"
+
+    small = settings.model_copy(update={"monthly_spend_cap_usd": 0.0001})
+    with pytest.raises(SpendCapExceededError):
+        SpendLedger(small).guard_tts_spend(100_000)
+
+
+def test_every_ledger_in_the_process_shares_one_lock(settings):
+    """`BotCore` builds one and hands it to the TTS engine and the b-roll
+    manager; a per-instance lock guards nothing when the file is shared."""
+    assert SpendLedger(settings)._lock is SpendLedger(settings)._lock

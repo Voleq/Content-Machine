@@ -493,7 +493,14 @@ class IdeaQueue:
         return n
 
     def ranked(self, limit: int = 10, *, include_seen: bool = False) -> list[Idea]:
-        out = [Idea(**r) for r in self._all()]
+        # Unknown keys dropped, as `ThesisBook.get` and `ConfessionLog` do.
+        # These files outlive the build that wrote them — a field added and
+        # then renamed leaves rows a newer build cannot splat — and the
+        # failure mode here is worse than a missing idea: a TypeError takes
+        # the whole queue down, and /ideas is how the operator finds work.
+        known = {f for f in Idea.__dataclass_fields__}
+        out = [Idea(**{k: v for k, v in r.items() if k in known})
+               for r in self._all() if isinstance(r, dict)]
         if not include_seen:
             out = [i for i in out if not i.seen]
         out.sort(key=lambda i: (-(i.score + _SOURCE_WEIGHT.get(i.source, 1.0)),
@@ -589,7 +596,10 @@ class BatchQueue:
         return item
 
     def pending(self) -> list[BatchItem]:
-        return [BatchItem(**r) for r in self._all() if not r.get("done_at")]
+        known = {f for f in BatchItem.__dataclass_fields__}
+        return [BatchItem(**{k: v for k, v in r.items() if k in known})
+                for r in self._all()
+                if isinstance(r, dict) and not r.get("done_at")]
 
     def mark_done(self, ticker: str, fmt: str, error: str = "") -> None:
         rows = self._all()

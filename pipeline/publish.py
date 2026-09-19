@@ -40,18 +40,41 @@ def _timestamp(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
-def _wrap(text: str) -> str:
+def _stamp_seconds(stamp: str) -> float:
+    """`mm:ss` or `hh:mm:ss` as seconds. Unreadable reads as 0."""
+    parts = [int(p) for p in re.split(r"[:.]", stamp.strip()) if p.isdigit()][:3]
+    if not parts:
+        return 0.0
+    while len(parts) < 3:
+        parts.insert(0, 0)
+    return parts[0] * 3600 + parts[1] * 60 + parts[2]
+
+
+def _wrap_lines(text: str) -> list[str]:
+    """Greedy wrap at `MAX_LINE`. LOSSLESS — every word comes back.
+
+    It used to end with `lines[:2]`, which silently DELETED the tail of any
+    cue that wrapped past two lines: a subtitle file, whose whole job is to
+    be a transcript of what was said, quietly missing the end of a sentence.
+    Two lines is still the readable maximum, but it is enforced where it can
+    be enforced without losing words — `group_cues` breaks a cue before it
+    needs a third line — rather than by throwing the words away here.
+    """
     if len(text) <= MAX_LINE:
-        return text
-    words, lines, cur = text.split(), [], ""
-    for w in words:
+        return [text]
+    lines, cur = [], ""
+    for w in text.split():
         if len(f"{cur} {w}".strip()) <= MAX_LINE or not cur:
             cur = f"{cur} {w}".strip()
         else:
             lines.append(cur)
             cur = w
     lines.append(cur)
-    return "\n".join(lines[:2])
+    return lines
+
+
+def _wrap(text: str) -> str:
+    return "\n".join(_wrap_lines(text))
 
 
 def group_cues(words: list[WordTimestamp]) -> list[tuple[float, float, str]]:
@@ -75,6 +98,16 @@ def group_cues(words: list[WordTimestamp]) -> list[tuple[float, float, str]]:
         bucket.clear()
 
     for i, w in enumerate(words):
+        # BREAK BEFORE THE WORD THAT OVERFLOWS, not after it. The length
+        # check below fires once the cue has ALREADY grown past what two
+        # lines hold, which is how text reached `_wrap` with a third line in
+        # it — and `_wrap` answered by deleting it. Asking the wrapper
+        # itself, rather than counting characters, is the only version of
+        # this that is actually true: 84 characters is two lines only when
+        # the words happen to break in the right places.
+        if bucket and len(_wrap_lines(
+                " ".join(x.word for x in bucket) + " " + w.word)) > 2:
+            flush()
         bucket.append(w)
         text_len = sum(len(x.word) + 1 for x in bucket)
         span = w.end - bucket[0].start
@@ -161,6 +194,14 @@ def normalise_chapters(chapters: str,
         out.append((m.group(1).strip(), rest, ctype))
     if out and not out[0][0].startswith("00:00"):
         out[0] = ("00:00", out[0][1], out[0][2])
+    # `duration_s` WAS ACCEPTED AND IGNORED. The trailer is written against
+    # the script, and the render is what decides how long the video actually
+    # is — a beat cut after the chapters were written leaves a chapter
+    # starting past the end, which YouTube answers by rendering NO chapter
+    # list at all. Dropping those is the difference between a list with a
+    # stale entry and no list.
+    if duration_s > 0:
+        out = [c for c in out if _stamp_seconds(c[0]) < duration_s]
     return out
 
 

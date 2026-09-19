@@ -39,6 +39,18 @@ class TTSError(Exception):
     pass
 
 
+class CacheMissForbidden(TTSError):
+    """A job that may only REUSE audio found none.
+
+    `/repurpose` cuts clips out of a LONG that is already rendered and paid
+    for, and its whole promise is that it costs nothing. It was keeping that
+    promise by probing `is_cached()` and then calling `synthesize()` — two
+    statements, with the paid tier on the other side of the gap. Passing
+    `cached_only=True` makes it one statement: the cache answers or this
+    raises, and no request is ever built.
+    """
+
+
 class PaidVoiceForbidden(TTSError):
     """A job that guarantees $0 tried to reach the paid voice.
 
@@ -422,7 +434,8 @@ class TTSEngine:
                 cdir, req_text, voice_id, model_id, vsettings, tier, spans)
 
     def synthesize(self, text: str, fmt: str, *, events=None,
-                   draft: bool = False, free_only: bool = False) -> TTSResult:
+                   draft: bool = False, free_only: bool = False,
+                   cached_only: bool = False) -> TTSResult:
         """text must be the CLEAN script (tags stripped). fmt: short|long.
 
         `events` carries the script's delivery direction ([BEAT], [SIGH],
@@ -437,6 +450,13 @@ class TTSEngine:
         `free_only=True` makes that a guarantee rather than a consequence: the
         call fails loudly instead of spending if the tier ever resolves to
         paid. Callers whose whole promise to the operator is "$0" pass it.
+
+        `cached_only=True` is the other shape of the same promise, for a
+        caller that wants audio it has ALREADY paid for and nothing else: a
+        cache hit returns, a miss raises `CacheMissForbidden`, and no voice
+        of any tier is generated. `free_only` cannot serve that job, because
+        a reuse of the paid tier's audio has to ask for the paid tier's
+        cache key.
         """
         if fmt not in ("short", "long"):
             raise ValueError(f"fmt must be short|long, got {fmt!r}")
@@ -470,6 +490,14 @@ class TTSEngine:
                 draft=tier == "local",
             )
 
+        if cached_only:
+            # After the cache probe and before anything that could generate.
+            raise CacheMissForbidden(
+                f"this job may only reuse audio it has already paid for, and "
+                f"there is none cached for this {fmt} at the {tier} tier. "
+                f"Nothing was generated and nothing was sent to ElevenLabs."
+            )
+
         cdir.mkdir(parents=True, exist_ok=True)
         chunks = chunk_text(text, self.settings.tts_chunk_chars)
         log.info("TTS generate: %s chars in %d chunk(s), tier=%s",
@@ -493,10 +521,19 @@ class TTSEngine:
             # total, blow the month? The RECORDING happens per chunk inside
             # `_generate_real`, because a nine-chunk LONG that dies on chunk
             # five has already been billed for five (A1).
-            self.ledger.guard_tts_spend(len(text))
-            chunk_files, chunk_words, cost_usd = self._generate_real(
-                chunks, voice_id, model_id, vsettings, cdir
-            )
+            # RESERVED, not merely checked: the headroom this job was just
+            # authorised for is held against the cap until the generation is
+            # over, so a second job cannot be authorised against money this
+            # one is about to spend.
+            _est, reservation = self.ledger.reserve_tts_spend(len(text))
+            try:
+                chunk_files, chunk_words, cost_usd = self._generate_real(
+                    chunks, voice_id, model_id, vsettings, cdir
+                )
+            finally:
+                # Whatever happened, the claim is over: what was actually
+                # billed is already in the ledger, chunk by chunk.
+                self.ledger.release_reservation(reservation)
 
         # stitch chunks: offset each chunk's word times by the exact summed
         # durations of prior chunks, and char offsets by prior chunk lengths

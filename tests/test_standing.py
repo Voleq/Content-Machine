@@ -953,3 +953,37 @@ def test_the_six_kinds_are_the_only_kinds():
     assert ScriptConfession(kind="Epistemic", text="x").kind == "epistemic"
     with pytest.raises(Exception):
         ScriptConfession(kind="sad", text="x")
+
+
+# --------------------------------------------------------------------------
+# Rows written by a build that is not this one.
+#
+# `ThesisBook.get` and `ConfessionLog.entries` already drop keys they do not
+# know; the idea queue and the batch queue splatted rows straight into their
+# dataclass. A field added and then renamed leaves rows that take the whole
+# queue down on a TypeError — and /ideas is how the operator finds work.
+# --------------------------------------------------------------------------
+
+
+def test_an_idea_row_from_a_newer_build_does_not_take_the_queue_down(settings):
+    q = IdeaQueue(settings)
+    q.add("EXMPL", "cheap on owner earnings", "manual")
+
+    rows = json.loads(q.path.read_text(encoding="utf-8"))
+    rows[0]["conviction"] = "a field this build has never heard of"
+    q.path.write_text(json.dumps(rows), encoding="utf-8")
+
+    got = q.ranked()
+    assert [i.ticker for i in got] == ["EXMPL"]
+    assert got[0].reason == "cheap on owner earnings"
+
+
+def test_a_batch_row_from_a_newer_build_does_not_take_the_queue_down(settings):
+    q = BatchQueue(settings)
+    q.add("EXMPL", "long")
+
+    rows = json.loads(q.path.read_text(encoding="utf-8"))
+    rows[0]["retry_of"] = "a field this build has never heard of"
+    q.path.write_text(json.dumps(rows), encoding="utf-8")
+
+    assert [b.ticker for b in q.pending()] == ["EXMPL"]

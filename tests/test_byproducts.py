@@ -369,3 +369,27 @@ def test_the_shortfall_is_written_into_the_manifest(settings, tmp_path):
     assert set(payload["shortfall"]) == {"thumbnails", "social", "end_screens"}
     for gap in payload["shortfall"].values():
         assert gap["made"] <= gap["found"]
+
+
+def test_a_backend_s_own_note_survives_the_credits(settings, tmp_path):
+    """`deliver` assigned `result.note`, which discards whatever the backend
+    had put there. No backend sets one today — and that is the kind of
+    harmless that stops being true the first time one wants to say "the 2 GB
+    file went to Drive instead"."""
+    from pipeline import delivery as dmod
+
+    artifact = tmp_path / "long_final.mp4"
+    artifact.write_bytes(b"video")
+
+    def _fake(art, ticker, workdate, s, extra):
+        return dmod.DeliveryResult(backend="local", link=str(art),
+                                   note="the backend had something to say")
+
+    original = dmod._local_deliver
+    dmod._local_deliver = _fake
+    try:
+        got = dmod.deliver(artifact, "EXMPL", "2026-09-19", settings)
+    finally:
+        dmod._local_deliver = original
+
+    assert "the backend had something to say" in got.note

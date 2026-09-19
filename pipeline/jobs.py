@@ -174,7 +174,12 @@ class RenderJobQueue:
             JobStatus.FAILED: "❌", JobStatus.CANCELLED: "🚫", JobStatus.INTERRUPTED: "⚡",
         }
         for j in recent:
-            line = f"{icons[j.status]} {j.ticker} {j.kind.value} — {j.status.value}"
+            # `.get`, because /status is the command an operator runs when
+            # something has gone wrong: a status this build has no icon for
+            # — a job record written by a newer one — must not be what makes
+            # the listing itself raise.
+            line = (f"{icons.get(j.status, '•')} {j.ticker} {j.kind.value} "
+                    f"— {j.status.value}")
             if j.detail:
                 line += f" ({j.detail})"
             if j.delivered_link:

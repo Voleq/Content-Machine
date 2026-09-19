@@ -95,3 +95,26 @@ def test_the_cooldown_scan_stops_at_the_first_date_in_the_window(settings):
     out = audited_tickers_since(settings, 7)
 
     assert out == {"NEWCO"}
+
+
+def test_the_cooldown_is_measured_on_the_same_calendar_the_folders_use(settings):
+    """Every directory here is named by `today_str()` — `date.today()`, the
+    operator's own day — and the cutoff was built from `utcnow()`. West of
+    UTC the two disagree for most of the day, so the screener's cooldown ran
+    a day long or a day short depending on the hour, and the string
+    comparison hid it by never parsing either side.
+    """
+    import datetime as dt
+
+    from pipeline.workspace import audited_tickers_since, today_str
+
+    edge = (dt.date.today() - dt.timedelta(days=7)).isoformat()
+    Workspace(settings, "EDGECO", edge).create()
+    Workspace(settings, "TODAYCO", today_str()).create()
+
+    assert "TODAYCO" in audited_tickers_since(settings, 7)
+    # The boundary day itself is inside a 7-day window and outside a 6-day one
+    # on ANY single calendar; what must not happen is the answer changing
+    # with the hour of the day.
+    assert "EDGECO" in audited_tickers_since(settings, 7)
+    assert "EDGECO" not in audited_tickers_since(settings, 6)

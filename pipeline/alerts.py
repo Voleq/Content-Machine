@@ -278,6 +278,10 @@ def in_quiet_hours(settings: Settings, now: datetime | None = None) -> bool:
 # --------------------------------------------------------------------------
 
 
+# When the numbers a `bmo` name puts out are public. US regular session.
+MARKET_OPEN = time(hour=9, minute=30)
+
+
 @dataclass
 class EarningsEntry:
     ticker: str
@@ -319,31 +323,65 @@ class EarningsCalendar:
         self._save(entries)
         return entry
 
+    @staticmethod
+    def _entry(row: dict) -> EarningsEntry:
+        """A row, with keys this build does not know dropped rather than
+        raised on — the same compatibility `ThesisBook.get` keeps."""
+        known = {f for f in EarningsEntry.__dataclass_fields__}
+        return EarningsEntry(**{k: v for k, v in row.items() if k in known})
+
     def get(self, ticker: str) -> EarningsEntry | None:
         row = self._all().get(ticker.upper())
-        return EarningsEntry(**row) if row else None
+        return self._entry(row) if isinstance(row, dict) and row else None
 
     def upcoming(self, within_days: int = 7,
                  today: date | None = None) -> list[EarningsEntry]:
         today = today or date.today()
         out: list[EarningsEntry] = []
         for row in self._all().values():
+            if not isinstance(row, dict):
+                continue
             try:
                 d = date.fromisoformat(str(row.get("date")))
             except (TypeError, ValueError):
                 continue
             if 0 <= (d - today).days <= within_days:
-                out.append(EarningsEntry(**row))
+                out.append(self._entry(row))
         return sorted(out, key=lambda e: e.date)
 
-    def due_alerts(self, today: date | None = None) -> list[Alert]:
+    def due_alerts(self, now: datetime | date | None = None) -> list[Alert]:
         """Pre- and post-print flags, each fired once.
 
         Two flags because they are two different videos: "reports after the
         close tonight" is a setup, "reported last night" is a reaction, and
         the second is the one that has to go out fast.
+
+        WHICH MEANS THE CLOCK MATTERS, and this used to work off a bare
+        date. Two ways that went wrong. A `bmo` name reports at 7am and the
+        numbers are public by the open, but the post-print flag waited for
+        `delta < 0` — the next calendar day — so the one alert whose whole
+        point is speed arrived a day late, with the setup alert the same
+        morning saying "reports before the open" about a print that had
+        already happened. And the day itself came from `poll_once` as a UTC
+        date, so after 8pm New York the calendar had already rolled over and
+        an `amc` print due tonight read as yesterday's.
+
+        So: the day is the day in the MARKET's timezone, and `bmo` flips to
+        the reaction at the open. A `date` is still accepted, and is read as
+        that day before the open — which is what a caller passing one means.
         """
-        today = today or date.today()
+        tz = _alert_tz(self.settings)
+        if now is None:
+            now = datetime.now(tz)
+        if isinstance(now, datetime):
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=tz)
+            now = now.astimezone(tz)
+            today, clock = now.date(), now.time()
+        else:
+            today, clock = now, time(0, 0)
+        after_open = clock >= MARKET_OPEN
+
         entries = self._all()
         out: list[Alert] = []
         changed = False
@@ -354,7 +392,22 @@ class EarningsCalendar:
                 continue
             delta = (d - today).days
             when = str(row.get("when") or "")
-            if delta == 0 and not row.get("flagged_pre"):
+            # A `bmo` print is out by the open; everything else is out the
+            # next day. The setup alert only makes sense while the print is
+            # still ahead, so it closes at the same moment.
+            reported = delta < 0 or (delta == 0 and when == "bmo" and after_open)
+            if reported and not row.get("flagged_post"):
+                out.append(Alert(ticker=ticker, kind="earnings",
+                                 headline="reported — the numbers are out",
+                                 detail="the fast one: /headline works too",
+                                 magnitude=2.0))
+                row["flagged_post"] = True
+                # The setup is moot now. Marking it keeps a name whose
+                # calendar entry is corrected backwards from announcing a
+                # print that has already been reported on.
+                row["flagged_pre"] = True
+                changed = True
+            elif delta == 0 and not reported and not row.get("flagged_pre"):
                 slot = {"bmo": "before the open", "amc": "after the close"}.get(
                     when, "today")
                 out.append(Alert(ticker=ticker, kind="earnings",
@@ -362,13 +415,6 @@ class EarningsCalendar:
                                  detail="worth having the angle ready",
                                  magnitude=1.0))
                 row["flagged_pre"] = True
-                changed = True
-            elif delta < 0 and not row.get("flagged_post"):
-                out.append(Alert(ticker=ticker, kind="earnings",
-                                 headline="reported — the numbers are out",
-                                 detail="the fast one: /headline works too",
-                                 magnitude=2.0))
-                row["flagged_post"] = True
                 changed = True
         if changed:
             self._save(entries)
@@ -408,8 +454,10 @@ def poll_once(settings: Settings, *, quotes: Iterable[dict] | None = None,
             candidates.append(a)
 
     candidates += [a for a in filings if a.ticker in watch]
+    # The DATETIME, not its UTC date: `due_alerts` needs the market clock to
+    # tell a print that has happened from one that is still hours away.
     candidates += EarningsCalendar(settings).due_alerts(
-        (now or datetime.now(timezone.utc)).date())
+        now or datetime.now(timezone.utc))
 
     # Highest-severity, then biggest, so a ticker's single allowed alert is
     # its most important one rather than whichever was evaluated first.
