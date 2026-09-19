@@ -551,7 +551,7 @@ def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int]
         lo, hi = INK_WEIGHT_BAND
         if solved > hi:
             warnings.append(
-                f"{key} solves to a {solved:.1f}-unit stroke against a legible "
+                f"{style} solves to a {solved:.1f}-unit stroke against a legible "
                 f"band of {lo}–{hi} — a smear over what it points at. Mark the "
                 f"figure rather than the sentence, or use the tight mark.")
         elif solved < lo:
@@ -561,7 +561,7 @@ def solve_mark(settings: Settings, style: str, target: tuple[int, int, int, int]
             # column. Naming the cause is the difference between a warning an
             # operator can act on and one they learn to scroll past.
             warnings.append(
-                f"{key} solves to a {solved:.1f}-unit stroke against a legible "
+                f"{style} solves to a {solved:.1f}-unit stroke against a legible "
                 f"band of {lo}–{hi} — the target is small enough that the mark "
                 f"arrives as a hairline. Mark a wider target, or give the beat "
                 f"the full frame.")

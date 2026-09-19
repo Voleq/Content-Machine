@@ -288,7 +288,12 @@ def _provenance(script, settings, workspace: Path, duration: float,
         if ticker:
             prices = get_price_history(ticker, settings)
 
-    shots = load_manifest(workspace) or []
+    # `load_manifest` returns the WHOLE manifest — ticker, form, accession,
+    # url and the shot list. Reading it as the shot list itself counted its
+    # five top-level keys as five shots and then walked them as dicts, so a
+    # workspace with any auto-pulled filing crashed this on `str.get`, after
+    # the encode and the paid voice were already spent.
+    shots = load_manifest(workspace).get("shots", []) or []
     filings = {"shots": len(shots)} if shots else {}
     refs = sorted({str(s.get("accession") or "") for s in shots
                    if s.get("accession")})
