@@ -781,13 +781,24 @@ class Registry:
         # An hour the recent videos have already been shot at is a preference
         # to move off, on the same terms as a plate: the set changing hour
         # between videos is most of what makes two of them look different.
-        fresh = [h for h in hours
-                 if not any(self.room_hours.get(h, "") and
-                            k.endswith(self.room_hours.get(h, ""))
-                            for k in avoid)]
-        if avoid and fresh and len(fresh) < len(hours):
+        #
+        # Every room key belongs to exactly one hour — the one whose suffix
+        # it carries, or the BASE hour when it carries none. Deriving it that
+        # way rather than testing each suffix in turn is what keeps the base
+        # hour avoidable: it has no suffix, so a suffix test can never match
+        # it and `night` would have been unavoidable for ever.
+        used = {self._hour_of_key(k) for k in avoid if k.startswith("room/")}
+        fresh = [h for h in hours if h not in used]
+        if fresh and len(fresh) < len(hours):
             hours = fresh
         return random.Random(f"hour|{episode}").choice(hours)
+
+    def _hour_of_key(self, key: str) -> str:
+        """Which hour a room key is shot at. The base hour carries no suffix."""
+        for hour, suffix in self.room_hours.items():
+            if suffix and key.endswith(suffix):
+                return hour
+        return self.hour_rotation[0] if self.hour_rotation else ""
 
     def at_hour(self, stem: str, hour: str) -> str:
         """A room stem at `hour` — ``room/desk-front`` -> ``room/desk-front-dusk``.

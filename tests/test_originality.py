@@ -4,6 +4,12 @@ the sameness gate, and rotating the plates off what was just used."""
 from __future__ import annotations
 
 import json
+from pathlib import Path
+
+import pytest
+
+from config import Settings
+from pipeline.plates import Registry, load_plates
 
 from pipeline.corpus import (
     SAMENESS_BLOCK, SAMENESS_WARN, SAMENESS_WINDOW, sameness_check,
@@ -153,3 +159,59 @@ def test_the_rotation_line_scores_this_video_against_the_last_few(settings):
 
     assert "100%" in same and "much the same look" in same
     assert "0%" in different and "different-looking" in different
+
+
+# ---------------------------------------- rotation, against the real registry
+
+
+@pytest.fixture(scope="module")
+def reg() -> Registry:
+    return load_plates(Settings(_env_file=None).assets_dir)
+
+
+def test_a_pose_recently_used_is_stepped_over_when_the_role_has_another(reg):
+    """The preference, doing its job: a role with alternatives moves off what
+    the last few videos used."""
+    role = next((r for r, keys in reg.host_roles.items()
+                 if len([k for k in keys if k in reg.assets]) > 1), "")
+    assert role, "this kit has no host role with a choice in it"
+
+    first = reg.host_for(role, seed="same-seed")
+    second = reg.host_for(role, seed="same-seed", avoid={first.key})
+
+    assert second is not None
+    assert second.key != first.key
+
+
+def test_rotation_never_fails_a_render_for_want_of_a_fresh_drawing(reg):
+    """A PREFERENCE, never a constraint. When everything has been used
+    recently, everything is back on the table and the seed decides as before
+    — a rotation that could fail a render would be worse than the sameness."""
+    role = next(iter(reg.host_roles))
+    everything = {k for k in reg.host_roles[role]}
+
+    assert reg.host_for(role, seed="s", avoid=everything) is not None
+    assert (reg.host_for(role, seed="s", avoid=everything).key
+            == reg.host_for(role, seed="s").key)
+
+
+def test_a_room_still_resolves_when_every_angle_was_just_used(reg):
+    role = next(iter(reg.room_roles))
+    everything = {reg.aspect_key(stem, "9x16") or stem
+                  for stem in reg.room_roles[role]}
+
+    assert reg.room_for(role, "9x16", seed="s", avoid=everything) is not None
+
+
+def test_the_base_hour_is_avoidable_like_any_other(reg):
+    """It carries no suffix, so a suffix test could never match it and the
+    set would have been stuck at one hour for ever."""
+    base = reg.hour_rotation[0]
+    at_base = {k for k in reg.assets
+               if k.startswith("room/") and reg._hour_of_key(k) == base}
+
+    assert at_base, "the kit has no rooms at its own base hour"
+    # With only one hour in the rotation there is nowhere else to go, and
+    # falling back to it is the preference behaving correctly.
+    picked = reg.hour_for("AAPL", avoid=at_base)
+    assert picked == base if len(reg.hour_rotation) == 1 else picked != base
