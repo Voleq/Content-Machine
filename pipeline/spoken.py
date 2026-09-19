@@ -1,11 +1,12 @@
-"""Figures as they are SAID, not as they are typed.
+"""Figures and terms as they are SAID, not as they are typed.
 
-Nothing in the pipeline normalises numbers, and neither writing prompt asked
-for spoken-form figures. It has worked so far by convention — the bible's own
-examples happen to be written that way ("fifty-nine point six", "a hundred and
-sixty-two percent") — and a convention is not a guarantee. One `$1,234.56`
-reaching the voice is read wrong, out loud, on a figure the on-screen
-fact-check gate has already verified: two verification systems that never meet.
+Both writing prompts now carry the rule in full — `master_prompt_short.md`
+rule 11 and `master_prompt_long_write.md` — so a script normally arrives with
+its figures already spelled for the voice. A prompt is an instruction to a
+model, though, not a guarantee, and one `$1,234.56` that slips through is read
+wrong out loud on a figure the on-screen fact-check gate has already verified:
+two verification systems that never meet. This module is the backstop under
+the prompts.
 
 This is the spelling half of that, and only the spelling half. What the number
 IS remains `pipeline.gates.fact_check`'s question; this answers how it should
@@ -13,6 +14,11 @@ be written so the voice says it the way a person would. It is deliberately not
 wired into the TTS path: silently rewriting a script before it is spoken would
 put words in the narration that nobody read, and the writer is the one who
 should hear it. `voice_lint` warns and suggests; the writer decides.
+
+Two kinds of defect live here. `eye_written_figures` covers the four a figure
+has — a currency symbol, a percent sign, a thousands comma, a decimal point.
+`eye_written_terms` covers the abbreviations a financial script is full of,
+where the eye reads "YoY" and the voice says "yoy".
 
 The register is the bible's: British "and" in the hundreds, "a hundred" rather
 than "one hundred" where it leads, decimals read digit by digit after "point".
@@ -164,3 +170,86 @@ def eye_written_figures(text: str) -> list[tuple[str, str]]:
             continue
         out.append((m.group(0).strip(), _spoken(m)))
     return out
+
+
+# --------------------------------------------------------------------------
+# Terms as they are said.
+# --------------------------------------------------------------------------
+# The same rule as the figures, applied to the abbreviations a financial
+# script is made of. The table is not a glossary: an abbreviation belongs here
+# only when the voice says something DIFFERENT from what a person says. "IPO",
+# "CEO" and "ETF" are read out as letters by a person and by the voice alike,
+# so they are not defects and listing them would only make the check noise —
+# the same reasoning that leaves a bare integer alone above.
+#
+# What is left after that filter is three shapes: a slash the voice reads as
+# the word "slash", an ampersand it reads as "ampersand", and a lettered
+# abbreviation it tries to pronounce as a word ("YoY" comes out "yoy").
+_SAID_AS = {
+    # Comparisons, which are the two most common in this register.
+    "YoY": "year over year",
+    "QoQ": "quarter over quarter",
+    # Multiples. The slash is the defect; the expansion is how Dennis says it.
+    "P/E": "price to earnings",
+    "P/S": "price to sales",
+    "P/B": "price to book",
+    "EV/EBITDA": "enterprise value to EBITDA",
+    "EV/Sales": "enterprise value to sales",
+    # Measures a voice runs together rather than spelling out.
+    "EPS": "earnings per share",
+    "FCF": "free cash flow",
+    "ROIC": "return on invested capital",
+    "ROE": "return on equity",
+    "DCF": "discounted cash flow",
+    "CAGR": "compound annual growth rate",
+    "TAM": "total addressable market",
+    "YTD": "year to date",
+    "bps": "basis points",
+    # Ampersands. Covered by the general rule below too, but the expansion a
+    # person actually says is better than the mechanical "S G and A".
+    "SG&A": "selling, general and administrative",
+    "R&D": "research and development",
+    "M&A": "mergers and acquisitions",
+}
+
+# Filing names are deliberately absent, and they are the interesting absence.
+# "I've read the 10-K twice" is the opening line of the committed long
+# fixture — the script this repo holds up as the register done properly — so
+# a rule that flagged it would fire on the house style itself, which is how a
+# check gets switched off. The voice makes a passable job of it, and the
+# writer who wants "ten K" can type it.
+
+# Longest first so "EV/EBITDA" is not matched as "EV" would be, and bounded by
+# alphanumerics rather than \b, which does not behave around "&" and "/".
+_TERM_RE = re.compile(
+    r"(?<![A-Za-z0-9])(?:"
+    + "|".join(re.escape(t) for t in sorted(_SAID_AS, key=len, reverse=True))
+    + r")(?![A-Za-z0-9])")
+
+# Anything else joined by an ampersand — "AT&T", "S&P". Unlike a slash, the
+# substitution is mechanical and always right: the voice reads "&" as
+# "ampersand", and a person reads it as "and".
+_AMPERSAND_RE = re.compile(
+    r"(?<![A-Za-z0-9])[A-Za-z]+(?:&[A-Za-z]+)+(?![A-Za-z0-9])")
+
+
+def eye_written_terms(text: str) -> list[tuple[str, str]]:
+    """Every term in `text` written for the eye, as (as typed, as said).
+
+    Tickers are deliberately absent. A ticker is written in caps because that
+    is what it IS, there is no one spoken form to suggest — a voice may say
+    "EXMPL" as letters or as a word and both are defensible — and flagging
+    every one would fire on nearly every line of a stock script.
+    """
+    found: list[tuple[int, int, str, str]] = []
+    for m in _TERM_RE.finditer(text):
+        found.append((m.start(), m.end(), m.group(0), _SAID_AS[m.group(0)]))
+
+    covered = [(s, e) for s, e, _, _ in found]
+    for m in _AMPERSAND_RE.finditer(text):
+        if any(s <= m.start() and m.end() <= e for s, e in covered):
+            continue
+        found.append((m.start(), m.end(), m.group(0),
+                      m.group(0).replace("&", " and ")))
+
+    return [(raw, said) for _, _, raw, said in sorted(found)]
