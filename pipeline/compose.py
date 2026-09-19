@@ -33,7 +33,7 @@ Three things follow from the v2 kit that did not hold under the old one:
   number. The kit ships 270 plates: 260 `loop`, 7 `overlay` and 3 `static`,
   and the three are furniture — `overlays/row-band` and the two lower thirds.
 
-  THE ARGUMENT WAS NOT ABANDONED, IT WAS MADE PER-MARK. `engine/build.js`
+  THE ARGUMENT WAS NOT ABANDONED, IT WAS MADE PER-MARK. `kit/engine/build.js`
   §1.5 turns the boil on for a data plate's FURNITURE — paper edge, corner
   wear, rule lines, hatch — while axes, series lines, figures and cells emit
   the identical path they emitted at boil 0, bit for bit. The frame breathes;
@@ -698,10 +698,17 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     # surface the camera was above. A framing has no floor line to pin, so the
     # beat survives as the close-up it should probably have been — which is
     # branching on the refusal rather than reading it as an omission.
+    #
+    # `framing_for` RATHER THAN `host_for`, and the difference is the whole
+    # point of the branch. `host_for` returns any member of the role; the role
+    # served nothing but the two framings when this was written, and delta-15
+    # added `host/sitting-at-desk` to it — a cut-out with a floor line. From
+    # then on the "instead" could be exactly as unplaceable as the pose it
+    # replaced, while the substitution looked like it had done its job.
     if (plate is not None and plate.refuses_host
             and pose is not None and pose.floor_line_y):
-        instead = reg.host_for(HOST_WHERE_NOBODY_STANDS,
-                               seed=f"{seed}|{shot.id}")
+        instead = reg.framing_for(HOST_WHERE_NOBODY_STANDS,
+                                  seed=f"{seed}|{shot.id}")
         if instead is not None:
             log.debug("%s refuses a cut-out — %s is framed instead of %s",
                       plate.key, instead.key, pose.key)

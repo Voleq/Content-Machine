@@ -4732,6 +4732,23 @@
       key: o.key, w, h, seed: o.seed, pal: Object.assign({}, p, { ground: "none", grain: null }),
       meta: {
         aspect: w > h ? "16x9" : "9x16", family: "host", type: "empty-chair",
+        // `cutout` and `alpha` ADDED DOWNSTREAM, against the drop as shipped.
+        //
+        // Every other plate that composites over something declares both —
+        // hostFigure, the two framings, every annotation. This author declared
+        // neither, while its own dataPolicy on the next line says "alpha
+        // cut-out, no ground" and the Plate above is built with
+        // `ground: "none"`. So the drawing was always a cut-out and only the
+        // flag was missing, which is why nothing looked wrong: `alpha` has no
+        // reader in the render path at all, and the single thing that consults
+        // it is the check that every pose a host role serves is a cut-out.
+        // That check is right and it caught a real hole — `beat` was handing
+        // the compositor a plate that declared itself opaque.
+        //
+        // This is a correction to the vendor delivery, so it does not survive
+        // a drop. Re-apply it or, better, get it fixed upstream: the ingest's
+        // host-contract check will fail the build until one of the two happens.
+        cutout: true, alpha: true,
         dataPolicy: "alpha cut-out, no ground: it composites onto a room's host-anchor exactly as a figure does",
       },
     });

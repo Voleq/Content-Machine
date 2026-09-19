@@ -190,6 +190,35 @@ def pick_shot(reg: Registry, role: str, index: int = 0, *,
     return bank[index % len(bank)]
 
 
+def pick_framing(reg: Registry, role: str = "to-camera", index: int = 0, *,
+                 used: dict[str, int] | None = None) -> HostShot | None:
+    """The `index`-th FRAMING a role serves, or None if it serves none.
+
+    For the one situation that needs a camera distance rather than a figure:
+    a room that declares ``hostAnchor: false`` has no floor to stand anybody
+    on, so the beat survives as a shot of his face or it does not survive.
+
+    Asking `pick_shot` for a `to-camera` pose and using whatever comes back is
+    the same call ONLY while that role serves nothing but framings. It stopped
+    being true in delta-15, which added `host/sitting-at-desk` — a cut-out with
+    a floor line — to the role, so a caller could swap an unplaceable pose for
+    another unplaceable pose and look like it had handled the case.
+
+    A role is curation and can gain a member in any drop. `is_framing` is the
+    kit's own answer, off `floorLineY`, so this filters on the property rather
+    than trusting the role to keep its shape across a delivery.
+    """
+    bank = [s for s in shots(reg, role) if s.is_framing]
+    if used:
+        allowed = [s for s in bank
+                   if (cap := reg.host_limit(s.key)) is None
+                   or used.get(s.key, 0) < cap]
+        bank = allowed or bank
+    if not bank:
+        return None
+    return bank[index % len(bank)]
+
+
 def available(reg: Registry, role: str = "open") -> bool:
     """True when the registry can supply a pose for this role."""
     return bool(shots(reg, role))

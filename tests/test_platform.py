@@ -722,7 +722,7 @@ def test_the_materialised_kit_is_portable():
     """Every filename the registry names must be creatable on Windows.
 
     The engine writes these rather than an exporter, so the names come from
-    `engine/build.js` keys — but a key with a colon or a reserved stem in it
+    `kit/engine/build.js` keys — but a key with a colon or a reserved stem in it
     would still land as a file, and the render box is Windows.
     """
     from config import Settings

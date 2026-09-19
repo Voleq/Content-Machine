@@ -263,3 +263,111 @@ def test_room_tone_stays():
     assert (ROOT / "assets" / "sfx" / "room_tone.wav").exists()
     text = (ROOT / "pipeline" / "render_long.py").read_text(encoding="utf-8")
     assert "ROOM_TONE_NAME" in text and "ROOM_TONE_GAIN_DB" in text
+
+
+# --------------------------------------------------------------------------
+# The kit before this one. It is gone; keep it gone.
+# --------------------------------------------------------------------------
+
+# What the delivery two kits ago was made of. `862a5f9` replaced it with the
+# plate registry and removed most of it — these are the pieces that survived
+# that commit and sat in the tree for two deliveries, because nothing was
+# looking for them: none of it was imported, so no import broke; none of it was
+# in the repository map, and `test_the_repository_map_names_things_that_exist`
+# only checks the other direction.
+#
+# A register was one of four hand-drawn inks (`marker`, `ballpoint`,
+# `grease-pencil`, `cut-paper`) that the whole library was drawn in four times
+# over. This kit has one surface and asks for colour by ROLE, so the word
+# should not appear as an ink anywhere.
+_OLD_KIT_INK_REGISTERS = ("ballpoint", "grease-pencil", "cut-paper")
+
+# Files and directories from that delivery, by path.
+_OLD_KIT_PATHS = (
+    "engine/dennis-marker-ink.js",
+    "engine/dennis-long-ink.js",
+    "engine/dennis-parts-ink.js",
+    "engine/KIT_DELIVERY.md",
+    "assets/manifest.json",
+    "assets/fonts/ShantellSans-Regular.ttf",
+)
+
+# The five directories the old delivery wrote its artwork into. They are named
+# in `.gitattributes` history as LFS paths; a filter for a path nothing writes
+# silently LFS-ifies the day a future kit reuses one of the names.
+_OLD_KIT_ASSET_DIRS = ("marker", "ballpoint", "grease-pencil", "cut-paper",
+                       "light")
+
+
+def test_the_previous_kits_files_are_gone():
+    """Named individually, because a stale file reads as current.
+
+    `engine/` at the repository root was the whole of it: three ink engines and
+    a `KIT_DELIVERY.md` stating a contract — 476 entries, four registers,
+    `playback: "boil"` — that contradicts this kit's 270 / one surface /
+    `loop | overlay | static` point for point. Nothing imported it, so nothing
+    failed; but a dozen comments under `pipeline/` cite `engine/build.js` and
+    `engine/series.js` meaning `kit/engine/`, and a reader who followed one
+    landed in the dead directory, which has no `build.js` in it at all.
+    """
+    present = [p for p in _OLD_KIT_PATHS if (ROOT / p).exists()]
+    assert not present, f"the previous kit is back: {present}"
+    assert not (ROOT / "engine").exists(), (
+        "engine/ at the repository root is the kit before this one. The engine "
+        "this kit is built from is kit/engine/, and having both means every "
+        "`engine/…` reference in a comment is ambiguous")
+
+
+def test_no_asset_directory_from_the_previous_kit():
+    for name in _OLD_KIT_ASSET_DIRS:
+        assert not (ROOT / "assets" / name).exists(), (
+            f"assets/{name}/ is one of the old kit's four ink registers plus "
+            f"its light overlays — this kit draws one surface")
+
+
+def test_gitattributes_has_no_lfs_rule_for_a_path_nothing_writes():
+    """A filter pointing at a directory that does not exist is a trap.
+
+    It costs nothing until a future kit happens to reuse one of the names, at
+    which point its artwork is silently committed through LFS.
+    """
+    text = (ROOT / ".gitattributes").read_text(encoding="utf-8")
+    rules = [ln.strip() for ln in text.splitlines()
+             if ln.strip() and not ln.lstrip().startswith("#")]
+    stale = [r for r in rules
+             if any(f"assets/{d}/" in r for d in _OLD_KIT_ASSET_DIRS)]
+    assert not stale, f"LFS rules for directories that do not exist: {stale}"
+
+
+def test_no_ink_register_survives_in_the_pipeline():
+    """`pipeline/marks.py` carried the old palette for two deliveries.
+
+    Nine hex constants sourced from `assets/manifest.json` — a file gone since
+    `862a5f9` — and an `INK_FOR_REGISTER` map keyed on the four inks. Nothing
+    read any of it, which is exactly what let it survive: it read as live API,
+    it contradicted `pipeline/plates.py`'s "there is no hex literal anywhere in
+    `pipeline/`", and it was a paper-white palette one import away from a
+    renderer drawing on this kit's `night-card` ground.
+    """
+    hits = []
+    for folder in ("pipeline", "bot"):
+        for path in sorted((ROOT / folder).rglob("*.py")):
+            for i, line in enumerate(
+                    path.read_text(encoding="utf-8").splitlines(), 1):
+                # The comment recording the removal names them on purpose.
+                if line.lstrip().startswith("#"):
+                    continue
+                for reg in _OLD_KIT_INK_REGISTERS:
+                    if reg in line:
+                        hits.append(f"{path.relative_to(ROOT)}:{i}: {line.strip()}")
+    assert not hits, "an ink register from the old kit is back:\n  " + \
+        "\n  ".join(hits)
+
+
+def test_the_old_kit_search_would_actually_find_something():
+    """The three tests above pass trivially if the searches are broken."""
+    assert (ROOT / "kit" / "engine" / "build.js").exists(), \
+        "the search reads a real tree, and this kit's engine is kit/engine/"
+    assert "ballpoint" in _OLD_KIT_INK_REGISTERS
+    marks = (ROOT / "pipeline" / "marks.py").read_text(encoding="utf-8")
+    assert "marker_stroke" in marks, "marks.py is still the file being searched"

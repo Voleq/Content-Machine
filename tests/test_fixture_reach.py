@@ -37,7 +37,7 @@ from pipeline.tts import TTSEngine
 # tables, charts, figures, structure — because a figure that moves is a figure
 # being re-read", and the kit retracted that rule: 3 plates of 270 are static
 # and all 122 data-family plates loop. A data plate's FRAME breathes while its
-# axes and series stay pinned (engine/build.js §1.5), which is tested against
+# axes and series stay pinned (kit/engine/build.js §1.5), which is tested against
 # the delivered artwork in test_kit_ingest.py rather than inferred from a
 # playback flag here. The floor stays low because a short is a dozen shots.
 MIN_PLATES = 8
