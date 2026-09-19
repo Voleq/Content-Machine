@@ -394,18 +394,54 @@ def _num(raw: str) -> float | None:
         return None
 
 
+class ChartSlotError(RuntimeError):
+    """A data region whose plate offers no slot stem this code knows.
+
+    The ethos everywhere else in this pipeline is that a name resolving to
+    nothing fails the build rather than drawing an empty area —
+    `Registry.require` raises, `compose.build_layers` raises. This was the one
+    place that shrugged: `SERIES_SLOTS` maps a region to the slot stems it
+    reads, a kit that renamed a stem matched none of them, and the chart drew
+    its axes, its grid and its frame with no data path in it at all. Silently,
+    and with no test anywhere.
+    """
+
+
 def declared_series(plate: Plate, values: dict[str, str],
                     region: str) -> list[float | None]:
-    """The series a data region draws, read off the slots the director filled."""
-    for stem in SERIES_SLOTS.get(region, ()):
+    """The series a data region draws, read off the slots the director filled.
+
+    Raises when the plate declares NO slot for any stem this region knows —
+    that is a kit and renderer that disagree about what a chart is made of,
+    and it has to be loud. An empty list still comes back when the stems are
+    there and the director simply filled none of them: a chapter that names a
+    chart and gives it no figures is a script problem, and the gates are
+    where a script is refused.
+    """
+    stems = SERIES_SLOTS.get(region, ())
+    if not stems:
+        raise ChartSlotError(
+            f"no slot stems are known for the data region {region!r}. "
+            f"SERIES_SLOTS covers {', '.join(sorted(SERIES_SLOTS))} — either "
+            f"the kit renamed a region or this table is behind it")
+    found_any = False
+    for stem in stems:
         idx = sorted(
             (int(n.rsplit("-", 1)[1]), n) for n in plate.slots
             if n.startswith(f"{stem}-") and n.rsplit("-", 1)[1].isdigit())
         if not idx:
             continue
+        found_any = True
         series = [_num(values.get(n, "")) for _, n in idx]
         if any(v is not None for v in series):
             return series
+    if not found_any:
+        raise ChartSlotError(
+            f"{plate.key} draws a {region!r} region but declares no "
+            f"{'/'.join(f'{stem}-N' for stem in stems)} slots for it, so "
+            f"there is no path for the data onto the plate. A renamed stem "
+            f"in a new kit looks exactly like this, and used to draw an "
+            f"empty chart instead of saying so")
     return []
 
 

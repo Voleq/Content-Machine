@@ -52,7 +52,7 @@ import hashlib
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Protocol, Sequence
+from typing import Any, Collection, Protocol, Sequence
 
 from pipeline.plates import Plate, Registry
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
@@ -290,8 +290,14 @@ def _settings():
 
 def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
                  reg: Registry, *, aspect: str = "",
-                 seed: str = "") -> BuildResult:
-    """Turn the template and the script into the ordered layer list."""
+                 seed: str = "", avoid: "Collection[str]" = ()) -> BuildResult:
+    """Turn the template and the script into the ordered layer list.
+
+    `avoid` is what the last few renders already used. It steers the host and
+    framing picks off those where the kit offers an alternative, so two
+    consecutive videos do not open on the same pose — a preference the
+    registry drops the moment a role has nothing else to give.
+    """
     frame = fmt.frame
     fw, fh = frame
     aspect = aspect or getattr(fmt, "aspect", "") or ""
@@ -689,7 +695,8 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     # medium; hashed on the video's seed alone, every to-camera beat in a long
     # resolves to the same one of them and the other is never cut to at all.
     pose = (reg.get(role) if role in reg
-            else reg.host_for(role, seed=f"{seed}|{shot.id}"))
+            else reg.host_for(role, seed=f"{seed}|{shot.id}",
+                              avoid=avoid))
 
     # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The camera
     # is above the desk on `high-desk-down` and square to a wall of index cards
@@ -708,7 +715,7 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
     if (plate is not None and plate.refuses_host
             and pose is not None and pose.floor_line_y):
         instead = reg.framing_for(HOST_WHERE_NOBODY_STANDS,
-                                  seed=f"{seed}|{shot.id}")
+                                  seed=f"{seed}|{shot.id}", avoid=avoid)
         if instead is not None:
             log.debug("%s refuses a cut-out — %s is framed instead of %s",
                       plate.key, instead.key, pose.key)

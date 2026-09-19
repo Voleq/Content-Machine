@@ -71,6 +71,18 @@ class VideoRecord:
     chapters: list = field(default_factory=list)   # [(mm:ss, title), …]
     duration_s: float = 0.0
     retention: dict = field(default_factory=dict)
+    # THE DISCLOSURE RECEIPT (04). `build_body` declares synthetic media as a
+    # constant, and nothing ever checked that the declaration stuck. This is
+    # what the API said back: True, False, or None for "the response did not
+    # carry a status", which is not the same as a denial.
+    synthetic_declared: bool | None = None
+    # Two clips cut from one long, shipped as a pair (33). Empty on every
+    # ordinary upload. A field with a default reads a row written before it
+    # existed, which is why no migration was needed.
+    experiment: str = ""
+    clip_start_s: float = 0.0
+    # Corrections pinned after publication (06): [{"at": iso, "text": …}].
+    corrections: list = field(default_factory=list)
 
     def url(self) -> str:
         return f"https://youtu.be/{self.video_id}"
@@ -201,6 +213,8 @@ class YouTubeClient:
         self.settings = settings
         self._youtube: Any = None
         self._analytics: Any = None
+        # What the API said about the most recent upload's status (04).
+        self.last_upload_status: dict = {}
 
     def _credentials(self):
         try:
@@ -278,6 +292,11 @@ class YouTubeClient:
         vid = response.get("id")
         if not vid:
             raise UploadError(f"upload returned no video id: {response}")
+        # THE RESPONSE, KEPT (04). `build_body` sets `containsSyntheticMedia`
+        # and the caller only ever saw an id come back, so "we declared it"
+        # and "YouTube recorded the declaration" were the same sentence. They
+        # are not: a body field the API drops fails silently and for ever.
+        self.last_upload_status = dict(response.get("status") or {})
         if session is not None:
             session.clear(path)
         return vid
@@ -316,6 +335,26 @@ class YouTubeClient:
                               "topLevelComment": {"snippet":
                                                   {"textOriginal": text}}}},
         ).execute()
+
+    def append_description(self, video_id: str, extra: str) -> None:
+        """Add to a published video's description without losing what is there.
+
+        The Data API's update replaces the whole snippet, so the current one
+        has to be read first — an update that forgets this silently deletes
+        the chapters, the disclaimer and the transcript.
+        """
+        if self._youtube is None:
+            self._youtube = self._build("youtube", "v3")
+        resp = self._youtube.videos().list(
+            part="snippet", id=video_id).execute()
+        items = resp.get("items") or []
+        if not items:
+            raise UploadError(f"no video {video_id} to amend")
+        snippet = dict(items[0]["snippet"])
+        snippet["description"] = (
+            str(snippet.get("description", "")) + extra)[:DESCRIPTION_MAX]
+        self._youtube.videos().update(
+            part="snippet", body={"id": video_id, "snippet": snippet}).execute()
 
     def retention(self, video_id: str, start: str, end: str) -> list[dict]:
         """Relative audience retention rows: [{elapsed_ratio, watch_ratio}, …]."""
@@ -436,7 +475,9 @@ def upload_video(video: Path, package, settings: Settings, *,
                  duration_s: float = 0.0,
                  thumbnail: Path | None = None, captions: Path | None = None,
                  client: YouTubeClient | None = None,
-                 now: datetime | None = None) -> VideoRecord:
+                 now: datetime | None = None,
+                 experiment: str = "",
+                 clip_start_s: float = 0.0) -> VideoRecord:
     """Upload as private (or scheduled), pin the comment, record it.
 
     Never public on the way out: a scheduled publish is the most this will do
@@ -486,13 +527,23 @@ def upload_video(video: Path, package, settings: Settings, *,
         except Exception as e:  # noqa: BLE001 - the video is up; a comment is not
             log.warning("pinned comment failed for %s: %s", video_id, e)
 
+    declared = getattr(client, "last_upload_status", {}).get(
+        "containsSyntheticMedia")
+    if declared is False:
+        # Worth shouting about: the disclosure obligation attaches to the
+        # uploader whatever the file contains, and an upload that silently
+        # lost the flag is one YouTube will label for itself.
+        log.warning("youtube: %s came back WITHOUT the synthetic-media "
+                    "declaration — set it by hand on the watch page", video_id)
     record = VideoRecord(
         ticker=package.ticker, video_id=video_id, title=chosen,
         privacy="scheduled" if when else "private",
         publish_at=when.isoformat() if when else "",
         uploaded_at=(now or datetime.now(timezone.utc)).isoformat(),
         workdate=workdate, chapters=[list(c) for c in chapters],
-        duration_s=duration_s)
+        duration_s=duration_s,
+        synthetic_declared=(None if declared is None else bool(declared)),
+        experiment=experiment, clip_start_s=clip_start_s)
     VideoLog(settings).record(record)
     log.info("youtube: %s uploaded as %s%s", video_id, record.privacy,
              f" for {record.publish_at}" if when else "")
@@ -694,3 +745,110 @@ def chapter_type_evidence(settings: Settings) -> list[dict]:
             "titles": titles.get(k, [])}
            for k, v in totals.items() if v]
     return sorted(out, key=lambda r: r["avg_watch_ratio"])
+
+
+# --------------------------------------------------------------------------
+# Corrections (06) and the disclosure probe (05).
+# --------------------------------------------------------------------------
+
+
+def pin_correction(ticker: str, text: str, settings: Settings, *,
+                   video_id: str = "",
+                   client: "YouTubeClient | None" = None,
+                   now: datetime | None = None) -> str:
+    """Correct a figure on a video that has already shipped.
+
+    Twelve gates stop a wrong number before it goes out. None of them covers
+    the figure that was right on Tuesday and restated on Friday, and a finance
+    channel lives or dies on what it does next. So: a comment on the video, a
+    line appended to the description, and a row on the record — because a
+    correction nobody can find later is an apology, not a correction.
+
+    The comment is posted first and the description amended second. If the
+    description edit fails the correction is still public, which is the right
+    way round for the two to fail.
+    """
+    record = None
+    log_ = VideoLog(settings)
+    if video_id:
+        record = log_.get(video_id)
+    else:
+        for candidate in sorted(log_.for_ticker(ticker),
+                                key=lambda v: v.uploaded_at, reverse=True):
+            record = candidate
+            break
+    if record is None:
+        raise UploadError(
+            f"no uploaded video on record for {ticker.upper()} — "
+            f"/correct works on videos this bot uploaded")
+    stamp = (now or datetime.now(timezone.utc)).isoformat()
+    body = f"CORRECTION: {text.strip()}"
+    if settings.mock_mode:
+        log.info("mock: would pin a correction on %s: %s", record.video_id, body)
+    else:
+        client = client or YouTubeClient(settings)
+        client.comment(record.video_id, body)
+        try:
+            client.append_description(record.video_id, f"\n\n{body}")
+        except Exception as e:  # noqa: BLE001 — the comment is the correction
+            log.warning("correction posted, description not amended (%s)", e)
+    rows = list(record.corrections or [])
+    rows.append({"at": stamp, "text": text.strip()})
+    record.corrections = rows
+    log_.record(record)
+    return (f"Correction pinned on {record.title or record.video_id} "
+            f"({record.url()}).\n  {body}")
+
+
+def corrections_text(settings: Settings) -> str:
+    """Every correction ever issued, because the record is the point."""
+    rows = [(v, c) for v in VideoLog(settings).all()
+            for c in (v.corrections or [])]
+    if not rows:
+        return "No corrections issued. That is a record worth keeping true."
+    rows.sort(key=lambda r: r[1].get("at", ""), reverse=True)
+    lines = [f"📌 {len(rows)} correction(s)"]
+    for video, correction in rows[:12]:
+        lines.append(f"  {correction.get('at', '')[:10]}  {video.ticker:<6} "
+                     f"{correction.get('text', '')[:70]}")
+    return "\n".join(lines)
+
+
+def disclosure_probe(video: Path, package, settings: Settings, *,
+                     client: "YouTubeClient | None" = None) -> str:
+    """Upload one video UNLISTED with the synthetic-media box ticked, and say
+    what came back (05).
+
+    Where YouTube puts the AI label on this channel's output is an open
+    question: the prominent under-player treatment targets photorealistic
+    media, and unrealistic or animated content stays in the expanded
+    description — which is probably where chart-and-motion renders land, and
+    probably is not a word to run a channel on. One unlisted upload answers
+    it, and the answer is a property of the watch page rather than of the
+    file, so it has to be looked at rather than reasoned about.
+
+    The video is unlisted, never public and never scheduled: this is a probe,
+    and the thing being probed is what a viewer sees, not what an audience
+    sees.
+    """
+    if settings.mock_mode:
+        return ("Mock mode: no upload made. Run this with credentials to put "
+                "one unlisted video up and read the label off its watch page.")
+    client = client or YouTubeClient(settings)
+    body = build_body(package, title=f"[disclosure probe] {package.ticker}",
+                      settings=settings)
+    body["status"]["privacyStatus"] = "unlisted"
+    body["status"].pop("publishAt", None)
+    video_id = client.upload(video, body)
+    status = dict(getattr(client, "last_upload_status", {}))
+    declared = status.get("containsSyntheticMedia")
+    verdict = {True: "recorded", False: "DROPPED", None: "not reported"}[
+        None if declared is None else bool(declared)]
+    return "\n".join([
+        f"Probe uploaded unlisted: https://youtu.be/{video_id}",
+        f"  synthetic-media declaration: {verdict}",
+        "  Open the watch page and look: a label under the player is the "
+        "prominent treatment, one only in the expanded description is the "
+        "quiet one. That is the answer, and nothing in the API reports it.",
+        "  Delete the probe when you have looked.",
+    ])

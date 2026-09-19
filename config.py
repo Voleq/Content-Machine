@@ -223,6 +223,13 @@ class Settings(BaseSettings):
     usd_per_1k_chars: float | None = Field(default=None,
                                            alias="USD_PER_1K_CHARS")
     monthly_spend_cap_usd: float = Field(default=50.0, alias="MONTHLY_SPEND_CAP")
+    # A SOFT WEEKLY CEILING, PER LANE (12). The monthly cap is a hard stop
+    # that reports the problem once the month is already spent; a busy first
+    # week can eat it and the only notice is a refusal in week three. This
+    # warns instead — on the approval card, while there is still time to
+    # change the plan. Zero switches it off.
+    weekly_spend_warn_usd: float = Field(default=15.0,
+                                         alias="WEEKLY_SPEND_WARN")
 
     # ----------------------------------------------------------------- pexels
     pexels_api_key: str = ""
@@ -959,6 +966,7 @@ _SETTING_EXAMPLES: dict[str, str] = {
     "MOCK_SCREENER": "MOCK_SCREENER=false (true | false; unset follows MOCK_MODE)",
     "DELIVERY_BACKEND": "DELIVERY_BACKEND=gdrive   (gdrive | s3 | telegram | local)",
     "MONTHLY_SPEND_CAP": "MONTHLY_SPEND_CAP=50.0",
+    "WEEKLY_SPEND_WARN": "WEEKLY_SPEND_WARN=15.0  (0 disables the weekly warning)",
     "SHORT_MAX_CHARS": "SHORT_MAX_CHARS=1400",
     "LONG_MAX_CHARS": "LONG_MAX_CHARS=36000",
     "OPERATOR_CHAT_ID": 'OPERATOR_CHAT_IDS=["123456789"]   (note the S)',

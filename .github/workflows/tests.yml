@@ -1,0 +1,80 @@
+# The offline suite, on every push (21).
+#
+# There was no CI. Fifty-five test files ran when somebody remembered, and a
+# fresh environment reports a pile of failures that mean nothing — the kit is
+# a gitignored build product, ffmpeg is not preinstalled anywhere, and the
+# sample videos live in Git LFS. So "did this break anything" meant running
+# the suite on the base commit too and diffing the failure sets, by hand.
+#
+# All three of those are one-time setup costs, and the kit build is cached on
+# the hash of `kit/` — so a run that does not touch the kit reuses the plates
+# and the whole job is the suite.
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The fifteen hold tests read `samples/*.mp4`, which are LFS
+          # pointers without this and fail with misleading ffmpeg errors.
+          lfs: true
+
+      - name: ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Python dependencies
+        # `--ignore-installed` because a plain install trips over the
+        # distribution-owned `packaging` on Debian-family runners.
+        run: pip install --ignore-installed -r requirements.lock.txt
+
+      - name: Cache the ingested kit
+        id: kit-cache
+        uses: actions/cache@v4
+        with:
+          path: assets/plates
+          # Everything the plates are built FROM. A kit change misses and
+          # rebuilds; anything else hits and the ingest is skipped entirely.
+          key: plates-${{ hashFiles('kit/**', 'scripts/ingest_kit.py', 'scripts/kit_engine.js', 'package-lock.json') }}
+
+      - name: Node dependencies
+        if: steps.kit-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Check the kit's manifests against its engine
+        if: steps.kit-cache.outputs.cache-hit != 'true'
+        # An engine and manifests from different drops pass every test and
+        # then fail to render, because the tests read the build product.
+        run: node kit/scripts/emit_manifests.mjs --check
+
+      - name: Ingest the kit
+        if: steps.kit-cache.outputs.cache-hit != 'true'
+        # `--batched`: a single pass is OOM-killed on a runner this size.
+        run: python scripts/ingest_kit.py kit --batched
+
+      - name: Tests
+        env:
+          MOCK_MODE: "true"
+        run: python -m pytest tests/ -q --maxfail=0

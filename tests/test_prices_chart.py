@@ -313,3 +313,56 @@ def test_a_synthetic_series_blocks_a_final_render_outside_mock_mode(
     (cdir / f"{script.ticker}_{live.price_history_days}.json").write_text(
         good.to_json(), encoding="utf-8")
     assert check_prices(script, live, final=True) == []
+
+
+# --------------------------------------------------------------------------
+# A data region with no slot path is a build failure, not an empty chart.
+# --------------------------------------------------------------------------
+
+
+def test_a_region_this_code_does_not_know_is_refused():
+    from pipeline.chart import ChartSlotError, declared_series
+
+    class _P:
+        key = "charts/line"
+        slots = {"value-1", "value-2"}
+
+    with pytest.raises(ChartSlotError, match="no slot stems are known"):
+        declared_series(_P(), {}, "a-region-from-a-newer-kit")
+
+
+def test_a_plate_with_no_slots_for_its_region_is_refused():
+    """The silent failure this replaces: a renamed stem matched nothing, and
+    the chart drew its axes and its frame with no data path in it."""
+    from pipeline.chart import ChartSlotError, declared_series
+
+    class _P:
+        key = "charts/line-dense"
+        slots = {"datum-1", "datum-2"}          # the kit renamed the stem
+
+    with pytest.raises(ChartSlotError, match="declares no"):
+        declared_series(_P(), {"datum-1": "4"}, "path")
+
+
+def test_slots_that_exist_and_are_empty_are_a_script_problem_not_a_kit_one():
+    """An empty list still comes back when the stems are there and the
+    director filled none of them — that is the gates' business, not this."""
+    from pipeline.chart import declared_series
+
+    class _P:
+        key = "charts/line"
+        slots = {"value-1", "value-2"}
+
+    assert declared_series(_P(), {}, "path") == []
+
+
+def test_a_filled_series_comes_back_in_order():
+    from pipeline.chart import declared_series
+
+    class _P:
+        key = "charts/line"
+        slots = {"value-1", "value-2", "value-3"}
+
+    series = declared_series(_P(), {"value-1": "10", "value-2": "20",
+                                    "value-3": "30"}, "path")
+    assert series == [10.0, 20.0, 30.0]

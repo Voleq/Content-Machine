@@ -45,6 +45,9 @@ Excel; the refresh happens on the operator's own machine.)
 | Character budgets (`SHORT_MAX_CHARS=800`, `LONG_MAX_CHARS=22000`) rejected **before** any spend | parsers + `TTSEngine` |
 | Nothing paid before the operator taps **Approve** on the cost report | `bot/handlers.py` approval gate; approvals pin the script sha |
 | Monthly cap (`MONTHLY_SPEND_CAP=50`) blocks paid calls in code | `pipeline/cost.py` SpendLedger, checked inside `TTSEngine` |
+| The cap holds across PROCESSES, not just threads — a script run by hand while the bot is up cannot claim headroom the bot already reserved | `pipeline/cost.py` `_ProcessLock`, an advisory `flock` on `state/spend.lock` around every read-modify-write |
+| Every paid generation, and every generation the cache answered instead, leaves a row saying which video, which lane and which tier | `SpendLedger.record_tts` / `record_cache_hit`, read by `/cost explain` |
+| A data region whose plate declares no slot for it fails the build rather than drawing an empty chart | `pipeline/chart.py` `ChartSlotError`; the same rule `Registry.require` follows |
 | One final render per approved ticker | job queue + `/draft`; no variant generation exists |
 | A `/draft` never spends: free local voice, else the mock hum — never ElevenLabs | `TTSEngine.tier_for`; the tier is part of the cache key |
 | A `/proof` **cannot** spend — it raises at the boundary rather than reaching ElevenLabs, so $0 survives a mistyped command | `TTSEngine.guard_free_only` (`free_only=True`), asserted again immediately before the paid branch |
@@ -71,6 +74,8 @@ Excel; the refresh happens on the operator's own machine.)
 | Audio timestamps are the master clock (`ffprobe` + ElevenLabs alignment) | `pipeline/timeline.py` (pure, exhaustively tested) |
 | Screener is data-only, never spends, degrades gracefully | `pipeline/screener.py` |
 | Uploads are private or scheduled — never public from a machine | `pipeline/youtube.py` `build_body` |
+| The synthetic-media declaration is read back off the API response and recorded, so "we declared it" and "YouTube recorded it" are two separate facts | `pipeline/youtube.py` `upload_video`, `VideoRecord.synthetic_declared` |
+| Two consecutive videos are steered off the plates and the set hour the last three renders used, wherever the kit has an alternative — and never at the cost of failing a render | `pipeline/plates.py` `_prefer_unused`, `pipeline/reach.py` `recent_plates` |
 | Every free source degrades to "unavailable"; none can fail a run | `pipeline/sources.py` |
 | The status page binds loopback only (no auth, shows internals) | `pipeline/status_page.py` `serve` |
 
@@ -100,6 +105,10 @@ vendor or stale data went straight to the Approve button.
 | **valuation moves** | whether the valuation chapter goes from forward multiples straight to the reverse DCF without ever placing the subject against its peer set — move 3 of four, and the one it has always skipped | blocks |
 | **kit doctor** | unresolved plate names, slots a script left unfilled, and which plates no template, chapter type or renderer can reach | blocks on unresolved |
 | **skeptic** | an LLM read of the finished script as a hostile investor. Notes only, never offline | never |
+| **sameness** | this script against the last ten shipped, with the figures, tickers and names masked out so what is compared is the SCAFFOLDING. The voice linter refuses a construction used twice in one script; nothing compared one script to another, and repetition across a channel is the axis YouTube's inauthentic-content policy is written on | **blocks** past 60% shared phrasing — the same video with a different ticker |
+| **pacing** | words per second, sentence lengths, how long before the first figure lands, and the longest stretch carrying none. Computable from the script alone, before any spend, and none of it is something a writer can feel by reading their own draft | warns |
+| **loops** | whether a question is posed in the opening twenty seconds and whether the script ever comes back to it. An open loop that stays open is a promise the video breaks | warns |
+| **title** | whether the first thing anyone hears delivers what the title promised. A mismatch is the textbook thirty-second drop | warns |
 
 ---
 
@@ -727,6 +736,26 @@ only the human-facing summary in the chat body.
 | `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
+| `/correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. Twelve gates stop a wrong number before it goes out; this is for the one that was right on Tuesday and restated on Friday. |
+
+### Reading what the videos did
+
+Every command here is a read. None spends, none renders, none can fail a job.
+They exist because these measurements were already being taken and thrown
+away.
+
+| command | what it does |
+|---|---|
+| `/lines TICKER` | Where a published video lost them, **to the sentence**. Retention comes back as a ratio through the video; joined against the word timings the render already stored, it names the line. A chapter is twenty to ninety seconds and points at a paragraph. |
+| `/hooks [short\|long]` | Openers ranked by what they held over their own first five seconds, rather than by the whole video's average. An opener's job ends early and a video that loses people at the end did not fail at the top. |
+| `/shots TICKER` | Which shots of a published video lose people, and how long each of them runs. The half of the retention loop the renderer never heard. |
+| `/stillness TICKER` | Every stretch where the audio runs and the picture holds still for more than eight seconds. Read off the manifest, so it works offline and on a video that has never shipped. |
+| `/rules` | What the voice rules are worth, measured. Mean hold on sentences carrying a turn, a direction tag, a question, a figure — against those without. Every threshold in the linter was a judgement; this is where they argue back. |
+| `/runtime` | Hold against how long the videos run, per band. Sixty to seventy-five seconds for a short is an assumption in a spec, not a finding. |
+| `/said <phrase>` | Every earlier use of a line, across every script ever shipped. The voice bible's *no construction twice* rule could only ever see inside one script. |
+| `/experiments` | Clip pairs cut from one long and shipped as a pair, and which one held. Two clips off one render cost no voice generation — the only free experiment in the system, and the second one used to be thrown away. |
+| `/scoreboard [YYYY-Qn]` | What we said and what happened, for a quarter. Every number in it was already gathered for the video it came from. It leads with the calls that were wrong, deliberately. |
+| `/why TICKER [<your sentence>]` | Why this one is worth making, in your own words. Prints above Approve and rides the description. With no sentence it reads back what is recorded. |
 
 ### Finding the next one
 
@@ -746,6 +775,7 @@ only the human-facing summary in the chat body.
 |---|---|
 | `/batch [TICKER [fmt] \| run \| clear]` | Queues renders to run unattended overnight. Harmless when the machine is off — nothing expires. |
 | `/cost` | Month-to-date spend against the cap, and **how long ago anyone checked it against the provider**. Every figure is what Dennis believes it spent — chunks counted at the configured rate, against a cap enforced from that same number — so a drift is invisible from inside and the first symptom is a bill. |
+| `/cost explain` | Where the month went: per video, per tier, and what the sha-keyed cache answered for free. A month where the cache worked and a month where nothing was re-rendered used to read identically. |
 | `/cost reconciled` | Stamp today, after you have compared month-to-date against the ElevenLabs dashboard. It records a date and verifies nothing; it is worth exactly as much as the check you did. Past a month the line in `/cost` marks itself stale. |
 | `/kit doctor` | Unresolved tag keys, artwork nothing has ever used, PNGs with no registry entry. The gap list is the input to the next batch of art. |
 | `/help`, `/start` | The command list, in chat. |

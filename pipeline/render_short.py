@@ -833,8 +833,15 @@ def render_short(script, tts, workspace: Path, settings, *,
                           anchors if anchors is not None
                           else build_anchors(script))
 
+    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02). The seed alone makes
+    # two videos differ by chance; nothing stopped three in a row opening on
+    # the same pose in the same room. This steers off what is recent where
+    # the kit has an alternative, and is silently empty on a fresh install.
+    from pipeline.reach import recent_plates
+
     result = build_layers(fmt, spans, resolver, reg,
-                          aspect=fmt.aspect, seed=script.content_sha())
+                          aspect=fmt.aspect, seed=script.content_sha(),
+                          avoid=recent_plates(settings))
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s

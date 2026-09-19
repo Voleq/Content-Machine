@@ -1589,14 +1589,39 @@ class BotCore:
             # and the upload package. Best-effort — neither is worth losing a
             # completed render over.
             try:
-                from pipeline.publish import build_package, write_srt
+                from pipeline.publish import (
+                    build_package, group_cues, timestamps_from_cues,
+                    transcript_text, write_srt, write_transcript,
+                )
+                from pipeline.retention_lines import WORDS_FILE, write_words
 
                 extra.append(write_srt(tts.words, ws.path / f"{job.ticker}.srt"))
+                # The same clock unrounded, kept beside the video. Retention
+                # comes back as a ratio through the video and means nothing
+                # on its own; joined against these it names the sentence.
+                write_words(tts.words, ws.path / WORDS_FILE)
+                # The transcript and the timestamps (27): both derived from
+                # the timings that are already here, both free, and neither
+                # has ever reached the description.
+                extra.append(write_transcript(
+                    tts.words, ws.path / f"{job.ticker}.transcript.txt"))
+                cues = group_cues(tts.words)
                 pkg = build_package(script, self.settings, ticker=job.ticker,
-                                    runtime_min=tts.duration_s / 60.0)
+                                    runtime_min=tts.duration_s / 60.0,
+                                    transcript=transcript_text(tts.words),
+                                    timestamps=timestamps_from_cues(cues),
+                                    why=ws.why)
                 pkg_path = ws.path / "upload_package.txt"
                 pkg_path.write_text(pkg.render_text(), encoding="utf-8")
                 extra.append(pkg_path)
+                # The receipt for this video (25): the provenance the render
+                # already wrote, as a page a viewer can be pointed at.
+                from pipeline.companion import write_companion
+
+                page = write_companion(Path(manifest), self.settings,
+                                       why=ws.why)
+                if page:
+                    extra.append(page)
             except Exception:  # noqa: BLE001
                 log.exception("publishing by-products failed — delivering anyway")
             # The rest of the kit's by-products (P3.6): eight thumbnail
@@ -2427,6 +2452,161 @@ class BotCore:
             + self._mock_status_line()
         )
 
+    # ------------------------------------------- retention, scripts, receipts
+
+    def lines_text(self, args: list[str]) -> str:
+        """`/lines TICKER` — where a published video lost them, by sentence."""
+        from pipeline.corpus import Corpus
+        from pipeline.retention_lines import (
+            holds_for_video, line_report,
+        )
+        from pipeline.youtube import VideoLog
+
+        if not args:
+            return "usage: /lines TICKER"
+        ticker = args[0].upper()
+        records = VideoLog(self.settings).for_ticker(ticker)
+        if not records:
+            return (f"No uploaded video on record for {ticker}. "
+                    f"/lines reads retention off videos this bot uploaded.")
+        record = max(records, key=lambda v: v.uploaded_at)
+        narration = next(
+            (e.narration for e in Corpus(self.settings).entries
+             if e.ticker == ticker and e.workdate == record.workdate), "")
+        return line_report(holds_for_video(self.settings, record, narration))
+
+    def hooks_text(self, args: list[str]) -> str:
+        """`/hooks` — the openers that held, over their own first seconds."""
+        from pipeline.retention_lines import hook_bench_text
+
+        fmt = (args[0].lower() if args else "short")
+        return hook_bench_text(self.settings,
+                               fmt=fmt if fmt in ("short", "long") else "short")
+
+    def rules_text(self) -> str:
+        """`/rules` — what the voice rules are worth, measured."""
+        from pipeline.retention_lines import rule_evidence_text
+
+        return rule_evidence_text(self.settings)
+
+    def runtime_text(self) -> str:
+        """`/runtime` — hold against how long the videos run."""
+        from pipeline.retention_lines import runtime_evidence_text
+
+        return runtime_evidence_text(self.settings)
+
+    def shots_text(self, args: list[str]) -> str:
+        """`/shots TICKER` — which shots of a published video lose people."""
+        import json as _json
+
+        from pipeline.retention_lines import shot_holds, shot_report
+        from pipeline.youtube import VideoLog
+
+        if not args:
+            return "usage: /shots TICKER"
+        ticker = args[0].upper()
+        records = VideoLog(self.settings).for_ticker(ticker)
+        if not records:
+            return f"No uploaded video on record for {ticker}."
+        record = max(records, key=lambda v: v.uploaded_at)
+        ws = Workspace(self.settings, ticker, record.workdate)
+        manifests = sorted(ws.path.glob("*manifest*.json")) if ws.exists else []
+        if not manifests:
+            return (f"No render manifest left in {ticker}'s workspace — "
+                    f"cleanup prunes the heavy artefacts after "
+                    f"{self.settings.retention_days} days.")
+        try:
+            manifest = _json.loads(manifests[0].read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            return f"That manifest could not be read: {e}"
+        return shot_report(shot_holds(manifest, record.retention,
+                                      record.duration_s))
+
+    def stillness_text(self, args: list[str]) -> str:
+        """`/stillness TICKER` — how long the picture holds still.
+
+        Offline: this needs a manifest and nothing else, so it answers for a
+        video that has never been uploaded.
+        """
+        import json as _json
+
+        from pipeline.pacing import dead_air_report
+
+        if not args:
+            return "usage: /stillness TICKER"
+        ws = Workspace.latest_for(self.settings, args[0].upper())
+        manifests = sorted(ws.path.glob("*manifest*.json")) if ws else []
+        if not manifests:
+            return f"No render manifest for {args[0].upper()} to read."
+        try:
+            manifest = _json.loads(manifests[0].read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            return f"That manifest could not be read: {e}"
+        return dead_air_report(manifest)
+
+    def said_text(self, args: list[str]) -> str:
+        """`/said PHRASE` — have I used this line before?"""
+        from pipeline.corpus import Corpus
+
+        phrase = " ".join(args or [])
+        if not phrase.strip():
+            return "usage: /said some phrase you think you have used before"
+        hits = Corpus(self.settings, fresh=True).search(phrase)
+        if not hits:
+            return f"Nothing in the corpus says “{phrase}”. It is new."
+        lines = [f"🔁 {len(hits)} earlier use(s) of “{phrase}”"]
+        for entry, said in hits[:8]:
+            lines.append(f"  {entry.ticker} {entry.workdate}: {said[:90]}")
+        return "\n".join(lines)
+
+    def why_command(self, args: list[str]) -> str:
+        """`/why TICKER your sentence` — the human judgement, on the record."""
+        if not args:
+            return ("usage: /why TICKER why this one is worth making, in "
+                    "your own words")
+        ticker = args[0].upper()
+        ws = Workspace.latest_for(self.settings, ticker)
+        if ws is None or not ws.exists:
+            return f"No workspace for {ticker} — start one with /short or /long."
+        text = " ".join(args[1:]).strip()
+        if not text:
+            return (ws.why or
+                    f"Nothing recorded for {ticker} yet. "
+                    f"/why {ticker} <your sentence> records it.")
+        ws.set_why(text)
+        return (f"Recorded against {ticker} {ws.workdate}. It prints above "
+                f"Approve and rides the description.")
+
+    def experiments_reply(self) -> str:
+        """`/experiments` — the clip pairs, and which one held."""
+        from pipeline.experiments import experiments_text
+
+        return experiments_text(self.settings)
+
+    def scoreboard_reply(self, args: list[str]) -> str:
+        """`/scoreboard [YYYY-Qn]` — what we said, and what happened."""
+        from pipeline.scoreboard import scoreboard_text
+
+        return scoreboard_text(self.settings, args[0] if args else "")
+
+    def correct_command(self, args: list[str]) -> str:
+        """`/correct TICKER what was wrong` — after the video has shipped."""
+        from pipeline.youtube import UploadError, corrections_text, pin_correction
+
+        if not args:
+            return corrections_text(self.settings)
+        ticker = args[0].upper()
+        text = " ".join(args[1:]).strip()
+        if not text:
+            return f"usage: /correct {ticker} what the right number is"
+        try:
+            return pin_correction(ticker, text, self.settings)
+        except UploadError as e:
+            return f"⛔ {e}"
+        except Exception as e:  # noqa: BLE001
+            log.exception("correction failed")
+            return f"💥 the correction did not post: {e}"
+
     def cost_reply(self, args: list[str] | None = None) -> Reply:
         """`/cost` and its one subcommand.
 
@@ -2439,7 +2619,9 @@ class BotCore:
             return Reply(self.cost_text())
         if what in ("reconciled", "reconcile"):
             return Reply(self.mark_reconciled())
-        return Reply("usage: /cost  or  /cost reconciled")
+        if what in ("explain", "where", "breakdown"):
+            return Reply(self.ledger.explain_text())
+        return Reply("usage: /cost  |  /cost explain  |  /cost reconciled")
 
     def mark_reconciled(self) -> str:
         """`/cost reconciled` — stamp today against the ledger."""
@@ -2767,6 +2949,74 @@ def build_application(settings: Settings, core: BotCore):
     async def cmd_cost(update, ctx):
         await _send(update, core.cost_reply(ctx.args))
 
+    # THE RETENTION AND SCRIPT COMMANDS. Every one of these is a read: none
+    # spends, none renders, and none can fail a job. They exist because the
+    # measurements they print were being taken and thrown away.
+
+    @guard
+    async def cmd_lines(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.lines_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_hooks(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.hooks_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_rules(update, ctx):
+        import asyncio
+        await _send(update, await asyncio.to_thread(core.rules_text))
+
+    @guard
+    async def cmd_runtime(update, ctx):
+        import asyncio
+        await _send(update, await asyncio.to_thread(core.runtime_text))
+
+    @guard
+    async def cmd_shots(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.shots_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_stillness(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.stillness_text,
+                                        list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_said(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.said_text, list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_why(update, ctx):
+        await _send(update, core.why_command(list(ctx.args or [])))
+
+    @guard
+    async def cmd_experiments(update, ctx):
+        import asyncio
+        await _send(update, await asyncio.to_thread(core.experiments_reply))
+
+    @guard
+    async def cmd_scoreboard(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.scoreboard_reply,
+                                        list(ctx.args or []))
+        await _send(update, reply)
+
+    @guard
+    async def cmd_correct(update, ctx):
+        import asyncio
+        reply = await asyncio.to_thread(core.correct_command,
+                                        list(ctx.args or []))
+        await _send(update, reply)
+
     @guard
     async def cmd_kit(update, ctx):
         """`/kit doctor` — what the library cannot answer, and what nothing
@@ -2923,6 +3173,17 @@ def build_application(settings: Settings, core: BotCore):
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("cancel", cmd_cancel))
     app.add_handler(CommandHandler("cost", cmd_cost))
+    app.add_handler(CommandHandler("lines", cmd_lines))
+    app.add_handler(CommandHandler("hooks", cmd_hooks))
+    app.add_handler(CommandHandler("rules", cmd_rules))
+    app.add_handler(CommandHandler("runtime", cmd_runtime))
+    app.add_handler(CommandHandler("shots", cmd_shots))
+    app.add_handler(CommandHandler("stillness", cmd_stillness))
+    app.add_handler(CommandHandler("said", cmd_said))
+    app.add_handler(CommandHandler("why", cmd_why))
+    app.add_handler(CommandHandler("experiments", cmd_experiments))
+    app.add_handler(CommandHandler("scoreboard", cmd_scoreboard))
+    app.add_handler(CommandHandler("correct", cmd_correct))
     app.add_handler(CommandHandler("kit", cmd_kit))
     app.add_handler(CommandHandler("screen", cmd_screen))
     app.add_handler(CallbackQueryHandler(on_callback))

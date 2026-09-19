@@ -475,6 +475,13 @@ def render_long(
     # There is a real room now, in nine angles, and a beat with nothing else in
     # it is simply the room.
     room_cache: dict[tuple[str, str], Path] = {}
+    # WHAT THE LAST FEW VIDEOS ALREADY LOOKED LIKE (02): a preference to shoot
+    # this one somewhere else, including at a different hour, wherever the kit
+    # has somewhere else to offer. Empty on a fresh install, so nothing about
+    # a first render changes.
+    from pipeline.reach import recent_plates
+
+    _avoid_recent = recent_plates(settings)
 
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed
@@ -483,7 +490,7 @@ def render_long(
         # ANGLE and wrong for the HOUR. `episode` is the ticker alone, so the
         # set stays at one hour for the whole video while the angle rotates.
         return reg.room_for(role_name, aspect, seed=seed or script.ticker,
-                            episode=script.ticker)
+                            episode=script.ticker, avoid=_avoid_recent)
 
     def _room_still(variant: int, role_name: str = "talk") -> Path:
         """The room, as a still. The bottom layer when nothing else is on.

@@ -314,3 +314,50 @@ def test_the_clips_use_the_projects_encoder_profile(settings):
     assert 'encode_profile(settings, "short")' in src
     assert '"-c:v", "libx264"' not in src, \
         "the encoder is the project's choice, not this module's"
+
+
+# --------------------------------------------------------------------------
+# Cutting the clip by what people actually watched, not by cue density.
+# --------------------------------------------------------------------------
+
+
+def test_retention_replaces_the_density_guess_when_it_exists():
+    """Density says "where is the interesting minute"; once the long has been
+    watched, the peaks are not a guess at all."""
+    from pipeline.repurpose import pick_best_window
+
+    # Every cue sits early, so density would pick the opening — while the
+    # curve says the second half is what people stayed for.
+    cues = [{"t": float(t), "kind": "meme"} for t in range(0, 40, 5)]
+    retention = {"rows": [{"elapsed_ratio": i / 20, "watch_ratio": w}
+                          for i, w in enumerate(
+                              [0.2] * 10 + [0.9] * 11)]}
+
+    by_density, _ = pick_best_window(cues, 200.0, 58.0)
+    by_hold, _ = pick_best_window(cues, 200.0, 58.0, retention=retention)
+
+    assert by_density < 50.0
+    assert by_hold > by_density
+
+
+def test_with_no_retention_the_heuristic_is_unchanged():
+    from pipeline.repurpose import pick_best_window
+
+    cues = [{"t": float(t), "kind": "meme"} for t in range(0, 40, 5)]
+    assert (pick_best_window(cues, 200.0, 58.0)
+            == pick_best_window(cues, 200.0, 58.0, retention=None))
+
+
+def test_several_windows_can_be_picked_by_retention_too():
+    from pipeline.repurpose import pick_best_windows
+
+    cues = [{"t": float(t), "kind": "beat"} for t in range(0, 300, 10)]
+    retention = {"rows": [{"elapsed_ratio": i / 20, "watch_ratio": 1 - i / 25}
+                          for i in range(21)]}
+
+    windows = pick_best_windows(cues, 400.0, n=2, retention=retention)
+
+    assert len(windows) == 2
+    # Non-overlapping still holds — two clips are two moments.
+    (a_start, a_end), (b_start, b_end) = windows
+    assert a_end <= b_start or b_end <= a_start

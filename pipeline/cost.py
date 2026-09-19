@@ -9,12 +9,15 @@ approval flow in the bot is the human gate, this is the code gate.
 from __future__ import annotations
 
 import json
+import logging
 import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 from config import Settings
+
+log = logging.getLogger(__name__)
 
 
 class SpendCapExceededError(Exception):
@@ -23,6 +26,13 @@ class SpendCapExceededError(Exception):
 
 class BudgetExceededError(Exception):
     """A script exceeds its per-format character budget — no spend allowed."""
+
+
+def week_key(now: datetime | None = None) -> str:
+    """ISO year-week, so a week that straddles a month stays one week."""
+    now = now or datetime.now(timezone.utc)
+    year, week, _ = now.isocalendar()
+    return f"{year}-W{week:02d}"
 
 
 def month_key(now: datetime | None = None) -> str:
@@ -55,7 +65,10 @@ class SpendLedger:
     def __init__(self, settings: Settings):
         self.settings = settings
         self.path: Path = settings.state_dir / "spend.json"
-        self._lock = SpendLedger._LOCK
+        # Thread lock AND file lock: a second process shares neither the
+        # RLock nor the belief that it is the only one spending (11).
+        self._lock = _ProcessLock.for_path(
+            settings.state_dir / "spend.lock")
 
     # ------------------------------------------------------------- internals
     def _load(self) -> dict:
@@ -249,11 +262,112 @@ class SpendLedger:
             )
 
     # ---------------------------------------------------------------- record
-    def record_tts(self, usd: float) -> None:
+    def record_tts(self, usd: float, *, lane: str = "", ticker: str = "",
+                   chars: int = 0, tier: str = "") -> None:
+        """Real spend, as it is billed — and WHAT it was spent on (12, 13).
+
+        The totals alone answer "how much is left" and nothing else. Where
+        the month went, which lane is expensive, and how much the sha-keyed
+        cache saved are all questions the ledger had the rows for and never
+        kept. Each generation now leaves one, so `/cost explain` is a read
+        rather than an investigation.
+        """
         with self._lock:
             data = self._load()
-            self._month(data)["tts_usd"] = round(self._month(data)["tts_usd"] + usd, 4)
+            month = self._month(data)
+            month["tts_usd"] = round(month["tts_usd"] + usd, 4)
+            month.setdefault("events", []).append({
+                "at": datetime.now(timezone.utc).isoformat(),
+                "week": week_key(), "lane": lane, "ticker": ticker.upper(),
+                "chars": int(chars), "tier": tier, "usd": round(float(usd), 4)})
             self._save(data)
+
+    def record_cache_hit(self, chars: int, *, lane: str = "",
+                         ticker: str = "", tier: str = "") -> None:
+        """A paid generation that did not happen, because the sha matched.
+
+        Recorded as a row worth zero with the money it did NOT cost, because
+        the cache is one of the better things in this pipeline and it has
+        been completely invisible: a month where it worked and a month where
+        nothing was ever re-rendered read identically.
+        """
+        with self._lock:
+            data = self._load()
+            month = self._month(data)
+            month.setdefault("events", []).append({
+                "at": datetime.now(timezone.utc).isoformat(),
+                "week": week_key(), "lane": lane, "ticker": ticker.upper(),
+                "chars": int(chars), "tier": tier, "usd": 0.0,
+                "saved_usd": round(estimate_tts_usd(chars, self.settings), 4)})
+            self._save(data)
+
+    # ------------------------------------------------------------ the weekly
+    def weekly_usd(self, *, lane: str = "",
+                   week: str = "") -> float:
+        """Spend this week, optionally for one lane only."""
+        week = week or week_key()
+        with self._lock:
+            events = self._month(self._load()).get("events", [])
+        return round(sum(float(e.get("usd", 0.0) or 0.0) for e in events
+                         if e.get("week") == week
+                         and (not lane or e.get("lane") == lane)), 4)
+
+    def weekly_warning(self, lane: str = "") -> str:
+        """One line when this week is running hot, and nothing when it is not.
+
+        A warning, never a block: the hard stop is the month, and a week that
+        spends more than its share is a plan to look at rather than a rule
+        that was broken.
+        """
+        ceiling = float(getattr(self.settings, "weekly_spend_warn_usd", 0.0))
+        if ceiling <= 0:
+            return ""
+        spent = self.weekly_usd(lane=lane)
+        if spent < ceiling:
+            return ""
+        where = f" on the {lane} lane" if lane else ""
+        return (f"This week has spent ${spent:.2f}{where}, past the "
+                f"${ceiling:.2f} weekly mark. The monthly cap is "
+                f"${self.settings.monthly_spend_cap_usd:.2f} and "
+                f"${self.mtd_spend_usd():.2f} of it is gone.")
+
+    def explain_text(self) -> str:
+        """Where the month went, per video and per tier (13)."""
+        with self._lock:
+            month = self._month(self._load())
+        events = list(month.get("events", []))
+        spent = float(month.get("tts_usd", 0.0) or 0.0)
+        saved = sum(float(e.get("saved_usd", 0.0) or 0.0) for e in events)
+        cap = self.settings.monthly_spend_cap_usd
+        lines = [f"💷 {month_key()} — ${spent:.2f} of ${cap:.2f}"]
+        if not events:
+            lines.append("  No paid generation recorded this month. Either "
+                         "nothing shipped, or every script matched a cached "
+                         "sha and cost nothing.")
+            return "\n".join(lines)
+        by_video: dict[str, float] = {}
+        by_tier: dict[str, float] = {}
+        for event in events:
+            key = f"{event.get('ticker', '?')} {str(event.get('at', ''))[:10]}"
+            by_video[key] = by_video.get(key, 0.0) + float(
+                event.get("usd", 0.0) or 0.0)
+            tier = str(event.get("tier") or "unknown")
+            by_tier[tier] = by_tier.get(tier, 0.0) + float(
+                event.get("usd", 0.0) or 0.0)
+        lines.append("  By video")
+        for key, usd in sorted(by_video.items(), key=lambda r: -r[1])[:10]:
+            lines.append(f"    ${usd:6.2f}  {key}")
+        lines.append("  By tier")
+        for tier, usd in sorted(by_tier.items(), key=lambda r: -r[1]):
+            lines.append(f"    ${usd:6.2f}  {tier}")
+        hits = sum(1 for e in events if e.get("saved_usd"))
+        if hits:
+            lines.append(f"  The cache answered {hits} generation(s) that "
+                         f"would have cost ${saved:.2f}.")
+        weekly = self.weekly_warning()
+        if weekly:
+            lines.append(f"  ⚠ {weekly}")
+        return "\n".join(lines)
 
     def record_pexels_call(self) -> None:
         with self._lock:
@@ -269,6 +383,107 @@ class SpendLedger:
             month = self._month(data)
             month["llm_usd"] = round(month.get("llm_usd", 0.0) + float(usd), 4)
             self._save(data)
+
+
+
+class _ProcessLock:
+    """The thread lock, plus an advisory file lock across processes (11).
+
+    `SpendLedger._LOCK` makes the ledger safe inside one process. The
+    monthly cap is the only hard stop on spending in this system, and a
+    second PROCESS — a script run by hand while the bot is up, a second bot
+    started by accident, the render box and the VPS pointed at one state
+    directory — shared none of it: both could read $40 of a $50 cap and both
+    proceed.
+
+    `flock` on a lockfile beside the ledger closes that. Reentrant, because
+    the thread lock it wraps is an RLock and the reserve path nests: the
+    depth counter means the file is locked once at the outermost `with` and
+    released once on the way out.
+
+    Where `fcntl` does not exist — the Windows render box — this degrades to
+    the thread lock alone and says so once. That is exactly today's
+    behaviour, so nothing gets worse; it simply does not get better there.
+    """
+
+    # ONE LOCK PER LEDGER FILE, for the life of the process. Two instances
+    # would each open their own descriptor, and `flock` contends between
+    # descriptors even inside one process — so two ledgers built from the
+    # same settings would deadlock against each other rather than against a
+    # second process. Sharing the object keeps the invariant the in-process
+    # lock already had: one read-modify-write on one file, one lock.
+    _INSTANCES: "dict[str, _ProcessLock]" = {}
+    _REGISTRY_LOCK = threading.Lock()
+
+    @classmethod
+    def for_path(cls, path: Path) -> "_ProcessLock":
+        key = str(Path(path).absolute())
+        with cls._REGISTRY_LOCK:
+            got = cls._INSTANCES.get(key)
+            if got is None:
+                got = cls._INSTANCES[key] = cls(Path(path))
+            return got
+
+    def __init__(self, path: Path):
+        self.path = path
+        self._thread_lock = SpendLedger._LOCK
+        self._depth = 0
+        self._fh = None
+
+    def __enter__(self):
+        self._thread_lock.acquire()
+        self._depth += 1
+        if self._depth == 1:
+            self._acquire_file()
+        return self
+
+    def __exit__(self, *exc) -> bool:
+        self._depth -= 1
+        if self._depth == 0:
+            self._release_file()
+        self._thread_lock.release()
+        return False
+
+    def _acquire_file(self) -> None:
+        try:
+            import fcntl
+        except ImportError:                      # Windows: thread lock only
+            if not _ProcessLock._warned:
+                log.warning("no fcntl on this platform — the monthly cap is "
+                            "guarded within this process only")
+                _ProcessLock._warned = True
+            return
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self._fh = open(self.path, "a+")
+            fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
+        except OSError as e:                     # noqa: BLE001
+            # A lock that cannot be taken must not stop a render: the thread
+            # lock still holds, which is the guarantee that existed before.
+            log.warning("spend lock unavailable (%s) — falling back to the "
+                        "in-process lock", e)
+            self._close()
+
+    def _release_file(self) -> None:
+        if self._fh is None:
+            return
+        try:
+            import fcntl
+
+            fcntl.flock(self._fh.fileno(), fcntl.LOCK_UN)
+        except (ImportError, OSError):
+            pass
+        self._close()
+
+    def _close(self) -> None:
+        try:
+            if self._fh is not None:
+                self._fh.close()
+        except OSError:
+            pass
+        self._fh = None
+
+    _warned = False
 
 
 # ---------------------------------------------------------------------------

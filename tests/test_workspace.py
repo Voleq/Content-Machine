@@ -118,3 +118,15 @@ def test_the_cooldown_is_measured_on_the_same_calendar_the_folders_use(settings)
     # with the hour of the day.
     assert "EDGECO" in audited_tickers_since(settings, 7)
     assert "EDGECO" not in audited_tickers_since(settings, 6)
+
+
+def test_the_operator_s_own_sentence_survives_a_restart(settings):
+    """The human judgement behind a video lived in a prompt and evaporated.
+    It is on disk now, which is what the originality rule wants pointing at."""
+    ws = Workspace(settings, "AAPL", "2026-09-01").create()
+    assert ws.why == ""
+
+    ws.set_why("  Because the inventory line is the whole story.  ")
+
+    assert Workspace(settings, "AAPL", "2026-09-01").why == (
+        "Because the inventory line is the whole story.")

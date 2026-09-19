@@ -171,3 +171,86 @@ def test_a_duration_of_zero_is_not_an_answer():
     that must not read as "every chapter is out of range"."""
     raw = "00:00 a | A\n01:00 b | B\n02:00 c | C"
     assert len(normalise_chapters(raw, duration_s=0.0)) == 3
+
+
+# --------------------------------------------------------------------------
+# The transcript, the derived timestamps, and the operator's own sentence.
+# --------------------------------------------------------------------------
+
+
+def _words(text: str):
+    from pipeline.models import WordTimestamp
+
+    out, at = [], 0
+    for i, w in enumerate(text.split()):
+        start = text.index(w, at)
+        at = start + len(w)
+        out.append(WordTimestamp(word=w, start=i / 2.0, end=(i + 1) / 2.0,
+                                 char_start=start, char_end=at))
+    return out
+
+
+def test_the_transcript_is_the_narration_off_the_render_s_own_clock():
+    from pipeline.publish import transcript_text
+
+    assert transcript_text(_words("One two three.")) == "One two three."
+
+
+def test_the_transcript_is_written_beside_the_subtitles(tmp_path):
+    from pipeline.publish import write_transcript
+
+    out = write_transcript(_words("One two."), tmp_path / "A.transcript.txt")
+
+    assert out.read_text(encoding="utf-8").strip() == "One two."
+
+
+def test_timestamps_come_off_the_cues_when_there_is_no_chapter_trailer():
+    from pipeline.publish import timestamps_from_cues
+
+    cues = [(0.0, 2.0, "The opening"), (10.0, 12.0, "Skipped"),
+            (31.0, 33.0, "The next mark")]
+
+    stamps = timestamps_from_cues(cues, every_s=30.0)
+
+    assert [s[0] for s in stamps] == ["00:00", "00:31"]
+    assert stamps[1][1] == "The next mark"
+
+
+def test_a_short_gets_chapters_from_its_cues(settings, short_valid_json):
+    from pipeline.models import ShortScript
+    from pipeline.publish import build_package
+
+    script = ShortScript.model_validate_json(short_valid_json)
+    pkg = build_package(script, settings, ticker=script.ticker,
+                        timestamps=[("00:00", "The opening"),
+                                    ("00:30", "The turn")])
+
+    assert "Chapters" in pkg.description
+    assert "00:30 The turn" in pkg.description
+
+
+def test_the_operator_s_own_sentence_rides_the_description(settings,
+                                                           short_valid_json):
+    from pipeline.models import ShortScript
+    from pipeline.publish import build_package
+
+    script = ShortScript.model_validate_json(short_valid_json)
+    pkg = build_package(script, settings, ticker=script.ticker,
+                        why="Because the inventory line is the whole story.")
+
+    assert "Why this one" in pkg.description
+    assert "inventory line is the whole story" in pkg.description
+
+
+def test_a_transcript_too_long_for_the_description_is_left_out(settings,
+                                                              short_valid_json):
+    # A truncated transcript reads as a video that stops mid-sentence.
+    from pipeline.models import ShortScript
+    from pipeline.publish import build_package
+
+    script = ShortScript.model_validate_json(short_valid_json)
+    pkg = build_package(script, settings, ticker=script.ticker,
+                        transcript="word " * 3000)
+
+    assert "Transcript" not in pkg.description
+    assert len(pkg.description) < 5000
