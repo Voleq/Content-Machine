@@ -155,3 +155,77 @@ def test_veto_shot_removes_png_and_manifest_entry(settings, tmp_path):
     assert victim not in list_screenshots(tmp_path)
     # vetoing an already-gone shot is a no-op, not an error
     assert F.veto_shot(tmp_path, victim) is False
+
+
+# ------------------------------------------------- the manifest's own shape
+#
+# `load_manifest` returns the WHOLE manifest — ticker, form, accession, url
+# and `shots` — and two readers took it for the shot list itself. Both are
+# exercised here WITHOUT a browser, which is why neither was caught: the veto
+# test above needs Chromium and skips on any box that has none.
+
+def _hand_written_manifest(workspace, n: int = 2) -> list[str]:
+    """A manifest and its PNGs, built by hand so no browser is needed."""
+    names = [f"filing_{i}.png" for i in range(1, n + 1)]
+    for name in names:
+        (workspace / name).write_bytes(b"not really a png")
+    F._manifest_path(workspace).parent.mkdir(parents=True, exist_ok=True)
+    F._manifest_path(workspace).write_text(json.dumps({
+        "ticker": "EXMPL",
+        "form": "10-K",
+        "accession": "0001234567-26-000012",
+        "url": "https://www.sec.gov/Archives/edgar/data/1234567/x.htm",
+        "shots": [{"name": name, "section": "Risk Factors",
+                   "accession": "0001234567-26-000012",
+                   "image": str(workspace / name)} for name in names],
+    }, indent=2), encoding="utf-8")
+    return names
+
+
+def test_the_provenance_record_counts_shots_not_manifest_keys(settings, tmp_path):
+    """The render's provenance block reads the shot list, not the manifest.
+
+    Reading the manifest as a list counted its five top-level keys as five
+    shots and then walked them as dicts — an AttributeError on `str.get`,
+    raised while writing the manifest, i.e. after the encode and after the
+    paid voice had already been spent.
+    """
+    from pipeline.render_long import _provenance
+
+    workspace = tmp_path / "EXMPL" / "2026-09-19"
+    workspace.mkdir(parents=True)
+    _hand_written_manifest(workspace, n=2)
+
+    class _Script:
+        ticker = "EXMPL"
+        events: list = []
+        narration = "Nothing here draws a price chart."
+
+        def events_of(self, *_types):
+            return []
+
+    record = _provenance(_Script(), settings, workspace, 12.0, [], None,
+                         draft=False, proof=False)
+    assert record.filings["shots"] == 2
+    assert record.filings["refs"] == ["10-K 0001234567-26-000012"]
+
+
+def test_the_veto_button_resolves_a_shot_by_index(settings, tmp_path):
+    """`fv|…|<i>` addresses the i-th shot; the manifest is not that list.
+
+    Indexing the manifest dict raised `KeyError: 0`, which the handler's own
+    except clause did not name — so every tap of a drop button came back as
+    an internal error and the crop stayed in.
+    """
+    from bot.handlers import BotCore
+
+    core = BotCore(settings)
+    workspace = settings.workspace_dir / "EXMPL" / "2026-09-19"
+    workspace.mkdir(parents=True)
+    names = _hand_written_manifest(workspace, n=2)
+
+    core.veto_filing(1, "EXMPL", "2026-09-19", "0")
+
+    assert not (workspace / names[0]).exists()
+    remaining = {s["name"] for s in F.load_manifest(workspace)["shots"]}
+    assert remaining == {names[1]}

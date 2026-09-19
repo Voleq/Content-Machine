@@ -1092,10 +1092,10 @@ class BotCore:
 
         ws = Workspace(self.settings, ticker, workdate)
         self.context.set(chat_id, ticker, workdate)
-        shots = load_manifest(ws.path) or []
+        shots = load_manifest(ws.path).get("shots", []) or []
         try:
             name = str(shots[int(index)].get("name", ""))
-        except (ValueError, IndexError, AttributeError):
+        except (ValueError, IndexError, KeyError, AttributeError):
             # An older button still carrying the filename, or a stale index.
             name = index
         removed = veto_shot(ws.path, name)
