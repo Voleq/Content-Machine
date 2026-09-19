@@ -2111,7 +2111,7 @@ class BotCore:
         # An explicit format, so a ticker with both, or a repurposed clip,
         # can be reached at all (E5). `/upload EXMPL short 2026-09-20`.
         wanted_fmt = ""
-        if rest and rest[0].lower() in ("short", "long", "clip"):
+        if rest and rest[0].lower() in ("short", "long", "clip", "pair"):
             wanted_fmt = rest.pop(0).lower()
         when_raw = " ".join(rest).strip()
         try:
@@ -2122,6 +2122,8 @@ class BotCore:
         ws = Workspace.latest_for(self.settings, ticker)
         if ws is None:
             return Reply(f"No workspace for {ticker}.")
+        if wanted_fmt == "pair":
+            return self._upload_pair(ws, when)
         fmt, video, why = self._upload_target(ws, wanted_fmt)
         if video is None:
             return Reply(why)
@@ -2160,6 +2162,67 @@ class BotCore:
         else:
             tail = "uploaded PRIVATE — publish it when you're ready"
         return Reply(f"📺 {ticker}: {tail}\n{record.url()}")
+
+    def _clip_start(self, clip: Path) -> float:
+        """Where in the long this clip was cut from, off its own sidecar."""
+        import json as _json
+
+        try:
+            info = _json.loads(
+                clip.with_suffix(".repurpose.json").read_text(encoding="utf-8"))
+            return float((info.get("window") or [0.0])[0])
+        except (OSError, ValueError, TypeError, IndexError):
+            return 0.0
+
+    def _upload_pair(self, ws: Workspace, when) -> Reply:
+        """`/upload TICKER pair` — ship two clips off one long, tagged (33).
+
+        The only free experiment in this pipeline. `/repurpose` has always cut
+        two or three non-overlapping windows and one of them shipped; the rest
+        were thrown away. Two clips off one render cost no voice generation,
+        no fetching and no new composition, and they differ in exactly one
+        thing — which minute of the argument they carry. So they go up as a
+        pair and `/experiments` compares them once both have views.
+        """
+        from pipeline.experiments import pair_id
+        from pipeline.youtube import (
+            UploadError, YouTubeUnavailable, available, upload_video,
+        )
+
+        clips = sorted(ws.path.glob("short_repurposed*.mp4"))
+        if len(clips) < 2:
+            return Reply(
+                f"Only {len(clips)} clip on file for {ws.ticker} — a pair "
+                f"needs two. /repurpose {ws.ticker} cuts up to three out of a "
+                f"finished LONG.")
+        ok, why = available(self.settings)
+        if not ok:
+            return Reply(f"⛔ can't upload from here: {why}")
+        tag = pair_id(ws.ticker, ws.workdate)
+        lines = [f"🅰🅱 {ws.ticker}: two clips off one render, tagged as a pair"]
+        for clip in clips[:2]:
+            package = self._upload_package(ws, "clip", clip)
+            if package is None:
+                return Reply("⛔ no upload package on file — re-render to "
+                             "build one.")
+            try:
+                record = upload_video(
+                    clip, package, self.settings, publish_at=when,
+                    workdate=ws.workdate,
+                    duration_s=self._render_duration(ws, "clip", clip),
+                    experiment=tag,
+                    clip_start_s=self._clip_start(clip))
+            except (UploadError, YouTubeUnavailable) as e:
+                # The first may already be up. Say so rather than implying
+                # neither went: an untagged single is still a shipped video.
+                return Reply("\n".join(lines + [f"⛔ the second failed: {e}"]))
+            except Exception as e:  # noqa: BLE001
+                log.exception("clip pair upload blew up")
+                return Reply("\n".join(lines + [f"💥 upload error: {e}"]))
+            lines.append(f"  at {self._clip_start(clip):.0f}s — {record.url()}")
+        lines.append("/experiments compares them once both have a day or two "
+                     "of views.")
+        return Reply("\n".join(lines))
 
     def scheduled_text(self) -> Reply:
         from pipeline.youtube import VideoLog

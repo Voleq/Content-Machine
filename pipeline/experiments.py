@@ -103,8 +103,8 @@ def experiments(settings: Settings) -> list[Experiment]:
 def experiments_text(settings: Settings) -> str:
     rows = experiments(settings)
     if not rows:
-        return ("No clip pairs shipped yet. `/repurpose TICKER --pair` cuts "
-                "two clips out of one long and tags them, which costs nothing "
-                "beyond the second upload and is the only free experiment "
-                "this pipeline has.")
+        return ("No clip pairs shipped yet. /repurpose cuts two or three clips out "
+                "of one long; /upload TICKER pair ships two of them tagged, "
+                "which costs nothing beyond the second upload and is the only "
+                "free experiment this pipeline has.")
     return "\n\n".join(e.line() for e in rows[:6])

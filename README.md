@@ -734,6 +734,7 @@ only the human-facing summary in the chat body.
 | command | what it does |
 |---|---|
 | `/upload TICKER [short\|long\|clip] [YYYY-MM-DD HH:MM]` | YouTube upload — private, or scheduled at that time. Never public. A format reaches either lane, or a repurposed clip. A bare date means `PUBLISH_HOUR` in `PUBLISH_TIMEZONE`, and a naive time is read in that zone rather than UTC. The thumbnail and the `.srt` go up with the video; a dropped upload resumes rather than starting a second one. |
+| `/upload TICKER pair` | Ships **two** repurposed clips off one long, tagged as a pair, so `/experiments` can compare them. Two clips off one render cost no voice generation and no new composition and differ in exactly one thing — which minute of the argument they carry. The second one used to be thrown away. |
 | `/scheduled` | What is queued to publish, and when. |
 | `/retention [TICKER]` | Per-chapter drop-off. No ticker aggregates the evidence across everything published. |
 | `/correct [TICKER <what was wrong>]` | Pins a correction on a video that has already shipped, amends its description and records it. No arguments lists every correction ever issued. Twelve gates stop a wrong number before it goes out; this is for the one that was right on Tuesday and restated on Friday. |
