@@ -151,6 +151,27 @@ def test_a_manifest_from_before_plates_were_recorded_is_skipped(settings):
     assert recent_plates(settings) == set()
 
 
+def test_a_render_does_not_rotate_away_from_itself(settings):
+    """A re-render of the same video reads its own previous manifest. Without
+    excluding it, the second pass steers off the plates the first pass used
+    and the same ticker on the same day comes out looking different every
+    time — which is how a resumed render lost its segment cache."""
+    _rendered(settings, "AAA", "2026-09-01", ["room/desk", "host/a"])
+    mine = settings.workspace_dir / "AAA" / "2026-09-01"
+
+    assert recent_plates(settings, exclude=mine) == set()
+    assert recent_plates(settings) == {"room/desk", "host/a"}
+
+
+def test_excluding_one_video_leaves_the_others_to_rotate_off(settings):
+    _rendered(settings, "AAA", "2026-09-01", ["room/desk"])
+    _rendered(settings, "BBB", "2026-09-02", ["room/wall"])
+
+    assert recent_plates(
+        settings, exclude=settings.workspace_dir / "BBB" / "2026-09-02"
+    ) == {"room/desk"}
+
+
 def test_the_rotation_line_scores_this_video_against_the_last_few(settings):
     _rendered(settings, "AAA", "2026-09-01", ["room/desk", "host/a"])
 

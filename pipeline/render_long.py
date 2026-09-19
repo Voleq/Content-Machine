@@ -481,7 +481,9 @@ def render_long(
     # a first render changes.
     from pipeline.reach import recent_plates
 
-    _avoid_recent = recent_plates(settings)
+    # `exclude` is this video's own workspace: a resumed or re-run render
+    # must not read its own last manifest and rotate away from itself.
+    _avoid_recent = recent_plates(settings, exclude=workspace)
 
     def _room_plate(role_name: str = "talk", seed: str = ""):
         # THE TICKER IS THE EPISODE, and it is passed separately from the seed

@@ -542,7 +542,7 @@ def test_a_second_process_cannot_claim_the_same_headroom(settings):
 
     with ledger._lock:
         # While it is held, a foreign descriptor cannot take it.
-        with open(lock_path, "a+") as other:
+        with open(lock_path, "a+", encoding="utf-8") as other:
             with pytest.raises(BlockingIOError):
                 fcntl.flock(other.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
 

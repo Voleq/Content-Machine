@@ -276,7 +276,8 @@ def _undrawn_beats(script, drawn: set[str]) -> list[str]:
 ROTATION_WINDOW = 3
 
 
-def recent_plates(settings, *, window: int = ROTATION_WINDOW) -> set[str]:
+def recent_plates(settings, *, window: int = ROTATION_WINDOW,
+                  exclude: "Path | str | None" = None) -> set[str]:
     """Every plate the last few renders actually put on screen.
 
     Read off the manifests, which is where `plates_used` has been recorded
@@ -285,6 +286,13 @@ def recent_plates(settings, *, window: int = ROTATION_WINDOW) -> set[str]:
     render from before this field existed — each simply contributes nothing.
     A rotation hint that cannot be built is a rotation hint that does not
     apply, never an error.
+
+    `exclude` is the workspace of the video being rendered, and a renderer
+    MUST pass it. Without it a re-render reads its own previous manifest and
+    steers away from the plates it just used, so the same ticker on the same
+    day comes out looking different every pass — which breaks the segment
+    cache, makes a resumed render redraw beats it already had, and makes a
+    proof no longer a proof of the thing that shipped.
     """
     import json
     from pathlib import Path
@@ -292,8 +300,11 @@ def recent_plates(settings, *, window: int = ROTATION_WINDOW) -> set[str]:
     base = Path(settings.workspace_dir)
     if not base.is_dir():
         return set()
+    skip = Path(exclude).resolve() if exclude else None
     found: list[tuple[float, set[str]]] = []
     for manifest in base.glob("*/*/*manifest*.json"):
+        if skip is not None and manifest.parent.resolve() == skip:
+            continue
         try:
             payload = json.loads(manifest.read_text(encoding="utf-8"))
             used = payload.get("plates_used")

@@ -495,7 +495,7 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         if shot.host:
             host_layer = _host_layer(reg, shot, plate, placed, frame, t0, t1,
                                      seed=seed, column=host_column,
-                                     graphic_side=graphic_side)
+                                     graphic_side=graphic_side, avoid=avoid)
             if host_layer is not None:
                 layers.append(host_layer)
 
@@ -678,7 +678,8 @@ def _host_layer(reg: Registry, shot: Shot, plate: Plate | None,
                 frame: tuple[int, int], t0: float, t1: float, *,
                 seed: str,
                 column: tuple[int, int, int, int] | None = None,
-                graphic_side: str = "") -> Layer | None:
+                graphic_side: str = "",
+                avoid: "Collection[str]" = ()) -> Layer | None:
     """The host, solved onto the room's anchor.
 
     THE ANCHOR'S HEIGHT IS HIS TARGET HEIGHT — never its width, which the

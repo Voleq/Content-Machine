@@ -455,7 +455,7 @@ class _ProcessLock:
             return
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
-            self._fh = open(self.path, "a+")
+            self._fh = open(self.path, "a+", encoding="utf-8")
             fcntl.flock(self._fh.fileno(), fcntl.LOCK_EX)
         except OSError as e:                     # noqa: BLE001
             # A lock that cannot be taken must not stop a render: the thread

@@ -841,7 +841,7 @@ def render_short(script, tts, workspace: Path, settings, *,
 
     result = build_layers(fmt, spans, resolver, reg,
                           aspect=fmt.aspect, seed=script.content_sha(),
-                          avoid=recent_plates(settings))
+                          avoid=recent_plates(settings, exclude=workspace))
 
     # A composition that breaks its own rules never reaches an encoder. This
     # is the check that the last renderer did not have: it shipped a 12.5s
