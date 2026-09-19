@@ -149,3 +149,23 @@ async def test_a_lost_queued_job_no_longer_blocks_the_ticker(settings):
     # Still refused while it is genuinely queued — but it is queued IN THIS
     # PROCESS now, so it will actually run.
     assert second._queue.qsize() == 1
+
+
+def test_a_status_this_build_has_no_icon_for_does_not_break_status(settings):
+    """/status is the command an operator runs when something has gone wrong,
+    and it indexed a dict by the job's status. A record written by a newer
+    build — one more status in the enum — made the listing itself raise."""
+    queue = RenderJobQueue(settings, executor=lambda job: "")
+    job = JobRecord(id="j1", ticker="EXMPL", kind=JobKind.RENDER_LONG,
+                    workdate="2026-09-19")
+    queue.store.save(job)
+
+    class _Unknown(str):
+        value = "quarantined"
+
+    stored = queue.store.load("j1")
+    object.__setattr__(stored, "status", _Unknown("quarantined"))
+    queue.store.all = lambda: [stored]
+
+    out = queue.status_text()
+    assert "EXMPL" in out and "quarantined" in out

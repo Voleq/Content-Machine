@@ -249,13 +249,13 @@ def test_both_sides_of_the_print_are_flagged_once_each(settings):
     cal = EarningsCalendar(settings)
     cal.set("EXMPL", "2026-07-29", "amc")
 
-    pre = cal.due_alerts(today=date(2026, 7, 29))
+    pre = cal.due_alerts(date(2026, 7, 29))
     assert len(pre) == 1 and "after the close" in pre[0].headline
-    assert cal.due_alerts(today=date(2026, 7, 29)) == [], "flagged twice"
+    assert cal.due_alerts(date(2026, 7, 29)) == [], "flagged twice"
 
-    post = cal.due_alerts(today=date(2026, 7, 30))
+    post = cal.due_alerts(date(2026, 7, 30))
     assert len(post) == 1 and "reported" in post[0].headline
-    assert cal.due_alerts(today=date(2026, 7, 30)) == []
+    assert cal.due_alerts(date(2026, 7, 30)) == []
 
 
 def test_a_malformed_calendar_row_is_skipped_not_fatal(settings):
@@ -263,7 +263,7 @@ def test_a_malformed_calendar_row_is_skipped_not_fatal(settings):
     cal.set("EXMPL", "2026-07-29")
     cal.path.write_text(json.dumps({"entries": {
         "EXMPL": {"ticker": "EXMPL", "date": "not-a-date", "when": ""}}}), encoding="utf-8")
-    assert cal.due_alerts(today=date(2026, 7, 30)) == []
+    assert cal.due_alerts(date(2026, 7, 30)) == []
     assert cal.upcoming(today=date(2026, 7, 30)) == []
 
 
@@ -422,3 +422,76 @@ def test_the_weekend_check_follows_the_market_too(settings):
 
     assert in_quiet_hours(wide, sunday_evening), \
         "it is Sunday in New York — no alerts, whatever the box thinks"
+
+
+def test_a_before_the_open_print_is_reported_the_same_morning(settings):
+    """The reaction alert is the one whose whole point is speed, and for a
+    `bmo` name it used to arrive a day late.
+
+    A company that reports at 7am is public by the open. The flag waited for
+    `delta < 0` — the next calendar day — so the morning of the print the
+    operator got "reports before the open" about numbers that were already
+    out, and the reaction alert landed after everyone else had covered it.
+    """
+    from zoneinfo import ZoneInfo
+
+    from pipeline.alerts import MARKET_OPEN
+
+    ny = ZoneInfo(settings.screen_timezone)
+    cal = EarningsCalendar(settings)
+    cal.set("EXMPL", "2026-07-29", "bmo")
+
+    before = datetime(2026, 7, 29, MARKET_OPEN.hour - 2, 0, tzinfo=ny)
+    pre = cal.due_alerts(before)
+    assert len(pre) == 1 and "before the open" in pre[0].headline
+
+    after = datetime(2026, 7, 29, MARKET_OPEN.hour + 1, 0, tzinfo=ny)
+    post = cal.due_alerts(after)
+    assert len(post) == 1 and "reported" in post[0].headline, \
+        "the numbers are out — this is the fast one"
+    assert cal.due_alerts(after) == [], "flagged twice"
+    assert cal.due_alerts(datetime(2026, 7, 30, 10, 0, tzinfo=ny)) == []
+
+
+def test_an_after_the_close_print_is_not_reported_before_it_happens(settings):
+    """The open is the `bmo` line only. An `amc` name reporting tonight is
+    still a setup at lunchtime."""
+    from zoneinfo import ZoneInfo
+
+    ny = ZoneInfo(settings.screen_timezone)
+    cal = EarningsCalendar(settings)
+    cal.set("EXMPL", "2026-07-29", "amc")
+
+    out = cal.due_alerts(datetime(2026, 7, 29, 12, 0, tzinfo=ny))
+    assert len(out) == 1 and "after the close" in out[0].headline
+
+
+def test_the_calendar_day_is_the_market_s_day_not_utc(settings):
+    """`poll_once` handed over a UTC date. At 8pm in New York the UTC
+    calendar has already rolled over, so tonight's print read as yesterday's
+    and fired the reaction alert before the numbers existed."""
+    from zoneinfo import ZoneInfo
+
+    ny = ZoneInfo(settings.screen_timezone)
+    cal = EarningsCalendar(settings)
+    cal.set("EXMPL", "2026-07-29", "amc")
+
+    evening = datetime(2026, 7, 29, 20, 0, tzinfo=ny)
+    assert evening.astimezone(timezone.utc).date() == date(2026, 7, 30), \
+        "fixture setup: the two calendars must disagree here"
+
+    out = cal.due_alerts(evening)
+    assert len(out) == 1 and "after the close" in out[0].headline, \
+        "it is still the 29th where the market is"
+
+
+def test_a_calendar_row_with_a_key_this_build_does_not_know_is_still_read(settings):
+    """These files outlive the build that wrote them."""
+    cal = EarningsCalendar(settings)
+    cal.path.parent.mkdir(parents=True, exist_ok=True)
+    cal.path.write_text(json.dumps({"entries": {"EXMPL": {
+        "ticker": "EXMPL", "date": "2026-07-29", "when": "amc",
+        "confirmed_by": "a field from a newer build"}}}), encoding="utf-8")
+
+    assert cal.get("EXMPL").ticker == "EXMPL"
+    assert [e.ticker for e in cal.upcoming(7, today=date(2026, 7, 27))] == ["EXMPL"]

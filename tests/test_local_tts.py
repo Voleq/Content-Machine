@@ -550,3 +550,63 @@ def test_a_proof_mocks_the_voice_and_nothing_else(settings, monkeypatch,
     # and nothing else was switched to mock behind the operator's back
     assert not live.mocking_prices
     assert not live.mocking_screener
+
+
+# --------------------------------------------------------------------------
+# /repurpose: the other shape of the same promise.
+# --------------------------------------------------------------------------
+
+
+def test_a_reuse_only_job_raises_rather_than_generating(settings, monkeypatch):
+    """`/repurpose` cuts clips out of a LONG that is already rendered and
+    paid for, and it has no approval gate at all. It kept its $0 promise with
+    an `is_cached()` probe followed by a `synthesize()` call — two statements
+    with the paid tier in the gap between them."""
+    from pipeline.tts import CacheMissForbidden
+
+    monkeypatch.setattr(settings, "mock_tts", False)
+    monkeypatch.setattr(settings, "mock_mode", False)
+    monkeypatch.setattr(settings, "local_tts_enabled", False)
+
+    eng = TTSEngine(settings)
+    monkeypatch.setattr(eng, "_generate_real", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("a reuse-only job reached the generator")))
+
+    assert eng.tier_for(False) == "paid"
+    with pytest.raises(CacheMissForbidden):
+        eng.synthesize("Noise, or signal?", "long", cached_only=True)
+
+
+def test_a_reuse_only_job_still_returns_a_cache_hit(settings, monkeypatch):
+    """The gate must not block the thing it exists to allow."""
+    import json as _json
+
+    import pipeline.tts as tts_mod
+
+    eng = TTSEngine(settings)
+    text = "Noise, or signal?"
+    _, cdir, req, *_ = eng._cache_dir(text, "long", None, False)
+    cdir.mkdir(parents=True, exist_ok=True)
+    (cdir / "audio.m4a").write_bytes(b"paid for, already")
+    (cdir / "words.json").write_text(_json.dumps(
+        [{"word": "Noise,", "start": 0.0, "end": 0.4,
+          "char_start": 0, "char_end": 6}]), encoding="utf-8")
+    monkeypatch.setattr(tts_mod, "ffprobe_duration", lambda p: 0.4)
+
+    assert eng.is_cached(text, "long")
+    got = eng.synthesize(text, "long", cached_only=True)
+    assert got.cached is True and got.cost_usd == 0.0
+    assert [w.word for w in got.words] == ["Noise,"]
+
+
+def test_the_repurpose_job_asks_for_reuse_only(settings):
+    """Named rather than run: the job itself needs a finished render."""
+    import inspect
+
+    from bot.handlers import BotCore
+
+    src = inspect.getsource(BotCore._execute_job)
+    repurpose = src.split("no finished LONG render to repurpose")[1][:900]
+    assert "cached_only=True" in repurpose
+    assert "self.tts.is_cached" not in repurpose, \
+        "the probe-then-call gap is back"

@@ -622,3 +622,40 @@ def test_the_prompt_says_something_honest_with_no_data_at_all(settings, workspac
                        workspace, settings, chosen_angle="the value trap")
     assert "no evidence either way" in text
     assert "{{retention}}" not in text
+
+
+def test_an_explicit_offset_is_honoured_rather_than_reinterpreted(settings):
+    """An operator who types a zone means that zone.
+
+    The parse sliced `text[:19]`, which is exactly long enough to cut the
+    offset off an ISO timestamp — leaving a naive time that was then stamped
+    with `PUBLISH_TIMEZONE`. The video published at the difference between
+    the two.
+    """
+    got = resolve_publish_at("2026-08-07T18:00:00+03:00", NOW, settings=settings)
+    assert got.isoformat() == "2026-08-07T15:00:00+00:00"
+
+    assert resolve_publish_at("2026-08-07T18:00:00Z", NOW,
+                              settings=settings).hour == 18
+
+
+def test_a_bare_date_still_means_the_publish_hour(settings):
+    """The offset path must not swallow the `PUBLISH_HOUR` behaviour."""
+    live = settings.model_copy(update={"publish_hour": 18, "publish_minute": 30,
+                                       "publish_timezone": "UTC"})
+    got = resolve_publish_at("2026-08-07", NOW, settings=live)
+    assert (got.hour, got.minute) == (18, 30)
+
+
+def test_every_upload_declares_the_synthetic_voice(settings, package):
+    """Every video this pipeline makes is narrated by ElevenLabs, and the
+    disclosure obligation is the uploader's. Nothing declared it."""
+    body = build_body(package, settings=settings)
+    assert body["status"]["containsSyntheticMedia"] is True
+
+
+def test_the_declaration_is_not_a_switch(settings, package, video):
+    """It rides on the real upload path too, not just on `build_body`."""
+    client = FakeClient()
+    upload_video(video, package, settings, client=client, now=NOW)
+    assert client.body["status"]["containsSyntheticMedia"] is True

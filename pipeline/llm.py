@@ -19,6 +19,9 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
+from collections import OrderedDict
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 from config import Settings
@@ -242,35 +245,101 @@ def chat(prompt: str, settings: Settings, *, system: str = "",
 # saw it and neither did the operator (N2b). So every call is tallied here
 # and the provenance record reads it.
 #
-# Process-local and reset per render rather than persisted: the question is
-# "what happened in THIS video", and a file would answer a different one.
+# Process-local rather than persisted: the question is "what happened in THIS
+# video", and a file would answer a different one.
+#
+# KEYED BY SCOPE, and that is the whole point. This was one flat list with a
+# `reset_llm_calls()` that nothing outside the tests ever called, so every
+# render's provenance block reported every LLM call since the bot booted:
+# `provider` and `model` came from the first call the PROCESS made, and
+# `hosted_fallbacks` — the one figure here that is about money — carried a
+# hosted call from three videos ago into a video that made none. A record
+# whose whole purpose is honesty about what happened cannot be a running
+# total presented as a per-render one.
+#
+# Resetting at the render was not the fix either: the LLM work all happens at
+# INTAKE — the filing brief at `/long`, the flagger at the angle pick, the
+# skeptic in `run_gates` — hours before the render job runs, so a reset there
+# would make almost every record read "0 calls". The scope is therefore the
+# WORKSPACE, which is what "this video" actually means, and the bot opens one
+# around each entry point that can reach an LLM.
+#
+# Thread-local, because the filing reading runs on its own thread (K3) while
+# the bot goes on handling messages, and a plain global would tally an AAPL
+# brief against whatever workspace the operator happened to be pasting into.
 
-_CALLS: list[dict] = []
+_CALLS: "OrderedDict[str, list[dict]]" = OrderedDict()
+_SCOPE = threading.local()
+# The filing reader writes from its own thread while the bot writes from the
+# main one, so the tally itself is shared state even though the SCOPE is not.
+_TALLY_LOCK = threading.Lock()
+
+# A bound, so a bot that runs for months does not accumulate one bucket per
+# video it ever made. Far more than anything reads back.
+_MAX_SCOPES = 64
+
+
+def current_scope() -> str:
+    """The scope LLM calls on this thread are tallied against."""
+    return getattr(_SCOPE, "key", "")
+
+
+@contextmanager
+def llm_scope(key: str):
+    """Tally every LLM call made on this thread, in here, against `key`.
+
+    Nests and restores, so a caller that already opened one is not clobbered
+    by an inner one — and an empty key means "unscoped", which is what a
+    script or a test that never opens a scope gets.
+    """
+    previous = getattr(_SCOPE, "key", "")
+    _SCOPE.key = key
+    try:
+        yield key
+    finally:
+        _SCOPE.key = previous
 
 
 def record_llm_call(settings: Settings, result: LLMResult, *,
                     purpose: str = "") -> None:
-    _CALLS.append({"purpose": purpose, "provider": result.provider,
-                   "model": result.model, "reason": result.reason})
+    scope = current_scope()
+    with _TALLY_LOCK:
+        _CALLS.setdefault(scope, []).append(
+            {"purpose": purpose, "provider": result.provider,
+             "model": result.model, "reason": result.reason})
+        _CALLS.move_to_end(scope)
+        while len(_CALLS) > _MAX_SCOPES:
+            _CALLS.popitem(last=False)
 
 
-def reset_llm_calls() -> None:
-    _CALLS.clear()
+def reset_llm_calls(scope: str | None = None) -> None:
+    """Drop one scope's tally, or every scope when none is named."""
+    with _TALLY_LOCK:
+        if scope is None:
+            _CALLS.clear()
+        else:
+            _CALLS.pop(scope, None)
 
 
-def llm_calls() -> list[dict]:
-    return list(_CALLS)
+def llm_calls(scope: str | None = None) -> list[dict]:
+    return list(_CALLS.get(current_scope() if scope is None else scope, []))
 
 
-def llm_summary(settings: Settings) -> dict:
-    """`{provider, model, calls, hosted_fallbacks, skipped}` for this run.
+def llm_summary(settings: Settings, scope: str | None = None) -> dict:
+    """`{provider, model, calls, hosted_fallbacks, skipped}` for one scope.
+
+    The scope is the workspace this video belongs to; `None` reads the one
+    open on this thread, which is what `provenance.build` wants — it runs
+    inside the render, under the scope the bot opened.
 
     `hosted_fallbacks` is the number that matters on a box configured
     local-first: `llm_provider_order` defaults to `ollama,github,openai`, so
     a local failure becomes hosted spend, and a non-zero count is a thing to
-    SEE rather than discover on a bill.
+    SEE rather than discover on a bill. It is only that if it counts THIS
+    video's calls, which is what the keyed tally above is for.
     """
-    calls = [c for c in _CALLS if c["reason"] == OK]
+    tally = _CALLS.get(current_scope() if scope is None else scope, [])
+    calls = [c for c in tally if c["reason"] == OK]
     hosted = [c for c in calls if c["provider"] in (GITHUB, OPENAI)]
     order = provider_order(settings)
     local_first = bool(order) and order[0] == OLLAMA
@@ -280,7 +349,7 @@ def llm_summary(settings: Settings) -> dict:
         "model": (answered or {}).get("model", ""),
         "calls": len(calls),
         "hosted_fallbacks": len(hosted) if local_first else 0,
-        "skipped": [c["reason"] for c in _CALLS if c["reason"] != OK],
+        "skipped": [c["reason"] for c in tally if c["reason"] != OK],
     }
 
 

@@ -148,14 +148,27 @@ def resolve_publish_at(when: str | datetime | None,
         text = str(when).strip().replace("/", "-")
         dt = None
         date_only = False
-        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
-                    "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
-            try:
-                dt = datetime.strptime(text[:19], fmt)
-                date_only = fmt == "%Y-%m-%d"
-                break
-            except ValueError:
-                continue
+        # AN EXPLICIT OFFSET IS AN ANSWER, so read it before guessing. The
+        # loop below slices `text[:19]`, which is exactly long enough to cut
+        # the offset off `2026-09-20T18:00:00+03:00` — leaving a naive time
+        # that then got stamped with `PUBLISH_TIMEZONE`. An operator who
+        # types a zone means that zone, and the silent reinterpretation
+        # moved the publish by the difference between the two.
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except ValueError:
+            parsed = None
+        if parsed is not None and parsed.tzinfo is not None:
+            dt = parsed
+        else:
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
+                        "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+                try:
+                    dt = datetime.strptime(text[:19], fmt)
+                    date_only = fmt == "%Y-%m-%d"
+                    break
+                except ValueError:
+                    continue
         if dt is None:
             raise ValueError(
                 f"{when!r} is not a time I can read — try 2026-08-07 18:00")
@@ -387,7 +400,16 @@ def build_body(package, *, title: str = "", publish_at: datetime | None = None,
                settings: Settings | None = None) -> dict:
     """The Data API insert body. Private unless a publish time says otherwise."""
     chosen = title or (package.titles[0] if package.titles else package.ticker)
-    status: dict = {"selfDeclaredMadeForKids": False}
+    # EVERY VIDEO THIS PIPELINE MAKES IS NARRATED BY A SYNTHETIC VOICE, so
+    # every video declares it. This is a constant and not a setting on
+    # purpose: the disclosure obligation attaches to the uploader, YouTube
+    # applies the label itself when it detects undisclosed AI — and the C2PA
+    # provenance ElevenLabs writes into the audio is exactly that detection
+    # — and a switch here would only ever be turned off. The label does not
+    # affect monetization eligibility or recommendations; an undisclosed
+    # upload does.
+    status: dict = {"selfDeclaredMadeForKids": False,
+                    "containsSyntheticMedia": True}
     if publish_at is not None:
         # `publishAt` only takes effect while the video is private; setting
         # both is how a scheduled publish is expressed.

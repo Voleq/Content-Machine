@@ -540,3 +540,109 @@ def test_a_record_with_no_engine_says_nothing_rather_than_guessing():
     p = build(ticker="EXMPL", fmt="long", workdate="d", duration_s=1.0)
     assert "render" not in p.render_text()
     assert p.to_json()["render"] == {}
+
+
+# --------------------------------------------------------------------------
+# Whose calls are these? (the scope)
+# --------------------------------------------------------------------------
+
+
+def test_a_second_video_does_not_inherit_the_first_one_s_llm_calls(settings, monkeypatch):
+    """The tally was one flat list with a reset nothing outside the tests ever
+    called, so every record reported every call since the bot booted — and
+    `hosted_fallbacks`, the one figure here that is about money, carried a
+    hosted call from three videos ago into a video that made none."""
+    import pipeline.llm as llm
+
+    live = settings.model_copy(update={
+        "mock_mode": False, "llm_provider_order": "ollama,github",
+        "github_models_token": "t"})
+
+    def _post(url, payload, headers, timeout):
+        if "11434" in url or "ollama" in url:
+            raise ConnectionError("connection refused")
+        return {"choices": [{"message": {"content": "ok"}}]}
+
+    monkeypatch.setattr(llm, "_post", _post)
+    llm.reset_llm_calls()
+
+    with llm.llm_scope("AAPL/2026-09-19"):
+        for _ in range(3):
+            llm.chat("q", live, purpose="skeptic")
+        assert llm.llm_summary(live)["hosted_fallbacks"] == 3
+
+    with llm.llm_scope("MSFT/2026-09-19"):
+        got = llm.llm_summary(live)
+        assert got["calls"] == 0
+        assert got["hosted_fallbacks"] == 0, \
+            "MSFT made no hosted call and must not be billed for AAPL's"
+
+    # And the first one is still readable — the render reopens it hours later.
+    with llm.llm_scope("AAPL/2026-09-19"):
+        assert llm.llm_summary(live)["calls"] == 3
+    llm.reset_llm_calls()
+
+
+def test_a_scope_opened_on_another_thread_is_that_thread_s_own(settings, monkeypatch):
+    """The filing reading runs on its own thread while the bot goes on
+    handling messages, so a plain global would tally an AAPL brief against
+    whatever workspace the operator happened to be pasting into."""
+    import threading
+
+    import pipeline.llm as llm
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "llm_provider_order": "ollama"})
+    monkeypatch.setattr(llm, "_post",
+                        lambda *a, **k: {"message": {"content": "ok"}})
+    llm.reset_llm_calls()
+
+    def _reader():
+        with llm.llm_scope("AAPL/2026-09-19"):
+            llm.chat("read the 10-K", live, purpose="filing")
+
+    with llm.llm_scope("MSFT/2026-09-19"):
+        t = threading.Thread(target=_reader)
+        t.start()
+        t.join()
+        assert llm.llm_summary(live)["calls"] == 0, \
+            "the reader's call landed in the workspace being pasted into"
+
+    with llm.llm_scope("AAPL/2026-09-19"):
+        assert llm.llm_summary(live)["calls"] == 1
+    llm.reset_llm_calls()
+
+
+def test_the_tally_does_not_grow_without_bound(settings, monkeypatch):
+    """A bot that runs for months must not keep one bucket per video it ever
+    made."""
+    import pipeline.llm as llm
+
+    live = settings.model_copy(update={"mock_mode": False,
+                                       "llm_provider_order": "ollama"})
+    monkeypatch.setattr(llm, "_post",
+                        lambda *a, **k: {"message": {"content": "ok"}})
+    llm.reset_llm_calls()
+    for i in range(llm._MAX_SCOPES + 10):
+        with llm.llm_scope(f"T{i}/d"):
+            llm.chat("q", live, purpose="skeptic")
+    assert len(llm._CALLS) <= llm._MAX_SCOPES
+    with llm.llm_scope("T0/d"):
+        assert llm.llm_summary(live)["calls"] == 0, "the oldest goes first"
+    llm.reset_llm_calls()
+
+
+def test_the_bot_opens_a_scope_around_every_path_that_can_reach_an_llm(settings):
+    """The scope is only worth having if the entry points actually open it.
+
+    Named rather than exercised: each of these runs a whole intake or a whole
+    render, and what is being checked is that the wiring exists at all.
+    """
+    import inspect
+
+    from bot.handlers import BotCore
+
+    for name in ("intake_script", "execute_job", "headline_command",
+                 "_start_filing_read", "_approval_blockers"):
+        src = inspect.getsource(getattr(BotCore, name))
+        assert "llm_scope" in src, f"BotCore.{name} tallies against nothing"

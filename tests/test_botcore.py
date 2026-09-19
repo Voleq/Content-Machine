@@ -503,3 +503,88 @@ def test_a_slow_paste_is_acknowledged_before_the_work_starts(core):
     src = inspect.getsource(handlers.build_application)
     assert "_off_loop" in src
     assert "got it" in src, "the acknowledgement has to actually be sent"
+
+
+# --------------------------------------------------------------------------
+# The Approve button and the world underneath it (G8).
+#
+# These build the approval state directly rather than going through
+# `intake_script`, so the re-check is tested without the cost report's
+# dependency on an installed kit.
+# --------------------------------------------------------------------------
+
+
+def _ready_to_approve(core, xlsx_bytes, short_valid_json):
+    """A workspace with a saved SHORT and a report on file — the state the
+    Approve button is drawn on."""
+    from pipeline.models import ShortScript
+
+    core.start_lane(CHAT, "short", "EXMPL")
+    core.handle_upload(CHAT, "dennis_data.xlsx", xlsx_bytes)
+    ws = Workspace.latest_for(core.settings, "EXMPL")
+    # The model rather than the parser: `parse_short_script` checks the
+    # script's visual keys against the installed kit, and what is under test
+    # here is the approval gate, not the kit.
+    script = ShortScript.model_validate_json(short_valid_json)
+    ws.save_short(script, short_valid_json)
+    (ws.path / "report_short.txt").write_text("the report as written",
+                                              encoding="utf-8")
+    return ws, script.content_sha()[:8]
+
+
+def test_approval_refuses_a_gate_that_has_turned_blocking_since_the_report(
+        core, xlsx_bytes, short_valid_json, monkeypatch):
+    """The hash pins the CONTENT, and nothing else. A button drawn on an
+    approvable report stayed approvable after the world underneath it
+    changed — freshness rolling over, a screengrab deleted — and /render
+    then reads `is_approved()` and spends."""
+    from pipeline.gates import Finding, GateReport
+
+    ws, sha8 = _ready_to_approve(core, xlsx_bytes, short_valid_json)
+
+    def _blocked(*a, **k):
+        report = GateReport()
+        report.findings += report.record("freshness", [Finding(
+            gate="freshness", severity="block",
+            message="the workbook is older than DATA_MAX_AGE_DAYS")])
+        return report
+
+    monkeypatch.setattr("bot.handlers.run_gates", _blocked)
+    reply = core.approve("short", "EXMPL", ws.workdate, sha8)
+
+    assert "Not approved" in reply.text
+    assert "DATA_MAX_AGE_DAYS" in reply.text
+    assert not ws.is_approved("short"), "nothing may be spendable after this"
+
+
+def test_a_battery_that_cannot_run_does_not_refuse_the_approval(
+        core, xlsx_bytes, short_valid_json, monkeypatch):
+    """A missing kit is not evidence that the script is bad, and refusing
+    every approval because of one would be worse than the bug being fixed."""
+    ws, sha8 = _ready_to_approve(core, xlsx_bytes, short_valid_json)
+
+    def _explode(*a, **k):
+        raise RuntimeError("no plates-registry.json")
+
+    monkeypatch.setattr("bot.handlers.run_gates", _explode)
+    assert "approved" in core.approve("short", "EXMPL", ws.workdate, sha8).text
+    assert ws.is_approved("short")
+
+
+def test_the_approval_recheck_does_not_pay_for_a_network_call(
+        core, xlsx_bytes, short_valid_json, monkeypatch):
+    """The skeptic is the only pass here that costs one, and every finding it
+    returns is a warning — so it can never be what refuses this."""
+    from pipeline.gates import GateReport
+
+    ws, sha8 = _ready_to_approve(core, xlsx_bytes, short_valid_json)
+    seen: dict = {}
+
+    def _spy(script, settings, **kw):
+        seen.update(kw)
+        return GateReport()
+
+    monkeypatch.setattr("bot.handlers.run_gates", _spy)
+    core.approve("short", "EXMPL", ws.workdate, sha8)
+    assert seen.get("skeptic") is False
+    assert ws.is_approved("short")
