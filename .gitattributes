@@ -6,11 +6,16 @@
 # The scripts themselves are unmaintained (the target is Linux/WSL2); this only
 # guarantees that what is in the repo still parses. See tests/test_platform.py.
 *.ps1 -text
-assets/marker/*.png filter=lfs diff=lfs merge=lfs -text
-assets/ballpoint/*.png filter=lfs diff=lfs merge=lfs -text
-assets/grease-pencil/*.png filter=lfs diff=lfs merge=lfs -text
-assets/cut-paper/*.png filter=lfs diff=lfs merge=lfs -text
-assets/light/*.png filter=lfs diff=lfs merge=lfs -text
+
+# NO LFS RULE FOR THE KIT'S ARTWORK, deliberately. `assets/plates/` is a build
+# product that `scripts/ingest_kit.py` reproduces from `kit/`, and it is
+# gitignored — committing it through LFS is the same mistake as committing it,
+# with a bill attached. The five rules that used to sit here named
+# `assets/marker/`, `assets/ballpoint/`, `assets/grease-pencil/`,
+# `assets/cut-paper/` and `assets/light/`: the four ink registers and the light
+# overlays of the kit before this one. Those directories have not existed since
+# `862a5f9`, and a filter for a path nothing writes is a trap rather than a
+# no-op — it silently LFS-ifies the day a future kit reuses one of the names.
 
 # Sample renders and their contact sheets. Every stage re-renders these — a
 # 42MB mp4 per stage is not something to keep in the pack file. Existing

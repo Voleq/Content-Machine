@@ -504,6 +504,7 @@ nothing and exercises every seam. Only then follow *Going live* above.
 |---|---|
 | update to the latest code | `cd ~/dennis && git pull && sudo bash deploy/bootstrap.sh /opt/dennis` |
 | restart after an `.env` change | `sudo systemctl restart dennis` |
+| after a kit ingest | nothing — `load_registry` re-reads when `plates-registry.json` changes under it. It did not always: the registry was cached for the life of the process, so a kit ingested under a running bot did not reach a render until somebody restarted. |
 | watch the logs | `journalctl -u dennis -f` |
 | stop it | `sudo systemctl stop dennis` |
 | run in the foreground instead (no systemd) | `cd /opt/dennis && sudo -u dennis .venv/bin/python main.py` |

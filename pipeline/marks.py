@@ -1,14 +1,15 @@
-"""Hand-drawn line primitives and type fitting, lifted out of the old kit.
+"""Hand-drawn line primitives and type fitting.
 
-These five things were the genuinely reusable part of `rasters.py`: they draw
-a line the way a hand draws one, and they fit type into a box. Everything
-around them — the tag-driven composition that chose which asset went where —
-is gone. These came across because the new compositor needs exactly the same
-marks, and re-deriving a marker stroke would have produced a different one.
+Two jobs, and nothing else: draw a line the way a hand draws one, and fit type
+into a box. `marker_stroke`, `drawn_rect` and `ease_out` came across from the
+compositor that preceded the plate registry, because the marks themselves are
+geometry and re-deriving a stroke would only have produced a different one. The
+type fitting is the same wrap-then-shrink loop, generalised to work in fractions
+of frame height rather than hardcoded point sizes.
 
-`marker_stroke`, `drawn_rect` and `ease_out` are the originals. The type
-fitting is the same wrap-then-shrink loop, generalised to work in fractions of
-frame height instead of hardcoded point sizes.
+WHAT THIS MODULE DOES NOT OWN is colour and, as of the typography note below,
+faces. Both belong to the kit, are read off the registry, and had stale copies
+here for two deliveries. See the comment where the palette used to be.
 """
 
 from __future__ import annotations
@@ -20,30 +21,26 @@ from typing import Sequence
 
 from PIL import ImageDraw, ImageFont
 
-# The kit's palette, from assets/manifest.json. World colour appears only on
-# physical objects — never on a chart, a number, a label or a plate interior —
-# which is what keeps green meaning an up move and nothing else.
-INK = (35, 35, 38, 255)
-INK_BALLPOINT = (43, 50, 66, 255)
-INK_GREASE = (42, 39, 36, 255)
-PAPER = (242, 242, 239, 255)
-CARD = (250, 249, 246, 255)
-CARD_LINE = (226, 223, 213, 255)
-MUTED = (143, 140, 131, 255)
-RED = (255, 82, 71, 255)
-GREEN = (47, 213, 118, 255)
-
-INK_FOR_REGISTER = {
-    "marker": INK,
-    "ballpoint": INK_BALLPOINT,
-    "grease-pencil": INK_GREASE,
-    "cut-paper": INK,
-}
-
-PALETTE = {
-    "ink": INK, "paper": PAPER, "card": CARD, "cardLine": CARD_LINE,
-    "muted": MUTED, "red": RED, "green": GREEN,
-}
+# THERE IS NO PALETTE HERE, AND THERE MUST NOT BE ONE.
+#
+# Nine hex constants used to sit at this line — `INK`, `PAPER`, `CARD`, `RED`,
+# `GREEN` and friends — sourced, per their own comment, from
+# `assets/manifest.json`: a file belonging to the kit two deliveries ago, which
+# has not existed since `862a5f9`. Beside them was `INK_FOR_REGISTER`, keyed on
+# `marker` / `ballpoint` / `grease-pencil` / `cut-paper`, the four ink registers
+# that kit shipped and this one does not have.
+#
+# Nothing read any of it. That is exactly what made it dangerous: it read as
+# live API, it contradicted the contract at the top of `pipeline/plates.py`
+# ("there is no hex literal anywhere in `pipeline/`"), and it was a PAPER-WHITE
+# palette sitting one import away from a renderer drawing on the current kit's
+# `night-card` ground. The next person to want a colour here had a
+# plausible-looking answer that would have set dark ink on a dark surface.
+#
+# Colour comes off the registry, by ROLE: `reg.colour("structure")`,
+# `reg.colour("attention")`, `reg.direction_colour(v)`. The registry got those
+# values from the engine that put the ink on the plate, which is the only
+# source that cannot go stale.
 
 
 def ease_out(t: float) -> float:
@@ -143,6 +140,27 @@ def underline(d, box, rng, *, color, width=6):
 
 # The two faces. Named here rather than in the renderer so the budget
 # measurement and the fitter cannot be measuring different type.
+#
+# THESE ARE NOT THE KIT'S FACES, AND THAT IS AN OPEN DECISION, NOT AN OVERSIGHT.
+#
+# The kit declares exactly two, in its every `typeRoles` table: Archivo Narrow
+# (weights 400/500/600/700) and Courier Prime (400/700). `plate_frames.py` reads
+# them off the manifest and sets every word that lands in a plate SLOT in them.
+# What is left is the free-placed type in the vertical formats — the layers
+# `render_short._draw_text` positions itself — and that is what these two names
+# feed.
+#
+# Inter has never been vendored, so those layers are really set in the
+# substitute below, DejaVu Sans Bold, which arrived in `62baf29` with the
+# original scaffold and predates both kits. The result is a SHORT whose plate
+# type is Archivo Narrow and whose free type is DejaVu.
+#
+# Moving these to Archivo Narrow is the kit-correct answer and it is a visible
+# change: the faces have different metrics, so every fitted block in every
+# vertical format re-flows, and the shrink-to-fit in `fit_lines` lands
+# elsewhere. That is a call about what the channel looks like rather than a bug
+# fix, so it is written down here rather than made quietly. Whoever takes it:
+# the substitution table below is the only other thing that has to change.
 BODY_FONT = "Inter-Regular.ttf"
 DISPLAY_FONT = "Inter-Bold.ttf"
 
@@ -163,16 +181,31 @@ def face_for(size_fh: float) -> str:
     """Which face type of this size is set in."""
     return DISPLAY_FONT if size_fh >= DISPLAY_FROM_FH else BODY_FONT
 
-_FONT_DIR = Path("assets/fonts")
+# ANCHORED TO THE REPOSITORY, NOT TO THE WORKING DIRECTORY.
+#
+# This was `Path("assets/fonts")`, relative, so it resolved against whatever
+# directory the process happened to start in. `deploy/dennis.service` sets
+# `WorkingDirectory=/opt/dennis`, so the supported deployment happened to work
+# and the bug stayed invisible — but from anywhere else (a cron entry, a manual
+# run out of $HOME, a container with its own WORKDIR) `font_file` returned None,
+# the substitution below never fired, and `load_font` fell through to Pillow's
+# 11px bitmap default. Silently: no exception, no warning. `block_height` then
+# answers 46px where it should answer 201, so the compositor believes a
+# three-line block is a quarter of its real height and every line of type in the
+# vertical formats is set in a face nobody chose.
+_FONT_DIR = Path(__file__).resolve().parents[1] / "assets" / "fonts"
 
 # Inter is not vendored. Neither face above has ever been on disk, so every
 # line of type in this renderer is actually set in its stand-in — and the
-# stand-in used to be "whichever file sorts first in assets/fonts". The day
-# the kit's own Archivo Narrow landed in that directory, every short in the
-# repo silently re-set itself in a narrow italic, and `templates/budgets.json`
-# — measured against the old face — went on claiming numbers that were half
-# again too small. A directory listing is not a typographic decision, so each
-# face names its substitute here.
+# stand-in used to be "whichever file sorts first in assets/fonts". The day the
+# kit's own Archivo Narrow landed in that directory, every short in the repo
+# silently re-set itself in a narrow italic, and the character budgets — derived
+# against the old face — went on claiming numbers that were half again too
+# small. A directory listing is not a typographic decision, so each face names
+# its substitute here.
+#
+# (That sentence used to name `templates/budgets.json`. There is no such file;
+# budgets are read per slot off the kit's own manifests by `pipeline/form.py`.)
 _SUBSTITUTES = {
     "Inter-Regular.ttf": "DejaVuSans-Bold.ttf",
     "Inter-Bold.ttf": "DejaVuSans-Bold.ttf",

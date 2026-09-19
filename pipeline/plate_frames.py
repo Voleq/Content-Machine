@@ -8,7 +8,7 @@ host's blink strips, which are composited rather than played; 3 are static.
 THE OLD BLANKET RULE IS GONE AND THIS PARAGRAPH USED TO CARRY IT — "96 of the
 143 plates are two-frame loops; the other 47 are data plates that deliberately
 never boil". Every number in that sentence was from a kit two deliveries back,
-and the rule it stated had been retracted in the engine. `engine/build.js` §1.5
+and the rule it stated had been retracted in the engine. `kit/engine/build.js` §1.5
 is headed A DATA PLATE'S FRAME BREATHES AND ITS FIGURES DO NOT: the boil is
 turned on for a data plate's FURNITURE — paper edge, corner wear, rule lines,
 hatch — while axes, series lines, figures and cells emit the identical path they

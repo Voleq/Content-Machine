@@ -5,7 +5,7 @@ heads, the frame, the y-axis labels: all of it is on the plate, authored by the
 same hand as everything else in the video. What is left for code is the series
 itself, drawn inside the region the plate reserved for it.
 
-That is the split ``engine/series.js`` was built around, and every plate states
+That is the split ``kit/engine/series.js`` was built around, and every plate states
 it: ``charts/line-6y``'s ``plot-area`` carries the note *"code draws the data
 path in here only"*, ``peers/peer-strip``'s ``bars`` region names
 ``series.rowBars``, ``cycles/cycle-frame``'s ``path`` names ``series.cycleArc``.

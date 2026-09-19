@@ -78,7 +78,7 @@ from pipeline.audio_assets import (
 from pipeline.broll import ContentManager
 from pipeline.company_data import prepare_screenshot
 from pipeline.host import (HostShot, build_host_clip, dressed,
-                           frame_shot, looking_at, pick_shot,
+                           frame_shot, looking_at, pick_framing, pick_shot,
                            place_on_room, stands_on)
 from pipeline.chart import draw_declared
 from pipeline.media_frames import FrameRotation, composite as frame_media
@@ -822,8 +822,21 @@ def render_long(
         # A ROOM THAT REFUSES A CUT-OUT STILL TAKES A SHOT OF HIS FACE. The
         # angle says nobody stands here; a framing has no floor line to pin,
         # so the beat survives as the shot it should probably have been.
+        #
+        # THE REPLACEMENT HAS TO BE A FRAMING, NOT MERELY A `to-camera` POSE.
+        # This asked the role for its next pose and took whatever came back,
+        # which was sound only while `to-camera` served nothing but the two
+        # framings. delta-15 added `host/sitting-at-desk` to that role — a
+        # cut-out, `floorLineY: 1728`, no `framing` — so the substitution
+        # started handing back a figure with a floor line to stand a man in a
+        # room that has declared it has no floor. Swapping one unplaceable
+        # pose for another, and reading as fixed because a swap happened.
+        #
+        # Ask for the property the situation needs. A role is curation and can
+        # gain a member in any drop; `is_framing` is the kit's own answer to
+        # "is there a floor line on this plate", which is the actual question.
         if room is not None and room.refuses_host and not shot.is_framing:
-            instead = pick_shot(reg, "to-camera", seg_i, used=host_used)
+            instead = pick_framing(reg, "to-camera", seg_i, used=host_used)
             if instead is not None:
                 shot = instead
         shot = dressed(reg, shot, seed=script.ticker)

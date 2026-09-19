@@ -7030,6 +7030,8 @@
     "aspect": "9x16",
     "family": "host",
     "type": "empty-chair",
+    "cutout": true,
+    "alpha": true,
     "dataPolicy": "alpha cut-out, no ground: it composites onto a room's host-anchor exactly as a figure does",
     "floorLineY": 1728,
     "chair": {

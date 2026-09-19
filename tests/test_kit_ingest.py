@@ -797,7 +797,7 @@ def _frames_differ(a, b, box=None) -> bool:
 
 
 def test_a_data_plate_breathes_and_its_axes_do_not():
-    """`engine/build.js` §1.5, asserted against the PNGs the ingest wrote.
+    """`kit/engine/build.js` §1.5, asserted against the PNGs the ingest wrote.
 
     THE RULE IS PER-MARK, NOT PER-PLATE, and that is what makes it testable at
     all. Every data plate used to be `playback: static` on the argument that a

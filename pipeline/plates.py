@@ -696,6 +696,27 @@ class Registry:
         rng = random.Random(f"{role}|{seed}")
         return self.assets[rng.choice(options)]
 
+    def framing_for(self, role: str, seed: str = "") -> Plate | None:
+        """A host pose for a role that is a FRAMING — a camera distance.
+
+        ``host_for`` with the one filter the "nobody stands here" case needs. A
+        room declaring ``hostAnchor: false`` has no floor, so only a plate with
+        no floor line of its own can be put in it, and asking a role for any of
+        its members is not the same question: a role is curation and gains
+        members in a drop. delta-15 added ``host/sitting-at-desk``, a cut-out
+        with ``floorLineY: 1728``, to ``to-camera`` — after which ``host_for``
+        could answer that call with a figure that has to stand somewhere.
+
+        ``None`` when the role serves no framing, which is a real answer and
+        the caller's to handle: it means this kit cannot shoot that beat.
+        """
+        options = [k for k in self.host_roles.get(role, ())
+                   if k in self.assets and not self.assets[k].floor_line_y]
+        if not options:
+            return None
+        rng = random.Random(f"{role}|{seed}")
+        return self.assets[rng.choice(options)]
+
     def host_roles_available(self) -> tuple[str, ...]:
         return tuple(sorted(self.host_roles))
 
@@ -873,7 +894,20 @@ def load_variant_ledger(settings) -> VariantLedger:
     return VariantLedger(Path(settings.state_dir) / "kit_variants.json")
 
 
-_CACHE: dict[Path, Registry] = {}
+# The parsed registry, keyed by root, with the mtime it was parsed at.
+#
+# IT USED TO BE KEYED BY ROOT ALONE AND NEVER INVALIDATED, and the bot is a
+# long-running process. `scripts/ingest_kit.py` installs a kit by `rmtree`-ing
+# `assets/plates/` and copying the new one in, so an operator who ingested
+# while the service was up got the previous kit's registry serving every render
+# until somebody happened to restart — new artwork on disk, old geometry in
+# memory, and nothing on screen looking wrong because every plate it named
+# still existed. That is the kit-swap failure in its most literal form: the bot
+# holding a delivery that is no longer installed.
+#
+# The registry file is rewritten by every install, so its mtime is the whole
+# signal. One `stat` per `load_plates` against a parse of a ~10MB JSON.
+_CACHE: dict[Path, tuple[float, Registry]] = {}
 
 
 def wall_of_calls(settings, *, limit: int = 7) -> dict[str, str]:
@@ -908,11 +942,27 @@ def wall_of_calls(settings, *, limit: int = 7) -> dict[str, str]:
 
 
 def load_registry(root: Path) -> Registry:
-    """The registry at ``root``, cached — it is read once per process."""
+    """The registry at ``root``, cached until the file underneath it changes.
+
+    Re-read on a new mtime rather than once per process: an ingest replaces
+    `assets/plates/` wholesale under a running bot, and a cache with no way to
+    notice is a bot rendering the kit before last. See `_CACHE`.
+    """
     root = Path(root)
-    if root not in _CACHE:
-        _CACHE[root] = Registry(root)
-    return _CACHE[root]
+    path = root / REGISTRY_NAME
+    try:
+        stamp = path.stat().st_mtime
+    except OSError:
+        # Missing or unreadable: fall through to `Registry`, whose error names
+        # the ingest. Never serve a cached kit for a registry that is gone.
+        _CACHE.pop(root, None)
+        return Registry(root)
+    hit = _CACHE.get(root)
+    if hit is not None and hit[0] == stamp:
+        return hit[1]
+    reg = Registry(root)
+    _CACHE[root] = (stamp, reg)
+    return reg
 
 
 def load_plates(assets_dir: Path) -> Registry:

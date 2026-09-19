@@ -633,7 +633,7 @@ def resolve_spans(fmt: Format, words: Sequence[Any], duration: float,
             # DATA PLATES MOVE NOW and the ordering below still holds. The kit
             # ships 3 static plates of 270 — `overlays/row-band` and the two
             # lower thirds — and a data plate's FRAME breathes while its
-            # figures stay pinned (engine/build.js §1.5). So a numbers sheet is
+            # figures stay pinned (kit/engine/build.js §1.5). So a numbers sheet is
             # no longer the dead frame this guarded against. It is still the
             # frame with the least happening in it, which is why the order
             # below is unchanged.

@@ -314,6 +314,67 @@ def _install(built: dict, delivery: Path, staged: Path, dest: Path,
     return registry
 
 
+# The role a beat falls back to when the room it is in declares `hostAnchor:
+# false`. Named once; `pipeline/compose.py` names the same one.
+_ROLE_WHERE_NOBODY_STANDS = "to-camera"
+
+
+def _host_contract(reg) -> list[str]:
+    """What the render path requires of a plate a host ROLE serves.
+
+    ARTWORK AND CURATION ARRIVE TOGETHER AND NOTHING RECONCILED THEM. A drop
+    ships plates and a `roles.json` that wires them into shot roles, and every
+    check on either half passed while the two disagreed — because they are
+    checked separately. `_reconcile` compares the engine's geometry against the
+    manifests, and `test_kit_ingest` asserts the new poses reached the role
+    tables. Neither asks whether a plate a role serves is the KIND of plate the
+    compositor can do anything with.
+
+    delta-15 broke both of these and shipped:
+
+    * `host/empty-chair` went into the `beat` role declaring neither `cutout`
+      nor `alpha`, so a role that exists to be composited onto a room could
+      hand back a plate that says it is opaque and paint over the room.
+    * `host/sitting-at-desk` went into `to-camera`, which is the role a beat
+      falls back to when its room has no floor. It is a cut-out with
+      `floorLineY: 1728`, so the fallback could answer with a figure that has
+      to stand somewhere — swapping one unplaceable pose for another.
+
+    Both are one line of data each and neither is visible in a diff of the
+    artwork. So they are asked here, at the point the two halves first exist
+    together, rather than left to a render.
+    """
+    problems: list[str] = []
+    for role in sorted(reg.host_roles):
+        for key in reg.host_roles.get(role, ()):
+            pose = reg.get(key)
+            if pose is None:
+                problems.append(
+                    f"roles.json wires {key!r} into the {role!r} host role and "
+                    f"the kit ships no such plate")
+                continue
+            # A framing is a camera distance and composites against the frame,
+            # so it is exempt from the cut-out rule by construction.
+            if not pose.floor_line_y:
+                continue
+            if not pose.alpha:
+                problems.append(
+                    f"{key}: the {role!r} host role serves it and it does not "
+                    f"declare `alpha` — a role's pose is composited onto a "
+                    f"room, so an opaque plate paints over the room")
+
+    # The fallback role has to be able to answer the one question it is for.
+    served = reg.host_roles.get(_ROLE_WHERE_NOBODY_STANDS, ())
+    if served and not any((p := reg.get(k)) is not None and not p.floor_line_y
+                          for k in served):
+        problems.append(
+            f"the {_ROLE_WHERE_NOBODY_STANDS!r} role serves no framing — it is "
+            f"what a beat falls back to when its room declares `hostAnchor: "
+            f"false`, and every member of it has a floor line, so there is "
+            f"nothing to put in a room with no floor")
+    return problems
+
+
 def _verify(repo: Path) -> int:
     """The exhaustive pass: every asset, every frame, every slot, every file."""
     dest = repo / "assets" / PLATES_DIRNAME
@@ -403,6 +464,8 @@ def _verify(repo: Path) -> int:
     # drawing whose entry had moved stayed resolvable from a script.
     for p in orphans:
         problems.append(f"unregistered file on disk: {p.relative_to(repo)}")
+
+    problems.extend(_host_contract(reg))
 
     fams = Counter(a.family for a in reg.assets.values())
     playback = Counter(a.playback for a in reg.assets.values())

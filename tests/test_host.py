@@ -26,6 +26,7 @@ from pipeline.host import (
     beat_times,
     build_host_clip,
     mouth_schedule,
+    pick_framing,
     pick_shot,
     dressed,
     frame_shot,
@@ -473,3 +474,53 @@ def test_zero_length_segment_builds_nothing(tmp_path, reg, settings):
     assert build_host_clip(words((0.0, 1.0)), 2.0, 2.0, tmp_path / "x.mov",
                            reg=reg, settings=settings, display_w=100,
                            fps=12) is None
+
+
+# --------------------------------------------------------------------------
+# A room with no floor. The substitution has to change the KIND of shot.
+# --------------------------------------------------------------------------
+
+
+def test_the_fallback_for_a_floorless_room_is_always_a_framing(reg):
+    """`to-camera` is asked for a camera distance, not for its next member.
+
+    Twelve rooms declare `hostAnchor: false` — the camera is above the desk, or
+    square to a wall of index cards — and a beat that lands in one survives as a
+    shot of his face or not at all. Both callers used to ask the `to-camera`
+    role for a pose and take what came back, which was the same question only
+    while that role served nothing but the two framings.
+
+    delta-15 added `host/sitting-at-desk` to it: a cut-out, `floorLineY: 1728`,
+    no `framing`. From then on the fallback could answer with a figure that
+    still has to stand somewhere — swapping one unplaceable pose for another,
+    and reading as handled because a swap had happened.
+    """
+    for i in range(len(reg.host_roles.get("to-camera", ())) + 3):
+        shot = pick_framing(reg, "to-camera", i)
+        assert shot is not None, "the kit ships two framings; one must come back"
+        assert shot.is_framing, (
+            f"{shot.key} has a floor line — it cannot stand in a room that "
+            f"declares it has no floor")
+
+
+def test_the_seeded_picker_agrees_with_the_stepped_one(reg):
+    """`compose` picks by seed and `render_long` by index; both must filter.
+
+    Two call sites, two pickers, one rule — and the rule is the kit's own
+    answer about the plate rather than the shape of the role.
+    """
+    for seed in ("EXMPL", "AAPL", "", "ch11-short-interest-open"):
+        pose = reg.framing_for("to-camera", seed=seed)
+        assert pose is not None
+        assert not pose.floor_line_y, f"{pose.key} is a cut-out, not a framing"
+
+
+def test_a_role_that_serves_no_framing_says_so_rather_than_guessing(reg):
+    """`None` is a real answer: this kit cannot shoot that beat.
+
+    Returning some cut-out instead is how the bug being fixed here worked.
+    """
+    assert pick_framing(reg, "rests-on") is None or \
+        pick_framing(reg, "rests-on").is_framing
+    assert reg.framing_for("no-such-role-in-any-kit") is None
+    assert pick_framing(reg, "no-such-role-in-any-kit") is None
