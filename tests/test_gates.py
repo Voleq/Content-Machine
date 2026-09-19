@@ -107,6 +107,16 @@ def test_voice_linter_flags_bible_violations():
     assert "exclamation" in kinds
 
 
+def test_an_eye_written_abbreviation_warns_with_its_spoken_form():
+    """The suggestion is the whole value of the warning, and the severity is
+    a warning: how a term is SPELLED never stops a render."""
+    findings = voice_lint("Margins fell YoY and the P/E still reads as hope.")
+    said = {f.message for f in findings}
+    assert any("year over year" in m for m in said)
+    assert any("price to earnings" in m for m in said)
+    assert all(f.severity == "warn" for f in findings)
+
+
 def test_a_vendor_name_blocks():
     findings = voice_lint("According to Refinitiv, revenue fell.")
     assert any(f.severity == "block" for f in findings)

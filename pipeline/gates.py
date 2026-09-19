@@ -38,7 +38,7 @@ from pathlib import Path
 
 from config import Settings
 from pipeline.models import RATE_FIELDS
-from pipeline.spoken import eye_written_figures
+from pipeline.spoken import eye_written_figures, eye_written_terms
 
 log = logging.getLogger(__name__)
 
@@ -1094,6 +1094,16 @@ def voice_lint(narration: str) -> list[Finding]:
                 gate="voice", severity="warn", line=lineno,
                 message=(f"“{raw}” is written for the eye — the voice reads a "
                          f"symbol, a comma and a decimal point literally. "
+                         f"Write it spoken: “{said}”"),
+                excerpt=line.strip()[:140]))
+        # The same defect one layer out: the abbreviations this register is
+        # built from. A figure at least arrives as digits a voice recognises;
+        # "YoY" is a word to it, and it says one.
+        for raw, said in eye_written_terms(line):
+            findings.append(Finding(
+                gate="voice", severity="warn", line=lineno,
+                message=(f"“{raw}” is written for the eye — the voice does not "
+                         f"say it the way a person does. "
                          f"Write it spoken: “{said}”"),
                 excerpt=line.strip()[:140]))
     return findings
