@@ -39,7 +39,7 @@ import logging
 import random
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Collection, Any
 
 log = logging.getLogger(__name__)
 
@@ -385,6 +385,23 @@ class Plate:
         return (self.delivered[0], self.delivered[1])
 
 
+
+def _prefer_unused(options: list[str],
+                   avoid: "Collection[str]") -> list[str]:
+    """Drop what recent videos already used — unless that leaves nothing.
+
+    A PREFERENCE, never a constraint. Rotation exists so two consecutive
+    videos do not look like one video with a different ticker; a rotation that
+    could fail a render for want of an unused drawing would be a worse bug
+    than the sameness it prevents. When every option has been used recently,
+    every option is back on the table and the seed decides as it always did.
+    """
+    if not avoid:
+        return options
+    fresh = [k for k in options if k not in avoid]
+    return fresh or options
+
+
 class Registry:
     """Every plate, the palette, and the curation that decides what goes where."""
 
@@ -683,20 +700,27 @@ class Registry:
 
     # ----------------------------------------------------------------- host
 
-    def host_for(self, role: str, seed: str = "") -> Plate | None:
+    def host_for(self, role: str, seed: str = "",
+                 avoid: "Collection[str]" = ()) -> Plate | None:
         """A host pose for a shot ROLE, off the registry.
 
         The roles and the poses that serve them are curation shipped WITH the
         kit, not a list in this codebase. A new kit with a different set of
         poses drops in by shipping its own ``roles.json``.
+
+        `avoid` is what recent videos already used. It is a PREFERENCE, never
+        a constraint: a role served by one pose still yields that pose, so
+        rotation can never fail a render for want of a fresh drawing.
         """
         options = [k for k in self.host_roles.get(role, ()) if k in self.assets]
         if not options:
             return None
+        options = _prefer_unused(options, avoid)
         rng = random.Random(f"{role}|{seed}")
         return self.assets[rng.choice(options)]
 
-    def framing_for(self, role: str, seed: str = "") -> Plate | None:
+    def framing_for(self, role: str, seed: str = "",
+                    avoid: "Collection[str]" = ()) -> Plate | None:
         """A host pose for a role that is a FRAMING — a camera distance.
 
         ``host_for`` with the one filter the "nobody stands here" case needs. A
@@ -714,6 +738,7 @@ class Registry:
                    if k in self.assets and not self.assets[k].floor_line_y]
         if not options:
             return None
+        options = _prefer_unused(options, avoid)
         rng = random.Random(f"{role}|{seed}")
         return self.assets[rng.choice(options)]
 
@@ -735,7 +760,8 @@ class Registry:
         v = self.host_poses.get(pose_key, {}).get("limit")
         return int(v) if v is not None else None
 
-    def hour_for(self, episode: str) -> str:
+    def hour_for(self, episode: str,
+                 avoid: "Collection[str]" = ()) -> str:
         """Which hour the set is at for this EPISODE. One per video, never two.
 
         THE ARGUMENT IS THE EPISODE AND NOTHING ELSE, and that is the whole
@@ -752,7 +778,27 @@ class Registry:
             return ""
         if not episode:
             return hours[0]
+        # An hour the recent videos have already been shot at is a preference
+        # to move off, on the same terms as a plate: the set changing hour
+        # between videos is most of what makes two of them look different.
+        #
+        # Every room key belongs to exactly one hour — the one whose suffix
+        # it carries, or the BASE hour when it carries none. Deriving it that
+        # way rather than testing each suffix in turn is what keeps the base
+        # hour avoidable: it has no suffix, so a suffix test can never match
+        # it and `night` would have been unavoidable for ever.
+        used = {self._hour_of_key(k) for k in avoid if k.startswith("room/")}
+        fresh = [h for h in hours if h not in used]
+        if fresh and len(fresh) < len(hours):
+            hours = fresh
         return random.Random(f"hour|{episode}").choice(hours)
+
+    def _hour_of_key(self, key: str) -> str:
+        """Which hour a room key is shot at. The base hour carries no suffix."""
+        for hour, suffix in self.room_hours.items():
+            if suffix and key.endswith(suffix):
+                return hour
+        return self.hour_rotation[0] if self.hour_rotation else ""
 
     def at_hour(self, stem: str, hour: str) -> str:
         """A room stem at `hour` — ``room/desk-front`` -> ``room/desk-front-dusk``.
@@ -771,7 +817,7 @@ class Registry:
         return at if any(self.aspect_key(at, a) for a in ("16x9", "9x16")) else stem
 
     def room_for(self, role: str, aspect: str, seed: str = "",
-                 episode: str = "") -> Plate:
+                 episode: str = "", avoid: "Collection[str]" = ()) -> Plate:
         """One of the angles that fill a room ROLE. Raises if none do.
 
         THIS USED TO RETURN NONE AND THE CALLER DREW FLAT GROUND. `render_long`
@@ -785,9 +831,11 @@ class Registry:
         granularities: the angle rotates shot to shot, the hour does not move
         for the whole video. Passing no episode keeps the night set.
         """
-        hour = self.hour_for(episode)
+        hour = self.hour_for(episode, avoid=avoid)
         options = [k for stem in self.room_roles.get(role, ())
                    if (k := self.aspect_key(self.at_hour(stem, hour), aspect))]
+        if options:
+            options = _prefer_unused(options, avoid)
         if not options:
             known = ", ".join(sorted(self.room_roles)) or "(none)"
             raise PlateError(

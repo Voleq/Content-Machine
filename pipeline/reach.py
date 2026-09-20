@@ -264,3 +264,81 @@ def _undrawn_beats(script, drawn: set[str]) -> list[str]:
     """
     return [name for name, figures in _figure_beats(script)
             if not (figures & drawn)]
+
+
+# --------------------------------------------------------------------------
+# Rotation: what the last few videos already looked like (02).
+# --------------------------------------------------------------------------
+
+# How many recent videos count as "recently used". Three is one week of
+# output on the short lane, and it is the window in which two videos are
+# actually seen next to each other on a channel page.
+ROTATION_WINDOW = 3
+
+
+def recent_plates(settings, *, window: int = ROTATION_WINDOW,
+                  exclude: "Path | str | None" = None) -> set[str]:
+    """Every plate the last few renders actually put on screen.
+
+    Read off the manifests, which is where `plates_used` has been recorded
+    all along, waiting for somebody to ask the question. Deliberately
+    forgiving: an unreadable manifest, a workspace pruned by cleanup, a
+    render from before this field existed — each simply contributes nothing.
+    A rotation hint that cannot be built is a rotation hint that does not
+    apply, never an error.
+
+    `exclude` is the workspace of the video being rendered, and a renderer
+    MUST pass it. Without it a re-render reads its own previous manifest and
+    steers away from the plates it just used, so the same ticker on the same
+    day comes out looking different every pass — which breaks the segment
+    cache, makes a resumed render redraw beats it already had, and makes a
+    proof no longer a proof of the thing that shipped.
+    """
+    import json
+    from pathlib import Path
+
+    base = Path(settings.workspace_dir)
+    if not base.is_dir():
+        return set()
+    skip = Path(exclude).resolve() if exclude else None
+    found: list[tuple[float, set[str]]] = []
+    for manifest in base.glob("*/*/*manifest*.json"):
+        if skip is not None and manifest.parent.resolve() == skip:
+            continue
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            used = payload.get("plates_used")
+            if not isinstance(used, list) or not used:
+                continue
+            found.append((manifest.stat().st_mtime,
+                          {str(k) for k in used}))
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+    found.sort(key=lambda row: row[0], reverse=True)
+    out: set[str] = set()
+    for _, used in found[:window]:
+        out |= used
+    return out
+
+
+def rotation_line(settings, used: "set[str] | None" = None) -> str:
+    """How much of this video's look the last few videos already had.
+
+    Printed above Approve beside :meth:`Reach.line`. Reach asks whether a
+    script uses ENOUGH of the library; this asks whether it uses a DIFFERENT
+    part of it, which is the question the platform's originality rule is
+    actually about.
+    """
+    recent = recent_plates(settings)
+    if not recent:
+        return "Rotation: nothing rendered recently to compare against."
+    if not used:
+        return (f"Rotation: the last {ROTATION_WINDOW} renders used "
+                f"{len(recent)} plates, and this video will be steered off "
+                f"them where the kit has an alternative.")
+    shared = recent & used
+    pct = round(100 * len(shared) / len(used)) if used else 0
+    verdict = ("a different-looking video" if pct < 40
+               else "much the same look as the last few")
+    return (f"Rotation: {pct}% of this video's plates were also in the last "
+            f"{ROTATION_WINDOW} renders — {verdict}.")

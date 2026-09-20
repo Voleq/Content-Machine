@@ -2334,6 +2334,23 @@ def run_gates(script, settings: Settings, *, data=None, as_of: str = "",
         "prices", check_prices(script, settings, final=final))
     kit_findings, kit_stats = kit_doctor(script, settings)
     report.findings += report.record("kit", kit_findings)
+    # THE FOUR THAT ARE ABOUT WATCHABILITY, not truth (01, 30, 31, 35).
+    # Every gate above asks whether this video is right or affordable. These
+    # ask whether it is another copy of the last one, whether it has a shape,
+    # and whether it opens on what its title promised — which is the axis the
+    # platform's own originality rule is written on, and the axis retention
+    # measures. All warn; the sameness gate is the one that can block, and
+    # only when a script is effectively a previous one re-tickered.
+    #
+    # Imported here rather than at module scope: these read the corpus and
+    # the upload package, and `gates` is imported by nearly everything.
+    from pipeline.corpus import sameness_check
+    from pipeline.pacing import check_title_package, loop_check, pacing_report
+
+    report.findings += report.record("sameness", sameness_check(script, settings))
+    report.findings += report.record("pacing", pacing_report(script))
+    report.findings += report.record("loops", loop_check(script))
+    report.findings += report.record("title", check_title_package(script, settings))
     if skeptic:
         notes, why = skeptic_notes(narration, settings)
         report.findings += report.record("skeptic", notes)

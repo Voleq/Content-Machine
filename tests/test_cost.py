@@ -501,3 +501,123 @@ def test_every_ledger_in_the_process_shares_one_lock(settings):
     """`BotCore` builds one and hands it to the TTS engine and the b-roll
     manager; a per-instance lock guards nothing when the file is shared."""
     assert SpendLedger(settings)._lock is SpendLedger(settings)._lock
+
+
+# --------------------------------------------------------------------------
+# The cross-process lock, the weekly ceiling, and where the month went.
+# --------------------------------------------------------------------------
+
+
+def test_the_lock_is_shared_per_ledger_file(settings):
+    """Two ledgers on one file must share one lock — `flock` contends between
+    descriptors even inside a process, so two of them would deadlock against
+    each other rather than against a second process."""
+    from pipeline.cost import SpendLedger
+
+    assert SpendLedger(settings)._lock is SpendLedger(settings)._lock
+
+
+def test_the_lock_is_reentrant(settings):
+    """`reserve_tts_spend` takes it and calls `_live_reservations`, which
+    takes it again. A file lock that was not reentrant would hang here."""
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    with ledger._lock:
+        with ledger._lock:
+            assert ledger.reserved_usd() == 0.0
+
+
+def test_a_second_process_cannot_claim_the_same_headroom(settings):
+    """The whole point: the lockfile is held while the ledger is read and
+    written, so another process blocks rather than reading a stale total."""
+    import fcntl
+
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    ledger.record_tts(1.0)
+    lock_path = settings.state_dir / "spend.lock"
+    assert lock_path.exists(), "the lockfile is taken on a write"
+
+    with ledger._lock:
+        # While it is held, a foreign descriptor cannot take it.
+        with open(lock_path, "a+", encoding="utf-8") as other:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(other.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+
+def test_the_week_key_is_iso_so_a_straddling_week_stays_one_week():
+    from datetime import datetime, timezone
+
+    from pipeline.cost import week_key
+
+    # 2026-12-31 and 2027-01-01 are the same ISO week.
+    a = week_key(datetime(2026, 12, 31, tzinfo=timezone.utc))
+    b = week_key(datetime(2027, 1, 1, tzinfo=timezone.utc))
+    assert a == b
+
+
+def test_the_weekly_warning_is_silent_until_the_mark(settings):
+    from pipeline.cost import SpendLedger
+
+    settings.weekly_spend_warn_usd = 10.0
+    ledger = SpendLedger(settings)
+    ledger.record_tts(4.0, lane="short", ticker="AAPL")
+    assert ledger.weekly_warning() == ""
+
+    ledger.record_tts(7.0, lane="short", ticker="MSFT")
+    warning = ledger.weekly_warning()
+    assert "past the $10.00 weekly mark" in warning
+
+
+def test_the_weekly_warning_can_be_asked_about_one_lane(settings):
+    from pipeline.cost import SpendLedger
+
+    settings.weekly_spend_warn_usd = 5.0
+    ledger = SpendLedger(settings)
+    ledger.record_tts(6.0, lane="long", ticker="AAPL")
+
+    assert "on the long lane" in ledger.weekly_warning(lane="long")
+    assert ledger.weekly_warning(lane="short") == ""
+
+
+def test_a_zero_ceiling_turns_the_weekly_warning_off(settings):
+    from pipeline.cost import SpendLedger
+
+    settings.weekly_spend_warn_usd = 0.0
+    ledger = SpendLedger(settings)
+    ledger.record_tts(999.0, lane="short")
+    assert ledger.weekly_warning() == ""
+
+
+def test_explain_says_where_the_month_went(settings):
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    ledger.record_tts(3.0, lane="short", ticker="AAPL", chars=800, tier="paid")
+    ledger.record_tts(1.0, lane="long", ticker="MSFT", chars=200, tier="paid")
+
+    text = ledger.explain_text()
+
+    assert "By video" in text and "By tier" in text
+    assert "AAPL" in text and "MSFT" in text
+    assert "$  3.00" in text
+
+
+def test_explain_counts_the_cache_as_money_not_spent(settings):
+    from pipeline.cost import SpendLedger
+
+    ledger = SpendLedger(settings)
+    ledger.record_cache_hit(5000, lane="short", ticker="AAPL", tier="paid")
+
+    text = ledger.explain_text()
+
+    assert "cache answered 1 generation" in text
+    assert ledger.mtd_spend_usd() == 0.0, "a cache hit spends nothing"
+
+
+def test_explain_is_honest_about_an_empty_month(settings):
+    from pipeline.cost import SpendLedger
+
+    assert "No paid generation recorded" in SpendLedger(settings).explain_text()

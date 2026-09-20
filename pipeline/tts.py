@@ -479,6 +479,11 @@ class TTSEngine:
 
         if audio_path.exists() and words_path.exists():
             words = [WordTimestamp(**w) for w in json.loads(words_path.read_text(encoding="utf-8"))]
+            # A generation that did not happen, recorded as one (13). The
+            # sha-keyed cache is the guarantee that an unchanged script costs
+            # nothing, and it has never left a trace anyone could read.
+            if tier == "paid":
+                self.ledger.record_cache_hit(len(text), lane=fmt, tier=tier)
             return TTSResult(
                 audio_path=audio_path,
                 words=words,
@@ -528,7 +533,8 @@ class TTSEngine:
             _est, reservation = self.ledger.reserve_tts_spend(len(text))
             try:
                 chunk_files, chunk_words, cost_usd = self._generate_real(
-                    chunks, voice_id, model_id, vsettings, cdir
+                    chunks, voice_id, model_id, vsettings, cdir,
+                    fmt=fmt, tier=tier
                 )
             finally:
                 # Whatever happened, the claim is over: what was actually
@@ -671,6 +677,8 @@ class TTSEngine:
         model_id: str,
         vsettings: dict,
         cdir: Path,
+        fmt: str = "",
+        tier: str = "",
     ) -> tuple[list[Path], list[list[WordTimestamp]], float]:
         """Generate every chunk, metering and resuming per chunk.
 
@@ -742,7 +750,8 @@ class TTSEngine:
                 # before anything downstream can raise. The cap is metered on
                 # what was actually billed.
                 spent = estimate_tts_usd(len(chunk), self.settings)
-                self.ledger.record_tts(spent)
+                self.ledger.record_tts(spent, lane=fmt, chars=len(chunk),
+                                       tier=tier)
                 cost_usd += spent
                 files.append(f)
                 words.append(cwords)

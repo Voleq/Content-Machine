@@ -39,6 +39,7 @@ def pick_best_window(
     words: list[WordTimestamp] | None = None,
     avoid: Sequence[tuple[float, float]] = (),
     min_gap_s: float = 5.0,
+    retention: dict | None = None,
 ) -> tuple[float, float]:
     """Slide candidate windows over the cue list; densest one wins.
     Candidates start slightly before each cue (so the window opens on
@@ -47,11 +48,17 @@ def pick_best_window(
     `avoid` holds (start, end) ranges already taken. A candidate is excluded
     when its own window would overlap one — plus `min_gap_s` of breathing
     room, so two clips are two different moments rather than the same moment
-    shifted a few seconds."""
+    shifted a few seconds.
+
+    `retention` REPLACES the density guess when it exists (34). Cue density is
+    a proxy for "where is the interesting minute"; once the long has been
+    published and watched, the peaks are not a proxy at all. The heuristic
+    stays as the fallback, because most clips are cut the day the long ships
+    and there is nothing to read yet."""
     if duration <= window_s:
         return 0.0, duration
 
-    def score(start: float) -> float:
+    def density(start: float) -> float:
         end = start + window_s
         s = 0.0
         for c in cues:
@@ -62,9 +69,30 @@ def pick_best_window(
                     s += 1.5
         return s
 
+    def held(start: float) -> float:
+        from pipeline.retention_lines import _rows_of, hold_over
+
+        got = hold_over(_rows_of(retention), duration, start,
+                        min(start + window_s, duration))
+        # A window the curve says nothing about falls back to its density, so
+        # partial retention data never scores a window at zero.
+        return got[0] if got is not None else 0.0
+
+    score = held if retention else density
+
     candidates = {0.0}
     for c in cues:
         candidates.add(min(max(c["t"] - 2.0, 0.0), duration - window_s))
+    if retention:
+        # The cues say where the DIRECTOR put something. With a retention
+        # curve the question is where the VIEWERS stayed, and the two need
+        # not coincide — so the search stops being limited to moments the
+        # director marked and sweeps the whole video.
+        step = max(2.0, window_s / 8.0)
+        at = 0.0
+        while at <= duration - window_s:
+            candidates.add(round(at, 3))
+            at += step
     if avoid:
         def clear(s: float) -> bool:
             e = s + window_s
@@ -101,6 +129,7 @@ def pick_best_windows(
     window_s: float = 58.0,
     words: list[WordTimestamp] | None = None,
     min_gap_s: float = 5.0,
+    retention: dict | None = None,
 ) -> list[tuple[float, float]]:
     """The best `n` NON-OVERLAPPING windows, best first (P3.3).
 
@@ -120,7 +149,8 @@ def pick_best_windows(
     taken: list[tuple[float, float]] = []
     for _ in range(max(1, n)):
         start, end = pick_best_window(cues, duration, window_s, words=words,
-                                      avoid=taken, min_gap_s=min_gap_s)
+                                      avoid=taken, min_gap_s=min_gap_s,
+                                      retention=retention)
         if start is None:
             break
         taken.append((start, end))

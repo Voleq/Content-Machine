@@ -247,6 +247,32 @@ class Workspace:
         except json.JSONDecodeError:
             return {}
 
+    # ------------------------------------------------ the operator's own words
+    #
+    # WHY THIS ONE, IN THE OPERATOR'S WORDS (03). The thesis exists inside the
+    # angle prompt and evaporates when the prompt is answered; nothing on disk
+    # ever held the human judgement behind a video. YouTube's originality rule
+    # asks for exactly that judgement, and a pipeline that renders one template
+    # per ticker has to be able to point at it.
+    #
+    # Captured at intake, printed above Approve, and carried into the
+    # description, so it is one sentence written once and used three times.
+
+    def _why_file(self) -> Path:
+        return self.path / "why.txt"
+
+    def set_why(self, text: str) -> None:
+        self.path.mkdir(parents=True, exist_ok=True)
+        self._why_file().write_text(text.strip() + "\n", encoding="utf-8")
+
+    @property
+    def why(self) -> str:
+        f = self._why_file()
+        try:
+            return f.read_text(encoding="utf-8").strip() if f.exists() else ""
+        except OSError:
+            return ""
+
     # ------------------------------------------------------------- approval
     def _approval_file(self, fmt: str) -> Path:
         return self.path / f"approval_{fmt}.json"

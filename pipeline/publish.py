@@ -15,9 +15,11 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Sequence
 
 from pipeline.models import WordTimestamp
 from pipeline.plates import fold_chapter_type
+from pipeline.youtube import DESCRIPTION_MAX
 
 log = logging.getLogger(__name__)
 
@@ -131,6 +133,57 @@ def write_srt(words: list[WordTimestamp], out_path: Path) -> Path:
     return out_path
 
 
+
+# --------------------------------------------------------------------------
+# The transcript and the timestamps (27).
+#
+# Both are derived from artefacts the render already produced, so both are
+# free: the word timings are the master clock the captions are cut against,
+# and the chapter trailer is already parsed for the on-screen titles. Neither
+# was reaching the description, which is where a search engine and a viewer
+# skimming for the bit they came for would both look for it.
+# --------------------------------------------------------------------------
+
+# YouTube truncates a description at 5000 characters. A long's transcript is
+# far longer than that on its own, so the transcript rides only when it fits
+# with everything else — and it is cut at a sentence when it nearly does.
+TRANSCRIPT_HEAD = "Transcript"
+
+
+def transcript_text(words: list[WordTimestamp]) -> str:
+    """The narration as one readable block, off the render's own timings."""
+    return " ".join(w.word for w in words).strip()
+
+
+def write_transcript(words: list[WordTimestamp], out_path: Path) -> Path:
+    """The transcript as a file, beside the `.srt` it shares a clock with."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(transcript_text(words) + "\n", encoding="utf-8")
+    return out_path
+
+
+def timestamps_from_cues(cues: list[tuple[float, float, str]],
+                         *, every_s: float = 30.0) -> list[tuple[str, str]]:
+    """Timestamps for a video whose script carries no chapter trailer.
+
+    A SHORT never has one, and a LONG written before the trailer existed does
+    not either. Taking the first cue at or after each interval gives marks a
+    viewer can actually use, labelled with what is being said there — which is
+    more useful than "Part 2" and costs nothing, because the cues are already
+    cut.
+    """
+    out: list[tuple[str, str]] = []
+    next_at = 0.0
+    for start, _end, text in cues:
+        if start + 0.001 < next_at:
+            continue
+        label = " ".join(text.split())[:48]
+        if label:
+            out.append((_timestamp(start)[:8].replace("00:", "", 1)
+                        if start < 3600 else _timestamp(start)[:8], label))
+        next_at = start + every_s
+    return out
+
 # --------------------------------------------------------------------------
 # The upload package.
 # --------------------------------------------------------------------------
@@ -206,7 +259,10 @@ def normalise_chapters(chapters: str,
 
 
 def build_package(script, settings, *, ticker: str = "",
-                  hook: str = "", runtime_min: float = 0.0) -> UploadPackage:
+                  hook: str = "", runtime_min: float = 0.0,
+                  transcript: str = "",
+                  timestamps: "Sequence[tuple[str, str]]" = (),
+                  why: str = "") -> UploadPackage:
     """Title options, description with chapters, tags and a pinned comment.
 
     Deliberately mechanical: it assembles what the script already decided
@@ -232,12 +288,29 @@ def build_package(script, settings, *, ticker: str = "",
         body.append("Chapters")
         body += [f"{ts} {title}" for ts, title, _ in chapters]
         body.append("")
+    elif timestamps:
+        # No chapter trailer — a SHORT never has one. The cues do the job.
+        body.append("Chapters")
+        body += [f"{ts} {label}" for ts, label in timestamps]
+        body.append("")
+    if why:
+        # The operator's own sentence (03), above the boilerplate. It is the
+        # one part of the description no template wrote.
+        body += ["Why this one", why.strip(), ""]
     body += [
         settings.disclaimer_text,
         "",
         "Everything on screen is from the filings. No sponsor, no position "
         "unless stated, no price targets.",
     ]
+
+    # The transcript last, and only if the whole description still fits.
+    # A truncated transcript is worse than none: it reads as a video that
+    # stops mid-sentence.
+    if transcript:
+        candidate = body + ["", TRANSCRIPT_HEAD, transcript]
+        if len("\n".join(candidate).strip()) <= DESCRIPTION_MAX:
+            body = candidate
 
     return UploadPackage(
         ticker=ticker,
