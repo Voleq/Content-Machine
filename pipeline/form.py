@@ -74,7 +74,7 @@ def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
     try:
         from config import Settings
         from pipeline.compose import resolve_plate
-        from pipeline.plate_frames import budget
+        from pipeline.plate_frames import slot_limit
         from pipeline.plates import load_plates
     except Exception:                              # noqa: BLE001
         return {}
@@ -88,29 +88,51 @@ def _budgets(name: str, root: Path | str = ".") -> dict[str, int]:
     for shot in fmt.shots:
         if not shot.plate:
             continue
-        try:
-            plate = resolve_plate(reg, shot.plate, fmt.aspect)
-        except Exception:                          # noqa: BLE001
-            plate = None
-        if plate is None:
-            continue
-        for slot_name in (shot.bind or {}):
-            slot = plate.slot(slot_name)
-            if slot is None:
+        # EVERY PLATE THE BEAT MIGHT LAND ON, NOT JUST THE AUTHORED ONE.
+        # The rotation picks between them at render time and the writer is
+        # asked for the line long before that, so the number they are given
+        # has to be the one that fits WHICHEVER is picked — the narrowest box
+        # across the set. Quoting the authored plate's figure would promise
+        # room an alternate does not have, and the render refuses rather than
+        # truncating, which puts the failure after the writing.
+        for i, variant in enumerate(shot.variants):
+            try:
+                plate = resolve_plate(reg, variant.plate, fmt.aspect)
+            except Exception:                      # noqa: BLE001
+                plate = None
+            if plate is None:
                 continue
-            # The budget for THIS box, falling back to the role's floor — the
-            # same resolution `check_budgets` uses, so a field cannot advertise
-            # a length the compositor will then refuse.
-            tr = budget(plate, slot)
-            limit = tr.get("maxChars")
-            if not limit:
-                # A wrapping slot says how many lines and how wide each is.
-                lines, per = tr.get("maxLines"), tr.get("maxCharsPerLine")
-                limit = int(lines) * int(per) if lines and per else None
-            if limit:
-                key = f"fill:{slot_name}"
-                out[key] = min(out.get(key, int(limit)), int(limit))
+            bind, _lit, _focus = variant.resolved(shot)
+            # The authored plate contributes every box it is given; an
+            # alternate only the ones it REQUIRES, for the reason spelled out
+            # in `form_for` — an optional value that does not fit is left out
+            # of that drawing rather than refused, so a narrow optional box on
+            # one alternate must not shrink what the writer may write for every
+            # video.
+            if i:
+                bind = {k: v for k, v in bind.items() if not v.startswith("?")}
+            _slot_budgets(out, plate, bind, slot_limit)
     return out
+
+
+def _slot_budgets(out: dict[str, int], plate, binds, slot_limit) -> None:
+    """Fold one plate's limits into `out`, keeping the tightest per slot."""
+    for slot_name in binds:
+        slot = plate.slot(slot_name)
+        if slot is None:
+            continue
+        # The budget for THIS box, falling back to the role's floor — the
+        # same resolution `check_budgets` uses, so a field cannot advertise
+        # a length the compositor will then refuse.
+        # A wrapping slot says how many lines and how wide each is, and
+        # `slot_limit` multiplies the two out — the same arithmetic the
+        # rotation uses to decide whether a line fits a plate it is
+        # considering, so a field cannot advertise a length the compositor
+        # will then refuse.
+        limit = slot_limit(plate, slot)
+        if limit:
+            key = f"fill:{slot_name}"
+            out[key] = min(out.get(key, int(limit)), int(limit))
 
 
 def form_for(name: str, root: Path | str = ".") -> list[Field]:
@@ -138,10 +160,37 @@ def form_for(name: str, root: Path | str = ".") -> list[Field]:
     for shot in fmt.shots:
         for t in shot.text:
             note(t.src, f"text:{t.name}", shot.id)
+        # EVERY BOX THE FIELD MAY LAND IN, across every plate this beat may
+        # be drawn on. The rotation picks the plate at render time and the
+        # alternates rarely name their slots the same way — `script.verdict`
+        # is the `detail` rule on `big-number-l2` and the `caption` on `l1`,
+        # and those boxes are not the same width. Registering only the
+        # authored plate's slot leaves the field quoting a budget for a box it
+        # may never land in, and the render refuses rather than truncating.
         for slot, expr in (shot.bind or {}).items():
             # A leading '?' marks an optional slot; it is the SLOT that is
             # optional, not the source, so the name is the same either way.
             note(expr.lstrip("?"), f"fill:{slot}", shot.id)
+        # AN ALTERNATE TIGHTENS THE ASK ONLY WHERE IT MUST.
+        #
+        # The rotation picks the plate at render time and the alternates rarely
+        # name their slots the same way, so a field can land in boxes of
+        # different widths. Where the alternate REQUIRES the value, the writer
+        # has to be given the narrowest of them: the render refuses an
+        # over-budget required fill rather than truncating it, and a number
+        # quoted off the authored plate alone would put that refusal after the
+        # writing instead of during it.
+        #
+        # Where it is OPTIONAL the opposite holds. An optional value that does
+        # not fit is left out of that drawing and the video is fine — that is
+        # the kit's own rule, in `_bound_values` — so letting a narrow optional
+        # box drag the quoted budget down would shrink what the writer may
+        # write for every video, to suit the one plate that can do without it.
+        for variant in shot.alts:
+            bind, _lit, _focus = variant.resolved(shot)
+            for slot, expr in bind.items():
+                if not expr.startswith("?"):
+                    note(expr, f"fill:{slot}", shot.id)
         if shot.repeat and shot.repeat.src:
             for slot in (shot.repeat.bind or {}):
                 note(shot.repeat.src, f"repeat:{slot}", shot.id)

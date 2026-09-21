@@ -321,6 +321,43 @@ def recent_plates(settings, *, window: int = ROTATION_WINDOW,
     return out
 
 
+def recent_orders(settings, *, window: int = ROTATION_WINDOW,
+                  exclude: "Path | str | None" = None) -> set[str]:
+    """Which cut orders the last few renders were shot in.
+
+    `recent_plates` for sequences rather than drawings, off the same manifests
+    and with the same forgiveness: a manifest with no `shot_order` — every one
+    written before the field existed — contributes nothing, and a rotation hint
+    that cannot be built simply does not apply.
+
+    `exclude` is the workspace being rendered and a renderer MUST pass it, for
+    the reason it must pass it to `recent_plates`: without it a second pass
+    reads the manifest its own first pass wrote and cuts the same video in a
+    different order, so a proof stops being a proof of the thing that ships.
+    """
+    import json
+    from pathlib import Path
+
+    base = Path(settings.workspace_dir)
+    if not base.is_dir():
+        return set()
+    skip = Path(exclude).resolve() if exclude else None
+    found: list[tuple[float, str]] = []
+    for manifest in base.glob("*/*/*manifest*.json"):
+        if skip is not None and manifest.parent.resolve() == skip:
+            continue
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            order = payload.get("shot_order")
+            if not isinstance(order, str) or not order:
+                continue
+            found.append((manifest.stat().st_mtime, order))
+        except (OSError, json.JSONDecodeError, ValueError):
+            continue
+    found.sort(key=lambda row: row[0], reverse=True)
+    return {order for _, order in found[:window]}
+
+
 def rotation_line(settings, used: "set[str] | None" = None) -> str:
     """How much of this video's look the last few videos already had.
 

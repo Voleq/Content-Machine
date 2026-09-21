@@ -50,11 +50,11 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Collection, Protocol, Sequence
 
-from pipeline.plates import Plate, Registry
+from pipeline.plates import Plate, Registry, _prefer_unused
 from pipeline.shots import (LARGE_TYPE_FH, MIN_TYPE_FH, Format, Shot, Span,
                             TemplateError)
 
@@ -215,6 +215,118 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
     return resolved[(offset + step) % len(resolved)]
 
 
+def _fillable(variant, shot: Shot, plate: Plate, resolver: Resolver,
+              reg: Registry) -> bool:
+    """Would this plate actually compose, for THIS script?
+
+    Asked by running the real fill rather than by re-deriving the rules, which
+    matters more than it reads: `head`, `row-3` and `band-2` are the tag
+    grammar's names and not slots any plate declares, so a hand-rolled "does it
+    declare this slot" test rejects every numbers sheet in the kit, including
+    the one the template already names.
+
+    Two ways a plate is wrong for a video and both have to be caught before it
+    is chosen rather than after:
+
+    * it cannot take one of the binds — `build_fill` raises, and a raise here
+      would take the render down over a drawing that was only ever one of
+      several options;
+    * a REQUIRED bind the script carries nothing for. `figures/big-number-l2`
+      wants a detail line; a video with no verdict has none, so l2 is the wrong
+      plate for it and `big-number-l1` is the right one.
+
+    Optional binds, marked `?`, are neither: a blank row is the correct drawing
+    and never a reason to reject the plate carrying it.
+    """
+    bind, lit, focus = variant.resolved(shot)
+    probe = replace(shot, plate=plate.key, bind=bind, lit=lit, focus=focus,
+                    alts=())
+    try:
+        values, unfilled, _skipped = _bound_values(probe, plate, resolver, reg)
+    except Exception:                              # noqa: BLE001
+        return False
+    if unfilled:
+        return False
+    # AND THE COPY HAS TO FIT THE BOXES THIS DRAWING RESERVES FOR IT.
+    #
+    # `check_budgets` refuses a required fill that runs over, so a rotation
+    # that ignored the budgets would trade sameness for a render that fails on
+    # the videos whose lines happen to be long — the worst possible trade,
+    # because it fails AFTER the writing and only for some seeds.
+    #
+    # Rejected rather than trimmed: the same words fit the authored plate,
+    # which is still in the set. So a long conclusion simply keeps the wide
+    # sign-off card and a short one may rotate onto the narrow one.
+    from pipeline.plate_frames import slot_limit
+
+    for slot_name, value in values.items():
+        slot = plate.slot(slot_name)
+        if slot is None:
+            continue
+        # The WRAPPED limit too, not just `maxChars`. The sign-off line, a
+        # quote body and a statement on the two-sided card all wrap, and a
+        # check that read `maxChars` alone would answer "no limit" for exactly
+        # the slots a long line overruns.
+        limit = slot_limit(plate, slot, str(value))
+        if limit and len(str(value)) > limit:
+            return False
+    # A lit band or a focus move that names nothing on this plate is not an
+    # error — it just silently does not happen, which is a beat that reads as
+    # a held frame. Reject the plate instead.
+    for name in (lit, focus):
+        if name and name != "all" and plate.slot(name) is None:
+            return False
+    return True
+
+
+def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
+                   *, seed: str = "", avoid: "Collection[str]" = ()):
+    """Which of a beat's interchangeable plates this video draws.
+
+    THE WRITER CHOOSES NOTHING HERE AND THAT IS DELIBERATE. A SHORT is
+    mass-produced: its beats are fixed so the character budgets can be stated
+    up front and the cut has a shape that always holds. What was missing is
+    that the PICTURE on a beat was fixed too, so every short of a format showed
+    the same ten drawings in the same order, and 55 plates drawn at 9:16 had no
+    route to a frame at all — the vertical templates never named them and
+    `parser_short` ignores the inline tags a director would use in a LONG.
+
+    Rotating here costs the writer nothing and costs the budgets nothing:
+    `form._budgets` quotes the narrowest box across the whole set, so whatever
+    is picked, the line fits.
+
+    The authored plate is the floor. When every alternate is unresolvable in
+    this kit or unfillable by this script it is what comes back, and its own
+    failure to resolve stays the caller's error to raise.
+    """
+    import random
+
+    variants = shot.variants
+    if len(variants) <= 1:
+        return variants[0] if variants else None
+    primary = variants[0]
+
+    usable: list[tuple[str, object]] = []
+    for v in variants:
+        try:
+            plate = resolve_plate(reg, v.plate, aspect)
+        except TemplateError:
+            plate = None
+        # AN ALTERNATE A KIT DOES NOT CARRY IS DROPPED, NOT RAISED ON. The kit
+        # is swapped wholesale and the next drop retires plates by name; a
+        # rotation that hard-failed on a retired alternate would turn every
+        # swap into a render outage over a picture nothing needed.
+        if plate is None or not _fillable(v, shot, plate, resolver, reg):
+            continue
+        usable.append((plate.key, v))
+    if not usable:
+        return primary
+
+    keys = _prefer_unused([k for k, _ in usable], avoid)
+    pick = random.Random(f"variant|{shot.id}|{seed}").choice(sorted(keys))
+    return next(v for k, v in usable if k == pick)
+
+
 def resolve_plate(reg: Registry, name: str, aspect: str) -> Plate | None:
     """A template's plate name against the registry, aspect-aware.
 
@@ -329,6 +441,21 @@ def build_layers(fmt: Format, spans: Sequence[Span], resolver: Resolver,
         stage: tuple[int, int, int, int] = (0, 0, fw, fh)
         host_column: tuple[int, int, int, int] | None = None
         graphic_side = ""
+
+        # -- WHICH DRAWING THIS BEAT GETS. A shot may name alternates, and the
+        #    one picked brings its own bind map with it, so everything below —
+        #    the slot fills, the lit band, the focus move, the budgets — reads
+        #    the chosen variant rather than the authored one. Swapping the shot
+        #    here rather than threading a variant through twenty lines is what
+        #    keeps a plate with differently-named slots from being a special
+        #    case in each of them.
+        if shot.plate and shot.alts:
+            picked = choose_variant(reg, shot, aspect, resolver,
+                                    seed=seed, avoid=avoid)
+            if picked is not None and picked.plate != shot.plate:
+                bind, lit, focus = picked.resolved(shot)
+                shot = replace(shot, plate=picked.plate, alts=(),
+                               bind=bind, lit=lit, focus=focus)
 
         # -- the plate. `None` is a real value: a bare-ground shot.
         if shot.plate:

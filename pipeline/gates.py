@@ -2001,8 +2001,13 @@ def reachable_plates(reg) -> dict[str, set[str]]:
     for fmt_name in available_formats():
         fmt = load_format(fmt_name)
         for shot in fmt.shots:
-            if shot.plate:
-                _named(shot.plate, fmt.aspect)
+            # EVERY PLATE THE BEAT CAN LAND ON. A shot's alternates are
+            # template routes exactly as its authored plate is — code picks
+            # between them with no writer involved — and counting only the
+            # authored one is what reported 55 drawn 9:16 plates as having no
+            # route to a frame while the templates were reaching for them.
+            for variant in shot.variants:
+                _named(variant.plate, fmt.aspect)
             for src in (shot.bind or {}).values():
                 src = str(src).lstrip("?")
                 if src.startswith("plate."):
