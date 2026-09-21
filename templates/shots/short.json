@@ -30,7 +30,11 @@
     "nobody in it. `host/close-up` is head and shoulders and it exists for",
     "exactly that beat.",
     "",
-    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one."
+    "A STATIC PLATE MAY HOLD. The ceiling was written when every plate in the kit boiled; 44 of the 140 are `playback: static` now, because a figure that moves is a figure being re-read. What keeps a data beat short is the ceiling itself, and it is set to what a seventy-second cut of ten beats actually gives each one.",
+    "",
+    "ALTERNATES: a beat may name other plates that can carry it, and code picks between them, rotating off what the last few videos used. The writer still chooses nothing — that is the point of a format that exists to be mass-produced. An alternate restates `bind` when it names its slots differently, and inherits when it does not.",
+    "",
+    "ORDERS: an alternate sequence may only move shots the NARRATION does not pin. A shot with an `anchor` starts where its own words are spoken, and the words are one take written to the beat order in the writing prompt, so moving an anchored beat puts the picture over the wrong sentence. Only unanchored shots, and ones sharing an anchor with another, are free — which today is one swap. Reordering beats properly means the prompt stating the order it picked and the script carrying it back."
   ],
   "shots": [
     {
@@ -44,7 +48,17 @@
         "sub": "?script.move_summary",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file."
+      "notes": "The hook card is the format's own opener — three treatments, and which one a video gets is a property of the script, not of this file.",
+      "alts": [
+        {
+          "plate": "shorts/hook-card-t2",
+          "notes": "Same three slots, a different treatment."
+        },
+        {
+          "plate": "shorts/hook-card-t3",
+          "notes": "The third treatment. `huge` goes unfilled, which is the drawing, not a gap."
+        }
+      ]
     },
     {
       "id": "the-move",
@@ -69,7 +83,26 @@
         "headline": "script.headlines.0.text",
         "sub": "?script.headlines.0.meaning"
       },
-      "notes": "A headline on paper, in the band drawn for it. Three treatments exist so two headlines in one video are not the same picture twice."
+      "notes": "A headline on paper, in the band drawn for it. Three treatments exist so two headlines in one video are not the same picture twice.",
+      "alts": [
+        {
+          "plate": "paper/headline-band-t2-9x16"
+        },
+        {
+          "plate": "paper/headline-band-t3-9x16"
+        },
+        {
+          "plate": "paper/headline-stack-3-9x16",
+          "bind": {
+            "headline-1": "script.headlines.0.text",
+            "headline-2": "script.headlines.1.text",
+            "headline-3": "?script.headlines.2.text",
+            "caption": "?script.headlines.0.meaning",
+            "kicker": "?script.ticker"
+          },
+          "notes": "NEWS-RELEASE ART, AND THE SCRIPT ALREADY CARRIES IT. A script may declare three headlines and the band shows one, so the other two were written and never drawn. `headline-2` is bound REQUIRED on purpose: a stack of three with two empty rows is a broken drawing rather than a sparse one, so the rotation only reaches for this when the writer actually filed a second headline."
+        }
+      ]
     },
     {
       "id": "the-turn",
@@ -104,7 +137,17 @@
         "lit": "band-$n",
         "focus": "band-$n"
       },
-      "notes": "One row per shot: the band lights and the frame moves to it. Steps that differ only by which row carries a rectangle are one shot with extra runtime — but a vertical sheet's row is already the width of the frame, so the move is a pan rather than a zoom past the figures. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff."
+      "notes": "One row per shot: the band lights and the frame moves to it. Steps that differ only by which row carries a rectangle are one shot with extra runtime — but a vertical sheet's row is already the width of the frame, so the move is a pan rather than a zoom past the figures. No host: there is no room for a figure in front of a wall-sized sheet, and he returns at the payoff.",
+      "alts": [
+        {
+          "plate": "tables/numbers-sheet-4r-spark-9x16",
+          "notes": "The same sheet with a sparkline column. `head-spark` is the kit's own label and takes no binding."
+        },
+        {
+          "plate": "tables/numbers-sheet-5r-9x16",
+          "notes": "A taller sheet: three rows lit against five bands rather than three."
+        }
+      ]
     },
     {
       "id": "the-sheet",
@@ -124,7 +167,15 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "Pull back: every row up at once, after the walk down them."
+      "notes": "Pull back: every row up at once, after the walk down them.",
+      "alts": [
+        {
+          "plate": "tables/numbers-sheet-4r-spark-9x16"
+        },
+        {
+          "plate": "tables/numbers-sheet-5r-9x16"
+        }
+      ]
     },
     {
       "id": "the-comment",
@@ -136,7 +187,18 @@
         "attribution": "?script.ticker",
         "source": "?numbers.unit"
       },
-      "notes": "What the sheet meant, in the plate drawn for a line worth pulling out. The numbers comment is written at two hundred characters and there is nowhere on a sheet to put one."
+      "notes": "What the sheet meant, in the plate drawn for a line worth pulling out. The numbers comment is written at two hundred characters and there is nowhere on a sheet to put one.",
+      "alts": [
+        {
+          "plate": "cards/definition-9x16",
+          "bind": {
+            "term": "script.ticker",
+            "body": "script.numbers_comment",
+            "kicker": "?numbers.unit"
+          },
+          "notes": "The read as a term and its meaning. `definition` names its slots nothing like `quote-pull`, so it restates the binds."
+        }
+      ]
     },
     {
       "id": "cheap-or-trap",
@@ -174,7 +236,36 @@
         "line-1": "script.conclusion",
         "date-label": "?channel.handle"
       },
-      "notes": "Resigned, not conclusive. The handle sits under it where the date label goes."
+      "notes": "Resigned, not conclusive. The handle sits under it where the date label goes.",
+      "alts": [
+        {
+          "plate": "cards/quote-pull-9x16",
+          "bind": {
+            "body": "script.conclusion",
+            "attribution": "?channel.handle",
+            "source": "?script.ticker"
+          },
+          "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+        }
+      ]
+    }
+  ],
+  "orders": [
+    {
+      "name": "comment-first",
+      "shots": [
+        "hook",
+        "the-move",
+        "the-news",
+        "the-turn",
+        "numbers",
+        "the-comment",
+        "the-sheet",
+        "cheap-or-trap",
+        "payoff",
+        "close"
+      ],
+      "notes": "The read before the pull-back instead of after it. `the-sheet` and `the-comment` both listen for `numbers_comment`, so the voice does not care which lands first — which is what makes this the one swap the narration leaves free."
     }
   ]
 }

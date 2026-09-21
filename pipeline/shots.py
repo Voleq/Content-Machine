@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Collection, Sequence
 
 TEMPLATE_DIR = Path("templates/shots")
 
@@ -44,14 +44,20 @@ class TemplateError(RuntimeError):
 # Every key any of these objects may carry is listed, and anything else is an
 # error naming the key and the shot it is in.
 FORMAT_KEYS = frozenset({"format", "aspect", "frame", "shots", "chapters",
-                         "notes"})
+                         "notes", "orders"})
 CHAPTER_KEYS = frozenset({"chapter", "shots", "notes"})
 CHAPTER_DIR = Path("templates/chapters")
 SHOT_KEYS = frozenset({"id", "plate", "bind", "text", "marks", "host", "enter",
                        "lit", "anchor", "max_hold_s", "captions", "notes",
-                       "repeat", "stagger_s", "focus",
+                       "repeat", "stagger_s", "focus", "alts",
                        # set by chapter expansion, never authored
                        "_chapter", "_chapter_n"})
+# An ALTERNATE is the same beat drawn on a different plate. It carries its own
+# `bind` because interchangeable plates rarely name their slots the same way:
+# `structure/closing` writes `line-1` and `structure/end-card` writes `line`,
+# and a shared bind map would name a slot one of them does not declare.
+ALT_KEYS = frozenset({"plate", "bind", "lit", "focus", "notes"})
+ORDER_KEYS = frozenset({"name", "shots", "notes"})
 TEXT_KEYS = frozenset({"name", "src", "size_fh", "align", "halign",
                        "max_lines", "draw_on_s", "color", "slot"})
 MARK_KEYS = frozenset({"kind", "target", "name"})
@@ -156,6 +162,50 @@ class RepeatSpec:
 
 
 @dataclass(frozen=True)
+class Variant:
+    """One way to draw a beat: a plate, and what goes in ITS slots.
+
+    A shot names one plate and every short of that format shows that drawing.
+    The kit holds alternatives for most beats — three hook treatments, three
+    headline bands, a big number with a detail line and one without — and
+    until this existed none of them could be reached from a SHORT, because the
+    vertical formats are fixed shot lists and `parser_short` ignores the inline
+    tags a director would use in a LONG.
+
+    So the alternatives live HERE, in the template, next to the beat they draw.
+    The writer still chooses nothing; code picks, rotating off what the last
+    few videos used. Which is the point: shorts are mass-produced, so the
+    variety has to come from the code rather than from a person.
+
+    `bind`, `lit` and `focus` fall back to the shot's own when the alternate
+    names its slots the same way, and replace them wholesale when it does not.
+    They are never merged: a half-inherited bind map names slots from the plate
+    it was written for, and those are exactly the names the alternate lacks.
+    """
+
+    plate: str
+    bind: dict[str, str] | None = None
+    lit: str | None = None
+    focus: str | None = None
+    notes: str = ""
+
+    def resolved(self, shot: "Shot") -> tuple[dict[str, str], str | None,
+                                              str | None]:
+        """What this variant ACTUALLY composes with: `(bind, lit, focus)`.
+
+        One place, because two callers need the same answer and disagreeing
+        about it is the whole bug class: the compositor swaps the shot over to
+        this variant, and the chooser has to have checked the plate against the
+        same three things it will then be asked to draw.
+        """
+        if self.bind is not None:
+            return dict(self.bind), self.lit, self.focus
+        return (dict(shot.bind),
+                self.lit if self.lit else shot.lit,
+                self.focus if self.focus else shot.focus)
+
+
+@dataclass(frozen=True)
 class HostSpec:
     """The host, as a concept name plus the plate slot they stand in."""
 
@@ -196,6 +246,24 @@ class Shot:
     max_hold_s: float = 8.0
     captions: bool = True
     notes: str = ""
+    # Other plates that can carry this beat. Empty is the old behaviour: one
+    # plate, every time.
+    alts: tuple[Variant, ...] = ()
+
+    @property
+    def variants(self) -> tuple[Variant, ...]:
+        """Every way to draw this beat, the authored plate FIRST.
+
+        First is load-bearing twice over. It is the fallback when nothing else
+        resolves in this kit, and it is the one whose failure to resolve is
+        still an error — an alternate a kit does not carry is dropped quietly,
+        because a drop is how a kit swap is supposed to degrade.
+        """
+        if not self.plate:
+            return ()
+        mine = Variant(plate=self.plate, bind=dict(self.bind), lit=self.lit,
+                       focus=self.focus)
+        return (mine, *self.alts)
 
     @property
     def has_large_type(self) -> bool:
@@ -209,12 +277,24 @@ LARGE_TYPE_FH = 0.065
 
 
 @dataclass(frozen=True)
+class ShotOrder:
+    """A named sequence the format's shots may be cut in."""
+
+    name: str
+    shots: tuple[str, ...]
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class Format:
     name: str
     aspect: str
     frame: tuple[int, int]
     shots: tuple[Shot, ...]
     source: Path | None = None
+    # Alternate cut orders. The authored sequence is always available under
+    # AS_AUTHORED and is never listed here.
+    orders: tuple[ShotOrder, ...] = ()
     # Whether the room advances across the runtime — light, clutter, the
     # wall, the clock. Declared by the template, because it is a property of
     # the format and not of the frame: a future 16:9 format that is ninety
@@ -371,8 +451,37 @@ def parse_format(raw: dict, source: Path | None = None,
             if not repeat.spatial and repeat.arrange != "sequence":
                 raise TemplateError(
                     f"{where} repeat: unknown arrange {repeat.arrange!r}")
+        alts: list[Variant] = []
+        for j, a in enumerate(s.get("alts") or ()):
+            if isinstance(a, str):
+                a = {"plate": a}
+            if not isinstance(a, dict):
+                raise TemplateError(f"{where}: alt #{j} is not a plate name "
+                                    f"or an object")
+            _reject_unknown(a, ALT_KEYS, f"{where} alt #{j}")
+            try:
+                alt_plate = a["plate"]
+            except KeyError as exc:
+                raise TemplateError(f"{where} alt #{j} missing {exc}") from exc
+            if not plate:
+                raise TemplateError(
+                    f"{where}: names alternates but no plate of its own. The "
+                    f"authored plate is the fallback every alternate is "
+                    f"measured against, so a bare-ground shot cannot have any.")
+            alts.append(Variant(
+                plate=alt_plate,
+                bind=dict(a["bind"]) if a.get("bind") is not None else None,
+                lit=a.get("lit"), focus=a.get("focus"),
+                notes=a.get("notes", "")))
+        alt_keys = [v.plate for v in alts]
+        if len(set(alt_keys)) != len(alt_keys) or plate in alt_keys:
+            raise TemplateError(
+                f"{where}: an alternate repeats a plate this shot already "
+                f"names ({sorted(alt_keys)}). A duplicate is weight on the "
+                f"rotation, not another picture.")
+
         shots.append(Shot(
-            id=sid, plate=plate,
+            id=sid, plate=plate, alts=tuple(alts),
             bind=dict(s.get("bind") or {}),
             text=_text_specs(s.get("text"), where),
             marks=marks, host=host, repeat=repeat,
@@ -386,6 +495,7 @@ def parse_format(raw: dict, source: Path | None = None,
 
     fmt = Format(name=name, aspect=raw.get("aspect", "9:16"), frame=frame,
                  shots=tuple(shots), source=source,
+                 orders=_parse_orders(raw.get("orders"), name, tuple(shots)),
                  )
 
     for sh in fmt.shots:
@@ -404,6 +514,138 @@ def parse_format(raw: dict, source: Path | None = None,
                 f"caption band. They are mutually exclusive — set "
                 f'"captions": false')
     return fmt
+
+
+# The authored sequence, as a name the rotation can pick and a manifest can
+# record. A format never lists it; it is always in play.
+AS_AUTHORED = "as-authored"
+
+
+def _anchored_spine(shots: Sequence[Shot]) -> tuple[str, ...]:
+    """The ids of the shots the NARRATION pins, in the order it pins them.
+
+    A shot with an `anchor` starts where its own words are spoken, and the
+    words are one linear take the writer wrote to the format's authored beat
+    order. So the anchored shots are not free to move: put `the-news` ahead of
+    `the-move` and the picture is talking about the headline while the voice is
+    still on the price. `resolve_spans` will not even let it try — its
+    monotonic pass drops an anchor landing before one already fixed, so the
+    shot stops being anchored at all and interpolates to somewhere that matches
+    nothing.
+
+    THIS IS THE CEILING ON ALTERNATE ORDERS AND IT IS NOT A CODE LIMIT. It is
+    the writing prompt, which states the beats as fixed and asks for one take
+    of prose over them. Reordering beats for real means the prompt states the
+    order it picked and the script carries it back, and that is a change to
+    what the writer is asked for rather than to this file.
+
+    Until then an order may move the shots the narration does NOT pin — the
+    sign-off, and any beat sharing its anchor with another — and must leave the
+    pinned ones in the sequence the voice puts them in.
+    """
+    return tuple(sh.id for sh in shots if sh.anchor)
+
+
+def _parse_orders(raw: Any, fmt_name: str,
+                  shots: tuple[Shot, ...]) -> tuple[ShotOrder, ...]:
+    ids = [sh.id for sh in shots]
+    spine = _anchored_spine(shots)
+    by_id = {sh.id: sh for sh in shots}
+    # Two shots listening for the SAME words are interchangeable, so the spine
+    # compares what each pinned shot listens for rather than which shot it is.
+    def voice(order_ids: Sequence[str]) -> tuple[str, ...]:
+        return tuple(by_id[i].anchor or "" for i in order_ids
+                     if by_id[i].anchor)
+
+    want = voice(spine)
+    out: list[ShotOrder] = []
+    seen: set[str] = set()
+    for i, o in enumerate(raw or ()):
+        where = f"{fmt_name} order #{i}"
+        if not isinstance(o, dict):
+            raise TemplateError(f"{where} is not an object")
+        _reject_unknown(o, ORDER_KEYS, where)
+        try:
+            oname, oshots = o["name"], list(o["shots"])
+        except KeyError as exc:
+            raise TemplateError(f"{where} missing {exc}") from exc
+        where = f"{fmt_name} order {oname!r}"
+        if oname == AS_AUTHORED:
+            raise TemplateError(
+                f"{where}: {AS_AUTHORED!r} is the authored sequence and is "
+                f"always in the rotation — it is never listed.")
+        if oname in seen:
+            raise TemplateError(f"{fmt_name}: two orders named {oname!r}")
+        seen.add(oname)
+        if sorted(oshots) != sorted(ids):
+            missing = sorted(set(ids) - set(oshots))
+            extra = sorted(set(oshots) - set(ids))
+            raise TemplateError(
+                f"{where}: an order is a resequencing of the WHOLE format, so "
+                f"it names every shot exactly once. Missing {missing}, "
+                f"unknown {extra}. Dropping a beat here would drop it "
+                f"silently — prune it from the script instead.")
+        if voice(oshots) != want:
+            raise TemplateError(
+                f"{where}: moves a shot the narration pins. The voice speaks "
+                f"these beats in the order {list(want)} and a picture that "
+                f"arrives out of that order is talking over the wrong "
+                f"sentence. Only shots with no anchor, or ones sharing an "
+                f"anchor with another, are free to move.")
+        out.append(ShotOrder(name=oname, shots=tuple(oshots),
+                             notes=o.get("notes", "")))
+    return tuple(out)
+
+
+def order_names(fmt: Format) -> tuple[str, ...]:
+    """Every cut order this format can be shot in, the authored one first."""
+    return (AS_AUTHORED, *(o.name for o in fmt.orders))
+
+
+def apply_order(fmt: Format, name: str) -> Format:
+    """`fmt` resequenced. An unknown name is the authored order, not an error.
+
+    Forgiving on purpose: the order is recorded on a manifest and read back
+    later, and a template that has since dropped an order must not make an old
+    workspace unrenderable.
+    """
+    from dataclasses import replace
+
+    if not name or name == AS_AUTHORED:
+        return fmt
+    for o in fmt.orders:
+        if o.name == name:
+            by_id = {sh.id: sh for sh in fmt.shots}
+            return replace(fmt, shots=tuple(by_id[i] for i in o.shots))
+    return fmt
+
+
+def choose_order(fmt: Format, seed: str = "",
+                 avoid: "Collection[str]" = ()) -> str:
+    """Which cut order this video gets, rotating off the recent ones.
+
+    The same preference the plates use: drop what the last few videos were cut
+    in unless that leaves nothing, then let the seed decide. A format that
+    declares no orders always answers with the authored one, so this is a
+    no-op until somebody authors an alternative.
+    """
+    import random
+
+    options = _prefer_unused_names(list(order_names(fmt)), avoid)
+    return random.Random(f"order|{fmt.name}|{seed}").choice(options)
+
+
+def _prefer_unused_names(options: list[str],
+                         avoid: "Collection[str]") -> list[str]:
+    """`plates._prefer_unused`, for names that are not plate keys.
+
+    Same rule, same reason it is a preference: a rotation that could fail a
+    render for want of a fresh sequence would be a worse bug than the sameness
+    it prevents.
+    """
+    if not avoid:
+        return options
+    return [k for k in options if k not in avoid] or options
 
 
 def load_format(name: str, root: Path | str = ".") -> Format:
@@ -483,6 +725,16 @@ def expand_sequences(fmt: Format, items_for) -> Format:
                 # one held composition, over an 8s ceiling. `$n` in a bind is
                 # which item of the list this step places.
                 bind={k: _sub(v, i) or v for k, v in (shot.bind or {}).items()},
+                # THE ALTERNATES STEP TOO. A sequence shot that carries them
+                # placed item `$n` on the authored plate and a literal "$n" on
+                # every other one, so the beat read correctly until the
+                # rotation picked a different drawing for it.
+                alts=tuple(replace(
+                    v,
+                    bind=({k: _sub(b, i) or b for k, b in v.bind.items()}
+                          if v.bind is not None else None),
+                    lit=_sub(v.lit, i), focus=_sub(v.focus, i))
+                    for v in shot.alts),
                 anchor=shot.anchor if i == 1 else None,
                 marks=tuple(replace(m, target=_sub(m.target, i),
                                     name=_sub(m.name, i) or m.kind)

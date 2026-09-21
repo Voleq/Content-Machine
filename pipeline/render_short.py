@@ -34,7 +34,8 @@ from pipeline.compose import (BuildResult, Layer, build_layers,
 from pipeline.plates import load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
-from pipeline.shots import (Format, expand_sequences, load_format,
+from pipeline.shots import (Format, apply_order, choose_order,
+                            expand_sequences, load_format,
                             resolve_spans)
 
 FPS = 30
@@ -826,6 +827,17 @@ def render_short(script, tts, workspace: Path, settings, *,
     # A sequence repeat becomes one shot per item BEFORE anything is timed:
     # how many numbers beats a video has is a fact about its script.
     probe = resolver if resolver is not None else resolver_probe(script, settings)
+
+    # WHICH SEQUENCE THIS VIDEO IS CUT IN (03). Before anything is expanded or
+    # pruned, because an order names the shots the template was AUTHORED with
+    # and a sequence repeat renames them. Rotating off the recent orders the
+    # same way the plates rotate off the recent plates.
+    from pipeline.reach import recent_orders, recent_plates
+
+    shot_order = choose_order(fmt, seed=script.content_sha(),
+                              avoid=recent_orders(settings, exclude=workspace))
+    fmt = apply_order(fmt, shot_order)
+
     fmt = expand_sequences(fmt, probe.list_for)
     fmt, dropped = prune_empty_shots(fmt, probe)
 
@@ -837,8 +849,10 @@ def render_short(script, tts, workspace: Path, settings, *,
     # two videos differ by chance; nothing stopped three in a row opening on
     # the same pose in the same room. This steers off what is recent where
     # the kit has an alternative, and is silently empty on a fresh install.
-    from pipeline.reach import recent_plates
-
+    # It also decides which of a beat's interchangeable plates this video
+    # draws — the rotation the vertical formats never had, because a fixed
+    # shot list names one drawing per beat and `parser_short` ignores the
+    # inline tags a director would use in a LONG.
     result = build_layers(fmt, spans, resolver, reg,
                           aspect=fmt.aspect, seed=script.content_sha(),
                           avoid=recent_plates(settings, exclude=workspace))
@@ -969,6 +983,11 @@ def render_short(script, tts, workspace: Path, settings, *,
         # under the templates it is a property of the twelve shots, and it is
         # recorded so it stays visible rather than being rediscovered.
         "plates_used": result.plates_used,
+        # WHICH SEQUENCE IT WAS CUT IN, so the next video can rotate off it.
+        # `recent_orders` reads this back exactly as `recent_plates` reads
+        # `plates_used`; a manifest from before the field existed simply
+        # contributes nothing.
+        "shot_order": shot_order,
         "kit_reach": (
             f"Kit: {len(result.plates_used)} of {len(reg)} plates, "
             f"{len({l.concept for l in result.layers if l.concept})} families, "

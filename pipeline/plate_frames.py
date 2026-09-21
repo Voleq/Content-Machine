@@ -160,6 +160,28 @@ def type_role(plate: Plate, slot: Slot, value: str = "") -> dict:
     return roles.get(slot.role, {}) or {}
 
 
+def slot_limit(plate: Plate, slot: Slot, value: str = "") -> int | None:
+    """How many characters this box holds, wrapping slots included.
+
+    `maxChars` is the number for a slot set on one line. A slot that WRAPS
+    states its room as `maxLines` and `maxCharsPerLine` instead and carries no
+    `maxChars` at all, which is most of the prose in the kit: the sign-off
+    line, a quote body, a statement on the two-sided card.
+
+    Reading only `maxChars` therefore answers "no limit" for exactly the slots
+    where the limit bites. `form._budgets` has multiplied the two out since it
+    was written; this is that arithmetic in one place, so a caller asking
+    whether a line fits gets the same answer the writer was given when they
+    were asked for it.
+    """
+    spec = budget(plate, slot, value)
+    limit = spec.get("maxChars")
+    if limit:
+        return int(limit)
+    lines, per = spec.get("maxLines"), spec.get("maxCharsPerLine")
+    return int(lines) * int(per) if lines and per else None
+
+
 def budget(plate: Plate, slot: Slot, value: str = "") -> dict:
     """The type spec for this slot, with the budget for THIS BOX applied.
 

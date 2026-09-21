@@ -97,13 +97,17 @@ def test_every_plate_a_format_names_is_in_the_kit(name):
     reg = _reg()
     fmt = load_format(name)
     for shot in fmt.shots:
-        if shot.plate:
-            role = (shot.plate.split("/", 1)[1]
-                    if shot.plate.startswith("room/") else "")
+        # EVERY PLATE THE BEAT CAN LAND ON, not only the authored one. An
+        # alternate the kit does not carry is dropped silently at render time
+        # — deliberately, so a kit swap degrades rather than fails — which
+        # means a typo in one is invisible unless it is caught here.
+        for variant in shot.variants:
+            role = (variant.plate.split("/", 1)[1]
+                    if variant.plate.startswith("room/") else "")
             if role and role in reg.room_roles:
                 continue
-            assert resolve_plate(reg, shot.plate, fmt.aspect) is not None, \
-                f"{name}/{shot.id}: {shot.plate!r} is not a plate in the kit"
+            assert resolve_plate(reg, variant.plate, fmt.aspect) is not None, \
+                f"{name}/{shot.id}: {variant.plate!r} is not a plate in the kit"
         if shot.host:
             assert shot.host.pose in reg or shot.host.pose in reg.host_roles, \
                 f"{name}/{shot.id}: {shot.host.pose!r} is neither pose nor role"
@@ -120,11 +124,12 @@ def test_a_vertical_format_reaches_only_vertical_plates(name):
     reg = _reg()
     fmt = load_format(name)
     for shot in fmt.shots:
-        if not shot.plate or shot.plate.startswith("room/"):
-            continue
-        plate = resolve_plate(reg, shot.plate, fmt.aspect)
-        assert plate.aspect in ("9x16", ""), \
-            f"{name}/{shot.id}: {plate.key} is {plate.aspect}"
+        for variant in shot.variants:
+            if variant.plate.startswith("room/"):
+                continue
+            plate = resolve_plate(reg, variant.plate, fmt.aspect)
+            assert plate.aspect in ("9x16", ""), \
+                f"{name}/{shot.id}: {plate.key} is {plate.aspect}"
 
 
 def test_a_template_carrying_large_type_and_captions_is_refused():

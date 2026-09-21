@@ -7,7 +7,7 @@
   "format": "earnings",
   "notes": [
     "EARNINGS, on the v2 plate kit. The print against what was expected, what",
-    "moved, and what it means \u2014 in the vertical set only.",
+    "moved, and what it means — in the vertical set only.",
     "",
     "There is no stamp. A verdict card is a CALL, and the register is",
     "anti-Cramer by construction: he describes and the viewer decides. What",
@@ -27,7 +27,15 @@
         "sub": "?script.move_summary",
         "ticker": "script.ticker"
       },
-      "notes": "The hook card, second treatment \u2014 earnings is not the daily short and should not open on the same picture."
+      "notes": "The hook card, second treatment — earnings is not the daily short and should not open on the same picture.",
+      "alts": [
+        {
+          "plate": "shorts/hook-card-t1"
+        },
+        {
+          "plate": "shorts/hook-card-t3"
+        }
+      ]
     },
     {
       "id": "the-print",
@@ -40,7 +48,19 @@
         "label": "?numbers.headline_label",
         "caption": "?script.move_summary"
       },
-      "notes": "The number that printed, at the size it deserves."
+      "notes": "The number that printed, at the size it deserves.",
+      "alts": [
+        {
+          "plate": "figures/big-number-l2-9x16",
+          "bind": {
+            "kicker": "?numbers.headline_kicker",
+            "value": "compare.reported",
+            "label": "?numbers.headline_label",
+            "caption": "?script.move_summary"
+          },
+          "notes": "The same figure with a detail rule under it, for a print that has a verdict to carry."
+        }
+      ]
     },
     {
       "id": "vs-expected",
@@ -55,7 +75,13 @@
         "value-2": "?compare.expected",
         "caption": "?script.cheap_or_trap"
       },
-      "notes": "Print against consensus, stacked. The delta slot holds eight characters and takes the gap."
+      "notes": "Print against consensus, stacked. The delta slot holds eight characters and takes the gap.",
+      "alts": [
+        {
+          "plate": "figures/compare-side-9x16",
+          "notes": "Print and consensus side by side rather than stacked. Same slot names, so the binds carry; `detail-1` and `detail-2` go unfilled."
+        }
+      ]
     },
     {
       "id": "the-sheet",
@@ -75,7 +101,15 @@
         "label-4": "?numbers.label.3",
         "row-4": "?numbers.figures.3"
       },
-      "notes": "Every row up at once \u2014 an earnings cut has no time for a walk down them."
+      "notes": "Every row up at once — an earnings cut has no time for a walk down them.",
+      "alts": [
+        {
+          "plate": "tables/numbers-sheet-4r-spark-9x16"
+        },
+        {
+          "plate": "tables/numbers-sheet-5r-9x16"
+        }
+      ]
     },
     {
       "id": "guidance",
@@ -87,7 +121,18 @@
         "term": "?numbers.headline_label",
         "body": "script.guidance"
       },
-      "notes": "What they said about next year, in the card drawn for a term and its meaning."
+      "notes": "What they said about next year, in the card drawn for a term and its meaning.",
+      "alts": [
+        {
+          "plate": "cards/quote-pull-9x16",
+          "bind": {
+            "body": "script.guidance",
+            "attribution": "?numbers.headline_label",
+            "source": "?numbers.unit"
+          },
+          "notes": "Guidance as a line worth pulling out rather than a term and its meaning."
+        }
+      ]
     },
     {
       "id": "the-turn",
@@ -110,7 +155,19 @@
         "statement-1": "compare.heavy",
         "statement-2": "compare.light",
         "caption": "?script.cheap_or_trap"
-      }
+      },
+      "alts": [
+        {
+          "plate": "structure/confession-statement-9x16",
+          "bind": {
+            "kicker": "?compare.kicker",
+            "said": "compare.heavy",
+            "happened": "compare.light",
+            "caption": "?script.cheap_or_trap"
+          },
+          "notes": "The two-sided beat as said-against-happened. Names its slots nothing like `both-true`, so it restates the binds; `wrong` and the three labels are the kit's own and take no binding."
+        }
+      ]
     },
     {
       "id": "close",
@@ -120,7 +177,34 @@
         "kicker": "?script.ticker",
         "line-1": "script.conclusion",
         "date-label": "?channel.handle"
-      }
+      },
+      "alts": [
+        {
+          "plate": "cards/quote-pull-9x16",
+          "bind": {
+            "body": "script.conclusion",
+            "attribution": "?channel.handle",
+            "source": "?script.ticker"
+          },
+          "notes": "THE OTHER WAY TO END. All three vertical formats closed on `structure/closing` every time, so every short in the channel signed off on the same drawing. The conclusion is a line worth pulling out by definition, and `quote-pull`'s body is the only other 9:16 plate wide enough to hold one without narrowing what the writer may write — `structure/end-card` holds 58 characters against closing's 136, so rotating onto it would have shrunk every conclusion in the channel to suit the alternate."
+        }
+      ]
+    }
+  ],
+  "orders": [
+    {
+      "name": "sign-off-first",
+      "shots": [
+        "close",
+        "open",
+        "the-print",
+        "vs-expected",
+        "the-sheet",
+        "guidance",
+        "the-turn",
+        "so-what"
+      ],
+      "notes": "The sign-off card as a cold stamp before the hook. `close` is the one shot the narration does not pin, so it is the one shot free to move."
     }
   ]
 }
