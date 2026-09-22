@@ -31,7 +31,7 @@ from pipeline import marks as mk
 from pipeline.compose import (BuildResult, Layer, build_layers,
                               check_budgets, check_invariants,
                               held_layer_spans)
-from pipeline.plates import load_plates
+from pipeline.plates import at_episode_hour, load_plates
 from pipeline.models import ShortScript
 from pipeline.render_common import RenderError, encode_profile, run_ffmpeg
 from pipeline.shots import (Format, apply_order, choose_order,
@@ -764,6 +764,23 @@ def render_short(script, tts, workspace: Path, settings, *,
                  resolver=None, anchors=None) -> tuple[Path, Path]:
     """Render the SHORT. Returns `(mp4, manifest)`.
 
+    At ONE HOUR for the whole cut, fixed here and recorded on the manifest;
+    see `plates.at_episode_hour`. The work is `_render_short`.
+    """
+    with at_episode_hour(settings, workspace, script.ticker):
+        return _render_short(script, tts, workspace, settings,
+                             content=content, prices=prices, proof=proof,
+                             out_name=out_name, format_name=format_name,
+                             resolver=resolver, anchors=anchors)
+
+
+def _render_short(script, tts, workspace: Path, settings, *,
+                  content=None, prices=None, proof: bool = False,
+                  out_name: str | None = None,
+                  format_name: str = "short",
+                  resolver=None, anchors=None) -> tuple[Path, Path]:
+    """`render_short`, at the hour it has already fixed for the episode.
+
     Interpolated word timings must never be the master clock of a published
     cut, so draft audio cannot make a FINAL. A PROOF is the deliberate
     exception: it exists to be looked at and never delivered.
@@ -942,6 +959,9 @@ def render_short(script, tts, workspace: Path, settings, *,
     manifest_path.write_text(json.dumps({
         "ticker": script.ticker,
         "format": fmt.name,
+        # The hour the set is at, for the whole cut; the next pass of this
+        # video reads it back (`plates.hour_of_episode`).
+        "hour": reg.hour,
         # "Who it hits" is one beat told across four shots because four cards
         # cannot share a frame legibly — so a nine-beat format cutting to
         # fourteen shots is the design working, not drift. Reporting

@@ -195,13 +195,15 @@ def resolve_room(reg: Registry, role: str, aspect: str, *, seed: str,
     reading the hour from the seed alone is what makes it hold still for the
     whole video while the angle keeps rotating under it. Deriving it from
     anything carrying `step` would cut dusk against night inside one video.
+    Inside a render the registry is already viewed at the episode's hour, and
+    `hour_for` answers with that whatever the seed.
     """
     hour = reg.hour_for(seed)
-    options = [reg.at_hour(k, hour) for k in reg.room_roles.get(role, ())]
+    keys = reg.angles_for(role, aspect, hour) or [
+        stem for stem in reg.room_roles.get(role, ()) if stem in reg]
     resolved: list[Plate] = []
-    for stem in options:
-        key = reg.aspect_key(stem, aspect) or (stem if stem in reg else None)
-        got = reg.get(key) if key else None
+    for key in keys:
+        got = reg.plate_at(key, hour)
         if got is not None:
             resolved.append(got)
     if not resolved:
@@ -318,11 +320,17 @@ def choose_variant(reg: Registry, shot: Shot, aspect: str, resolver: Resolver,
         # swap into a render outage over a picture nothing needed.
         if plate is None or not _fillable(v, shot, plate, resolver, reg):
             continue
-        usable.append((plate.key, v))
+        # BY THE DRAWING, NOT THE HOUR. A dusk video resolves every name to a
+        # dusk key, and a night video last week used the night key of the same
+        # drawing; compared as keys they never match, so rotation would put the
+        # same picture on the same beat two videos running. Base keys also keep
+        # the pick itself off the hour: sorted hour keys do not always sort in
+        # the order their drawings do.
+        usable.append((reg.base_key(plate.key), v))
     if not usable:
         return primary
 
-    keys = _prefer_unused([k for k, _ in usable], avoid)
+    keys = _prefer_unused([k for k, _ in usable], reg.base_keys(avoid))
     pick = random.Random(f"variant|{shot.id}|{seed}").choice(sorted(keys))
     return next(v for k, v in usable if k == pick)
 

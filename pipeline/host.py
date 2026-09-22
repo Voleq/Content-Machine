@@ -461,7 +461,8 @@ def dressed(reg: Registry, host: HostShot, *, seed: str) -> HostShot:
     """
     rule = (getattr(reg, "wardrobe", None) or {}).get("medium") or {}
     alt = rule.get("alt")
-    if not alt or host.key != rule.get("default"):
+    # The curation names the base hour's key; a dusk episode holds the dusk one.
+    if not alt or reg.base_key(host.key) != rule.get("default"):
         return host
     gaps = wardrobe_gaps(reg, rule)
     if gaps:
@@ -488,7 +489,10 @@ def looking_at(reg: Registry, host: HostShot, side: str) -> HostShot:
     """
     if side not in ("left", "right") or not host.pose.framing:
         return host
-    pose = reg.get(f"{host.pose.key}-glance-{side}")
+    # Off the BASE key: the hour goes after the glance in a key
+    # (`-glance-left-dusk`), so appending to a dusk key names nothing, and a
+    # dusk episode would never glance. `get` returns the episode's hour.
+    pose = reg.get(f"{reg.base_key(host.pose.key)}-glance-{side}")
     if pose is None:
         return host
     return HostShot(pose=pose,

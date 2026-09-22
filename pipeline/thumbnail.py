@@ -197,10 +197,8 @@ def _room(settings: Settings, orient: str, size: tuple[int, int],
         # `room_for` raises when nothing fills a role, so this tries the next
         # one rather than letting the first miss take the whole list with it.
         try:
-            # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the
-            # video's hour. `episode` is the ticker, the same value
-            # `render_long` hands `room_for`, so a dusk episode gets a dusk
-            # cover rather than a night one advertising it.
+            # At the video's hour: `make_thumbnail` views the registry at the
+            # hour the render recorded, and `room_for` answers with it.
             plate = reg.room_for(role_name, aspect, seed=orient,
                                  episode=episode)
         except Exception as exc:  # noqa: BLE001
@@ -342,6 +340,8 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
 
     Never raises: a missing cover is a nuisance, a failed render is not.
     """
+    from pipeline.plates import at_episode_hour
+
     try:
         try:
             metric = shock_metric(load_company_data(ws.path))
@@ -360,12 +360,17 @@ def make_thumbnail(script, ws, settings: Settings) -> Path | None:
         kicker = "noise or signal?" if is_short else "the deep dive"
 
         out = ws.path / "thumbnail.png"
-        _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                 size=WIDE, orient="wide", is_move=is_move).save(out)
-        if is_short:
+        # THE COVER IS A FRAME FROM THE VIDEO, so it is drawn at the hour the
+        # render recorded in this workspace: a dusk episode gets a dusk cover,
+        # room, host and colours alike, not a night one advertising it.
+        with at_episode_hour(settings, ws.path,
+                             str(getattr(script, "ticker", "") or "")):
             _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
-                     size=TALL, orient="tall",
-                     is_move=is_move).save(ws.path / "thumbnail_tall.png")
+                     size=WIDE, orient="wide", is_move=is_move).save(out)
+            if is_short:
+                _compose(settings, ticker=ticker, metric=metric, kicker=kicker,
+                         size=TALL, orient="tall",
+                         is_move=is_move).save(ws.path / "thumbnail_tall.png")
         return out
     except Exception:
         log.exception("thumbnail generation failed (non-fatal)")

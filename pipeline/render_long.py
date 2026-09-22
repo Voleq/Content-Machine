@@ -91,7 +91,7 @@ from pipeline.models import (
     parse_scribble_payload,
 )
 from pipeline.plate_frames import drawn_box, playback_seconds, render_clip
-from pipeline.plates import load_plates
+from pipeline.plates import at_episode_hour, load_plates
 from pipeline.rasters import (
     build_phrase_ass,
     cover_fill_frame,
@@ -392,7 +392,35 @@ def render_long(
     """Render the LONG (or its low-res draft / full-res proof).
 
     Returns (mp4, manifest).
+
+    At ONE HOUR, chosen here for the whole video and recorded on the manifest:
+    every plate any module loads while this runs is drawn at it. See
+    `plates.at_episode_hour`.
     """
+    with at_episode_hour(settings, workspace, script.ticker):
+        return _render_long(
+            script, tts, workspace, settings, content,
+            draft=draft, preview=preview, proof=proof,
+            broll_overrides=broll_overrides, as_of=as_of,
+            company_data=company_data, on_progress=on_progress)
+
+
+def _render_long(
+    script: LongScript,
+    tts: TTSResult,
+    workspace: Path,
+    settings: Settings,
+    content: ContentManager | None = None,
+    *,
+    draft: bool = False,
+    preview: bool = False,
+    proof: bool = False,
+    broll_overrides: dict[str, int] | None = None,
+    as_of: str = "",
+    company_data=None,
+    on_progress: Callable[[int, int], None] | None = None,
+) -> tuple[Path, Path]:
+    """`render_long`, at the hour it has already fixed for the episode."""
     # Draft audio (the free local voice) has word timings that are exact per
     # sentence and interpolated within one. Good enough to judge pacing, not
     # good enough to be the master clock of something published — and the
@@ -1621,6 +1649,10 @@ def render_long(
         "ticker": script.ticker,
         "draft": draft,
         "proof": proof,
+        # THE HOUR THE SET IS AT, for the whole video. The next pass of this
+        # video reads it back so a proof and its final cannot come out at two
+        # different hours; see `plates.hour_of_episode`.
+        "hour": reg.hour,
         # The audio tier, carried on the manifest so "is this shippable?" is
         # answerable from the artefact rather than from whoever ran it. A
         # proof is real pictures over a free voice: everything below is what

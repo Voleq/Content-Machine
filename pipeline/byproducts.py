@@ -318,7 +318,21 @@ def build_byproducts(workspace: Path, settings: Settings, *,
 
     Best-effort per item — one unfillable layout must not cost the other
     twenty-one.
+
+    AT THE VIDEO'S HOUR, which the render recorded on its manifest in this
+    workspace: a by-product is a still from the video, not a picture of the
+    same set on another night.
     """
+    from pipeline.plates import at_episode_hour
+
+    with at_episode_hour(settings, workspace, ticker or ""):
+        return _build_byproducts(workspace, settings, ticker=ticker,
+                                 script=script, data=data)
+
+
+def _build_byproducts(workspace: Path, settings: Settings, *,
+                      ticker: str = "", script=None, data=None) -> ByProducts:
+    """`build_byproducts`, with the registry already viewed at the video's hour."""
     from pipeline.plates import PlateError, load_plates
 
     out_dir = workspace / "byproducts"
@@ -336,17 +350,15 @@ def build_byproducts(workspace: Path, settings: Settings, *,
     for label, (room_role, cap) in BYPRODUCT_SOURCES.items():
         made: list[str] = []
         # Every room angle in this role, in both aspects — that is the real
-        # supply, and the honest number to report.
-        #
-        # AT THE EPISODE'S OWN HOUR, because a by-product is a still from the
-        # video rather than a picture of the same set on another night. The
-        # hour comes off the ticker, the same value `render_long` gives
-        # `room_for`, so the stills match the frames they are cut from.
-        hour = reg.hour_for(ticker or "")
-        stems = tuple(reg.at_hour(s, hour)
-                      for s in reg.room_roles.get(room_role, ()))
+        # supply, and the honest number to report. The angles the video's hour
+        # allows, the way `room_for` asks it: an angle kept to its own light
+        # is not a still from a dusk video, because a dusk video never cuts
+        # to it.
+        stems = tuple(reg.room_roles.get(room_role, ()))
+        allowed = {a: set(reg.angles_for(room_role, a, reg.hour))
+                   for a in ("16x9", "9x16")}
         found = [k for stem in stems for a in ("16x9", "9x16")
-                 if (k := reg.aspect_key(stem, a))]
+                 if (k := reg.aspect_key(stem, a)) and k in allowed[a]]
         result.shortfall[label] = {"wanted": len(found), "found": len(found),
                                    "families": list(stems), "made": 0}
         for key in found[:cap]:
