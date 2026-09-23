@@ -27,6 +27,10 @@ So:
   motion is the data-plate rule: the frame breathes, the mark does not. A mark sits over
   a plate and is pinned to what it marks; a jittering circle around a fixed number is
   exactly the thing that made the drawn kit feel unstable.
+- **And the manifest now says so (rebuild-21).** Until this round every mark still took
+  the data-plate rule offset on frame 2, and a mark has no pinned ink, so the whole mark
+  moved a unit. All ten are now `playback: still`, `fps: 1`, `frameCount: 1`, with one
+  file per hour and no `_fNN` frames.
 
 Three faults were found and fixed in the marks during the port, none of them the
 drawing: the port mapped legacy `attention` to the wrong ink so every mark was the wrong

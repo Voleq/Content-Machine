@@ -118,6 +118,77 @@ class KitModel {
     return [Math.round((cx - w / 2) * 10) / 10, A[1], Math.round(w * 10) / 10, A[3]];
   }
 
+  // WHERE THE STANDING BOX LANDS in a room: the 720-unit box scaled to the
+  // anchor's height, floor on the anchor's bottom edge, centred on it (§4.4a).
+  placeOf(r) {
+    const A = this.anchorOf(r); if (!A) return null;
+    const sc = A[3] / 720;
+    return { sc, tx: A[0] + A[2] / 2 - 200 * sc, ty: A[1] + A[3] - 760 * sc };
+  }
+  // A path as polygons: rect() form exactly, everything else by its coordinate
+  // pairs in order (curve control points taken as vertices — close enough for
+  // a coverage measure, and it errs toward counting a touch as a hit).
+  static polys(d) {
+    const out = [];
+    String(d).split(/(?=M)/).forEach(sub => {
+      const r = sub.match(/^M(-?[\d.]+),(-?[\d.]+)h(-?[\d.]+)v(-?[\d.]+)h/);
+      if (r) { const [x, y, w, h] = r.slice(1, 5).map(Number); out.push([[x, y], [x + w, y], [x + w, y + h], [x, y + h]]); return; }
+      const pts = []; const re = /(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/g; let m;
+      while ((m = re.exec(sub))) pts.push([+m[1], +m[2]]);
+      if (pts.length > 2) out.push(pts);
+    });
+    return out;
+  }
+  static inPoly(P, x, y) {
+    const b = P.bb || (P.bb = [Math.min(...P.map(p => p[0])), Math.min(...P.map(p => p[1])), Math.max(...P.map(p => p[0])), Math.max(...P.map(p => p[1]))]);
+    if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) return false;
+    let c = false;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+      const [xi, yi] = P[i], [xj, yj] = P[j];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+  }
+  // THE COMPOSITE CHECK (§4.5, rule 27). The figure placed by the contract, the
+  // room's front layer over him, measured on a 1u grid in room units:
+  //   headCover  — % of head + hair under a front shape. Must be 0.
+  //   upperCover — % of his ink ABOVE THE DESK TOP under a front shape. The desk
+  //                itself hides his legs by design; nothing above it should
+  //                hide him.
+  // rebuild-18 looked at rooms with nobody in them. This looks with him in.
+  clearance(r, poseKey) {
+    const at = this.placeOf(r); if (!at) return null;
+    const front = [].concat(...r.shapes.filter(s => s.front).map(s => KitModel.polys(s.d)));
+    const deskYs = [].concat(...r.shapes.filter(s => s.front && s.role === "desk").map(s => KitModel.polys(s.d)))
+      .map(P => Math.min(...P.map(p => p[1])));
+    const deskTop = deskYs.length ? Math.min(...deskYs) : Infinity;
+    const g = this.geometry(poseKey);
+    const T = P => P.map(([x, y]) => [at.tx + x * at.sc, at.ty + y * at.sc]);
+    const head = [].concat(...g.head.map(p => KitModel.polys(p.d))).map(T);
+    const body = [].concat(...g.body.map(p => KitModel.polys(p.d))).map(T).concat(head);
+    const all = [].concat(...body); const bx = [Math.min(...all.map(p => p[0])), Math.min(...all.map(p => p[1])), Math.max(...all.map(p => p[0])), Math.max(...all.map(p => p[1]))];
+    let h = 0, hc = 0, u = 0, uc = 0; const st = 1;
+    for (let y = bx[1] + st / 2; y < bx[3]; y += st) for (let x = bx[0] + st / 2; x < bx[2]; x += st) {
+      const inH = head.some(P => KitModel.inPoly(P, x, y));
+      const inB = inH || body.some(P => KitModel.inPoly(P, x, y));
+      if (!inB) continue;
+      const cov = front.some(P => KitModel.inPoly(P, x, y));
+      if (inH) { h++; if (cov) hc++; }
+      if (y < deskTop) { u++; if (cov) uc++; }
+    }
+    return { pose: poseKey, box: bx.map(v => Math.round(v * 10) / 10), headCover: h ? Math.round((hc / h) * 1000) / 10 : 0, upperCover: u ? Math.round((uc / u) * 1000) / 10 : 0 };
+  }
+  // Every pose that names this room in its `fits`, plus to-camera; the worst.
+  clearanceOf(r) {
+    if (!this.anchorOf(r)) return null;
+    const keys = Object.keys(KitModel.POSES).filter(k => k === "to-camera" || KitModel.POSES[k].fits.split(" · ").indexOf(r.id) >= 0);
+    const rows = keys.map(k => this.clearance(r, k));
+    const worst = f => rows.reduce((a, b) => (b[f] > a[f] ? b : a));
+    const box = rows.reduce((a, r) => [Math.min(a[0], r.box[0]), Math.min(a[1], r.box[1]), Math.max(a[2], r.box[2]), Math.max(a[3], r.box[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+    const strip = r0 => ({ pose: r0.pose, headCover: r0.headCover, upperCover: r0.upperCover });
+    return { poses: keys.length, head: strip(worst("headCover")), upper: strip(worst("upperCover")), figureBox: box };
+  }
+
   static rect(x, y, w, h) { return "M" + x + "," + y + "h" + w + "v" + h + "h" + (-w) + "z"; }
   static poly(pts) { return "M" + pts.map(p => p.join(",")).join("L") + "Z"; }
 
@@ -237,7 +308,15 @@ class KitModel {
     const R = KitModel.rect, Y = KitModel.poly;
     const s = (d, role, tone) => ({ d, role, tone });
     const ink = (d, role) => ({ d, role, ink: true });
-    return [
+    /* BEHIND HIM, written down (§4.5, rebuild-21). The split used to be derived
+     * as "the first desk shape", so anything authored after the desk painted in
+     * front of him — four rooms listed wall items after it and hung a shelf or
+     * a frame across his head. Every shape now carries an explicit layer: the
+     * desk and everything after it defaults to front, and b(...) marks a shape
+     * that sits behind him wherever it was authored. rooms() then orders each
+     * room behind-then-front and the split is the first front shape. */
+    const b = (...xs) => xs.map(x => Object.assign(x, { back: true }));
+    return KitModel.layered([
       { id: "desk-front", isNew: false, anchor: [178, 30, 110, 116], why: "The talk shot. Square to the wall, and most of every video.", shapes: [
         s(R(0, 0, 320, 146), "wall"), s(R(230, 0, 90, 146), "wall", "shade"),
         s(R(22, 16, 84, 54), "prop", "shade"), s(R(29, 23, 22, 15), "paper"), s(R(55, 23, 22, 15), "paper"),
@@ -258,33 +337,42 @@ class KitModel {
         s(R(296, 100, 11, 18), "paper", "shade"), s(R(294, 96, 15, 5), "prop"),
         s(R(84, 108, 30, 12), "prop", "shade"), s(R(88, 104, 22, 5), "paper"),
         s(R(292, 118, 22, 24), "prop", "shade"), s(R(294, 114, 18, 5), "paper"),
-        s(R(112, 22, 30, 42), "paper"), s(R(114, 26, 26, 5), "prop"),
-        s(R(238, 8, 40, 26), "prop", "shade"), s(R(242, 12, 32, 5), "paper"), s(R(242, 20, 32, 5), "paper"),
+        ...b(s(R(112, 22, 30, 42), "paper"), s(R(114, 26, 26, 5), "prop")),
+        ...b(s(R(238, 8, 40, 26), "prop", "shade"), s(R(242, 12, 32, 5), "paper"), s(R(242, 20, 32, 5), "paper")),
         s(R(198, 126, 46, 3), "prop", "shade"),
         s(Y([[194, 116], [214, 116], [238, 128], [196, 128]]), "desk", "shade"),
         s(Y([[223, 116], [240, 116], [248, 128], [225, 128]]), "desk", "shade"),
         s(Y([[36, 142], [284, 142], [300, 162], [20, 162]]), "floor", "shade"),
         s(Y([[0, 180], [0, 118], [56, 132], [64, 180]]), "prop", "shade"),
       ] },
-      { id: "desk-wide", isNew: false, anchor: [212, 46, 80, 88], why: "The scene change and the chapter opener. Carries the title ground.", shapes: [
+      { id: "desk-wide", isNew: false, anchor: [212, 56, 80, 78], opener: true,
+        /* rebuild-21: THE TITLE SLOT. Every long chapter opens with its title set here,
+         * and no rebuilt room published one, so every chapter title had nowhere to
+         * land. The card is drawn into the room (the card ground, §5.3) top-right,
+         * inside the portrait window, above his head: the window moved to the left
+         * wall to make room, and he stands 10% further back so two lines fit over
+         * him in 16:9. `slot` and `ground` are room units; emit.js publishes both
+         * aspects in canvas units. */
+        title: { slot: [210, 14, 84, 36], ground: [206, 11, 92, 42] },
+        why: "The scene change and the chapter opener. Carries the title ground.", shapes: [
         s(R(0, 0, 320, 132), "wall"), s(R(0, 0, 72, 132), "wallSide"),
         s(R(286, 36, 26, 96), "wallSide", "shade"),
-        s(R(190, 26, 96, 62), "prop", "shade"), s(R(195, 31, 86, 52), "glow"),
-        s(R(195, 31, 86, 5), "prop", "shade"), s(R(195, 49, 86, 4), "prop", "shade"), s(R(195, 66, 86, 4), "prop", "shade"),
+        s(R(20, 26, 96, 62), "prop", "shade"), s(R(25, 31, 86, 52), "glow"),
+        s(R(25, 31, 86, 5), "prop", "shade"), s(R(25, 49, 86, 4), "prop", "shade"), s(R(25, 66, 86, 4), "prop", "shade"),
         s(R(0, 124, 320, 8), "prop", "shade"), s(R(0, 132, 320, 48), "floor"), s(R(0, 132, 72, 48), "floor", "shade"),
-        s(Y([[195, 132], [281, 132], [300, 180], [150, 180]]), "glow", "shade"),
+        s(Y([[25, 132], [111, 132], [130, 180], [0, 180], [0, 172]]), "glow", "shade"),
         s(R(96, 104, 112, 10), "desk"), s(R(96, 114, 112, 12), "desk", "shade"),
         s(R(100, 126, 7, 16), "prop", "shade"), s(R(197, 126, 7, 16), "prop", "shade"),
         s(R(140, 84, 40, 22), "prop", "shade"), s(R(143, 87, 34, 16), "screen"),
         s(R(112, 88, 4, 16), "prop", "shade"), s(Y([[104, 78], [126, 78], [121, 88], [109, 88]]), "lamp"),
-        s(R(246, 96, 16, 36), "prop"), s(R(238, 86, 32, 12), "prop", "shade"),
-        ink(R(20, 16, 128, 36), "ground"), ink(R(28, 44, 80, 3), "rule"),
+        ...b(s(R(246, 96, 16, 36), "prop"), s(R(238, 86, 32, 12), "prop", "shade")),
+        ...b(ink(R(206, 11, 92, 42), "ground"), ink(R(210, 50, 36, 2), "rule")),
         s(R(178, 96, 24, 18), "prop"), s(R(178, 92, 24, 5), "prop", "shade"),
         s(R(84, 96, 13, 18), "paper"), s(R(120, 100, 20, 6), "prop", "shade"),
         s(R(16, 96, 44, 36), "prop", "shade"), s(R(20, 100, 36, 6), "paper"), s(R(20, 110, 36, 6), "paper"), s(R(20, 120, 36, 6), "paper"),
         s(R(276, 140, 26, 32), "prop", "shade"), s(R(272, 136, 34, 6), "paper"),
         s(R(150, 150, 34, 8), "prop", "shade"), s(R(206, 158, 22, 10), "paper"),
-        s(R(156, 30, 22, 28), "paper"),
+        ...b(s(R(156, 30, 22, 28), "paper")),
         s(Y([[96, 126], [208, 126], [226, 148], [78, 148]]), "floor", "shade"),
         s(Y([[178, 112], [202, 112], [212, 122], [180, 122]]), "desk", "shade"),
         s(Y([[0, 180], [0, 134], [48, 148], [56, 180]]), "prop", "shade"),
@@ -303,10 +391,10 @@ class KitModel {
         s(R(104, 100, 14, 13), "prop"), s(R(122, 106, 44, 6), "paper"), s(R(126, 102, 34, 4), "paper", "shade"),
         s(R(86, 94, 15, 20), "prop"), s(R(86, 90, 15, 5), "prop", "shade"),
         s(R(172, 96, 26, 14), "prop", "shade"), s(R(174, 92, 22, 5), "paper"),
-        s(R(246, 82, 58, 34), "prop", "shade"), s(R(252, 88, 46, 6), "paper"), s(R(252, 100, 46, 6), "paper"),
+        ...b(s(R(246, 82, 58, 34), "prop", "shade"), s(R(252, 88, 46, 6), "paper"), s(R(252, 100, 46, 6), "paper")),
         s(R(34, 152, 30, 26), "prop", "shade"), s(R(30, 148, 38, 6), "paper"),
-        s(R(60, 22, 44, 52), "paper"), s(R(64, 28, 36, 6), "prop"), s(R(64, 40, 36, 4), "prop", "shade"),
-        s(R(120, 20, 18, 26), "prop", "shade"),
+        ...b(s(R(60, 22, 44, 52), "paper"), s(R(64, 28, 36, 6), "prop"), s(R(64, 40, 36, 4), "prop", "shade")),
+        ...b(s(R(120, 20, 18, 26), "prop", "shade")),
         s(Y([[30, 140], [214, 128], [230, 154], [14, 166]]), "floor", "shade"),
         s(Y([[118, 110], [140, 109], [150, 120], [120, 121]]), "desk", "shade"),
         s(Y([[320, 180], [320, 114], [266, 132], [258, 180]]), "prop", "shade"),
@@ -322,10 +410,10 @@ class KitModel {
         s(Y([[100, 114], [216, 114], [262, 126], [54, 126]]), "glow"),
         s(R(120, 106, 76, 8), "prop"), s(R(226, 104, 34, 6), "paper"),
         s(R(266, 92, 4, 22), "prop", "shade"), s(Y([[256, 80], [284, 80], [278, 92], [262, 92]]), "lamp"),
-        s(R(44, 96, 19, 24), "prop"), s(R(44, 92, 19, 5), "prop", "shade"),
-        s(R(70, 104, 26, 10), "prop", "shade"), s(R(74, 100, 18, 5), "paper"),
-        s(R(224, 38, 18, 24), "paper"), s(R(224, 66, 18, 24), "paper"), s(R(246, 46, 18, 24), "prop"),
-        s(R(14, 40, 62, 40), "prop", "shade"), s(R(20, 46, 50, 6), "paper"), s(R(20, 58, 50, 6), "paper"), s(R(20, 70, 50, 5), "prop"),
+        s(R(34, 96, 19, 24), "prop"), s(R(34, 92, 19, 5), "prop", "shade"),
+        s(R(196, 104, 26, 10), "prop", "shade"), s(R(200, 100, 18, 5), "paper"),
+        ...b(s(R(224, 38, 18, 24), "paper"), s(R(224, 66, 18, 24), "paper"), s(R(246, 46, 18, 24), "prop")),
+        ...b(s(R(14, 40, 62, 40), "prop", "shade"), s(R(20, 46, 50, 6), "paper"), s(R(20, 58, 50, 6), "paper"), s(R(20, 70, 50, 5), "prop")),
         s(R(276, 122, 34, 4), "prop", "shade"),
         s(Y([[16, 138], [304, 138], [316, 158], [4, 158]]), "floor", "shade"),
         s(Y([[216, 112], [242, 112], [252, 126], [218, 126]]), "desk", "shade"),
@@ -354,13 +442,13 @@ class KitModel {
         s(R(0, 134, 320, 8), "prop", "shade"), s(R(0, 142, 320, 38), "floor"),
         s(Y([[156, 142], [284, 142], [320, 180], [122, 180]]), "glow", "shade"),
         s(R(36, 104, 96, 10), "desk"), s(R(36, 114, 96, 12), "desk", "shade"), s(R(42, 126, 8, 18), "prop", "shade"),
-        s(R(60, 82, 34, 22), "prop", "shade"), s(R(63, 85, 28, 16), "screen"),
+        s(R(100, 82, 32, 22), "prop", "shade"), s(R(103, 85, 26, 16), "screen"),
         s(R(102, 100, 12, 12), "prop"),
         s(R(288, 96, 20, 46), "prop"), s(R(280, 82, 36, 16), "prop", "shade"),
         s(R(120, 96, 16, 20), "prop"), s(R(120, 92, 16, 5), "prop", "shade"),
-        s(R(14, 40, 50, 36), "prop", "shade"), s(R(18, 44, 42, 6), "paper"), s(R(18, 54, 42, 6), "paper"), s(R(18, 64, 42, 5), "prop"),
+        ...b(s(R(14, 40, 50, 36), "prop", "shade"), s(R(18, 44, 42, 6), "paper"), s(R(18, 54, 42, 6), "paper"), s(R(18, 64, 42, 5), "prop")),
         s(R(36, 148, 34, 26), "prop", "shade"), s(R(32, 144, 42, 6), "paper"),
-        s(R(84, 88, 26, 16), "paper"), s(R(200, 150, 44, 10), "prop", "shade"),
+        s(R(40, 96, 18, 8), "paper"), s(R(200, 150, 44, 10), "prop", "shade"),
         s(R(30, 90, 22, 14), "prop", "shade"),
         s(Y([[36, 126], [132, 126], [146, 152], [20, 152]]), "floor", "shade"),
         s(Y([[94, 110], [118, 110], [126, 122], [96, 122]]), "desk", "shade"),
@@ -374,12 +462,12 @@ class KitModel {
         s(Y([[60, 138], [142, 138], [170, 180], [28, 180]]), "glow", "shade"),
         s(R(188, 38, 112, 74), "prop", "shade"), s(R(194, 44, 100, 27), "paper"), s(R(194, 76, 100, 29), "prop"),
         s(R(166, 112, 142, 10), "desk"), s(R(166, 122, 142, 12), "desk", "shade"), s(R(174, 134, 8, 22), "prop", "shade"),
-        s(R(226, 88, 36, 24), "prop", "shade"), s(R(229, 91, 30, 18), "screen"),
+        s(R(262, 88, 36, 24), "prop", "shade"), s(R(265, 91, 30, 18), "screen"),
         s(R(194, 106, 26, 6), "paper"),
         s(R(276, 100, 16, 20), "prop"), s(R(276, 96, 16, 5), "prop", "shade"),
-        s(R(24, 92, 26, 46), "prop", "shade"), s(R(26, 96, 22, 6), "paper"), s(R(26, 106, 22, 6), "paper"),
+        ...b(s(R(24, 92, 26, 46), "prop", "shade"), s(R(26, 96, 22, 6), "paper"), s(R(26, 106, 22, 6), "paper")),
         s(R(58, 146, 34, 26), "prop", "shade"), s(R(54, 142, 42, 6), "paper"),
-        s(R(150, 26, 26, 34), "paper"), s(R(154, 32, 18, 5), "prop"),
+        ...b(s(R(150, 26, 26, 34), "paper"), s(R(154, 32, 18, 5), "prop")),
         s(R(110, 150, 46, 10), "prop", "shade"), s(R(248, 132, 40, 6), "paper"),
         s(Y([[148, 14], [159, 24], [159, 140], [148, 132]]), "wall", "shade"),
         s(Y([[166, 134], [308, 134], [320, 156], [152, 156]]), "floor", "shade"),
@@ -420,7 +508,7 @@ class KitModel {
        * that dusk lights from the other side. Wide angles are marked false
        * and should be used at night until the relight lands.
        */
-      { id: "desk-front-b", isNew: true, anchor: [166, 32, 104, 112], duskSafe: true,
+      { id: "desk-front-b", isNew: true, anchor: [228, 32, 104, 112], duskSafe: true,
         role: "talk", why: "NEW — the second TALK angle. Same desk, camera stepped left and in, so the monitor sits off his shoulder rather than behind his head. talk is the only room any short ever uses and it had one member; this is the single highest-value drawing in the round.", shapes: [
         s(R(0, 0, 320, 148), "wall"), s(R(0, 0, 58, 148), "wallSide", "shade"), s(R(262, 0, 58, 148), "wall", "shade"),
         s(R(206, 14, 92, 58), "prop", "shade"), s(R(212, 20, 38, 16), "paper"), s(R(254, 20, 38, 16), "paper"),
@@ -438,15 +526,15 @@ class KitModel {
         s(R(128, 114, 36, 6), "paper"), s(R(132, 110, 28, 4), "paper", "shade"),
         s(R(72, 98, 17, 22), "prop"), s(R(72, 94, 17, 5), "prop", "shade"),
         s(R(168, 106, 22, 14), "prop", "shade"), s(R(170, 102, 18, 5), "paper"),
-        s(R(286, 104, 26, 38), "prop", "shade"), s(R(284, 100, 30, 5), "paper"),
-        s(R(86, 24, 32, 44), "paper"), s(R(88, 28, 28, 5), "prop"),
-        s(R(128, 30, 26, 34), "prop", "shade"), s(R(131, 34, 20, 4), "paper"),
+        ...b(s(R(286, 104, 26, 38), "prop", "shade"), s(R(284, 100, 30, 5), "paper")),
+        ...b(s(R(86, 24, 32, 44), "paper"), s(R(88, 28, 28, 5), "prop")),
+        ...b(s(R(128, 30, 26, 34), "prop", "shade"), s(R(131, 34, 20, 4), "paper")),
         s(Y([[26, 144], [286, 144], [302, 164], [10, 164]]), "floor", "shade"),
         s(Y([[190, 118], [214, 118], [226, 130], [192, 130]]), "desk", "shade"),
         s(Y([[0, 180], [0, 120], [52, 134], [60, 180]]), "prop", "shade"),
       ] },
 
-      { id: "desk-front-low", isNew: true, anchor: [176, 44, 96, 104], duskSafe: true,
+      { id: "desk-front-low", isNew: true, anchor: [236, 44, 96, 104], duskSafe: true,
         role: "talk", why: "NEW — the third TALK angle. Camera dropped to desk height so the surface reads as a foreground plane and he sits above it. Use it for the beat where the paperwork matters as much as he does.", shapes: [
         s(R(0, 0, 320, 120), "wall"), s(R(244, 0, 76, 120), "wall", "shade"), s(R(0, 0, 44, 120), "wallSide", "shade"),
         s(R(60, 10, 104, 44), "prop", "shade"), s(R(66, 16, 44, 14), "paper"), s(R(114, 16, 44, 14), "paper"),
@@ -462,9 +550,9 @@ class KitModel {
         s(R(214, 130, 28, 26), "prop"), s(R(212, 126, 32, 5), "prop", "shade"),
         s(R(258, 136, 44, 30), "paper"), ink(R(266, 144, 28, 3), "rule"),
         s(R(96, 100, 16, 20), "prop"), s(R(96, 96, 16, 5), "prop", "shade"),
-        s(R(276, 96, 22, 24), "prop", "shade"), s(R(274, 92, 26, 5), "paper"),
+        ...b(s(R(276, 96, 22, 24), "prop", "shade"), s(R(274, 92, 26, 5), "paper")),
         s(R(164, 98, 20, 22), "paper"), s(R(166, 102, 16, 4), "prop"),
-        s(R(12, 96, 30, 24), "prop", "shade"), s(R(14, 100, 26, 5), "paper"),
+        ...b(s(R(12, 96, 30, 24), "prop", "shade"), s(R(14, 100, 26, 5), "paper")),
         s(Y([[0, 180], [0, 150], [44, 160], [50, 180]]), "prop", "shade"),
         s(Y([[286, 146], [320, 152], [320, 180], [274, 180]]), "prop", "shade"),
       ] },
@@ -481,10 +569,10 @@ class KitModel {
         s(R(118, 92, 84, 32), "paper"), ink(R(128, 100, 64, 3), "rule"), ink(R(128, 108, 64, 3), "rule"), ink(R(128, 116, 40, 3), "rule"),
         s(R(52, 92, 4, 30), "prop", "shade"), s(Y([[38, 78], [72, 78], [64, 92], [46, 92]]), "lamp"),
         s(Y([[30, 116], [78, 116], [92, 132], [16, 132]]), "lamp", "shade"),
-        s(R(214, 104, 44, 18), "prop", "shade"), s(R(218, 100, 36, 5), "paper"),
+        s(R(250, 104, 40, 18), "prop", "shade"), s(R(254, 100, 32, 5), "paper"),
         s(R(84, 104, 18, 18), "prop"), s(R(84, 100, 18, 5), "prop", "shade"),
         s(R(262, 110, 30, 12), "paper"), s(R(266, 106, 22, 4), "paper", "shade"),
-        s(R(232, 18, 34, 46), "paper"), s(R(234, 22, 30, 5), "prop"),
+        ...b(s(R(232, 18, 34, 46), "paper"), s(R(234, 22, 30, 5), "prop")),
         s(R(292, 96, 22, 26), "prop", "shade"), s(R(290, 92, 26, 5), "paper"),
         s(Y([[20, 146], [292, 146], [306, 166], [6, 166]]), "floor", "shade"),
         s(Y([[0, 180], [0, 126], [48, 138], [56, 180]]), "prop", "shade"),
@@ -512,7 +600,7 @@ class KitModel {
         s(Y([[0, 180], [0, 146], [40, 158], [46, 180]]), "prop", "shade"),
       ] },
 
-      { id: "doorway-wide", isNew: true, anchor: [214, 34, 106, 114], duskSafe: false,
+      { id: "doorway-wide", isNew: true, anchor: [243, 34, 106, 114], duskSafe: false,
         role: "exit", why: "NEW — the second EXIT angle, pulled back so the whole door and the corridor light beyond are in frame. One member closes every long. NOT dusk-safe: the corridor spill is keyed to the night lamp and the wide frame shows the cast crossing the floor.", shapes: [
         s(R(0, 0, 320, 150), "wall"), s(R(0, 0, 96, 150), "wallSide", "shade"),
         s(R(108, 14, 96, 136), "prop", "shade"), s(R(116, 22, 80, 128), "glow"),
@@ -522,10 +610,10 @@ class KitModel {
         s(R(0, 142, 320, 8), "prop", "shade"), s(R(0, 150, 320, 30), "floor"), s(R(0, 150, 96, 30), "floor", "shade"),
         s(R(216, 96, 96, 10), "desk"), s(R(216, 106, 96, 12), "desk", "shade"),
         s(R(222, 118, 7, 18), "prop", "shade"), s(R(300, 118, 7, 18), "prop", "shade"),
-        s(R(248, 74, 44, 24), "prop", "shade"), s(R(251, 77, 38, 18), "screen"),
+        s(R(244, 74, 36, 24), "prop", "shade"), s(R(247, 77, 30, 18), "screen"),
         s(R(230, 82, 4, 14), "prop", "shade"), s(Y([[222, 72], [244, 72], [239, 82], [227, 82]]), "lamp"),
-        s(R(16, 100, 48, 50), "prop", "shade"), s(R(20, 104, 40, 6), "paper"), s(R(20, 114, 40, 6), "paper"), s(R(20, 124, 40, 6), "paper"),
-        s(R(24, 20, 44, 58), "paper"), s(R(28, 26, 36, 5), "prop"), s(R(28, 38, 36, 4), "prop", "shade"),
+        ...b(s(R(16, 100, 48, 50), "prop", "shade"), s(R(20, 104, 40, 6), "paper"), s(R(20, 114, 40, 6), "paper"), s(R(20, 124, 40, 6), "paper")),
+        ...b(s(R(24, 20, 44, 58), "paper"), s(R(28, 26, 36, 5), "prop"), s(R(28, 38, 36, 4), "prop", "shade")),
         s(R(74, 128, 26, 22), "prop"), s(R(72, 124, 30, 5), "prop", "shade"),
         s(R(286, 130, 28, 34), "prop", "shade"), s(R(284, 126, 32, 6), "paper"),
         s(Y([[216, 118], [312, 118], [320, 140], [204, 140]]), "floor", "shade"),
@@ -551,15 +639,26 @@ class KitModel {
         s(R(20, 142, 8, 26), "prop", "shade"), s(R(128, 142, 8, 26), "prop", "shade"),
         s(R(40, 90, 4, 28), "prop", "shade"), s(Y([[28, 78], [58, 78], [51, 90], [35, 90]]), "lamp"),
         s(R(64, 104, 16, 14), "prop"), s(R(80, 107, 4, 7), "prop", "shade"),
-        s(R(92, 110, 44, 8), "paper"), s(R(96, 106, 34, 4), "paper", "shade"),
-        s(R(8, 22, 30, 42), "paper"), s(R(10, 26, 26, 5), "prop"),
-        s(R(48, 26, 76, 34), "prop", "shade"), s(R(54, 32, 30, 8), "paper"), s(R(90, 32, 28, 8), "paper"),
+        s(R(124, 110, 20, 8), "paper"), s(R(126, 106, 16, 4), "paper", "shade"),
+        ...b(s(R(8, 22, 30, 42), "paper"), s(R(10, 26, 26, 5), "prop")),
+        ...b(s(R(48, 26, 76, 34), "prop", "shade"), s(R(54, 32, 30, 8), "paper"), s(R(90, 32, 28, 8), "paper")),
         s(R(150, 128, 24, 18), "prop", "shade"), s(R(152, 124, 20, 5), "paper"),
         s(Y([[12, 142], [144, 142], [158, 162], [0, 162]]), "floor", "shade"),
         s(Y([[0, 180], [0, 124], [44, 136], [50, 180]]), "prop", "shade"),
       ] },
 
-    ];
+    ]);
+  }
+
+  static layered(list) {
+    return list.map(r => {
+      const deskAt = r.shapes.findIndex(s => s.role === "desk");
+      const tagged = r.shapes.map((s, i) => {
+        const o = Object.assign({}, s, { front: !s.back && deskAt >= 0 && i >= deskAt });
+        delete o.back; return o;
+      });
+      return Object.assign({}, r, { shapes: tagged.filter(s => !s.front).concat(tagged.filter(s => s.front)) });
+    });
   }
 
   // The fourteen parts. Every one of the five new ones answers a line of
@@ -640,11 +739,19 @@ class KitModel {
       " Q" + (hcx + 33) + "," + (hcy + 22) + " " + (hcx + 12) + "," + (hcy + 26) +
       " Q" + (hcx - 12) + "," + (hcy + 30) + " " + (hcx - 26) + "," + (hcy + 44) +
       " Q" + (hcx - 35) + "," + (hcy + 52) + " " + (hcx - 41) + "," + (hcy + 56) + " Z";
-    const hairShade = "M" + (hcx + 14 * kx) + "," + (hcy - 10) +
-      " Q" + (hcx + 31 * kx) + "," + (hcy - 2) + " " + (hcx + 37 * kx) + "," + (hcy + 14) +
+    // A RIM, NOT A SPLIT (rebuild-21) — the face terminator's fix, applied to the
+    // hair. The first cut ran the shade from the crown's centre to the temple,
+    // half the hair, and at night that half is the lamp's brown against the
+    // key's blue-grey: two-tone hair, not one colour lit from one side. The shade
+    // is now a crescent on the key-away rim, crown to temple, following the
+    // outer contour (control points from subdividing it at t = 0.75), so the
+    // hair reads as the lit colour with the second source catching its edge.
+    const hairShade = "M" + (hcx + 27 * kx) + "," + (hcy + 3) +
+      " Q" + (hcx + 32.25 * kx) + "," + (hcy + 7.5) + " " + (hcx + 37 * kx) + "," + (hcy + 14) +
       " Q" + (hcx + 43 * kx) + "," + (hcy + 32) + " " + (hcx + 41 * kx) + "," + (hcy + 52) +
       " L" + (hcx + 33 * kx) + "," + (hcy + 44) +
-      " Q" + (hcx + 33 * kx) + "," + (hcy + 24) + " " + (hcx + 16 * kx) + "," + (hcy + 25) + " Z";
+      " Q" + (hcx + 34 * kx) + "," + (hcy + 30) + " " + (hcx + 30 * kx) + "," + (hcy + 18) +
+      " Q" + (hcx + 29 * kx) + "," + (hcy + 10) + " " + (hcx + 27 * kx) + "," + (hcy + 3) + " Z";
     // Uneven stubble — one flat jaw mass, deliberately faint. Heavy enough to
     // read as bruising makes him look beaten, which the sheet calls over the line.
     // STUBBLE IS GONE, and this is a finding rather than a cut. "Deliberately

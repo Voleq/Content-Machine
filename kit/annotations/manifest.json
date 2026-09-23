@@ -23,99 +23,24 @@
     460
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "scrawl-oval-wide-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "scrawl-oval-wide-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "e656b3f2"
-     },
-     {
-      "file": "scrawl-oval-wide-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "188b1cfe"
-     },
-     {
-      "file": "scrawl-oval-wide-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "e656b3f2"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "scrawl-oval-wide-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "scrawl-oval-wide-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "e656b3f2"
-      },
-      {
-       "file": "scrawl-oval-wide-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "188b1cfe"
-      },
-      {
-       "file": "scrawl-oval-wide-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "e656b3f2"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "scrawl-oval-wide-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "scrawl-oval-wide-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "f18faace"
-      },
-      {
-       "file": "scrawl-oval-wide-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "a428e668"
-      },
-      {
-       "file": "scrawl-oval-wide-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "f18faace"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -168,99 +93,24 @@
     300
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "scrawl-oval-tight-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "scrawl-oval-tight-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "f0fc778e"
-     },
-     {
-      "file": "scrawl-oval-tight-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "4ca864be"
-     },
-     {
-      "file": "scrawl-oval-tight-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "f0fc778e"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "scrawl-oval-tight-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "scrawl-oval-tight-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "f0fc778e"
-      },
-      {
-       "file": "scrawl-oval-tight-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "4ca864be"
-      },
-      {
-       "file": "scrawl-oval-tight-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "f0fc778e"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "scrawl-oval-tight-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "scrawl-oval-tight-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "cb52dc10"
-      },
-      {
-       "file": "scrawl-oval-tight-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "31d74f96"
-      },
-      {
-       "file": "scrawl-oval-tight-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "cb52dc10"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -313,99 +163,24 @@
     280
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "underline-swipe-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "underline-swipe-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "ecbf8848"
-     },
-     {
-      "file": "underline-swipe-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "1f67519c"
-     },
-     {
-      "file": "underline-swipe-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "ecbf8848"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "underline-swipe-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "underline-swipe-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "ecbf8848"
-      },
-      {
-       "file": "underline-swipe-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "1f67519c"
-      },
-      {
-       "file": "underline-swipe-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "ecbf8848"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "underline-swipe-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "underline-swipe-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "1c62d318"
-      },
-      {
-       "file": "underline-swipe-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "8a6a3c8d"
-      },
-      {
-       "file": "underline-swipe-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "1c62d318"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -458,99 +233,24 @@
     180
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "underline-tight-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "underline-tight-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "9d7051c8"
-     },
-     {
-      "file": "underline-tight-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "37faa738"
-     },
-     {
-      "file": "underline-tight-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "9d7051c8"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "underline-tight-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "underline-tight-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "9d7051c8"
-      },
-      {
-       "file": "underline-tight-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "37faa738"
-      },
-      {
-       "file": "underline-tight-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "9d7051c8"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "underline-tight-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "underline-tight-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "c7d50866"
-      },
-      {
-       "file": "underline-tight-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "e5f24c9e"
-      },
-      {
-       "file": "underline-tight-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "c7d50866"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -603,99 +303,24 @@
     180
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "strike-out-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "strike-out-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "241154e8"
-     },
-     {
-      "file": "strike-out-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "94d37240"
-     },
-     {
-      "file": "strike-out-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "241154e8"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "strike-out-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "strike-out-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "241154e8"
-      },
-      {
-       "file": "strike-out-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "94d37240"
-      },
-      {
-       "file": "strike-out-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "241154e8"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "strike-out-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "strike-out-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "60b39e38"
-      },
-      {
-       "file": "strike-out-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "9036eca8"
-      },
-      {
-       "file": "strike-out-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "60b39e38"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -748,99 +373,24 @@
     640
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "box-scrawl-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "box-scrawl-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "1009ef0e"
-     },
-     {
-      "file": "box-scrawl-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "0c33459e"
-     },
-     {
-      "file": "box-scrawl-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "1009ef0e"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "box-scrawl-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "box-scrawl-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "1009ef0e"
-      },
-      {
-       "file": "box-scrawl-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "0c33459e"
-      },
-      {
-       "file": "box-scrawl-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "1009ef0e"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "box-scrawl-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "box-scrawl-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "7e03dba8"
-      },
-      {
-       "file": "box-scrawl-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "18045800"
-      },
-      {
-       "file": "box-scrawl-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "7e03dba8"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -893,99 +443,24 @@
     1400
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "bracket-rows-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "bracket-rows-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "18673bee"
-     },
-     {
-      "file": "bracket-rows-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "1ab6c998"
-     },
-     {
-      "file": "bracket-rows-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "18673bee"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "bracket-rows-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "bracket-rows-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "18673bee"
-      },
-      {
-       "file": "bracket-rows-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "1ab6c998"
-      },
-      {
-       "file": "bracket-rows-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "18673bee"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "bracket-rows-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "bracket-rows-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "6d7cca36"
-      },
-      {
-       "file": "bracket-rows-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "4fc3b4bf"
-      },
-      {
-       "file": "bracket-rows-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "6d7cca36"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -1038,99 +513,24 @@
     1040
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "arrow-elbow-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "arrow-elbow-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "a97c5f16"
-     },
-     {
-      "file": "arrow-elbow-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "1100d9f0"
-     },
-     {
-      "file": "arrow-elbow-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "a97c5f16"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "arrow-elbow-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "arrow-elbow-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "a97c5f16"
-      },
-      {
-       "file": "arrow-elbow-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "1100d9f0"
-      },
-      {
-       "file": "arrow-elbow-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "a97c5f16"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "arrow-elbow-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "arrow-elbow-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "96592568"
-      },
-      {
-       "file": "arrow-elbow-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "2fff80e0"
-      },
-      {
-       "file": "arrow-elbow-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "96592568"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -1183,99 +583,24 @@
     600
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "caret-note-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "caret-note-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "13c3deee"
-     },
-     {
-      "file": "caret-note-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "139f8f58"
-     },
-     {
-      "file": "caret-note-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "13c3deee"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "caret-note-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "caret-note-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "13c3deee"
-      },
-      {
-       "file": "caret-note-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "139f8f58"
-      },
-      {
-       "file": "caret-note-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "13c3deee"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "caret-note-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "caret-note-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "e702fdfe"
-      },
-      {
-       "file": "caret-note-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "a5d08450"
-      },
-      {
-       "file": "caret-note-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "e702fdfe"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,
@@ -1328,99 +653,24 @@
     440
    ],
    "exportScale": 2,
-   "playback": "loop",
-   "fps": 3,
-   "frameCount": 3,
+   "playback": "still",
+   "fps": 1,
+   "frameCount": 1,
    "files": {
     "base": "tick-marks-night.png",
     "baseIsFrame": true,
-    "frames": [
-     {
-      "file": "tick-marks-night_f01.png",
-      "tag": "_f01",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "9f41d230"
-     },
-     {
-      "file": "tick-marks-night_f02.png",
-      "tag": "_f02",
-      "args": {
-       "ruleOffset": 1
-      },
-      "hash": "14464652"
-     },
-     {
-      "file": "tick-marks-night_f03.png",
-      "tag": "_f03",
-      "args": {
-       "ruleOffset": 0
-      },
-      "hash": "9f41d230"
-     }
-    ]
+    "frames": []
    },
    "filesByHour": {
     "night": {
      "base": "tick-marks-night.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "tick-marks-night_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "9f41d230"
-      },
-      {
-       "file": "tick-marks-night_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "14464652"
-      },
-      {
-       "file": "tick-marks-night_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "9f41d230"
-      }
-     ]
+     "frames": []
     },
     "dusk": {
      "base": "tick-marks-dusk.png",
      "baseIsFrame": true,
-     "frames": [
-      {
-       "file": "tick-marks-dusk_f01.png",
-       "tag": "_f01",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "c515dfc0"
-      },
-      {
-       "file": "tick-marks-dusk_f02.png",
-       "tag": "_f02",
-       "args": {
-        "ruleOffset": 1
-       },
-       "hash": "9c2aa6b0"
-      },
-      {
-       "file": "tick-marks-dusk_f03.png",
-       "tag": "_f03",
-       "args": {
-        "ruleOffset": 0
-       },
-       "hash": "c515dfc0"
-      }
-     ]
+     "frames": []
     }
    },
    "slotCount": 2,

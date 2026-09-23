@@ -134,12 +134,14 @@ function build(opts) {
 
   M.rooms().forEach(r => {
     const anchor = M.anchorOf(r);
-    const deskAt = r.shapes.findIndex(s => s.role === 'desk');
-    /* THE SPLIT. The desk is where the figure is occluded. An anchored room with
-     * no desk \u2014 board-side, where he stands at the near edge \u2014 draws him over
-     * everything, so its split is the shape count. It used to publish none, and
-     * rule 15 was right to fail it. */
-    const split = !anchor ? undefined : (deskAt >= 0 ? deskAt : r.shapes.length);
+    const frontAt = r.shapes.findIndex(s => s.front);
+    /* THE SPLIT (rebuild-21). Every shape carries an explicit layer and rooms()
+     * orders them behind-then-front, so the split is the first front shape.
+     * It used to be the first desk shape, which painted any wall item authored
+     * after the desk over his head. An anchored room with nothing in front of
+     * him \u2014 board-side \u2014 splits at the shape count. */
+    const split = !anchor ? undefined : (frontAt >= 0 ? frontAt : r.shapes.length);
+    const clear = anchor ? M.clearanceOf(r) : null;
     const cx = anchor ? anchor[0] + anchor[2] / 2 : 160;
     const win = [Math.max(0, Math.min(320 - PW, Math.round(cx - PW / 2))), PY, PW, PH];
     const gHash = hash(r.shapes.map(s => s.d).join('|'));
@@ -150,6 +152,28 @@ function build(opts) {
     if (anchor) assets[id].hostAnchor = anchor;
     if (r.role) assets[id].roomRole = r.role;
     if (r.duskSafe !== undefined) assets[id].duskSafe = r.duskSafe;
+    /* THE TITLE SLOT (rebuild-21, §5.3). Authored in room units on the model;
+     * published per aspect in that aspect's canvas units: 16:9 is the room x6
+     * (320 -> 1920), 9:16 is the portrait window scaled to 1080 wide, origin at
+     * the window. Card ground, colour `structure` (the card keeps the type
+     * colour, which is why card was chosen). Budgets derived by budget.js from
+     * the box, never typed, with the drawn kit's room title role. */
+    let roomSlots = null;
+    if (r.title) {
+      const k16 = 1920 / 320, k9 = 1080 / PW;
+      const at16 = b => b.map(v => Math.round(v * k16));
+      const at9 = b => [Math.round((b[0] - win[0]) * k9), Math.round((b[1] - win[1]) * k9), Math.round(b[2] * k9), Math.round(b[3] * k9)];
+      roomSlots = {};
+      [['16x9', at16, [1920, 1080], 76], ['9x16', at9, [1080, 1920], 62]].forEach(([aspect, f, canvas, size]) => {
+        const s = f(r.title.slot);
+        const slotsA = { title: { x: s[0], y: s[1], w: s[2], h: s[3], align: 'left', role: 'title', ground: 'card', groundBox: f(r.title.ground), colour: 'structure',
+          note: 'chapter opener writes here. The card under it is drawn into the room, so nothing else changes.' } };
+        const roles = { title: { font: 'Archivo Narrow', size, weight: 700, colour: 'structure', tracking: '-.02em', maxLines: 3, maxCharsPerLine: 22 } };
+        const rows = g.BUDGET.derive(slotsA, roles);
+        roomSlots[aspect] = { canvas, aspect, typeRoles: rows.roles || roles, slots: slotsA };
+        slots[id + '-' + aspect] = roomSlots[aspect];
+      });
+    }
     const byHour = {};
     M.HOURS.forEach(H => {
       const svg = roomSvg(r, H);
@@ -159,16 +183,22 @@ function build(opts) {
         shapeCount: r.shapes.length, box: aspect === '16x9' ? [0, 0, 320, 180] : win,
         inkBox: boxOfPaths(r.shapes.map(s => s.d)),
         hostAnchor: anchor || undefined, portraitWindow: anchor ? win : undefined, occlusionSplit: split,
+        clearance: clear || undefined,
+        title: r.title ? { slot: r.title.slot, ground: r.title.ground } : undefined,
       }));
       const stem = r.id + '-' + H.name;
       emitFile({ key: id, hour: H.name, aspect: 'any', frame: null, file: 'room/' + stem + '.svg', canvas: [320, 180],
-        viewBox: [0, 0, 320, 180], exportScale: 2, delivered: [3840, 2160], slots: 0, flat: true }, svg);
+        viewBox: [0, 0, 320, 180], exportScale: 2, delivered: [3840, 2160], slots: r.title ? 1 : 0, flat: true }, svg);
       byHour[H.name] = { base: stem + '.png', baseIsFrame: true, frames: [] };
     });
     addFam('room', id, { key: id, dir: 'room', aspect: 'any', canvas: [320, 180], delivered: [3840, 2160],
       exportScale: 2, playback: 'still', fps: 1, frameCount: 1, hostAnchor: anchor || null,
       portraitWindow: anchor ? win : null, occlusionSplit: split === undefined ? null : split,
       roomRole: r.role || null, duskSafe: r.duskSafe === undefined ? null : r.duskSafe,
+      opener: !!r.title, clearance: clear,
+      typeRoles: roomSlots ? roomSlots['16x9'].typeRoles : undefined,
+      slots: roomSlots ? roomSlots['16x9'].slots : undefined,
+      slotsByAspect: roomSlots || undefined,
       files: byHour.night, filesByHour: byHour });
   });
 
@@ -188,6 +218,12 @@ function build(opts) {
     const aspect = /-9x16$/.test(it.key) ? '9x16' : '16x9';
     const byHour = {};
     let slotRec = null, slotCount = 0;
+    /* THE MARKS ARE STILLS (rebuild-21). ANSWERS §1: "the frame breathes, the
+     * mark does not". A mark has no pinned ink, so the rule offset moved the
+     * WHOLE mark a unit on frame 2 while the answer said it holds. One frame,
+     * still/1/1, so the manifest says what the answer says. */
+    const still = it.dir === 'annotations';
+    const O = still ? [0] : offs;
     ['night', 'dusk'].forEach(hour => {
       const H = M.HOURS.find(x => x.name === hour);
       const P = g.PLATES[it.author](Object.assign({}, it.args, { key: it.key, seed: it.seed, pal: PORT.palFor(tokens, hour) }));
@@ -195,13 +231,13 @@ function build(opts) {
       /* Frames: the frame's rule lines take tokens.motion.dataRuleOffsets;
        * pinned ink (axes, baselines, references) and every value stay still. */
       const cache = {};
-      const svgs = offs.map(dy => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
+      const svgs = O.map(dy => cache[dy] || (cache[dy] = P.toSVG({ ruleOffset: dy })));
       const extra = opts.decorate ? opts.decorate(it, m, hour) : '';
       const files = extra ? svgs.map(s => s.replace('</svg>', extra + '</svg>')) : svgs;
       const c = countsOf(svgs[0]);
       slotCount = Object.keys(m.slots || {}).length;
-      assets[id] = assets[id] || { role: 'plate', dir: it.dir, author: it.author, playback: 'loop', fps,
-        frameCount: offs.length, drawn: PORT.DRAWN_FAMILIES.indexOf(it.dir) >= 0,
+      assets[id] = assets[id] || { role: 'plate', dir: it.dir, author: it.author, playback: still ? 'still' : 'loop', fps: still ? 1 : fps,
+        frameCount: O.length, drawn: PORT.DRAWN_FAMILIES.indexOf(it.dir) >= 0,
         gradients: 0, partialOpacity: 0, textNodes: 0, slots: slotCount };
       if (R1.has(it.key)) assets[id].round = 'r1';
       if (R2.has(it.key)) assets[id].round = 'r2';
@@ -247,15 +283,15 @@ function build(opts) {
       const base = { key: it.key, hour, aspect, canvas: m.canvas, viewBox: [0, 0, m.canvas[0], m.canvas[1]],
         exportScale: 2, delivered: [m.canvas[0] * 2, m.canvas[1] * 2], slots: slotCount };
       emitFile(Object.assign({}, base, { frame: null, file: it.dir + '/' + stem + '.svg' }), files[0]);
-      files.forEach((sv, i) => emitFile(Object.assign({}, base,
-        { frame: '_f' + pad(i + 1), file: it.dir + '/' + stem + '_f' + pad(i + 1) + '.svg', args: { ruleOffset: offs[i] } }), sv));
+      if (!still) files.forEach((sv, i) => emitFile(Object.assign({}, base,
+        { frame: '_f' + pad(i + 1), file: it.dir + '/' + stem + '_f' + pad(i + 1) + '.svg', args: { ruleOffset: O[i] } }), sv));
       byHour[hour] = { base: stem + '.png', baseIsFrame: true,
-        frames: svgs.map((sv, i) => ({ file: stem + '_f' + pad(i + 1) + '.png', tag: '_f' + pad(i + 1), args: { ruleOffset: offs[i] }, hash: hash(sv) })) };
+        frames: still ? [] : svgs.map((sv, i) => ({ file: stem + '_f' + pad(i + 1) + '.png', tag: '_f' + pad(i + 1), args: { ruleOffset: O[i] }, hash: hash(sv) })) };
     });
     slots[it.key] = slotRec;
     addFam(it.dir, it.key, Object.assign({ key: it.key, dir: it.dir, aspect, canvas: slotRec.canvas,
-      delivered: [slotRec.canvas[0] * 2, slotRec.canvas[1] * 2], exportScale: 2, playback: 'loop', fps,
-      frameCount: offs.length, files: byHour.night, filesByHour: byHour, slotCount,
+      delivered: [slotRec.canvas[0] * 2, slotRec.canvas[1] * 2], exportScale: 2, playback: still ? 'still' : 'loop', fps: still ? 1 : fps,
+      frameCount: O.length, files: byHour.night, filesByHour: byHour, slotCount,
       typeRoles: slotRec.typeRoles, slots: slotRec.slots }));
   });
 

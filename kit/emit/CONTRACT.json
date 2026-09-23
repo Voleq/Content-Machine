@@ -40,7 +40,9 @@
     "inkBox": "[x0, y0, x1, y1] — the plate's real ink extent. Rule 13 fails if it leaves box.",
     "hostAnchor": "[x, y, w, h] — room plates only",
     "portraitWindow": "[x, y, w, h] — room plates only. Rule 14 requires hostAnchor inside it (§4.4a).",
-    "occlusionSplit": "number — the index from which shapes paint AFTER the host. Rule 15 requires it on every anchored room; a room with no anchor declares none (§4.5)."
+    "occlusionSplit": "number — the index from which shapes paint AFTER the host: the first shape whose explicit layer is front. Rule 15 requires it on every anchored room; a room with no anchor declares none (§4.5).",
+    "clearance": "{ poses, head: {pose, headCover}, upper: {pose, upperCover}, figureBox } — anchored rooms only. The composite measured by kit-model.js clearanceOf over every pose that fits. Rule 27: headCover 0, upperCover <= 10 (§4.5).",
+    "title": "{ slot, ground } in room units — opener rooms only. Rule 28: slot inside ground, ground inside portraitWindow and clear of clearance.figureBox (§5.3)."
    }
   ]
  },

@@ -1,6 +1,84 @@
 # Dennis v2 — REBUILD_STATE.md
 
-> ## Where it stands — rebuild-19 (supersedes every count below this block)
+> ## rebuild-21 — the composite check, and five items from the Node report (supersedes the counts below)
+>
+> **This is the output of the kit's own scripts, run unmodified through the CommonJS shim.**
+> `emit.js` gives **304 assets · 1,006 plate records · 429 slot tables · 14 family manifests**.
+> `export.js --index` gives **3,672 files**, which is 60 fewer than before because the ten marks lost
+> their frames. `audit.js --check` passes **28 of 28**. `audit.test.js` catches **20 of 20**
+> injected violations.
+>
+> **1 · Rooms, checked with him in them.** Every room shape now carries an explicit
+> `front` layer. `b(...)` in `kit-model.js` marks a shape that sits behind him wherever it
+> was authored. `rooms()` orders each room behind, then front, and the split is the first
+> front shape (§4.5). Wall items moved behind him in `panel-left`, `read-close`,
+> `turn-to-screen`, `desk-side`, `desk-front`, `desk-wide`, `window-wall`, `doorway`,
+> `desk-front-b`, `desk-front-low` and `doorway-wide`. `desk-front-b` and `desk-front-low`
+> had him behind the monitor, so their anchors moved right of it. `desk-front-b`'s monitor
+> is now off his shoulder, as its note says. The same composite then found a monitor in
+> front of him in `window-wall`, `doorway` and `doorway-wide`, and trays on the desk in
+> `read-close`, `turn-to-screen` and `panel-left`. Those were moved too.
+> `M.clearanceOf` composites every pose that fits each room by the contract and `emit.js`
+> publishes the result as `clearance`. **New rule 27:** no head under a front shape, and
+> at most 10% of him above the desk top. Result: 0% head cover in every room. The worst
+> cover above the desk is 6.4%, `desk-front` with `sitting-at-desk`, from a paper stack
+> on the desk. The composites are in `/Room Composite Check.dc.html`.
+>
+> **2 · Title slot.** `desk-wide` now publishes `slots.title` (`ground: card`,
+> `groundBox`, `colour: structure`, budgets from budget.js) in both aspects:
+> `room/manifest.json` → `slots`, `slotsByAspect`, `opener: true`, and `emit/slots.json`
+> → `room/desk-wide-16x9` / `-9x16`. The card is drawn top-right, inside the portrait
+> window and above his head. The window graphic moved to the left wall, and he stands
+> about 10% further back so two lines fit in 16:9 (2 × 16 characters; 9:16 holds 3 × 37).
+> **New rule 28** checks placement. **Only `desk-wide` opens a chapter.** The read and
+> talk angles are too tight to fit a card inside the window above him, so a chapter
+> template must open on an `opener` room.
+>
+> **3 · Marks are stills.** All ten `annotations/` marks are `still / 1 / 1`, with one file
+> per hour and no frames.
+>
+> **4 · Hair.** The hair shade is now a rim crescent from crown to temple instead of half
+> the hair, the same fix as the face terminator. The glasses are unchanged.
+>
+> **5 · Legacy pass (`plates.js` unfrozen for these five authors only).**
+> - waterfall-3s/4s/5s: the end-label boxes are inset like the step boxes.
+> - insider-flow: the plot stops where the date and who rows clear the caption.
+> - macro-series: the bottom y label sits on the baseline.
+> - cycle-frame: head-1 and head-6 align inward from their end ticks.
+> - said-happened-3/4/5/6: each rail name heads its own track, inside the safe margin.
+>
+> Slot boxes on all 21 plates are clean for overlap and margin. `roles.fragment.json` is
+> corrected at source:
+> - 46 aspect-suffixed keys folded onto their asset ids.
+> - 4 dropped assets removed.
+> - The 24 entries that remain from the 32 with non-structural `shot_ids` now say
+>   `formats` + `beats`, or `any_shot` for host poses. Every `shot_ids` value is now
+>   open / evidence / land / on-the-desk.
+> - The `move-on-the-day` caution is rewritten.
+>
+> **Also fixed:** `audit.test.js` had not run green since rule 22. It stripped `fs`/`read`,
+> so rules 22–26 threw on the baseline. Rule 9 now diffs the manifest as loaded, which is
+> why the fps injection is caught.
+>
+> **Also fixed, rebuild-21b (the rest of the stricter probe).** A text-extent probe runs
+> over every plate: sample copy at the renderer's fitted size, overlap between text, and
+> the 5% safe margin. It flagged these, now fixed in `plates.js`:
+> - numbers-sheet-3r…6r and -4r-spark, and cash-flow: portrait side margins went from 48 to 56.
+> - sensitivity: the row labels start at the margin, and the column axis title stacks above the heads.
+> - line-6y, line-8q, guided-vs-actual: the last value box is clamped inside the margin.
+> - line-dense: the heads are clamped to the margin, not to 12 units.
+> - media-frame-t2: the screen is 4% shorter in 16:9, so the source clears the bottom.
+> - flow: the input and output start and stop at the margin.
+> - timeline: the end dates and labels align inward from their ticks.
+>
+> The probe now flags nothing except `overlays/lower-third-9x16`, and that is expected.
+> It is an overlay strip measured against its own small canvas, and its on-screen
+> margin is set by where the compositor places it. Rules 20 and 23 still pass, and
+> nothing is over budget.
+>
+> **Noticed, not changed:** none.
+
+> ## Where it stands — rebuild-19 (superseded by the rebuild-21 block above)
 >
 > **From the kit's own scripts, run unmodified through the CommonJS shim:** `emit.js` →
 > **205 assets · 612 plate records · 230 slot tables · 14 family manifests**;

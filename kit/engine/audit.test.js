@@ -42,6 +42,8 @@ const CASES = [
   [14, 'anchor clipped by the portrait window', d => { d.plates.plates.find(p => p.portraitWindow).portraitWindow = [0, 0, 10, 10]; }],
   [15, 'anchored room with no split', d => { delete d.plates.plates.find(p => p.role === 'room' && p.hostAnchor).occlusionSplit; }],
   [16, 'anchor width not derived', d => { d.plates.plates.find(p => p.role === 'room' && p.hostAnchor).hostAnchor = [10, 10, 110, 116]; }],
+  [27, 'a shelf across his head', d => { d.plates.plates.find(p => p.role === 'room' && p.clearance).clearance.head.headCover = 67; }],
+  [28, 'title card off the portrait window', d => { d.plates.plates.filter(p => p.title).forEach(p => { p.title.ground = [0, 9, 92, 44]; }); }],
   [17, 'band direction flipped', d => { d.tokens.hours.night.ink.band = '#0A0D14'; }],
   [18, 'slab caption broken', d => { d.tokens.hours.dusk.ink.band = '#6B5F50'; d.tokens.hours.dusk.ink.ground = '#5F5570'; }],
 ];
@@ -50,16 +52,20 @@ const CASES = [
 function runAudit(tokens, manifest, plates) {
   let src = fs.readFileSync(path.join(__dirname, 'audit.js'), 'utf8');
   src = src.replace(/^[\s\S]*?const ROOT = [^\n]*\n/, '')
-    .replace(/const read = [^\n]*\n/, '').replace(/const exists = [^\n]*\n/, '')
     .replace(/const T = \(\) => read\('design-tokens\.json'\);/, 'const T = () => __t;')
     .replace(/const manifest = \(\)[^\n]*\n/, 'const manifest = () => __m;\n')
     .replace(/const plates = \(\)[^\n]*\n/, 'const plates = () => __p;\n')
-    .replace(/\/\* ── report[\s\S]*$/, '');
+    .replace(/\/\* ── report[\s\S]*$/, '')
+    .replace(/\nconst argv = process\.argv[\s\S]*$/, '\n');
   /* eslint-disable no-new-func */
-  return new Function('__t', '__m', '__p', src + `
+  /* rebuild-21: fs, path, ROOT and require are passed in. They used to be
+   * stripped with the header, so every rule that reads a file of its own
+   * (22, 24, 25, 26 — the export index and the roles file) threw, the baseline
+   * came up not-green, and this test had been refusing to run since rule 22. */
+  return new Function('__t', '__m', '__p', 'fs', 'path', 'ROOT', 'require', 'process', src + `
     return RULES.map(r => { try { const o = r.fn(); return { n: r.n, state: o.ok ? 'pass' : 'FAIL' }; }
       catch (e) { return { n: r.n, state: e instanceof NeedsData ? 'needs-data' : 'DID NOT RUN' }; } });`
-  )(tokens, manifest, plates);
+  )(tokens, manifest, plates, fs, path, ROOT, require, process);
 }
 
 const clean = () => ({

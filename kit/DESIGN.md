@@ -423,9 +423,26 @@ art has no z. Without the split the figure is pasted over the room: he stands at
 wall and paints over the desk in front of him, which is the fastest way to make a composite
 look like a sticker.
 
-**The split is derived, never typed:** it is the index of the room's first `desk`-role
-shape, because the desk slab is the nearest thing the host can stand behind. Behind it:
-wall, pinboard, floor, back glow. In front: the desk slab and everything resting on it.
+**The split is derived, never typed — and since rebuild-21 it is derived from a LAYER ON
+EVERY SHAPE, not from the first desk.** Each room shape carries `front: true|false`. The
+desk and everything authored after it defaults to front; a shape authored after the desk
+that sits behind him (a wall shelf, a frame, a sheet pinned up, a floor-standing unit
+against the wall) is marked `b(...)` in `kit-model.js`. `rooms()` orders each room
+behind-then-front, and the split is the index of the first front shape. The old rule — "the
+first desk-role shape" — painted every wall item listed after the desk over his head: a
+frame across 97% of it in `panel-left`, a shelf across his shoulders in `turn-to-screen`.
+Behind: wall, pinboard, floor, back glow, and anything hung on the wall. In front: the desk
+slab and what rests on it.
+
+**LAW — check the room WITH HIM IN IT.** Rules 14–16 check the anchor and the split and
+passed while the composite was wrong; rebuild-18's recheck looked at empty rooms. `emit.js`
+now composites every pose that fits each room by the contract (`M.clearanceOf`) and
+publishes the cover as `clearance` on each room plate: `headCover` (share of head and
+hair under a front shape — must be 0) and `upperCover` (share of his ink above the desk
+top under a front shape — at most 10%). Audit rule 27 fails either. The desk hiding his
+legs is the design; a monitor across his chest is not, which is why `desk-front-b` and
+`desk-front-low` moved their anchors clear of the monitor, and `window-wall`, `doorway`
+and `doorway-wide` moved theirs or the monitor.
 A room with no desk — `board`, `desk-top-down` — has no host anchor and needs no split.
 An index written into prose is the defect §0 diagnoses; the rule is the record. The host anchor is placed in a **clear column**
 — furniture in front of him is depth, furniture through his head is a mistake, and the
@@ -469,6 +486,18 @@ correct.
 
 Title slots publish `ground`, `groundBox` and `colour`; `TITLE_GROUND` selects `card` or
 `slab`, and the resolved colour moves from `structure` to `ground` between them.
+
+**Rooms that open a chapter publish a title slot (rebuild-21).** None of the rebuilt rooms
+did, so every chapter title would have dropped. A room declares `title: { slot, ground }`
+in room units on the model and draws its card as an `ink.ground` shape behind him. `emit.js`
+publishes the slot per aspect in canvas units (16:9 = room ×6; 9:16 = the portrait window
+scaled to 1080 wide, origin at the window) with `ground: "card"`, `groundBox`,
+`colour: "structure"` and budgets from `budget.js`, in `room/manifest.json` (`slots`,
+`slotsByAspect`, `opener: true`) and in `emit/slots.json` as `room/<id>-16x9` / `-9x16`.
+The card has to sit inside the portrait window and clear of his head, so it goes above him;
+audit rule 28 checks both. **Only `desk-wide` opens a chapter today.** The read and talk
+angles are framed too tight to hold a card inside the window above his head. A chapter
+template has to open on an `opener` room.
 
 **Nothing in `pipeline/` reads `title.colour` yet, so a wrong value there fails silently
 today.** Both treatments are tested in both hours — audit rule 5, contrast ≥ 4.5:1 sampled
@@ -600,6 +629,11 @@ that failed**, because a failure is at least information.
 | 21 | **Every override names a slot that exists.** A typo in `content-overrides.json` silently does nothing; this turns it into a failure. |
 | 22 | **Every emitted plate has an export entry at both hours.** One code path from model to file (§9). |
 | 23 | **No rendered string is wider than its slot box.** `maxChars` is a character budget, not a width one; where a published budget and the box disagree the tighter wins (§8.3). |
+| 24 | **Every plate is reachable and explains itself.** A purpose and a caution in `roles.fragment.json`, or a stated way it is reached. |
+| 25 | **Every talk, idle and blink strip actually moves.** Distinct frame hashes off the exported files. |
+| 26 | **Every exported file frames its own ink**, within a 10% bleed per edge. |
+| 27 | **He stands clear of the front layer, composited.** Every pose that fits the room, placed by the contract: no head under a front shape, at most 10% of him above the desk top (§4.5). |
+| 28 | **A chapter title has somewhere to land.** At least one opener room; every title inside its card, the card inside the portrait window and clear of him (§5.3). |
 
 ---
 

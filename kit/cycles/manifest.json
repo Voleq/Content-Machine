@@ -155,8 +155,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.66,
-     "maxChars": 10,
-     "budget": "derived from the slot boxes that set this role; 10 is the floor (narrowest of 6), was 6"
+     "maxChars": 5,
+     "budget": "derived from the slot boxes that set this role; 5 is the floor (narrowest of 6), was 6"
     },
     "then": {
      "font": "Courier Prime",
@@ -256,13 +256,13 @@
      "maxChars": 6
     },
     "head-1": {
-     "align": "center",
+     "align": "left",
      "role": "period",
-     "x": 804,
+     "x": 881,
      "y": 820,
-     "w": 168,
+     "w": 91,
      "h": 30,
-     "maxChars": 10
+     "maxChars": 5
     },
     "head-2": {
      "align": "center",
@@ -301,13 +301,13 @@
      "maxChars": 10
     },
     "head-6": {
-     "align": "center",
+     "align": "right",
      "role": "period",
      "x": 1646,
      "y": 820,
-     "w": 168,
+     "w": 91,
      "h": 30,
-     "maxChars": 10
+     "maxChars": 5
     },
     "path": {
      "role": "path",
@@ -476,8 +476,8 @@
      "weight": 400,
      "colour": "structure",
      "opacity": 0.66,
-     "maxChars": 12,
-     "budget": "derived from the slot boxes that set this role; 12 is the floor (narrowest of 6), was 6"
+     "maxChars": 7,
+     "budget": "derived from the slot boxes that set this role; 7 is the floor (narrowest of 6), was 6"
     },
     "then": {
      "font": "Courier Prime",
@@ -577,13 +577,13 @@
      "maxChars": 4
     },
     "head-1": {
-     "align": "center",
+     "align": "left",
      "role": "period",
-     "x": 0,
+     "x": 78,
      "y": 1475,
-     "w": 180,
+     "w": 102,
      "h": 28,
-     "maxChars": 12
+     "maxChars": 7
     },
     "head-2": {
      "align": "center",
@@ -622,13 +622,13 @@
      "maxChars": 12
     },
     "head-6": {
-     "align": "center",
+     "align": "right",
      "role": "period",
      "x": 900,
      "y": 1475,
-     "w": 180,
+     "w": 102,
      "h": 28,
-     "maxChars": 12
+     "maxChars": 7
     },
     "path": {
      "role": "path",

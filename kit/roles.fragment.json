@@ -65,10 +65,11 @@
    "long": "NO BEATS OF ITS OWN. templates/shots/long.json holds none — the director picks chapter types and each expands to its own shot list. A long-form plate is placed by chapter_types + shot_ids; formats: [\"long\"] on an entry means only 'this plate is for long-form', and carries no beat."
   },
   "short_beats_are_not_chapter_types": "the nine short-the-* values this file used to carry were SHORT beats wearing chapter-type clothing. They now sit under formats: [\"short\"] + beats: [...]. A portrait plate usually keeps a chapter_types value as well, for a long-form 9:16 cut.",
-  "any": "a plate that genuinely belongs everywhere says so with \"any\": true (and \"any_shot\": true for shot position) rather than with a \"*\" or an \"any LONG chapter\" string. A wildcard string does not resolve against sixteen names and the gate cannot check it. Two entries carry it: host/sitting-at-desk and host/close-up-blink.",
+  "any": "a plate that genuinely belongs everywhere says so with \"any\": true (and \"any_shot\": true for shot position) rather than with a \"*\" or an \"any LONG chapter\" string. A wildcard string does not resolve against sixteen names and the gate cannot check it. host/sitting-at-desk carries it; the host poses placed by rotation carry any_shot.",
   "moat": "UNREFERENCED. Of the sixteen, moat is the one chapter type no plate in the kit reaches — see CHANGES.md §VOCABULARY. It is a gap in the LIBRARY, not in this file, and it is not fixed by adding moat to a plate that is not about a moat.",
   "field_shapes": "LIST FIELDS HOLD NAMES, NOT SENTENCES. chapter_types, shot_ids, formats and beats are lists of vocabulary names — lowercase, hyphenated, no spaces — and anything iterating them expects that. An explanation belongs in note. Two entries (overlays/lower-third, both aspects) carried a sentence in beats; it was correct prose in the wrong field, and anything walking beats got a paragraph where a beat name belongs. Both are moved to note and their beats field is now ABSENT rather than empty, because the plate genuinely has no beat: it is persistent furniture composited over whatever the format is showing. An empty list would read as 'no beats found', which is a different claim.",
-  "sectors": "ROUND TWO AND THREE. sectors lists GICS sector names, lowercase and hyphenated: energy, materials, industrials, consumer-discretionary, consumer-staples, health-care, financials, information-technology, communication-services, utilities, real-estate. It names the kind of issuer a plate’s STRUCTURE presumes. Absent means any sector, which covers every plate before round two."
+  "sectors": "ROUND TWO AND THREE. sectors lists GICS sector names, lowercase and hyphenated: energy, materials, industrials, consumer-discretionary, consumer-staples, health-care, financials, information-technology, communication-services, utilities, real-estate. It names the kind of issuer a plate’s STRUCTURE presumes. Absent means any sector, which covers every plate before round two.",
+  "_rebuild21": "Corrected at source, rebuild-21. 46 aspect-suffixed keys folded onto their asset ids (marks, overlays/row-band, host strips, rebuilt rooms, hook cards carry no aspect: one plate composites into both). 4 entries removed for assets the rebuild dropped (host/close-up-blink, host/empty-chair, room/over-the-shoulder-16x9 and -9x16). 24 entries carried shot_ids that are not structural positions in any chapter file (host, news-*, move-*, earnings-*, hook, closing): short and earnings ones now say formats + beats, host poses say any_shot. Every shot_ids value in this file is now one of open / evidence / land / on-the-desk."
  },
  "_furniture": {
   "section": "§1 — the persistent furniture. overlays/lower-third-{16x9,9x16}, plus the caption decision (not a plate; see CHANGES.md §1.2).",
@@ -697,44 +698,6 @@
   "purpose": "four headlines stacked.",
   "caution": "The family stops at four. Five headlines has no plate."
  },
- "room/over-the-shoulder-16x9": {
-  "chapter_types": [
-   "filing-walk",
-   "the-numbers",
-   "guidance-estimates"
-  ],
-  "shot_ids": [
-   "evidence",
-   "on-the-desk"
-  ],
-  "note": "§4.3. The shot you get standing behind him: his shoulder and the back of his head crop the near corner, and the subject is the screen he is looking at. Use it the moment the script reads something OFF the screen — the viewer is behind him looking at the same thing, which is a different relationship to the material than watching him talk about it.",
-  "hostAnchor": "NONE, and not an omission: he is already in this plate. Compositing a host cut-out onto it puts two of him in one frame. It is the only room plate with a figure drawn into it.",
-  "screen": "the one room plate that publishes a `screen` region. Fill it with what he is reading — a chart plate, a filing page, a terminal — at LOW value: this is a screen in a dark room, not a lightbox, and it must not out-contrast him in the corner.",
-  "not_a_chapter_opener": "NO title slot. A chapter opener needs a quiet flat ground and this frame is a shoulder, a lit screen and a desk. §1's family audit is the argument.",
-  "pairs_with": [
-   "charts/line-8q",
-   "paper/headline-stack-3",
-   "frames/capture-frame"
-  ],
-  "caution": "UNVERIFIED at 1:1 — the near silhouette has not been reviewed. See CHANGES §UNVERIFIED §4."
- },
- "room/over-the-shoulder-9x16": {
-  "chapter_types": [
-   "filing-walk"
-  ],
-  "shot_ids": [
-   "evidence"
-  ],
-  "formats": [
-   "short"
-  ],
-  "beats": [
-   "the-sheet",
-   "the-news"
-  ],
-  "note": "same angle in 9:16. The monitor takes proportionally more of the frame here, which suits a short: the screen is the whole point.",
-  "caution": "UNVERIFIED at 1:1, as above."
- },
  "_timeOfDay": {
   "section": "§4.2 — time of day as a variant axis, not new angles. engine/build.js TIME_OF_DAY takes \"dusk\" or \"day\"; it ships null.",
   "gate": "a non-night variant publishes meta.timeOfDay.titleGroundRequired, and that requirement is now MET — TITLE_GROUND is \"card\", so a toned plate is safe in a chapter-opener template. The gate stays in the manifest because it is the pair that matters: a toned wall with no title ground is the original defect. Pre-flight check L fails on that combination.",
@@ -770,19 +733,6 @@
   "caution": "UNVERIFIED — no render of this pose has been reviewed at 1:1. See CHANGES §UNVERIFIED §4.",
   "host_roles": "POSE ROLES ONLY. This plate declares floorLineY and needs a floor under it, so it must not be added to `to-camera` or to any other role the renderer substitutes into a room declaring hostAnchor: false — see _hostSeated.the_invariant. Twelve of the fifty-two room plates declare it.",
   "reached_by": "renderer"
- },
- "host/empty-chair": {
-  "chapter_types": [
-   "resigned-close"
-  ],
-  "shot_ids": [
-   "land"
-  ],
-  "note": "his chair with nobody in it — the cut-away at the end of a chapter, or under a line delivered over an empty set. It is the SAME chair the seated pose sits on (one function), so the absence reads.",
-  "renderer_contract": "scales like a figure: (floorLineY - figure.y) to the anchor height directly. The seated ratio does NOT apply — there is no seated body to scale.",
-  "_contractStale": "WRONG AND SUPERSEDED — drop eight corrected this and the sentence above was never updated. The chair publishes its OWN ratio in meta.chair.heights: scale so (floorLineY - figure.y) equals anchor.targetHeight x that ratio, NOT the target height directly. Scaled directly it renders 64% larger with nobody in it, taller than the man who sits in it, on the one cut the plate exists for. engine/plates.js emptyChair() and proof/render-scale.html §14 are the source; this entry is the last copy of the old reasoning.",
-  "is_a_cutout": "YES, and it stays in the `beat` pose role. It never published cutout/alpha because its author in engine/plates.js was written apart from hostFigure and hostHead and missed the two fields both of those set — while its own dataPolicy said 'alpha cut-out, no ground' in prose the whole time. FIXED IN DROP FIFTEEN: the two fields are declared, so it composites onto a host-anchor exactly as a figure does and the role membership needs no change. It is furniture rather than a pose, but it is furniture that goes where he would have been, which is what a host role is for.",
-  "caution": "UNVERIFIED at 1:1, as above."
  },
  "figures/waterfall-3s-16x9": {
   "chapter_types": [
@@ -1133,24 +1083,6 @@
   "caution": "16:9 only."
  },
  "_dropTwoPortrait": "9:16 variants exist for every key above and inherit its chapter_types. What changes on a phone is the format, not the argument: the portrait key carries formats: [\"short\"] and the beat its plate serves. The constraint the invented template names were carrying — whether the plate can sit behind the host — is a property of the plate and is stated in its own note; sensitivity, multiples-grid and receipt-8 cannot.",
- "host/close-up-blink": {
-  "any": true,
-  "any_shot": true,
-  "overlay_of": "host/close-up-idle",
-  "playback": "overlay",
-  "note": "NOT a pose and not something a template selects. The renderer composites it over the idle strip at 0,0 — frame _fNN over idle _fNN — for about 100ms every 3-4 seconds. Never over a talk strip: talk frames differ only at the mouth, and an eye closing between two talk frames is a difference that is not the mouth.",
-  "variants_shipped": [
-   "host/close-up-blink",
-   "host/close-up-glance-left-blink",
-   "host/close-up-glance-right-blink",
-   "host/medium-blink",
-   "host/medium-glance-left-blink",
-   "host/medium-glance-right-blink",
-   "host/medium-robe-blink"
-  ],
-  "not_shipped": "the six hostFigure poses. Those are full-body 9:16 plates where the head is a few dozen pixels across and a blink is one pixel changing. Deliberate, not an omission.",
-  "reached_by": "renderer"
- },
  "structure/said-happened-3-16x9": {
   "chapter_types": [
    "guidance-estimates",
@@ -1213,7 +1145,7 @@
   "proposed_fix": "The check should resolve a stem as reachable if ANY aspect-qualified key under it resolves, or the fragment should be re-keyed to stems with a per-aspect override. NOT APPLIED — the check lives on the pipeline side, and which way it goes is a decision about whether a mapping is allowed to differ per aspect. It currently can and does: several portrait keys carry different beats from their landscape twin, so collapsing to stems would lose that.",
   "unverified": "I have not seen the reachability check's source. This is inferred from its output against this file's keys, and it is the most likely explanation rather than a confirmed one."
  },
- "room/board-16x9": {
+ "room/board": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1222,16 +1154,7 @@
   "caution": "No host anchor: nothing can stand in it.",
   "reached_by": "room role rotation, by seed"
  },
- "room/board-9x16": {
-  "chapter_types": [],
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the pinned wall of index cards — a full-frame data ground with no host anchor.",
-  "caution": "No host anchor: nothing can stand in it.",
-  "reached_by": "room role rotation, by seed"
- },
- "room/desk-top-down-16x9": {
+ "room/desk-top-down": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1240,16 +1163,7 @@
   "caution": "No figure. It is a cutaway, not a room to speak from.",
   "reached_by": "room role rotation, by seed"
  },
- "room/desk-top-down-9x16": {
-  "chapter_types": [],
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the detail cut-away — page, keyboard, mug, no figure.",
-  "caution": "No figure. It is a cutaway, not a room to speak from.",
-  "reached_by": "room role rotation, by seed"
- },
- "annotations/scrawl-oval-wide-16x9": {
+ "annotations/scrawl-oval-wide": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1258,7 +1172,7 @@
   "caution": "A mark spends the plate's one attention. Never use two marks on one plate.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/scrawl-oval-tight-16x9": {
+ "annotations/scrawl-oval-tight": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1267,7 +1181,7 @@
   "caution": "Use on the number the chapter turns on, not on every number you like.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/underline-swipe-16x9": {
+ "annotations/underline-swipe": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1276,7 +1190,7 @@
   "caution": "Anchored bottom — leave the lower third of the target area clear.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/underline-tight-16x9": {
+ "annotations/underline-tight": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1285,7 +1199,7 @@
   "caution": "As underline-swipe.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/strike-out-16x9": {
+ "annotations/strike-out": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1294,7 +1208,7 @@
   "caution": "Crosses the words deliberately. Only for something genuinely retracted — not for a number you disagree with.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/box-scrawl-16x9": {
+ "annotations/box-scrawl": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1303,7 +1217,7 @@
   "caution": "For a passage. For a single value use scrawl-oval-tight.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/bracket-rows-16x9": {
+ "annotations/bracket-rows": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1312,7 +1226,7 @@
   "caution": "Vertical. It needs rows to bracket; on a single figure it reads as a stray line.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/arrow-elbow-16x9": {
+ "annotations/arrow-elbow": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1321,7 +1235,7 @@
   "caution": "The only mark that connects two things. Both ends must be on the plate beneath.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/caret-note-16x9": {
+ "annotations/caret-note": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1330,7 +1244,7 @@
   "caution": "For an interjection. Not a caption — the aside must belong inside the sentence.",
   "reached_by": "writer, as [SCRIBBLE: <name>] over any plate"
  },
- "annotations/tick-marks-16x9": {
+ "annotations/tick-marks": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1655,7 +1569,7 @@
   "purpose": "a capture presented as evidence, with its source and date.",
   "caution": "Always fill the source slot. An uncited capture is the thing this plate exists to prevent."
  },
- "overlays/row-band-16x9": {
+ "overlays/row-band": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1730,7 +1644,7 @@
   "purpose": "a single press headline in a band, treatment three.",
   "caution": "As t1."
  },
- "shorts/hook-card-t1-16x9": {
+ "shorts/hook-card-t1": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1739,7 +1653,7 @@
   "caution": "Three treatments for every short; two consecutive uploads open the same way one time in three.",
   "reached_by": "shorts shot list (fixed; a [PLATE] tag in a short reaches no frame)"
  },
- "shorts/hook-card-t2-16x9": {
+ "shorts/hook-card-t2": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -1748,7 +1662,7 @@
   "caution": "As t1.",
   "reached_by": "shorts shot list (fixed; a [PLATE] tag in a short reaches no frame)"
  },
- "shorts/hook-card-t3-16x9": {
+ "shorts/hook-card-t3": {
   "chapter_types": [],
   "shot_ids": [
    "evidence"
@@ -2393,7 +2307,7 @@
   "form": "purpose = what it is for, present tense, in the vocabulary a writer thinks in. caution = when NOT to use it, or which sibling to prefer.",
   "reached_by": "A plate with no chapter_types must say how it IS reached. 22 entries are marks, shorts furniture, overlays and full-frame rooms — named by the writer as [SCRIBBLE:], by a fixed shot list, by the compositor or by room rotation, never by a chapter type. Rule 24 accepts either, and fails an entry with neither."
  },
- "room/desk-front-b-16x9": {
+ "room/desk-front-b": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2402,16 +2316,7 @@
   "purpose": "the second TALK angle — monitor off his shoulder rather than behind his head. Every short uses a talk room, and the role had one member.",
   "caution": "Dusk-safe. Prefer it over desk-front whenever the previous video opened on desk-front."
  },
- "room/desk-front-b-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the second TALK angle — monitor off his shoulder rather than behind his head. Every short uses a talk room, and the role had one member.",
-  "caution": "Dusk-safe. Prefer it over desk-front whenever the previous video opened on desk-front."
- },
- "room/desk-front-low-16x9": {
+ "room/desk-front-low": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2420,16 +2325,7 @@
   "purpose": "the third TALK angle, camera at desk height so the surface is a foreground plane. For the beat where the paperwork matters as much as he does.",
   "caution": "Dusk-safe. The desk eats the lower third — do not put a lower third or a caption there."
  },
- "room/desk-front-low-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the third TALK angle, camera at desk height so the surface is a foreground plane. For the beat where the paperwork matters as much as he does.",
-  "caution": "Dusk-safe. The desk eats the lower third — do not put a lower third or a caption there."
- },
- "room/read-close-16x9": {
+ "room/read-close": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2438,16 +2334,7 @@
   "purpose": "the second READ angle — tighter than desk-side, page raised into the light, monitor out of frame. read carries the opening and closing shot of ten of the sixteen chapters.",
   "caution": "Dusk-safe. No screen in frame, so do not use it for a beat that refers to what is on the monitor."
  },
- "room/read-close-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the second READ angle — tighter than desk-side, page raised into the light, monitor out of frame. read carries the opening and closing shot of ten of the sixteen chapters.",
-  "caution": "Dusk-safe. No screen in frame, so do not use it for a beat that refers to what is on the monitor."
- },
- "room/board-side-16x9": {
+ "room/board-side": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2456,16 +2343,7 @@
   "purpose": "the second DIAGRAM angle, from the left, wall running away to the right with him at the near edge.",
   "caution": "NIGHT ONLY until the relight lands — the wall cast still falls from the daylight lamp across the open right half."
  },
- "room/board-side-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the second DIAGRAM angle, from the left, wall running away to the right with him at the near edge.",
-  "caution": "NIGHT ONLY until the relight lands — the wall cast still falls from the daylight lamp across the open right half."
- },
- "room/doorway-wide-16x9": {
+ "room/doorway-wide": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2474,16 +2352,7 @@
   "purpose": "the second EXIT angle, pulled back so the whole door and the corridor light are in frame. One angle closes every long.",
   "caution": "NIGHT ONLY — the corridor spill is keyed to the night lamp and the wide frame shows the cast crossing the floor."
  },
- "room/doorway-wide-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the second EXIT angle, pulled back so the whole door and the corridor light are in frame. One angle closes every long.",
-  "caution": "NIGHT ONLY — the corridor spill is keyed to the night lamp and the wide frame shows the cast crossing the floor."
- },
- "room/panel-left-16x9": {
+ "room/panel-left": {
   "chapter_types": [],
   "reached_by": "room role rotation, by seed",
   "shot_ids": [
@@ -2492,310 +2361,258 @@
   "purpose": "the PANEL angle with lateral room: he stands left and the right two-thirds of wall is clear, so a full data plate sits BESIDE him rather than behind his head.",
   "caution": "Dusk-safe. The clear field is deliberately empty — do not composite a second graphic into the left half."
  },
- "room/panel-left-9x16": {
-  "chapter_types": [],
-  "reached_by": "room role rotation, by seed",
-  "shot_ids": [
-   "evidence"
-  ],
-  "purpose": "the PANEL angle with lateral room: he stands left and the right two-thirds of wall is clear, so a full data plate sits BESIDE him rather than behind his head.",
-  "caution": "Dusk-safe. The clear field is deliberately empty — do not composite a second graphic into the left half."
- },
- "host/considering-16x9": {
+ "host/considering": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument.",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
+  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion.",
+  "any_shot": true
  },
- "host/considering-9x16": {
+ "host/considering-talk": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument.",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
- },
- "host/considering-talk-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (talk strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
+  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion.",
+  "any_shot": true
  },
- "host/considering-talk-9x16": {
+ "host/considering-idle": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (talk strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
- },
- "host/considering-idle-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (idle strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
+  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion.",
+  "any_shot": true
  },
- "host/considering-idle-9x16": {
+ "host/considering-blink": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (idle strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
- },
- "host/considering-blink-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (blink strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
+  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion.",
+  "any_shot": true
  },
- "host/considering-blink-9x16": {
+ "host/checking-a-figure": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the BEAT pose — weight settled, one hand on the desk edge, the other loose. Him between two sentences rather than mid-argument. (blink strip)",
-  "caution": "Not for a point being made. If he is asserting something, use to-camera or arms-crossed; this is the shot before the assertion."
- },
- "host/checking-a-figure-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree.",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
+  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall.",
+  "any_shot": true
  },
- "host/checking-a-figure-9x16": {
+ "host/checking-a-figure-talk": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree.",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
- },
- "host/checking-a-figure-talk-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (talk strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
+  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall.",
+  "any_shot": true
  },
- "host/checking-a-figure-talk-9x16": {
+ "host/checking-a-figure-idle": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (talk strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
- },
- "host/checking-a-figure-idle-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (idle strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
+  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall.",
+  "any_shot": true
  },
- "host/checking-a-figure-idle-9x16": {
+ "host/checking-a-figure-blink": {
   "chapter_types": [],
   "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (idle strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
- },
- "host/checking-a-figure-blink-16x9": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
   "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (blink strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
- },
- "host/checking-a-figure-blink-9x16": {
-  "chapter_types": [],
-  "reached_by": "host pose rotation, by seed and role",
-  "shot_ids": [
-   "host"
-  ],
-  "purpose": "the EYELINE pose — head turned toward the graphic side, near arm raised to indicate, so his attention and the plate agree. (blink strip)",
-  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall."
+  "caution": "Only in a room with lateral space (panel-left, board-side, desk-front-low). In a tight talk angle he is looking at a wall.",
+  "any_shot": true
  },
  "paper/press-release-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-document"
-  ],
   "purpose": "the release itself as a document — masthead, dateline, headline, opening paragraph, with an area reserved over one sentence for a mark. The plate the news format was missing: it had one news beat, a headline in a band, and a news short is about a document.",
   "caution": "Not for a headline on its own — use paper/headline-band. This plate is only worth the screen time if the body paragraph is being read from.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-news"
+  ]
  },
  "paper/wire-strip-3-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-wire"
-  ],
   "purpose": "three wire headlines as a vertical ticker with timestamps, oldest at top, newest marked. Fills straight from a feed of time, headline and source.",
   "caution": "At three rows the headline role is 54pt and holds a real headline. Prefer the 5 when the story is the PATTERN of coverage rather than any one line.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-news"
+  ]
  },
  "paper/wire-strip-5-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-wire"
-  ],
   "purpose": "five wire headlines as a vertical ticker — the same feed shape as the 3, for when the volume of coverage is the point.",
   "caution": "The headline role drops to 42pt to fit five, so each line holds about a third less. If any single headline matters, use the 3.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-news"
+  ]
  },
  "structure/before-after-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-compare"
-  ],
   "purpose": "what was expected over what was announced, with the gap carried on the divider between them. Two stacked panels, because a phone reads vertically and the second panel is the news.",
   "caution": "Needs a real prior expectation. If nothing was expected, this reads as a comparison against a number the plate invented.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-turn"
+  ]
  },
  "figures/move-on-the-day-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-reaction",
-   "move-open"
-  ],
   "purpose": "the price reaction as one number with a drawn direction arrow and the session beneath it.",
-  "caution": "The arrow is a shape, not a glyph, and it points up. For a fall, the palette carries the direction — do not reach for this plate to say \"down\" without setting the attention role. The arrow is drawn DOWN: for a rise use figures/move-on-the-day-up, never this plate.",
-  "round": "r1"
+  "caution": "The arrow is drawn DOWN, as a shape rather than a glyph. For a rise use figures/move-on-the-day-up, never this plate — the arrow has to match the sign of the move.",
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-move"
+  ]
  },
  "figures/print-vs-consensus-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "earnings-print"
-  ],
   "purpose": "reported against expected as ONE paired figure with the beat or miss in points, set off and marked. Two big numbers side by side make the viewer do the subtraction, which on a phone means they do not do it.",
   "caution": "Only where a consensus number actually exists. Without it, use figures/big-number.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "earnings"
+  ],
+  "beats": [
+   "vs-expected"
+  ]
  },
  "charts/quarter-bars-8q-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "earnings-trend"
-  ],
   "purpose": "eight quarters at phone proportions with the current quarter picked out, sized so the column labels fit under the columns.",
   "caution": "Do not use the 16:9 bars-8q here — at 9:16 its columns come out narrower than their own labels. That is what this plate exists to fix.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "earnings"
+  ],
+  "beats": [
+   "the-print"
+  ]
  },
  "tables/three-lines-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "earnings-lines"
-  ],
   "purpose": "revenue, margin and EPS against the same quarter last year — three rows, two columns and a delta per row.",
   "caution": "Three rows is the phone limit. The six-period numbers-sheet is unreadable at arm’s length; if you need more than three metrics, cut a second plate rather than a wider one.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "earnings"
+  ],
+  "beats": [
+   "the-sheet"
+  ]
  },
  "figures/guidance-raise-cut-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "earnings-guide"
-  ],
   "purpose": "the old range and the new one as an extent and a mark on a single axis, with the direction called in words beneath.",
   "caution": "A range is an extent, so it is drawn as a band and not as a bar from zero. Needs both a prior range and a new one — for a single range with consensus inside it, that is proposal 71.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "earnings"
+  ],
+  "beats": [
+   "guidance"
+  ]
  },
  "charts/intraday-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "move-session"
-  ],
   "purpose": "one session, open to close, with the prior close as a pinned reference and the event marked on the path.",
   "caution": "One session only. The format currently reaches for a multi-year line here, which answers a different question — and a multi-year series in this plate reads as a single catastrophic day.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-move"
+  ]
  },
  "figures/52-week-position-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "move-range"
-  ],
   "purpose": "a vertical rail with the low, the high and where the price sits now — vertical because the question is how far up the range.",
   "caution": "axisMark reports a clamp if the price is outside the 52-week range, which happens at a new high or low. Check the return value: a mark pinned to the end of the rail says something different from \"off the end of it\".",
   "round": "r1",
-  "degrades_to": "nothing — cut the beat if the range is unavailable"
+  "degrades_to": "nothing — cut the beat if the range is unavailable",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "the-move"
+  ]
  },
  "shorts/hook-card-t4": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "hook"
-  ],
   "purpose": "the fourth hook treatment, and the first that LEADS WITH THE NUMBER — t1 and t2 lead with words, t3 with a question. The hook line sits under the figure and says what it means.",
   "caution": "Needs a figure short enough to read at 240pt. If the hook is the sentence rather than the number, use t5.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "hook"
+  ]
  },
  "shorts/hook-card-t5": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "hook"
-  ],
   "purpose": "the fifth hook treatment — the statement on a full field with the ticker at the foot. The other four put identifying furniture at the top, so the eye lands on a chip first; here it lands on the sentence.",
   "caution": "The ticker is at the bottom, so this is the wrong card when the company needs identifying before the claim is made.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "hook"
+  ]
  },
  "structure/closing-t2-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "closing"
-  ],
   "purpose": "a second close — ONE thing, at statement size, with a single line under it. The original closes on three lines and a short often has one; three slots force two of them to be padding.",
   "caution": "Do not pad the single line to fill the plate. If there are genuinely three things, use the original closing or t3.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
  },
  "structure/closing-t3-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "closing"
-  ],
   "purpose": "a third close — four short marked lines, for the ending that lists what to watch rather than concluding.",
   "caution": "Four lines at 38pt hold about 38 characters each. It is a checklist, not a summary — if the lines are sentences, use t2.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "close"
+  ]
  },
  "paper/filing-page-16x9": {
   "chapter_types": [
@@ -4265,13 +4082,16 @@
  "figures/move-on-the-day-up-9x16": {
   "chapter_types": [],
   "reached_by": "shorts shot list — NOT writer-driven; a [PLATE] tag in a short reaches no frame until the template names this id",
-  "shot_ids": [
-   "news-reaction",
-   "move-open"
-  ],
   "purpose": "the price reaction as one number with a drawn direction arrow and the session beneath it. The rising twin: the arrow points up, in the up series ink.",
   "caution": "For a fall use figures/move-on-the-day. The arrow is drawn, so the plate has to match the sign of the move.",
-  "round": "r1"
+  "round": "r1",
+  "formats": [
+   "short"
+  ],
+  "beats": [
+   "hook",
+   "the-move"
+  ]
  },
  "figures/product-mix-16x9": {
   "chapter_types": [

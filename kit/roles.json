@@ -13,7 +13,7 @@
   "stands where and what is held back. So a new drop brings its own plate notes",
   "and nothing here has to be retyped to keep up with it.",
   "",
-  "Written for rebuild-19/20 ('hopefully the last one', 2026-09-23). Every name",
+  "Written for rebuild-21 ('Bot reconstruction kit 3', 2026-09-23). Every name",
   "below is in that kit; nothing is carried over from the drawn kit before it."
  ],
  "hostRoles": {
@@ -132,38 +132,50 @@
   "_note": [
    "Which room angle carries which kind of beat, picked by seed within a role.",
    "",
-   "SIX OF THE FOURTEEN ROOMS ARE HELD BACK, and heldBack.rooms says why. With",
-   "him composited by the contract, four of them paint a wall item over him",
-   "(panel-left over his head, read-close over his face, turn-to-screen over his",
-   "head, desk-side across his body) and the two new talk angles stand him behind",
-   "the monitor. That went back to design on 2026-09-23. Until it is fixed every",
-   "role is filled from the rooms that are clean, which is why read borrows",
-   "desk-wide and window-wall and talk has two members rather than design's",
-   "three. A room goes back in with one line here, once the drop that fixes it",
-   "has been checked; the ingest measures every room in a role and refuses one",
-   "whose front layer covers his head.",
+   "ALL FOURTEEN ROOMS ARE IN USE. rebuild-20 painted a wall item over him in four",
+   "rooms and stood him behind the monitor in the two new talk angles, so six were",
+   "held back; rebuild-21 marks every room shape as behind or in front of him and",
+   "moved the anchors, and with every pose composited in every room none of his",
+   "head is covered and at most 6% of him above the desk is (checked 2026-09-23).",
+   "So the roles are design's again: talk is the three desk angles plus the",
+   "window, read is desk-side, read-close and turn-to-screen, and panel leads with",
+   "panel-left, the angle drawn to leave the right of the frame clear for a plate.",
+   "The ingest still measures every room in a role and refuses one whose front",
+   "layer covers his head.",
+   "",
+   "opener IS THE ONE ROOM A CHAPTER OPENS IN. A chapter opener is a room with the",
+   "chapter's title set in its `title` slot, and only desk-wide publishes one; the",
+   "read and talk angles are too tight to fit a card above him. The ingest refuses",
+   "an opener that publishes no title slot.",
    "",
    "board and desk-top-down declare no host anchor, so nobody stands in them: a",
    "beat that asks for a host there is told in the close-up. board is the index",
-   "card wall and carries the receipts role now; it publishes no card slots, so",
-   "the wall of calls is not written on it."
+   "card wall and carries the receipts role; it publishes no card slots, so the",
+   "wall of calls is not written on it."
   ],
   "establish": [
    "room/desk-wide",
    "room/doorway"
   ],
+  "opener": [
+   "room/desk-wide"
+  ],
   "talk": [
    "room/desk-front",
+   "room/desk-front-b",
+   "room/desk-front-low",
    "room/window-wall"
   ],
   "panel": [
+   "room/panel-left",
    "room/desk-front",
    "room/window-wall",
    "room/board-side"
   ],
   "read": [
-   "room/desk-wide",
-   "room/window-wall"
+   "room/desk-side",
+   "room/read-close",
+   "room/turn-to-screen"
   ],
   "diagram": [
    "room/board-side"
@@ -184,26 +196,16 @@
    "Plates and rooms the kit ships that no shot may reach yet, each with the",
    "reason. A held-back plate is off every chapter's menu, so the writer is never",
    "offered it and a [PLATE] tag naming it is refused; a held-back room is in no",
-   "role. Each entry is a stem and covers both aspects."
+   "role. Each entry is a stem and covers both aspects.",
+   "",
+   "EMPTY SINCE rebuild-21. The six legacy plates design's geometry probe flagged",
+   "(the waterfalls, insider-flow, macro-series, cycle-frame, said-happened-6)",
+   "had their slots moved clear of each other and of the safe margin, and the six",
+   "rooms that painted over him were fixed. A plate or room goes back in here with",
+   "its reason the day a drop breaks it."
   ],
-  "plates": {
-   "figures/waterfall-3s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
-   "figures/waterfall-4s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
-   "figures/waterfall-5s": "design's geometry probe: the total label collides with step one. Legacy pass requested 2026-09-23",
-   "charts/insider-flow-6": "design's geometry probe: the who line collides with the caption. Legacy pass requested 2026-09-23",
-   "charts/insider-flow-12": "design's geometry probe: the who line collides with the caption. Legacy pass requested 2026-09-23",
-   "charts/macro-series": "design's geometry probe: the first axis value collides with the first head. Legacy pass requested 2026-09-23",
-   "cycles/cycle-frame": "design's geometry probe: the now value collides with the first head. Legacy pass requested 2026-09-23",
-   "structure/said-happened-6": "design's geometry probe: the rails run outside the 5% safe margin. Legacy pass requested 2026-09-23"
-  },
-  "rooms": {
-   "room/panel-left": "a wall frame is painted over his head (97% of it hidden)",
-   "room/read-close": "a wall sheet is painted over his face (78% of his head hidden)",
-   "room/turn-to-screen": "a wall shelf is painted over his head (67% of it hidden)",
-   "room/desk-side": "the lower wall shelf is painted across his body",
-   "room/desk-front-b": "he stands behind the monitor; it hides about half of him",
-   "room/desk-front-low": "he stands behind the monitor; only his head shows over it"
-  }
+  "plates": {},
+  "rooms": {}
  },
  "hours": {
   "_note": [
@@ -277,7 +279,13 @@
    "purpose": "who is betting against it, and how crowded that is"
   },
   "valuation": {
-   "purpose": "what the price implies, and what it used to imply"
+   "purpose": "what the price implies, and what it used to imply",
+   "_why": "design files the multiples strip under the-numbers only and the multiple bridge under management and bull-vs-bear; the valuation beat sets the subject against its peers' multiples and walks the trailing multiple to the forward one, so ours adds both here too",
+   "plates": [
+    "tables/multiples-strip-16x9",
+    "tables/multiples-strip-9x16",
+    "structure/multiple-bridge-16x9"
+   ]
   },
   "risk": {
    "purpose": "what actually breaks the thesis"

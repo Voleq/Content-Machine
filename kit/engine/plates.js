@@ -174,7 +174,9 @@
     const rows = o.rows, w = o.w, h = o.h, land = w > h;
     const p = o.pal;
     const s = SURFACES[p.surfaceKey];
-    const m = land ? { l: 118, r: 118, t: 92, b: 96 } : { l: 48, r: 48, t: 200, b: 220 };
+    /* LEGACY PASS, rebuild-21: portrait side margins 48 -> 56. At 48 the unit and
+     * every row label started inside the 5% safe margin (54 of 1080). */
+    const m = land ? { l: 118, r: 118, t: 92, b: 96 } : { l: 56, r: 56, t: 200, b: 220 };
     const P = H.Plate({
       key: o.key, w, h, seed: o.seed, pal: p,
       meta: {
@@ -700,7 +702,11 @@
 
     const capY = h - (land ? 120 : 188);
     const plotTop = Math.round(kickY + kickH + u * (land ? 2.2 : 2.8));
-    const plotBot = Math.round(capY - u * (land ? 3.2 : 3.6));
+    // LEGACY PASS, rebuild-21: the date and who rows hang under the plot, and in
+    // 16:9 the who row ran into the caption. The plot now stops where both rows
+    // and half a unit still clear it.
+    const plotBot = Math.round(Math.min(capY - u * (land ? 3.2 : 3.6),
+      capY - Math.round(u * 1.0) - blockH(roles.date, 1) - blockH(roles.who, 1)));
     const axisY = Math.round((plotTop + plotBot) / 2);
     P.slot("plot-area", L, plotTop, R - L, plotBot - plotTop, { role: "plot-area", container: true, note: "code draws the marks in here only" });
     // THE AXIS IS TIME AND IT IS THE ZERO LINE FOR VALUE. Pinned: every mark's
@@ -803,7 +809,10 @@
       if (i > 0) P.inkAdd(H.breathe(function () {
         return H.line(L, y, R, y, { stroke: p.structure, width: 1.7, opacity: 0.19, amp: 2.6, over: 7, seed: 1810 + i * 7 });
       }));
-      P.slot("y-" + (i + 1), L - (land ? 170 : 100), i === 4 ? y + 6 : y - 26, land ? 150 : 86, 52, { align: "right", role: "axis" });
+      /* LEGACY PASS, rebuild-21: the bottom label was centred on the baseline and
+       * hung into head-1 under it. It now sits on the baseline, the mirror of
+       * the top label sitting under its line. */
+      P.slot("y-" + (i + 1), L - (land ? 170 : 100), i === 4 ? y + 6 : i === 0 ? y - 50 : y - 26, land ? 150 : 86, 52, { align: "right", role: "axis" });
     }
     H.pin(function () {
       P.inkAdd(H.line(L, y0 - 14, L, y1, { stroke: p.structure, width: land ? 4.6 : 4, opacity: 0.9, amp: 3, over: 11, seed: 1821 }));
@@ -1102,8 +1111,11 @@
     // which is the property that was missing.
     P.slot("total", L, top, (R - L) * 0.46, figH, { align: "left", role: "end" });
     P.slot("remainder", L + (R - L) * 0.54, top, (R - L) * 0.46, figH, { align: "right", role: "end" });
-    P.slot("total-label", colX(0) - Math.round(gut * 0.2), baseY + u, barW + Math.round(gut * 0.4), labelH, { align: "center", role: "endLabel" });
-    P.slot("remainder-label", colX(cols - 1) - Math.round(gut * 0.2), baseY + u, barW + Math.round(gut * 0.4), labelH, { align: "center", role: "endLabel" });
+    // LEGACY PASS, rebuild-21: the end labels took 0.2 of a gutter each side and
+    // ran 0.07 of a gutter into step-1 / step-n, whose boxes take 0.13. Same
+    // inset as the steps now, so neighbouring label boxes meet and never cross.
+    P.slot("total-label", colX(0) - Math.round(gut * 0.13), baseY + u, barW + Math.round(gut * 0.26), labelH, { align: "center", role: "endLabel" });
+    P.slot("remainder-label", colX(cols - 1) - Math.round(gut * 0.13), baseY + u, barW + Math.round(gut * 0.26), labelH, { align: "center", role: "endLabel" });
     for (let i = 1; i <= n; i++) {
       const x = colX(i) - Math.round(gut * 0.13), cw = barW + Math.round(gut * 0.26);
       P.slot(`step-${i}`, x, baseY + Math.round(u * 0.3), cw, blockH(roles.step, 1), { align: "center", role: "step" });
@@ -1471,8 +1483,13 @@
       P.inkAdd(H.line(L, saidY, R, saidY - 3, { stroke: p.structure, width: 3.6, opacity: 0.62, amp: 2.6, over: 10, seed: 701 }));
       P.inkAdd(H.line(L, hapY, R, hapY - 3, { stroke: p.structure, width: 4.6, opacity: 0.92, amp: 3, over: 12, seed: 702 }));
     });
-    P.slot("rail-said", L - (land ? 180 : 76), saidY - blockH(roles.rail, 1) / 2, land ? 160 : 70, blockH(roles.rail, 1), { align: "right", role: "rail" });
-    P.slot("rail-happened", L - (land ? 180 : 76), hapY - blockH(roles.rail, 1) / 2, land ? 160 : 70, blockH(roles.rail, 1), { align: "right", role: "rail" });
+    /* LEGACY PASS, rebuild-21: the rail names sat in the left gutter, x 20 in
+     * 16:9 and 4 in 9:16, outside the 5% safe margin and too narrow for
+     * "WHAT HAPPENED" at rail size. Each name now heads its own track: above the
+     * said row, below the happened row, flush with the rails' left end. */
+    const railH = blockH(roles.rail, 1), railW = Math.round((R - L) * 0.5);
+    P.slot("rail-said", L, Math.round(saidY - u * 1.2 - blockH(roles.said, 3) - u * 0.4 - railH), railW, railH, { align: "left", role: "rail" });
+    P.slot("rail-happened", L, Math.round(hapY + u * 1.2 + blockH(roles.happened, 3) + u * 0.4), railW, railH, { align: "left", role: "rail" });
     const step = (R - L) / n, colW = Math.round(step * 0.88);
     for (let i = 1; i <= n; i++) {
       const cx = Math.round(L + step * (i - 0.5));
@@ -1508,7 +1525,12 @@
     };
     const P = base(o, "sensitivity", roles);
     P.meta.family = "structure";
-    const u = unitOf(h), L = land ? 320 : 96, R = w - (land ? 220 : 72);
+    /* LEGACY PASS, rebuild-21: the row labels started at x 20 (16:9) and 4 (9:16),
+     * inside the 5% margin, and in 16:9 the column axis title ran into the column
+     * heads under it. Row labels now start at the margin — portrait gives the
+     * grid 54 units for it — and the axis title stacks above the heads. */
+    const u = unitOf(h), L = land ? 320 : 150, R = w - (land ? 220 : 72);
+    const rowX = land ? 96 : 56, rowW = L - rowX - (land ? 20 : 8);
     P.slot("kicker", L, land ? 92 : 200, R - L, blockH(roles.kicker, 1), { align: "left", role: "kicker" });
     const gridT = Math.round(h * (land ? 0.28 : 0.34));
     const gridB = Math.round(h * (land ? 0.80 : 0.70));
@@ -1521,11 +1543,12 @@
       P.inkAdd(H.breathe(function () { return H.line(gx, gridT, gx, gridB, { stroke: p.structure, width: i === 0 || i === 3 ? 3.6 : 2, opacity: i === 0 || i === 3 ? 0.85 : 0.34, amp: 2.4, over: 8, seed: 740 + i }); }));
       P.inkAdd(H.breathe(function () { return H.line(L, gy, R, gy, { stroke: p.structure, width: i === 0 || i === 3 ? 3.6 : 2, opacity: i === 0 || i === 3 ? 0.85 : 0.34, amp: 2.4, over: 8, seed: 750 + i }); }));
     }
-    P.slot("col-axis", L, gridT - u * 3.2, R - L, blockH(roles.axisTitle, 1), { align: "center", role: "axisTitle" });
-    P.slot("row-axis", L - (land ? 300 : 92), gridT - u * 3.2, land ? 280 : 88, blockH(roles.axisTitle, 1), { align: "right", role: "axisTitle" });
+    const axisY = Math.round(Math.min(gridT - u * 3.2, gridT - u * 1.6 - blockH(roles.axisTitle, 1) - u * 0.3));
+    P.slot("col-axis", L, axisY, R - L, blockH(roles.axisTitle, 1), { align: "center", role: "axisTitle" });
+    P.slot("row-axis", rowX, axisY, rowW, blockH(roles.axisTitle, 1), { align: "right", role: "axisTitle" });
     for (let c = 1; c <= 3; c++) {
       P.slot(`col-${c}`, L + cw * (c - 1), gridT - u * 1.6, cw, blockH(roles.head, 1), { align: "center", role: "head" });
-      P.slot(`row-${c}`, L - (land ? 300 : 92), gridT + ch * (c - 1) + ch / 2 - blockH(roles.head, 1) / 2, land ? 280 : 88, blockH(roles.head, 1), { align: "right", role: "head" });
+      P.slot(`row-${c}`, rowX, gridT + ch * (c - 1) + ch / 2 - blockH(roles.head, 1) / 2, rowW, blockH(roles.head, 1), { align: "right", role: "head" });
       for (let r = 1; r <= 3; r++) {
         P.slot(`cell-${r}-${c}`, L + cw * (c - 1), gridT + ch * (r - 1) + ch / 2 - blockH(roles.cell, 1) / 2, cw, blockH(roles.cell, 1), { align: "center", role: "cell", region: true });
       }
@@ -2292,7 +2315,9 @@
           note: "what happened. Solid and narrow, over the guided band. Same column, same scale — the gap between them IS the argument.",
         });
         const vw = Math.min(152, step * 0.8);
-        P.slot(`value-${c}`, cx - vw / 2, y0 - 50, vw, 46, { align: "center", role: "value" });
+        /* LEGACY PASS, rebuild-21: the last value box centred on the end point ran
+         * past the 5% margin. Clamped inside it; the text stays centred in the box. */
+        P.slot(`value-${c}`, Math.min(w * 0.95 - vw, Math.max(w * 0.05, cx - vw / 2)), y0 - 50, vw, 46, { align: "center", role: "value" });
         P.slot(`head-${c}`, cx - (land ? 84 : 62), y1 + 30, land ? 168 : 124, 52, { align: "center", role: "period" });
       }
       P.meta.argument = "the forecast faint and wide, the outcome solid and narrow. The whole format is 'they said, then look' — this is that sentence as a picture.";
@@ -2312,7 +2337,7 @@
           const px = Math.max(x0, Math.min(x1 - 84, cx - 42));
           P.slot(`point-${c}`, px, y0, 84, y1 - y0, { role: "point-column", region: true, anchorX: Math.round(cx) });
           const vw = Math.min(152, step * 0.8);
-          if (vFits) P.slot(`value-${c}`, cx - vw / 2, y0 - 50, vw, 46, { align: "center", role: "value" });
+          if (vFits) P.slot(`value-${c}`, Math.min(w * 0.95 - vw, Math.max(w * 0.05, cx - vw / 2)), y0 - 50, vw, 46, { align: "center", role: "value" });
           const hw = Math.min(land ? 168 : 124, step * 0.94);
           P.slot(`head-${c}`, cx - hw / 2, y1 + 30, hw, 52, { align: "center", role: "period", anchorX: Math.round(cx) });
         }
@@ -2325,7 +2350,8 @@
         const hw = step * 2;
         anchors.forEach((t, k) => {
           const cx = x0 + step * (t - 1);
-          const hx = Math.max(12, Math.min(w - hw - 12, cx - hw / 2));
+          /* LEGACY PASS, rebuild-21: clamped to the 5% margin, not to 12 units. */
+          const hx = Math.max(Math.ceil(w * 0.05), Math.min(Math.floor(w * 0.95) - hw, cx - hw / 2));
           P.slot(`head-${k + 1}`, hx, y1 + 30, hw, 52, { align: "center", role: "period", anchorX: Math.round(cx), tick: t });
         });
         P.slot("mark-high", x0, y0, x1 - x0, 56, { align: "right", role: "value", region: true, note: "52-week high callout" });
@@ -2348,7 +2374,9 @@
       },
     });
     P.colourAdd(surfaceFurniture(P, s));
-    const m = land ? { l: 118, r: 118, t: 78, b: 74 } : { l: 48, r: 48, t: 180, b: 200 };
+    /* LEGACY PASS, rebuild-21: portrait side margins 48 -> 56, same reason as the
+     * numbers sheet — the unit, group names and total label sat in the margin. */
+    const m = land ? { l: 118, r: 118, t: 78, b: 74 } : { l: 56, r: 56, t: 180, b: 200 };
     const innerL = m.l, innerR = w - m.r;
     P.slot("unit", innerL, m.t, innerR - innerL, 40, { align: "left", role: "unit" });
     const headY = m.t + 40 + (land ? 30 : 60);
@@ -2845,9 +2873,12 @@
     const P = base(o, "flow", TR), p = o.pal, w = o.w, h = o.h;
     const boxes = 3, midY = h * 0.54, boxH = 260, boxW = 300;
     P.slot("kicker", 150, 110, w - 300, 52, { align: "left", role: "kicker" });
-    P.slot("input", 90, midY - 90, 240, 180, { align: "left", role: "label" });
+    /* LEGACY PASS, rebuild-21: input and output ran 6 units into the 5% margin
+     * each side. The chain starts at the margin and the output stops at it. */
+    const inX = Math.ceil(w * 0.05) + 4;
+    P.slot("input", inX, midY - 90, 240, 180, { align: "left", role: "label" });
     const gap = 84;
-    const startX = 90 + 240 + gap;
+    const startX = inX + 240 + gap;
     for (let i = 1; i <= boxes; i++) {
       const x = startX + (boxW + gap) * (i - 1);
       P.colourAdd(H.hatch(H.polyRect(x, midY - boxH / 2, boxW, boxH), { color: p.ground2, opacity: 0.5, gap: 8, width: 13, angle: -3, over: 18, seed: 160 + i }));
@@ -2863,7 +2894,7 @@
     P.inkAdd(H.stroke([{ x: outX - gap + 12, y: midY }, { x: outX - 12, y: midY }], { stroke: p.structure, width: 3.4, amp: 2.4, over: 6, seed: 201 }));
     P.inkAdd(H.stroke([{ x: outX - 34, y: midY - 16 }, { x: outX - 12, y: midY }, { x: outX - 34, y: midY + 16 }], { stroke: p.structure, width: 3.4, amp: 1.8, over: 4, seed: 202 }));
     P.slot(`arrow-${boxes + 1}`, outX - gap + 2, midY - 74, gap + 20, 60, { align: "center", role: "caption" });
-    P.slot("output", outX + 34, midY - 100, w - outX - 124, 200, { align: "left", role: "statement" });
+    P.slot("output", outX + 34, midY - 100, Math.floor(w * 0.95) - 4 - (outX + 34), 200, { align: "left", role: "statement" });
     P.slot("caption", 150, h - 150, w - 300, 70, { align: "left", role: "caption" });
     return P;
   }
@@ -3211,8 +3242,13 @@
       for (let i = 1; i <= 6; i++) {
         const cx = L + step * (i - 1), up = i % 2 === 1;
         P.inkAdd(H.line(cx, y - 24, cx, y + 24, { stroke: p.structure, width: 3.6, opacity: 0.85, amp: 1.6, over: 5, seed: 290 + i }));
-        P.slot(`date-${i}`, cx - step * 0.46, up ? y - 116 : y + 52, step * 0.92, 48, { align: "center", role: "date" });
-        P.slot(`label-${i}`, cx - step * 0.46, up ? y - 236 : y + 108, step * 0.92, 110, { align: "center", role: "label" });
+        /* LEGACY PASS, rebuild-21: the end labels were centred on the end ticks and
+         * half of each fell past the 5% margin. The two ends align inward from
+         * their tick, date and label together. */
+        const end = i === 1 ? "left" : i === 6 ? "right" : "center";
+        const bx = end === "left" ? cx - 20 : end === "right" ? cx + 20 - step * 0.92 : cx - step * 0.46;
+        P.slot(`date-${i}`, bx, up ? y - 116 : y + 52, step * 0.92, 48, { align: end, role: "date" });
+        P.slot(`label-${i}`, bx, up ? y - 236 : y + 108, step * 0.92, 110, { align: end, role: "label" });
       }
       P.slot("caption", L, h - 130, R - L, 64, { align: "left", role: "caption" });
     } else {
@@ -3606,7 +3642,13 @@
       // is LONGER than a tick: sampled once, the path collapses and every tick on
       // the plate silently disappears. Same defect the sparkline bars had.
       P.inkAdd(H.line(cx, band.y + band.h, cx, band.y + band.h + 13, { stroke: p.structure, width: 2.2, opacity: 0.75, amp: 1.2, step: 4, seed: 980 + c * 11 }));
-      P.slot(`head-${c + 1}`, Math.max(0, cx - pStep / 2), band.y + band.h + Math.round(u * 0.7), pStep, headH, { align: "center", role: "period" });
+      /* LEGACY PASS, rebuild-21: head-1 and head-6 were centred on the band's end
+       * ticks, so half of each hung off the band — into now-value in 16:9, past
+       * the safe margin in 9:16. The end labels align inward from their tick. */
+      const endIn = Math.round(u * 0.4);
+      const end = c === 0 || c === 5, hw = end ? Math.round(pStep / 2) + endIn : pStep;
+      const hx = c === 0 ? band.x - endIn : c === 5 ? band.x + band.w - Math.round(pStep / 2) : Math.max(0, cx - pStep / 2);
+      P.slot(`head-${c + 1}`, hx, band.y + band.h + Math.round(u * 0.7), hw, headH, { align: c === 0 ? "left" : c === 5 ? "right" : "center", role: "period" });
     }
     // The path IS the band: first and last points sit on the axis ends, so they
     // line up with head-1, head-6 and the two figures above. An inset would put
@@ -3628,7 +3670,9 @@
     const P = base(o, "media-frame-t" + t, { caption: TR.caption, label: TR.label });
     P.meta.treatment = t;
     const iw = land ? w * 0.68 : w * 0.82;
-    const ih = land ? h * 0.6 : h * 0.44;
+    /* LEGACY PASS, rebuild-21: under the monitor's stand (t2) the source line fell
+     * past the bottom 5% in 16:9. The t2 screen is 4% of the height shorter. */
+    const ih = land ? h * (t === 2 ? 0.56 : 0.6) : h * 0.44;
     const ix = (w - iw) / 2, iy = land ? h * 0.12 : h * 0.26;
 
     if (t === 1) {

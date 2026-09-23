@@ -38,9 +38,29 @@
     98,
     174
    ],
-   "occlusionSplit": 12,
+   "occlusionSplit": 17,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 7,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 3
+    },
+    "upper": {
+     "pose": "sitting-at-desk",
+     "headCover": 0,
+     "upperCover": 6.4
+    },
+    "figureBox": [
+     214.6,
+     31.3,
+     263.8,
+     146
+    ]
+   },
    "files": {
     "base": "desk-front-night.png",
     "baseIsFrame": true,
@@ -76,10 +96,10 @@
    "fps": 1,
    "frameCount": 1,
    "hostAnchor": [
-    239.2,
-    46,
-    25.6,
-    88
+    240.7,
+    56,
+    22.7,
+    78
    ],
    "portraitWindow": [
     203,
@@ -87,9 +107,144 @@
     98,
     174
    ],
-   "occlusionSplit": 12,
+   "occlusionSplit": 17,
    "roomRole": null,
    "duskSafe": null,
+   "opener": true,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     237.3,
+     56.9,
+     267.1,
+     134
+    ]
+   },
+   "typeRoles": {
+    "title": {
+     "font": "Archivo Narrow",
+     "size": 76,
+     "weight": 700,
+     "colour": "structure",
+     "tracking": "-.02em",
+     "maxLines": 2,
+     "maxCharsPerLine": 16,
+     "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+    }
+   },
+   "slots": {
+    "title": {
+     "x": 1260,
+     "y": 84,
+     "w": 504,
+     "h": 216,
+     "align": "left",
+     "role": "title",
+     "ground": "card",
+     "groundBox": [
+      1236,
+      66,
+      552,
+      252
+     ],
+     "colour": "structure",
+     "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+     "maxCharsPerLine": 16,
+     "maxLines": 2
+    }
+   },
+   "slotsByAspect": {
+    "16x9": {
+     "canvas": [
+      1920,
+      1080
+     ],
+     "aspect": "16x9",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 76,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 2,
+       "maxCharsPerLine": 16,
+       "budget": "derived from the slot boxes that set this role; 16 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 1260,
+       "y": 84,
+       "w": 504,
+       "h": 216,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        1236,
+        66,
+        552,
+        252
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 16,
+       "maxLines": 2
+      }
+     }
+    },
+    "9x16": {
+     "canvas": [
+      1080,
+      1920
+     ],
+     "aspect": "9x16",
+     "typeRoles": {
+      "title": {
+       "font": "Archivo Narrow",
+       "size": 62,
+       "weight": 700,
+       "colour": "structure",
+       "tracking": "-.02em",
+       "maxLines": 3,
+       "maxCharsPerLine": 37,
+       "budget": "derived from the slot boxes that set this role; 37 is the floor (narrowest of 1), was 22"
+      }
+     },
+     "slots": {
+      "title": {
+       "x": 77,
+       "y": 110,
+       "w": 926,
+       "h": 397,
+       "align": "left",
+       "role": "title",
+       "ground": "card",
+       "groundBox": [
+        33,
+        77,
+        1014,
+        463
+       ],
+       "colour": "structure",
+       "note": "chapter opener writes here. The card under it is drawn into the room, so nothing else changes.",
+       "maxCharsPerLine": 37,
+       "maxLines": 3
+      }
+     }
+    }
+   },
    "files": {
     "base": "desk-wide-night.png",
     "baseIsFrame": true,
@@ -136,9 +291,29 @@
     98,
     174
    ],
-   "occlusionSplit": 10,
+   "occlusionSplit": 17,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     253.4,
+     51,
+     292.9,
+     144
+    ]
+   },
    "files": {
     "base": "desk-side-night.png",
     "baseIsFrame": true,
@@ -185,9 +360,29 @@
     98,
     174
    ],
-   "occlusionSplit": 10,
+   "occlusionSplit": 17,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 4,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     59.8,
+     43.1,
+     92.5,
+     140
+    ]
+   },
    "files": {
     "base": "turn-to-screen-night.png",
     "baseIsFrame": true,
@@ -227,6 +422,8 @@
    "occlusionSplit": null,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": null,
    "files": {
     "base": "board-night.png",
     "baseIsFrame": true,
@@ -273,9 +470,29 @@
     98,
     174
    ],
-   "occlusionSplit": 10,
+   "occlusionSplit": 14,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 1,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 1.6
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 1.6
+    },
+    "figureBox": [
+     73.9,
+     45,
+     101.2,
+     138
+    ]
+   },
    "files": {
     "base": "window-wall-night.png",
     "baseIsFrame": true,
@@ -322,9 +539,29 @@
     98,
     174
    ],
-   "occlusionSplit": 11,
+   "occlusionSplit": 16,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": {
+    "poses": 3,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     217.1,
+     39.1,
+     255.4,
+     138
+    ]
+   },
    "files": {
     "base": "doorway-night.png",
     "baseIsFrame": true,
@@ -364,6 +601,8 @@
    "occlusionSplit": null,
    "roomRole": null,
    "duskSafe": null,
+   "opener": false,
+   "clearance": null,
    "files": {
     "base": "desk-top-down-night.png",
     "baseIsFrame": true,
@@ -399,20 +638,40 @@
    "fps": 1,
    "frameCount": 1,
    "hostAnchor": [
-    201.7,
+    263.7,
     32,
     32.6,
     112
    ],
    "portraitWindow": [
-    169,
+    222,
     4,
     98,
     174
    ],
-   "occlusionSplit": 12,
+   "occlusionSplit": 18,
    "roomRole": "talk",
    "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     262.8,
+     33.2,
+     298.4,
+     144
+    ]
+   },
    "files": {
     "base": "desk-front-b-night.png",
     "baseIsFrame": true,
@@ -448,20 +707,40 @@
    "fps": 1,
    "frameCount": 1,
    "hostAnchor": [
-    208.9,
+    268.9,
     44,
     30.3,
     104
    ],
    "portraitWindow": [
-    175,
+    222,
     4,
     98,
     174
    ],
-   "occlusionSplit": 11,
+   "occlusionSplit": 15,
    "roomRole": "talk",
    "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     259.3,
+     45.2,
+     300,
+     148
+    ]
+   },
    "files": {
     "base": "desk-front-low-night.png",
     "baseIsFrame": true,
@@ -508,9 +787,29 @@
     98,
     174
    ],
-   "occlusionSplit": 11,
+   "occlusionSplit": 13,
    "roomRole": "read",
    "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     218.7,
+     41.1,
+     250.5,
+     140
+    ]
+   },
    "files": {
     "base": "read-close-night.png",
     "baseIsFrame": true,
@@ -560,6 +859,26 @@
    "occlusionSplit": 29,
    "roomRole": "diagram",
    "duskSafe": false,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     64.3,
+     45.1,
+     103.4,
+     144
+    ]
+   },
    "files": {
     "base": "board-side-night.png",
     "baseIsFrame": true,
@@ -595,20 +914,40 @@
    "fps": 1,
    "frameCount": 1,
    "hostAnchor": [
-    250.4,
+    279.4,
     34,
     33.2,
     114
    ],
    "portraitWindow": [
-    218,
+    222,
     4,
     98,
     174
    ],
-   "occlusionSplit": 10,
+   "occlusionSplit": 17,
    "roomRole": "exit",
    "duskSafe": false,
+   "opener": false,
+   "clearance": {
+    "poses": 1,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     280.1,
+     35.3,
+     313.3,
+     148
+    ]
+   },
    "files": {
     "base": "doorway-wide-night.png",
     "baseIsFrame": true,
@@ -655,9 +994,29 @@
     98,
     174
    ],
-   "occlusionSplit": 15,
+   "occlusionSplit": 20,
    "roomRole": "panel",
    "duskSafe": true,
+   "opener": false,
+   "clearance": {
+    "poses": 2,
+    "head": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "upper": {
+     "pose": "to-camera",
+     "headCover": 0,
+     "upperCover": 0
+    },
+    "figureBox": [
+     81.8,
+     39.2,
+     123.3,
+     144
+    ]
+   },
    "files": {
     "base": "panel-left-night.png",
     "baseIsFrame": true,

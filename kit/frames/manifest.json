@@ -354,7 +354,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "af58c0d8"
+      "hash": "073bd648"
      },
      {
       "file": "media-frame-t2-16x9-night_f02.png",
@@ -362,7 +362,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "e7eaaea8"
+      "hash": "86f69238"
      },
      {
       "file": "media-frame-t2-16x9-night_f03.png",
@@ -370,7 +370,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "af58c0d8"
+      "hash": "073bd648"
      }
     ]
    },
@@ -385,7 +385,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "af58c0d8"
+       "hash": "073bd648"
       },
       {
        "file": "media-frame-t2-16x9-night_f02.png",
@@ -393,7 +393,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "e7eaaea8"
+       "hash": "86f69238"
       },
       {
        "file": "media-frame-t2-16x9-night_f03.png",
@@ -401,7 +401,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "af58c0d8"
+       "hash": "073bd648"
       }
      ]
     },
@@ -415,7 +415,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "4e251658"
+       "hash": "da12c450"
       },
       {
        "file": "media-frame-t2-16x9-dusk_f02.png",
@@ -423,7 +423,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "3e579bf6"
+       "hash": "61d85640"
       },
       {
        "file": "media-frame-t2-16x9-dusk_f03.png",
@@ -431,7 +431,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "4e251658"
+       "hash": "da12c450"
       }
      ]
     }
@@ -465,13 +465,13 @@
      "x": 307,
      "y": 130,
      "w": 1306,
-     "h": 648
+     "h": 605
     },
     "caption": {
      "align": "left",
      "role": "label",
      "x": 307,
-     "y": 928,
+     "y": 884,
      "w": 1306,
      "h": 70,
      "maxChars": 95
@@ -480,7 +480,7 @@
      "align": "left",
      "role": "caption",
      "x": 307,
-     "y": 1012,
+     "y": 968,
      "w": 1306,
      "h": 56,
      "maxChars": 83

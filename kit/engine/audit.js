@@ -179,7 +179,14 @@ rule(9, 'Manifests are what the engine emits', () => {
    * crashed on this file's own shebang. It now rebuilds every manifest in
    * memory through engine/emit.js and diffs it against what is on disk. */
   const E = require('./emit');
-  const r = E.check();
+  const b = E.build();
+  /* The two files the other rules read are compared as LOADED — the thing the
+   * audit actually judged — the rest against disk. Same build, one pass. */
+  const loaded = { 'emit/manifest.json': manifest(), 'emit/plates.json': plates() };
+  const diffs = Object.keys(b.outputs).filter(rel => rel in loaded
+    ? JSON.stringify(loaded[rel], null, 1) !== b.outputs[rel]
+    : !exists(rel) || fs.readFileSync(path.join(ROOT, rel), 'utf8') !== b.outputs[rel]);
+  const r = { ok: !diffs.length, diffs, files: Object.keys(b.outputs).length };
   return { ok: r.ok, count: r.files + ' manifest files',
     note: r.ok ? 'emit/manifest.json, emit/plates.json, emit/slots.json and every <family>/manifest.json match a fresh build from the engine.'
       : r.diffs.length + ' differ from a fresh build: ' + r.diffs.slice(0, 5).join(', ') + ' \u2014 run node engine/emit.js' };
@@ -253,6 +260,44 @@ rule(16, 'Every drawn anchor comes from one derivation', () => {
   const bad = rooms.filter(r => Math.abs(r.hostAnchor[2] - r.hostAnchor[3] * ratio) > 0.2);
   return { ok: !bad.length, count: `${rooms.length} anchor rects`,
     note: bad.length ? `width not derived: ${bad.slice(0, 3).map(r => r.id).join(', ')}` : 'Every anchor width equals height × the figure ink aspect. A self-consistent model plus one stale source is invisible to any other check.' };
+});
+
+rule(27, 'He stands clear of the front layer, composited', () => {
+  /* rebuild-21. Four rooms hung a wall item across his head and two talk angles
+   * stood him behind the monitor, while rules 14–16 passed: they check the
+   * anchor and the split, never the room WITH HIM IN IT. emit.js composites
+   * every pose that fits the room by the contract and measures the cover; this
+   * fails any head under a front shape, and any room hiding more than 10% of
+   * him above the desk top. The desk hiding his legs is the design. */
+  const p = plates(), LIMIT = 10;
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hostAnchor);
+  if (!rooms.length) needs('no anchored room plates');
+  const unmeasured = rooms.filter(r => !r.clearance);
+  if (unmeasured.length) needs('room plates carry no clearance — run node engine/emit.js');
+  const bad = rooms.filter(r => r.clearance.head.headCover > 0 || r.clearance.upper.upperCover > LIMIT);
+  const worst = rooms.reduce((a, r) => Math.max(a, r.clearance.upper.upperCover), 0);
+  return { ok: !bad.length, count: `${rooms.length - bad.length} of ${rooms.length}`,
+    note: bad.length ? 'covered: ' + bad.slice(0, 4).map(r => `${r.id} head ${r.clearance.head.headCover}% / upper ${r.clearance.upper.upperCover}% (${r.clearance.upper.pose})`).join(', ')
+      : `No head under a front shape; worst cover above the desk ${worst}% (limit ${LIMIT}%), over every pose that fits each room (§4.5).` };
+});
+
+rule(28, 'A chapter title has somewhere to land', () => {
+  /* rebuild-21. None of the rebuilt rooms published a title slot, so every
+   * chapter title would have dropped silently. This fails unless at least one
+   * anchored room opens a chapter, and fails any title that leaves its card,
+   * leaves the portrait window, or sits over him. Room units throughout. */
+  const p = plates();
+  const rooms = p.plates.filter(pl => pl.role === 'room' && pl.hostAnchor && pl.aspect === '16x9');
+  if (!rooms.length) needs('no anchored room plates');
+  const openers = rooms.filter(r => r.title);
+  const inside = (a, b) => a[0] >= b[0] && a[1] >= b[1] && a[0] + a[2] <= b[0] + b[2] && a[1] + a[3] <= b[1] + b[3];
+  const hits = (a, f) => !(a[0] + a[2] <= f[0] || a[0] >= f[2] || a[1] + a[3] <= f[1] || a[1] >= f[3]);
+  const bad = openers.filter(r => !inside(r.title.slot, r.title.ground) || !inside(r.title.ground, r.portraitWindow)
+    || (r.clearance && hits(r.title.ground, r.clearance.figureBox)));
+  return { ok: openers.length > 0 && !bad.length, count: `${new Set(openers.map(r => r.twinId)).size} opener room(s), ${openers.length} plates`,
+    note: !openers.length ? 'no anchored room publishes a title slot — every chapter title would drop'
+      : bad.length ? 'title misplaced: ' + bad.map(r => r.id).join(', ')
+      : 'Every opener room\u2019s title sits on its card, inside the portrait window, and clear of every pose that fits the room.' };
 });
 
 rule(25, 'Every talk, idle and blink strip actually moves', () => {

@@ -372,7 +372,7 @@
     "value-6": {
      "align": "center",
      "role": "value",
-     "x": 1714,
+     "x": 1672,
      "y": 140,
      "w": 152,
      "h": 46,
@@ -752,7 +752,7 @@
     "value-6": {
      "align": "center",
      "role": "value",
-     "x": 923,
+     "x": 892,
      "y": 280,
      "w": 134,
      "h": 46,
@@ -975,7 +975,7 @@
      "role": "period",
      "anchorX": 200,
      "tick": 1,
-     "x": 55,
+     "x": 96,
      "y": 940,
      "w": 289,
      "h": 52,
@@ -1008,7 +1008,7 @@
      "role": "period",
      "anchorX": 1790,
      "tick": 12,
-     "x": 1619,
+     "x": 1535,
      "y": 940,
      "w": 289,
      "h": 52,
@@ -1284,7 +1284,7 @@
      "role": "period",
      "anchorX": 990,
      "tick": 12,
-     "x": 914,
+     "x": 873,
      "y": 1530,
      "w": 153,
      "h": 52,
@@ -4037,7 +4037,7 @@
     "value-6": {
      "align": "center",
      "role": "value",
-     "x": 1714,
+     "x": 1672,
      "y": 140,
      "w": 152,
      "h": 46,
@@ -4489,7 +4489,7 @@
     "value-6": {
      "align": "center",
      "role": "value",
-     "x": 923,
+     "x": 892,
      "y": 280,
      "w": 134,
      "h": 46,
@@ -6990,7 +6990,7 @@
     "value-8": {
      "align": "center",
      "role": "value",
-     "x": 1714,
+     "x": 1672,
      "y": 140,
      "w": 152,
      "h": 46,
@@ -9676,7 +9676,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "a4d56c97"
+      "hash": "06492a26"
      },
      {
       "file": "insider-flow-6-16x9-night_f02.png",
@@ -9684,7 +9684,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "a4d56c97"
+      "hash": "06492a26"
      },
      {
       "file": "insider-flow-6-16x9-night_f03.png",
@@ -9692,7 +9692,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "a4d56c97"
+      "hash": "06492a26"
      }
     ]
    },
@@ -9707,7 +9707,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "a4d56c97"
+       "hash": "06492a26"
       },
       {
        "file": "insider-flow-6-16x9-night_f02.png",
@@ -9715,7 +9715,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "a4d56c97"
+       "hash": "06492a26"
       },
       {
        "file": "insider-flow-6-16x9-night_f03.png",
@@ -9723,7 +9723,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "a4d56c97"
+       "hash": "06492a26"
       }
      ]
     },
@@ -9737,7 +9737,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "cc5db524"
+       "hash": "0a87c7d0"
       },
       {
        "file": "insider-flow-6-16x9-dusk_f02.png",
@@ -9745,7 +9745,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "cc5db524"
+       "hash": "0a87c7d0"
       },
       {
        "file": "insider-flow-6-16x9-dusk_f03.png",
@@ -9753,7 +9753,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "cc5db524"
+       "hash": "0a87c7d0"
       }
      ]
     }
@@ -9845,7 +9845,7 @@
      "x": 200,
      "y": 153,
      "w": 1570,
-     "h": 753
+     "h": 732
     },
     "scale-above": {
      "align": "right",
@@ -9862,7 +9862,7 @@
      "role": "axis",
      "note": "the value at the top of the below half, e.g. '$4m'. Both halves share ONE scale — a plate whose buys and sells are scaled independently is unreadable and would be a verdict by arithmetic.",
      "x": 30,
-     "y": 881,
+     "y": 859,
      "w": 150,
      "h": 52,
      "maxChars": 10
@@ -9871,20 +9871,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 1,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 276,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-1": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 200,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -9893,20 +9893,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 2,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 538,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-2": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 462,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -9915,20 +9915,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 3,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 799,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-3": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 723,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -9937,20 +9937,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 4,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1061,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-4": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 985,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -9959,20 +9959,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 5,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1323,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-5": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1247,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -9981,20 +9981,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 6,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1584,
      "y": 153,
      "w": 110,
-     "h": 753
+     "h": 732
     },
     "date-6": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1508,
-     "y": 915,
+     "y": 894,
      "w": 262,
      "h": 30,
      "maxChars": 24
@@ -10004,7 +10004,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 200,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10014,7 +10014,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 462,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10024,7 +10024,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 723,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10034,7 +10034,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 985,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10044,7 +10044,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1247,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10054,7 +10054,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1508,
-     "y": 945,
+     "y": 924,
      "w": 262,
      "h": 28,
      "maxChars": 18
@@ -10516,7 +10516,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "1441ac58"
+      "hash": "6f8c4890"
      },
      {
       "file": "insider-flow-12-16x9-night_f02.png",
@@ -10524,7 +10524,7 @@
       "args": {
        "ruleOffset": 1
       },
-      "hash": "1441ac58"
+      "hash": "6f8c4890"
      },
      {
       "file": "insider-flow-12-16x9-night_f03.png",
@@ -10532,7 +10532,7 @@
       "args": {
        "ruleOffset": 0
       },
-      "hash": "1441ac58"
+      "hash": "6f8c4890"
      }
     ]
    },
@@ -10547,7 +10547,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1441ac58"
+       "hash": "6f8c4890"
       },
       {
        "file": "insider-flow-12-16x9-night_f02.png",
@@ -10555,7 +10555,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "1441ac58"
+       "hash": "6f8c4890"
       },
       {
        "file": "insider-flow-12-16x9-night_f03.png",
@@ -10563,7 +10563,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "1441ac58"
+       "hash": "6f8c4890"
       }
      ]
     },
@@ -10577,7 +10577,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "c0da2154"
+       "hash": "f560d2b0"
       },
       {
        "file": "insider-flow-12-16x9-dusk_f02.png",
@@ -10585,7 +10585,7 @@
        "args": {
         "ruleOffset": 1
        },
-       "hash": "c0da2154"
+       "hash": "f560d2b0"
       },
       {
        "file": "insider-flow-12-16x9-dusk_f03.png",
@@ -10593,7 +10593,7 @@
        "args": {
         "ruleOffset": 0
        },
-       "hash": "c0da2154"
+       "hash": "f560d2b0"
       }
      ]
     }
@@ -10685,7 +10685,7 @@
      "x": 200,
      "y": 153,
      "w": 1570,
-     "h": 753
+     "h": 732
     },
     "scale-above": {
      "align": "right",
@@ -10702,7 +10702,7 @@
      "role": "axis",
      "note": "the value at the top of the below half, e.g. '$4m'. Both halves share ONE scale — a plate whose buys and sells are scaled independently is unreadable and would be a verdict by arithmetic.",
      "x": 30,
-     "y": 881,
+     "y": 859,
      "w": 150,
      "h": 52,
      "maxChars": 10
@@ -10711,20 +10711,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 1,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 233,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-1": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 200,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10733,20 +10733,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 2,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 364,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-2": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 331,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10755,20 +10755,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 3,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 495,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-3": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 462,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10777,20 +10777,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 4,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 625,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-4": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 593,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10799,20 +10799,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 5,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 756,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-5": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 723,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10821,20 +10821,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 6,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 887,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-6": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 854,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10843,20 +10843,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 7,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1018,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-7": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 985,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10865,20 +10865,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 8,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1149,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-8": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1116,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10887,20 +10887,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 9,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1280,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-9": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1247,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10909,20 +10909,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 10,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1410,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-10": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1378,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10931,20 +10931,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 11,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1541,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-11": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1508,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10953,20 +10953,20 @@
      "role": "mark",
      "region": true,
      "growth": "from-axis-both-ways",
-     "axisY": 530,
+     "axisY": 519,
      "index": 12,
      "note": "one Form 4 trade. Fill from axisY upward for a purchase and downward for a sale, to (value / scale) of the half-height. Direction is the DATA, not a judgement — one ink, one weight, both ways.",
      "x": 1672,
      "y": 153,
      "w": 65,
-     "h": 753
+     "h": 732
     },
     "date-12": {
      "align": "center",
      "role": "date",
      "note": "when, e.g. \"12 Mar\". Under the plot, not under the mark: a mark can sit either side of the axis and its label must not move with it.",
      "x": 1639,
-     "y": 915,
+     "y": 894,
      "w": 131,
      "h": 30,
      "maxChars": 12
@@ -10976,7 +10976,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 200,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -10986,7 +10986,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 331,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -10996,7 +10996,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 462,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11006,7 +11006,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 593,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11016,7 +11016,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 723,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11026,7 +11026,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 854,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11036,7 +11036,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 985,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11046,7 +11046,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1116,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11056,7 +11056,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1247,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11066,7 +11066,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1378,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11076,7 +11076,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1508,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11086,7 +11086,7 @@
      "role": "who",
      "note": "who, e.g. 'CFO'. A role rather than a name where it fits — the argument is almost never about the individual.",
      "x": 1639,
-     "y": 945,
+     "y": 924,
      "w": 131,
      "h": 28,
      "maxChars": 9
@@ -11805,7 +11805,7 @@
      "align": "right",
      "role": "axis",
      "x": 40,
-     "y": 853,
+     "y": 829,
      "w": 150,
      "h": 52,
      "maxChars": 10
@@ -12231,7 +12231,7 @@
      "align": "right",
      "role": "axis",
      "x": 10,
-     "y": 1572,
+     "y": 1548,
      "w": 86,
      "h": 52,
      "maxChars": 6
